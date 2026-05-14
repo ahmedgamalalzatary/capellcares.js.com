@@ -1,6 +1,6 @@
-import type { Language } from "../constants/languages";
-import type { ProductStatus } from "../constants/product-status";
-import type { PaymentMethod } from "../constants/payment-methods";
+import type { Language } from "../constants/languages.js";
+import type { ProductStatus } from "../constants/product-status.js";
+import type { PaymentMethod } from "../constants/payment-methods.js";
 
 export type Bilingual = { ar: string; en: string };
 

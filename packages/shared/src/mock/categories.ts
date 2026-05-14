@@ -1,4 +1,4 @@
-import type { Category } from "../types";
+import type { Category } from "../types/index.js";
 
 type Seed = { id: number; parentId: number | null; slug: string; ar: string; en: string };
 

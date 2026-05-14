@@ -62,7 +62,7 @@ export function OfferForm({ mode, initial, products }: Props) {
     });
   };
 
-  const save = () => {
+  const save = async () => {
     const e: Record<string, string> = {};
     if (!nameAr.trim()) e.nameAr = "مطلوب";
     if (!nameEn.trim()) e.nameEn = "مطلوب";
@@ -90,7 +90,7 @@ export function OfferForm({ mode, initial, products }: Props) {
       updatedAt: new Date().toISOString(),
       deletedAt: null
     };
-    getStore().upsertOffer(offer);
+    await getStore().upsertOffer(offer);
     router.push("/offers");
   };
 

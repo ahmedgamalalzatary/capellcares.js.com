@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
-import { mock, type Language } from "@capella/shared";
+import { type Language, type Product } from "@capella/shared";
+import { fetchProducts } from "@/lib/api/client";
 import { ProductCard } from "@/components/products/product-card";
 import styles from "./wishlist.module.css";
 import { Icon } from "@/components/ui/icons";
@@ -11,6 +13,15 @@ import { Icon } from "@/components/ui/icons";
 export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const { user } = useAuth();
   const { ids } = useWishlist();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts().then((items) => {
+      setProducts(items);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
   if (!user) {
     return (
@@ -23,7 +34,9 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
     );
   }
 
-  const items = mock.products.filter((p) => ids.includes(p.id));
+  if (loading) return <p className="muted" style={{ padding: 40 }}>…</p>;
+
+  const items = products.filter((p) => ids.includes(p.id));
   if (items.length === 0) {
     return (
       <div className={styles.gate}>

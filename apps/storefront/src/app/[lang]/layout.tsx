@@ -6,6 +6,8 @@ import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { fetchCategories } from "@/lib/api/client";
+import { buildNav } from "@/lib/nav";
 
 export async function generateStaticParams() {
   return languages.map((lang) => ({ lang }));
@@ -26,13 +28,15 @@ export default async function LocaleLayout({
   const { lang } = await params;
   if (!languages.includes(lang as Language)) notFound();
   const dict = getDict(lang as Language);
+  const categories = await fetchCategories().catch(() => []);
+  const navGroups = buildNav(categories, lang as Language);
 
   return (
     <AuthProvider>
       <WishlistProvider>
         <CartProvider>
           <div className="shell" lang={lang} dir={dir(lang as Language)}>
-            <Header lang={lang as Language} dict={dict} />
+            <Header lang={lang as Language} dict={dict} navGroups={navGroups} />
             <div>{children}</div>
             <Footer lang={lang as Language} dict={dict} />
           </div>

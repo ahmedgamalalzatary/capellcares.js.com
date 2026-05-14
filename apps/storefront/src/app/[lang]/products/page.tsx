@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, mock, pickLang, type Language } from "@capella/shared";
+import { getDict, languages, type Language } from "@capella/shared";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { fetchCategories, fetchProducts } from "@/lib/api/client";
 
 export default async function ProductsPage({
   params,
@@ -15,8 +16,9 @@ export default async function ProductsPage({
   const sp = await searchParams;
   const dict = getDict(lang as Language);
 
-  const activeProducts = mock.products.filter((p) => p.status === "active" && !p.deletedAt);
-  const rootCats = mock.categories.filter((c) => c.parentId === null);
+  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  const activeProducts = products.filter((p) => p.status === "active");
+  const rootCats = categories.filter((c) => c.parentId === null && !c.deletedAt);
 
   return (
     <main className="container">

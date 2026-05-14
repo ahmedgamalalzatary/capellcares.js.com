@@ -1,5 +1,5 @@
-import type { Product } from "../types";
-import { getDescendantCategoryIds } from "./categories";
+import type { Product } from "../types/index.js";
+import { getDescendantCategoryIds } from "./categories.js";
 
 const now = "2026-01-15T10:00:00Z";
 

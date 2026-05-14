@@ -87,7 +87,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
     return Object.keys(e).length === 0;
   };
 
-  const save = () => {
+  const save = async () => {
     if (!canSave()) return;
     const id = initial?.id ?? Math.floor(Math.random() * 90000 + 10000);
     const slug = initial?.slug ?? slugify(nameEn || nameAr || `product-${id}`);
@@ -112,7 +112,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       updatedAt: new Date().toISOString(),
       deletedAt: null
     };
-    getStore().upsertProduct(product);
+    await getStore().upsertProduct(product);
     router.push("/products");
   };
 

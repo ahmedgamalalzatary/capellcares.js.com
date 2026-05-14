@@ -1,7 +1,16 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, mock, pickLang, type Language } from "@capella/shared";
+import { getDict, languages, pickLang, type Language } from "@capella/shared";
 import { ProductDetail } from "@/components/products/product-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import {
+  fetchProductBySlug,
+  fetchCategories,
+  fetchOffers,
+  fetchProducts,
+  getCategoryById,
+  getCategoryPath,
+  getOffersForProduct
+} from "@/lib/api/client";
 
 export default async function ProductDetailsPage({
   params
@@ -10,12 +19,17 @@ export default async function ProductDetailsPage({
 }) {
   const { lang, slug } = await params;
   if (!languages.includes(lang as Language)) notFound();
-  const product = mock.getProductBySlug(slug);
+  const product = await fetchProductBySlug(slug);
   if (!product || product.status !== "active" || product.deletedAt) notFound();
   const dict = getDict(lang as Language);
-  const category = mock.getCategoryById(product.categoryId);
-  const path = category ? mock.getCategoryPath(category.id) : [];
-  const offers = mock.getOffersForProduct(product.id);
+  const [categories, allOffers, allProducts] = await Promise.all([
+    fetchCategories(),
+    fetchOffers(),
+    fetchProducts()
+  ]);
+  const category = getCategoryById(categories, product.categoryId);
+  const path = category ? getCategoryPath(categories, category.id) : [];
+  const offers = getOffersForProduct(allOffers, allProducts, product.id);
 
   return (
     <main className="container">

@@ -8,15 +8,16 @@ import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { buildNav } from "@/lib/nav";
+import type { NavGroup } from "@/lib/nav";
 import styles from "./header.module.css";
 
 interface Props {
   lang: Language;
   dict: any;
+  navGroups: NavGroup[];
 }
 
-export function Header({ lang, dict }: Props) {
+export function Header({ lang, dict, navGroups }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const { count } = useCart();
@@ -26,7 +27,7 @@ export function Header({ lang, dict }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const groups = buildNav(lang);
+  const groups = navGroups;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);

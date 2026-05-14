@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, mock, pickLang, type Language } from "@capella/shared";
+import { getDict, languages, pickLang, type Language } from "@capella/shared";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import {
+  fetchCategories,
+  fetchProducts,
+  getCategoryBySlug,
+  getCategoryPath,
+  getProductsByCategory
+} from "@/lib/api/client";
 
 export default async function CategoryPage({
   params
@@ -10,13 +17,14 @@ export default async function CategoryPage({
 }) {
   const { lang, slug } = await params;
   if (!languages.includes(lang as Language)) notFound();
-  const category = mock.getCategoryBySlug(slug);
+  const [categories, allProducts] = await Promise.all([fetchCategories(), fetchProducts()]);
+  const category = getCategoryBySlug(categories, slug);
   if (!category) notFound();
   const dict = getDict(lang as Language);
 
-  const products = mock.getProductsByCategory(category.id);
-  const path = mock.getCategoryPath(category.id);
-  const subCats = mock.categories.filter((c) => c.parentId === category.id);
+  const products = getProductsByCategory(allProducts.filter((p) => p.status === "active"), categories, category.id);
+  const path = getCategoryPath(categories, category.id);
+  const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
 
   return (
     <main className="container">
@@ -45,7 +53,7 @@ export default async function CategoryPage({
       </header>
       <ProductGrid
         products={products}
-        categories={subCats.length > 0 ? subCats : mock.categories.filter((c) => c.parentId === null)}
+        categories={subCats.length > 0 ? subCats : categories.filter((c) => c.parentId === null && !c.deletedAt)}
         lang={lang as Language}
         dict={dict}
         initialCategory={subCats.length > 0 ? undefined : category.id}

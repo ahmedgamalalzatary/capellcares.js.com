@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getDict, formatPrice, languages, mock, pickLang, type Language } from "@capella/shared";
+import { getDict, formatPrice, languages, pickLang, type Language } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
+import { fetchOffers } from "@/lib/api/client";
 import styles from "./offers.module.css";
 
 export default async function OffersPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!languages.includes(lang as Language)) notFound();
   const dict = getDict(lang as Language);
-  const offers = mock.offers.filter((o) => !o.deletedAt);
+  const offers = await fetchOffers();
 
   return (
     <main className="container">

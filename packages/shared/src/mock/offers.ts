@@ -1,11 +1,11 @@
-import type { Offer } from "../types";
-import { products } from "./products";
+import type { Offer, Product } from "../types/index.js";
+import { products } from "./products.js";
 
 const now = "2026-01-15T10:00:00Z";
 
 function priceOfVariant(id: number) {
   for (const p of products) {
-    const v = p.variants.find((v) => v.id === id);
+    const v = p.variants.find((v: Product["variants"][number]) => v.id === id);
     if (v) return v.price;
   }
   return 0;
@@ -96,6 +96,6 @@ export function getOfferBySlug(slug: string): Offer | undefined {
 }
 
 export function getOffersForProduct(productId: number) {
-  const variantIds = new Set(products.find((p) => p.id === productId)?.variants.map((v) => v.id) ?? []);
-  return offers.filter((o) => o.items.some((it) => variantIds.has(it.variantId)));
+  const variantIds = new Set(products.find((p) => p.id === productId)?.variants.map((v: Product["variants"][number]) => v.id) ?? []);
+  return offers.filter((o) => o.items.some((it: Offer["items"][number]) => variantIds.has(it.variantId)));
 }

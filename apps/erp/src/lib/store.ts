@@ -1,16 +1,21 @@
 "use client";
 
-// In-memory mock ERP store used to let admin actions (create/update/delete)
-// take effect inside the running session. Seeded from @capella/shared mock.
+// API-backed ERP store: initial state hydrated from /api/erp, mutations go
+// through the API and trigger a refetch so storefront sees the same data.
 
-import { mock, type Product, type Category, type Offer } from "@capella/shared";
+import { useSyncExternalStore } from "react";
+import type { Product, Category, Offer } from "@capella/shared";
+import { api } from "./api/client";
 
 type Listener = () => void;
 
 class ErpStore {
-  products: Product[] = mock.products.map((p) => ({ ...p, variants: p.variants.map((v) => ({ ...v })) }));
-  categories: Category[] = mock.categories.map((c) => ({ ...c }));
-  offers: Offer[] = mock.offers.map((o) => ({ ...o, items: o.items.map((i) => ({ ...i })) }));
+  products: Product[] = [];
+  categories: Category[] = [];
+  offers: Offer[] = [];
+  loaded = false;
+  loading = false;
+  error: string | null = null;
   private listeners = new Set<Listener>();
 
   subscribe(l: Listener) {
@@ -21,89 +26,89 @@ class ErpStore {
     this.listeners.forEach((l) => l());
   }
 
+  async refetch() {
+    this.loading = true;
+    this.emit();
+    try {
+      const [p, c, o] = await Promise.all([
+        api.get<{ items: Product[] }>("/api/erp/products"),
+        api.get<{ items: Category[] }>("/api/erp/categories"),
+        api.get<{ items: Offer[] }>("/api/erp/offers")
+      ]);
+      this.products = p.items;
+      this.categories = c.items;
+      this.offers = o.items;
+      this.loaded = true;
+      this.error = null;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : "Failed to load";
+    } finally {
+      this.loading = false;
+      this.emit();
+    }
+  }
+
+  ensureLoaded() {
+    if (!this.loaded && !this.loading) void this.refetch();
+  }
+
   // products
-  upsertProduct(p: Product) {
-    const i = this.products.findIndex((x) => x.id === p.id);
-    if (i === -1) this.products = [...this.products, p];
-    else { this.products = [...this.products]; this.products[i] = p; }
-    this.emit();
+  async upsertProduct(p: Product) {
+    await api.post("/api/erp/products", p);
+    await this.refetch();
   }
-  softDeleteProduct(id: number) {
-    const i = this.products.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.products = [...this.products];
-    this.products[i] = { ...this.products[i], deletedAt: new Date().toISOString() };
-    this.emit();
+  async softDeleteProduct(id: number) {
+    await api.del(`/api/erp/products/${id}`);
+    await this.refetch();
   }
-  restoreProduct(id: number) {
-    const i = this.products.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.products = [...this.products];
-    this.products[i] = { ...this.products[i], deletedAt: null };
-    this.emit();
+  async restoreProduct(id: number) {
+    await api.post(`/api/erp/products/${id}/restore`);
+    await this.refetch();
   }
-  toggleProductStatus(id: number) {
-    const i = this.products.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.products = [...this.products];
-    const cur = this.products[i];
-    this.products[i] = { ...cur, status: cur.status === "active" ? "inactive" : "active" };
-    this.emit();
+  async toggleProductStatus(id: number) {
+    await api.post(`/api/erp/products/${id}/toggle-status`);
+    await this.refetch();
   }
-  setVariantStock(productId: number, variantId: number, stock: number) {
-    const i = this.products.findIndex((x) => x.id === productId);
-    if (i === -1) return;
-    const variants = this.products[i].variants.map((v) => v.id === variantId ? { ...v, stock: Math.max(0, stock) } : v);
-    this.products = [...this.products];
-    this.products[i] = { ...this.products[i], variants };
-    this.emit();
+  async setVariantStock(productId: number, variantId: number, stock: number) {
+    await api.post(`/api/erp/products/${productId}/variants/${variantId}/stock`, { stock });
+    await this.refetch();
   }
 
   // categories
-  upsertCategory(c: Category) {
-    const i = this.categories.findIndex((x) => x.id === c.id);
-    if (i === -1) this.categories = [...this.categories, c];
-    else { this.categories = [...this.categories]; this.categories[i] = c; }
-    this.emit();
+  async upsertCategory(c: Category) {
+    await api.post("/api/erp/categories", c);
+    await this.refetch();
   }
-  softDeleteCategory(id: number): { ok: true } | { ok: false; reason: "has-products" } {
-    const linked = this.products.some((p) => !p.deletedAt && p.categoryId === id);
-    if (linked) return { ok: false, reason: "has-products" };
-    const i = this.categories.findIndex((x) => x.id === id);
-    if (i === -1) return { ok: true };
-    this.categories = [...this.categories];
-    this.categories[i] = { ...this.categories[i], deletedAt: new Date().toISOString() };
-    this.emit();
-    return { ok: true };
+  async softDeleteCategory(id: number): Promise<{ ok: true } | { ok: false; reason: "has-products" }> {
+    try {
+      await api.del(`/api/erp/categories/${id}`);
+      await this.refetch();
+      return { ok: true };
+    } catch (e: unknown) {
+      const err = e as { status?: number; body?: { reason?: string } };
+      if (err?.status === 409 && err.body?.reason === "has-products") {
+        return { ok: false, reason: "has-products" };
+      }
+      throw e;
+    }
   }
-  restoreCategory(id: number) {
-    const i = this.categories.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.categories = [...this.categories];
-    this.categories[i] = { ...this.categories[i], deletedAt: null };
-    this.emit();
+  async restoreCategory(id: number) {
+    await api.post(`/api/erp/categories/${id}/restore`);
+    await this.refetch();
   }
 
   // offers
-  upsertOffer(o: Offer) {
-    const i = this.offers.findIndex((x) => x.id === o.id);
-    if (i === -1) this.offers = [...this.offers, o];
-    else { this.offers = [...this.offers]; this.offers[i] = o; }
-    this.emit();
+  async upsertOffer(o: Offer) {
+    await api.post("/api/erp/offers", o);
+    await this.refetch();
   }
-  softDeleteOffer(id: number) {
-    const i = this.offers.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.offers = [...this.offers];
-    this.offers[i] = { ...this.offers[i], deletedAt: new Date().toISOString() };
-    this.emit();
+  async softDeleteOffer(id: number) {
+    await api.del(`/api/erp/offers/${id}`);
+    await this.refetch();
   }
-  restoreOffer(id: number) {
-    const i = this.offers.findIndex((x) => x.id === id);
-    if (i === -1) return;
-    this.offers = [...this.offers];
-    this.offers[i] = { ...this.offers[i], deletedAt: null };
-    this.emit();
+  async restoreOffer(id: number) {
+    await api.post(`/api/erp/offers/${id}/restore`);
+    await this.refetch();
   }
 }
 
@@ -113,10 +118,9 @@ export function getStore(): ErpStore {
   return _instance;
 }
 
-import { useSyncExternalStore } from "react";
-
 export function useStore<T>(selector: (s: ErpStore) => T): T {
   const store = getStore();
+  if (typeof window !== "undefined") store.ensureLoaded();
   return useSyncExternalStore(
     (cb) => store.subscribe(cb),
     () => selector(store),

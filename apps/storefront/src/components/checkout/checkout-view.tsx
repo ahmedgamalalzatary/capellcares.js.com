@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/providers/cart-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
-  pickLang, formatPrice, mock,
+  pickLang, formatPrice,
   GOVERNORATES, EG_PHONE_REGEX, PAYMENT_METHODS,
-  type Language, type PaymentMethod
+  type Language, type PaymentMethod, type Product, type Offer
 } from "@capella/shared";
+import { fetchProducts, fetchOffers } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
 import styles from "./checkout.module.css";
 
@@ -37,17 +38,29 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const [placing, setPlacing] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+
+  useEffect(() => {
+    Promise.all([fetchProducts(), fetchOffers()]).then(([p, o]) => {
+      setProducts(p);
+      setOffers(o);
+    }).catch(() => {});
+  }, []);
+
   const resolved: Resolved[] = useMemo(() => {
     return lines.map((l) => {
       if (l.type === "product") {
-        const p = mock.products.find((p) => p.id === l.productId)!;
-        const v = p.variants.find((v) => v.id === l.variantId)!;
+        const p = products.find((p) => p.id === l.productId);
+        const v = p?.variants.find((v) => v.id === l.variantId);
+        if (!p || !v) return null;
         return { key: `p${l.productId}${l.variantId}`, title: pickLang(p.name, lang), meta: v.size, unit: v.price, qty: l.qty };
       }
-      const o = mock.offers.find((o) => o.id === l.offerId)!;
+      const o = offers.find((o) => o.id === l.offerId);
+      if (!o) return null;
       return { key: `o${l.offerId}`, title: pickLang(o.name, lang), meta: dict.offers.badge, unit: o.price, qty: l.qty };
-    });
-  }, [lines, lang, dict]);
+    }).filter(Boolean) as Resolved[];
+  }, [lines, lang, dict, products, offers]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unit * r.qty, 0);
 

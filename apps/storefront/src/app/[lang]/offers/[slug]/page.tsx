@@ -1,17 +1,19 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, mock, type Language } from "@capella/shared";
+import { getDict, languages, type Language } from "@capella/shared";
 import { OfferDetail } from "@/components/offers/offer-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { fetchOfferBySlug, fetchProducts } from "@/lib/api/client";
 
 export default async function OfferDetailsPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
   const { lang, slug } = await params;
   if (!languages.includes(lang as Language)) notFound();
-  const offer = mock.getOfferBySlug(slug);
+  const offer = await fetchOfferBySlug(slug);
   if (!offer || offer.deletedAt) notFound();
   const dict = getDict(lang as Language);
+  const products = await fetchProducts();
 
   const items = offer.items.map((it) => {
-    const product = mock.products.find((p) => p.variants.some((v) => v.id === it.variantId));
+    const product = products.find((p) => p.variants.some((v) => v.id === it.variantId));
     const variant = product?.variants.find((v) => v.id === it.variantId);
     return {
       qty: it.qty,

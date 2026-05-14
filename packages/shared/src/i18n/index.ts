@@ -1,6 +1,6 @@
-import { ar } from "./ar";
-import { en } from "./en";
-import type { Language } from "../constants/languages";
+import { ar } from "./ar.js";
+import { en } from "./en.js";
+import type { Language } from "../constants/languages.js";
 
 export type Dict = typeof ar | typeof en;
 export const dictionaries: Record<Language, Dict> = { ar, en };

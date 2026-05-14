@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
-import { pickLang, formatPrice, mock, type Language } from "@capella/shared";
+import { pickLang, formatPrice, type Language, type Product, type Offer } from "@capella/shared";
+import { fetchProducts, fetchOffers } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -22,13 +23,22 @@ interface Resolved {
 
 export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, setQty, remove, keyOf } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+
+  useEffect(() => {
+    Promise.all([fetchProducts(), fetchOffers()]).then(([p, o]) => {
+      setProducts(p);
+      setOffers(o);
+    }).catch(() => {});
+  }, []);
 
   const resolved: Resolved[] = useMemo(() => {
     return lines
       .map((l) => {
         const key = keyOf(l);
         if (l.type === "product") {
-          const p = mock.products.find((p) => p.id === l.productId);
+          const p = products.find((p) => p.id === l.productId);
           const v = p?.variants.find((v) => v.id === l.variantId);
           if (!p || !v) return null;
           return {
@@ -39,7 +49,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             illustration: <ProductIllustration product={p} />
           };
         }
-        const o = mock.offers.find((o) => o.id === l.offerId);
+        const o = offers.find((o) => o.id === l.offerId);
         if (!o) return null;
         return {
           key, type: "offer" as const,
@@ -50,7 +60,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         };
       })
       .filter(Boolean) as Resolved[];
-  }, [lines, lang, dict, keyOf]);
+  }, [lines, lang, dict, keyOf, products, offers]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
 

@@ -24,7 +24,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
 
   const parents = categories.filter((c) => !c.deletedAt && c.id !== initial?.id);
 
-  const save = () => {
+  const save = async () => {
     const e: Record<string, string> = {};
     if (!nameAr.trim()) e.nameAr = "مطلوب";
     if (!nameEn.trim()) e.nameEn = "مطلوب";
@@ -41,7 +41,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
       isLeaf: true,
       deletedAt: initial?.deletedAt ?? null
     };
-    getStore().upsertCategory(category);
+    await getStore().upsertCategory(category);
     router.push("/categories");
   };
 
