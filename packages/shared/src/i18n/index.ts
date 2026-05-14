@@ -2,8 +2,8 @@ import { ar } from "./ar";
 import { en } from "./en";
 import type { Language } from "../constants/languages";
 
-export const dictionaries = { ar, en } as const;
-export type Dict = typeof en;
+export type Dict = typeof ar | typeof en;
+export const dictionaries: Record<Language, Dict> = { ar, en };
 
 export function getDict(lang: Language): Dict {
   return dictionaries[lang];

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { languages, dir, getDict, type Language } from "@capella/shared";
-import "../globals.css";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
@@ -29,20 +28,16 @@ export default async function LocaleLayout({
   const dict = getDict(lang as Language);
 
   return (
-    <html lang={lang} dir={dir(lang as Language)}>
-      <body>
-        <AuthProvider>
-          <WishlistProvider>
-            <CartProvider>
-              <div className="shell">
-                <Header lang={lang as Language} dict={dict} />
-                <div>{children}</div>
-                <Footer lang={lang as Language} dict={dict} />
-              </div>
-            </CartProvider>
-          </WishlistProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <AuthProvider>
+      <WishlistProvider>
+        <CartProvider>
+          <div className="shell" lang={lang} dir={dir(lang as Language)}>
+            <Header lang={lang as Language} dict={dict} />
+            <div>{children}</div>
+            <Footer lang={lang as Language} dict={dict} />
+          </div>
+        </CartProvider>
+      </WishlistProvider>
+    </AuthProvider>
   );
 }
