@@ -1,0 +1,1423 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "sku": "BODY-LOTION-ROSE",
+      "slug": "rose-petal-body-lotion",
+      "name": {
+        "ar": "لوشن الجسم بخلاصة الورد",
+        "en": "Rose Petal Body Lotion"
+      },
+      "description": {
+        "ar": "لوشن مرطب خفيف بخلاصة الورد الدمشقي، يترك بشرتك ناعمة بعطر يدوم.",
+        "en": "A weightless rose lotion that drinks straight into skin and leaves a soft, lingering scent."
+      },
+      "ingredients": {
+        "ar": "ماء، زبدة الشيا، زيت الجوجوبا، خلاصة الورد، فيتامين هـ.",
+        "en": "Aqua, Shea Butter, Jojoba Oil, Rose Extract, Vitamin E."
+      },
+      "howToUse": {
+        "ar": "ضعي كمية مناسبة على بشرة نظيفة ودلكي حتى الامتصاص.",
+        "en": "Massage onto clean skin daily, especially after a shower."
+      },
+      "warnings": {
+        "ar": "للاستخدام الخارجي فقط. تجنب ملامسة العين.",
+        "en": "For external use only. Avoid contact with eyes."
+      },
+      "keywords": [
+        "rose",
+        "lotion",
+        "body",
+        "ورد",
+        "لوشن"
+      ],
+      "buyingPrice": 120,
+      "imagePath": "/images/products/rose-lotion.svg",
+      "status": "active",
+      "categoryId": 100,
+      "variants": [
+        {
+          "id": 11,
+          "productId": 1,
+          "size": "100ml",
+          "price": 220,
+          "stock": 24,
+          "sortOrder": 1
+        },
+        {
+          "id": 12,
+          "productId": 1,
+          "size": "200ml",
+          "price": 360,
+          "stock": 12,
+          "sortOrder": 2
+        },
+        {
+          "id": 13,
+          "productId": 1,
+          "size": "400ml",
+          "price": 620,
+          "stock": 4,
+          "sortOrder": 3
+        }
+      ],
+      "offerIds": [
+        1
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 2,
+      "sku": "SKIN-SERUM-VITC",
+      "slug": "vitamin-c-radiance-serum",
+      "name": {
+        "ar": "سيروم فيتامين سي للإشراق",
+        "en": "Vitamin C Radiance Serum"
+      },
+      "description": {
+        "ar": "سيروم مركز بفيتامين سي لإشراق فوري ومظهر موحد.",
+        "en": "A 15% Vitamin C serum that wakes up dull skin and evens out tone over time."
+      },
+      "ingredients": {
+        "ar": "حمض الأسكوربيك، حمض الهيالورونيك، نياسيناميد.",
+        "en": "Ascorbic Acid, Hyaluronic Acid, Niacinamide."
+      },
+      "howToUse": {
+        "ar": "قطرتان على بشرة نظيفة صباحًا قبل الكريم وواقي الشمس.",
+        "en": "Two drops on clean skin in the morning, before moisturizer and SPF."
+      },
+      "warnings": {
+        "ar": "استخدمي واقي شمس يوميًا.",
+        "en": "Always pair with daily sunscreen."
+      },
+      "keywords": [
+        "serum",
+        "vitamin c",
+        "glow",
+        "سيروم",
+        "فيتامين سي"
+      ],
+      "buyingPrice": 280,
+      "imagePath": "/images/products/vitamin-c.svg",
+      "status": "active",
+      "categoryId": 200,
+      "variants": [
+        {
+          "id": 21,
+          "productId": 2,
+          "size": "30ml",
+          "price": 480,
+          "stock": 18,
+          "sortOrder": 1
+        },
+        {
+          "id": 22,
+          "productId": 2,
+          "size": "50ml",
+          "price": 720,
+          "stock": 7,
+          "sortOrder": 2
+        }
+      ],
+      "offerIds": [
+        2
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 3,
+      "sku": "HAIR-OIL-ARGAN",
+      "slug": "argan-shine-hair-oil",
+      "name": {
+        "ar": "زيت الأرغان للمعان الشعر",
+        "en": "Argan Shine Hair Oil"
+      },
+      "description": {
+        "ar": "زيت أرغان نقي يغذي الشعر ويمنحه لمعانًا طبيعيًا دون ثقل.",
+        "en": "Pure argan oil that nourishes hair and adds shine without any greasy weight."
+      },
+      "ingredients": {
+        "ar": "زيت الأرغان، فيتامين هـ.",
+        "en": "Argan Oil, Vitamin E."
+      },
+      "howToUse": {
+        "ar": "ضعي بضع قطرات على أطراف الشعر بعد الاستحمام.",
+        "en": "Apply a few drops to damp hair, focusing on the ends."
+      },
+      "warnings": {
+        "ar": "للاستخدام الخارجي فقط.",
+        "en": "For external use only."
+      },
+      "keywords": [
+        "argan",
+        "hair",
+        "shine",
+        "أرغان",
+        "زيت"
+      ],
+      "buyingPrice": 95,
+      "imagePath": "/images/products/argan-oil.svg",
+      "status": "active",
+      "categoryId": 301,
+      "variants": [
+        {
+          "id": 31,
+          "productId": 3,
+          "size": "50ml",
+          "price": 180,
+          "stock": 30,
+          "sortOrder": 1
+        },
+        {
+          "id": 32,
+          "productId": 3,
+          "size": "100ml",
+          "price": 300,
+          "stock": 0,
+          "sortOrder": 2
+        }
+      ],
+      "offerIds": [
+        2
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 4,
+      "sku": "BODY-SCRUB-COFFEE",
+      "slug": "coffee-body-scrub",
+      "name": {
+        "ar": "مقشر القهوة للجسم",
+        "en": "Coffee Body Scrub"
+      },
+      "description": {
+        "ar": "مقشر قهوة منعش يزيل خلايا الجلد الميتة ويترك بشرتك ناعمة.",
+        "en": "An energizing coffee scrub that sloughs away dull skin and leaves a soft glow."
+      },
+      "ingredients": {
+        "ar": "بن مطحون، زيت جوز الهند، سكر بني.",
+        "en": "Ground Coffee, Coconut Oil, Brown Sugar."
+      },
+      "howToUse": {
+        "ar": "افركي بحركات دائرية على البشرة المبللة، ثم اشطفي.",
+        "en": "Massage onto damp skin in circular motions, then rinse."
+      },
+      "warnings": {
+        "ar": "تجنبي البشرة المتهيجة.",
+        "en": "Avoid use on irritated skin."
+      },
+      "keywords": [
+        "scrub",
+        "coffee",
+        "exfoliate",
+        "مقشر",
+        "قهوة"
+      ],
+      "buyingPrice": 60,
+      "imagePath": "/images/products/coffee-scrub.svg",
+      "status": "active",
+      "categoryId": 107,
+      "variants": [
+        {
+          "id": 41,
+          "productId": 4,
+          "size": "150ml",
+          "price": 140,
+          "stock": 14,
+          "sortOrder": 1
+        },
+        {
+          "id": 42,
+          "productId": 4,
+          "size": "300ml",
+          "price": 240,
+          "stock": 9,
+          "sortOrder": 2
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 5,
+      "sku": "LIP-BALM-VANILLA",
+      "slug": "vanilla-honey-lip-balm",
+      "name": {
+        "ar": "بلسم الشفاه بالفانيليا والعسل",
+        "en": "Vanilla Honey Lip Balm"
+      },
+      "description": {
+        "ar": "بلسم مرطب بنكهة الفانيليا والعسل، يحمي شفتيك على مدار اليوم.",
+        "en": "A creamy vanilla-honey balm that locks in moisture all day."
+      },
+      "ingredients": {
+        "ar": "زبدة الكاكاو، عسل النحل، فانيليا.",
+        "en": "Cocoa Butter, Honey, Vanilla."
+      },
+      "howToUse": {
+        "ar": "ضعي كلما احتجت.",
+        "en": "Apply whenever lips need it."
+      },
+      "warnings": {
+        "ar": "—",
+        "en": "—"
+      },
+      "keywords": [
+        "lip",
+        "balm",
+        "vanilla",
+        "بلسم",
+        "شفاه"
+      ],
+      "buyingPrice": 25,
+      "imagePath": "/images/products/lip-balm.svg",
+      "status": "active",
+      "categoryId": 208,
+      "variants": [
+        {
+          "id": 51,
+          "productId": 5,
+          "size": "10g",
+          "price": 80,
+          "stock": 50,
+          "sortOrder": 1
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 6,
+      "sku": "FRAG-ROSE-OUD",
+      "slug": "rose-oud-eau-de-parfum",
+      "name": {
+        "ar": "عطر ورد وعود",
+        "en": "Rose & Oud Eau de Parfum"
+      },
+      "description": {
+        "ar": "مزيج فاخر من الورد الدمشقي والعود، يبقى عليك طوال اليوم.",
+        "en": "A rich blend of Damask rose and oud that lingers all day."
+      },
+      "ingredients": {
+        "ar": "كحول، ماء، عطور.",
+        "en": "Alcohol, Aqua, Parfum."
+      },
+      "howToUse": {
+        "ar": "رشّي على المعصمين وخلف الأذنين.",
+        "en": "Spray on wrists and behind ears."
+      },
+      "warnings": {
+        "ar": "قابل للاشتعال.",
+        "en": "Flammable."
+      },
+      "keywords": [
+        "perfume",
+        "rose",
+        "oud",
+        "عطر",
+        "عود"
+      ],
+      "buyingPrice": 320,
+      "imagePath": "/images/products/rose-oud.svg",
+      "status": "active",
+      "categoryId": 500,
+      "variants": [
+        {
+          "id": 61,
+          "productId": 6,
+          "size": "30ml",
+          "price": 550,
+          "stock": 8,
+          "sortOrder": 1
+        },
+        {
+          "id": 62,
+          "productId": 6,
+          "size": "50ml",
+          "price": 780,
+          "stock": 6,
+          "sortOrder": 2
+        },
+        {
+          "id": 63,
+          "productId": 6,
+          "size": "100ml",
+          "price": 1200,
+          "stock": 0,
+          "sortOrder": 3
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 7,
+      "sku": "SOAP-OATMEAL",
+      "slug": "oatmeal-honey-soap-bar",
+      "name": {
+        "ar": "صابون الشوفان والعسل",
+        "en": "Oatmeal & Honey Soap Bar"
+      },
+      "description": {
+        "ar": "صابون يدوي بالشوفان والعسل لتنظيف لطيف.",
+        "en": "A handmade oatmeal soap that cleans gently without stripping skin."
+      },
+      "ingredients": {
+        "ar": "شوفان، عسل، زيت زيتون.",
+        "en": "Oats, Honey, Olive Oil."
+      },
+      "howToUse": {
+        "ar": "استخدمي على الوجه أو الجسم.",
+        "en": "Use on face or body."
+      },
+      "warnings": {
+        "ar": "—",
+        "en": "—"
+      },
+      "keywords": [
+        "soap",
+        "oatmeal",
+        "honey",
+        "صابون",
+        "شوفان"
+      ],
+      "buyingPrice": 30,
+      "imagePath": "/images/products/oatmeal-soap.svg",
+      "status": "active",
+      "categoryId": 9,
+      "variants": [
+        {
+          "id": 71,
+          "productId": 7,
+          "size": "120g",
+          "price": 70,
+          "stock": 80,
+          "sortOrder": 1
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 8,
+      "sku": "CANDLE-AMBER",
+      "slug": "amber-soy-candle",
+      "name": {
+        "ar": "شمعة العنبر بالصويا",
+        "en": "Amber Soy Candle"
+      },
+      "description": {
+        "ar": "شمعة صويا فاخرة بعطر العنبر، احتراق نظيف لساعات طويلة.",
+        "en": "A clean-burning soy candle with a warm amber scent."
+      },
+      "ingredients": {
+        "ar": "شمع صويا، عطور، فتيل قطن.",
+        "en": "Soy Wax, Parfum, Cotton Wick."
+      },
+      "howToUse": {
+        "ar": "اشعليها لمدة لا تزيد عن 3 ساعات.",
+        "en": "Burn for no more than 3 hours at a time."
+      },
+      "warnings": {
+        "ar": "لا تترك بدون رقابة.",
+        "en": "Never leave unattended."
+      },
+      "keywords": [
+        "candle",
+        "amber",
+        "soy",
+        "شمعة",
+        "عنبر"
+      ],
+      "buyingPrice": 90,
+      "imagePath": "/images/products/amber-candle.svg",
+      "status": "active",
+      "categoryId": 10,
+      "variants": [
+        {
+          "id": 81,
+          "productId": 8,
+          "size": "200g",
+          "price": 180,
+          "stock": 22,
+          "sortOrder": 1
+        },
+        {
+          "id": 82,
+          "productId": 8,
+          "size": "400g",
+          "price": 320,
+          "stock": 10,
+          "sortOrder": 2
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 9,
+      "sku": "OIL-COCONUT-PURE",
+      "slug": "pure-coconut-oil",
+      "name": {
+        "ar": "زيت جوز الهند النقي",
+        "en": "Pure Coconut Oil"
+      },
+      "description": {
+        "ar": "زيت جوز هند بكر متعدد الاستخدامات للشعر والبشرة.",
+        "en": "Cold-pressed virgin coconut oil for hair, skin, and lips."
+      },
+      "ingredients": {
+        "ar": "زيت جوز الهند البكر.",
+        "en": "Virgin Coconut Oil."
+      },
+      "howToUse": {
+        "ar": "استخدمي حسب الحاجة.",
+        "en": "Use as needed."
+      },
+      "warnings": {
+        "ar": "يتجمد في درجات الحرارة الباردة.",
+        "en": "May solidify in cool temperatures."
+      },
+      "keywords": [
+        "coconut",
+        "oil",
+        "organic",
+        "جوز الهند",
+        "زيت"
+      ],
+      "buyingPrice": 70,
+      "imagePath": "/images/products/coconut-oil.svg",
+      "status": "active",
+      "categoryId": 8,
+      "variants": [
+        {
+          "id": 91,
+          "productId": 9,
+          "size": "250ml",
+          "price": 150,
+          "stock": 16,
+          "sortOrder": 1
+        },
+        {
+          "id": 92,
+          "productId": 9,
+          "size": "500ml",
+          "price": 270,
+          "stock": 5,
+          "sortOrder": 2
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 10,
+      "sku": "MAKE-LIP-MATTE-NUDE",
+      "slug": "matte-lipstick-desert-nude",
+      "name": {
+        "ar": "أحمر شفاه مطفي – نود صحراوي",
+        "en": "Matte Lipstick — Desert Nude"
+      },
+      "description": {
+        "ar": "أحمر شفاه مطفي مريح ينعم على الشفاه ويثبت طويلاً.",
+        "en": "Comfort-matte lipstick that wears soft and stays put."
+      },
+      "ingredients": {
+        "ar": "أوكسيد الزنك، شمع كرنوبا، عطور.",
+        "en": "Zinc Oxide, Carnauba Wax, Parfum."
+      },
+      "howToUse": {
+        "ar": "ضعي طبقة واحدة على الشفاه.",
+        "en": "Apply directly to clean lips."
+      },
+      "warnings": {
+        "ar": "—",
+        "en": "—"
+      },
+      "keywords": [
+        "lipstick",
+        "matte",
+        "nude",
+        "أحمر شفاه"
+      ],
+      "buyingPrice": 110,
+      "imagePath": "/images/products/lipstick.svg",
+      "status": "active",
+      "categoryId": 401,
+      "variants": [
+        {
+          "id": 101,
+          "productId": 10,
+          "size": "3.5g",
+          "price": 220,
+          "stock": 18,
+          "sortOrder": 1
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 11,
+      "sku": "BODY-BUTTER-COCOA",
+      "slug": "cocoa-body-butter",
+      "name": {
+        "ar": "زبدة الجسم بالكاكاو",
+        "en": "Cocoa Body Butter"
+      },
+      "description": {
+        "ar": "زبدة جسم كثيفة بالكاكاو ترطب وتغذي البشرة الجافة.",
+        "en": "Whipped cocoa butter that wraps dry skin in long-lasting hydration."
+      },
+      "ingredients": {
+        "ar": "زبدة الكاكاو، زبدة الشيا، فيتامين هـ.",
+        "en": "Cocoa Butter, Shea Butter, Vitamin E."
+      },
+      "howToUse": {
+        "ar": "ضعي على بشرة جافة أو رطبة.",
+        "en": "Smooth onto clean skin morning or night."
+      },
+      "warnings": {
+        "ar": "—",
+        "en": "—"
+      },
+      "keywords": [
+        "butter",
+        "cocoa",
+        "body",
+        "زبدة",
+        "كاكاو"
+      ],
+      "buyingPrice": 85,
+      "imagePath": "/images/products/cocoa-butter.svg",
+      "status": "active",
+      "categoryId": 104,
+      "variants": [
+        {
+          "id": 111,
+          "productId": 11,
+          "size": "150ml",
+          "price": 200,
+          "stock": 0,
+          "sortOrder": 1
+        },
+        {
+          "id": 112,
+          "productId": 11,
+          "size": "300ml",
+          "price": 340,
+          "stock": 0,
+          "sortOrder": 2
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 12,
+      "sku": "SHAMPOO-MINT",
+      "slug": "fresh-mint-shampoo",
+      "name": {
+        "ar": "شامبو النعناع المنعش",
+        "en": "Fresh Mint Shampoo"
+      },
+      "description": {
+        "ar": "شامبو منعش بالنعناع يوازن فروة الرأس ويترك الشعر نظيفًا.",
+        "en": "Cooling mint shampoo that balances the scalp and leaves hair feeling fresh."
+      },
+      "ingredients": {
+        "ar": "ماء، خلاصة النعناع، سلفات لطيفة.",
+        "en": "Aqua, Mint Extract, Mild Surfactants."
+      },
+      "howToUse": {
+        "ar": "دلكي على الشعر المبلل، ثم اشطفي.",
+        "en": "Massage into wet hair, then rinse thoroughly."
+      },
+      "warnings": {
+        "ar": "لتجنب ملامسة العين.",
+        "en": "Avoid contact with eyes."
+      },
+      "keywords": [
+        "shampoo",
+        "mint",
+        "scalp",
+        "شامبو",
+        "نعناع"
+      ],
+      "buyingPrice": 75,
+      "imagePath": "/images/products/mint-shampoo.svg",
+      "status": "active",
+      "categoryId": 304,
+      "variants": [
+        {
+          "id": 121,
+          "productId": 12,
+          "size": "250ml",
+          "price": 150,
+          "stock": 22,
+          "sortOrder": 1
+        },
+        {
+          "id": 122,
+          "productId": 12,
+          "size": "500ml",
+          "price": 270,
+          "stock": 11,
+          "sortOrder": 2
+        }
+      ],
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "parentId": null,
+      "slug": "new",
+      "name": {
+        "ar": "وصل حديثًا",
+        "en": "New"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 2,
+      "parentId": null,
+      "slug": "bestseller",
+      "name": {
+        "ar": "الأكثر مبيعًا",
+        "en": "Bestseller"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 3,
+      "parentId": null,
+      "slug": "body-care",
+      "name": {
+        "ar": "العناية بالجسم",
+        "en": "Body Care"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 4,
+      "parentId": null,
+      "slug": "skin-care",
+      "name": {
+        "ar": "العناية بالبشرة",
+        "en": "Skin Care"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 5,
+      "parentId": null,
+      "slug": "hair-care",
+      "name": {
+        "ar": "العناية بالشعر",
+        "en": "Hair Care"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 6,
+      "parentId": null,
+      "slug": "mens",
+      "name": {
+        "ar": "للرجال",
+        "en": "Men's"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 7,
+      "parentId": null,
+      "slug": "kids",
+      "name": {
+        "ar": "للأطفال",
+        "en": "Kid's"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 8,
+      "parentId": null,
+      "slug": "organic-oils",
+      "name": {
+        "ar": "زيوت طبيعية",
+        "en": "Organic Oils"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 9,
+      "parentId": null,
+      "slug": "soap",
+      "name": {
+        "ar": "صابون",
+        "en": "Soap"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 10,
+      "parentId": null,
+      "slug": "candles",
+      "name": {
+        "ar": "شموع",
+        "en": "Candles"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 11,
+      "parentId": null,
+      "slug": "fragrances",
+      "name": {
+        "ar": "العطور",
+        "en": "Fragrances"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 12,
+      "parentId": null,
+      "slug": "fresheners",
+      "name": {
+        "ar": "معطرات الجو",
+        "en": "Fresheners"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 13,
+      "parentId": null,
+      "slug": "makeup",
+      "name": {
+        "ar": "مكياج",
+        "en": "Makeup"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 14,
+      "parentId": null,
+      "slug": "accessories-tools",
+      "name": {
+        "ar": "إكسسوارات وأدوات",
+        "en": "Accessories & Tools"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 100,
+      "parentId": 3,
+      "slug": "body-lotion",
+      "name": {
+        "ar": "لوشن الجسم",
+        "en": "Body Lotion"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 101,
+      "parentId": 3,
+      "slug": "body-mist",
+      "name": {
+        "ar": "بخاخ معطر للجسم",
+        "en": "Body Mist"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 102,
+      "parentId": 3,
+      "slug": "body-oils",
+      "name": {
+        "ar": "زيوت الجسم",
+        "en": "Body Oils"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 103,
+      "parentId": 3,
+      "slug": "body-cream",
+      "name": {
+        "ar": "كريم الجسم",
+        "en": "Body Cream"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 104,
+      "parentId": 3,
+      "slug": "body-butter",
+      "name": {
+        "ar": "زبدة الجسم",
+        "en": "Body Butter"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 105,
+      "parentId": 3,
+      "slug": "hand-care",
+      "name": {
+        "ar": "العناية باليدين",
+        "en": "Hand Care"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 106,
+      "parentId": 3,
+      "slug": "foot-care",
+      "name": {
+        "ar": "العناية بالقدمين",
+        "en": "Foot Care"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 107,
+      "parentId": 3,
+      "slug": "body-scrub",
+      "name": {
+        "ar": "مقشر الجسم",
+        "en": "Body Scrub"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 108,
+      "parentId": 3,
+      "slug": "bubble-bath",
+      "name": {
+        "ar": "حمام رغوة",
+        "en": "Bubble Bath"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 109,
+      "parentId": 3,
+      "slug": "body-wash",
+      "name": {
+        "ar": "غسول الجسم",
+        "en": "Body Wash & Shower Gel"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 200,
+      "parentId": 4,
+      "slug": "skin-serum",
+      "name": {
+        "ar": "سيروم البشرة",
+        "en": "Skin Serum"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 201,
+      "parentId": 4,
+      "slug": "skin-oils",
+      "name": {
+        "ar": "زيوت البشرة",
+        "en": "Skin Oils"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 202,
+      "parentId": 4,
+      "slug": "skin-cream",
+      "name": {
+        "ar": "كريم البشرة",
+        "en": "Skin Cream"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 203,
+      "parentId": 4,
+      "slug": "barrier-cream",
+      "name": {
+        "ar": "كريم حماية",
+        "en": "Barrier Cream"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 204,
+      "parentId": 4,
+      "slug": "exfoliators",
+      "name": {
+        "ar": "مقشرات",
+        "en": "Exfoliators & Peels"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 205,
+      "parentId": 4,
+      "slug": "cleansers-toners",
+      "name": {
+        "ar": "غسول وتونر",
+        "en": "Cleansers & Toners"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 206,
+      "parentId": 4,
+      "slug": "face-masks",
+      "name": {
+        "ar": "ماسكات الوجه",
+        "en": "Face Masks"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 207,
+      "parentId": 4,
+      "slug": "eye-care",
+      "name": {
+        "ar": "العناية بالعين",
+        "en": "Eye Care"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 208,
+      "parentId": 4,
+      "slug": "lip-care",
+      "name": {
+        "ar": "العناية بالشفاه",
+        "en": "Lip Care"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 209,
+      "parentId": 4,
+      "slug": "skin-treatments",
+      "name": {
+        "ar": "علاجات البشرة",
+        "en": "Skin Treatments"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 210,
+      "parentId": 4,
+      "slug": "skin-routines",
+      "name": {
+        "ar": "روتين البشرة",
+        "en": "Skincare Routines"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 211,
+      "parentId": 4,
+      "slug": "by-skin-type",
+      "name": {
+        "ar": "حسب نوع البشرة",
+        "en": "By Skin Type"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 2110,
+      "parentId": 211,
+      "slug": "oily-skin",
+      "name": {
+        "ar": "بشرة دهنية",
+        "en": "Oily Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 2111,
+      "parentId": 211,
+      "slug": "dry-skin",
+      "name": {
+        "ar": "بشرة جافة",
+        "en": "Dry Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 2112,
+      "parentId": 211,
+      "slug": "combination-skin",
+      "name": {
+        "ar": "بشرة مختلطة",
+        "en": "Combination Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 2113,
+      "parentId": 211,
+      "slug": "sensitive-skin",
+      "name": {
+        "ar": "بشرة حساسة",
+        "en": "Sensitive Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 2114,
+      "parentId": 211,
+      "slug": "normal-skin",
+      "name": {
+        "ar": "بشرة عادية",
+        "en": "Normal Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 300,
+      "parentId": 5,
+      "slug": "hair-serum",
+      "name": {
+        "ar": "سيروم الشعر",
+        "en": "Hair Serum"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 301,
+      "parentId": 5,
+      "slug": "hair-oils",
+      "name": {
+        "ar": "زيوت الشعر",
+        "en": "Hair Oils"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 302,
+      "parentId": 5,
+      "slug": "hair-masks",
+      "name": {
+        "ar": "ماسكات الشعر",
+        "en": "Hair Masks"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 303,
+      "parentId": 5,
+      "slug": "hair-tonic",
+      "name": {
+        "ar": "تونيك الشعر",
+        "en": "Hair Tonic"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 304,
+      "parentId": 5,
+      "slug": "shampoo",
+      "name": {
+        "ar": "شامبو",
+        "en": "Shampoo"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 305,
+      "parentId": 5,
+      "slug": "conditioner",
+      "name": {
+        "ar": "بلسم",
+        "en": "Conditioner"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 306,
+      "parentId": 5,
+      "slug": "hair-treatments",
+      "name": {
+        "ar": "علاجات الشعر",
+        "en": "Hair Treatments"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 307,
+      "parentId": 5,
+      "slug": "hair-routines",
+      "name": {
+        "ar": "روتين الشعر",
+        "en": "Hair Routines"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 308,
+      "parentId": 5,
+      "slug": "by-hair-type",
+      "name": {
+        "ar": "حسب نوع الشعر",
+        "en": "By Hair Type"
+      },
+      "isLeaf": false
+    },
+    {
+      "id": 3080,
+      "parentId": 308,
+      "slug": "dry-hair",
+      "name": {
+        "ar": "شعر جاف",
+        "en": "Dry Hair"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 3081,
+      "parentId": 308,
+      "slug": "oily-hair",
+      "name": {
+        "ar": "شعر دهني",
+        "en": "Oily Hair"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 3082,
+      "parentId": 308,
+      "slug": "frizzy-hair",
+      "name": {
+        "ar": "شعر مجعد",
+        "en": "Frizzy Hair"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 3083,
+      "parentId": 308,
+      "slug": "damaged-hair",
+      "name": {
+        "ar": "شعر تالف",
+        "en": "Damaged Hair"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 400,
+      "parentId": 13,
+      "slug": "foundations-concealers",
+      "name": {
+        "ar": "كريم الأساس والكونسيلر",
+        "en": "Foundations & Concealers"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 401,
+      "parentId": 13,
+      "slug": "lips",
+      "name": {
+        "ar": "الشفاه",
+        "en": "Lips"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 402,
+      "parentId": 13,
+      "slug": "eyeliners-eyebrows",
+      "name": {
+        "ar": "آيلاينر وحواجب",
+        "en": "Eyeliners & Eyebrows"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 403,
+      "parentId": 13,
+      "slug": "cheeks",
+      "name": {
+        "ar": "الخدود",
+        "en": "Cheeks"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 404,
+      "parentId": 13,
+      "slug": "bronzing",
+      "name": {
+        "ar": "برونزر",
+        "en": "Bronzing"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 500,
+      "parentId": 11,
+      "slug": "for-her",
+      "name": {
+        "ar": "لها",
+        "en": "For Her"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 501,
+      "parentId": 11,
+      "slug": "for-him",
+      "name": {
+        "ar": "له",
+        "en": "For Him"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 600,
+      "parentId": 14,
+      "slug": "acc-body",
+      "name": {
+        "ar": "الجسم",
+        "en": "Body"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 601,
+      "parentId": 14,
+      "slug": "acc-skin",
+      "name": {
+        "ar": "البشرة",
+        "en": "Skin"
+      },
+      "isLeaf": true
+    },
+    {
+      "id": 602,
+      "parentId": 14,
+      "slug": "acc-hair",
+      "name": {
+        "ar": "الشعر",
+        "en": "Hair"
+      },
+      "isLeaf": true
+    }
+  ],
+  "offers": [
+    {
+      "id": 1,
+      "slug": "rose-ritual-bundle",
+      "name": {
+        "ar": "طقوس الورد",
+        "en": "Rose Ritual Bundle"
+      },
+      "description": {
+        "ar": "لوشن الورد مع بلسم الشفاه بسعر باقة.",
+        "en": "Our rose body lotion paired with vanilla-honey lip balm at a bundle price."
+      },
+      "imagePath": "/images/offers/rose-ritual.svg",
+      "items": [
+        {
+          "variantId": 12,
+          "qty": 1
+        },
+        {
+          "variantId": 51,
+          "qty": 1
+        }
+      ],
+      "price": 380,
+      "originalTotal": 440,
+      "status": "active",
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 2,
+      "slug": "glow-routine",
+      "name": {
+        "ar": "روتين الإشراق",
+        "en": "Glow Routine"
+      },
+      "description": {
+        "ar": "سيروم فيتامين سي مع زيت الأرغان لإشراق طبيعي.",
+        "en": "Vitamin C serum + Argan hair oil for a head-to-toe glow."
+      },
+      "imagePath": "/images/offers/glow-routine.svg",
+      "items": [
+        {
+          "variantId": 21,
+          "qty": 1
+        },
+        {
+          "variantId": 31,
+          "qty": 1
+        }
+      ],
+      "price": 580,
+      "originalTotal": 660,
+      "status": "active",
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": 3,
+      "slug": "weekend-pamper",
+      "name": {
+        "ar": "تدليل عطلة الأسبوع",
+        "en": "Weekend Pamper Box"
+      },
+      "description": {
+        "ar": "صابون الشوفان، مقشر القهوة، وشمعة العنبر.",
+        "en": "Oatmeal soap, coffee scrub, and an amber candle — a quiet Saturday in a box."
+      },
+      "imagePath": "/images/offers/weekend-pamper.svg",
+      "items": [
+        {
+          "variantId": 71,
+          "qty": 1
+        },
+        {
+          "variantId": 41,
+          "qty": 1
+        },
+        {
+          "variantId": 81,
+          "qty": 1
+        }
+      ],
+      "price": 360,
+      "originalTotal": 390,
+      "status": "active",
+      "createdAt": "2026-01-15T10:00:00Z",
+      "updatedAt": "2026-01-15T10:00:00Z",
+      "deletedAt": null
+    }
+  ]
+}
