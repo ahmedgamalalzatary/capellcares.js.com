@@ -328,10 +328,6 @@ capella/
 │  ├─ storefront-erp-spec.md
 │  └─ folder-structure.md
 │
-├─ infra/
-│  ├─ docker/
-│  │  └─ mysql/
-│  └─ scripts/
 │
 ├─ cat.txt
 ├─ .env.example

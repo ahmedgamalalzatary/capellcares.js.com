@@ -10,6 +10,8 @@
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
+    "@capella/database": "workspace:*",
+    "drizzle-orm": "^0.39.0",
     "express": "^4.19.2"
   },
   "devDependencies": {

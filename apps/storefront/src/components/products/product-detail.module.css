@@ -1,0 +1,49 @@
+.layout { display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; padding: 16px 0 80px; }
+@media (max-width: 880px) { .layout { grid-template-columns: 1fr; gap: 32px; } }
+
+.gallery { display: grid; gap: 16px; align-content: start; position: sticky; top: 140px; }
+.galleryMain { aspect-ratio: 4/5; background: var(--bg-tint); border-radius: 24px; overflow: hidden; display: grid; place-items: center; }
+.illustration { width: 80%; height: 80%; }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.thumb { aspect-ratio: 1; background: var(--bg-tint); border-radius: 12px; display: grid; place-items: center; border: 1px solid transparent; cursor: pointer; }
+.thumb[data-active="true"] { border-color: var(--accent); }
+.thumb > svg { width: 70%; height: 70%; }
+
+.info { display: grid; gap: 24px; align-content: start; }
+.infoHeader { display: grid; gap: 8px; }
+.title { font-family: var(--font-display); font-weight: 500; font-size: clamp(28px, 3vw, 40px); margin: 0; letter-spacing: -0.01em; }
+.offerBadges { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.priceRow { display: flex; align-items: center; gap: 12px; }
+.price { font-family: var(--font-display); font-size: 32px; }
+
+.section { display: grid; gap: 10px; }
+.sectionLabel { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
+.variantRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.variantChip {
+  display: grid; gap: 2px; min-width: 96px;
+  padding: 10px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--hairline);
+  text-align: start; transition: border-color 0.15s, background 0.15s;
+}
+.variantChip:hover { border-color: var(--ink-3); }
+.variantChip[data-active="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.variantChip[data-out="true"] { opacity: 0.45; text-decoration: line-through; cursor: not-allowed; }
+.variantPrice { font-size: 12px; color: var(--ink-2); }
+
+.qty { display: inline-grid; grid-template-columns: 36px 60px 36px; align-items: center; border: 1px solid var(--hairline); border-radius: var(--radius-pill); background: #fff; }
+.qty button { background: transparent; border: 0; height: 40px; display: grid; place-items: center; }
+.qty span { text-align: center; font-weight: 600; }
+
+.cta { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; }
+@media (max-width: 480px) { .cta { grid-template-columns: 1fr auto; } .cta > .btn:nth-child(2) { grid-column: 1 / -1; order: 3; } }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
+.tabBtn { background: transparent; border: 0; padding: 12px 4px; margin-inline-end: 16px; font-size: 14px; color: var(--ink-3); border-bottom: 2px solid transparent; }
+.tabBtn[data-active="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabBody { color: var(--ink-2); line-height: 1.7; min-height: 80px; }
+
+.offerCross { display: grid; gap: 10px; padding-top: 12px; }
+.offerList { display: grid; gap: 10px; }
+.offerCard { display: grid; grid-template-columns: 80px 1fr; align-items: center; gap: 14px; padding: 10px; border: 1px solid var(--hairline); border-radius: 12px; background: #fff; }
+.offerCard:hover { border-color: var(--accent); }
+.offerThumb { width: 80px; height: 60px; border-radius: 8px; overflow: hidden; }

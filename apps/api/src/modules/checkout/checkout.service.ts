@@ -27,7 +27,7 @@ export function validateCheckoutPayload(payload: CheckoutPayload) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
 }
 
-export function submitCheckout(payload: CheckoutPayload) {
+export async function submitCheckout(payload: CheckoutPayload) {
   validateCheckoutPayload(payload);
   return createOrderFromCheckout(payload);
 }

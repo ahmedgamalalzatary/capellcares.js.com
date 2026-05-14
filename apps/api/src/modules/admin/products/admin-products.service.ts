@@ -1,4 +1,4 @@
-import { products } from "../../../data/store.js";
+import { addVariantRepo, createAdminProductRepo, listAdminProductsRepo } from "../../../repositories/product.repository.js";
 import type { Product } from "../../../types/domain.js";
 
 function toSlug(input: string) {
@@ -17,16 +17,33 @@ function canActivateProduct(input: Product) {
 }
 
 export function listAdminProducts() {
-  return products.filter((p) => p.deletedAt === null);
+  return listAdminProductsRepo();
 }
 
-export function createAdminProduct(input: Omit<Product, "id" | "slug" | "deletedAt">) {
-  const id = products.length + 1;
+export async function createAdminProduct(input: Omit<Product, "id" | "slug" | "deletedAt">) {
   const slug = toSlug(input.enName);
-  const product: Product = { ...input, id, slug, deletedAt: null };
+  const product: Product = { ...input, id: 0, slug, deletedAt: null };
   if (product.status === "active" && !canActivateProduct(product)) {
     throw new Error("Cannot activate incomplete product");
   }
-  products.push(product);
-  return product;
+  const created = await createAdminProductRepo({
+    sku: input.sku,
+    slug,
+    arName: input.arName,
+    enName: input.enName,
+    buyingPrice: Number((input as any).buyingPrice ?? 0),
+    keywords: input.keywords.join(","),
+    imagePath: input.imagePath ?? null,
+    categoryId: Number((input as any).categoryId ?? 1),
+    status: input.status
+  });
+  for (const v of input.variants) {
+    await addVariantRepo({
+      productId: created.id,
+      sizeLabel: v.sizeLabel,
+      sellingPrice: Number(v.sellingPrice),
+      stockQty: v.stockQty
+    });
+  }
+  return created;
 }

@@ -1,0 +1,28 @@
+.wrap { display: grid; grid-template-columns: 260px 1fr; gap: 36px; padding-bottom: 80px; }
+@media (max-width: 880px) { .wrap { grid-template-columns: 1fr; gap: 16px; } }
+
+.filters { display: grid; gap: 24px; align-content: start; padding: 24px; background: var(--bg-elev); border: 1px solid var(--hairline); border-radius: 16px; position: sticky; top: 140px; }
+@media (max-width: 880px) {
+  .filters { position: static; display: none; }
+  .filtersOpen { display: grid; }
+}
+
+.filterHead { display: flex; align-items: center; justify-content: space-between; }
+.filterGroup { display: grid; gap: 10px; }
+.filterLabel { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
+.searchInner { display: flex; align-items: center; gap: 8px; border: 1px solid var(--hairline); border-radius: var(--radius-pill); padding: 8px 14px; background: #fff; }
+.search { flex: 1; border: 0; outline: 0; background: transparent; height: 28px; }
+
+.catList { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+.catItem { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.catItem:hover { background: var(--bg-tint); }
+.catItem input { accent-color: var(--accent); }
+
+.priceRow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
+.toolbar > button { display: none; }
+@media (max-width: 880px) { .toolbar > button { display: inline-flex; } }
+.sortWrap { display: inline-flex; align-items: center; gap: 8px; }
+
+.empty { padding: 80px 0; text-align: center; display: grid; gap: 8px; }

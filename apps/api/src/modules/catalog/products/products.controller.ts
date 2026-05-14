@@ -5,13 +5,12 @@ export function listProductsController(req: Request, res: Response) {
   const lang = req.locale ?? "ar";
   const q = typeof req.query.q === "string" ? req.query.q : undefined;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
-  res.json({ items: listStorefrontProducts({ lang, q, category }) });
+  listStorefrontProducts({ lang, q, category }).then((items) => res.json({ items }));
 }
 
 export function getProductBySlugController(req: Request, res: Response) {
-  const product = getStorefrontProductBySlug(req.params.slug);
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
-  return res.json(product);
+  getStorefrontProductBySlug(req.params.slug).then((product) => {
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    return res.json(product);
+  });
 }
