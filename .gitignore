@@ -38,7 +38,9 @@ coverage/
 
 # Deployment
 .vercel/
-.history/
+
 # OS files
 .DS_Store
 Thumbs.db
+.history/
+.agents/
