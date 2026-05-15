@@ -110,6 +110,8 @@ Status: Completed on 2026-05-15.
 - Keep hardcoded admin dev fallback only with clear warning.
 - Protect all `/api/erp/*`.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 10: Wishlist
 
 - Implement DB-backed wishlist repository/service/routes.
