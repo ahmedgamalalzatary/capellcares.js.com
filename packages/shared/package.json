@@ -10,6 +10,11 @@
     "./types": "./src/types/index.ts",
     "./constants": "./src/constants/index.ts",
     "./mock": "./src/mock/index.ts",
-    "./i18n": "./src/i18n/index.ts"
+    "./i18n": "./src/i18n/index.ts",
+    "./dto": "./src/dto/index.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
   }
 }

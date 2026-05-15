@@ -29,6 +29,9 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.22.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -196,7 +199,11 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
 
 packages:
 
@@ -2255,6 +2262,9 @@ packages:
     engines: {node: ^16.13.0 || >=18.0.0}
     hasBin: true
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
@@ -3939,3 +3949,5 @@ snapshots:
   which@4.0.0:
     dependencies:
       isexe: 3.1.5
+
+  zod@3.25.76: {}

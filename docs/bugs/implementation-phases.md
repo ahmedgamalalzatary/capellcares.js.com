@@ -51,6 +51,8 @@ Status: Completed on 2026-05-15.
 - Add offer/order DTOs supporting product variants and offers.
 - Export clean shared contracts from `@capella/shared`.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 5: Database Schema Alignment
 
 - Add product flags: `isNew`, `isBestseller`.
@@ -59,6 +61,8 @@ Status: Completed on 2026-05-15.
 - Add offer visibility/status semantics.
 - Keep no FK constraints, per product decision.
 - Prepare/generate Drizzle migration strategy.
+
+Status: Completed on 2026-05-15.
 
 ## Phase 6: DB Repositories + Data Migration
 

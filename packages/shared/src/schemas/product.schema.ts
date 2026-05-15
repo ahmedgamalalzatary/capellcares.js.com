@@ -1,1 +1,36 @@
-export {}
+import { z } from "zod";
+
+export const productVariantSchema = z.object({
+  id: z.number().int().positive(),
+  productId: z.number().int().positive(),
+  sizeLabel: z.string().min(1),
+  sellingPrice: z.number().nonnegative(),
+  stockQty: z.number().int().nonnegative(),
+  sortOrder: z.number().int()
+});
+
+export const productSchema = z.object({
+  id: z.number().int().positive(),
+  sku: z.string().min(1),
+  slug: z.string().min(1),
+  arName: z.string().min(1),
+  enName: z.string().min(1),
+  buyingPrice: z.number().nonnegative(),
+  keywords: z.array(z.string()),
+  arDescription: z.string().nullable(),
+  enDescription: z.string().nullable(),
+  arIngredients: z.string().nullable(),
+  enIngredients: z.string().nullable(),
+  arHowToUse: z.string().nullable(),
+  enHowToUse: z.string().nullable(),
+  arWarnings: z.string().nullable(),
+  enWarnings: z.string().nullable(),
+  youtubeUrl: z.string().nullable(),
+  imagePath: z.string().nullable(),
+  status: z.enum(["active", "inactive"]),
+  isNew: z.boolean(),
+  isBestseller: z.boolean(),
+  categoryId: z.number().int().positive(),
+  deletedAt: z.string().nullable(),
+  variants: z.array(productVariantSchema)
+});

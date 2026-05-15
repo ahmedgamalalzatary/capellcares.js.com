@@ -41,6 +41,8 @@ export const products = mysqlTable("products", {
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  isNew: boolean("is_new").notNull().default(false),
+  isBestseller: boolean("is_bestseller").notNull().default(false),
   categoryId: int("category_id").notNull(),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -68,6 +70,7 @@ export const offers = mysqlTable("offers", {
   imagePath: varchar("image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  visibility: mysqlEnum("visibility", ["visible", "hidden"]).notNull().default("visible"),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -108,8 +111,8 @@ export const orders = mysqlTable("orders", {
   cityArea: varchar("city_area", { length: 120 }).notNull(),
   addressLine: varchar("address_line", { length: 255 }).notNull(),
   buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
-  notes: text("notes").notNull(),
-  paymentMethod: mysqlEnum("payment_method", ["cod", "paymob"]).notNull(),
+  notes: text("notes"),
+  paymentMethod: mysqlEnum("payment_method", ["cod"]).notNull(),
   paymentStatus: mysqlEnum("payment_status", ["pending", "paid", "failed"]).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -119,8 +122,13 @@ export const orders = mysqlTable("orders", {
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
   orderId: int("order_id").notNull(),
-  variantId: int("variant_id").notNull(),
+  itemType: mysqlEnum("item_type", ["product_variant", "offer"]).notNull(),
+  variantId: int("variant_id"),
+  offerId: int("offer_id"),
   qty: int("qty").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull()
+  lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
+  snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
+  snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
+  snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 })
 });

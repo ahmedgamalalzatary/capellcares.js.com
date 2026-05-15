@@ -42,10 +42,15 @@ export async function createOrderWithItems(input: {
     await tx.insert(orderItems).values(
       input.items.map((i) => ({
         orderId: order.id,
+        itemType: "product_variant" as const,
         variantId: i.variantId,
+        offerId: null,
         qty: i.qty,
         unitPrice: sql`${i.unitPrice}`,
-        lineTotal: sql`${i.lineTotal}`
+        lineTotal: sql`${i.lineTotal}`,
+        snapshotNameAr: null,
+        snapshotNameEn: null,
+        snapshotSizeLabel: null
       }))
     );
     return order.id;
