@@ -88,9 +88,9 @@ export interface CheckoutForm {
   phone: string;
   email: string;
   governorate: string;
-  city: string;
+  cityArea: string;
   addressLine: string;
-  building: string;
+  buildingApartment: string;
   notes?: string;
   paymentMethod: PaymentMethod;
 }

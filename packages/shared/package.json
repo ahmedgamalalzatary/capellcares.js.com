@@ -16,5 +16,11 @@
   },
   "dependencies": {
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "lint": "tsc -p tsconfig.json --noEmit"
   }
 }

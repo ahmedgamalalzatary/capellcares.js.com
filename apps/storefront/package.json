@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
+    "lint": "tsc -p tsconfig.json --noEmit",
     "start": "next start -p 3000",
     "test": "echo \"No tests yet\""
   },

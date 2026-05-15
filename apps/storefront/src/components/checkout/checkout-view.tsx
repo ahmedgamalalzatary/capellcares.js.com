@@ -28,9 +28,9 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
     phone: "",
     email: user?.email ?? "",
     governorate: "",
-    city: "",
+    cityArea: "",
     addressLine: "",
-    building: "",
+    buildingApartment: "",
     notes: "",
     paymentMethod: PAYMENT_METHODS.cod as PaymentMethod
   });
@@ -42,11 +42,11 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProducts(), fetchOffers()]).then(([p, o]) => {
+    Promise.all([fetchProducts({ lang }), fetchOffers(lang)]).then(([p, o]) => {
       setProducts(p);
       setOffers(o);
     }).catch(() => {});
-  }, []);
+  }, [lang]);
 
   const resolved: Resolved[] = useMemo(() => {
     return lines.map((l) => {
@@ -72,9 +72,9 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
     if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) e.email = dict.checkout.required;
     if (!form.phone.trim() || !EG_PHONE_REGEX.test(form.phone.trim())) e.phone = dict.checkout.egPhoneInvalid;
     if (!form.governorate) e.governorate = dict.checkout.required;
-    if (!form.city.trim()) e.city = dict.checkout.required;
+    if (!form.cityArea.trim()) e.city = dict.checkout.required;
     if (!form.addressLine.trim()) e.addressLine = dict.checkout.required;
-    if (!form.building.trim()) e.building = dict.checkout.required;
+    if (!form.buildingApartment.trim()) e.building = dict.checkout.required;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -88,15 +88,15 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         phone: form.phone,
         email: form.email,
         governorate: form.governorate,
-        cityArea: form.city,
+        cityArea: form.cityArea,
         addressLine: form.addressLine,
-        buildingApartment: form.building,
+        buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
         paymentMethod: "cod",
         customerId: user?.id ?? null,
         items: lines.map((l) =>
           l.type === "product"
-            ? { type: "product", variantId: String(l.variantId), qty: l.qty }
+            ? { type: "product", variantId: l.variantId, qty: l.qty }
             : { type: "offer", offerId: l.offerId, qty: l.qty }
         )
       };
@@ -168,13 +168,13 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
               </select>
             </Field>
             <Field label={dict.checkout.city} error={errors.city}>
-              <input className="input" value={form.city} onChange={(e) => set("city", e.target.value)} />
+              <input className="input" value={form.cityArea} onChange={(e) => set("cityArea", e.target.value)} />
             </Field>
             <Field label={dict.checkout.addressLine} error={errors.addressLine} fullWidth>
               <input className="input" value={form.addressLine} onChange={(e) => set("addressLine", e.target.value)} />
             </Field>
             <Field label={dict.checkout.building} error={errors.building}>
-              <input className="input" value={form.building} onChange={(e) => set("building", e.target.value)} />
+              <input className="input" value={form.buildingApartment} onChange={(e) => set("buildingApartment", e.target.value)} />
             </Field>
             <Field label={dict.checkout.notes} fullWidth>
               <textarea className="textarea" value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />

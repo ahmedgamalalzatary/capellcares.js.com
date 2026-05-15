@@ -1,16 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
 import { findCustomerByEmail } from "../repositories/customer.repository.js";
 import jwt from "jsonwebtoken";
+import { isDevAdminFallbackEnabled, resolveDevAdminCredentials } from "./admin-auth.config.js";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
 export async function adminAuthMiddleware(req: Request, res: Response, next: NextFunction) {
-  const devEmail = process.env.ADMIN_DEV_EMAIL ?? "admin@capella.eg";
-  const devPassword = process.env.ADMIN_DEV_PASSWORD ?? "admin1234";
+  const fallbackEnabled = isDevAdminFallbackEnabled();
+  const devCreds = resolveDevAdminCredentials();
   const adminHeader = req.headers["x-admin-basic"];
-  if (typeof adminHeader === "string") {
+  if (fallbackEnabled && typeof adminHeader === "string") {
     const [email, password] = adminHeader.split(":");
-    if (email === devEmail && password === devPassword) {
+    if (email === devCreds.email && password === devCreds.password) {
       console.warn("Using hardcoded admin dev fallback credentials");
       return next();
     }

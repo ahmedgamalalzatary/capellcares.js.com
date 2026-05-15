@@ -2,30 +2,53 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
+import { api } from "@/lib/api/client";
 
 interface Props {
   value: string | null;
-  onChange: (dataUrl: string | null) => void;
+  onChange: (imageUrl: string | null) => void;
   hint?: string;
 }
 
-// Mock upload — accepts a local file, encodes to data URL and reports back.
 export function ImageUpload({ value, onChange, hint }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = (file?: File | null) => {
+  const handleFile = async (file?: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setError("نوع الصورة غير مدعوم. استخدمي PNG/JPG/WEBP.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError("حجم الصورة أكبر من 4MB.");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    try {
+      const result = await api.uploadImage(file);
+      onChange(result.url);
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : "فشل رفع الصورة";
+      setError(message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        void handleFile(e.dataTransfer.files?.[0]);
+      }}
       style={{
         border: `1.5px dashed ${dragOver ? "var(--accent)" : "var(--hairline-2)"}`,
         background: dragOver ? "var(--accent-soft)" : "#fff",
@@ -41,10 +64,10 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         <>
           <img src={value} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
           <div className="row" style={{ gap: 8 }}>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
               <Icon.Upload size={14} /> استبدال الصورة
             </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange(null)}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange(null)} disabled={uploading}>
               <Icon.Trash size={14} /> إزالة
             </button>
           </div>
@@ -58,7 +81,7 @@ export function ImageUpload({ value, onChange, hint }: Props) {
             <div style={{ fontWeight: 600 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
             <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
           </div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
             <Icon.Upload size={14} /> اختيار صورة
           </button>
         </>
@@ -68,8 +91,10 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         accept="image/*"
         ref={ref}
         style={{ display: "none" }}
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={(e) => { void handleFile(e.target.files?.[0]); }}
       />
+      {uploading && <div className="faint" style={{ fontSize: 12 }}>جارِ رفع الصورة...</div>}
+      {error && <div className="field-error" style={{ marginTop: 4 }}>{error}</div>}
     </div>
   );
 }

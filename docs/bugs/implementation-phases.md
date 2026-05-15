@@ -163,3 +163,16 @@ Status: Completed on 2026-05-15.
 - Add API tests for offer stock deduction.
 - Run typecheck/build/lint as available.
 - Update `docs/bugs.md` after fixes.
+
+Status: In progress on 2026-05-15.
+- Added API regression tests for workspace `.env` loading (`apps/api/tests/load-workspace-env.test.ts`).
+- Replaced no-op workspace lint with package-level typecheck lint scripts and verified `pnpm lint`.
+- Verified `pnpm test`, `pnpm build`, and `pnpm dev` startup health after fixes.
+- Added checkout contract validation tests and wired shared Zod schema into `/api/v1/checkout` route validation.
+- Aligned storefront/shared checkout fields to `cityArea` and `buildingApartment`, and product checkout `variantId` to numeric ID contract.
+- Added admin dev-fallback auth config tests and fixed middleware to respect `DEV_ADMIN_*` and `ALLOW_DEV_ADMIN_FALLBACK`.
+- Updated storefront API client to send `x-lang` and propagated language through product/category/offer fetch call sites.
+- Implemented `/api/erp/uploads` with schema validation, file-size/mime checks, and local upload URL/path response.
+- Wired ERP image upload UI to use the new upload API instead of data-URL mock behavior.
+- Mounted legacy admin CRUD routes under ERP auth group so ERP categories/offers/product endpoints resolve consistently.
+- Removed out-of-scope PayMob placeholder backend files (`apps/api/src/modules/payments/paymob/*`, `apps/api/src/config/paymob.ts`).
