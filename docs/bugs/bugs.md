@@ -1,14 +1,17 @@
 # Capella Project Bug Audit
 
-> Verified against the current project files, `docs/folder-structure.md`, and `docs/storefront-erp-spec.md` after the documentation decisions captured in this branch.
+> Last updated after Phase 12 commit (2026-05-15). Verified against the current project files, `docs/folder-structure.md`, and `docs/storefront-erp-spec.md`.
+> Phase 13 (Frontend Integration Polish) has been reverted to the Phase 11 baseline and is not yet implemented.
+> Phase 14 (Tests) is partially done — remaining test cases are tracked in `implementation-phases.md`.
 
 ## Executive Summary
 
-The project has a usable storefront UI and ERP UI shell, but the implementation is not yet aligned with the locked architecture. The largest problem is a split data model: storefront and ERP catalog endpoints read and write `apps/api/data.json`, while the MySQL/Drizzle layer is only partially used for checkout orders.
+Phases 1–12 are committed. The API layer is now substantially implemented: catalog and ERP management use MySQL/Drizzle, customer auth (JWT + bcrypt) and admin auth (dev-fallback JWT) are in place, all `/api/erp/*` routes are auth-protected, the upload API is live, checkout is wired end-to-end for COD, and PayMob has been fully removed.
 
-The current system can demo catalog browsing and ERP CRUD from a JSON file, but it is not production-functional for the specified storefront + ERP requirements. The main implementation gaps are database-backed catalog management, real auth, DB-backed wishlist, COD checkout wiring, uploads, validation, and shared DTO/schema contracts.
-
-PayMob is no longer a bug for v1 because online payment integration has been explicitly removed from current scope.
+The main remaining gaps are:
+- **Phase 13** (Frontend Integration Polish) — storefront pages, cart, wishlist, and layout have not yet been updated to pass `x-lang`, consume updated DTOs, or use targeted detail endpoints. Reverted to Phase 11 baseline intentionally.
+- **Phase 14** (Tests) — auth, wishlist, category-delete, product-activation, and offer-stock-deduction tests are still missing.
+- Several bugs listed below remain open, particularly around storefront auth being mocked, wishlist being localStorage-only, and the storefront pages over-fetching.
 
 ---
 
@@ -57,15 +60,15 @@ PayMob is no longer a bug for v1 because online payment integration has been exp
 | Issue | Severity | Evidence | Impact |
 |---|---:|---|---|
 | Intended storefront route group is unused | High | `routes/index.ts` mounts `catalogRoutes` directly under `/api/v1`. | `localeMiddleware` from `storefront.routes.ts` is not applied. |
-| Intended ERP route group is unused | Critical | `routes/index.ts` mounts `adminRoutes` directly under `/api/erp`. | `adminAuthMiddleware` from `erp.routes.ts` is not applied. ERP API routes are unprotected. |
-| `admin-auth.middleware.ts` is a bypass | Critical | Middleware only calls `next()`. | Even if mounted, it would not authenticate admin requests. |
+| ~~Intended ERP route group is unused~~ | ~~Critical~~ | **Fixed in Phase 3/12.** `erpRoutes` is mounted from `routes/index.ts`; `adminAuthMiddleware` is applied; admin CRUD and uploads routes are mounted under the auth group. | |
+| ~~`admin-auth.middleware.ts` is a bypass~~ | ~~Critical~~ | **Fixed in Phase 12.** Middleware now performs JWT verification (`role: admin`) with a configurable dev-fallback path (`ALLOW_DEV_ADMIN_FALLBACK` / `DEV_ADMIN_*`). | |
 | `auth.middleware.ts` is empty | Critical | File contains `export {}`. | No customer auth protection exists. |
 | `validate.middleware.ts` is empty | High | File contains `export {}`. | API requests are not centrally validated. |
 | `error.middleware.ts` is empty | Medium | File contains `export {}`. | Errors are handled inconsistently per controller. |
 | `locale.middleware.ts` is not active | High | Middleware exists but unused by mounted routes. | API response shaping/search behavior cannot use normalized locale. |
 | Storefront auth routes are empty | Critical | `auth.controller.ts`, `auth.routes.ts`, `auth.service.ts`, `auth.schemas.ts` are `export {}`. | Signup/login required by spec are not implemented. |
 | Wishlist routes are empty | Critical | All files in `modules/wishlist` are `export {}`. | DB-backed wishlist required by spec is absent. |
-| Upload routes are empty | High | All files in `modules/uploads` are `export {}`. | Hostinger/image upload boundary is absent. |
+| ~~Upload routes are empty~~ | ~~High~~ | **Fixed in Phase 12.** `POST /api/erp/uploads` implemented with Zod validation, mime/size checks, and Hostinger env placeholder. ERP image upload UI wired to real API. | |
 | Customer routes are empty | High | All files in `modules/customers` are `export {}`. | Customer management/auth backing is absent. |
 | Admin product submodule is incomplete | Medium | `admin-products.service.ts` has partial DB create logic, but routes mounted are legacy `admin.routes.ts`. | DB-based admin product implementation is not actually used by current routing. |
 | Admin category/offer submodules are empty | High | Admin category/offer module files are `export {}`. | Intended modular admin APIs are absent. |
@@ -79,11 +82,11 @@ PayMob is no longer a bug for v1 because online payment integration has been exp
 | Checkout UI is fake | Critical | `checkout-view.tsx` waits 700ms, generates `CPL-XXXXXX`, clears cart, and never posts to `/api/v1/checkout`. | Orders are not saved from storefront checkout. |
 | Checkout payload shape mismatch | Critical | UI fields are `city` and `building`; API expects `cityArea` and `buildingApartment`. | Direct wiring would fail without mapping/contracts. |
 | Checkout notes contract is stale in API/DB | Medium | Current API requires notes and DB column is `notNull`; updated spec says notes are optional. | API/DB must be updated to allow optional notes. |
-| Payment UI still includes PayMob | Medium | `checkout-view.tsx` renders a PayMob radio option. | Online payment is removed from v1 scope and should be removed from UI/contracts. |
+| ~~Payment UI still includes PayMob~~ | ~~Medium~~ | **Fixed in Phase 12.** PayMob radio option removed from `checkout-view.tsx`; COD is the only option shown. | |
 | Auth is mocked | Critical | `auth-provider.tsx` stores a fake user in localStorage after a timeout. | Signup/login do not call backend, hash passwords, or create customers. |
 | Wishlist is localStorage-only | Critical | `wishlist-provider.tsx` persists IDs under `capella.wishlist.v1`. | Spec requires login-only, DB-backed, cross-device wishlist. |
 | Guest wishlist behavior is wrong | High | Product card/wishlist provider can toggle locally without requiring login. | Violates spec requirement to warn and redirect guests. |
-| Storefront API client does not send `x-lang` | High | `getJSON()` in `src/lib/api/client.ts` sends no locale header. | Localized response shaping cannot work consistently. |
+| Storefront API client does not send `x-lang` | High | `getJSON()` in `src/lib/api/client.ts` sends no locale header. | Localized response shaping cannot work consistently. Phase 13 not yet implemented. |
 | `/products` does not use API search params | Medium | `products/page.tsx` calls `fetchProducts()` with no query params, then filters in `ProductGrid`. | Search should be server-side. |
 | API search behavior does not match updated spec | Medium | `catalog.controller.ts` searches both language names, SKU, and keywords. | Search should use product names and keywords, not SKU, and should handle query language intentionally. |
 | Product detail over-fetches | Medium | `products/[slug]/page.tsx` fetches product, categories, all offers, and all products. | Inefficient and should be served by targeted endpoints/DTOs. |
@@ -100,11 +103,11 @@ PayMob is no longer a bug for v1 because online payment integration has been exp
 | ERP login is hardcoded only | Critical | `admin-auth.tsx` uses `admin@capella.eg / admin1234`. | Spec requires DB-backed admin auth; hardcoded credentials may remain only as warned dev fallback. |
 | ERP API is unprotected | Critical | Current mounted `/api/erp` routes do not use `adminAuthMiddleware`; that middleware is also a no-op. | Anyone can call admin APIs. |
 | ERP writes JSON data, not DB | Critical | `admin.controller.ts` uses `file-store.ts`. | ERP is not controlling the shared MySQL catalog. |
-| Image upload is mocked | High | `image-upload.tsx` converts files to data URLs; upload service/routes are empty. | Images are not stored through Hostinger/API boundary. |
+| ~~Image upload is mocked~~ | ~~High~~ | **Fixed in Phase 12.** `image-upload.tsx` now calls `api.uploadImage()`; upload service writes files to disk and returns a public URL. | |
 | Category delete protection only checks direct products | Medium | `adminSoftDeleteCategory` checks `p.categoryId === id`. | Parent categories with linked descendant products can be deleted. |
 | Category delete does not protect active child categories | Medium | No check for non-deleted child categories before soft delete. | Can leave orphaned active children. |
 | Activation rules are client-only/partial | High | Product form validates some fields before active status, but API accepts posted product objects without server validation. | Invalid active products can be created through API. |
-| Direct stock update is JSON-only | High | `adminSetVariantStock` updates variants in `data.json`, not DB. | Storefront/checkout stock behavior diverges from persisted orders. |
+| ~~Direct stock update is JSON-only~~ | ~~High~~ | **Fixed in Phase 8.** `adminSetVariantStock` now calls `setVariantStockRepo` against the MySQL DB. | |
 | Slug generation is duplicated | Low | Slug logic exists in forms and partial admin service; `slug.service.ts` is empty. | Slug behavior can drift and is not centralized. |
 
 ---
@@ -129,8 +132,8 @@ PayMob is no longer a bug for v1 because online payment integration has been exp
 | DTO files are empty | High | All files in `packages/shared/src/dto/` are `export {}`. | No shared API data contracts. |
 | Schema files are empty | High | All files in `packages/shared/src/schemas/` are `export {}`. | No shared Zod validation contracts. |
 | Product variant type mismatch | High | Shared type uses `size`, `price`, `stock`; DB uses `sizeLabel`, `sellingPrice`, `stockQty`. | Mapping/DTO layer is required. |
-| Checkout field mismatch | High | Shared `CheckoutForm` uses `city`, `building`; API/DB use `cityArea`, `buildingApartment`. | Frontend/API integration will break without adapters/contracts. |
-| Payment methods still include PayMob | Medium | Shared constants include `paymob`. | Updated v1 scope is COD only. |
+| ~~Checkout field mismatch~~ | ~~High~~ | **Fixed in Phase 12.** Shared `CheckoutForm`, `checkout-view.tsx`, and the API Zod schema all use `cityArea` and `buildingApartment`. | |
+| ~~Payment methods still include PayMob~~ | ~~Medium~~ | **Fixed in Phase 12.** PayMob removed from shared constants and all backend module files deleted. | |
 
 ---
 

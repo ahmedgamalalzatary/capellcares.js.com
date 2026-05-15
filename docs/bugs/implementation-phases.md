@@ -144,6 +144,25 @@ Status: Completed on 2026-05-15.
 - Product/offer image replacement updates reference only.
 - Do not delete old physical image in v1.
 
+Status: Completed on 2026-05-15.
+- Implemented `POST /api/erp/uploads` with Zod schema validation, mime-type allowlist (`image/png`, `image/jpeg`, `image/webp`), and 4 MB size cap.
+- Implemented `image.service.ts` (`saveImageBuffer`) writing files to a local `uploads/` directory with env-configurable `HOSTINGER_PUBLIC_BASE_URL` placeholder.
+- Served the uploads directory as static files under `/uploads` via `express.static`.
+- Wired ERP `image-upload.tsx` component to call `api.uploadImage()` (real multipart-to-base64 upload) instead of the previous data-URL mock.
+- Added `api.uploadImage` helper in `apps/erp/src/lib/api/client.ts` with `arrayBufferToBase64` encoding and `x-admin-basic` dev header.
+- Uploaded `UPLOAD_ALLOWED_MIME_TYPES` and `UPLOAD_MAX_BYTES` are env-configurable.
+- Also completed as part of this phase commit:
+  - Removed all PayMob backend files (`apps/api/src/modules/payments/paymob/*`, `apps/api/src/config/paymob.ts`).
+  - Implemented `admin-auth` module (`apps/api/src/modules/admin/auth/`) with JWT-signed login for the dev-fallback admin.
+  - Extracted dev-admin credential resolution into `apps/api/src/middlewares/admin-auth.config.ts`.
+  - Fixed `adminAuthMiddleware` to perform real JWT verification and respect `ALLOW_DEV_ADMIN_FALLBACK` / `DEV_ADMIN_*` env vars.
+  - Implemented `apps/api/src/config/env.ts` (`loadWorkspaceEnv`) to load root `.env` file at startup.
+  - Wired `loadWorkspaceEnv()` into `apps/api/src/server.ts` before app import.
+  - Wired `validateBody(parseCheckoutBody)` into `POST /api/v1/checkout` using the shared Zod checkout schema.
+  - Aligned `CheckoutForm` shared type and `checkout-view.tsx` to use `cityArea` / `buildingApartment` field names and numeric `variantId`.
+  - Added `lint` (typecheck) scripts to all package/app `package.json` files.
+  - Added API tests: `load-workspace-env.test.ts`, `admin-auth.middleware.test.ts`, `admin-auth.service.test.ts`, `checkout.schemas.test.ts`, `uploads.test.ts`.
+
 ## Phase 13: Frontend Integration Polish
 
 - Storefront API client sends `x-lang`.
@@ -152,6 +171,10 @@ Status: Completed on 2026-05-15.
 - Offer detail uses resolved items endpoint instead of fetching all products.
 - Cart and checkout handle out-of-stock states correctly.
 - ERP UI consumes DB-backed APIs.
+
+Status: Not started. Reverted to Phase 11 baseline on 2026-05-15 to keep phase commits clean.
+- All storefront page changes (`products`, `category`, `offers`), `cart-view.tsx`, `wishlist-view.tsx`, `layout.tsx`, and `apps/storefront/src/lib/api/client.ts` were restored to the Phase 11 committed state.
+- Phase 13 will be implemented as its own dedicated commit once Phase 14 tests are complete.
 
 ## Phase 14: Tests + Verification
 
@@ -164,15 +187,21 @@ Status: Completed on 2026-05-15.
 - Run typecheck/build/lint as available.
 - Update `docs/bugs.md` after fixes.
 
-Status: In progress on 2026-05-15.
-- Added API regression tests for workspace `.env` loading (`apps/api/tests/load-workspace-env.test.ts`).
-- Replaced no-op workspace lint with package-level typecheck lint scripts and verified `pnpm lint`.
-- Verified `pnpm test`, `pnpm build`, and `pnpm dev` startup health after fixes.
-- Added checkout contract validation tests and wired shared Zod schema into `/api/v1/checkout` route validation.
-- Aligned storefront/shared checkout fields to `cityArea` and `buildingApartment`, and product checkout `variantId` to numeric ID contract.
-- Added admin dev-fallback auth config tests and fixed middleware to respect `DEV_ADMIN_*` and `ALLOW_DEV_ADMIN_FALLBACK`.
-- Updated storefront API client to send `x-lang` and propagated language through product/category/offer fetch call sites.
-- Implemented `/api/erp/uploads` with schema validation, file-size/mime checks, and local upload URL/path response.
-- Wired ERP image upload UI to use the new upload API instead of data-URL mock behavior.
-- Mounted legacy admin CRUD routes under ERP auth group so ERP categories/offers/product endpoints resolve consistently.
-- Removed out-of-scope PayMob placeholder backend files (`apps/api/src/modules/payments/paymob/*`, `apps/api/src/config/paymob.ts`).
+Status: Pending — not started as a standalone phase. Work tracked here was folded into the Phase 12 commit on 2026-05-15.
+
+Items moved to Phase 12 commit (already done):
+- API regression tests for workspace `.env` loading (`load-workspace-env.test.ts`).
+- Package-level typecheck `lint` scripts added to all apps/packages.
+- Checkout contract validation tests; Zod schema wired to `POST /api/v1/checkout`.
+- Admin dev-fallback auth config tests; middleware fixed for `DEV_ADMIN_*` / `ALLOW_DEV_ADMIN_FALLBACK`.
+- Upload API tests (`uploads.test.ts`).
+
+Items still remaining:
+- Add API tests for customer auth (signup / login / refresh token).
+- Add API tests for category delete protection (has-products, has-active-children).
+- Add API tests for product activation validation (server-side enforcement).
+- Add API tests for wishlist persistence (add / list / remove, auth required).
+- Add API tests for checkout stock deduction (variant deduction, offer deduction).
+- Add API tests for offer stock deduction.
+- Run full `pnpm lint`, `pnpm test`, `pnpm build` after Phase 13 is implemented.
+- Update `docs/bugs/bugs.md` after all remaining fixes.
