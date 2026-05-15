@@ -17,9 +17,17 @@ type ProductApiShape = {
   arName?: string;
   enName?: string;
   description?: { ar?: string; en?: string };
+  arDescription?: string | null;
+  enDescription?: string | null;
   ingredients?: { ar?: string; en?: string };
+  arIngredients?: string | null;
+  enIngredients?: string | null;
   howToUse?: { ar?: string; en?: string };
+  arHowToUse?: string | null;
+  enHowToUse?: string | null;
   warnings?: { ar?: string; en?: string };
+  arWarnings?: string | null;
+  enWarnings?: string | null;
   keywords?: string[] | string;
   buyingPrice?: number | string;
   imagePath?: string | null;
@@ -76,10 +84,10 @@ function normalizeProduct(input: ProductApiShape): Product {
     sku: input.sku ?? "",
     slug: input.slug ?? "",
     name: toBilingual(input.name, input.arName, input.enName),
-    description: toBilingual(input.description),
-    ingredients: toBilingual(input.ingredients),
-    howToUse: toBilingual(input.howToUse),
-    warnings: toBilingual(input.warnings),
+    description: toBilingual(input.description, input.arDescription ?? undefined, input.enDescription ?? undefined),
+    ingredients: toBilingual(input.ingredients, input.arIngredients ?? undefined, input.enIngredients ?? undefined),
+    howToUse: toBilingual(input.howToUse, input.arHowToUse ?? undefined, input.enHowToUse ?? undefined),
+    warnings: toBilingual(input.warnings, input.arWarnings ?? undefined, input.enWarnings ?? undefined),
     keywords: Array.isArray(input.keywords)
       ? input.keywords
       : typeof input.keywords === "string"

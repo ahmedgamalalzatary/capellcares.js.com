@@ -203,22 +203,76 @@ export async function listAdminProductsRepo() {
 }
 
 export async function createAdminProductRepo(input: {
+  id?: number;
   sku: string;
   slug: string;
   arName: string;
   enName: string;
   buyingPrice: number;
   keywords: string;
+  arDescription?: string | null;
+  enDescription?: string | null;
+  arIngredients?: string | null;
+  enIngredients?: string | null;
+  arHowToUse?: string | null;
+  enHowToUse?: string | null;
+  arWarnings?: string | null;
+  enWarnings?: string | null;
+  youtubeUrl?: string | null;
   imagePath?: string | null;
   categoryId: number;
   status: "active" | "inactive";
   isNew?: boolean;
   isBestseller?: boolean;
 }) {
+  if (input.id) {
+    await db
+      .update(products)
+      .set({
+        sku: input.sku,
+        slug: input.slug,
+        arName: input.arName,
+        enName: input.enName,
+        buyingPrice: sql`${input.buyingPrice}`,
+        keywords: input.keywords,
+        arDescription: input.arDescription ?? null,
+        enDescription: input.enDescription ?? null,
+        arIngredients: input.arIngredients ?? null,
+        enIngredients: input.enIngredients ?? null,
+        arHowToUse: input.arHowToUse ?? null,
+        enHowToUse: input.enHowToUse ?? null,
+        arWarnings: input.arWarnings ?? null,
+        enWarnings: input.enWarnings ?? null,
+        youtubeUrl: input.youtubeUrl ?? null,
+        imagePath: input.imagePath ?? null,
+        categoryId: input.categoryId,
+        status: input.status,
+        isNew: input.isNew ?? false,
+        isBestseller: input.isBestseller ?? false
+      })
+      .where(eq(products.id, input.id));
+    return { id: input.id };
+  }
+
   const [created] = await db.insert(products).values({
-    ...input,
+    sku: input.sku,
+    slug: input.slug,
+    arName: input.arName,
+    enName: input.enName,
     buyingPrice: sql`${input.buyingPrice}`,
+    keywords: input.keywords,
+    arDescription: input.arDescription ?? null,
+    enDescription: input.enDescription ?? null,
+    arIngredients: input.arIngredients ?? null,
+    enIngredients: input.enIngredients ?? null,
+    arHowToUse: input.arHowToUse ?? null,
+    enHowToUse: input.enHowToUse ?? null,
+    arWarnings: input.arWarnings ?? null,
+    enWarnings: input.enWarnings ?? null,
+    youtubeUrl: input.youtubeUrl ?? null,
     imagePath: input.imagePath ?? null,
+    categoryId: input.categoryId,
+    status: input.status,
     isNew: input.isNew ?? false,
     isBestseller: input.isBestseller ?? false
   }).$returningId();
@@ -237,6 +291,23 @@ export async function addVariantRepo(input: {
     sellingPrice: sql`${input.sellingPrice}`,
     stockQty: input.stockQty
   });
+}
+
+export async function replaceVariantsRepo(
+  productId: number,
+  variants: Array<{ sizeLabel: string; sellingPrice: number; stockQty: number }>
+) {
+  await db.delete(productVariants).where(eq(productVariants.productId, productId));
+  if (variants.length === 0) return;
+  await db.insert(productVariants).values(
+    variants.map((v, index) => ({
+      productId,
+      sizeLabel: v.sizeLabel,
+      sellingPrice: sql`${v.sellingPrice}`,
+      stockQty: v.stockQty,
+      sortOrder: index + 1
+    }))
+  );
 }
 
 export async function softDeleteProductRepo(id: number) {
