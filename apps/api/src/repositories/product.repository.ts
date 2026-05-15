@@ -2,6 +2,35 @@ import { and, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { categories, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
+function toNumber(value: unknown): number {
+  return Number(value ?? 0);
+}
+
+function toKeywords(value: string): string[] {
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function mapVariant(v: {
+  id: number;
+  productId: number;
+  sizeLabel: string;
+  sellingPrice: unknown;
+  stockQty: number;
+  sortOrder: number;
+}) {
+  return {
+    id: v.id,
+    productId: v.productId,
+    size: v.sizeLabel,
+    price: toNumber(v.sellingPrice),
+    stock: v.stockQty,
+    sortOrder: v.sortOrder
+  };
+}
+
 export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
   const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
   if (params.category) {
@@ -32,15 +61,19 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     );
   }
 
-  return db
+  const rows = await db
     .select({
       id: products.id,
       slug: products.slug,
       sku: products.sku,
       arName: products.arName,
       enName: products.enName,
+      keywords: products.keywords,
+      buyingPrice: products.buyingPrice,
       imagePath: products.imagePath,
       status: products.status,
+      categoryId: products.categoryId,
+      deletedAt: products.deletedAt,
       categorySlug: categories.slug,
       isNew: products.isNew,
       isBestseller: products.isBestseller
@@ -48,6 +81,39 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
     .where(and(...filters));
+
+  if (rows.length === 0) return [];
+  const productIds = rows.map((r) => r.id);
+  const variantsRows = await db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sizeLabel: productVariants.sizeLabel,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty,
+      sortOrder: productVariants.sortOrder
+    })
+    .from(productVariants)
+    .where(inArray(productVariants.productId, productIds));
+
+  const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
+  for (const v of variantsRows) {
+    const list = variantsByProduct.get(v.productId) ?? [];
+    list.push(mapVariant(v));
+    variantsByProduct.set(v.productId, list);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    keywords: toKeywords(r.keywords),
+    buyingPrice: toNumber(r.buyingPrice),
+    variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
+    name: { ar: r.arName, en: r.enName },
+    description: { ar: "", en: "" },
+    ingredients: { ar: "", en: "" },
+    howToUse: { ar: "", en: "" },
+    warnings: { ar: "", en: "" }
+  }));
 }
 
 export async function findVisibleProductBySlug(slug: string) {
@@ -58,19 +124,82 @@ export async function findVisibleProductBySlug(slug: string) {
       sku: products.sku,
       arName: products.arName,
       enName: products.enName,
+      keywords: products.keywords,
+      buyingPrice: products.buyingPrice,
+      arDescription: products.arDescription,
+      enDescription: products.enDescription,
+      arIngredients: products.arIngredients,
+      enIngredients: products.enIngredients,
+      arHowToUse: products.arHowToUse,
+      enHowToUse: products.enHowToUse,
+      arWarnings: products.arWarnings,
+      enWarnings: products.enWarnings,
+      youtubeUrl: products.youtubeUrl,
       imagePath: products.imagePath,
       status: products.status,
+      categoryId: products.categoryId,
+      deletedAt: products.deletedAt,
       categorySlug: categories.slug
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
     .where(and(eq(products.slug, slug), eq(products.status, "active"), isNull(products.deletedAt)))
     .limit(1);
-  return rows[0] ?? null;
+  const product = rows[0];
+  if (!product) return null;
+
+  const variantsRows = await db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sizeLabel: productVariants.sizeLabel,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty,
+      sortOrder: productVariants.sortOrder
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, product.id));
+
+  return {
+    ...product,
+    keywords: toKeywords(product.keywords),
+    buyingPrice: toNumber(product.buyingPrice),
+    variants: variantsRows.map(mapVariant).sort((a, b) => a.sortOrder - b.sortOrder),
+    name: { ar: product.arName, en: product.enName },
+    description: { ar: product.arDescription ?? "", en: product.enDescription ?? "" },
+    ingredients: { ar: product.arIngredients ?? "", en: product.enIngredients ?? "" },
+    howToUse: { ar: product.arHowToUse ?? "", en: product.enHowToUse ?? "" },
+    warnings: { ar: product.arWarnings ?? "", en: product.enWarnings ?? "" }
+  };
 }
 
 export async function listAdminProductsRepo() {
-  return db.select().from(products).where(isNull(products.deletedAt));
+  const rows = await db.select().from(products).where(isNull(products.deletedAt));
+  if (rows.length === 0) return [];
+
+  const variantsRows = await db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sizeLabel: productVariants.sizeLabel,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty,
+      sortOrder: productVariants.sortOrder
+    })
+    .from(productVariants)
+    .where(inArray(productVariants.productId, rows.map((r) => r.id)));
+
+  const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
+  for (const v of variantsRows) {
+    const list = variantsByProduct.get(v.productId) ?? [];
+    list.push(mapVariant(v));
+    variantsByProduct.set(v.productId, list);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
+  }));
 }
 
 export async function createAdminProductRepo(input: {

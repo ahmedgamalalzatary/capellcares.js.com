@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import type { Category, Offer, Product } from "@capella/shared";
 import {
-  addVariantRepo,
   createAdminProductRepo,
-  listAdminProductsRepo
+  listAdminProductsRepo,
+  replaceVariantsRepo
 } from "../../repositories/product.repository.js";
 import {
   hasLinkedProductsInCategoryRepo,
@@ -40,26 +40,36 @@ export async function adminUpsertProduct(req: Request, res: Response) {
     return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
   }
   const created = await createAdminProductRepo({
+    id: incoming.id ? Number(incoming.id) : undefined,
     sku: incoming.sku ?? "",
     slug: toSlug(incoming.slug || productNameEn || productNameAr),
     arName: productNameAr,
     enName: productNameEn,
     buyingPrice: Number(incoming.buyingPrice ?? 0),
     keywords: Array.isArray(incoming.keywords) ? incoming.keywords.join(",") : "",
+    arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
+    enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
+    arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,
+    enIngredients: incoming.ingredients?.en ?? incoming.enIngredients ?? null,
+    arHowToUse: incoming.howToUse?.ar ?? incoming.arHowToUse ?? null,
+    enHowToUse: incoming.howToUse?.en ?? incoming.enHowToUse ?? null,
+    arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
+    enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
+    youtubeUrl: incoming.youtubeUrl ?? null,
     imagePath: incoming.imagePath ?? null,
     categoryId: Number(incoming.categoryId ?? 0),
     status: productStatus,
     isNew: incoming.isNew ?? false,
     isBestseller: incoming.isBestseller ?? false
   });
-  for (const v of productVariants) {
-    await addVariantRepo({
-      productId: created.id,
+  await replaceVariantsRepo(
+    created.id,
+    productVariants.map((v: any) => ({
       sizeLabel: v.sizeLabel ?? v.size ?? "",
       sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
       stockQty: Number(v.stockQty ?? v.stock ?? 0)
-    });
-  }
+    }))
+  );
   res.json({ ok: true });
 }
 

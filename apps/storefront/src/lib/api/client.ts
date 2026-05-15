@@ -1,6 +1,30 @@
 import type { Product, Category, Offer } from "@capella/shared";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+type CategoryApiShape = {
+  id: number;
+  parentId: number | null;
+  slug: string;
+  name?: { ar?: string; en?: string };
+  arName?: string;
+  enName?: string;
+  isLeaf?: boolean;
+  deletedAt?: string | null;
+};
+
+function normalizeCategory(input: CategoryApiShape): Category {
+  return {
+    id: Number(input.id),
+    parentId: input.parentId == null ? null : Number(input.parentId),
+    slug: input.slug,
+    name: {
+      ar: input.name?.ar ?? input.arName ?? "",
+      en: input.name?.en ?? input.enName ?? ""
+    },
+    isLeaf: Boolean(input.isLeaf ?? true),
+    deletedAt: input.deletedAt ?? null
+  };
+}
 
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
@@ -25,8 +49,8 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const data = await getJSON<{ items: Category[] }>(`/api/v1/categories`);
-  return data?.items ?? [];
+  const data = await getJSON<{ items: CategoryApiShape[] }>(`/api/v1/categories`);
+  return (data?.items ?? []).map(normalizeCategory);
 }
 
 export async function fetchOffers(): Promise<Offer[]> {

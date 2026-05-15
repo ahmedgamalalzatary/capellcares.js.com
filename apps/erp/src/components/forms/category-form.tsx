@@ -31,17 +31,16 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
-    const id = initial?.id ?? Math.floor(Math.random() * 90000 + 10000);
     const slug = initial?.slug ?? slugify(nameEn);
-    const category: Category = {
-      id,
+    const categoryPayload: Omit<Category, "id"> & { id?: number } = {
+      id: initial?.id,
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       parentId,
       isLeaf: true,
       deletedAt: initial?.deletedAt ?? null
     };
-    await getStore().upsertCategory(category);
+    await getStore().upsertCategory(categoryPayload);
     router.push("/categories");
   };
 

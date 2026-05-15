@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useCart } from "@/components/providers/cart-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
@@ -21,7 +20,6 @@ interface Errors { [k: string]: string | undefined }
 export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, clear } = useCart();
   const { user, accessToken } = useAuth();
-  const router = useRouter();
 
   const [form, setForm] = useState({
     fullName: user?.name ?? "",
@@ -42,7 +40,7 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProducts({ lang }), fetchOffers(lang)]).then(([p, o]) => {
+    Promise.all([fetchProducts(), fetchOffers()]).then(([p, o]) => {
       setProducts(p);
       setOffers(o);
     }).catch(() => {});

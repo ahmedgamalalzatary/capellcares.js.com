@@ -18,6 +18,17 @@ interface Props {
 
 type Sort = "newest" | "price-asc" | "price-desc" | "name";
 
+function safeName(product: Product, lang: Language): string {
+  const fallback = { ar: "", en: "" };
+  return pickLang(product.name ?? fallback, lang);
+}
+
+function minVariantPrice(product: Product): number {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  if (variants.length === 0) return Number.POSITIVE_INFINITY;
+  return Math.min(...variants.map((v) => Number(v?.price ?? Number.POSITIVE_INFINITY)));
+}
+
 export function ProductGrid({ products, categories, lang, dict, initialSearch = "", initialCategory, lockCategory }: Props) {
   const [q, setQ] = useState(initialSearch);
   const [category, setCategory] = useState<number | undefined>(initialCategory);
@@ -33,23 +44,24 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
     return products
       .filter((p) => {
         if (ql) {
-          const name = pickLang(p.name, lang).toLowerCase();
+          const name = safeName(p, lang).toLowerCase();
           if (!name.includes(ql)) return false;
         }
         if (category && p.categoryId !== category) {
           // simple match — for trees we'd descend; left as-is for grid use cases
           return false;
         }
-        const minVariant = Math.min(...p.variants.map((v) => v.price));
+        const minVariant = minVariantPrice(p);
+        if (!Number.isFinite(minVariant)) return false;
         if (minVariant < min || minVariant > max) return false;
         return true;
       })
       .sort((a, b) => {
-        const ap = Math.min(...a.variants.map((v) => v.price));
-        const bp = Math.min(...b.variants.map((v) => v.price));
+        const ap = minVariantPrice(a);
+        const bp = minVariantPrice(b);
         if (sort === "price-asc") return ap - bp;
         if (sort === "price-desc") return bp - ap;
-        if (sort === "name") return pickLang(a.name, lang).localeCompare(pickLang(b.name, lang));
+        if (sort === "name") return safeName(a, lang).localeCompare(safeName(b, lang));
         return b.id - a.id;
       });
   }, [products, q, category, sort, priceRange, lang]);
