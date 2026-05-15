@@ -85,6 +85,8 @@ Status: Completed on 2026-05-15.
 - Hide hidden/deleted offers, but show visible out-of-stock offers.
 - Add targeted product detail and offer detail DTOs.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 8: ERP Catalog Management
 
 - Implement DB-backed ERP product CRUD.
