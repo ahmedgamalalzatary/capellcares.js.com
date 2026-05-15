@@ -1,141 +1,144 @@
 import type { Request, Response } from "express";
-import { getState, save, nextId } from "../../data/file-store.js";
-import type { Product, Category, Offer } from "@capella/shared";
+import type { Category, Offer, Product } from "@capella/shared";
+import {
+  addVariantRepo,
+  createAdminProductRepo,
+  listAdminProductsRepo
+} from "../../repositories/product.repository.js";
+import {
+  hasLinkedProductsInCategoryRepo,
+  listCategoriesRepo,
+  restoreCategoryRepo,
+  softDeleteCategoryRepo,
+  upsertCategoryRepo
+} from "../../repositories/category.repository.js";
+import {
+  findOfferBySlugRepo,
+  listOffersRepo,
+  restoreOfferRepo,
+  softDeleteOfferRepo,
+  upsertOfferRepo
+} from "../../repositories/offer.repository.js";
 
 // ---- products ----
 
 export async function adminListProducts(_req: Request, res: Response) {
-  const s = await getState();
-  res.json({ items: s.products });
+  res.json({ items: await listAdminProductsRepo() });
 }
 
 export async function adminUpsertProduct(req: Request, res: Response) {
-  const s = await getState();
   const incoming = req.body as Product;
-  const now = new Date().toISOString();
-  if (incoming.id && s.products.some((p) => p.id === incoming.id)) {
-    s.products = s.products.map((p) => p.id === incoming.id ? { ...incoming, updatedAt: now } : p);
-  } else {
-    const id = incoming.id || nextId(s.products);
-    const variants = (incoming.variants ?? []).map((v, idx) => ({
-      ...v,
-      id: v.id || idx + 1,
-      productId: id
-    }));
-    s.products = [...s.products, { ...incoming, id, variants, createdAt: now, updatedAt: now, deletedAt: null }];
+  const created = await createAdminProductRepo({
+    sku: incoming.sku,
+    slug: incoming.slug,
+    arName: incoming.name.ar,
+    enName: incoming.name.en,
+    buyingPrice: incoming.buyingPrice,
+    keywords: incoming.keywords.join(","),
+    imagePath: incoming.imagePath ?? null,
+    categoryId: incoming.categoryId,
+    status: incoming.status,
+    isNew: (incoming as any).isNew ?? false,
+    isBestseller: (incoming as any).isBestseller ?? false
+  });
+  for (const v of incoming.variants ?? []) {
+    await addVariantRepo({
+      productId: created.id,
+      sizeLabel: v.size,
+      sellingPrice: v.price,
+      stockQty: v.stock
+    });
   }
-  await save();
   res.json({ ok: true });
 }
 
 export async function adminSoftDeleteProduct(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.products = s.products.map((p) => p.id === id ? { ...p, deletedAt: new Date().toISOString() } : p);
-  await save();
+  const { softDeleteProductRepo } = await import("../../repositories/product.repository.js");
+  await softDeleteProductRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
 export async function adminRestoreProduct(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.products = s.products.map((p) => p.id === id ? { ...p, deletedAt: null } : p);
-  await save();
+  const { restoreProductRepo } = await import("../../repositories/product.repository.js");
+  await restoreProductRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
 export async function adminToggleProductStatus(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.products = s.products.map((p) => p.id === id ? { ...p, status: p.status === "active" ? "inactive" : "active", updatedAt: new Date().toISOString() } : p);
-  await save();
+  const { toggleProductStatusRepo } = await import("../../repositories/product.repository.js");
+  await toggleProductStatusRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
 export async function adminSetVariantStock(req: Request, res: Response) {
-  const s = await getState();
-  const productId = Number(req.params.id);
   const variantId = Number(req.params.variantId);
   const stock = Math.max(0, Number(req.body?.stock ?? 0));
-  s.products = s.products.map((p) => {
-    if (p.id !== productId) return p;
-    return { ...p, variants: p.variants.map((v) => v.id === variantId ? { ...v, stock } : v) };
-  });
-  await save();
+  const { setVariantStockRepo } = await import("../../repositories/product.repository.js");
+  await setVariantStockRepo(variantId, stock);
   res.json({ ok: true });
 }
 
 // ---- categories ----
 
 export async function adminListCategories(_req: Request, res: Response) {
-  const s = await getState();
-  res.json({ items: s.categories });
+  res.json({ items: await listCategoriesRepo(true) });
 }
 
 export async function adminUpsertCategory(req: Request, res: Response) {
-  const s = await getState();
   const incoming = req.body as Category;
-  if (incoming.id && s.categories.some((c) => c.id === incoming.id)) {
-    s.categories = s.categories.map((c) => c.id === incoming.id ? { ...incoming } : c);
-  } else {
-    const id = incoming.id || nextId(s.categories);
-    s.categories = [...s.categories, { ...incoming, id, deletedAt: null }];
-  }
-  await save();
+  await upsertCategoryRepo({
+    id: incoming.id,
+    parentId: incoming.parentId,
+    slug: incoming.slug,
+    arName: incoming.name.ar,
+    enName: incoming.name.en,
+    isLeaf: incoming.isLeaf
+  });
   res.json({ ok: true });
 }
 
 export async function adminSoftDeleteCategory(req: Request, res: Response) {
-  const s = await getState();
   const id = Number(req.params.id);
-  const hasLinked = s.products.some((p) => !p.deletedAt && p.categoryId === id);
+  const hasLinked = await hasLinkedProductsInCategoryRepo(id);
   if (hasLinked) return res.status(409).json({ ok: false, reason: "has-products" });
-  s.categories = s.categories.map((c) => c.id === id ? { ...c, deletedAt: new Date().toISOString() } : c);
-  await save();
+  await softDeleteCategoryRepo(id);
   res.json({ ok: true });
 }
 
 export async function adminRestoreCategory(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.categories = s.categories.map((c) => c.id === id ? { ...c, deletedAt: null } : c);
-  await save();
+  await restoreCategoryRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
 // ---- offers ----
 
 export async function adminListOffers(_req: Request, res: Response) {
-  const s = await getState();
-  res.json({ items: s.offers });
+  res.json({ items: await listOffersRepo(true) });
 }
 
 export async function adminUpsertOffer(req: Request, res: Response) {
-  const s = await getState();
   const incoming = req.body as Offer;
-  const now = new Date().toISOString();
-  if (incoming.id && s.offers.some((o) => o.id === incoming.id)) {
-    s.offers = s.offers.map((o) => o.id === incoming.id ? { ...incoming, updatedAt: now } : o);
-  } else {
-    const id = incoming.id || nextId(s.offers);
-    s.offers = [...s.offers, { ...incoming, id, createdAt: now, updatedAt: now, deletedAt: null }];
-  }
-  await save();
+  await upsertOfferRepo({
+    id: incoming.id,
+    slug: incoming.slug,
+    arName: incoming.name.ar,
+    enName: incoming.name.en,
+    arDescription: incoming.description?.ar ?? null,
+    enDescription: incoming.description?.en ?? null,
+    imagePath: incoming.imagePath ?? null,
+    fixedPrice: incoming.price,
+    status: incoming.status,
+    items: incoming.items.map((item) => ({ variantId: item.variantId, qty: item.qty }))
+  });
   res.json({ ok: true });
 }
 
 export async function adminSoftDeleteOffer(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.offers = s.offers.map((o) => o.id === id ? { ...o, deletedAt: new Date().toISOString() } : o);
-  await save();
+  await softDeleteOfferRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
 export async function adminRestoreOffer(req: Request, res: Response) {
-  const s = await getState();
-  const id = Number(req.params.id);
-  s.offers = s.offers.map((o) => o.id === id ? { ...o, deletedAt: null } : o);
-  await save();
+  await restoreOfferRepo(Number(req.params.id));
   res.json({ ok: true });
 }

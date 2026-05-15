@@ -73,6 +73,8 @@ Status: Completed on 2026-05-15.
 - Use current mock/JSON data only as migration/dev seed input if useful.
 - Stop relying on `apps/api/data.json` as runtime source of truth.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 7: Catalog API + Storefront Search
 
 - Implement storefront product/category/offer endpoints from DB.
