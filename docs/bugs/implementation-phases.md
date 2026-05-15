@@ -120,6 +120,8 @@ Status: Completed on 2026-05-15.
 - Update storefront wishlist provider/UI to use API.
 - Guest wishlist click shows warning and login redirect.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 11: Checkout + Orders
 
 - Wire checkout UI to `/api/v1/checkout`.

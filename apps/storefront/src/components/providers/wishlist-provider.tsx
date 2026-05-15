@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useAuth } from "@/components/providers/auth-provider";
 
 interface WishlistContextValue {
   ids: number[];
@@ -10,29 +11,41 @@ interface WishlistContextValue {
 }
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
-const STORAGE_KEY = "capella.wishlist.v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
+  const { user, accessToken } = useAuth();
   const [ids, setIds] = useState<number[]>([]);
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setIds(JSON.parse(raw));
-    } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)); } catch {}
-  }, [ids, hydrated]);
+    if (!user || !accessToken) {
+      setIds([]);
+      return;
+    }
+    fetch(`${API_BASE}/api/v1/wishlist`, {
+      headers: { authorization: `Bearer ${accessToken}` }
+    })
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((data) => setIds((data.items ?? []).map((x: any) => Number(x.productId))))
+      .catch(() => setIds([]));
+  }, [user, accessToken]);
 
   const has = useCallback((id: number) => ids.includes(id), [ids]);
   const toggle = useCallback((id: number) => {
-    setIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }, []);
+    if (!accessToken) return;
+    setIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      fetch(`${API_BASE}/api/v1/wishlist${prev.includes(id) ? `/${id}` : ""}`, {
+        method: prev.includes(id) ? "DELETE" : "POST",
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json"
+        },
+        body: prev.includes(id) ? undefined : JSON.stringify({ productId: id })
+      }).catch(() => {});
+      return next;
+    });
+  }, [accessToken]);
   const clear = useCallback(() => setIds([]), []);
 
   const value = useMemo(() => ({ ids, has, toggle, clear }), [ids, has, toggle, clear]);
