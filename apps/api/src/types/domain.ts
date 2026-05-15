@@ -27,7 +27,9 @@ export interface Product {
 }
 
 export interface CheckoutItem {
-  variantId: string;
+  type: "product" | "offer";
+  variantId?: string;
+  offerId?: number;
   qty: number;
 }
 

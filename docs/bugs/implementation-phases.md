@@ -133,6 +133,8 @@ Status: Completed on 2026-05-15.
 - Store order item snapshots.
 - Clear cart only after successful order creation.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 12: Uploads / Images
 
 - Implement upload API boundary.

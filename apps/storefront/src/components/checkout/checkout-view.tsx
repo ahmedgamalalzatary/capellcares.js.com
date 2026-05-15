@@ -20,7 +20,7 @@ interface Errors { [k: string]: string | undefined }
 
 export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, clear } = useCart();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -82,10 +82,39 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const placeOrder = async () => {
     if (!validate()) return;
     setPlacing(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setOrderId(`CPL-${Math.floor(Math.random() * 900000 + 100000)}`);
-    clear();
-    setPlacing(false);
+    try {
+      const payload = {
+        fullName: form.fullName,
+        phone: form.phone,
+        email: form.email,
+        governorate: form.governorate,
+        cityArea: form.city,
+        addressLine: form.addressLine,
+        buildingApartment: form.building,
+        notes: form.notes || undefined,
+        paymentMethod: "cod",
+        customerId: user?.id ?? null,
+        items: lines.map((l) =>
+          l.type === "product"
+            ? { type: "product", variantId: String(l.variantId), qty: l.qty }
+            : { type: "offer", offerId: l.offerId, qty: l.qty }
+        )
+      };
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/v1/checkout`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Checkout failed");
+      const data = await res.json();
+      setOrderId(`CPL-${String(data.id)}`);
+      clear();
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (orderId) {
