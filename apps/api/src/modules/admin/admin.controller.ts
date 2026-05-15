@@ -7,18 +7,19 @@ import {
 } from "../../repositories/product.repository.js";
 import {
   hasLinkedProductsInCategoryRepo,
+  hasActiveChildrenCategoriesRepo,
   listCategoriesRepo,
   restoreCategoryRepo,
   softDeleteCategoryRepo,
   upsertCategoryRepo
 } from "../../repositories/category.repository.js";
 import {
-  findOfferBySlugRepo,
   listOffersRepo,
   restoreOfferRepo,
   softDeleteOfferRepo,
   upsertOfferRepo
 } from "../../repositories/offer.repository.js";
+import { toSlug } from "../../services/slug.service.js";
 
 // ---- products ----
 
@@ -27,26 +28,36 @@ export async function adminListProducts(_req: Request, res: Response) {
 }
 
 export async function adminUpsertProduct(req: Request, res: Response) {
-  const incoming = req.body as Product;
+  const incoming = req.body as any;
+  const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
+  const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
+  const productVariants = incoming.variants ?? [];
+  const productStatus = incoming.status ?? "inactive";
+  if (
+    productStatus === "active" &&
+    (!productNameAr || !productNameEn || !incoming.imagePath || !incoming.categoryId || productVariants.length === 0)
+  ) {
+    return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
+  }
   const created = await createAdminProductRepo({
-    sku: incoming.sku,
-    slug: incoming.slug,
-    arName: incoming.name.ar,
-    enName: incoming.name.en,
-    buyingPrice: incoming.buyingPrice,
-    keywords: incoming.keywords.join(","),
+    sku: incoming.sku ?? "",
+    slug: toSlug(incoming.slug || productNameEn || productNameAr),
+    arName: productNameAr,
+    enName: productNameEn,
+    buyingPrice: Number(incoming.buyingPrice ?? 0),
+    keywords: Array.isArray(incoming.keywords) ? incoming.keywords.join(",") : "",
     imagePath: incoming.imagePath ?? null,
-    categoryId: incoming.categoryId,
-    status: incoming.status,
-    isNew: (incoming as any).isNew ?? false,
-    isBestseller: (incoming as any).isBestseller ?? false
+    categoryId: Number(incoming.categoryId ?? 0),
+    status: productStatus,
+    isNew: incoming.isNew ?? false,
+    isBestseller: incoming.isBestseller ?? false
   });
-  for (const v of incoming.variants ?? []) {
+  for (const v of productVariants) {
     await addVariantRepo({
       productId: created.id,
-      sizeLabel: v.size,
-      sellingPrice: v.price,
-      stockQty: v.stock
+      sizeLabel: v.sizeLabel ?? v.size ?? "",
+      sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
+      stockQty: Number(v.stockQty ?? v.stock ?? 0)
     });
   }
   res.json({ ok: true });
@@ -85,14 +96,14 @@ export async function adminListCategories(_req: Request, res: Response) {
 }
 
 export async function adminUpsertCategory(req: Request, res: Response) {
-  const incoming = req.body as Category;
+  const incoming = req.body as any;
   await upsertCategoryRepo({
     id: incoming.id,
     parentId: incoming.parentId,
-    slug: incoming.slug,
-    arName: incoming.name.ar,
-    enName: incoming.name.en,
-    isLeaf: incoming.isLeaf
+    slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
+    arName: incoming.name?.ar ?? incoming.arName ?? "",
+    enName: incoming.name?.en ?? incoming.enName ?? "",
+    isLeaf: Boolean(incoming.isLeaf)
   });
   res.json({ ok: true });
 }
@@ -101,6 +112,8 @@ export async function adminSoftDeleteCategory(req: Request, res: Response) {
   const id = Number(req.params.id);
   const hasLinked = await hasLinkedProductsInCategoryRepo(id);
   if (hasLinked) return res.status(409).json({ ok: false, reason: "has-products" });
+  const hasActiveChildren = await hasActiveChildrenCategoriesRepo(id);
+  if (hasActiveChildren) return res.status(409).json({ ok: false, reason: "has-active-children" });
   await softDeleteCategoryRepo(id);
   res.json({ ok: true });
 }
@@ -117,18 +130,19 @@ export async function adminListOffers(_req: Request, res: Response) {
 }
 
 export async function adminUpsertOffer(req: Request, res: Response) {
-  const incoming = req.body as Offer;
+  const incoming = req.body as any;
   await upsertOfferRepo({
     id: incoming.id,
-    slug: incoming.slug,
-    arName: incoming.name.ar,
-    enName: incoming.name.en,
-    arDescription: incoming.description?.ar ?? null,
-    enDescription: incoming.description?.en ?? null,
+    slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
+    arName: incoming.name?.ar ?? incoming.arName ?? "",
+    enName: incoming.name?.en ?? incoming.enName ?? "",
+    arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
+    enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
     imagePath: incoming.imagePath ?? null,
-    fixedPrice: incoming.price,
-    status: incoming.status,
-    items: incoming.items.map((item) => ({ variantId: item.variantId, qty: item.qty }))
+    fixedPrice: Number(incoming.price ?? incoming.fixedPrice ?? 0),
+    status: incoming.status ?? "inactive",
+    visibility: incoming.visibility ?? "visible",
+    items: (incoming.items ?? []).map((item: any) => ({ variantId: Number(item.variantId), qty: Number(item.qty) }))
   });
   res.json({ ok: true });
 }

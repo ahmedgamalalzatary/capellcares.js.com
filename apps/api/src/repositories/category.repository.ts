@@ -49,10 +49,31 @@ export async function restoreCategoryRepo(id: number) {
 }
 
 export async function hasLinkedProductsInCategoryRepo(id: number) {
+  const allCategories = await db.select({ id: categories.id, parentId: categories.parentId }).from(categories);
+  const descendantIds = new Set<number>([id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of allCategories) {
+      if (c.parentId != null && descendantIds.has(c.parentId) && !descendantIds.has(c.id)) {
+        descendantIds.add(c.id);
+        changed = true;
+      }
+    }
+  }
   const rows = await db
     .select({ id: products.id })
     .from(products)
-    .where(and(eq(products.categoryId, id), isNull(products.deletedAt)))
+    .where(and(sql`${products.categoryId} in (${sql.join([...descendantIds].map((x) => sql`${x}`), sql`,`)})`, isNull(products.deletedAt)))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function hasActiveChildrenCategoriesRepo(id: number) {
+  const rows = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(and(eq(categories.parentId, id), isNull(categories.deletedAt)))
     .limit(1);
   return rows.length > 0;
 }

@@ -98,6 +98,8 @@ Status: Completed on 2026-05-15.
 - Add product flags management: `isNew`, `isBestseller`.
 - Add offer visible/hidden management.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 9: Auth
 
 - Implement DB-backed customer signup/login.
