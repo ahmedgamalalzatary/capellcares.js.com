@@ -25,7 +25,7 @@ export async function createOrderFromCheckout(payload: CheckoutPayload): Promise
   }
 
   const totalAmount = pricedItems.reduce((sum, row) => sum + row.lineTotal, 0);
-  const paymentStatus: PaymentStatus = payload.paymentMethod === "paymob" ? "pending" : "pending";
+  const paymentStatus: PaymentStatus = "pending";
   const orderId = await createOrderWithItems({
     order: {
       customerType: payload.customerId ? "registered" : "guest",
@@ -37,7 +37,7 @@ export async function createOrderFromCheckout(payload: CheckoutPayload): Promise
       cityArea: payload.cityArea,
       addressLine: payload.addressLine,
       buildingApartment: payload.buildingApartment,
-      notes: payload.notes,
+      notes: payload.notes ?? "",
       paymentMethod: payload.paymentMethod,
       paymentStatus,
       totalAmount

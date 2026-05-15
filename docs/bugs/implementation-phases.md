@@ -40,6 +40,8 @@ This file tracks the agreed implementation order. Keep related edits together in
 - Add consistent error middleware.
 - Add validation middleware.
 
+Status: Completed on 2026-05-15.
+
 ## Phase 4: Shared Contracts
 
 - Fill `packages/shared/src/dto/*`.

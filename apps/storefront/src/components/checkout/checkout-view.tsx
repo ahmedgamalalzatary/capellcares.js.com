@@ -162,13 +162,6 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
                 <div className="muted" style={{ fontSize: 13 }}>{dict.checkout.codDesc}</div>
               </div>
             </label>
-            <label className={styles.payOption} data-active={form.paymentMethod === "paymob"}>
-              <input type="radio" name="pay" value="paymob" checked={form.paymentMethod === "paymob"} onChange={() => set("paymentMethod", "paymob")} />
-              <div>
-                <div style={{ fontWeight: 600 }}>{dict.checkout.paymob}</div>
-                <div className="muted" style={{ fontSize: 13 }}>{dict.checkout.paymobDesc}</div>
-              </div>
-            </label>
           </div>
         </Section>
 

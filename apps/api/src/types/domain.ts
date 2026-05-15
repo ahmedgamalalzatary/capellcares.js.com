@@ -1,6 +1,6 @@
 export type Language = "ar" | "en";
 export type ProductStatus = "active" | "inactive";
-export type PaymentMethod = "cod" | "paymob";
+export type PaymentMethod = "cod";
 export type PaymentStatus = "pending" | "paid" | "failed";
 
 export interface ProductVariant {
@@ -39,7 +39,7 @@ export interface CheckoutPayload {
   cityArea: string;
   addressLine: string;
   buildingApartment: string;
-  notes: string;
+  notes?: string;
   paymentMethod: PaymentMethod;
   items: CheckoutItem[];
   customerId?: number | null;

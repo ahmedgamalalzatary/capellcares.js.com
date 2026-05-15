@@ -12,7 +12,6 @@ export function validateCheckoutPayload(payload: CheckoutPayload) {
     "cityArea",
     "addressLine",
     "buildingApartment",
-    "notes",
     "paymentMethod",
     "items"
   ];
@@ -24,6 +23,7 @@ export function validateCheckoutPayload(payload: CheckoutPayload) {
     }
   }
   if (!egyptPhonePattern.test(payload.phone)) throw new Error("Invalid Egyptian phone number");
+  if (payload.paymentMethod !== "cod") throw new Error("Only COD payment is supported");
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
 }
 

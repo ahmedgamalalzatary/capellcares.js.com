@@ -14,7 +14,7 @@ export async function createOrderWithItems(input: {
     addressLine: string;
     buildingApartment: string;
     notes: string;
-    paymentMethod: "cod" | "paymob";
+    paymentMethod: "cod";
     paymentStatus: "pending" | "paid" | "failed";
     totalAmount: number;
   };

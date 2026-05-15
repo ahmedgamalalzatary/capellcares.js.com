@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { catalogRoutes } from "../modules/catalog/catalog.routes.js";
-import { adminRoutes } from "../modules/admin/admin.routes.js";
+import { storefrontRoutes } from "./storefront.routes.js";
+import { erpRoutes } from "./erp.routes.js";
 
 export const apiRoutes = Router();
 
 apiRoutes.get("/health", (_req, res) => res.json({ ok: true }));
-apiRoutes.use("/api/v1", catalogRoutes);
-apiRoutes.use("/api/erp", adminRoutes);
+apiRoutes.use("/api/v1", storefrontRoutes);
+apiRoutes.use("/api/erp", erpRoutes);

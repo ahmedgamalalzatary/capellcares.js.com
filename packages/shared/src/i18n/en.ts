@@ -106,8 +106,6 @@ export const en = {
     notes: "Notes (optional)",
     cod: "Cash on Delivery",
     codDesc: "Pay in cash when your order arrives.",
-    paymob: "Pay online (PayMob)",
-    paymobDesc: "Credit / debit card, e-wallet.",
     review: "Review your order",
     placeOrder: "Place order",
     egPhoneInvalid: "Enter a valid Egyptian phone number.",
