@@ -37,79 +37,91 @@ Treat this as the implementation baseline unless a new explicit product decision
 capella/
 ├─ apps/
 │  ├─ storefront/
-│  │  ├─ public/
-│  │  │  ├─ images/
-│  │  │  └─ icons/
 │  │  ├─ src/
 │  │  │  ├─ app/
 │  │  │  │  ├─ [lang]/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ layout.tsx
-│  │  │  │  │  ├─ products/
-│  │  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ cart/
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ checkout/
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ cart/
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ category/
 │  │  │  │  │  │  └─ [slug]/page.tsx
-│  │  │  │  │  ├─ category/[slug]/page.tsx
+│  │  │  │  │  ├─ login/
+│  │  │  │  │  │  └─ page.tsx
 │  │  │  │  │  ├─ offers/
-│  │  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  │  └─ [slug]/page.tsx
-│  │  │  │  │  ├─ cart/page.tsx
-│  │  │  │  │  ├─ checkout/page.tsx
-│  │  │  │  │  ├─ wishlist/page.tsx
-│  │  │  │  │  ├─ login/page.tsx
-│  │  │  │  │  └─ signup/page.tsx
+│  │  │  │  │  │  ├─ [slug]/page.tsx
+│  │  │  │  │  │  ├─ offers.module.css
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ products/
+│  │  │  │  │  │  ├─ [slug]/page.tsx
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ signup/
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  └─ wishlist/
+│  │  │  │  │     └─ page.tsx
 │  │  │  │  ├─ globals.css
-│  │  │  │  └─ not-found.tsx
+│  │  │  │  ├─ layout.tsx
+│  │  │  │  ├─ not-found.tsx
+│  │  │  │  └─ page.tsx
 │  │  │  ├─ components/
-│  │  │  │  ├─ ui/
-│  │  │  │  ├─ layout/
-│  │  │  │  ├─ products/
-│  │  │  │  ├─ offers/
+│  │  │  │  ├─ auth/
 │  │  │  │  ├─ cart/
 │  │  │  │  ├─ checkout/
-│  │  │  │  ├─ wishlist/
-│  │  │  │  └─ auth/
+│  │  │  │  ├─ layout/
+│  │  │  │  ├─ offers/
+│  │  │  │  ├─ products/
+│  │  │  │  ├─ providers/
+│  │  │  │  ├─ ui/
+│  │  │  │  └─ wishlist/
 │  │  │  └─ lib/
 │  │  │     ├─ api/
 │  │  │     │  └─ client.ts
+│  │  │     ├─ nav.ts
 │  │  │     └─ utils.ts
 │  │  ├─ middleware.ts
+│  │  ├─ next-env.d.ts
 │  │  ├─ next.config.ts
+│  │  ├─ tailwind.config.ts
+│  │  ├─ components.json
 │  │  ├─ tsconfig.json
 │  │  └─ package.json
 │  │
 │  ├─ erp/
-│  │  ├─ public/
 │  │  ├─ src/
 │  │  │  ├─ app/
-│  │  │  │  ├─ login/page.tsx
-│  │  │  │  ├─ dashboard/page.tsx
-│  │  │  │  ├─ products/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ [id]/
-│  │  │  │  │     ├─ page.tsx
-│  │  │  │  │     └─ edit/page.tsx
 │  │  │  │  ├─ categories/
-│  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ [id]/edit/page.tsx
 │  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ [id]/edit/page.tsx
-│  │  │  │  ├─ offers/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ [id]/edit/page.tsx
-│  │  │  │  ├─ trash/page.tsx
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ dashboard/page.tsx
+│  │  │  │  ├─ globals.css
 │  │  │  │  ├─ layout.tsx
-│  │  │  │  └─ page.tsx
+│  │  │  │  ├─ login/page.tsx
+│  │  │  │  ├─ offers/
+│  │  │  │  │  ├─ [id]/edit/page.tsx
+│  │  │  │  │  ├─ new/page.tsx
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ page.tsx
+│  │  │  │  ├─ products/
+│  │  │  │  │  ├─ [id]/edit/page.tsx
+│  │  │  │  │  ├─ [id]/page.tsx
+│  │  │  │  │  ├─ new/page.tsx
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  └─ trash/page.tsx
 │  │  │  ├─ components/
-│  │  │  │  ├─ ui/
-│  │  │  │  ├─ shell/
+│  │  │  │  ├─ forms/
 │  │  │  │  ├─ providers/
-│  │  │  │  └─ forms/
+│  │  │  │  ├─ shell/
+│  │  │  │  └─ ui/
 │  │  │  └─ lib/
 │  │  │     ├─ api/client.ts
 │  │  │     ├─ store.ts
 │  │  │     └─ utils.ts
+│  │  ├─ next-env.d.ts
 │  │  ├─ next.config.ts
+│  │  ├─ tailwind.config.ts
 │  │  ├─ tsconfig.json
 │  │  └─ package.json
 │  │
@@ -118,40 +130,39 @@ capella/
 │     │  ├─ server.ts
 │     │  ├─ app.ts
 │     │  ├─ config/
-│     │  │  ├─ env.ts
-│     │  │  └─ constants.ts
+│     │  │  ├─ constants.ts
+│     │  │  └─ env.ts
+│     │  ├─ data/
+│     │  │  ├─ file-store.ts
+│     │  │  └─ store.ts
 │     │  ├─ middlewares/
-│     │  │  ├─ auth.middleware.ts
+│     │  │  ├─ admin-auth.config.ts
 │     │  │  ├─ admin-auth.middleware.ts
+│     │  │  ├─ auth.middleware.ts
+│     │  │  ├─ error.middleware.ts
 │     │  │  ├─ locale.middleware.ts
 │     │  │  ├─ validate.middleware.ts
-│     │  │  └─ error.middleware.ts
 │     │  ├─ modules/
 │     │  │  ├─ auth/
 │     │  │  ├─ customers/
 │     │  │  ├─ catalog/
-│     │  │  │  ├─ products/
-│     │  │  │  ├─ categories/
-│     │  │  │  └─ offers/
-│     │  │  ├─ wishlist/
+│     │  │  ├─ admin/
 │     │  │  ├─ checkout/
 │     │  │  ├─ orders/
 │     │  │  ├─ uploads/
-│     │  │  └─ admin/
-│     │  │     ├─ products/
-│     │  │     ├─ categories/
-│     │  │     └─ offers/
+│     │  │  └─ wishlist/
 │     │  ├─ repositories/
 │     │  ├─ services/
-│     │  │  ├─ slug.service.ts
 │     │  │  ├─ image.service.ts
-│     │  │  ├─ stock.service.ts
 │     │  │  ├─ locale.service.ts
-│     │  │  └─ price.service.ts
+│     │  │  ├─ price.service.ts
+│     │  │  ├─ slug.service.ts
+│     │  │  ├─ stock.service.ts
 │     │  ├─ routes/
-│     │  │  ├─ storefront.routes.ts
-│     │  │  ├─ erp.routes.ts
 │     │  │  └─ index.ts
+│     │  │  ├─ erp.routes.ts
+│     │  │  ├─ index.ts
+│     │  │  └─ storefront.routes.ts
 │     │  └─ utils/
 │     ├─ tests/
 │     ├─ tsconfig.json
@@ -160,25 +171,28 @@ capella/
 ├─ packages/
 │  ├─ shared/
 │  │  ├─ src/
-│  │  │  ├─ dto/
-│  │  │  ├─ schemas/
 │  │  │  ├─ constants/
 │  │  │  ├─ i18n/
-│  │  │  ├─ types/
+│  │  │  ├─ dto/
+│  │  │  ├─ enums/
+│  │  │  ├─ mock/
+│  │  │  ├─ schemas/
 │  │  │  └─ utils/
+│  │  │  └─ types/
 │  │  ├─ tsconfig.json
 │  │  └─ package.json
 │  │
 │  └─ database/
 │     ├─ drizzle/
-│     │  ├─ schema.ts
-│     │  ├─ relations.ts
 │     │  └─ migrations/
+│     │  ├─ relations.ts
+│     │  └─ schema.ts
 │     ├─ drizzle.config.ts
 │     ├─ src/
 │     │  ├─ client.ts
 │     │  ├─ db.ts
 │     │  └─ seeds/
+│     ├─ dist/
 │     ├─ tsconfig.json
 │     └─ package.json
 │
