@@ -45,3 +45,4 @@ coverage/
 Thumbs.db
 .history/
 .agents/
+**/uploads/

@@ -89,11 +89,11 @@ export function ProductForm({ mode, initial, categories }: Props) {
 
   const save = async () => {
     if (!canSave()) return;
-    const id = initial?.id ?? Math.floor(Math.random() * 90000 + 10000);
-    const slug = initial?.slug ?? slugify(nameEn || nameAr || `product-${id}`);
+    const id = initial?.id;
+    const slug = initial?.slug ?? slugify(nameEn || nameAr || "product");
     const product: Product = {
-      id,
-      sku: sku.trim() || `SKU-${id}`,
+      id: id ?? 0,
+      sku: sku.trim() || `SKU-${Date.now()}`,
       slug,
       name: { ar: nameAr, en: nameEn },
       description: { ar: descAr, en: descEn },
@@ -106,7 +106,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,
       categoryId: categoryId ?? 0,
-      variants: variants.map((v, i) => ({ ...v, productId: id, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
+      variants: variants.map((v, i) => ({ ...v, productId: id ?? 0, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
       offerIds: initial?.offerIds ?? [],
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),

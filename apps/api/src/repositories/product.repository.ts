@@ -226,32 +226,40 @@ export async function createAdminProductRepo(input: {
   isBestseller?: boolean;
 }) {
   if (input.id) {
-    await db
-      .update(products)
-      .set({
-        sku: input.sku,
-        slug: input.slug,
-        arName: input.arName,
-        enName: input.enName,
-        buyingPrice: sql`${input.buyingPrice}`,
-        keywords: input.keywords,
-        arDescription: input.arDescription ?? null,
-        enDescription: input.enDescription ?? null,
-        arIngredients: input.arIngredients ?? null,
-        enIngredients: input.enIngredients ?? null,
-        arHowToUse: input.arHowToUse ?? null,
-        enHowToUse: input.enHowToUse ?? null,
-        arWarnings: input.arWarnings ?? null,
-        enWarnings: input.enWarnings ?? null,
-        youtubeUrl: input.youtubeUrl ?? null,
-        imagePath: input.imagePath ?? null,
-        categoryId: input.categoryId,
-        status: input.status,
-        isNew: input.isNew ?? false,
-        isBestseller: input.isBestseller ?? false
-      })
-      .where(eq(products.id, input.id));
-    return { id: input.id };
+    const [existing] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, input.id))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(products)
+        .set({
+          sku: input.sku,
+          slug: input.slug,
+          arName: input.arName,
+          enName: input.enName,
+          buyingPrice: sql`${input.buyingPrice}`,
+          keywords: input.keywords,
+          arDescription: input.arDescription ?? null,
+          enDescription: input.enDescription ?? null,
+          arIngredients: input.arIngredients ?? null,
+          enIngredients: input.enIngredients ?? null,
+          arHowToUse: input.arHowToUse ?? null,
+          enHowToUse: input.enHowToUse ?? null,
+          arWarnings: input.arWarnings ?? null,
+          enWarnings: input.enWarnings ?? null,
+          youtubeUrl: input.youtubeUrl ?? null,
+          imagePath: input.imagePath ?? null,
+          categoryId: input.categoryId,
+          status: input.status,
+          isNew: input.isNew ?? false,
+          isBestseller: input.isBestseller ?? false
+        })
+        .where(eq(products.id, input.id));
+      return { id: input.id };
+    }
   }
 
   const [created] = await db.insert(products).values({

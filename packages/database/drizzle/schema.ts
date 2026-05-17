@@ -51,7 +51,7 @@ export const products = mysqlTable("products", {
 
 export const productVariants = mysqlTable("product_variants", {
   id: int("id").autoincrement().primaryKey(),
-  productId: int("product_id").notNull(),
+  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   sizeLabel: varchar("size_label", { length: 64 }).notNull(),
   sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
   stockQty: int("stock_qty").notNull().default(0),
