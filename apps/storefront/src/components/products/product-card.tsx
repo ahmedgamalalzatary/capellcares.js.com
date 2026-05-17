@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { pickLang, formatPrice, formatPriceRange, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getProductBadgeState, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -21,9 +21,7 @@ export function ProductCard({ product, lang, dict }: Props) {
   const prices = product.variants.map((v) => v.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  const outOfStock = product.variants.every((v) => v.stock === 0);
-  const isOffer = (product.offerIds?.length ?? 0) > 0;
-  const isNew = product.id <= 3;
+  const { isNew, isBestseller, isOffer, isOutOfStock } = getProductBadgeState(product);
 
   const onWish = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,8 +39,9 @@ export function ProductCard({ product, lang, dict }: Props) {
       </div>
       <div className="pcard__badges">
         {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
+        {isBestseller && <span className="badge badge--gold">{dict.badges.bestseller}</span>}
         {isOffer && <span className="badge badge--offer">{dict.badges.offer}</span>}
-        {outOfStock && <span className="badge">{dict.common.outOfStock}</span>}
+        {isOutOfStock && <span className="badge">{dict.common.outOfStock}</span>}
       </div>
       <button className="pcard__wish" data-active={has(product.id)} aria-label={dict.common.addToWishlist} onClick={onWish}>
         {has(product.id) ? <Icon.HeartFill size={16} /> : <Icon.Heart size={16} />}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { pickLang, formatPrice, type Language, type Product, type Offer } from "@capella/shared";
+import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -26,6 +26,7 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   const cart = useCart();
   const wishlist = useWishlist();
   const auth = useAuth();
+  const { isNew, isBestseller } = getProductBadgeState(product);
 
   const inStockVariants = product.variants.filter((v) => v.stock > 0);
   const [variantId, setVariantId] = useState<number>(inStockVariants[0]?.id ?? product.variants[0].id);
@@ -81,8 +82,10 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
         <div className={styles.infoHeader}>
           <span className="eyebrow">{dict.product.sku}: {product.sku}</span>
           <h1 className={styles.title}>{pickLang(product.name, lang)}</h1>
-          {offers.length > 0 && (
+          {(isNew || isBestseller || offers.length > 0) && (
             <div className={styles.offerBadges}>
+              {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
+              {isBestseller && <span className="badge badge--gold">{dict.badges.bestseller}</span>}
               {offers.map((o) => (
                 <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className="badge badge--offer">
                   ★ {pickLang(o.name, lang)}

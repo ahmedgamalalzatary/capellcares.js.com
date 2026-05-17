@@ -36,6 +36,8 @@ export interface Product {
   imagePath: string;
   youtubeUrl?: string;
   status: ProductStatus;
+  isNew: boolean;
+  isBestseller: boolean;
   categoryId: number;
   variants: ProductVariant[];
   offerIds?: number[];
@@ -100,4 +102,13 @@ export type { Language, ProductStatus, PaymentMethod };
 export function pickLang(b: Bilingual, lang: Language): string {
   if (lang === "en") return b.en?.trim() || b.ar;
   return b.ar?.trim() || b.en;
+}
+
+export function getProductBadgeState(product: Pick<Product, "isNew" | "isBestseller" | "offerIds" | "variants">) {
+  return {
+    isNew: product.isNew,
+    isBestseller: product.isBestseller,
+    isOffer: (product.offerIds?.length ?? 0) > 0,
+    isOutOfStock: product.variants.every((variant) => variant.stock === 0)
+  };
 }

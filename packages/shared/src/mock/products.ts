@@ -33,6 +33,8 @@ export const products: Product[] = [
     buyingPrice: 120,
     imagePath: "/images/products/rose-lotion.svg",
     status: "active",
+    isNew: true,
+    isBestseller: true,
     categoryId: 100,
     variants: [
       { id: 11, productId: 1, size: "100ml", price: 220, stock: 24, sortOrder: 1 },
@@ -66,6 +68,8 @@ export const products: Product[] = [
     buyingPrice: 280,
     imagePath: "/images/products/vitamin-c.svg",
     status: "active",
+    isNew: true,
+    isBestseller: true,
     categoryId: 200,
     variants: [
       { id: 21, productId: 2, size: "30ml", price: 480, stock: 18, sortOrder: 1 },
@@ -98,6 +102,8 @@ export const products: Product[] = [
     buyingPrice: 95,
     imagePath: "/images/products/argan-oil.svg",
     status: "active",
+    isNew: true,
+    isBestseller: false,
     categoryId: 301,
     variants: [
       { id: 31, productId: 3, size: "50ml", price: 180, stock: 30, sortOrder: 1 },
@@ -121,6 +127,8 @@ export const products: Product[] = [
     buyingPrice: 60,
     imagePath: "/images/products/coffee-scrub.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 107,
     variants: [
       { id: 41, productId: 4, size: "150ml", price: 140, stock: 14, sortOrder: 1 },
@@ -143,6 +151,8 @@ export const products: Product[] = [
     buyingPrice: 25,
     imagePath: "/images/products/lip-balm.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 208,
     variants: [{ id: 51, productId: 5, size: "10g", price: 80, stock: 50, sortOrder: 1 }]
   }),
@@ -162,6 +172,8 @@ export const products: Product[] = [
     buyingPrice: 320,
     imagePath: "/images/products/rose-oud.svg",
     status: "active",
+    isNew: false,
+    isBestseller: true,
     categoryId: 500,
     variants: [
       { id: 61, productId: 6, size: "30ml", price: 550, stock: 8, sortOrder: 1 },
@@ -185,6 +197,8 @@ export const products: Product[] = [
     buyingPrice: 30,
     imagePath: "/images/products/oatmeal-soap.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 9,
     variants: [{ id: 71, productId: 7, size: "120g", price: 70, stock: 80, sortOrder: 1 }]
   }),
@@ -204,6 +218,8 @@ export const products: Product[] = [
     buyingPrice: 90,
     imagePath: "/images/products/amber-candle.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 10,
     variants: [
       { id: 81, productId: 8, size: "200g", price: 180, stock: 22, sortOrder: 1 },
@@ -226,6 +242,8 @@ export const products: Product[] = [
     buyingPrice: 70,
     imagePath: "/images/products/coconut-oil.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 8,
     variants: [
       { id: 91, productId: 9, size: "250ml", price: 150, stock: 16, sortOrder: 1 },
@@ -248,6 +266,8 @@ export const products: Product[] = [
     buyingPrice: 110,
     imagePath: "/images/products/lipstick.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 401,
     variants: [{ id: 101, productId: 10, size: "3.5g", price: 220, stock: 18, sortOrder: 1 }]
   }),
@@ -267,6 +287,8 @@ export const products: Product[] = [
     buyingPrice: 85,
     imagePath: "/images/products/cocoa-butter.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 104,
     variants: [
       { id: 111, productId: 11, size: "150ml", price: 200, stock: 0, sortOrder: 1 },
@@ -289,6 +311,8 @@ export const products: Product[] = [
     buyingPrice: 75,
     imagePath: "/images/products/mint-shampoo.svg",
     status: "active",
+    isNew: false,
+    isBestseller: false,
     categoryId: 304,
     variants: [
       { id: 121, productId: 12, size: "250ml", price: 150, stock: 22, sortOrder: 1 },

@@ -45,6 +45,8 @@ export function ProductForm({ mode, initial, categories }: Props) {
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [image, setImage] = useState<string | null>(initial?.imagePath ?? null);
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
+  const [isNew, setIsNew] = useState(initial?.isNew ?? false);
+  const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
   const [variants, setVariants] = useState<ProductVariant[]>(
     initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
   );
@@ -105,6 +107,8 @@ export function ProductForm({ mode, initial, categories }: Props) {
       imagePath: image ?? "",
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,
+      isNew,
+      isBestseller,
       categoryId: categoryId ?? 0,
       variants: variants.map((v, i) => ({ ...v, productId: id ?? 0, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
       offerIds: initial?.offerIds ?? [],
@@ -211,6 +215,20 @@ export function ProductForm({ mode, initial, categories }: Props) {
                 لتفعيل المنتج يجب اكتمال الاسمين، السعر، صورة، قسم نهائي، كلمات مفتاحية، ومقاس واحد على الأقل.
               </p>
             )}
+          </div>
+        </section>
+
+        <section className="card">
+          <div className="card__head"><h3 className="card__title">شارات المتجر</h3></div>
+          <div className="card__body stack">
+            <label className="check">
+              <input type="checkbox" checked={isNew} onChange={(e) => setIsNew(e.target.checked)} />
+              جديد
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={isBestseller} onChange={(e) => setIsBestseller(e.target.checked)} />
+              الأكثر مبيعًا
+            </label>
           </div>
         </section>
 

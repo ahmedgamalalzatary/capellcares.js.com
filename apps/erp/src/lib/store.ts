@@ -97,6 +97,8 @@ function normalizeProduct(input: ProductApiShape): Product {
     imagePath: input.imagePath ?? "",
     youtubeUrl: input.youtubeUrl ?? undefined,
     status: input.status ?? "inactive",
+    isNew: input.isNew ?? false,
+    isBestseller: input.isBestseller ?? false,
     categoryId: toNumber(input.categoryId),
     variants: (input.variants ?? []).map((v, index) => ({
       id: toNumber(v.id),
