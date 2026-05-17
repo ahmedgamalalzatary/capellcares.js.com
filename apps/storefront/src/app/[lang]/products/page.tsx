@@ -18,7 +18,6 @@ export default async function ProductsPage({
 
   const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
   const activeProducts = products.filter((p) => p.status === "active");
-  const rootCats = categories.filter((c) => c.parentId === null && !c.deletedAt);
 
   return (
     <main className="container">
@@ -39,7 +38,7 @@ export default async function ProductsPage({
       </header>
       <ProductGrid
         products={activeProducts}
-        categories={rootCats}
+        categories={categories.filter((c) => !c.deletedAt)}
         lang={lang as Language}
         dict={dict}
         initialSearch={sp.q ?? ""}

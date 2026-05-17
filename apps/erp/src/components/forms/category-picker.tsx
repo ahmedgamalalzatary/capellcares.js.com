@@ -69,10 +69,6 @@ export function CategoryPicker({ categories, value, onChange }: Props) {
       {value != null && (() => {
         const cur = byId.get(value);
         if (!cur) return null;
-        const hasChildren = (childrenOf.get(cur.id)?.length ?? 0) > 0;
-        if (hasChildren) {
-          return <div className="field-error">الرجاء اختيار قسم نهائي (فرعي).</div>;
-        }
         return <div className="muted" style={{ fontSize: 12 }}>القسم المختار: {path.map((p) => p.name.ar).join(" › ")}</div>;
       })()}
     </div>

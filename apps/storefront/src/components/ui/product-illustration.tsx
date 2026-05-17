@@ -22,11 +22,22 @@ function pickPalette(slug: string) {
 }
 
 interface Props {
-  product: Pick<Product, "slug" | "name">;
+  product: Pick<Product, "slug" | "name" | "imagePath">;
   className?: string;
 }
 
 export function ProductIllustration({ product, className }: Props) {
+  if (product.imagePath) {
+    return (
+      <img
+        className={className}
+        src={product.imagePath}
+        alt={product.name.en}
+        loading="lazy"
+      />
+    );
+  }
+
   const p = pickPalette(product.slug);
   const initials = product.name.en.split(" ").slice(0, 2).map((s) => s[0]).join("");
   return (

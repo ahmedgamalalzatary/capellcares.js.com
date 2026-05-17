@@ -17,7 +17,7 @@
 .priceRow { display: flex; align-items: center; gap: 12px; }
 .price { font-family: var(--font-display); font-size: 32px; }
 
-.section { display: grid; gap: 10px; }
+.section { display: grid; gap: 10px; justify-items: start; }
 .sectionLabel { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
 .variantRow { display: flex; flex-wrap: wrap; gap: 8px; }
 .variantChip {

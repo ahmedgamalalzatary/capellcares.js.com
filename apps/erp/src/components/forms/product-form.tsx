@@ -77,7 +77,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       if (!nameEn.trim()) e.nameEn = "مطلوب لتفعيل المنتج";
       if (!buyingPrice || buyingPrice <= 0) e.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
       if (variants.length === 0 || variants.some((v) => !v.size.trim() || v.price <= 0)) e.variants = "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح";
-      if (!isLeaf(categoryId)) e.categoryId = "اختاري قسمًا نهائيًا";
+      if (!categoryId) e.categoryId = "اختاري قسمًا";
       if (!keywords.trim()) e.keywords = "أضيفي كلمات مفتاحية";
       if (!image) e.image = "أضيفي صورة المنتج";
     } else {

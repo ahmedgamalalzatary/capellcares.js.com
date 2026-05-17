@@ -10,7 +10,26 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const offers = useStore((s) => s.offers);
   const products = useStore((s) => s.products);
+  const loaded = useStore((s) => s.loaded);
+  const error = useStore((s) => s.error);
   const offer = offers.find((o) => o.id === Number(id));
+
+  if (!loaded) {
+    return (
+      <AdminShell title="تحميل العرض..." crumbs={[{ label: "العروض", href: "/offers" }, { label: "تحميل" }]}>
+        <div className="card">جاري تحميل بيانات العرض...</div>
+      </AdminShell>
+    );
+  }
+
+  if (error && !offer) {
+    return (
+      <AdminShell title="تعذر تحميل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "خطأ" }]}>
+        <div className="card">{error}</div>
+      </AdminShell>
+    );
+  }
+
   if (!offer) return notFound();
 
   return (

@@ -29,12 +29,41 @@ function minVariantPrice(product: Product): number {
   return Math.min(...variants.map((v) => Number(v?.price ?? Number.POSITIVE_INFINITY)));
 }
 
+function isDescendantOf(categoryId: number, selectedId: number, byId: Map<number, Category>) {
+  let current = byId.get(categoryId);
+  while (current?.parentId != null) {
+    if (current.parentId === selectedId) return true;
+    current = byId.get(current.parentId);
+  }
+  return false;
+}
+
 export function ProductGrid({ products, categories, lang, dict, initialSearch = "", initialCategory, lockCategory }: Props) {
   const [q, setQ] = useState(initialSearch);
   const [category, setCategory] = useState<number | undefined>(initialCategory);
   const [sort, setSort] = useState<Sort>("newest");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [showFilters, setShowFilters] = useState(false);
+
+  const categoryById = useMemo(() => new Map(categories.map((item) => [item.id, item])), [categories]);
+
+  const categoryTree = useMemo(() => {
+    const parents = categories.filter((item) => item.parentId === null);
+    if (parents.length === 0) return [];
+
+    return parents.map((parent) => ({
+      parent,
+      children: categories.filter((item) => item.parentId === parent.id)
+    }));
+  }, [categories]);
+
+  const [openParents, setOpenParents] = useState<Record<number, boolean>>(() => {
+    const selectedId = initialCategory;
+    if (!selectedId) return {};
+
+    const directParent = categories.find((item) => item.id === selectedId)?.parentId;
+    return directParent ? { [directParent]: true } : { [selectedId]: true };
+  });
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
@@ -47,9 +76,10 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
           const name = safeName(p, lang).toLowerCase();
           if (!name.includes(ql)) return false;
         }
-        if (category && p.categoryId !== category) {
-          // simple match — for trees we'd descend; left as-is for grid use cases
-          return false;
+        if (category) {
+          const sameCategory = p.categoryId === category;
+          const descendantMatch = isDescendantOf(p.categoryId, category, categoryById);
+          if (!sameCategory && !descendantMatch) return false;
         }
         const minVariant = minVariantPrice(p);
         if (!Number.isFinite(minVariant)) return false;
@@ -64,7 +94,11 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
         if (sort === "name") return safeName(a, lang).localeCompare(safeName(b, lang));
         return b.id - a.id;
       });
-  }, [products, q, category, sort, priceRange, lang]);
+  }, [products, q, category, sort, priceRange, lang, categoryById]);
+
+  const toggleParent = (parentId: number) => {
+    setOpenParents((current) => ({ ...current, [parentId]: !current[parentId] }));
+  };
 
   return (
     <div className={styles.wrap}>
@@ -97,7 +131,40 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                 <input type="radio" name="cat" checked={!category} onChange={() => setCategory(undefined)} />
                 <span>{dict.nav.allCategories}</span>
               </label>
-              {categories.slice(0, 14).map((c) => (
+              {categoryTree.length > 0 ? categoryTree.map(({ parent, children }) => {
+                const isOpen = openParents[parent.id] ?? Boolean(category && (category === parent.id || children.some((child) => child.id === category)));
+                return (
+                  <div key={parent.id} className={styles.catGroup}>
+                    <div className={styles.catRow}>
+                      <label className={styles.catItem}>
+                        <input type="radio" name="cat" checked={category === parent.id} onChange={() => setCategory(parent.id)} />
+                        <span>{pickLang(parent.name, lang)}</span>
+                      </label>
+                      {children.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.catToggle}
+                          aria-label={lang === "ar" ? "تبديل الفئة" : "Toggle category"}
+                          aria-expanded={isOpen}
+                          onClick={() => toggleParent(parent.id)}
+                        >
+                          <Icon.Chevron size={14} className={isOpen ? styles.chevronOpen : undefined} />
+                        </button>
+                      )}
+                    </div>
+                    {children.length > 0 && isOpen && (
+                      <div className={styles.catChildren}>
+                        {children.map((child) => (
+                          <label key={child.id} className={`${styles.catItem} ${styles.catChild}`}>
+                            <input type="radio" name="cat" checked={category === child.id} onChange={() => setCategory(child.id)} />
+                            <span>{pickLang(child.name, lang)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }) : categories.slice(0, 14).map((c) => (
                 <label key={c.id} className={styles.catItem}>
                   <input type="radio" name="cat" checked={category === c.id} onChange={() => setCategory(c.id)} />
                   <span>{pickLang(c.name, lang)}</span>
