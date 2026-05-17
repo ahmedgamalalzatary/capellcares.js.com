@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
@@ -27,12 +27,17 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   const wishlist = useWishlist();
   const auth = useAuth();
   const { isNew, isBestseller } = getProductBadgeState(product);
+  const ribbons = [
+    isNew ? { key: "new", label: dict.badges.new, tone: "new" as const } : null,
+    isBestseller ? { key: "bestseller", label: dict.badges.bestseller, tone: "gold" as const } : null
+  ].filter(Boolean) as Array<{ key: string; label: string; tone: "new" | "gold" }>;
 
   const inStockVariants = product.variants.filter((v) => v.stock > 0);
   const [variantId, setVariantId] = useState<number>(inStockVariants[0]?.id ?? product.variants[0].id);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
+  const [showWishlistWarning, setShowWishlistWarning] = useState(false);
 
   const variant = useMemo(() => product.variants.find((v) => v.id === variantId)!, [variantId, product.variants]);
   const isOutOfStock = variant.stock === 0;
@@ -50,11 +55,16 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
 
   const onWish = () => {
     if (!auth.user) {
-      router.push(`/${lang}/wishlist`);
+      setShowWishlistWarning(true);
       return;
     }
+    setShowWishlistWarning(false);
     wishlist.toggle(product.id);
   };
+
+  useEffect(() => {
+    if (auth.user) setShowWishlistWarning(false);
+  }, [auth.user]);
 
   const tabs: { key: Tab; label: string; content: string }[] = [
     { key: "description", label: dict.product.description, content: pickLang(product.description, lang) },
@@ -67,6 +77,19 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
     <div className={styles.layout}>
       <div className={styles.gallery}>
         <div className={styles.galleryMain}>
+          {ribbons.length > 0 && (
+            <div className={styles.ribbonStack}>
+              {ribbons.map((ribbon, index) => (
+                <span
+                  key={ribbon.key}
+                  className={`${styles.ribbon} ${ribbon.tone === "new" ? styles.ribbonNew : styles.ribbonGold}`}
+                  data-offset={index === 1 ? "true" : undefined}
+                >
+                  {ribbon.label}
+                </span>
+              ))}
+            </div>
+          )}
           <ProductIllustration product={product} className={styles.illustration} />
         </div>
         <div className={styles.thumbs}>
@@ -82,10 +105,8 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
         <div className={styles.infoHeader}>
           <span className="eyebrow">{dict.product.sku}: {product.sku}</span>
           <h1 className={styles.title}>{pickLang(product.name, lang)}</h1>
-          {(isNew || isBestseller || offers.length > 0) && (
+          {offers.length > 0 && (
             <div className={styles.offerBadges}>
-              {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
-              {isBestseller && <span className="badge badge--gold">{dict.badges.bestseller}</span>}
               {offers.map((o) => (
                 <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className="badge badge--offer">
                   ★ {pickLang(o.name, lang)}
@@ -146,6 +167,14 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
             {wishlist.has(product.id) ? <Icon.HeartFill /> : <Icon.Heart />}
           </button>
         </div>
+        {showWishlistWarning && (
+          <p className="muted" style={{ marginTop: 10 }}>
+            {dict.wishlist.loginRequiredDesc}{" "}
+            <Link href={`/${lang}/login`} style={{ textDecoration: "underline" }}>
+              {dict.wishlist.goLogin}
+            </Link>
+          </p>
+        )}
 
         <div className={styles.tabs}>
           {tabs.map((t) => (

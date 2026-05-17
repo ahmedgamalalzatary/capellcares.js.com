@@ -61,7 +61,6 @@ export function Header({ lang, dict, navGroups }: Props) {
           <Icon.Menu />
         </button>
         <Link href={`/${lang}`} className={styles.brand} aria-label={dict.brand}>
-          <Icon.Logo size={32} />
           <span className={styles.brandWord}>{dict.brand}</span>
         </Link>
         <form className={styles.searchForm} onSubmit={onSearch}>
@@ -83,7 +82,7 @@ export function Header({ lang, dict, navGroups }: Props) {
             <Icon.Heart />
             {ids.length > 0 && <span className={styles.badgeDot}>{ids.length}</span>}
           </Link>
-          <Link href={`/${lang}/${user ? "wishlist" : "login"}`} className={styles.iconBtn} aria-label={dict.nav.account}>
+          <Link href={`/${lang}/${user ? "login" : "login"}`} className={styles.iconBtn} aria-label={dict.nav.account}>
             <Icon.User />
           </Link>
           <Link href={`/${lang}/cart`} className={styles.iconBtn} aria-label={dict.nav.cart}>
