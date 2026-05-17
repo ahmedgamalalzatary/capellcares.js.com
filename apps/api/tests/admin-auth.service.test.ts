@@ -53,3 +53,15 @@ test("loginAdmin rejects when dev fallback is disabled", async () => {
     /disabled/i
   );
 });
+
+test("loginAdmin rejects when dev fallback credentials are not configured", async () => {
+  const env: NodeJS.ProcessEnv = {
+    JWT_ACCESS_SECRET: "test-access-secret",
+    ALLOW_DEV_ADMIN_FALLBACK: "true"
+  };
+
+  await assert.rejects(
+    () => loginAdmin({ email: "admin@capella.eg", password: "admin1234" }, { env }),
+    /not configured/i
+  );
+});

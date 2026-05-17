@@ -1,7 +1,13 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const DEV_ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL ?? "admin@capella.eg";
-const DEV_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD ?? "admin1234";
-const DEV_ADMIN_HEADER = `${DEV_ADMIN_EMAIL}:${DEV_ADMIN_PASSWORD}`;
+const DEV_ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL;
+const DEV_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD;
+
+function getDevAdminHeader() {
+  if (!DEV_ADMIN_EMAIL || !DEV_ADMIN_PASSWORD) {
+    throw new Error("Missing NEXT_PUBLIC_DEV_ADMIN_EMAIL or NEXT_PUBLIC_DEV_ADMIN_PASSWORD");
+  }
+  return `${DEV_ADMIN_EMAIL}:${DEV_ADMIN_PASSWORD}`;
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = "";
@@ -17,7 +23,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "x-admin-basic": DEV_ADMIN_HEADER,
+      "x-admin-basic": getDevAdminHeader(),
       ...(init?.headers ?? {})
     },
     cache: "no-store"

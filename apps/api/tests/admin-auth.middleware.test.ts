@@ -28,6 +28,13 @@ test("resolveDevAdminCredentials falls back to legacy ADMIN_DEV_* names", () => 
   assert.equal(creds.password, "legacy-pass");
 });
 
+test("resolveDevAdminCredentials does not use hardcoded dev credentials when env is missing", () => {
+  const creds = resolveDevAdminCredentials({});
+
+  assert.equal(creds.email, undefined);
+  assert.equal(creds.password, undefined);
+});
+
 test("isDevAdminFallbackEnabled respects ALLOW_DEV_ADMIN_FALLBACK flag", () => {
   assert.equal(isDevAdminFallbackEnabled({ ALLOW_DEV_ADMIN_FALLBACK: "true" }), true);
   assert.equal(isDevAdminFallbackEnabled({ ALLOW_DEV_ADMIN_FALLBACK: "1" }), true);

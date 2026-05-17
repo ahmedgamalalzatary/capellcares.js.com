@@ -40,6 +40,10 @@ export async function loginAdmin(
   }
 
   const creds = resolveDevAdminCredentials(env);
+  if (!creds.email || !creds.password) {
+    throw new Error("Admin dev fallback credentials are not configured");
+  }
+
   const email = input.email.trim().toLowerCase();
   if (email !== creds.email.toLowerCase() || input.password !== creds.password) {
     throw new Error("Invalid admin credentials");

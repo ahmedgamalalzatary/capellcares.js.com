@@ -13,8 +13,15 @@ interface AdminAuthValue {
 const Ctx = createContext<AdminAuthValue | null>(null);
 const KEY = "capella.admin.v1";
 
-const ADMIN_EMAIL = "admin@capella.eg";
-const ADMIN_PASS = "admin1234";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL;
+const ADMIN_PASS = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD;
+
+function getAdminCredentials() {
+  if (!ADMIN_EMAIL || !ADMIN_PASS) {
+    return null;
+  }
+  return { email: ADMIN_EMAIL, password: ADMIN_PASS };
+}
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -38,7 +45,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> => {
     await new Promise((r) => setTimeout(r, 400));
-    if (email.trim().toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASS) {
+    const adminCredentials = getAdminCredentials();
+    if (!adminCredentials) {
+      return { ok: false, error: "إعدادات تسجيل الدخول غير مكتملة: أضيفي NEXT_PUBLIC_DEV_ADMIN_EMAIL و NEXT_PUBLIC_DEV_ADMIN_PASSWORD" };
+    }
+    if (email.trim().toLowerCase() === adminCredentials.email && password === adminCredentials.password) {
       setUser({ name: "Capella Admin", email });
       return { ok: true };
     }
@@ -57,4 +68,4 @@ export function useAdminAuth() {
   return c;
 }
 
-export const ADMIN_CREDENTIALS_HINT = { email: ADMIN_EMAIL, password: ADMIN_PASS };
+export const ADMIN_CREDENTIALS_HINT = getAdminCredentials();

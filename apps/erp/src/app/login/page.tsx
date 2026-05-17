@@ -70,7 +70,9 @@ export default function LoginPage() {
             </button>
           </div>
           <div style={{ marginTop: 18, padding: 12, background: "var(--bg-tint)", borderRadius: 6, fontSize: 12, color: "var(--ink-2)" }}>
-            <strong>للتجربة:</strong> {ADMIN_CREDENTIALS_HINT.email} / {ADMIN_CREDENTIALS_HINT.password}
+            {ADMIN_CREDENTIALS_HINT
+              ? <><strong>للتجربة:</strong> {ADMIN_CREDENTIALS_HINT.email} / {ADMIN_CREDENTIALS_HINT.password}</>
+              : <>أضيفي <code>NEXT_PUBLIC_DEV_ADMIN_EMAIL</code> و <code>NEXT_PUBLIC_DEV_ADMIN_PASSWORD</code> إلى ملف <code>.env</code> ثم أعيدي تشغيل ERP.</>}
           </div>
         </form>
       </section>
