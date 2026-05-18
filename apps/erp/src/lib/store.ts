@@ -239,7 +239,7 @@ class ErpStore {
   }
 
   // offers
-  async upsertOffer(o: Offer) {
+  async upsertOffer(o: Omit<Offer, "id"> & { id?: number }) {
     await api.post("/api/erp/offers", o);
     await this.refetch();
   }

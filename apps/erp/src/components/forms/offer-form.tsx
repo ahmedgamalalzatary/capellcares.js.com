@@ -76,8 +76,8 @@ export function OfferForm({ mode, initial, products }: Props) {
     const id = initial?.id;
     const slug = initial?.slug ?? slugify(nameEn);
     const items: OfferItem[] = rows.map((r) => ({ variantId: r.variantId, qty: r.qty }));
-    const offer: Offer = {
-      ...(id ? { id } : {}),
+    const offer: Omit<Offer, "id"> & { id?: number } = {
+      id,
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },
