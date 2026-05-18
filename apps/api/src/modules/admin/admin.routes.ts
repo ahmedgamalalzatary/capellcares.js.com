@@ -13,7 +13,8 @@ import {
   adminListOffers,
   adminUpsertOffer,
   adminSoftDeleteOffer,
-  adminRestoreOffer
+  adminRestoreOffer,
+  adminToggleOfferStatus
 } from "./admin.controller.js";
 
 export const adminRoutes = Router();
@@ -34,3 +35,4 @@ adminRoutes.get("/offers", adminListOffers);
 adminRoutes.post("/offers", adminUpsertOffer);
 adminRoutes.delete("/offers/:id", adminSoftDeleteOffer);
 adminRoutes.post("/offers/:id/restore", adminRestoreOffer);
+adminRoutes.post("/offers/:id/toggle-status", adminToggleOfferStatus);

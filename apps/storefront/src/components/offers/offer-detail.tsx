@@ -47,7 +47,7 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
   return (
     <div className={styles.layout}>
       <div className={styles.media}>
-        <OfferIllustration slug={offer.slug} name={pickLang(offer.name, lang)} className={styles.thumb} />
+        <OfferIllustration offer={offer} className={styles.thumb} />
       </div>
       <div className={styles.info}>
         <span className="eyebrow">{dict.offers.badge}</span>

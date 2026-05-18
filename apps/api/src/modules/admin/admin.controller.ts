@@ -186,6 +186,12 @@ export async function adminRestoreOffer(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
+export async function adminToggleOfferStatus(req: Request, res: Response) {
+  const { toggleOfferStatusRepo } = await import("../../repositories/offer.repository.js");
+  await toggleOfferStatusRepo(Number(req.params.id));
+  res.json({ ok: true });
+}
+
 async function calculateOfferInventory(items: Array<{ variantId: number; qty: number }>) {
   if (items.length === 0) {
     return { originalTotal: 0, stock: 0 };

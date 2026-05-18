@@ -56,7 +56,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           title: pickLang(o.name, lang),
           meta: dict.offers.badge,
           unitPrice: o.price, qty: l.qty, slug: `/${lang}/offers/${o.slug}`,
-          illustration: <OfferIllustration slug={o.slug} name={pickLang(o.name, lang)} />
+          illustration: <OfferIllustration offer={o} />
         };
       })
       .filter(Boolean) as Resolved[];

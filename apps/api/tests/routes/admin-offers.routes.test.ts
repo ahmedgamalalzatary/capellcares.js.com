@@ -115,3 +115,85 @@ test("admin offers list returns ERP offer shape with bilingual name", async () =
     assert.ok(Array.isArray(offer.items));
   });
 });
+
+test("admin offer toggle-status flips the persisted DB status", async () => {
+  const ids = await getBaselineIds();
+
+  const [before] = await db
+    .select({ slug: offers.slug, status: offers.status })
+    .from(offers)
+    .where(eq(offers.id, ids.offerId))
+    .limit(1);
+
+  assert.ok(before, "expected baseline offer to exist");
+  assert.equal(before.status, "active");
+
+  await withTestServer(app, async (request) => {
+    const storefrontBefore = await request("/api/v1/offers");
+    assert.equal(storefrontBefore.status, 200);
+    assert.equal(
+      storefrontBefore.json.items.some((offer: any) => offer.id === ids.offerId),
+      true
+    );
+
+    const response = await request(`/api/erp/offers/${ids.offerId}/toggle-status`, {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234"
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+
+    const storefrontAfterFirstToggle = await request("/api/v1/offers");
+    assert.equal(storefrontAfterFirstToggle.status, 200);
+    assert.equal(
+      storefrontAfterFirstToggle.json.items.some((offer: any) => offer.id === ids.offerId),
+      false
+    );
+
+    const offerDetailAfterFirstToggle = await request(`/api/v1/offers/${before.slug}`);
+    assert.equal(offerDetailAfterFirstToggle.status, 404);
+  });
+
+  const [afterFirstToggle] = await db
+    .select({ status: offers.status })
+    .from(offers)
+    .where(eq(offers.id, ids.offerId))
+    .limit(1);
+
+  assert.ok(afterFirstToggle, "expected offer after first toggle");
+  assert.equal(afterFirstToggle.status, "inactive");
+
+  await withTestServer(app, async (request) => {
+    const response = await request(`/api/erp/offers/${ids.offerId}/toggle-status`, {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234"
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+
+    const storefrontAfterSecondToggle = await request("/api/v1/offers");
+    assert.equal(storefrontAfterSecondToggle.status, 200);
+    assert.equal(
+      storefrontAfterSecondToggle.json.items.some((offer: any) => offer.id === ids.offerId),
+      true
+    );
+
+    const offerDetailAfterSecondToggle = await request(`/api/v1/offers/${before.slug}`);
+    assert.equal(offerDetailAfterSecondToggle.status, 200);
+  });
+
+  const [afterSecondToggle] = await db
+    .select({ status: offers.status })
+    .from(offers)
+    .where(eq(offers.id, ids.offerId))
+    .limit(1);
+
+  assert.ok(afterSecondToggle, "expected offer after second toggle");
+  assert.equal(afterSecondToggle.status, "active");
+});

@@ -3,7 +3,7 @@ import { inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { productVariants } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../repositories/category.repository.js";
-import { findOfferBySlugRepo, listOffersRepo } from "../../repositories/offer.repository.js";
+import { findOfferBySlugRepo, listVisibleOffersRepo } from "../../repositories/offer.repository.js";
 import { findVisibleProductBySlug, findVisibleProducts } from "../../repositories/product.repository.js";
 import { toStorefrontOffer } from "./offers/offers.mapper.js";
 
@@ -36,17 +36,15 @@ export async function listCategories(_req: Request, res: Response) {
 }
 
 export async function listOffers(_req: Request, res: Response) {
-  const offers = await listOffersRepo(false);
+  const offers = await listVisibleOffersRepo();
   const items = await Promise.all(
-    offers
-      .filter((offer) => offer.visibility === "visible")
-      .map(async (offer) => {
-        const inventory = await calculateOfferInventory(offer.items);
-        return toStorefrontOffer(
-          { ...offer, stock: inventory.stock },
-          inventory.originalTotal
-        );
-      })
+    offers.map(async (offer) => {
+      const inventory = await calculateOfferInventory(offer.items);
+      return toStorefrontOffer(
+        { ...offer, stock: inventory.stock },
+        inventory.originalTotal
+      );
+    })
   );
   res.json({ items });
 }

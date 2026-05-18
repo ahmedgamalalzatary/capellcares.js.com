@@ -58,4 +58,28 @@ describe("OfferDetail", () => {
     expect(screen.getByRole("button", { name: /add bundle/i })).toBeDisabled();
     expect(screen.getByText(/currently unavailable/i)).toBeInTheDocument();
   });
+
+  it("renders the uploaded offer image when imagePath exists", () => {
+    render(createElement(OfferDetail, {
+      offer: {
+        ...offers[0]!,
+        imagePath: "/uploads/offers/real-offer-photo.jpg"
+      },
+      items: [
+        {
+          qty: 1,
+          variantId: products[0]!.variants[0]!.id,
+          product: products[0]!,
+          size: products[0]!.variants[0]!.size,
+          unitPrice: products[0]!.variants[0]!.price,
+          available: products[0]!.variants[0]!.stock
+        }
+      ],
+      lang: "en",
+      dict
+    }));
+
+    const image = screen.getByRole("img", { name: /rose ritual bundle/i });
+    expect(image).toHaveAttribute("src", "/uploads/offers/real-offer-photo.jpg");
+  });
 });

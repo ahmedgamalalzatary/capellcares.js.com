@@ -13,16 +13,22 @@ export async function listOffersRepo(includeDeleted = false) {
 }
 
 export async function listVisibleOffersRepo() {
-  return db
+  const rows = await db
     .select()
     .from(offers)
-    .where(eq(offers.visibility, "visible"));
+    .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
+  return Promise.all(
+    rows.map(async (row) => {
+      const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+      return { ...row, items };
+    })
+  );
 }
 
 export async function findOfferBySlugRepo(slug: string) {
   const [row] = await db.select().from(offers).where(eq(offers.slug, slug)).limit(1);
   if (!row) return null;
-  if (row.deletedAt || row.visibility !== "visible") return null;
+  if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
   return { ...row, items };
 }
@@ -88,4 +94,13 @@ export async function softDeleteOfferRepo(id: number) {
 
 export async function restoreOfferRepo(id: number) {
   await db.update(offers).set({ deletedAt: null }).where(eq(offers.id, id));
+}
+
+export async function toggleOfferStatusRepo(id: number) {
+  const [current] = await db.select({ status: offers.status }).from(offers).where(eq(offers.id, id)).limit(1);
+  if (!current) return;
+  await db
+    .update(offers)
+    .set({ status: current.status === "active" ? "inactive" : "active" })
+    .where(eq(offers.id, id));
 }

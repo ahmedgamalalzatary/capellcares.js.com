@@ -169,7 +169,7 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
             <div className={styles.offerList}>
               {offers.map((o) => (
                 <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className={styles.offerCard}>
-                  <OfferIllustration slug={o.slug} name={pickLang(o.name, lang)} className={styles.offerThumb} />
+                  <OfferIllustration offer={o} className={styles.offerThumb} />
                   <div>
                     <div style={{ fontWeight: 600 }}>{pickLang(o.name, lang)}</div>
                     <div className="muted" style={{ fontSize: 13 }}>{formatPrice(o.price, lang)} · {dict.offers.save.replace("{amount}", formatPrice(o.originalTotal - o.price, lang))}</div>

@@ -39,7 +39,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
             return (
               <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className={styles.card}>
                 <div className={styles.media}>
-                  <OfferIllustration slug={o.slug} name={pickLang(o.name, lang as Language)} className={styles.thumb} />
+                  <OfferIllustration offer={o} className={styles.thumb} />
                   <span className="badge badge--offer" style={{ position: "absolute", top: 14, insetInlineStart: 14 }}>
                     {dict.offers.badge}
                   </span>

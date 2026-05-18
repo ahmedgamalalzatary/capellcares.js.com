@@ -230,6 +230,10 @@ class ErpStore {
     await api.post(`/api/erp/offers/${id}/restore`);
     await this.refetch();
   }
+  async toggleOfferStatus(id: number) {
+    await api.post(`/api/erp/offers/${id}/toggle-status`);
+    await this.refetch();
+  }
 }
 
 let _instance: ErpStore | null = null;

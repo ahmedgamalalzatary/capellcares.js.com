@@ -1,6 +1,7 @@
+import type { Offer } from "@capella/shared";
+
 interface Props {
-  slug: string;
-  name: string;
+  offer: Pick<Offer, "slug" | "name" | "imagePath">;
   className?: string;
 }
 
@@ -10,17 +11,28 @@ const palettes: Record<string, { a: string; b: string; ink: string }> = {
   "weekend-pamper": { a: "#e8d3b3", b: "#d6e8d4", ink: "#3e7a4d" }
 };
 
-export function OfferIllustration({ slug, name, className }: Props) {
-  const p = palettes[slug] ?? { a: "#f1ece2", b: "#e6ddd0", ink: "#2a221c" };
+export function OfferIllustration({ offer, className }: Props) {
+  if (offer.imagePath) {
+    return (
+      <img
+        className={className}
+        src={offer.imagePath}
+        alt={offer.name.en}
+        loading="lazy"
+      />
+    );
+  }
+
+  const p = palettes[offer.slug] ?? { a: "#f1ece2", b: "#e6ddd0", ink: "#2a221c" };
   return (
-    <svg className={className} viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={name}>
+    <svg className={className} viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={offer.name.en}>
       <defs>
-        <linearGradient id={`og-${slug}`} x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id={`og-${offer.slug}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor={p.a} />
           <stop offset="100%" stopColor={p.b} />
         </linearGradient>
       </defs>
-      <rect width="320" height="200" fill={`url(#og-${slug})`} />
+      <rect width="320" height="200" fill={`url(#og-${offer.slug})`} />
       {/* three bottles */}
       <g transform="translate(60 50)">
         <rect width="40" height="110" rx="8" fill="#fff" stroke={p.ink} strokeWidth="1" />

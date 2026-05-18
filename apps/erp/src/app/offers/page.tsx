@@ -10,7 +10,6 @@ import { Modal } from "@/components/ui/modal";
 
 export default function OffersListPage() {
   const offers = useStore((s) => s.offers);
-  const products = useStore((s) => s.products);
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
 
@@ -55,6 +54,7 @@ export default function OffersListPage() {
               <th>سعر الباقة</th>
               <th>السعر الأصلي</th>
               <th>التوفير</th>
+              <th>الحالة</th>
               <th></th>
             </tr>
           </thead>
@@ -73,22 +73,34 @@ export default function OffersListPage() {
                     <div className="faint" style={{ fontSize: 11 }}>{o.name.en}</div>
                   </td>
                   <td>{o.items.reduce((acc, it) => acc + it.qty, 0)} عنصر</td>
-                  <td>{formatPrice(o.price, "ar")}</td>
-                  <td className="faint" style={{ textDecoration: "line-through" }}>{formatPrice(o.originalTotal, "ar")}</td>
-                  <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
-                  <td>
-                    <div className="row" style={{ gap: 4 }}>
-                      <Link href={`/offers/${o.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>
-                      <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(o.id)} style={{ color: "var(--danger)" }}>
-                        <Icon.Trash />
-                      </button>
+                   <td>{formatPrice(o.price, "ar")}</td>
+                   <td className="faint" style={{ textDecoration: "line-through" }}>{formatPrice(o.originalTotal, "ar")}</td>
+                   <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
+                   <td>
+                     {o.status === "active"
+                       ? <span className="status status--active">نشط</span>
+                       : <span className="status status--inactive">غير نشط</span>}
+                   </td>
+                   <td>
+                     <div className="row" style={{ gap: 4 }}>
+                       <button
+                         className="btn btn--ghost btn--sm"
+                         onClick={() => getStore().toggleOfferStatus(o.id)}
+                         title={o.status === "active" ? "إيقاف" : "تفعيل"}
+                       >
+                         {o.status === "active" ? <Icon.X /> : <Icon.Check />}
+                       </button>
+                       <Link href={`/offers/${o.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>
+                       <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(o.id)} style={{ color: "var(--danger)" }}>
+                         <Icon.Trash />
+                       </button>
                     </div>
                   </td>
                 </tr>
               );
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد عروض.</td></tr>
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد عروض.</td></tr>
             )}
           </tbody>
         </table>

@@ -196,6 +196,61 @@ test("admin product upsert activates a complete product successfully", async () 
   });
 });
 
+test("admin product toggle-status flips the persisted DB status", async () => {
+  const ids = await getBaselineIds();
+
+  const [before] = await db
+    .select({ status: products.status })
+    .from(products)
+    .where(eq(products.id, ids.productOneId))
+    .limit(1);
+
+  assert.ok(before, "expected baseline product to exist");
+  assert.equal(before.status, "active");
+
+  await withTestServer(app, async (request) => {
+    const response = await request(`/api/erp/products/${ids.productOneId}/toggle-status`, {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234"
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [afterFirstToggle] = await db
+    .select({ status: products.status })
+    .from(products)
+    .where(eq(products.id, ids.productOneId))
+    .limit(1);
+
+  assert.ok(afterFirstToggle, "expected product after first toggle");
+  assert.equal(afterFirstToggle.status, "inactive");
+
+  await withTestServer(app, async (request) => {
+    const response = await request(`/api/erp/products/${ids.productOneId}/toggle-status`, {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234"
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [afterSecondToggle] = await db
+    .select({ status: products.status })
+    .from(products)
+    .where(eq(products.id, ids.productOneId))
+    .limit(1);
+
+  assert.ok(afterSecondToggle, "expected product after second toggle");
+  assert.equal(afterSecondToggle.status, "active");
+});
+
 test("admin products list includes soft-deleted products for ERP trash", async () => {
   const ids = await getBaselineIds();
 
