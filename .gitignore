@@ -46,3 +46,6 @@ Thumbs.db
 .history/
 .agents/
 **/uploads/
+
+# Test artifacts
+test-results/

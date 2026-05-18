@@ -28,7 +28,7 @@ export default async function LocaleLayout({
   const { lang } = await params;
   if (!languages.includes(lang as Language)) notFound();
   const dict = getDict(lang as Language);
-  const categories = await fetchCategories().catch(() => []);
+  const categories = await fetchCategories({ lang }).catch(() => []);
   const navGroups = buildNav(categories, lang as Language);
 
   return (

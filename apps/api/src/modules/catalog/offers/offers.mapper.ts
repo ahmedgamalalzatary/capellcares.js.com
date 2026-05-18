@@ -1,1 +1,42 @@
-export {}
+import type { Offer } from "@capella/shared";
+
+type OfferRow = {
+  id: number;
+  slug: string;
+  arName: string;
+  enName: string;
+  arDescription: string | null;
+  enDescription: string | null;
+  imagePath: string | null;
+  fixedPrice: unknown;
+  stock: number;
+  status: "active" | "inactive";
+  items: Array<{ variantId: number; qty: number }>;
+};
+
+export function toStorefrontOffer(
+  offer: OfferRow,
+  originalTotal: number
+): Omit<Offer, "createdAt" | "updatedAt" | "deletedAt"> {
+  return {
+    id: offer.id,
+    slug: offer.slug,
+    name: {
+      ar: offer.arName,
+      en: offer.enName
+    },
+    description: {
+      ar: offer.arDescription ?? "",
+      en: offer.enDescription ?? ""
+    },
+    imagePath: offer.imagePath ?? "",
+    price: Number(offer.fixedPrice),
+    originalTotal,
+    stock: offer.stock,
+    items: offer.items.map((item) => ({
+      variantId: item.variantId,
+      qty: item.qty
+    })),
+    status: offer.status
+  };
+}

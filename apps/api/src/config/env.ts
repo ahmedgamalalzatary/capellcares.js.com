@@ -9,10 +9,14 @@ type LoadWorkspaceEnvOptions = {
   loadFile?: (path: string) => void;
 };
 
-const ENV_FILE_NAME = ".env";
+const DEFAULT_ENV_FILE_NAME = ".env";
+const TEST_ENV_FILE_NAME = ".env.test";
 
-export function resolveWorkspaceEnvPath(cwd = process.cwd()): string {
-  return resolve(cwd, "..", "..", ENV_FILE_NAME);
+export function resolveWorkspaceEnvPath(
+  cwd = process.cwd(),
+  envFileName = DEFAULT_ENV_FILE_NAME
+): string {
+  return resolve(cwd, "..", "..", envFileName);
 }
 
 function parseAndAssignEnvFile(path: string, env: NodeJS.ProcessEnv): void {
@@ -49,12 +53,20 @@ export function loadWorkspaceEnv(
   options: LoadWorkspaceEnvOptions = {}
 ): void {
   const env = options.env ?? process.env;
+  const isTestEnv = env.NODE_ENV === "test";
+
+  if (!env.DATABASE_URL && isTestEnv && env.TEST_DATABASE_URL) {
+    env.DATABASE_URL = env.TEST_DATABASE_URL;
+  }
+
   if (env.DATABASE_URL) {
     return;
   }
 
   const cwd = options.cwd ?? process.cwd();
-  const envPath = options.envPath ?? resolveWorkspaceEnvPath(cwd);
+  const envPath =
+    options.envPath ??
+    resolveWorkspaceEnvPath(cwd, isTestEnv ? TEST_ENV_FILE_NAME : DEFAULT_ENV_FILE_NAME);
   const fileExists = options.fileExists ?? existsSync;
   if (!fileExists(envPath)) {
     return;
@@ -62,13 +74,15 @@ export function loadWorkspaceEnv(
 
   if (options.loadFile) {
     options.loadFile(envPath);
-    return;
+  } else {
+    if (typeof process.loadEnvFile === "function") {
+      process.loadEnvFile(envPath);
+    } else {
+      parseAndAssignEnvFile(envPath, env);
+    }
   }
 
-  if (typeof process.loadEnvFile === "function") {
-    process.loadEnvFile(envPath);
-    return;
+  if (!env.DATABASE_URL && env.TEST_DATABASE_URL) {
+    env.DATABASE_URL = env.TEST_DATABASE_URL;
   }
-
-  parseAndAssignEnvFile(envPath, env);
 }

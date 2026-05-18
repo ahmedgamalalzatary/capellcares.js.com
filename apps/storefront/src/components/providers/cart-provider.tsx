@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CartLine } from "@capella/shared";
 import { fetchOffers, fetchProducts } from "@/lib/api/client";
+import { clearCartLines, loadCartLines, normalizeCartLine, saveCartLines } from "@/lib/cart";
 
 interface CartContextValue {
   lines: CartLine[];
@@ -15,56 +16,10 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "capella.cart.v1";
-
 function lineKey(line: CartLine) {
   return line.type === "product"
     ? `p:${line.productId}:${line.variantId}`
     : `o:${line.offerId}`;
-}
-
-function normalizeLine(line: unknown): CartLine | null {
-  if (!line || typeof line !== "object") return null;
-
-  if ((line as CartLine).type === "product") {
-    const productLine = line as Partial<CartLine & { type: "product" }>;
-    if (
-      Number.isInteger(productLine.productId) &&
-      Number.isInteger(productLine.variantId) &&
-      Number.isInteger(productLine.qty) &&
-      productLine.qty! > 0
-    ) {
-      return {
-        type: "product",
-        productId: productLine.productId!,
-        variantId: productLine.variantId!,
-        qty: productLine.qty!
-      };
-    }
-    return null;
-  }
-
-  if ((line as CartLine).type === "offer") {
-    const offerLine = line as Partial<CartLine & { type: "offer" }>;
-    if (
-      Number.isInteger(offerLine.offerId) &&
-      Number.isInteger(offerLine.qty) &&
-      offerLine.qty! > 0
-    ) {
-      return {
-        type: "offer",
-        offerId: offerLine.offerId!,
-        qty: offerLine.qty!
-      };
-    }
-  }
-
-  return null;
-}
-
-function normalizeLines(raw: unknown): CartLine[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map(normalizeLine).filter((line): line is CartLine => line !== null);
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -72,16 +27,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setLines(normalizeLines(JSON.parse(raw)));
-    } catch {}
+    setLines(loadCartLines(localStorage));
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(lines)); } catch {}
+    try {
+      saveCartLines(localStorage, lines);
+    } catch {}
   }, [lines, hydrated]);
 
   useEffect(() => {
@@ -115,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [hydrated, lines.length]);
 
   const add = useCallback((line: CartLine) => {
-    const normalized = normalizeLine(line);
+    const normalized = normalizeCartLine(line);
     if (!normalized) return;
 
     setLines((prev) => {
@@ -139,7 +93,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLines((prev) => prev.filter((l) => lineKey(l) !== key));
   }, []);
 
-  const clear = useCallback(() => setLines([]), []);
+  const clear = useCallback(() => {
+    setLines([]);
+    clearCartLines(localStorage);
+  }, []);
 
   const value = useMemo<CartContextValue>(() => ({
     lines,

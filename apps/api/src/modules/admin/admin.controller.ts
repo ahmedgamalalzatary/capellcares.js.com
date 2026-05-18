@@ -32,10 +32,18 @@ export async function adminUpsertProduct(req: Request, res: Response) {
   const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
   const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
   const productVariants = incoming.variants ?? [];
+  const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
   const productStatus = incoming.status ?? "inactive";
   if (
     productStatus === "active" &&
-    (!productNameAr || !productNameEn || !incoming.imagePath || !incoming.categoryId || productVariants.length === 0)
+    (
+      !productNameAr ||
+      !productNameEn ||
+      productKeywords.length === 0 ||
+      !incoming.imagePath ||
+      !incoming.categoryId ||
+      productVariants.length === 0
+    )
   ) {
     return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
   }
@@ -46,7 +54,7 @@ export async function adminUpsertProduct(req: Request, res: Response) {
     arName: productNameAr,
     enName: productNameEn,
     buyingPrice: Number(incoming.buyingPrice ?? 0),
-    keywords: Array.isArray(incoming.keywords) ? incoming.keywords.join(",") : "",
+    keywords: productKeywords.join(","),
     arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
     enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
     arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,

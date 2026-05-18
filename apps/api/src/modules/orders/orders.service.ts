@@ -4,7 +4,9 @@ import { offerItems, offers, productVariants, products } from "@capella/database
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 
-export async function createOrderFromCheckout(payload: CheckoutPayload): Promise<Pick<Order, "id">> {
+export async function createOrderFromCheckout(
+  payload: CheckoutPayload
+): Promise<Pick<Order, "id" | "paymentStatus">> {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
@@ -73,5 +75,5 @@ export async function createOrderFromCheckout(payload: CheckoutPayload): Promise
     },
     items: pricedItems
   });
-  return { id: orderId };
+  return { id: orderId, paymentStatus };
 }

@@ -40,7 +40,7 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProducts(), fetchOffers()]).then(([p, o]) => {
+    Promise.all([fetchProducts({ lang }), fetchOffers({ lang })]).then(([p, o]) => {
       setProducts(p);
       setOffers(o);
     }).catch(() => {});

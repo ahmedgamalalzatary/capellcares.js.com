@@ -16,7 +16,10 @@ export default async function ProductsPage({
   const sp = await searchParams;
   const dict = getDict(lang as Language);
 
-  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  const [products, categories] = await Promise.all([
+    fetchProducts({ lang }),
+    fetchCategories({ lang })
+  ]);
   const activeProducts = products.filter((p) => p.status === "active");
 
   return (

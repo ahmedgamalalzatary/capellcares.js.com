@@ -10,7 +10,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
   const { lang } = await params;
   if (!languages.includes(lang as Language)) notFound();
   const dict = getDict(lang as Language);
-  const offers = await fetchOffers();
+  const offers = await fetchOffers({ lang });
 
   return (
     <main className="container">

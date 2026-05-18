@@ -137,6 +137,8 @@ export async function findVisibleProductBySlug(slug: string) {
       youtubeUrl: products.youtubeUrl,
       imagePath: products.imagePath,
       status: products.status,
+      isNew: products.isNew,
+      isBestseller: products.isBestseller,
       categoryId: products.categoryId,
       deletedAt: products.deletedAt,
       categorySlug: categories.slug

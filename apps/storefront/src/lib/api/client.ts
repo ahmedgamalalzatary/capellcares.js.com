@@ -1,6 +1,8 @@
 import type { Product, Category, Offer } from "@capella/shared";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+type FetchLanguage = "ar" | "en";
+
 type CategoryApiShape = {
   id: number;
   parentId: number | null;
@@ -26,8 +28,27 @@ function normalizeCategory(input: CategoryApiShape): Category {
   };
 }
 
-async function getJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+function resolveFetchLanguage(lang?: string): FetchLanguage | undefined {
+  if (lang === "ar" || lang === "en") {
+    return lang;
+  }
+
+  if (typeof document !== "undefined") {
+    const documentLang = document.documentElement.lang;
+    if (documentLang === "ar" || documentLang === "en") {
+      return documentLang;
+    }
+  }
+
+  return undefined;
+}
+
+async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T> {
+  const resolvedLang = resolveFetchLanguage(options?.lang);
+  const res = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
+  });
   if (!res.ok) {
     if (res.status === 404) return null as T;
     throw new Error(`API ${res.status} ${path}`);
@@ -35,31 +56,33 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchProducts(params?: { q?: string; category?: string }): Promise<Product[]> {
+export async function fetchProducts(params?: { q?: string; category?: string; lang?: string }): Promise<Product[]> {
   const search = new URLSearchParams();
   if (params?.q) search.set("q", params.q);
   if (params?.category) search.set("category", params.category);
   const qs = search.toString();
-  const data = await getJSON<{ items: Product[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`);
+  const data = await getJSON<{ items: Product[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`, {
+    lang: params?.lang
+  });
   return data?.items ?? [];
 }
 
-export async function fetchProductBySlug(slug: string): Promise<Product | null> {
-  return getJSON<Product>(`/api/v1/products/${encodeURIComponent(slug)}`);
+export async function fetchProductBySlug(slug: string, options?: { lang?: string }): Promise<Product | null> {
+  return getJSON<Product>(`/api/v1/products/${encodeURIComponent(slug)}`, options);
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const data = await getJSON<{ items: CategoryApiShape[] }>(`/api/v1/categories`);
+export async function fetchCategories(options?: { lang?: string }): Promise<Category[]> {
+  const data = await getJSON<{ items: CategoryApiShape[] }>(`/api/v1/categories`, options);
   return (data?.items ?? []).map(normalizeCategory);
 }
 
-export async function fetchOffers(): Promise<Offer[]> {
-  const data = await getJSON<{ items: Offer[] }>(`/api/v1/offers`);
+export async function fetchOffers(options?: { lang?: string }): Promise<Offer[]> {
+  const data = await getJSON<{ items: Offer[] }>(`/api/v1/offers`, options);
   return data?.items ?? [];
 }
 
-export async function fetchOfferBySlug(slug: string): Promise<Offer | null> {
-  return getJSON<Offer>(`/api/v1/offers/${encodeURIComponent(slug)}`);
+export async function fetchOfferBySlug(slug: string, options?: { lang?: string }): Promise<Offer | null> {
+  return getJSON<Offer>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
 }
 
 // helpers (computed client-side after fetching)

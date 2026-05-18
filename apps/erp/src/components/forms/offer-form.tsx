@@ -84,6 +84,7 @@ export function OfferForm({ mode, initial, products }: Props) {
       imagePath: image ?? "",
       price: Number(price),
       originalTotal: computed.originalTotal,
+      stock: initial?.stock ?? 0,
       items,
       status: "active",
       createdAt: initial?.createdAt ?? new Date().toISOString(),

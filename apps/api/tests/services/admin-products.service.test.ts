@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { loadWorkspaceEnv } from "../src/config/env.js";
+import { loadWorkspaceEnv } from "../../src/config/env.js";
 
 loadWorkspaceEnv();
 
@@ -9,7 +9,7 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
   const { eq } = await import("drizzle-orm");
   const { productVariants, products } = await import("@capella/database/drizzle/schema");
   const { db } = await import("@capella/database/src/db");
-  const { createAdminProduct } = await import("../src/modules/admin/products/admin-products.service.js");
+  const { createAdminProduct } = await import("../../src/modules/admin/products/admin-products.service.js");
 
   const unique = Date.now();
   const sku = `ERP-SKU-${unique}`;

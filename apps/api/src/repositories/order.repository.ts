@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 
 export async function createOrderWithItems(input: {
@@ -23,8 +23,26 @@ export async function createOrderWithItems(input: {
   return db.transaction(async (tx) => {
     for (const item of input.items) {
       if ((item as any).itemType === "offer") {
-        const offerRows = await tx.select().from(productVariants).limit(0);
-        void offerRows;
+        const underlyingItems = await tx
+          .select({
+            variantId: offerItems.variantId,
+            bundleQty: offerItems.qty,
+            stockQty: productVariants.stockQty
+          })
+          .from(offerItems)
+          .innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+          .where(eq(offerItems.offerId, (item as any).offerId));
+
+        for (const underlyingItem of underlyingItems) {
+          const requiredQty = underlyingItem.bundleQty * item.qty;
+          if (underlyingItem.stockQty < requiredQty) {
+            throw new Error("Insufficient stock");
+          }
+          await tx
+            .update(productVariants)
+            .set({ stockQty: sql`${productVariants.stockQty} - ${requiredQty}` })
+            .where(eq(productVariants.id, underlyingItem.variantId));
+        }
       } else {
         const [variant] = await tx
           .select({ stockQty: productVariants.stockQty })

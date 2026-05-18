@@ -17,11 +17,11 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProducts().then((items) => {
+    fetchProducts({ lang }).then((items) => {
       setProducts(items);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   if (!user) {
     return (

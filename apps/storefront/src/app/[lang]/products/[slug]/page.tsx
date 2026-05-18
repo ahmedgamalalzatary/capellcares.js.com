@@ -19,13 +19,13 @@ export default async function ProductDetailsPage({
 }) {
   const { lang, slug } = await params;
   if (!languages.includes(lang as Language)) notFound();
-  const product = await fetchProductBySlug(slug);
+  const product = await fetchProductBySlug(slug, { lang });
   if (!product || product.status !== "active" || product.deletedAt) notFound();
   const dict = getDict(lang as Language);
   const [categories, allOffers, allProducts] = await Promise.all([
-    fetchCategories(),
-    fetchOffers(),
-    fetchProducts()
+    fetchCategories({ lang }),
+    fetchOffers({ lang }),
+    fetchProducts({ lang })
   ]);
   const category = getCategoryById(categories, product.categoryId);
   const path = category ? getCategoryPath(categories, category.id) : [];

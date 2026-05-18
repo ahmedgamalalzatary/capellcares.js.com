@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   isDevAdminFallbackEnabled,
   resolveDevAdminCredentials
-} from "../src/middlewares/admin-auth.config.js";
+} from "../../src/middlewares/admin-auth.config.js";
 
 test("resolveDevAdminCredentials prefers DEV_ADMIN_* variables", () => {
   const creds = resolveDevAdminCredentials({

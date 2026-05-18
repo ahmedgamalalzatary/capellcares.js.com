@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import jwt from "jsonwebtoken";
-import { loginAdmin } from "../src/modules/admin/auth/admin-auth.service.js";
+import { loginAdmin } from "../../src/modules/admin/auth/admin-auth.service.js";
 
 test("loginAdmin returns admin access token for valid dev fallback credentials", async () => {
   const env: NodeJS.ProcessEnv = {

@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { parseUploadBody } from "../src/modules/uploads/uploads.schemas.js";
-import { uploadBase64Image } from "../src/modules/uploads/uploads.service.js";
+import { parseUploadBody } from "../../src/modules/uploads/uploads.schemas.js";
+import { uploadBase64Image } from "../../src/modules/uploads/uploads.service.js";
 
 test("parseUploadBody accepts valid image upload payload", () => {
   const parsed = parseUploadBody({

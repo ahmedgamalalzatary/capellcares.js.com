@@ -34,6 +34,7 @@ export const offers: Offer[] = [
       { variantId: 12, qty: 1 },
       { variantId: 51, qty: 1 }
     ]),
+    stock: 12,
     status: "active",
     createdAt: now,
     updatedAt: now,
@@ -57,6 +58,7 @@ export const offers: Offer[] = [
       { variantId: 21, qty: 1 },
       { variantId: 31, qty: 1 }
     ]),
+    stock: 18,
     status: "active",
     createdAt: now,
     updatedAt: now,
@@ -82,6 +84,7 @@ export const offers: Offer[] = [
       { variantId: 41, qty: 1 },
       { variantId: 81, qty: 1 }
     ]),
+    stock: 10,
     status: "active",
     createdAt: now,
     updatedAt: now,

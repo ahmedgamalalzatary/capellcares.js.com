@@ -17,7 +17,10 @@ export default async function CategoryPage({
 }) {
   const { lang, slug } = await params;
   if (!languages.includes(lang as Language)) notFound();
-  const [categories, allProducts] = await Promise.all([fetchCategories(), fetchProducts()]);
+  const [categories, allProducts] = await Promise.all([
+    fetchCategories({ lang }),
+    fetchProducts({ lang })
+  ]);
   const category = getCategoryBySlug(categories, slug);
   if (!category) notFound();
   const dict = getDict(lang as Language);

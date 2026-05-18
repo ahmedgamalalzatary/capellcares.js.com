@@ -1,1 +1,48 @@
-export {}
+import type { Product } from "@capella/shared";
+
+type ProductRow = {
+  id: number;
+  sku: string;
+  slug: string;
+  keywords: string[];
+  imagePath: string | null;
+  youtubeUrl?: string | null;
+  status: "active" | "inactive";
+  isNew: boolean;
+  isBestseller: boolean;
+  categoryId: number;
+  variants: Array<{
+    id: number;
+    productId: number;
+    size: string;
+    price: number;
+    stock: number;
+    sortOrder?: number;
+  }>;
+  name: { ar: string; en: string };
+  description: { ar: string; en: string };
+  ingredients: { ar: string; en: string };
+  howToUse: { ar: string; en: string };
+  warnings: { ar: string; en: string };
+};
+
+export function toStorefrontProduct(product: ProductRow): Omit<Product, "buyingPrice" | "createdAt" | "updatedAt"> {
+  return {
+    id: product.id,
+    sku: product.sku,
+    slug: product.slug,
+    name: product.name,
+    description: product.description,
+    ingredients: product.ingredients,
+    howToUse: product.howToUse,
+    warnings: product.warnings,
+    keywords: product.keywords,
+    imagePath: product.imagePath ?? "",
+    youtubeUrl: product.youtubeUrl ?? undefined,
+    status: product.status,
+    isNew: product.isNew,
+    isBestseller: product.isBestseller,
+    categoryId: product.categoryId,
+    variants: product.variants
+  };
+}

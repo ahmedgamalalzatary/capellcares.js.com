@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseCheckoutBody } from "../src/modules/checkout/checkout.schemas.js";
+import { parseCheckoutBody } from "../../src/modules/checkout/checkout.schemas.js";
 
 test("parseCheckoutBody accepts COD checkout payload with API field names", () => {
   const parsed = parseCheckoutBody({
