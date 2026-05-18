@@ -59,13 +59,15 @@ test("checkout route returns a pending COD payment status for a created order", 
 
     assert.equal(response.status, 201);
     assert.equal(response.json.paymentStatus, "pending");
+    assert.match(response.json.orderCode, /^[A-Z]{4}-\d{3,}$/);
 
     const [order] = await db
-      .select({ paymentStatus: orders.paymentStatus })
+      .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode })
       .from(orders)
       .where(eq(orders.id, response.json.id))
       .limit(1);
 
     assert.equal(order?.paymentStatus, "pending");
+    assert.equal(order?.orderCode, response.json.orderCode);
   });
 });

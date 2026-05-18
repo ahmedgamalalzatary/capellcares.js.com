@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { orders, productVariants } from "@capella/database/drizzle/schema";
+import { orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -32,13 +32,20 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
     .where(eq(productVariants.id, ids.firstVariantId))
     .limit(1);
   const [order] = await db
-    .select({ paymentStatus: orders.paymentStatus })
+    .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode })
     .from(orders)
     .where(eq(orders.id, result.id))
+    .limit(1);
+  const [createdOrderItem] = await db
+    .select({ createdAt: orderItems.createdAt })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, result.id))
     .limit(1);
 
   assert.equal(variant?.stockQty, 8);
   assert.equal(order?.paymentStatus, "pending");
+  assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
+  assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
 });
 
 test("createOrderFromCheckout deducts offer stock from each included variant multiplied by quantity", async () => {

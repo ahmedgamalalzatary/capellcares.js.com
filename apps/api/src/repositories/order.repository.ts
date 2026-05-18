@@ -2,6 +2,17 @@ import { db } from "@capella/database/src/db";
 import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 
+function generateOrderCode(orderId: number): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let seed = orderId * 7919 + 104729;
+  let letters = "";
+  for (let index = 0; index < 4; index += 1) {
+    letters += alphabet[seed % alphabet.length];
+    seed = Math.floor(seed / alphabet.length);
+  }
+  return `${letters}-${String(orderId).padStart(3, "0")}`;
+}
+
 export async function createOrderWithItems(input: {
   order: {
     customerType: "guest" | "registered";
@@ -59,8 +70,16 @@ export async function createOrderWithItems(input: {
 
     const [order] = await tx.insert(orders).values({
       ...input.order,
+      orderCode: "",
       totalAmount: sql`${input.order.totalAmount}`
     }).$returningId();
+
+    const orderCode = generateOrderCode(order.id);
+
+    await tx
+      .update(orders)
+      .set({ orderCode })
+      .where(eq(orders.id, order.id));
 
     await tx.insert(orderItems).values(
       input.items.map((i) => ({
@@ -76,6 +95,6 @@ export async function createOrderWithItems(input: {
         snapshotSizeLabel: (i as any).snapshotSizeLabel ?? null
       }))
     );
-    return order.id;
+    return { id: order.id, orderCode };
   });
 }

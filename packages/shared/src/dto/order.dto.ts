@@ -12,10 +12,13 @@ export interface OrderItemDto {
   snapshotNameAr: string | null;
   snapshotNameEn: string | null;
   snapshotSizeLabel: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OrderDto {
   id: number;
+  orderCode: string;
   customerType: "guest" | "registered";
   customerId: number | null;
   fullName: string;

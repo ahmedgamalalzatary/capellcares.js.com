@@ -49,6 +49,7 @@ export interface CheckoutPayload {
 
 export interface Order {
   id: number;
+  orderCode: string;
   customerType: "guest" | "registered";
   customerId: number | null;
   fullName: string;

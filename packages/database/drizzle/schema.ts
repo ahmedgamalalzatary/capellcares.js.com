@@ -102,6 +102,7 @@ export const wishlists = mysqlTable("wishlists", {
 
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
+  orderCode: varchar("order_code", { length: 32 }).notNull().unique(),
   customerType: mysqlEnum("customer_type", ["guest", "registered"]).notNull(),
   customerId: int("customer_id"),
   fullName: varchar("full_name", { length: 255 }).notNull(),
@@ -130,5 +131,7 @@ export const orderItems = mysqlTable("order_items", {
   lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
-  snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 })
+  snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });

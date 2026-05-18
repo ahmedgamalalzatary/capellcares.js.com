@@ -6,7 +6,7 @@ import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.j
 
 export async function createOrderFromCheckout(
   payload: CheckoutPayload
-): Promise<Pick<Order, "id" | "paymentStatus">> {
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
@@ -57,7 +57,7 @@ export async function createOrderFromCheckout(
 
   const totalAmount = pricedItems.reduce((sum, row) => sum + row.lineTotal, 0);
   const paymentStatus: PaymentStatus = "pending";
-  const orderId = await createOrderWithItems({
+  const createdOrder = await createOrderWithItems({
     order: {
       customerType: payload.customerId ? "registered" : "guest",
       customerId: payload.customerId ?? null,
@@ -75,5 +75,5 @@ export async function createOrderFromCheckout(
     },
     items: pricedItems
   });
-  return { id: orderId, paymentStatus };
+  return { id: createdOrder.id, orderCode: createdOrder.orderCode, paymentStatus };
 }

@@ -108,7 +108,7 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
       });
       if (!res.ok) throw new Error("Checkout failed");
       const data = await res.json();
-      setOrderId(`CPL-${String(data.id)}`);
+      setOrderId(String(data.orderCode));
       clear();
     } finally {
       setPlacing(false);
