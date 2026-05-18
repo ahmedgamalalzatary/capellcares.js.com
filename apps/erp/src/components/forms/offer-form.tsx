@@ -73,11 +73,11 @@ export function OfferForm({ mode, initial, products }: Props) {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
-    const id = initial?.id ?? Math.floor(Math.random() * 90000 + 10000);
+    const id = initial?.id;
     const slug = initial?.slug ?? slugify(nameEn);
     const items: OfferItem[] = rows.map((r) => ({ variantId: r.variantId, qty: r.qty }));
     const offer: Offer = {
-      id,
+      ...(id ? { id } : {}),
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },

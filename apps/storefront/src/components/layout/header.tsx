@@ -94,31 +94,7 @@ export function Header({ lang, dict, navGroups }: Props) {
       <nav className={styles.nav} aria-label="Primary">
         <div className="container" style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap" }}>
           <Link href={`/${lang}/products`} className={styles.navLink}>{dict.nav.products}</Link>
-          {groups.slice(2, 8).map((g) => (
-            <div className={styles.navItem} key={g.root.id}>
-              <Link href={`/${lang}/category/${g.root.slug}`} className={styles.navLink}>
-                {lang === "ar" ? g.root.name.ar : g.root.name.en}
-                {g.children.length > 0 && <Icon.Chevron size={14} className="arrow-flip" />}
-              </Link>
-              {g.children.length > 0 && (
-                <div className={styles.dropdown}>
-                  <div className={styles.dropdownInner}>
-                    <div className={styles.dropdownGrid}>
-                      {g.children.map((c) => (
-                        <Link key={c.id} href={`/${lang}/category/${c.slug}`} className={styles.dropdownLink}>
-                          {c.label}
-                        </Link>
-                      ))}
-                    </div>
-                    <Link href={`/${lang}/category/${g.root.slug}`} className={styles.dropdownAll}>
-                      {dict.nav.allCategories} →
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          <Link href={`/${lang}/offers`} className={`${styles.navLink} ${styles.navLinkAccent}`}>{dict.nav.offers}</Link>
+          <Link href={`/${lang}/offers`} className={`${styles.navLink}`}>{dict.nav.offers}</Link>
         </div>
       </nav>
 

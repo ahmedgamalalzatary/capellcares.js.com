@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
+import { eq } from "drizzle-orm";
+import { products } from "@capella/database/drizzle/schema";
+import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
@@ -190,5 +193,24 @@ test("admin product upsert activates a complete product successfully", async () 
 
     assert.equal(response.status, 200);
     assert.equal(response.json.ok, true);
+  });
+});
+
+test("admin products list includes soft-deleted products for ERP trash", async () => {
+  const ids = await getBaselineIds();
+
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/products", {
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234"
+      }
+    });
+
+    assert.equal(response.status, 200);
+    const deletedProduct = response.json.items.find((item: any) => item.id === ids.productOneId);
+    assert.ok(deletedProduct, "expected soft-deleted product to be returned");
+    assert.ok(deletedProduct.deletedAt, "expected soft-deleted product to expose deletedAt");
   });
 });

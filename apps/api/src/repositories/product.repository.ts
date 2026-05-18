@@ -176,7 +176,7 @@ export async function findVisibleProductBySlug(slug: string) {
 }
 
 export async function listAdminProductsRepo() {
-  const rows = await db.select().from(products).where(isNull(products.deletedAt));
+  const rows = await db.select().from(products);
   if (rows.length === 0) return [];
 
   const variantsRows = await db

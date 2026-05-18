@@ -20,6 +20,10 @@ import {
   upsertOfferRepo
 } from "../../repositories/offer.repository.js";
 import { toSlug } from "../../services/slug.service.js";
+import { db } from "@capella/database/src/db";
+import { productVariants } from "@capella/database/drizzle/schema";
+import { inArray } from "drizzle-orm";
+import { toAdminOffer } from "./offers/admin-offers.mapper.js";
 
 // ---- products ----
 
@@ -144,7 +148,14 @@ export async function adminRestoreCategory(req: Request, res: Response) {
 // ---- offers ----
 
 export async function adminListOffers(_req: Request, res: Response) {
-  res.json({ items: await listOffersRepo(true) });
+  const offers = await listOffersRepo(true);
+  const items = await Promise.all(
+    offers.map(async (offer) => {
+      const inventory = await calculateOfferInventory(offer.items);
+      return toAdminOffer(offer, inventory.originalTotal, inventory.stock);
+    })
+  );
+  res.json({ items });
 }
 
 export async function adminUpsertOffer(req: Request, res: Response) {
@@ -173,4 +184,35 @@ export async function adminSoftDeleteOffer(req: Request, res: Response) {
 export async function adminRestoreOffer(req: Request, res: Response) {
   await restoreOfferRepo(Number(req.params.id));
   res.json({ ok: true });
+}
+
+async function calculateOfferInventory(items: Array<{ variantId: number; qty: number }>) {
+  if (items.length === 0) {
+    return { originalTotal: 0, stock: 0 };
+  }
+
+  const variantRows = await db
+    .select({
+      id: productVariants.id,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty
+    })
+    .from(productVariants)
+    .where(inArray(productVariants.id, items.map((item) => item.variantId)));
+
+  const originalTotal = items.reduce((sum, item) => {
+    const variant = variantRows.find((row) => row.id === item.variantId);
+    return sum + Number(variant?.sellingPrice ?? 0) * item.qty;
+  }, 0);
+
+  const stock = items.reduce((minAvailable, item) => {
+    const variant = variantRows.find((row) => row.id === item.variantId);
+    const availableBundles = Math.floor((variant?.stockQty ?? 0) / item.qty);
+    return Math.min(minAvailable, availableBundles);
+  }, Number.POSITIVE_INFINITY);
+
+  return {
+    originalTotal,
+    stock: Number.isFinite(stock) ? stock : 0
+  };
 }
