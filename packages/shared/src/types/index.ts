@@ -60,6 +60,7 @@ export interface Offer {
   price: number;
   originalTotal: number;
   items: OfferItem[];
+  stock: number;
   status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;

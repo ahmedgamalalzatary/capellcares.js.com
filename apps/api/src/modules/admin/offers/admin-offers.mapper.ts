@@ -20,7 +20,7 @@ export function toAdminOffer(
   offer: AdminOfferRow,
   originalTotal: number,
   stock: number
-): Offer & { stock: number } {
+): Offer {
   return {
     id: offer.id,
     slug: offer.slug,
