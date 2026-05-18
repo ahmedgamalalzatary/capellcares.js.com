@@ -13,11 +13,13 @@ test("parseCheckoutBody accepts COD checkout payload with API field names", () =
     addressLine: "Street 10",
     buildingApartment: "Building 2, Apt 5",
     paymentMethod: "cod",
+    customerId: 42,
     items: [{ type: "product", variantId: 123, qty: 2 }]
   });
 
   assert.equal(parsed.cityArea, "Nasr City");
   assert.equal(parsed.buildingApartment, "Building 2, Apt 5");
+  assert.equal(parsed.customerId, 42);
   assert.equal(parsed.items[0]?.type, "product");
 });
 

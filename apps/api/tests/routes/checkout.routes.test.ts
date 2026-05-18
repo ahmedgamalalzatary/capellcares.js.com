@@ -71,3 +71,37 @@ test("checkout route returns a pending COD payment status for a created order", 
     assert.equal(order?.orderCode, response.json.orderCode);
   });
 });
+
+test("checkout route persists registered customer orders when customerId is provided", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Registered Customer",
+        phone: "01012345678",
+        email: "seed-customer@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        customerId: ids.customerId,
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 201);
+
+    const [order] = await db
+      .select({ customerType: orders.customerType, customerId: orders.customerId })
+      .from(orders)
+      .where(eq(orders.id, response.json.id))
+      .limit(1);
+
+    assert.equal(order?.customerType, "registered");
+    assert.equal(order?.customerId, ids.customerId);
+  });
+});

@@ -22,5 +22,6 @@ export const checkoutSchema = z.object({
   buildingApartment: z.string().min(1),
   notes: z.string().optional(),
   paymentMethod: z.literal("cod"),
+  customerId: z.number().int().positive().nullable().optional(),
   items: z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema])).min(1)
 });

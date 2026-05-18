@@ -137,6 +137,7 @@ class ErpStore {
   loading = false;
   error: string | null = null;
   private listeners = new Set<Listener>();
+  private browserRefreshBound = false;
 
   subscribe(l: Listener) {
     this.listeners.add(l);
@@ -169,7 +170,27 @@ class ErpStore {
   }
 
   ensureLoaded() {
+    this.bindBrowserRefresh();
     if (!this.loaded && !this.loading) void this.refetch();
+  }
+
+  private bindBrowserRefresh() {
+    if (this.browserRefreshBound || typeof window === "undefined") {
+      return;
+    }
+
+    const refreshIfLoaded = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      if (this.loaded && !this.loading) {
+        void this.refetch();
+      }
+    };
+
+    window.addEventListener("focus", refreshIfLoaded);
+    document.addEventListener("visibilitychange", refreshIfLoaded);
+    this.browserRefreshBound = true;
   }
 
   // products
