@@ -154,3 +154,36 @@ test("erp advice delete removes the advice from subsequent listings", async () =
     assert.equal(afterDelete.json.items.length, 0);
   });
 });
+
+test("erp advice toggle-status flips active advice to inactive", async () => {
+  await withTestServer(app, async (request) => {
+    await request("/api/erp/advices", {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(makeAdvicePayload())
+    });
+
+    const listResponse = await request("/api/erp/advices", {
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+
+    const createdId = listResponse.json.items[0].id;
+
+    const toggleResponse = await request(`/api/erp/advices/${createdId}/toggle-status`, {
+      method: "POST",
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+
+    assert.equal(toggleResponse.status, 200);
+    assert.equal(toggleResponse.json.ok, true);
+
+    const afterToggle = await request("/api/erp/advices", {
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+
+    assert.equal(afterToggle.json.items[0].status, "inactive");
+  });
+});

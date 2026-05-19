@@ -24,5 +24,6 @@ describe("AdviceSection", () => {
 
     expect(screen.getAllByText("Capella Advices")).toHaveLength(2);
     expect(screen.getByText("Advice")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Advice" })).toHaveAttribute("src", "/uploads/advice.png");
   });
 });

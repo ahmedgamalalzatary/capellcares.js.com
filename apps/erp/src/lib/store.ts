@@ -266,6 +266,10 @@ class ErpStore {
     await api.post("/api/erp/advices", advice);
     await this.refetch();
   }
+  async toggleAdviceStatus(id: number) {
+    await api.post(`/api/erp/advices/${id}/toggle-status`);
+    await this.refetch();
+  }
   async deleteAdvice(id: number) {
     await api.del(`/api/erp/advices/${id}`);
     await this.refetch();

@@ -14,11 +14,18 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
       <div className="grid grid--products">
         {advices.map((advice) => (
           <article key={advice.id} className="card" style={{ padding: 20, display: "grid", gap: 12 }}>
+            {advice.imagePath ? (
+              <img
+                src={advice.imagePath}
+                alt={pickLang(advice.title, lang)}
+                loading="lazy"
+                style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", borderRadius: 20 }}
+              />
+            ) : null}
             <div>
               <h3 style={{ margin: 0 }}>{pickLang(advice.title, lang)}</h3>
               <p className="muted" style={{ marginTop: 8 }}>{pickLang(advice.description, lang)}</p>
             </div>
-            {advice.imagePath ? <div className="tag">{advice.imagePath}</div> : null}
             {advice.videoUrl ? (
               <a href={advice.videoUrl} target="_blank" rel="noreferrer" className="btn btn--ghost" style={{ width: "fit-content" }}>
                 {lang === "ar" ? "فتح الرابط" : "Open link"}

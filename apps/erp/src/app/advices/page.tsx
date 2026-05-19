@@ -31,6 +31,7 @@ export default function AdvicesPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Advice | null>(null);
   const [open, setOpen] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return advices;
@@ -81,9 +82,20 @@ export default function AdvicesPage() {
                   {advice.videoUrl || "—"}
                 </td>
                 <td>{advice.sortOrder}</td>
-                <td>{advice.status === "active" ? "نشط" : "غير نشط"}</td>
+                <td>
+                  {advice.status === "active"
+                    ? <span className="status status--active">نشط</span>
+                    : <span className="status status--inactive">غير نشط</span>}
+                </td>
                 <td>
                   <div className="row" style={{ gap: 4 }}>
+                    <button
+                      className="btn btn--ghost btn--sm"
+                      onClick={() => setPendingToggle(advice)}
+                      title={advice.status === "active" ? "إيقاف" : "تفعيل"}
+                    >
+                      {advice.status === "active" ? <Icon.X /> : <Icon.Check />}
+                    </button>
                     <button className="btn btn--ghost btn--sm" onClick={() => { setEditing(advice); setOpen(true); }}>
                       <Icon.Edit />
                     </button>
@@ -102,6 +114,32 @@ export default function AdvicesPage() {
       </div>
 
       <AdviceModal open={open} initial={editing ?? undefined} onClose={() => setOpen(false)} />
+      <Modal
+        open={pendingToggle != null}
+        title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
+        onClose={() => setPendingToggle(null)}
+        footer={(
+          <>
+            <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={async () => {
+                if (!pendingToggle) return;
+                await getStore().toggleAdviceStatus(pendingToggle.id);
+                setPendingToggle(null);
+              }}
+            >
+              تأكيد
+            </button>
+          </>
+        )}
+      >
+        <p style={{ margin: 0 }}>
+          {pendingToggle?.status === "active"
+            ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريدين المتابعة؟"
+            : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريدين المتابعة؟"}
+        </p>
+      </Modal>
     </AdminShell>
   );
 }

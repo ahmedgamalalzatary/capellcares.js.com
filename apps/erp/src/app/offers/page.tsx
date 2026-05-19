@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
-import { formatPrice } from "@capella/shared";
+import { formatPrice, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 
@@ -12,6 +12,7 @@ export default function OffersListPage() {
   const offers = useStore((s) => s.offers);
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<Offer | null>(null);
 
   const visibleOffers = useMemo(() => offers.filter((o) => !o.deletedAt), [offers]);
 
@@ -85,7 +86,7 @@ export default function OffersListPage() {
                      <div className="row" style={{ gap: 4 }}>
                        <button
                          className="btn btn--ghost btn--sm"
-                         onClick={() => getStore().toggleOfferStatus(o.id)}
+                         onClick={() => setPendingToggle(o)}
                          title={o.status === "active" ? "إيقاف" : "تفعيل"}
                        >
                          {o.status === "active" ? <Icon.X /> : <Icon.Check />}
@@ -105,6 +106,31 @@ export default function OffersListPage() {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        open={pendingToggle != null}
+        title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
+        onClose={() => setPendingToggle(null)}
+        footer={<>
+          <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
+          <button
+            className="btn btn--primary btn--sm"
+            onClick={async () => {
+              if (!pendingToggle) return;
+              await getStore().toggleOfferStatus(pendingToggle.id);
+              setPendingToggle(null);
+            }}
+          >
+            تأكيد
+          </button>
+        </>}
+      >
+        <p style={{ margin: 0 }}>
+          {pendingToggle?.status === "active"
+            ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريدين المتابعة؟"
+            : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
+        </p>
+      </Modal>
 
       <Modal
         open={pendingDelete != null}

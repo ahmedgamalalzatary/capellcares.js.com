@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
-import { formatPrice, formatPriceRange } from "@capella/shared";
+import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 
@@ -15,6 +15,7 @@ export default function ProductsListPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
 
   const rootCats = useMemo(() => categories.filter((c) => c.parentId === null && !c.deletedAt), [categories]);
 
@@ -126,7 +127,7 @@ export default function ProductsListPage() {
                     <div className="row" style={{ gap: 4 }}>
                       <button
                         className="btn btn--ghost btn--sm"
-                        onClick={() => getStore().toggleProductStatus(p.id)}
+                        onClick={() => setPendingToggle(p)}
                         title={p.status === "active" ? "إيقاف" : "تفعيل"}
                       >
                         {p.status === "active" ? <Icon.X /> : <Icon.Check />}
@@ -146,6 +147,33 @@ export default function ProductsListPage() {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        open={pendingToggle != null}
+        title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
+        onClose={() => setPendingToggle(null)}
+        footer={
+          <>
+            <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={async () => {
+                if (!pendingToggle) return;
+                await getStore().toggleProductStatus(pendingToggle.id);
+                setPendingToggle(null);
+              }}
+            >
+              تأكيد
+            </button>
+          </>
+        }
+      >
+        <p style={{ margin: 0 }}>
+          {pendingToggle?.status === "active"
+            ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريدين المتابعة؟"
+            : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
+        </p>
+      </Modal>
 
       <Modal
         open={pendingDelete != null}

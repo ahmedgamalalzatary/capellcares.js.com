@@ -35,9 +35,9 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                   setOrder((prev: any) => ({ ...prev, paymentStatus }));
                 }}
               >
-                <option value="pending">pending</option>
-                <option value="accepted">accepted</option>
-                <option value="denied">denied</option>
+                <option value="pending">قيد الانتظار</option>
+                <option value="accepted">مقبول</option>
+                <option value="denied">مرفوض</option>
               </select>
               <Link href="/orders" className="btn btn--ghost btn--sm">رجوع</Link>
             </div>

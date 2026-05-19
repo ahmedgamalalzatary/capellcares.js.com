@@ -83,7 +83,7 @@ export function Header({ lang, dict, navGroups }: Props) {
               <Icon.User />
             </Link>
           )}
-          <Link href={`/${lang}/${user ? "wishlist" : "wishlist"}`} className={styles.iconBtn} aria-label={dict.nav.wishlist}>
+          <Link href={`/${lang}/wishlist`} className={styles.iconBtn} aria-label={dict.nav.wishlist}>
             <Icon.Heart />
             {ids.length > 0 && <span className={styles.badgeDot}>{ids.length}</span>}
           </Link>

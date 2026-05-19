@@ -36,3 +36,18 @@ export async function upsertAdviceRepo(input: {
 export async function deleteAdviceRepo(id: number) {
   await db.delete(advices).where(eq(advices.id, id));
 }
+
+export async function toggleAdviceStatusRepo(id: number) {
+  const [existing] = await db
+    .select({ status: advices.status })
+    .from(advices)
+    .where(eq(advices.id, id))
+    .limit(1);
+
+  if (!existing) return;
+
+  await db
+    .update(advices)
+    .set({ status: existing.status === "active" ? "inactive" : "active" })
+    .where(eq(advices.id, id));
+}

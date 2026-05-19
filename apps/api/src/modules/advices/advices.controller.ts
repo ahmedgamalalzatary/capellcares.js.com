@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { deleteAdviceRepo, listAdvicesRepo, upsertAdviceRepo } from "../../repositories/advice.repository.js";
+import { deleteAdviceRepo, listAdvicesRepo, toggleAdviceStatusRepo, upsertAdviceRepo } from "../../repositories/advice.repository.js";
 
 function toAdviceDto(item: any) {
   return {
@@ -37,6 +37,11 @@ export async function upsertAdviceController(req: Request, res: Response) {
 
 export async function deleteAdviceController(req: Request, res: Response) {
   await deleteAdviceRepo(Number(req.params.id));
+  res.json({ ok: true });
+}
+
+export async function toggleAdviceStatusController(req: Request, res: Response) {
+  await toggleAdviceStatusRepo(Number(req.params.id));
   res.json({ ok: true });
 }
 
