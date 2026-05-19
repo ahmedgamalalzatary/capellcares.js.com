@@ -120,7 +120,14 @@ async function ensureCategory(input: {
   const [created] = await db
     .insert(categories)
     .values(input)
-    .$returningId();
+    .$returningId()
+    .catch(async (error: any) => {
+      if (error?.code === "ER_DUP_ENTRY") {
+        const [row] = await db.select().from(categories).where(eq(categories.slug, input.slug)).limit(1);
+        if (row) return [{ id: row.id }];
+      }
+      throw error;
+    });
 
   const [category] = await db.select().from(categories).where(eq(categories.id, created.id)).limit(1);
   return category!;
@@ -149,7 +156,14 @@ async function ensureProduct(input: {
       isNew: false,
       isBestseller: false
     })
-    .$returningId();
+    .$returningId()
+    .catch(async (error: any) => {
+      if (error?.code === "ER_DUP_ENTRY") {
+        const [row] = await db.select().from(products).where(eq(products.sku, input.sku)).limit(1);
+        if (row) return [{ id: row.id }];
+      }
+      throw error;
+    });
 
   return created.id;
 }
@@ -193,7 +207,14 @@ async function ensureOffer(input: {
       visibility: "visible",
       imagePath: "/uploads/test-offer.png"
     })
-    .$returningId();
+    .$returningId()
+    .catch(async (error: any) => {
+      if (error?.code === "ER_DUP_ENTRY") {
+        const [row] = await db.select().from(offers).where(eq(offers.slug, input.slug)).limit(1);
+        if (row) return [{ id: row.id }];
+      }
+      throw error;
+    });
 
   return created.id;
 }

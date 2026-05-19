@@ -1,7 +1,7 @@
 export type Language = "ar" | "en";
 export type ProductStatus = "active" | "inactive";
 export type PaymentMethod = "cod";
-export type PaymentStatus = "pending" | "paid" | "failed";
+export type PaymentStatus = "pending" | "accepted" | "denied";
 
 export interface ProductVariant {
   id: string;

@@ -30,11 +30,14 @@ export interface OrderDto {
   buildingApartment: string;
   notes: string | null;
   paymentMethod: "cod";
-  paymentStatus: "pending" | "paid" | "failed";
+  paymentStatus: "pending" | "accepted" | "denied";
   totalAmount: number;
+  createdAt?: string;
   items: OrderItemDto[];
 }
 
 export interface CreateOrderDto {
   checkout: CheckoutItemDto[];
 }
+
+export interface OrderSummaryDto extends Omit<OrderDto, "items"> {}

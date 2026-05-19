@@ -16,6 +16,8 @@ import {
   adminRestoreOffer,
   adminToggleOfferStatus
 } from "./admin.controller.js";
+import { adminAdvicesRoutes } from "../advices/admin-advices.routes.js";
+import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 
 export const adminRoutes = Router();
 
@@ -36,3 +38,5 @@ adminRoutes.post("/offers", adminUpsertOffer);
 adminRoutes.delete("/offers/:id", adminSoftDeleteOffer);
 adminRoutes.post("/offers/:id/restore", adminRestoreOffer);
 adminRoutes.post("/offers/:id/toggle-status", adminToggleOfferStatus);
+adminRoutes.use("/advices", adminAdvicesRoutes);
+adminRoutes.use("/orders", adminOrdersRoutes);

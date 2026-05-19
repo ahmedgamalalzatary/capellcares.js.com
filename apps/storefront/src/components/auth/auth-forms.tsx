@@ -11,12 +11,17 @@ type Mode = "login" | "signup";
 
 export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dict: any }) {
   const router = useRouter();
-  const { login, signup } = useAuth();
+  const { login, signup, user } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  if (user) {
+    router.push(`/${lang}`);
+    return null;
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

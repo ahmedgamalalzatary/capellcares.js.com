@@ -1,4 +1,4 @@
-import type { Product, Category, Offer } from "@capella/shared";
+import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 type FetchLanguage = "ar" | "en";
@@ -83,6 +83,34 @@ export async function fetchOffers(options?: { lang?: string }): Promise<Offer[]>
 
 export async function fetchOfferBySlug(slug: string, options?: { lang?: string }): Promise<Offer | null> {
   return getJSON<Offer>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
+}
+
+export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[]> {
+  const data = await getJSON<{ items: Advice[] }>(`/api/v1/advices`, options);
+  return data?.items ?? [];
+}
+
+async function authedGetJSON<T>(path: string, accessToken: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    headers: {
+      authorization: `Bearer ${accessToken}`
+    }
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null as T;
+    throw new Error(`API ${res.status} ${path}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function fetchCustomerOrders(accessToken: string): Promise<OrderSummary[]> {
+  const data = await authedGetJSON<{ items: OrderSummary[] }>(`/api/v1/orders`, accessToken);
+  return data?.items ?? [];
+}
+
+export async function fetchCustomerOrderById(id: number, accessToken: string): Promise<Order | null> {
+  return authedGetJSON<Order>(`/api/v1/orders/${id}`, accessToken);
 }
 
 // helpers (computed client-side after fetching)

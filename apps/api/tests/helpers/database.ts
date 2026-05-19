@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import {
   categories,
   customers,
+  advices,
   offerItems,
   offers,
   orderItems,
@@ -17,6 +18,7 @@ export async function resetApiTestDatabase() {
   await db.delete(wishlists);
   await db.delete(orderItems);
   await db.delete(orders);
+  await db.delete(advices);
   await clearTransientProducts();
   await db.delete(categories).where(inArray(categories.slug, ["route-parent-cat", "route-child-cat"]));
   await clearTestSeed();
@@ -99,11 +101,18 @@ async function clearTransientProducts() {
       "ROUTE-ACTIVE-COMPLETE"
     ]));
 
-  if (rows.length === 0) {
+  const serviceRows = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.slug, "service-test-product"));
+
+  const rowsWithService = [...rows, ...serviceRows.filter((serviceRow) => !rows.some((row) => row.id === serviceRow.id))];
+
+  if (rowsWithService.length === 0) {
     return;
   }
 
-  const productIds = rows.map((row) => row.id);
+  const productIds = rowsWithService.map((row) => row.id);
   const variantRows = await db
     .select({ id: productVariants.id })
     .from(productVariants)

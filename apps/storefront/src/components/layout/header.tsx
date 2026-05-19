@@ -78,13 +78,20 @@ export function Header({ lang, dict, navGroups }: Props) {
             <Icon.Globe />
             <span className={styles.iconLabel}>{dict.langSwitch.short}</span>
           </button>
+          {user && (
+            <Link href={`/${lang}/orders`} className={styles.iconBtn} aria-label={dict.nav.orders}>
+              <Icon.User />
+            </Link>
+          )}
           <Link href={`/${lang}/${user ? "wishlist" : "wishlist"}`} className={styles.iconBtn} aria-label={dict.nav.wishlist}>
             <Icon.Heart />
             {ids.length > 0 && <span className={styles.badgeDot}>{ids.length}</span>}
           </Link>
-          <Link href={`/${lang}/${user ? "login" : "login"}`} className={styles.iconBtn} aria-label={dict.nav.account}>
-            <Icon.User />
-          </Link>
+          {!user && (
+            <Link href={`/${lang}/login`} className={styles.iconBtn} aria-label={dict.nav.account}>
+              <Icon.User />
+            </Link>
+          )}
           <Link href={`/${lang}/cart`} className={styles.iconBtn} aria-label={dict.nav.cart}>
             <Icon.Cart />
             {count > 0 && <span className={styles.badgeDot} data-accent>{count}</span>}
@@ -109,6 +116,7 @@ export function Header({ lang, dict, navGroups }: Props) {
           <div className={styles.sheetBody}>
             <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className={styles.sheetLink}>{dict.nav.products}</Link>
             <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className={styles.sheetLink}>{dict.nav.offers}</Link>
+            {user ? <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className={styles.sheetLink}>{dict.nav.orders}</Link> : null}
             <div className={styles.sheetSection}>{dict.nav.categories}</div>
             {groups.slice(2).map((g) => (
               <Link

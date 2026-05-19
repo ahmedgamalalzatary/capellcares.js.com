@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  advices,
   categories,
   customers,
   offerItems,
@@ -10,6 +11,8 @@ import {
   productVariants,
   wishlists
 } from "./schema.js";
+
+export const advicesRelations = relations(advices, () => ({}));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
   parent: one(categories, { fields: [categories.parentId], references: [categories.id] }),

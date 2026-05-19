@@ -1,6 +1,6 @@
 import { db } from "@capella/database/src/db";
 import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 function generateOrderCode(orderId: number): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -26,7 +26,7 @@ export async function createOrderWithItems(input: {
     buildingApartment: string;
     notes: string;
     paymentMethod: "cod";
-    paymentStatus: "pending" | "paid" | "failed";
+    paymentStatus: "pending" | "accepted" | "denied";
     totalAmount: number;
   };
   items: Array<{ variantId: number; qty: number; unitPrice: number; lineTotal: number }>;
@@ -97,4 +97,59 @@ export async function createOrderWithItems(input: {
     );
     return { id: order.id, orderCode };
   });
+}
+
+function toNumber(value: unknown) {
+  return Number(value ?? 0);
+}
+
+export async function listOrdersRepo(filters?: { customerId?: number }) {
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(filters?.customerId != null ? eq(orders.customerId, filters.customerId) : undefined)
+    .orderBy(desc(orders.createdAt));
+
+  return rows.map((row) => ({
+    ...row,
+    totalAmount: toNumber(row.totalAmount)
+  }));
+}
+
+export async function findOrderByIdRepo(id: number, filters?: { customerId?: number }) {
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(
+      filters?.customerId != null
+        ? and(eq(orders.id, id), eq(orders.customerId, filters.customerId))
+        : eq(orders.id, id)
+    )
+    .limit(1);
+
+  if (!order) {
+    return null;
+  }
+
+  const items = await db
+    .select()
+    .from(orderItems)
+    .where(eq(orderItems.orderId, order.id));
+
+  return {
+    ...order,
+    totalAmount: toNumber(order.totalAmount),
+    items: items.map((item) => ({
+      ...item,
+      unitPrice: toNumber(item.unitPrice),
+      lineTotal: toNumber(item.lineTotal)
+    }))
+  };
+}
+
+export async function updateOrderPaymentStatusRepo(
+  id: number,
+  paymentStatus: "pending" | "accepted" | "denied"
+) {
+  await db.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
 }

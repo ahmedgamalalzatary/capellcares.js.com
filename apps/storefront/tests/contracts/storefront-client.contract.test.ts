@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  storefrontAdviceContract,
   assertConformsTo,
   assertForbiddenFieldsAbsent,
   storefrontCategoryContract,
   storefrontOfferContract,
   storefrontProductContract
 } from "@capella/shared/tests/contracts";
-import { fetchCategories, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchAdvices, fetchCategories, fetchOffers, fetchProducts } from "@/lib/api/client";
 
 const productBoundaryPayload = {
   id: 101,
@@ -86,6 +87,16 @@ const categoryBoundaryPayload = {
   deletedAt: null
 };
 
+const adviceBoundaryPayload = {
+  id: 12,
+  title: { ar: "نصيحة", en: "Advice" },
+  description: { ar: "وصف", en: "Description" },
+  imagePath: "/uploads/advice.png",
+  videoUrl: "https://instagram.com/capella",
+  status: "active" as const,
+  sortOrder: 1
+};
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -142,5 +153,18 @@ describe("storefront client contracts", () => {
         en: "Body Care"
       }
     });
+  });
+
+  it("advices conform to the shared advice contract", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ items: [adviceBoundaryPayload] })
+      })
+    );
+
+    const result = await fetchAdvices({ lang: "ar" });
+    assertConformsTo(result[0], storefrontAdviceContract);
   });
 });

@@ -62,3 +62,4 @@ Use the canonical structure reference in [docs/folder-structure.md](D:/Documents
 - Every time u learn a new behavior, add it to the "Learned Behaviors" section here and update the "Core Rules" if needed. This is the single source of truth for repo behaviors and preferences.
 - Offer/admin shape mismatches can break ERP pages; normalize API responses to shared shapes.
 - New DB-backed records must not send fake client IDs when the API uses ID presence to choose update vs insert.
+- Drizzle SQL migrations in this repo should include `--> statement-breakpoint` separators between statements, or later statements may not be applied as expected.

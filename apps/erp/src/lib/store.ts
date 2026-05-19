@@ -4,7 +4,7 @@
 // through the API and trigger a refetch so storefront sees the same data.
 
 import { useSyncExternalStore } from "react";
-import type { Product, Category, Offer } from "@capella/shared";
+import type { Advice, Category, Offer, OrderSummary, Product } from "@capella/shared";
 import { api } from "./api/client";
 
 type Listener = () => void;
@@ -133,6 +133,8 @@ class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
   offers: Offer[] = [];
+  advices: Advice[] = [];
+  orders: OrderSummary[] = [];
   loaded = false;
   loading = false;
   error: string | null = null;
@@ -151,14 +153,18 @@ class ErpStore {
     this.loading = true;
     this.emit();
     try {
-      const [p, c, o] = await Promise.all([
+      const [p, c, o, a, orderData] = await Promise.all([
         api.get<{ items: ProductApiShape[] }>("/api/erp/products"),
         api.get<{ items: CategoryApiShape[] }>("/api/erp/categories"),
-        api.get<{ items: Offer[] }>("/api/erp/offers")
+        api.get<{ items: Offer[] }>("/api/erp/offers"),
+        api.get<{ items: Advice[] }>("/api/erp/advices"),
+        api.get<{ items: OrderSummary[] }>("/api/erp/orders")
       ]);
       this.products = p.items.map(normalizeProduct);
       this.categories = c.items.map(normalizeCategory);
       this.offers = o.items;
+      this.advices = a.items;
+      this.orders = orderData.items;
       this.loaded = true;
       this.error = null;
     } catch (e) {
@@ -253,6 +259,23 @@ class ErpStore {
   }
   async toggleOfferStatus(id: number) {
     await api.post(`/api/erp/offers/${id}/toggle-status`);
+    await this.refetch();
+  }
+
+  async upsertAdvice(advice: Omit<Advice, "id" | "createdAt" | "updatedAt"> & { id?: number }) {
+    await api.post("/api/erp/advices", advice);
+    await this.refetch();
+  }
+  async deleteAdvice(id: number) {
+    await api.del(`/api/erp/advices/${id}`);
+    await this.refetch();
+  }
+
+  async fetchOrder(id: number) {
+    return api.get(`/api/erp/orders/${id}`);
+  }
+  async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {
+    await api.post(`/api/erp/orders/${id}/payment-status`, { paymentStatus });
     await this.refetch();
   }
 }

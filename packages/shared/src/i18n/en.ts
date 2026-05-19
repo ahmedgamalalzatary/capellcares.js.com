@@ -7,6 +7,7 @@ export const en = {
     bestsellers: "Bestsellers",
     new: "New",
     cart: "Cart",
+    orders: "Orders",
     wishlist: "Wishlist",
     account: "Account",
     login: "Log in",
@@ -90,6 +91,25 @@ export const en = {
     loginRequired: "Wishlist requires an account",
     loginRequiredDesc: "Create a free account or log in to save products to your wishlist.",
     goLogin: "Log in"
+  },
+  orders: {
+    title: "Your orders",
+    empty: "You have not placed any orders yet.",
+    loginRequired: "Orders require an account",
+    loginRequiredDesc: "Log in to view your order history and order details.",
+    statusPending: "Pending",
+    statusAccepted: "Accepted",
+    statusDenied: "Denied",
+    orderCode: "Order code",
+    orderDate: "Order date",
+    paymentStatus: "Payment status",
+    items: "Items",
+    viewDetails: "View details",
+    backToOrders: "Back to orders"
+  },
+  advices: {
+    title: "Capella Advices",
+    description: "Helpful guidance, shopping tips, and routine ideas from Capella."
   },
   checkout: {
     title: "Checkout",

@@ -7,6 +7,7 @@ export const ar = {
     bestsellers: "الأكثر مبيعًا",
     new: "وصل حديثًا",
     cart: "السلة",
+    orders: "طلباتي",
     wishlist: "المفضلة",
     account: "حسابي",
     login: "تسجيل الدخول",
@@ -90,6 +91,25 @@ export const ar = {
     loginRequired: "تحتاج إلى حساب لاستخدام المفضلة",
     loginRequiredDesc: "أنشئ حسابًا مجانيًا أو سجل دخولك لحفظ المنتجات في المفضلة.",
     goLogin: "تسجيل الدخول"
+  },
+  orders: {
+    title: "طلباتي",
+    empty: "لم تقومي بأي طلبات بعد.",
+    loginRequired: "تحتاجين إلى حساب لعرض الطلبات",
+    loginRequiredDesc: "سجلي الدخول لعرض سجل الطلبات وتفاصيل كل طلب.",
+    statusPending: "قيد المراجعة",
+    statusAccepted: "مقبول",
+    statusDenied: "مرفوض",
+    orderCode: "كود الطلب",
+    orderDate: "تاريخ الطلب",
+    paymentStatus: "حالة الدفع",
+    items: "العناصر",
+    viewDetails: "عرض التفاصيل",
+    backToOrders: "الرجوع إلى الطلبات"
+  },
+  advices: {
+    title: "نصائح كابيلا",
+    description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا."
   },
   checkout: {
     title: "إتمام الطلب",

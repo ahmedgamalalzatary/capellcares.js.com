@@ -76,6 +76,20 @@ export const offers = mysqlTable("offers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const advices = mysqlTable("advices", {
+  id: int("id").autoincrement().primaryKey(),
+  arTitle: varchar("ar_title", { length: 255 }).notNull(),
+  enTitle: varchar("en_title", { length: 255 }).notNull(),
+  arDescription: text("ar_description").notNull(),
+  enDescription: text("en_description").notNull(),
+  imagePath: varchar("image_path", { length: 1024 }),
+  videoUrl: varchar("video_url", { length: 1024 }),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const offerItems = mysqlTable("offer_items", {
   id: int("id").autoincrement().primaryKey(),
   offerId: int("offer_id").notNull(),
@@ -114,7 +128,7 @@ export const orders = mysqlTable("orders", {
   buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
   notes: text("notes"),
   paymentMethod: mysqlEnum("payment_method", ["cod"]).notNull(),
-  paymentStatus: mysqlEnum("payment_status", ["pending", "paid", "failed"]).notNull(),
+  paymentStatus: mysqlEnum("payment_status", ["pending", "accepted", "denied"]).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()

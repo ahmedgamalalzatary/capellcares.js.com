@@ -20,6 +20,8 @@ const NAV = [
   { href: "/products", label: "المنتجات", icon: <Icon.Box /> },
   { href: "/categories", label: "الأقسام", icon: <Icon.Folder /> },
   { href: "/offers", label: "العروض", icon: <Icon.Tag /> },
+  { href: "/advices", label: "نصائح كابيلا", icon: <Icon.Sparkle /> },
+  { href: "/orders", label: "الطلبات", icon: <Icon.Eye /> },
   { href: "/trash", label: "المحذوفات", icon: <Icon.Trash /> }
 ];
 
@@ -52,13 +54,13 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
           </Link>
         ))}
         <div className="sidebar__section">الكتالوج</div>
-        {NAV.slice(1, 4).map((n) => (
+        {NAV.slice(1, 6).map((n) => (
           <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
             {n.icon}<span>{n.label}</span>
           </Link>
         ))}
         <div className="sidebar__section">أخرى</div>
-        {NAV.slice(4).map((n) => (
+        {NAV.slice(6).map((n) => (
           <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
             {n.icon}<span>{n.label}</span>
           </Link>

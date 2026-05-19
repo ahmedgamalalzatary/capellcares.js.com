@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getDict, languages, type Language } from "@capella/shared";
+import { AdviceSection } from "@/components/products/advice-section";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { fetchCategories, fetchProducts } from "@/lib/api/client";
+import { fetchAdvices, fetchCategories, fetchProducts } from "@/lib/api/client";
 
 export default async function ProductsPage({
   params,
@@ -16,9 +17,10 @@ export default async function ProductsPage({
   const sp = await searchParams;
   const dict = getDict(lang as Language);
 
-  const [products, categories] = await Promise.all([
+  const [products, categories, advices] = await Promise.all([
     fetchProducts({ lang }),
-    fetchCategories({ lang })
+    fetchCategories({ lang }),
+    fetchAdvices({ lang })
   ]);
   const activeProducts = products.filter((p) => p.status === "active");
 
@@ -47,6 +49,7 @@ export default async function ProductsPage({
         initialSearch={sp.q ?? ""}
         initialCategory={sp.category ? Number(sp.category) : undefined}
       />
+      <AdviceSection advices={advices} lang={lang as Language} dict={dict} />
     </main>
   );
 }

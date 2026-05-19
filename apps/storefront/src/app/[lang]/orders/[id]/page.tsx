@@ -1,0 +1,21 @@
+import { notFound } from "next/navigation";
+import { getDict, languages, type Language } from "@capella/shared";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { OrderDetailView } from "@/components/orders/order-detail-view";
+
+export default async function OrderPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
+  const { lang, id } = await params;
+  if (!languages.includes(lang as Language)) notFound();
+  const dict = getDict(lang as Language);
+
+  return (
+    <main className="container">
+      <Breadcrumb items={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.orders.title, href: `/${lang}/orders` }, { label: id }]} />
+      <header className="page-head">
+        <span className="eyebrow">{dict.orders.orderCode}</span>
+        <h1>{id}</h1>
+      </header>
+      <OrderDetailView lang={lang as Language} dict={dict} orderId={Number(id)} />
+    </main>
+  );
+}

@@ -5,11 +5,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProductCard } from "@/components/products/product-card";
 import { products } from "@capella/shared/mock";
 
+const push = vi.fn();
+
 vi.mock("next/link", () => ({
   default: (props: any) => {
     const { children, href, ...rest } = props;
     return createElement("a", { href, ...rest }, children);
   }
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push
+  })
 }));
 
 vi.mock("@/components/providers/wishlist-provider", () => ({
@@ -37,6 +45,7 @@ const dict = {
 describe("ProductCard", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    push.mockReset();
   });
 
   it("shows a price range for multi-variant products", () => {
@@ -45,11 +54,10 @@ describe("ProductCard", () => {
     expect(screen.getByText(/620/i)).toBeInTheDocument();
   });
 
-  it("shows a guest wishlist warning and login redirect text", () => {
+  it("redirects guests to wishlist when they try to add a product to wishlist", () => {
     render(createElement(ProductCard, { product: products[0]!, lang: "en", dict }));
     fireEvent.click(screen.getAllByRole("button", { name: /add to wishlist/i })[0]!);
 
-    expect(screen.getByText("Please log in first.")).toBeInTheDocument();
-    expect(screen.getByText("Log in")).toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith("/en/wishlist");
   });
 });

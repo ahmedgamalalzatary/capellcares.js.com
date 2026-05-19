@@ -3,6 +3,7 @@ import type { ProductStatus } from "../constants/product-status.js";
 import type { PaymentMethod } from "../constants/payment-methods.js";
 
 export type Bilingual = { ar: string; en: string };
+export type PaymentStatus = "pending" | "accepted" | "denied";
 
 export interface Category {
   id: number;
@@ -71,6 +72,57 @@ export interface Customer {
   id: number;
   name: string;
   email: string;
+}
+
+export interface Advice {
+  id: number;
+  title: Bilingual;
+  description: Bilingual;
+  imagePath: string;
+  videoUrl?: string;
+  status: "active" | "inactive";
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  itemType: "product_variant" | "offer";
+  variantId: number | null;
+  offerId: number | null;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  snapshotNameAr: string | null;
+  snapshotNameEn: string | null;
+  snapshotSizeLabel: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OrderSummary {
+  id: number;
+  orderCode: string;
+  customerType: "guest" | "registered";
+  customerId: number | null;
+  fullName: string;
+  phone: string;
+  email: string;
+  governorate: string;
+  cityArea: string;
+  addressLine: string;
+  buildingApartment: string;
+  notes: string | null;
+  paymentMethod: "cod";
+  paymentStatus: PaymentStatus;
+  totalAmount: number;
+  createdAt: string;
+}
+
+export interface Order extends OrderSummary {
+  items: OrderItem[];
 }
 
 export interface CartLineProduct {
