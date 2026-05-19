@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
+import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
@@ -7,6 +8,12 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { db } from "@capella/database/src/db";
 import { orders } from "@capella/database/drizzle/schema";
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
+
+function issueCustomerToken(customerId: number) {
+  return jwt.sign({ sub: customerId, role: "customer" }, ACCESS_SECRET, { expiresIn: "15m" });
+}
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -89,6 +96,43 @@ test("checkout route persists registered customer orders when customerId is prov
         buildingApartment: "Building 4",
         paymentMethod: "cod",
         customerId: ids.customerId,
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 201);
+
+    const [order] = await db
+      .select({ customerType: orders.customerType, customerId: orders.customerId })
+      .from(orders)
+      .where(eq(orders.id, response.json.id))
+      .limit(1);
+
+    assert.equal(order?.customerType, "registered");
+    assert.equal(order?.customerId, ids.customerId);
+  });
+});
+
+test("checkout route uses the authenticated customer id instead of trusting the request body", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
+      },
+      body: JSON.stringify({
+        fullName: "Authenticated Customer",
+        phone: "01012345678",
+        email: "seed-customer@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        customerId: ids.customerId + 999,
         items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
       })
     });

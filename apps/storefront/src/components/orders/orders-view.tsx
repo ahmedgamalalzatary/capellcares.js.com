@@ -9,22 +9,35 @@ import { Icon } from "@/components/ui/icons";
 import styles from "@/components/wishlist/wishlist.module.css";
 
 export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, logout } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authRequired, setAuthRequired] = useState(false);
 
   useEffect(() => {
+    if (user && !accessToken) {
+      setLoading(true);
+      return;
+    }
+
     if (!accessToken) {
       setLoading(false);
       return;
     }
+    setAuthRequired(false);
     fetchCustomerOrders(accessToken).then((items) => {
       setOrders(items);
       setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [accessToken]);
+    }).catch((error) => {
+      if (error instanceof Error && error.message.includes("API 401")) {
+        setAuthRequired(true);
+        logout();
+      }
+      setLoading(false);
+    });
+  }, [user, accessToken, logout]);
 
-  if (!user) {
+  if (!user || authRequired) {
     return (
       <div className={styles.gate}>
         <div className={styles.gateIcon}><Icon.User size={36} /></div>

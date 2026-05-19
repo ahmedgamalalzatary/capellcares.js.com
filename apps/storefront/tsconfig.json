@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -13,11 +14,12 @@
     "resolveJsonModule": true,
     "incremental": true,
     "isolatedModules": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "next-env.d.ts", "middleware.ts", ".next/types/**/*.ts"],
+  "include": ["src", "tests", "next-env.d.ts", "middleware.ts", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

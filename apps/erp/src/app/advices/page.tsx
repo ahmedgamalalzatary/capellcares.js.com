@@ -152,7 +152,7 @@ function AdviceModal({ open, initial, onClose }: { open: boolean; initial?: Advi
     setForm(initial ? {
       title: initial.title,
       description: initial.description,
-      imagePath: initial.imagePath,
+      imagePath: initial.imagePath ?? "",
       videoUrl: initial.videoUrl ?? "",
       status: initial.status,
       sortOrder: initial.sortOrder

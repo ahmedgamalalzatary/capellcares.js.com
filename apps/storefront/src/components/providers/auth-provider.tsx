@@ -37,6 +37,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!hydrated || !user || accessToken) return;
+
+    let cancelled = false;
+
+    fetch(`${API_BASE}/api/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "include"
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Refresh failed");
+        const data = await res.json();
+        if (!cancelled) {
+          setAccessToken(data.accessToken ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUser(null);
+          setAccessToken(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, user, accessToken]);
+
+  useEffect(() => {
     if (!hydrated) return;
     try {
       if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
