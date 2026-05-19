@@ -18,6 +18,7 @@ export default function OrdersPage() {
               <th>الإجمالي</th>
               <th>حالة الدفع</th>
               <th>تاريخ الطلب</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -31,10 +32,15 @@ export default function OrdersPage() {
                 <td>{order.totalAmount}</td>
                 <td>{order.paymentStatus}</td>
                 <td>{new Date(order.createdAt).toLocaleDateString("ar-EG")}</td>
+                <td>
+                  <Link href={`/orders/${order.id}`} className="btn btn--ghost btn--sm">
+                    التفاصيل
+                  </Link>
+                </td>
               </tr>
             ))}
             {orders.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد طلبات بعد.</td></tr>
+              <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد طلبات بعد.</td></tr>
             )}
           </tbody>
         </table>

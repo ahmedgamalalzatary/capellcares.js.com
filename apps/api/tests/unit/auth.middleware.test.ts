@@ -2,93 +2,120 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import jwt from "jsonwebtoken";
 
+import { authMiddleware, optionalAuthMiddleware } from "../../src/middlewares/auth.middleware.js";
+
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
-function parseAuthUser(req: { headers: { authorization?: string } }) {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
-  if (!token) return null;
-  try {
-    const raw = jwt.verify(token, ACCESS_SECRET) as unknown;
-    const payload = raw as { sub?: number | string; role?: string };
-    if (!payload?.sub || !payload?.role) return null;
-    const id = typeof payload.sub === "string" ? Number(payload.sub) : payload.sub;
-    if (!Number.isFinite(id)) return null;
-    return { id, role: payload.role };
-  } catch {
-    return null;
-  }
-}
-
-function createToken(payload: jwt.JwtPayload, secret: string = ACCESS_SECRET) {
+function createToken(payload: Omit<jwt.JwtPayload, "sub"> & { sub?: number | string; role?: string }, secret: string = ACCESS_SECRET) {
   return jwt.sign(payload, secret);
 }
 
-test("parseAuthUser returns null when no token is provided", () => {
-  const result = parseAuthUser({ headers: {} });
-  assert.equal(result, null);
+function createRequest(authorization?: string) {
+  return {
+    headers: authorization ? { authorization } : {}
+  };
+}
+
+function createResponse() {
+  const response = {
+    statusCode: 200,
+    jsonBody: undefined as unknown,
+    status(statusCode: number) {
+      response.statusCode = statusCode;
+      return response;
+    },
+    json(body: unknown) {
+      response.jsonBody = body;
+      return response;
+    }
+  };
+
+  return response;
+}
+
+test("authMiddleware returns 401 when no token is provided", () => {
+  const req = createRequest();
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
 });
 
-test("parseAuthUser returns null when token is invalid", () => {
-  const result = parseAuthUser({ headers: { authorization: "Bearer invalid-token" } });
-  assert.equal(result, null);
+test("authMiddleware returns 401 when token is invalid", () => {
+  const req = createRequest("Bearer invalid-token");
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
 });
 
-test("parseAuthUser returns null when sub is missing", () => {
-  const token = createToken({ role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
-
-test("parseAuthUser returns null when role is missing", () => {
-  const token = createToken({ sub: 1 });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
-
-test("parseAuthUser returns user when sub is a number", () => {
+test("authMiddleware assigns req.user and calls next for a valid token", () => {
   const token = createToken({ sub: 42, role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.deepEqual(result, { id: 42, role: "customer" });
+  const req = createRequest(`Bearer ${token}`) as { headers: { authorization?: string }; user?: { id: number; role: string } };
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.deepEqual(req.user, { id: 42, role: "customer" });
+  assert.equal(nextCalled, true);
+  assert.equal(res.statusCode, 200);
 });
 
-test("parseAuthUser returns user when sub is a numeric string", () => {
+test("authMiddleware rejects non-integer subject values", () => {
+  const token = createToken({ sub: 42.5, role: "customer" });
+  const req = createRequest(`Bearer ${token}`);
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
+});
+
+test("optionalAuthMiddleware assigns req.user and calls next for a valid token", () => {
   const token = createToken({ sub: "42", role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.deepEqual(result, { id: 42, role: "customer" });
+  const req = createRequest(`Bearer ${token}`) as { headers: { authorization?: string }; user?: { id: number; role: string } };
+  const res = createResponse();
+  let nextCalled = false;
+
+  optionalAuthMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.deepEqual(req.user, { id: 42, role: "customer" });
+  assert.equal(nextCalled, true);
+  assert.equal(res.statusCode, 200);
 });
 
-test("parseAuthUser returns null when sub is a non-numeric string", () => {
-  const token = createToken({ sub: "abc", role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
+test("optionalAuthMiddleware leaves req.user unset when token is invalid", () => {
+  const req = createRequest("Bearer invalid-token") as { headers: { authorization?: string }; user?: { id: number; role: string } };
+  const res = createResponse();
+  let nextCalled = false;
 
-test("parseAuthUser returns null when sub is NaN-producing string", () => {
-  const token = createToken({ sub: "123abc", role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
+  optionalAuthMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
 
-test("parseAuthUser returns null when sub is empty string", () => {
-  const token = createToken({ sub: "", role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
-
-test("parseAuthUser returns null when sub is Infinity", () => {
-  const token = createToken({ sub: Infinity, role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
-
-test("parseAuthUser returns null when sub is -Infinity", () => {
-  const token = createToken({ sub: -Infinity, role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
-});
-
-test("parseAuthUser returns null when sub is NaN", () => {
-  const token = createToken({ sub: NaN, role: "customer" });
-  const result = parseAuthUser({ headers: { authorization: `Bearer ${token}` } });
-  assert.equal(result, null);
+  assert.equal(req.user, undefined);
+  assert.equal(nextCalled, true);
+  assert.equal(res.statusCode, 200);
 });

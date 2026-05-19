@@ -4,7 +4,7 @@
 // through the API and trigger a refetch so storefront sees the same data.
 
 import { useSyncExternalStore } from "react";
-import type { Advice, Category, Offer, OrderSummary, Product } from "@capella/shared";
+import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
 import { api } from "./api/client";
 
 type Listener = () => void;
@@ -275,7 +275,7 @@ class ErpStore {
     await this.refetch();
   }
 
-  async fetchOrder(id: number) {
+  async fetchOrder(id: number): Promise<Order> {
     return api.get(`/api/erp/orders/${id}`);
   }
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {

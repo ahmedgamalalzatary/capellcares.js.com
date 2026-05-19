@@ -11,9 +11,18 @@ function parseAuthUser(req: Request) {
   try {
     const raw = jwt.verify(token, ACCESS_SECRET) as unknown;
     const payload = raw as { sub?: number | string; role?: string };
-    if (!payload?.sub || !payload?.role) return null;
-    const id = typeof payload.sub === "string" ? Number(payload.sub) : payload.sub;
-    if (!Number.isFinite(id)) return null;
+    if (payload?.sub == null || !payload?.role) return null;
+
+    const id =
+      typeof payload.sub === "string"
+        ? /^\d+$/.test(payload.sub)
+          ? Number(payload.sub)
+          : null
+        : Number.isInteger(payload.sub)
+          ? payload.sub
+          : null;
+
+    if (id == null) return null;
     return { id, role: payload.role };
   } catch {
     return null;
