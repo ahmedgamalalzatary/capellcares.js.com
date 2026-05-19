@@ -1,4 +1,0 @@
-.card { max-width: 460px; margin: 60px auto 100px; background: var(--bg-elev); border: 1px solid var(--hairline); border-radius: 20px; padding: 40px; box-shadow: var(--shadow-1); }
-.form { display: grid; gap: 16px; margin-top: 24px; }
-.swap { margin-top: 24px; text-align: center; color: var(--ink-2); font-size: 14px; }
-.swap a { color: var(--accent); font-weight: 600; }

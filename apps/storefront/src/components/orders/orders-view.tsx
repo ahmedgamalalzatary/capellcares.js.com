@@ -6,7 +6,6 @@ import { type Language, type OrderSummary } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { fetchCustomerOrders } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
-import styles from "@/components/wishlist/wishlist.module.css";
 
 export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   const { user, accessToken, logout } = useAuth();
@@ -24,44 +23,55 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
       setLoading(false);
       return;
     }
+
     setAuthRequired(false);
-    fetchCustomerOrders(accessToken).then((items) => {
-      setOrders(items);
-      setLoading(false);
-    }).catch((error) => {
-      if (error instanceof Error && error.message.includes("API 401")) {
-        setAuthRequired(true);
-        logout();
-      }
-      setLoading(false);
-    });
+    fetchCustomerOrders(accessToken)
+      .then((items) => {
+        setOrders(items);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.message.includes("API 401")) {
+          setAuthRequired(true);
+          logout();
+        }
+        setLoading(false);
+      });
   }, [user, accessToken, logout]);
 
   if (!user || authRequired) {
     return (
-      <div className={styles.gate}>
-        <div className={styles.gateIcon}><Icon.User size={36} /></div>
-        <h2 className="display" style={{ fontSize: 26, margin: 0 }}>{dict.orders.loginRequired}</h2>
-        <p className="muted" style={{ maxWidth: "44ch" }}>{dict.orders.loginRequiredDesc}</p>
-        <Link href={`/${lang}/login`} className="btn btn--primary">{dict.wishlist.goLogin}</Link>
+      <div className="grid place-items-center gap-3 py-20 text-center">
+        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
+          <Icon.User size={36} />
+        </div>
+        <h2 className="m-0 text-[26px] font-(--font-display) leading-none">{dict.orders.loginRequired}</h2>
+        <p className="max-w-[44ch] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
+        <Link href={`/${lang}/login`} className="btn btn--primary">
+          {dict.wishlist.goLogin}
+        </Link>
       </div>
     );
   }
 
-  if (loading) return <p className="muted" style={{ padding: 40 }}>{dict.common.loading}</p>;
+  if (loading) return <p className="py-10 text-(--ink-2)">{dict.common.loading}</p>;
 
   if (orders.length === 0) {
     return (
-      <div className={styles.gate}>
-        <div className={styles.gateIcon}><Icon.Cart size={36} /></div>
-        <p className="muted">{dict.orders.empty}</p>
-        <Link href={`/${lang}/products`} className="btn btn--ghost">{dict.cart.keepShopping}</Link>
+      <div className="grid place-items-center gap-3 py-20 text-center">
+        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
+          <Icon.Cart size={36} />
+        </div>
+        <p className="text-(--ink-2)">{dict.orders.empty}</p>
+        <Link href={`/${lang}/products`} className="btn btn--ghost">
+          {dict.cart.keepShopping}
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="card" style={{ overflow: "hidden", marginBottom: 80 }}>
+    <div className="mb-20 overflow-hidden rounded-[16px] border border-(--hairline) bg-white">
       <table className="table">
         <thead>
           <tr>
@@ -79,7 +89,11 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
               <td>{order.paymentStatus}</td>
               <td>{order.totalAmount}</td>
               <td>{new Date(order.createdAt).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}</td>
-              <td><Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost">{dict.orders.viewDetails}</Link></td>
+              <td>
+                <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost">
+                  {dict.orders.viewDetails}
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -87,3 +101,4 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
     </div>
   );
 }
+

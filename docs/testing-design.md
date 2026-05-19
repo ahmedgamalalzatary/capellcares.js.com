@@ -142,7 +142,7 @@ All PRs must pass:
 
 ## 10. Spec-critical business rule matrix
 
-> **Status as of 2026-05-19:** 18/24 `[DONE]`, 4 `[MISSING]`, 2 `[PARTIAL]`
+> **Status as of 2026-05-19:** 18/25 `[DONE]`, 5 `[MISSING]`, 2 `[PARTIAL]`
 
 The following rules are mandatory test coverage. Rows marked **PR + Staging** also appear in the Section 9 smoke suite.
 

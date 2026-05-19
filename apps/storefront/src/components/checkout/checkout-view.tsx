@@ -1,21 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
-  pickLang, formatPrice,
-  GOVERNORATES, EG_PHONE_REGEX, PAYMENT_METHODS,
-  type Language, type PaymentMethod, type Product, type Offer
+  pickLang,
+  formatPrice,
+  GOVERNORATES,
+  EG_PHONE_REGEX,
+  PAYMENT_METHODS,
+  type Language,
+  type PaymentMethod,
+  type Product,
+  type Offer
 } from "@capella/shared";
 import { fetchProducts, fetchOffers } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
-import styles from "./checkout.module.css";
 
-interface Resolved { key: string; title: string; meta: string; unit: number; qty: number; }
+interface Resolved {
+  key: string;
+  title: string;
+  meta: string;
+  unit: number;
+  qty: number;
+}
 
-interface Errors { [k: string]: string | undefined }
+interface Errors {
+  [k: string]: string | undefined;
+}
 
 export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, clear } = useCart();
@@ -40,46 +53,66 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProducts({ lang }), fetchOffers({ lang })]).then(([p, o]) => {
-      setProducts(p);
-      setOffers(o);
-    }).catch(() => {});
+    Promise.all([fetchProducts({ lang }), fetchOffers({ lang })])
+      .then(([p, o]) => {
+        setProducts(p);
+        setOffers(o);
+      })
+      .catch(() => {});
   }, [lang]);
 
   const resolved: Resolved[] = useMemo(() => {
-    return lines.map((l) => {
-      if (l.type === "product") {
-        const p = products.find((p) => p.id === l.productId);
-        const v = p?.variants.find((v) => v.id === l.variantId);
-        if (!p || !v) return null;
-        return { key: `p${l.productId}${l.variantId}`, title: pickLang(p.name, lang), meta: v.size, unit: v.price, qty: l.qty };
-      }
-      const o = offers.find((o) => o.id === l.offerId);
-      if (!o) return null;
-      return { key: `o${l.offerId}`, title: pickLang(o.name, lang), meta: dict.offers.badge, unit: o.price, qty: l.qty };
-    }).filter(Boolean) as Resolved[];
+    return lines
+      .map((line) => {
+        if (line.type === "product") {
+          const product = products.find((item) => item.id === line.productId);
+          const variant = product?.variants.find((item) => item.id === line.variantId);
+          if (!product || !variant) return null;
+          return {
+            key: `p${line.productId}${line.variantId}`,
+            title: pickLang(product.name, lang),
+            meta: variant.size,
+            unit: variant.price,
+            qty: line.qty
+          };
+        }
+
+        const offer = offers.find((item) => item.id === line.offerId);
+        if (!offer) return null;
+        return {
+          key: `o${line.offerId}`,
+          title: pickLang(offer.name, lang),
+          meta: dict.offers.badge,
+          unit: offer.price,
+          qty: line.qty
+        };
+      })
+      .filter(Boolean) as Resolved[];
   }, [lines, lang, dict, products, offers]);
 
-  const subtotal = resolved.reduce((acc, r) => acc + r.unit * r.qty, 0);
+  const subtotal = resolved.reduce((acc, item) => acc + item.unit * item.qty, 0);
 
-  const set = (k: keyof typeof form, v: any) => setForm((s) => ({ ...s, [k]: v }));
+  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+    setForm((state) => ({ ...state, [key]: value }));
+  };
 
   const validate = (): boolean => {
-    const e: Errors = {};
-    if (!form.fullName.trim()) e.fullName = dict.checkout.required;
-    if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) e.email = dict.checkout.required;
-    if (!form.phone.trim() || !EG_PHONE_REGEX.test(form.phone.trim())) e.phone = dict.checkout.egPhoneInvalid;
-    if (!form.governorate) e.governorate = dict.checkout.required;
-    if (!form.cityArea.trim()) e.city = dict.checkout.required;
-    if (!form.addressLine.trim()) e.addressLine = dict.checkout.required;
-    if (!form.buildingApartment.trim()) e.building = dict.checkout.required;
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const next: Errors = {};
+    if (!form.fullName.trim()) next.fullName = dict.checkout.required;
+    if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) next.email = dict.checkout.required;
+    if (!form.phone.trim() || !EG_PHONE_REGEX.test(form.phone.trim())) next.phone = dict.checkout.egPhoneInvalid;
+    if (!form.governorate) next.governorate = dict.checkout.required;
+    if (!form.cityArea.trim()) next.city = dict.checkout.required;
+    if (!form.addressLine.trim()) next.addressLine = dict.checkout.required;
+    if (!form.buildingApartment.trim()) next.building = dict.checkout.required;
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const placeOrder = async () => {
     if (!validate()) return;
     setPlacing(true);
+
     try {
       const payload = {
         fullName: form.fullName,
@@ -92,13 +125,14 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         notes: form.notes || undefined,
         paymentMethod: "cod",
         customerId: user?.id ?? null,
-        items: lines.map((l) =>
-          l.type === "product"
-            ? { type: "product", variantId: l.variantId, qty: l.qty }
-            : { type: "offer", offerId: l.offerId, qty: l.qty }
+        items: lines.map((line) =>
+          line.type === "product"
+            ? { type: "product", variantId: line.variantId, qty: line.qty }
+            : { type: "offer", offerId: line.offerId, qty: line.qty }
         )
       };
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/v1/checkout`, {
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/v1/checkout`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -106,8 +140,9 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Checkout failed");
-      const data = await res.json();
+
+      if (!response.ok) throw new Error("Checkout failed");
+      const data = await response.json();
       setOrderId(String(data.orderCode));
       clear();
     } finally {
@@ -117,34 +152,45 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (orderId) {
     return (
-      <div className={styles.confirm}>
-        <div className={styles.confirmIcon}><Icon.Check size={32} /></div>
-        <h2 className="display" style={{ fontSize: 28, margin: 0 }}>{dict.common.orderPlaced}</h2>
-        <p className="muted">{dict.common.orderPlacedDesc}</p>
-        <div className={styles.orderNo}>{orderId}</div>
-        <Link href={`/${lang}/products`} className="btn btn--primary">{dict.cart.keepShopping}</Link>
+      <div className="grid place-items-center gap-3 py-20 text-center">
+        <div className="grid h-[84px] w-[84px] place-items-center rounded-full bg-(--accent-2) text-white">
+          <Icon.Check size={32} />
+        </div>
+        <h2 className="m-0 text-[28px] font-(--font-display) leading-none">{dict.common.orderPlaced}</h2>
+        <p className="text-(--ink-2)">{dict.common.orderPlacedDesc}</p>
+        <div className="rounded-[12px] bg-(--bg-tint) px-6 py-3 text-[28px] font-(--font-display) tracking-[0.08em]">
+          {orderId}
+        </div>
+        <Link href={`/${lang}/products`} className="btn btn--primary">
+          {dict.cart.keepShopping}
+        </Link>
       </div>
     );
   }
 
   if (resolved.length === 0) {
     return (
-      <div className={styles.confirm}>
-        <p className="muted">{dict.cart.empty}</p>
-        <Link href={`/${lang}/products`} className="btn btn--primary">{dict.cart.keepShopping}</Link>
+      <div className="grid place-items-center gap-3 py-20 text-center">
+        <p className="text-(--ink-2)">{dict.cart.empty}</p>
+        <Link href={`/${lang}/products`} className="btn btn--primary">
+          {dict.cart.keepShopping}
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className={styles.layout}>
+    <div className="grid gap-9 pb-20 lg:grid-cols-[1fr_380px] lg:items-start">
       <form
-        className={styles.form}
-        onSubmit={(e) => { e.preventDefault(); placeOrder(); }}
+        className="grid gap-7"
+        onSubmit={(e) => {
+          e.preventDefault();
+          placeOrder();
+        }}
         noValidate
       >
         <Section title={dict.checkout.contact}>
-          <div className={styles.grid2}>
+          <div className="grid gap-4 md:grid-cols-2">
             <Field label={dict.checkout.fullName} error={errors.fullName}>
               <input className="input" value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
             </Field>
@@ -158,11 +204,15 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         </Section>
 
         <Section title={dict.checkout.shipping}>
-          <div className={styles.grid2}>
+          <div className="grid gap-4 md:grid-cols-2">
             <Field label={dict.checkout.governorate} error={errors.governorate}>
               <select className="select" value={form.governorate} onChange={(e) => set("governorate", e.target.value)}>
                 <option value="">—</option>
-                {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                {GOVERNORATES.map((governorate) => (
+                  <option key={governorate} value={governorate}>
+                    {governorate}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label={dict.checkout.city} error={errors.city}>
@@ -181,63 +231,85 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         </Section>
 
         <Section title={dict.checkout.payment}>
-          <div className={styles.payments}>
-            <label className={styles.payOption} data-active={form.paymentMethod === "cod"}>
+          <div className="grid gap-2.5">
+            <label
+              className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-white px-4 py-3.5"
+              data-active={form.paymentMethod === "cod"}
+            >
               <input type="radio" name="pay" value="cod" checked={form.paymentMethod === "cod"} onChange={() => set("paymentMethod", "cod")} />
               <div>
-                <div style={{ fontWeight: 600 }}>{dict.checkout.cod}</div>
-                <div className="muted" style={{ fontSize: 13 }}>{dict.checkout.codDesc}</div>
+                <div className="font-semibold">{dict.checkout.cod}</div>
+                <div className="text-[13px] text-(--ink-2)">{dict.checkout.codDesc}</div>
               </div>
             </label>
           </div>
         </Section>
 
-        <button type="submit" className="btn btn--primary btn--block" disabled={placing} style={{ height: 52 }}>
+        <button type="submit" className="btn btn--primary btn--block h-[52px]" disabled={placing}>
           {placing ? dict.common.loading : dict.checkout.placeOrder}
         </button>
       </form>
 
-      <aside className={styles.summary}>
-        <div className="display" style={{ fontSize: 20 }}>{dict.checkout.review}</div>
+      <aside className="sticky top-[140px] rounded-[16px] border border-(--hairline) bg-(--bg-elev) p-6">
+        <div className="text-[20px] font-(--font-display)">{dict.checkout.review}</div>
         <hr className="hr" />
-        <ul className={styles.items}>
-          {resolved.map((r) => (
-            <li key={r.key} className={styles.item}>
+        <ul className="m-0 grid list-none gap-3 p-0">
+          {resolved.map((item) => (
+            <li key={item.key} className="flex items-start justify-between gap-3 text-sm">
               <div>
-                <div style={{ fontWeight: 500 }}>{r.title}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{r.meta} · {dict.common.quantity}: {r.qty}</div>
+                <div className="font-medium">{item.title}</div>
+                <div className="text-[12px] text-(--ink-2)">
+                  {item.meta} · {dict.common.quantity}: {item.qty}
+                </div>
               </div>
-              <div>{formatPrice(r.unit * r.qty, lang)}</div>
+              <div>{formatPrice(item.unit * item.qty, lang)}</div>
             </li>
           ))}
         </ul>
         <hr className="hr" />
-        <div className={styles.row}><span className="muted">{dict.common.subtotal}</span><span>{formatPrice(subtotal, lang)}</span></div>
-        <div className={styles.row}><span className="muted">{dict.common.shipping}</span><span className="muted" style={{ fontSize: 12 }}>{dict.common.calculatedAtCheckout}</span></div>
-        <div className={styles.row} style={{ fontSize: 18, fontWeight: 600, paddingTop: 8 }}>
+        <div className="flex items-center justify-between py-1.5">
+          <span className="text-(--ink-2)">{dict.common.subtotal}</span>
+          <span>{formatPrice(subtotal, lang)}</span>
+        </div>
+        <div className="flex items-center justify-between py-1.5">
+          <span className="text-(--ink-2)">{dict.common.shipping}</span>
+          <span className="text-[12px] text-(--ink-2)">{dict.common.calculatedAtCheckout}</span>
+        </div>
+        <div className="flex items-center justify-between pt-2 text-[18px] font-semibold">
           <span>{dict.common.total}</span>
-          <span className="display">{formatPrice(subtotal, lang)}</span>
+          <span className="font-(--font-display)">{formatPrice(subtotal, lang)}</span>
         </div>
       </aside>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>{title}</h2>
+    <section className="grid gap-4 rounded-[16px] border border-(--hairline) bg-(--bg-elev) p-6">
+      <h2 className="m-0 text-[22px] font-(--font-display)">{title}</h2>
       {children}
     </section>
   );
 }
 
-function Field({ label, error, fullWidth, children }: { label: string; error?: string; fullWidth?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  fullWidth,
+  children
+}: {
+  label: string;
+  error?: string;
+  fullWidth?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="field" style={{ gridColumn: fullWidth ? "1 / -1" : undefined }}>
-      <label>{label}</label>
+    <div className={fullWidth ? "grid gap-1.5 md:col-span-2" : "grid gap-1.5"}>
+      <label className="text-sm font-medium text-(--ink-2)">{label}</label>
       {children}
-      {error && <span className="field-error">{error}</span>}
+      {error && <span className="text-[12px] text-(--danger)">{error}</span>}
     </div>
   );
 }
+

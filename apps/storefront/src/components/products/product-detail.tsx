@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
@@ -9,8 +10,6 @@ import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useRouter } from "next/navigation";
-import styles from "./product-detail.module.css";
 
 type Tab = "description" | "ingredients" | "howToUse" | "warnings";
 
@@ -28,13 +27,13 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   const auth = useAuth();
   const { isNew, isBestseller } = getProductBadgeState(product);
 
-  const inStockVariants = product.variants.filter((v) => v.stock > 0);
+  const inStockVariants = product.variants.filter((variant) => variant.stock > 0);
   const [variantId, setVariantId] = useState<number>(inStockVariants[0]?.id ?? product.variants[0].id);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
 
-  const variant = useMemo(() => product.variants.find((v) => v.id === variantId)!, [variantId, product.variants]);
+  const variant = useMemo(() => product.variants.find((item) => item.id === variantId)!, [variantId, product.variants]);
   const isOutOfStock = variant.stock === 0;
 
   const addToCart = () => {
@@ -64,38 +63,46 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   ];
 
   return (
-    <div className={styles.layout}>
-      <div className={styles.gallery}>
-        <div className={styles.galleryMain}>
-          <ProductIllustration product={product} className={styles.illustration} />
+    <div className="grid gap-8 py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
+      <div className="grid gap-4 self-start lg:sticky lg:top-[140px]">
+        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-[24px] bg-(--bg-tint)">
+          <ProductIllustration product={product} className="h-4/5 w-4/5" />
         </div>
-        <div className={styles.thumbs}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={styles.thumb} data-active={i === 1}>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((index) => (
+            <div
+              key={index}
+              className="aspect-square rounded-[12px] border border-transparent bg-(--bg-tint) p-1"
+            >
               <ProductIllustration product={product} />
             </div>
           ))}
         </div>
       </div>
 
-      <div className={styles.info}>
-        <div className={styles.infoHeader}>
-          <h1 className={styles.title}>{pickLang(product.name, lang)}</h1>
+      <div className="grid gap-6 self-start lg:gap-7">
+        <div className="grid gap-2">
+          <h1 className="m-0 text-[clamp(28px,3vw,40px)] font-(--font-display) leading-tight tracking-[-0.01em]">
+            {pickLang(product.name, lang)}
+          </h1>
           {(isNew || isBestseller || offers.length > 0) && (
-            <div className={styles.offerBadges}>
+            <div className="flex flex-wrap gap-2">
               {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
               {isBestseller && <span className="badge badge--gold">{dict.badges.bestseller}</span>}
-              {offers.map((o) => (
-                <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className="badge badge--offer">
-                  ★ {pickLang(o.name, lang)}
+              {offers.map((offer) => (
+                <Link key={offer.id} href={`/${lang}/offers/${offer.slug}`} className="badge badge--offer">
+                  ★ {pickLang(offer.name, lang)}
                 </Link>
               ))}
             </div>
           )}
         </div>
 
-        <div className={styles.priceRow}>
-          <span className={styles.price}>{formatPrice(variant.price, lang)}</span>
+        <p className="text-(--ink-2)">{pickLang(product.description, lang)}</p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[32px] font-(--font-display)">{formatPrice(variant.price, lang)}</span>
           {isOutOfStock ? (
             <span className="chip chip--accent">{dict.common.outOfStock}</span>
           ) : variant.stock <= 5 ? (
@@ -105,35 +112,55 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
           )}
         </div>
 
-        <div className={styles.section}>
-          <div className={styles.sectionLabel}>{dict.product.selectSize}</div>
-          <div className={styles.variantRow}>
-            {product.variants.map((v) => (
+        <div className="grid gap-2">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+            {dict.product.selectSize}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {product.variants.map((item) => (
               <button
-                key={v.id}
-                className={styles.variantChip}
-                data-active={variantId === v.id}
-                data-out={v.stock === 0 ? "true" : undefined}
-                onClick={() => v.stock > 0 && setVariantId(v.id)}
-                disabled={v.stock === 0}
+                key={item.id}
+                className={[
+                  "grid min-w-24 gap-0.5 rounded-[12px] border bg-white px-3.5 py-2.5 text-start transition-colors",
+                  item.stock > 0 ? "hover:border-(--ink-3)" : "cursor-not-allowed opacity-45 line-through",
+                  variantId === item.id ? "border-accent bg-(--accent-soft)" : "border-(--hairline)"
+                ].join(" ")}
+                data-active={variantId === item.id}
+                data-out={item.stock === 0 ? "true" : undefined}
+                onClick={() => item.stock > 0 && setVariantId(item.id)}
+                disabled={item.stock === 0}
               >
-                <span>{v.size}</span>
-                <span className={styles.variantPrice}>{formatPrice(v.price, lang)}</span>
+                <span>{item.size}</span>
+                <span className="text-xs text-(--ink-2)">{formatPrice(item.price, lang)}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className={styles.section}>
-          <div className={styles.sectionLabel}>{dict.common.quantity}</div>
-          <div className={styles.qty}>
-            <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="−"><Icon.Minus /></button>
-            <span>{qty}</span>
-            <button onClick={() => setQty((q) => Math.min(variant.stock || 1, q + 1))} aria-label="+"><Icon.Plus /></button>
+        <div className="grid gap-2">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+            {dict.common.quantity}
+          </div>
+          <div className="inline-grid grid-cols-[36px_60px_36px] items-center rounded-full border border-(--hairline) bg-white">
+            <button
+              className="grid h-10 place-items-center border-0 bg-transparent"
+              onClick={() => setQty((value) => Math.max(1, value - 1))}
+              aria-label="−"
+            >
+              <Icon.Minus />
+            </button>
+            <span className="text-center font-semibold">{qty}</span>
+            <button
+              className="grid h-10 place-items-center border-0 bg-transparent"
+              onClick={() => setQty((value) => Math.min(variant.stock || 1, value + 1))}
+              aria-label="+"
+            >
+              <Icon.Plus />
+            </button>
           </div>
         </div>
 
-        <div className={styles.cta}>
+        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
             <Icon.Cart size={18} />
             {added ? (lang === "ar" ? "أُضيف" : "Added") : dict.common.addToCart}
@@ -146,32 +173,48 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
           </button>
         </div>
 
-        <div className={styles.tabs}>
-          {tabs.map((t) => (
+        <div className="flex flex-wrap gap-1 border-b border-(--hairline)">
+          {tabs.map((item) => (
             <button
-              key={t.key}
-              className={styles.tabBtn}
-              data-active={tab === t.key}
-              onClick={() => setTab(t.key)}
+              key={item.key}
+              className="mr-4 border-0 bg-transparent px-1 py-3 text-[14px] text-(--ink-3)"
+              data-active={tab === item.key}
+              onClick={() => setTab(item.key)}
+              style={
+                tab === item.key
+                  ? { borderBottom: "2px solid var(--accent)", color: "var(--ink)" }
+                  : { borderBottom: "2px solid transparent" }
+              }
             >
-              {t.label}
+              {item.label}
             </button>
           ))}
         </div>
-        <div className={styles.tabBody}>
-          {tabs.find((t) => t.key === tab)?.content}
+
+        <div className="min-h-20 leading-7 text-(--ink-2)">
+          {tabs.find((item) => item.key === tab)?.content}
         </div>
 
         {offers.length > 0 && (
-          <div className={styles.offerCross}>
-            <div className={styles.sectionLabel}>{dict.product.relatedOffers}</div>
-            <div className={styles.offerList}>
-              {offers.map((o) => (
-                <Link key={o.id} href={`/${lang}/offers/${o.slug}`} className={styles.offerCard}>
-                  <OfferIllustration offer={o} className={styles.offerThumb} />
+          <div className="grid gap-2.5 pt-1">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+              {dict.product.relatedOffers}
+            </div>
+            <div className="grid gap-2.5">
+              {offers.map((offer) => (
+                <Link
+                  key={offer.id}
+                  href={`/${lang}/offers/${offer.slug}`}
+                  className="grid grid-cols-[80px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-white p-2.5 transition-colors hover:border-accent"
+                >
+                  <div className="h-[60px] w-20 overflow-hidden rounded-[8px] bg-(--bg-tint)">
+                    <OfferIllustration offer={offer} className="h-full w-full" />
+                  </div>
                   <div>
-                    <div style={{ fontWeight: 600 }}>{pickLang(o.name, lang)}</div>
-                    <div className="muted" style={{ fontSize: 13 }}>{formatPrice(o.price, lang)} · {dict.offers.save.replace("{amount}", formatPrice(o.originalTotal - o.price, lang))}</div>
+                    <div className="font-semibold">{pickLang(offer.name, lang)}</div>
+                    <div className="text-[13px] text-(--ink-2)">
+                      {formatPrice(offer.price, lang)} · {dict.offers.save.replace("{amount}", formatPrice(offer.originalTotal - offer.price, lang))}
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -182,3 +225,4 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
     </div>
   );
 }
+

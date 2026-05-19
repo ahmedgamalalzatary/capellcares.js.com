@@ -6,8 +6,7 @@ This file is the working guide for contributors and agents in this repo. It shou
 ## Core Rules
 1. Read existing tests before creating any new test file. Match the nearest existing style, helpers, and file placement.
 2. For any medium or hard task, investigate first and identify the exact touching files and execution path before editing.
-3. Keep this file updated when new patterns, preferences, commands, or architectural behaviors are learned.
-4. Prefer tracing the full path: UI/page -> store/client -> API route/controller -> repository/service -> DB schema.
+3. Prefer tracing the full path: UI/page -> store/client -> API route/controller -> repository/service -> DB schema.
 5. Do not assume API response shape, delete behavior, or data flow. Inspect the actual controller, repository, store, and consuming UI path first.
 6. Before calling work complete, run the most targeted verification available and state clearly what was verified and what was not.
 
@@ -54,12 +53,3 @@ Use the canonical structure reference in [docs/folder-structure.md](D:/Documents
 - ERP and storefront use Vitest.
 - E2E uses Playwright.
 - Add regression tests for bugs in response shape, soft-delete behavior, create/edit flows, and visibility/filtering rules.
-
-## Learned Behaviors
-- User wants investigation-first work on medium/hard tasks.
-- User wants `AGENTS.md` treated as a living memory file.
-- ERP trash depends on admin list endpoints including soft-deleted rows.
-- Every time u learn a new behavior, add it to the "Learned Behaviors" section here and update the "Core Rules" if needed. This is the single source of truth for repo behaviors and preferences.
-- Offer/admin shape mismatches can break ERP pages; normalize API responses to shared shapes.
-- New DB-backed records must not send fake client IDs when the API uses ID presence to choose update vs insert.
-- Drizzle SQL migrations in this repo should include `--> statement-breakpoint` separators between statements, or later statements may not be applied as expected.
