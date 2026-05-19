@@ -78,8 +78,8 @@ export interface Advice {
   id: number;
   title: Bilingual;
   description: Bilingual;
-  imagePath: string;
-  videoUrl?: string;
+  imagePath: string | null;
+  videoUrl?: string | null;
   status: "active" | "inactive";
   sortOrder: number;
   createdAt: string;

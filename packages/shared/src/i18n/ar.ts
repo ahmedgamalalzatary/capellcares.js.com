@@ -94,9 +94,9 @@ export const ar = {
   },
   orders: {
     title: "طلباتي",
-    empty: "لم تقومي بأي طلبات بعد.",
-    loginRequired: "تحتاجين إلى حساب لعرض الطلبات",
-    loginRequiredDesc: "سجلي الدخول لعرض سجل الطلبات وتفاصيل كل طلب.",
+    empty: "لم تقم بأي طلبات بعد.",
+    loginRequired: "تحتاج إلى حساب لعرض الطلبات",
+    loginRequiredDesc: "سجل الدخول لعرض سجل الطلبات وتفاصيل كل طلب.",
     statusPending: "قيد المراجعة",
     statusAccepted: "مقبول",
     statusDenied: "مرفوض",

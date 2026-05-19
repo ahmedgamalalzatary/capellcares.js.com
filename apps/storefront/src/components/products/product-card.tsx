@@ -47,7 +47,6 @@ export function ProductCard({ product, lang, dict }: Props) {
         {has(product.id) ? <Icon.HeartFill size={16} /> : <Icon.Heart size={16} />}
       </button>
       <div className="pcard__body">
-        <div className="eyebrow">{product.sku}</div>
         <div className="pcard__name">{pickLang(product.name, lang)}</div>
         <div className="pcard__price">
           {prices.length > 1

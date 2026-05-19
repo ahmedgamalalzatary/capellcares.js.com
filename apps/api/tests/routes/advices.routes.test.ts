@@ -187,3 +187,43 @@ test("erp advice toggle-status flips active advice to inactive", async () => {
     assert.equal(afterToggle.json.items[0].status, "inactive");
   });
 });
+
+test("erp advice routes reject invalid ids and invalid upsert payloads", async () => {
+  await withTestServer(app, async (request) => {
+    const badCreate = await request("/api/erp/advices", {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        title: { ar: "نصيحة" },
+        description: { ar: "وصف", en: "Description" },
+        sortOrder: "NaN"
+      })
+    });
+
+    assert.equal(badCreate.status, 400);
+    assert.equal(badCreate.json.error, "Invalid advice payload");
+
+    const badDelete = await request("/api/erp/advices/not-a-number", {
+      method: "DELETE",
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+
+    assert.equal(badDelete.status, 400);
+    assert.equal(badDelete.json.error, "Invalid id");
+  });
+});
+
+test("erp advice toggle-status returns 404 when the advice does not exist", async () => {
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/advices/999999/toggle-status", {
+      method: "POST",
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(response.json.error, "Advice not found");
+  });
+});

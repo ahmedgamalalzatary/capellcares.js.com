@@ -80,7 +80,6 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
 
       <div className={styles.info}>
         <div className={styles.infoHeader}>
-          <span className="eyebrow">{dict.product.sku}: {product.sku}</span>
           <h1 className={styles.title}>{pickLang(product.name, lang)}</h1>
           {(isNew || isBestseller || offers.length > 0) && (
             <div className={styles.offerBadges}>

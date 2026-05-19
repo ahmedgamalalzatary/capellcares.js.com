@@ -6,6 +6,8 @@ import { OrderDetailView } from "@/components/orders/order-detail-view";
 export default async function OrderPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
   const { lang, id } = await params;
   if (!languages.includes(lang as Language)) notFound();
+  const orderId = Number.parseInt(id, 10);
+  if (!Number.isInteger(orderId) || orderId <= 0) notFound();
   const dict = getDict(lang as Language);
 
   return (
@@ -15,7 +17,7 @@ export default async function OrderPage({ params }: { params: Promise<{ lang: st
         <span className="eyebrow">{dict.orders.orderCode}</span>
         <h1>{id}</h1>
       </header>
-      <OrderDetailView lang={lang as Language} dict={dict} orderId={Number(id)} />
+      <OrderDetailView lang={lang as Language} dict={dict} orderId={orderId} />
     </main>
   );
 }

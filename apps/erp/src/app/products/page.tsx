@@ -16,6 +16,8 @@ export default function ProductsListPage() {
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const rootCats = useMemo(() => categories.filter((c) => c.parentId === null && !c.deletedAt), [categories]);
 
@@ -127,7 +129,10 @@ export default function ProductsListPage() {
                     <div className="row" style={{ gap: 4 }}>
                       <button
                         className="btn btn--ghost btn--sm"
-                        onClick={() => setPendingToggle(p)}
+                        onClick={() => {
+                          setToggleError(null);
+                          setPendingToggle(p);
+                        }}
                         title={p.status === "active" ? "إيقاف" : "تفعيل"}
                       >
                         {p.status === "active" ? <Icon.X /> : <Icon.Check />}
@@ -151,19 +156,33 @@ export default function ProductsListPage() {
       <Modal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
-        onClose={() => setPendingToggle(null)}
+        onClose={() => {
+          if (isToggling) return;
+          setPendingToggle(null);
+          setToggleError(null);
+        }}
         footer={
           <>
-            <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
+            <button className="btn btn--ghost btn--sm" disabled={isToggling} onClick={() => { setPendingToggle(null); setToggleError(null); }}>إلغاء</button>
             <button
               className="btn btn--primary btn--sm"
+              disabled={isToggling}
               onClick={async () => {
                 if (!pendingToggle) return;
-                await getStore().toggleProductStatus(pendingToggle.id);
-                setPendingToggle(null);
+                try {
+                  setIsToggling(true);
+                  setToggleError(null);
+                  await getStore().toggleProductStatus(pendingToggle.id);
+                  setPendingToggle(null);
+                } catch (error) {
+                  console.error(error);
+                  setToggleError("تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
+                } finally {
+                  setIsToggling(false);
+                }
               }}
             >
-              تأكيد
+              {isToggling ? "جارٍ التحديث..." : "تأكيد"}
             </button>
           </>
         }
@@ -173,6 +192,7 @@ export default function ProductsListPage() {
             ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
+        {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
       </Modal>
 
       <Modal

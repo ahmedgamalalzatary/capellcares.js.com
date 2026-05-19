@@ -2,6 +2,8 @@ import { db } from "@capella/database/src/db";
 import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 
+const allowedPaymentStatuses = new Set(["pending", "accepted", "denied"]);
+
 function generateOrderCode(orderId: number): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let seed = orderId * 7919 + 104729;
@@ -100,7 +102,16 @@ export async function createOrderWithItems(input: {
 }
 
 function toNumber(value: unknown) {
-  return Number(value ?? 0);
+  if (value == null) {
+    return 0;
+  }
+
+  const result = Number(value);
+  if (!Number.isFinite(result)) {
+    throw new TypeError(`toNumber could not coerce value: ${String(value)}`);
+  }
+
+  return result;
 }
 
 export async function listOrdersRepo(filters?: { customerId?: number }) {
@@ -151,5 +162,8 @@ export async function updateOrderPaymentStatusRepo(
   id: number,
   paymentStatus: "pending" | "accepted" | "denied"
 ) {
+  if (!allowedPaymentStatuses.has(paymentStatus)) {
+    throw new Error(`updateOrderPaymentStatusRepo received invalid paymentStatus: ${String(paymentStatus)}`);
+  }
   await db.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
 }

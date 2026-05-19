@@ -29,7 +29,8 @@ export async function upsertAdviceRepo(input: {
     }
   }
 
-  const [created] = await db.insert(advices).values(input).$returningId();
+  const { id: _id, ...insertPayload } = input;
+  const [created] = await db.insert(advices).values(insertPayload).$returningId();
   return created;
 }
 
@@ -44,10 +45,12 @@ export async function toggleAdviceStatusRepo(id: number) {
     .where(eq(advices.id, id))
     .limit(1);
 
-  if (!existing) return;
+  if (!existing) return false;
 
   await db
     .update(advices)
     .set({ status: existing.status === "active" ? "inactive" : "active" })
     .where(eq(advices.id, id));
+
+  return true;
 }

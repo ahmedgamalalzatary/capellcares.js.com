@@ -13,6 +13,7 @@ export default function OffersListPage() {
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Offer | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const visibleOffers = useMemo(() => offers.filter((o) => !o.deletedAt), [offers]);
 
@@ -86,7 +87,10 @@ export default function OffersListPage() {
                      <div className="row" style={{ gap: 4 }}>
                        <button
                          className="btn btn--ghost btn--sm"
-                         onClick={() => setPendingToggle(o)}
+                         onClick={() => {
+                           setToggleError(null);
+                           setPendingToggle(o);
+                         }}
                          title={o.status === "active" ? "إيقاف" : "تفعيل"}
                        >
                          {o.status === "active" ? <Icon.X /> : <Icon.Check />}
@@ -110,15 +114,23 @@ export default function OffersListPage() {
       <Modal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
-        onClose={() => setPendingToggle(null)}
+        onClose={() => {
+          setPendingToggle(null);
+          setToggleError(null);
+        }}
         footer={<>
-          <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
+          <button className="btn btn--ghost btn--sm" onClick={() => { setPendingToggle(null); setToggleError(null); }}>إلغاء</button>
           <button
             className="btn btn--primary btn--sm"
             onClick={async () => {
               if (!pendingToggle) return;
-              await getStore().toggleOfferStatus(pendingToggle.id);
-              setPendingToggle(null);
+              try {
+                setToggleError(null);
+                await getStore().toggleOfferStatus(pendingToggle.id);
+                setPendingToggle(null);
+              } catch {
+                setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+              }
             }}
           >
             تأكيد
@@ -130,6 +142,7 @@ export default function OffersListPage() {
             ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
+        {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
       </Modal>
 
       <Modal

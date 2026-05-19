@@ -211,3 +211,51 @@ test("storefront order detail rejects access to another customer's order", async
     assert.equal(response.status, 404);
   });
 });
+
+test("order routes reject invalid ids and invalid payment statuses", async () => {
+  const ids = await getBaselineIds();
+
+  const [created] = await db.insert(orders).values({
+    orderCode: "ABCD-997",
+    customerType: "registered",
+    customerId: ids.customerId,
+    fullName: "Seed Customer",
+    phone: "01012345678",
+    email: "seed-customer@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 4",
+    notes: "",
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    totalAmount: "150.00"
+  }).$returningId();
+
+  await withTestServer(app, async (request) => {
+    const badAdminDetail = await request("/api/erp/orders/not-a-number", {
+      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+    });
+    assert.equal(badAdminDetail.status, 400);
+    assert.equal(badAdminDetail.json.message, "Invalid order id");
+
+    const badPaymentStatus = await request(`/api/erp/orders/${created.id}/payment-status`, {
+      method: "POST",
+      headers: {
+        "x-admin-basic": "admin@capella.eg:admin1234",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ paymentStatus: "paid" })
+    });
+    assert.equal(badPaymentStatus.status, 400);
+    assert.equal(badPaymentStatus.json.message, "Invalid payment status");
+
+    const badCustomerDetail = await request("/api/v1/orders/not-a-number", {
+      headers: {
+        authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
+      }
+    });
+    assert.equal(badCustomerDetail.status, 400);
+    assert.equal(badCustomerDetail.json.message, "Invalid order id");
+  });
+});
