@@ -46,17 +46,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include"
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error("Refresh failed");
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            if (!cancelled) {
+              console.error("[auth] Refresh token rejected, clearing session");
+              setUser(null);
+              setAccessToken(null);
+            }
+          } else {
+            console.error(`[auth] Refresh failed with status ${res.status}`);
+          }
+          return;
+        }
         const data = await res.json();
         if (!cancelled) {
           setAccessToken(data.accessToken ?? null);
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setUser(null);
-          setAccessToken(null);
-        }
+      .catch((err) => {
+        console.error("[auth] Refresh request failed:", err?.message ?? err);
       });
 
     return () => {
