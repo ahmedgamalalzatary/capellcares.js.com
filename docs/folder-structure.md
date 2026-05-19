@@ -132,9 +132,6 @@ capella/
 │     │  ├─ config/
 │     │  │  ├─ constants.ts
 │     │  │  └─ env.ts
-│     │  ├─ data/
-│     │  │  ├─ file-store.ts
-│     │  │  └─ store.ts
 │     │  ├─ middlewares/
 │     │  │  ├─ admin-auth.config.ts
 │     │  │  ├─ admin-auth.middleware.ts

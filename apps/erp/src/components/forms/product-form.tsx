@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { Product, Category, ProductVariant } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
@@ -51,19 +51,6 @@ export function ProductForm({ mode, initial, categories }: Props) {
     initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const childrenOf = useMemo(() => {
-    const m = new Map<number | null, Category[]>();
-    for (const c of categories) {
-      if (c.deletedAt) continue;
-      const list = m.get(c.parentId) ?? [];
-      list.push(c);
-      m.set(c.parentId, list);
-    }
-    return m;
-  }, [categories]);
-
-  const isLeaf = (id: number | null) => id != null && !(childrenOf.get(id) && childrenOf.get(id)!.length > 0);
 
   const updateVariant = (id: number, patch: Partial<ProductVariant>) => {
     setVariants((vs) => vs.map((v) => v.id === id ? { ...v, ...patch } : v));

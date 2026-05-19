@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import type { Category, Offer, Product } from "@capella/shared";
 import {
   createAdminProductRepo,
   listAdminProductsRepo,

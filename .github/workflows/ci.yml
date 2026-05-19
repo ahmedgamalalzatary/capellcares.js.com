@@ -54,5 +54,8 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Run test database migrations
+        run: pnpm --filter @capella/database run pretest
+
       - name: Test
         run: pnpm test

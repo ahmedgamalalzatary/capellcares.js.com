@@ -12,7 +12,6 @@ export default function DashboardPage() {
   const offers = useStore((s) => s.offers);
 
   const activeProducts = products.filter((p) => !p.deletedAt && p.status === "active");
-  const inactiveProducts = products.filter((p) => !p.deletedAt && p.status === "inactive");
   const totalVariants = products.reduce((acc, p) => acc + (p.deletedAt ? 0 : p.variants.length), 0);
   const lowStock = products.flatMap((p) => p.deletedAt ? [] : p.variants.filter((v) => v.stock > 0 && v.stock <= 5).map((v) => ({ p, v })));
   const outOfStock = products.flatMap((p) => p.deletedAt ? [] : p.variants.filter((v) => v.stock === 0).map((v) => ({ p, v })));

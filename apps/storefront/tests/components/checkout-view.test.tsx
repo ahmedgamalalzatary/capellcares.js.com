@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CheckoutView } from "@/components/checkout/checkout-view";
-import { offers, products } from "@capella/shared/mock";
+import { products } from "@capella/shared/mock";
 
 vi.mock("next/link", () => ({
   default: (props: any) => {
