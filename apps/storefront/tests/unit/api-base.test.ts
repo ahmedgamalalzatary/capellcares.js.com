@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { resolveApiBase } from "@/lib/api/base";
 
 describe("resolveApiBase", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("prefers the internal API URL on the server", () => {
     expect(
       resolveApiBase({
@@ -13,7 +17,7 @@ describe("resolveApiBase", () => {
   });
 
   it("falls back to the public API URL in browser-like execution", () => {
-    vi.stubGlobal("window", {} as Window & typeof globalThis);
+    vi.stubGlobal("window", { location: { protocol: "http:", hostname: "localhost", port: "3000" } } as Window & typeof globalThis);
 
     expect(
       resolveApiBase({
@@ -24,6 +28,14 @@ describe("resolveApiBase", () => {
   });
 
   it("uses localhost as the default public API URL", () => {
+    vi.stubGlobal("window", { location: { protocol: "http:", hostname: "localhost", port: "3000" } } as Window & typeof globalThis);
+
     expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("http://localhost:4000");
+  });
+
+  it("derives the public API host from the storefront domain when no public env is present", () => {
+    vi.stubGlobal("window", { location: { protocol: "https:", hostname: "capellacares.com", port: "" } } as Window & typeof globalThis);
+
+    expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("https://api.capellacares.com");
   });
 });
