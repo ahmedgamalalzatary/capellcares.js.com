@@ -1,6 +1,7 @@
 import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import { resolveApiBase } from "./base";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const API_BASE = resolveApiBase();
 type FetchLanguage = "ar" | "en";
 
 type CategoryApiShape = {

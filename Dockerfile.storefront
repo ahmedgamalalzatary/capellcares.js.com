@@ -1,0 +1,35 @@
+FROM node:24-bookworm-slim AS base
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable
+
+FROM base AS deps
+WORKDIR /app
+ARG NEXT_PUBLIC_API_URL
+ARG API_INTERNAL_URL
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/storefront/package.json apps/storefront/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+WORKDIR /app
+ARG NEXT_PUBLIC_API_URL
+ARG API_INTERNAL_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
+COPY . .
+RUN pnpm --filter @capella/storefront build
+
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV API_INTERNAL_URL=http://api:4000
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/storefront/node_modules ./apps/storefront/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY . .
+COPY --from=builder /app/apps/storefront/.next ./apps/storefront/.next
+WORKDIR /app/apps/storefront
+EXPOSE 3000
+CMD ["pnpm", "start"]

@@ -1,0 +1,29 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { resolveApiBase } from "@/lib/api/base";
+
+describe("resolveApiBase", () => {
+  it("prefers the internal API URL on the server", () => {
+    expect(
+      resolveApiBase({
+        API_INTERNAL_URL: "http://api:4000",
+        NEXT_PUBLIC_API_URL: "http://localhost:4000"
+      } as NodeJS.ProcessEnv)
+    ).toBe("http://api:4000");
+  });
+
+  it("falls back to the public API URL in browser-like execution", () => {
+    vi.stubGlobal("window", {} as Window & typeof globalThis);
+
+    expect(
+      resolveApiBase({
+        API_INTERNAL_URL: "http://api:4000",
+        NEXT_PUBLIC_API_URL: "http://localhost:4000"
+      } as NodeJS.ProcessEnv)
+    ).toBe("http://localhost:4000");
+  });
+
+  it("uses localhost as the default public API URL", () => {
+    expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("http://localhost:4000");
+  });
+});
