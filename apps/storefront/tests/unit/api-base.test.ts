@@ -8,7 +8,7 @@ describe("resolveApiBase", () => {
       resolveApiBase({
         API_INTERNAL_URL: "http://api:4000",
         NEXT_PUBLIC_API_URL: "http://localhost:4000"
-      } as NodeJS.ProcessEnv)
+      } as NodeJS.ProcessEnv, { isServer: true })
     ).toBe("http://api:4000");
   });
 

@@ -29,7 +29,7 @@ services:
     container_name: capella-api
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.docker
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -62,7 +62,7 @@ services:
     container_name: capella-storefront
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.docker
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
@@ -85,7 +85,7 @@ services:
     container_name: capella-erp
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.docker
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}

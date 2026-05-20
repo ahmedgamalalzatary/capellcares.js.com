@@ -8,6 +8,13 @@
       "when": 1778882044860,
       "tag": "0000_glamorous_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778961600000,
+      "tag": "0001_handy_advices",
+      "breakpoints": true
     }
   ]
 }

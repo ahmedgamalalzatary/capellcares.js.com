@@ -1,8 +1,16 @@
 const DEFAULT_PUBLIC_API_BASE = "http://localhost:4000";
 
-export function resolveApiBase(env: NodeJS.ProcessEnv = process.env): string {
+type ResolveApiBaseOptions = {
+  isServer?: boolean;
+};
+
+export function resolveApiBase(
+  env: NodeJS.ProcessEnv = process.env,
+  options: ResolveApiBaseOptions = {}
+): string {
   const internalBase = env.API_INTERNAL_URL?.trim();
-  if (typeof window === "undefined" && internalBase) {
+  const isServer = options.isServer ?? typeof window === "undefined";
+  if (isServer && internalBase) {
     return internalBase;
   }
 
