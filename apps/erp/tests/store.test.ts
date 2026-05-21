@@ -3,8 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const apiGet = vi.fn();
 const apiPost = vi.fn();
 const apiDel = vi.fn();
+const authTokenListeners: Array<(token: string | null) => void> = [];
 
 vi.mock("@/lib/api/client", () => ({
+  subscribeAdminAccessToken: (listener: (token: string | null) => void) => {
+    authTokenListeners.push(listener);
+    return () => {
+      const index = authTokenListeners.indexOf(listener);
+      if (index >= 0) authTokenListeners.splice(index, 1);
+    };
+  },
   api: {
     get: apiGet,
     post: apiPost,
@@ -19,6 +27,7 @@ function flush() {
 afterEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
+  authTokenListeners.length = 0;
 });
 
 describe("ERP store", () => {
@@ -115,6 +124,46 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
+    expect(apiGet).toHaveBeenCalledTimes(10);
+  });
+
+  it("refetches after an admin access token is restored on tab reload", async () => {
+    apiGet
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/products"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/categories"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/offers"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/advices"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/orders"))
+      .mockResolvedValueOnce({
+        items: [{
+          id: 1,
+          sku: "SKU-1",
+          slug: "product-1",
+          name: { ar: "منتج", en: "Product" },
+          status: "active",
+          categoryId: 5,
+          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
+        }]
+      })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    expect(store.products).toHaveLength(0);
+    expect(store.error).toBe("API 401 /api/erp/products");
+
+    authTokenListeners.forEach((listener) => listener("restored-access-token"));
+    await flush();
+
+    expect(store.products).toHaveLength(1);
+    expect(store.error).toBeNull();
     expect(apiGet).toHaveBeenCalledTimes(10);
   });
 });

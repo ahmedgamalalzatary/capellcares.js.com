@@ -3,9 +3,16 @@ import { resolveApiBase } from "./base";
 export const API_BASE = resolveApiBase();
 
 let adminAccessToken: string | null = null;
+const adminAccessTokenListeners = new Set<(token: string | null) => void>();
 
 export function setAdminAccessToken(token: string | null) {
   adminAccessToken = token;
+  adminAccessTokenListeners.forEach((listener) => listener(token));
+}
+
+export function subscribeAdminAccessToken(listener: (token: string | null) => void) {
+  adminAccessTokenListeners.add(listener);
+  return () => adminAccessTokenListeners.delete(listener);
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

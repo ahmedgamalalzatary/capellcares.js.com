@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
-import { api } from "./api/client";
+import { api, subscribeAdminAccessToken } from "./api/client";
 
 type Listener = () => void;
 type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -140,6 +140,7 @@ class ErpStore {
   error: string | null = null;
   private listeners = new Set<Listener>();
   private browserRefreshBound = false;
+  private authRefreshBound = false;
 
   subscribe(l: Listener) {
     this.listeners.add(l);
@@ -177,6 +178,7 @@ class ErpStore {
 
   ensureLoaded() {
     this.bindBrowserRefresh();
+    this.bindAuthRefresh();
     if (!this.loaded && !this.loading) void this.refetch();
   }
 
@@ -197,6 +199,19 @@ class ErpStore {
     window.addEventListener("focus", refreshIfLoaded);
     document.addEventListener("visibilitychange", refreshIfLoaded);
     this.browserRefreshBound = true;
+  }
+
+  private bindAuthRefresh() {
+    if (this.authRefreshBound || typeof window === "undefined") {
+      return;
+    }
+
+    subscribeAdminAccessToken((token) => {
+      if (token && !this.loading) {
+        void this.refetch();
+      }
+    });
+    this.authRefreshBound = true;
   }
 
   // products
