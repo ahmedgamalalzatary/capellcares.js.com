@@ -1,220 +1,270 @@
 # Docker Deploy Guide
 
-This file is a practical command list for running the Capella stack with Docker.
+This guide is ordered by the normal flow of commands: prepare env, build/start, create or update schema, seed if needed, then verify.
 
 ## Environment Files
 
-- `.env`: normal local non-Docker development.
+- `.env`: local non-Docker development.
 - `.env.docker`: local Docker Compose on your PC.
 - `.env.production`: production Docker Compose on the VPS.
 
-## Local Docker On PC
+Production uses:
 
-Commands in this section assume you are in the repo root on Windows:
+```bash
+docker compose --env-file .env.production ...
+```
+
+Local Docker uses:
+
+```cmd
+docker compose --env-file .env.docker ...
+```
+
+## Required Auth Env
+
+Production and Docker auth require server-only ERP admin bootstrap values:
+
+```env
+ADMIN_NAME=Capella Admin
+ADMIN_EMAIL=your-admin-email
+ADMIN_PASSWORD=your-strong-admin-password
+```
+
+Remove old ERP dev fallback variables from production and Docker env files:
+
+```env
+ALLOW_DEV_ADMIN_FALLBACK
+DEV_ADMIN_EMAIL
+DEV_ADMIN_PASSWORD
+NEXT_PUBLIC_DEV_ADMIN_EMAIL
+NEXT_PUBLIC_DEV_ADMIN_PASSWORD
+```
+
+## Production Fresh DB Flow
+
+Use this only when the VPS database has no valuable data. `down -v` deletes the MySQL volume.
+
+Start on the VPS:
+
+```bash
+cd ~/capellcares.js.com
+git pull
+```
+
+Verify repo state before touching Docker:
+
+```bash
+git status --short
+git log -1 --oneline
+docker compose --env-file .env.production config >/tmp/capella-compose.yml
+```
+
+Build and start from a clean database:
+
+```bash
+docker compose --env-file .env.production pull mysql
+docker compose --env-file .env.production down -v
+docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production up -d
+```
+
+Verify containers are created and healthy enough to run commands:
+
+```bash
+docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs api --tail 80
+```
+
+Push the current schema directly:
+
+```bash
+docker compose --env-file .env.production exec api pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
+```
+
+Verify auth tables exist:
+
+```bash
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
+```
+
+Optional seed data:
+
+```bash
+docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
+```
+
+Verify seed data if you ran seed:
+
+```bash
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''categories'\''; SELECT COUNT(*) AS categories FROM categories;"'
+```
+
+Verify public services:
+
+```bash
+docker compose --env-file .env.production ps
+curl https://api.capellacares.com/health
+curl -I https://capellacares.com
+curl -I https://erp.capellacares.com
+```
+
+## Production Existing DB Flow
+
+Use this once production may contain valuable data. Do not use `down -v`.
+
+Start on the VPS:
+
+```bash
+cd ~/capellcares.js.com
+git pull
+```
+
+Verify repo state before touching Docker:
+
+```bash
+git status --short
+git log -1 --oneline
+docker compose --env-file .env.production config >/tmp/capella-compose.yml
+```
+
+Build and start:
+
+```bash
+docker compose --env-file .env.production pull mysql
+docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production up -d
+```
+
+Verify containers are created and the API container can run commands:
+
+```bash
+docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs api --tail 80
+```
+
+Apply migrations:
+
+```bash
+docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
+```
+
+Verify schema after migrations:
+
+```bash
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
+```
+
+Restart app services after schema changes:
+
+```bash
+docker compose --env-file .env.production restart api storefront erp
+```
+
+Verify public services:
+
+```bash
+docker compose --env-file .env.production ps
+curl https://api.capellacares.com/health
+curl -I https://capellacares.com
+curl -I https://erp.capellacares.com
+```
+
+## Local Docker Fresh DB Flow
+
+Use this when your local Docker database has no valuable data.
+
+Run from the repo root on Windows:
 
 ```cmd
 D:\Documents\currentwork\capella\capellastore\capellacares.js.com>
 ```
 
-### Main Commands
+Verify local Compose config:
 
-Pull required service images:
+```cmd
+docker compose --env-file .env.docker config > nul
+```
+
+Build and start from a clean database:
 
 ```cmd
 docker compose --env-file .env.docker pull mysql
-```
-
-Build everything:
-
-```cmd
+docker compose --env-file .env.docker down -v
 docker compose --env-file .env.docker build --no-cache
-```
-
-Build one service:
-
-```cmd
-docker compose --env-file .env.docker build api
-docker compose --env-file .env.docker build storefront
-docker compose --env-file .env.docker build erp
-```
-
-Start the full stack:
-
-```cmd
 docker compose --env-file .env.docker up -d
 ```
 
-Stop the full stack:
-
-```cmd
-docker compose --env-file .env.docker down
-```
-
-Stop only selected services without removing them:
-
-```cmd
-docker compose --env-file .env.docker stop storefront erp
-docker compose --env-file .env.docker stop api
-```
-
-Start selected stopped services again:
-
-```cmd
-docker compose --env-file .env.docker start storefront erp
-docker compose --env-file .env.docker start api
-```
-
-Stop and remove volumes:
-
-```cmd
-docker compose --env-file .env.docker down -v
-```
-
-Restart selected services:
-
-```cmd
-docker compose --env-file .env.docker restart api storefront
-docker compose --env-file .env.docker restart api
-docker compose --env-file .env.docker restart erp
-```
-
-Show running containers:
+Verify containers are running:
 
 ```cmd
 docker compose --env-file .env.docker ps
-```
-
-### Logs
-
-All logs:
-
-```cmd
-docker compose --env-file .env.docker logs
-```
-
-Tail all logs:
-
-```cmd
-docker compose --env-file .env.docker logs --tail 100
-```
-
-Service logs:
-
-```cmd
-docker compose --env-file .env.docker logs api
-docker compose --env-file .env.docker logs storefront
-docker compose --env-file .env.docker logs erp
-docker compose --env-file .env.docker logs mysql
-```
-
-Short service logs:
-
-```cmd
 docker compose --env-file .env.docker logs api --tail 80
-docker compose --env-file .env.docker logs storefront --tail 80
-docker compose --env-file .env.docker logs erp --tail 80
-docker compose --env-file .env.docker logs mysql --tail 80
 ```
 
-### Database And Migrations
-
-Apply Drizzle migrations:
+Push the current schema directly:
 
 ```cmd
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:migrate
+docker compose --env-file .env.docker exec api pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
 ```
 
-Run seed data:
+Verify auth tables exist:
+
+```cmd
+docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES LIKE 'admin_users'; SHOW TABLES LIKE 'auth_sessions';\""
+```
+
+Optional seed data:
 
 ```cmd
 docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:seed
 ```
 
-Open MySQL with the app user:
+Verify seed data if you ran seed:
 
 ```cmd
-docker compose --env-file .env.docker exec mysql mysql -ucapella -pnewapppassword capella
+docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES LIKE 'categories'; SELECT COUNT(*) AS categories FROM categories;\""
 ```
 
-Check whether a table exists:
+Verify local services:
 
 ```cmd
-docker compose --env-file .env.docker exec mysql mysql -ucapella -pnewapppassword capella -e "SHOW TABLES LIKE 'advices';"
+docker compose --env-file .env.docker ps
+curl http://localhost:4000/health
 ```
 
-Describe a table:
+## Local Docker Existing DB Flow
+
+Use this when you want to keep your local Docker database volume.
 
 ```cmd
-docker compose --env-file .env.docker exec mysql mysql -ucapella -pnewapppassword capella -e "DESCRIBE advices;"
+docker compose --env-file .env.docker config > nul
+docker compose --env-file .env.docker pull mysql
+docker compose --env-file .env.docker build --no-cache
+docker compose --env-file .env.docker up -d
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:migrate
+docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES LIKE 'admin_users'; SHOW TABLES LIKE 'auth_sessions';\""
+docker compose --env-file .env.docker ps
+curl http://localhost:4000/health
 ```
 
-### Useful Service Checks
+## Local Non-Docker Fresh DB
 
-Test API health from host:
+Use this when MySQL is running on your host machine and `.env` points to it.
+
+```cmd
+pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
+pnpm --filter @capella/database db:seed
+pnpm dev
+```
+
+Verify local non-Docker services:
 
 ```cmd
 curl http://localhost:4000/health
 ```
 
-Test API health from inside the API container:
-
-```cmd
-docker compose --env-file .env.docker exec api node -e "fetch('http://127.0.0.1:4000/health').then(r=>r.text()).then(console.log).catch(err=>{console.error(err);process.exit(1)})"
-```
-
-Test storefront-facing advices endpoint from inside the API container:
-
-```cmd
-docker compose --env-file .env.docker exec api node -e "fetch('http://127.0.0.1:4000/api/v1/advices').then(r=>r.text()).then(console.log).catch(err=>{console.error(err);process.exit(1)})"
-```
-
-List migration files inside the running API container:
-
-```cmd
-docker compose --env-file .env.docker exec api sh -lc "ls -1 /app/packages/database/drizzle/migrations"
-```
-
-### Local URLs
-
-- Storefront: `http://localhost:3000`
-- ERP: `http://localhost:3001`
-- API: `http://localhost:4000`
-- API health: `http://localhost:4000/health`
-
-### Common Recovery Flow
-
-If Docker state becomes confusing:
-
-```cmd
-docker compose --env-file .env.docker pull mysql
-docker compose --env-file .env.docker down -v
-docker compose --env-file .env.docker build
-docker compose --env-file .env.docker up -d
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:migrate
-docker compose --env-file .env.docker ps
-```
-
-## Production On VPS
-
-Commands in this section assume you are on the Linux server:
-
-```bash
-cd ~/capellcares.js.com
-```
-
-### Main Commands
-
-Pull required service images:
-
-```bash
-docker compose --env-file .env.production pull mysql
-```
-
-Build everything:
-
-```bash
-docker compose --env-file .env.production build --no-cache
-```
+## Common Commands
 
 Build one service:
 
@@ -224,42 +274,22 @@ docker compose --env-file .env.production build storefront
 docker compose --env-file .env.production build erp
 ```
 
-Start the full stack:
-
-```bash
-docker compose --env-file .env.production up -d
-```
-
-Stop the full stack:
+Stop without deleting data:
 
 ```bash
 docker compose --env-file .env.production down
 ```
 
-Stop only selected services without removing them:
-
-```bash
-docker compose --env-file .env.production stop storefront erp
-docker compose --env-file .env.production stop api
-```
-
-Start selected stopped services again:
-
-```bash
-docker compose --env-file .env.production start storefront erp
-docker compose --env-file .env.production start api
-```
-
-Stop and remove volumes:
+Stop and delete Docker volumes:
 
 ```bash
 docker compose --env-file .env.production down -v
 ```
 
-Restart selected services:
+Restart services:
 
 ```bash
-docker compose --env-file .env.production restart api storefront
+docker compose --env-file .env.production restart api storefront erp
 docker compose --env-file .env.production restart api
 docker compose --env-file .env.production restart erp
 ```
@@ -270,7 +300,9 @@ Show running containers:
 docker compose --env-file .env.production ps
 ```
 
-### Logs
+For local Docker, replace `.env.production` with `.env.docker`.
+
+## Logs
 
 All logs:
 
@@ -287,110 +319,62 @@ docker compose --env-file .env.production logs --tail 100
 Service logs:
 
 ```bash
-docker compose --env-file .env.production logs api
-docker compose --env-file .env.production logs storefront
-docker compose --env-file .env.production logs erp
-docker compose --env-file .env.production logs mysql
-```
-
-Short service logs:
-
-```bash
 docker compose --env-file .env.production logs api --tail 80
 docker compose --env-file .env.production logs storefront --tail 80
 docker compose --env-file .env.production logs erp --tail 80
 docker compose --env-file .env.production logs mysql --tail 80
 ```
 
-### Database And Migrations
+For local Docker, replace `.env.production` with `.env.docker`.
 
-Apply Drizzle migrations:
-
-```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
-```
-
-For a fresh production database, this command is still required. MySQL creates the empty database, and Drizzle migrations create the application tables.
-
-Run seed data:
-
-```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
-```
+## Database Checks
 
 Open MySQL with the app user:
 
 ```bash
-docker compose --env-file .env.production exec mysql mysql -ucapella -pnewapppassword capella
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
 ```
 
 Check whether a table exists:
 
 ```bash
-docker compose --env-file .env.production exec mysql mysql -ucapella -pnewapppassword capella -e "SHOW TABLES LIKE 'advices';"
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''auth_sessions'\'';"'
 ```
 
 Describe a table:
 
 ```bash
-docker compose --env-file .env.production exec mysql mysql -ucapella -pnewapppassword capella -e "DESCRIBE advices;"
+docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "DESCRIBE admin_users;"'
 ```
 
-### Useful Service Checks
-
-Test API health from VPS:
-
-```bash
-curl https://api.capellacares.com/health
-curl http://127.0.0.1:4000/health
-```
-
-Test storefront from VPS:
-
-```bash
-curl -I https://capellacares.com
-curl -I https://capellacares.com/ar/products
-```
-
-Test ERP from VPS:
-
-```bash
-curl -I https://erp.capellacares.com
-```
-
-List migration files inside the running API container:
+List migration files inside the API container:
 
 ```bash
 docker compose --env-file .env.production exec api sh -lc "ls -1 /app/packages/database/drizzle/migrations"
 ```
 
-### Public URLs
+For local Docker, replace `.env.production` with `.env.docker`.
+
+## URLs
+
+Production:
 
 - Storefront: `https://capellacares.com`
 - ERP: `https://erp.capellacares.com`
 - API: `https://api.capellacares.com`
 - API health: `https://api.capellacares.com/health`
 
-### Common Recovery Flow
+Local Docker:
 
-If production Docker state becomes confusing:
+- Storefront: `http://localhost:3000`
+- ERP: `http://localhost:3001`
+- API: `http://localhost:4000`
+- API health: `http://localhost:4000/health`
 
-```bash
-docker compose --env-file .env.production pull mysql
-docker compose --env-file .env.production down -v
-docker compose --env-file .env.production build
-docker compose --env-file .env.production up -d
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
-docker compose --env-file .env.production ps
-```
+## Rules
 
-## Notes
-
-- Use `.env` for normal local development outside Docker.
-- Use `.env.docker` for local Docker Compose on your PC.
-- Use `.env.production` for VPS deployment commands.
+- Fresh/disposable DBs can use `drizzle-kit push`.
+- Databases with valuable data should use `db:migrate`.
+- `down -v` deletes Docker volumes, including MySQL data.
+- `docker-compose.yml` reads deployment values from the `--env-file` argument.
 - Inside Docker, services talk to each other by service name such as `mysql` and `api`, not `localhost`.
-- `docker-compose.yml` reads deployment values from the `--env-file` argument; production should use `--env-file .env.production`.
-- Production auth requires server-only `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` in `.env.production`.
-- Remove old ERP dev fallback variables from production env files: `ALLOW_DEV_ADMIN_FALLBACK`, `DEV_ADMIN_EMAIL`, `DEV_ADMIN_PASSWORD`, `NEXT_PUBLIC_DEV_ADMIN_EMAIL`, and `NEXT_PUBLIC_DEV_ADMIN_PASSWORD`.
-- If the app works outside Docker but fails inside Docker, inspect DB schema drift first.
