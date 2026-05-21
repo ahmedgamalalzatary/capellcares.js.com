@@ -82,3 +82,73 @@ test("refresh route issues a new access token when refresh cookie is present", a
     assert.ok(refreshResponse.json.accessToken);
   });
 });
+
+test("refresh route rotates the refresh cookie and rejects the previous refresh token", async () => {
+  await withTestServer(app, async (request) => {
+    await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Route Rotate", email: loginEmail, password })
+    });
+
+    const loginResponse = await request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: loginEmail, password })
+    });
+
+    const firstCookie = loginResponse.headers.get("set-cookie");
+    assert.ok(firstCookie);
+
+    const refreshResponse = await request("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { cookie: firstCookie }
+    });
+
+    assert.equal(refreshResponse.status, 200);
+    const rotatedCookie = refreshResponse.headers.get("set-cookie");
+    assert.ok(rotatedCookie);
+    assert.notEqual(rotatedCookie, firstCookie);
+
+    const oldCookieResponse = await request("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { cookie: firstCookie }
+    });
+
+    assert.equal(oldCookieResponse.status, 401);
+  });
+});
+
+test("logout route revokes the current refresh session and clears the refresh cookie", async () => {
+  await withTestServer(app, async (request) => {
+    await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Route Logout", email: loginEmail, password })
+    });
+
+    const loginResponse = await request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: loginEmail, password })
+    });
+
+    const refreshCookie = loginResponse.headers.get("set-cookie");
+    assert.ok(refreshCookie);
+
+    const logoutResponse = await request("/api/v1/auth/logout", {
+      method: "POST",
+      headers: { cookie: refreshCookie }
+    });
+
+    assert.equal(logoutResponse.status, 204);
+    assert.match(logoutResponse.headers.get("set-cookie") ?? "", /capella_refresh=;/);
+
+    const refreshResponse = await request("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { cookie: refreshCookie }
+    });
+
+    assert.equal(refreshResponse.status, 401);
+  });
+});

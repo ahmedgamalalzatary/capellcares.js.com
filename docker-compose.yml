@@ -28,12 +28,21 @@ services:
       dockerfile: Dockerfile.api
     container_name: capella-api
     restart: unless-stopped
-    env_file:
-      - .env.docker
     environment:
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: mysql://${MYSQL_USER:-capella}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-capella}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in env file}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in env file}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      ADMIN_NAME: ${ADMIN_NAME:-Capella Admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in env file}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in env file}
+      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-4194304}
+      UPLOAD_ALLOWED_MIME_TYPES: ${UPLOAD_ALLOWED_MIME_TYPES:-image/png,image/jpeg,image/webp}
+      HOSTINGER_PUBLIC_BASE_URL: ${HOSTINGER_PUBLIC_BASE_URL:?set HOSTINGER_PUBLIC_BASE_URL in env file}
     depends_on:
       mysql:
         condition: service_healthy
@@ -57,15 +66,13 @@ services:
       context: .
       dockerfile: Dockerfile.storefront
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: http://api:4000
     container_name: capella-storefront
     restart: unless-stopped
-    env_file:
-      - .env.docker
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
       API_INTERNAL_URL: http://api:4000
     depends_on:
       api:
@@ -78,19 +85,13 @@ services:
       context: .
       dockerfile: Dockerfile.erp
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_DEV_ADMIN_EMAIL: ${NEXT_PUBLIC_DEV_ADMIN_EMAIL}
-        NEXT_PUBLIC_DEV_ADMIN_PASSWORD: ${NEXT_PUBLIC_DEV_ADMIN_PASSWORD}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: http://api:4000
     container_name: capella-erp
     restart: unless-stopped
-    env_file:
-      - .env.docker
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_DEV_ADMIN_EMAIL: ${NEXT_PUBLIC_DEV_ADMIN_EMAIL}
-      NEXT_PUBLIC_DEV_ADMIN_PASSWORD: ${NEXT_PUBLIC_DEV_ADMIN_PASSWORD}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
       API_INTERNAL_URL: http://api:4000
     depends_on:
       api:

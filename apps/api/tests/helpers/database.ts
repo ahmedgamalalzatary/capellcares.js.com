@@ -1,6 +1,8 @@
 import { eq, inArray } from "drizzle-orm";
 import {
   categories,
+  adminUsers,
+  authSessions,
   customers,
   advices,
   offerItems,
@@ -15,6 +17,8 @@ import { db } from "@capella/database/src/db";
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
+  await db.delete(authSessions);
+  await db.delete(adminUsers);
   await db.delete(wishlists);
   await db.delete(orderItems);
   await db.delete(orders);

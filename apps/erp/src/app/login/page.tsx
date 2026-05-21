@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useAdminAuth, ADMIN_CREDENTIALS_HINT } from "@/components/providers/admin-auth";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { Icon } from "@/components/ui/icons";
 
 export default function LoginPage() {
@@ -68,11 +68,6 @@ export default function LoginPage() {
             <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
               {busy ? "جارٍ التحقق…" : "تسجيل الدخول"}
             </button>
-          </div>
-          <div style={{ marginTop: 18, padding: 12, background: "var(--bg-tint)", borderRadius: 6, fontSize: 12, color: "var(--ink-2)" }}>
-            {ADMIN_CREDENTIALS_HINT
-              ? <><strong>للتجربة:</strong> {ADMIN_CREDENTIALS_HINT.email} / {ADMIN_CREDENTIALS_HINT.password}</>
-              : <>أضيفي <code>NEXT_PUBLIC_DEV_ADMIN_EMAIL</code> و <code>NEXT_PUBLIC_DEV_ADMIN_PASSWORD</code> إلى ملف <code>.env</code> ثم أعيدي تشغيل ERP.</>}
           </div>
         </form>
       </section>

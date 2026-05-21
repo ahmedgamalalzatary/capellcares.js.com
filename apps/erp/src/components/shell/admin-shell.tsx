@@ -73,7 +73,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.email}</div>
           </div>
           <button
-            onClick={() => { logout(); router.replace("/login"); }}
+            onClick={() => { void logout().finally(() => router.replace("/login")); }}
             style={{ background: "transparent", border: 0, color: "rgba(255,255,255,0.6)", padding: 6 }}
             aria-label="خروج"
           >

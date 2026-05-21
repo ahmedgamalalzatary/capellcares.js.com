@@ -107,6 +107,28 @@ export const customers = mysqlTable("customers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const adminUsers = mysqlTable("admin_users", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  role: mysqlEnum("role", ["admin"]).notNull().default("admin"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const authSessions = mysqlTable("auth_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  accountType: mysqlEnum("account_type", ["customer", "admin"]).notNull(),
+  customerId: int("customer_id"),
+  adminUserId: int("admin_user_id"),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  expiresAt: datetime("expires_at").notNull(),
+  revokedAt: datetime("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const wishlists = mysqlTable("wishlists", {
   id: int("id").autoincrement().primaryKey(),
   customerId: int("customer_id").notNull(),

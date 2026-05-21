@@ -1,38 +1,55 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { API_BASE, setAdminAccessToken } from "@/lib/api/client";
 
 interface AdminUser { name: string; email: string }
 interface AdminAuthValue {
   user: AdminUser | null;
   hydrated: boolean;
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const Ctx = createContext<AdminAuthValue | null>(null);
 const KEY = "capella.admin.v1";
-
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL;
-const ADMIN_PASS = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD;
-
-function getAdminCredentials() {
-  if (!ADMIN_EMAIL || !ADMIN_PASS) {
-    return null;
-  }
-  return { email: ADMIN_EMAIL, password: ADMIN_PASS };
-}
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     try {
       const raw = sessionStorage.getItem(KEY);
       if (raw) setUser(JSON.parse(raw));
     } catch {}
-    setHydrated(true);
+
+    fetch(`${API_BASE}/api/erp/auth/refresh`, {
+      method: "POST",
+      credentials: "include"
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          if (!cancelled) setUser(null);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) {
+          setAdminAccessToken(data.accessToken ?? null);
+          if (data.user) setUser(data.user);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setHydrated(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -44,19 +61,32 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [user, hydrated]);
 
   const login = useCallback(async (email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> => {
-    await new Promise((r) => setTimeout(r, 400));
-    const adminCredentials = getAdminCredentials();
-    if (!adminCredentials) {
-      return { ok: false, error: "إعدادات تسجيل الدخول غير مكتملة: أضيفي NEXT_PUBLIC_DEV_ADMIN_EMAIL و NEXT_PUBLIC_DEV_ADMIN_PASSWORD" };
-    }
-    if (email.trim().toLowerCase() === adminCredentials.email && password === adminCredentials.password) {
-      setUser({ name: "Capella Admin", email });
+    const res = await fetch(`${API_BASE}/api/erp/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setUser(data.user);
+      setAdminAccessToken(data.accessToken);
       return { ok: true };
     }
     return { ok: false, error: "بيانات الدخول غير صحيحة" };
   }, []);
 
-  const logout = useCallback(() => setUser(null), []);
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/api/erp/auth/logout`, {
+        method: "POST",
+        credentials: "include"
+      });
+    } finally {
+      setUser(null);
+      setAdminAccessToken(null);
+    }
+  }, []);
 
   const value = useMemo<AdminAuthValue>(() => ({ user, hydrated, login, logout }), [user, hydrated, login, logout]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -67,5 +97,3 @@ export function useAdminAuth() {
   if (!c) throw new Error("useAdminAuth must be used within AdminAuthProvider");
   return c;
 }
-
-export const ADMIN_CREDENTIALS_HINT = getAdminCredentials();

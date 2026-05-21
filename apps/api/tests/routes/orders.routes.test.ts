@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
+import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { db } from "@capella/database/src/db";
 import { orders } from "@capella/database/drizzle/schema";
 
@@ -40,8 +41,9 @@ test("erp orders list returns created orders for admins", async () => {
   }).$returningId();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/orders", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 200);
@@ -56,6 +58,7 @@ test("erp order detail returns line items for admins", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const checkout = await request("/api/v1/checkout", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -76,7 +79,7 @@ test("erp order detail returns line items for admins", async () => {
     assert.equal(checkout.status, 201);
 
     const response = await request(`/api/erp/orders/${checkout.json.id}`, {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 200);
@@ -107,10 +110,11 @@ test("erp orders can update payment status", async () => {
   }).$returningId();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/orders/${created.id}/payment-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({ paymentStatus: "accepted" })
@@ -169,6 +173,7 @@ test("storefront orders list only returns the authenticated customer's orders", 
   ]);
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/v1/orders", {
       headers: {
         authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
@@ -202,6 +207,7 @@ test("storefront order detail rejects access to another customer's order", async
   }).$returningId();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/v1/orders/${created.id}`, {
       headers: {
         authorization: `Bearer ${issueCustomerToken(ids.customerId + 999)}`
@@ -233,8 +239,9 @@ test("order routes reject invalid ids and invalid payment statuses", async () =>
   }).$returningId();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const badAdminDetail = await request("/api/erp/orders/not-a-number", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
     assert.equal(badAdminDetail.status, 400);
     assert.equal(badAdminDetail.json.message, "Invalid order id");
@@ -242,7 +249,7 @@ test("order routes reject invalid ids and invalid payment statuses", async () =>
     const badPaymentStatus = await request(`/api/erp/orders/${created.id}/payment-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({ paymentStatus: "paid" })

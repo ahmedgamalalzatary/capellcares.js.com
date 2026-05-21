@@ -7,6 +7,7 @@ import { db } from "@capella/database/src/db";
 import { categories } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
+import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -16,9 +17,10 @@ test("admin category delete rejects categories that still have linked products",
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/categories/${ids.rootCategoryId}`, {
       method: "DELETE",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 409);
@@ -36,9 +38,10 @@ test("admin category delete rejects categories that still have active children",
     .values({ slug: "route-child-cat", arName: "فرع", enName: "Child", isLeaf: true, parentId: parent.id });
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/categories/${parent.id}`, {
       method: "DELETE",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 409);

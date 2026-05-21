@@ -13,12 +13,11 @@ interface AuthContextValue {
   accessToken: string | null;
   login: (email: string, password: string) => Promise<AuthUser>;
   signup: (name: string, email: string, password: string) => Promise<AuthUser>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const STORAGE_KEY = "capella.auth.v1";
-const TOKEN_KEY = "capella.auth.token.v1";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -30,8 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setUser(JSON.parse(raw));
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (token) setAccessToken(token);
     } catch {}
     setHydrated(true);
   }, []);
@@ -77,8 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
       else localStorage.removeItem(STORAGE_KEY);
-      if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
-      else localStorage.removeItem(TOKEN_KEY);
     } catch {}
   }, [user, accessToken, hydrated]);
 
@@ -106,9 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return login(email, password);
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setAccessToken(null);
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include"
+      });
+    } finally {
+      setUser(null);
+      setAccessToken(null);
+    }
   }, []);
 
   const value = useMemo(() => ({ user, accessToken, login, signup, logout }), [user, accessToken, login, signup, logout]);

@@ -1,14 +1,11 @@
 import { resolveApiBase } from "./base";
 
 export const API_BASE = resolveApiBase();
-const DEV_ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL;
-const DEV_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD;
 
-function getDevAdminHeader() {
-  if (!DEV_ADMIN_EMAIL || !DEV_ADMIN_PASSWORD) {
-    throw new Error("Missing NEXT_PUBLIC_DEV_ADMIN_EMAIL or NEXT_PUBLIC_DEV_ADMIN_PASSWORD");
-  }
-  return `${DEV_ADMIN_EMAIL}:${DEV_ADMIN_PASSWORD}`;
+let adminAccessToken: string | null = null;
+
+export function setAdminAccessToken(token: string | null) {
+  adminAccessToken = token;
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -21,13 +18,13 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (adminAccessToken) headers.set("authorization", `Bearer ${adminAccessToken}`);
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-basic": getDevAdminHeader(),
-      ...(init?.headers ?? {})
-    },
+    headers,
     cache: "no-store"
   });
   if (!res.ok) {

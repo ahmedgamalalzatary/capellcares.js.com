@@ -12,7 +12,7 @@ describe("resolveApiBase", () => {
       resolveApiBase({
         API_INTERNAL_URL: "http://api:4000",
         NEXT_PUBLIC_API_URL: "http://localhost:4000"
-      } as NodeJS.ProcessEnv, { isServer: true })
+      } as unknown as NodeJS.ProcessEnv, { isServer: true })
     ).toBe("http://api:4000");
   });
 
@@ -23,7 +23,7 @@ describe("resolveApiBase", () => {
       resolveApiBase({
         API_INTERNAL_URL: "http://api:4000",
         NEXT_PUBLIC_API_URL: "http://localhost:4000"
-      } as NodeJS.ProcessEnv)
+      } as unknown as NodeJS.ProcessEnv)
     ).toBe("http://localhost:4000");
   });
 

@@ -7,6 +7,7 @@ import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
+import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -29,10 +30,11 @@ test("admin product upsert rejects activating a product with no variants", async
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -55,10 +57,11 @@ test("admin product upsert rejects activating a product with no keywords", async
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -81,10 +84,11 @@ test("admin product upsert rejects activating a product with no image", async ()
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -106,10 +110,11 @@ test("admin product upsert rejects activating a product missing the English name
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -132,10 +137,11 @@ test("admin product upsert rejects activating a product missing the Arabic name"
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -158,10 +164,11 @@ test("admin product upsert allows an incomplete product when status is inactive"
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -182,10 +189,11 @@ test("admin product upsert activates a complete product successfully", async () 
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify(makeCompleteProduct(ids.leafCategoryId))
@@ -209,10 +217,11 @@ test("admin product toggle-status flips the persisted DB status", async () => {
   assert.equal(before.status, "active");
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/products/${ids.productOneId}/toggle-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234"
+        ...authHeaders
       }
     });
 
@@ -230,10 +239,11 @@ test("admin product toggle-status flips the persisted DB status", async () => {
   assert.equal(afterFirstToggle.status, "inactive");
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/products/${ids.productOneId}/toggle-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234"
+        ...authHeaders
       }
     });
 
@@ -257,9 +267,10 @@ test("admin products list includes soft-deleted products for ERP trash", async (
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/products", {
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234"
+        ...authHeaders
       }
     });
 

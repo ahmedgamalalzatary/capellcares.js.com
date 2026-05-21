@@ -42,9 +42,7 @@ loadWorkspaceEnv();
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_DEV_ADMIN_EMAIL: process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL,
-    NEXT_PUBLIC_DEV_ADMIN_PASSWORD: process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
   },
   transpilePackages: ["@capella/shared"],
   webpack: (config) => {

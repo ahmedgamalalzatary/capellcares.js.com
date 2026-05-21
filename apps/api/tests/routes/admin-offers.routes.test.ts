@@ -7,6 +7,7 @@ import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
+import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -17,10 +18,11 @@ test("admin offer upsert creates a new offer when the payload has no id", async 
   const slug = `route-offer-${Date.now()}`;
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const createResponse = await request("/api/erp/offers", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -42,7 +44,7 @@ test("admin offer upsert creates a new offer when the payload has no id", async 
     assert.equal(createResponse.json.ok, true);
 
     const adminOffersResponse = await request("/api/erp/offers", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
     assert.equal(adminOffersResponse.status, 200);
     assert.equal(
@@ -100,8 +102,9 @@ test("admin offer upsert creates a new offer when the payload has no id", async 
 
 test("admin offers list returns ERP offer shape with bilingual name", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/offers", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 200);
@@ -129,6 +132,7 @@ test("admin offer toggle-status flips the persisted DB status", async () => {
   assert.equal(before.status, "active");
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const storefrontBefore = await request("/api/v1/offers");
     assert.equal(storefrontBefore.status, 200);
     assert.equal(
@@ -139,7 +143,7 @@ test("admin offer toggle-status flips the persisted DB status", async () => {
     const response = await request(`/api/erp/offers/${ids.offerId}/toggle-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234"
+        ...authHeaders
       }
     });
 
@@ -167,10 +171,11 @@ test("admin offer toggle-status flips the persisted DB status", async () => {
   assert.equal(afterFirstToggle.status, "inactive");
 
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/erp/offers/${ids.offerId}/toggle-status`, {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234"
+        ...authHeaders
       }
     });
 

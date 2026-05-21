@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm";
 import {
   advices,
+  adminUsers,
+  authSessions,
   categories,
   customers,
   offerItems,
@@ -13,6 +15,15 @@ import {
 } from "./schema.js";
 
 export const advicesRelations = relations(advices, () => ({}));
+
+export const adminUsersRelations = relations(adminUsers, ({ many }) => ({
+  sessions: many(authSessions)
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+  customer: one(customers, { fields: [authSessions.customerId], references: [customers.id] }),
+  adminUser: one(adminUsers, { fields: [authSessions.adminUserId], references: [adminUsers.id] })
+}));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
   parent: one(categories, { fields: [categories.parentId], references: [categories.id] }),
@@ -43,7 +54,8 @@ export const offerItemsRelations = relations(offerItems, ({ one }) => ({
 
 export const customersRelations = relations(customers, ({ many }) => ({
   wishlists: many(wishlists),
-  orders: many(orders)
+  orders: many(orders),
+  sessions: many(authSessions)
 }));
 
 export const wishlistsRelations = relations(wishlists, ({ one }) => ({

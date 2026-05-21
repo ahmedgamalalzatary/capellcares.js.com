@@ -1,8 +1,16 @@
+import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import {
-  isDevAdminFallbackEnabled,
-  resolveDevAdminCredentials
-} from "../../../middlewares/admin-auth.config.js";
+  createAdminUser,
+  findAdminUserByEmail,
+  findFirstAdminUser,
+  updateAdminUser
+} from "../../../repositories/admin-user.repository.js";
+import {
+  createRefreshSession,
+  rotateRefreshSession,
+  revokeRefreshSession
+} from "../../../services/auth-session.service.js";
 import type { AdminLoginInput } from "./admin-auth.schemas.js";
 
 type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
@@ -35,36 +43,89 @@ export async function loginAdmin(
   options?: { env?: NodeJS.ProcessEnv }
 ) {
   const env = options?.env ?? process.env;
-  if (!isDevAdminFallbackEnabled(env)) {
-    throw new Error("Admin dev fallback is disabled");
-  }
-
-  const creds = resolveDevAdminCredentials(env);
-  if (!creds.email || !creds.password) {
-    throw new Error("Admin dev fallback credentials are not configured");
-  }
+  await bootstrapAdminUser(env);
 
   const email = input.email.trim().toLowerCase();
-  if (email !== creds.email.toLowerCase() || input.password !== creds.password) {
+  const admin = await findAdminUserByEmail(email);
+  if (!admin) {
     throw new Error("Invalid admin credentials");
   }
+  const ok = await bcrypt.compare(input.password, admin.passwordHash);
+  if (!ok) throw new Error("Invalid admin credentials");
 
   const accessSecret = env.JWT_ACCESS_SECRET ?? "dev-access-secret";
-  const accessToken = jwt.sign(
-    {
-      sub: "dev-admin",
-      role: "admin",
-      type: "admin_access"
-    },
-    accessSecret,
-    { expiresIn: resolveJwtAccessTtl(env.JWT_ACCESS_TTL) }
-  );
+  const session = await createRefreshSession({ accountType: "admin", adminUserId: admin.id });
+  const accessToken = issueAdminAccessToken(admin.id, session.sessionId, accessSecret, env.JWT_ACCESS_TTL);
 
   return {
     accessToken,
+    refreshToken: session.refreshToken,
     user: {
-      name: "Capella Admin",
-      email: creds.email
+      name: admin.name,
+      email: admin.email
     }
   };
+}
+
+export async function bootstrapAdminUser(env: NodeJS.ProcessEnv = process.env) {
+  const email = env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = env.ADMIN_PASSWORD;
+  const name = env.ADMIN_NAME?.trim() || "Capella Admin";
+  if (!email || !password) {
+    throw new Error("Admin credentials are not configured");
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const existing = await findFirstAdminUser();
+  if (!existing) {
+    await createAdminUser({ name, email, passwordHash });
+    return;
+  }
+
+  const passwordMatches = await bcrypt.compare(password, existing.passwordHash);
+  if (existing.email !== email || existing.name !== name || !passwordMatches) {
+    await updateAdminUser(existing.id, { name, email, passwordHash });
+  }
+}
+
+export async function refreshAdminSession(refreshToken: string) {
+  const session = await rotateRefreshSession(refreshToken, "admin");
+  if (!session.adminUserId) throw new Error("Invalid admin refresh session");
+  const admin = await findFirstAdminUser();
+  if (!admin || admin.id !== session.adminUserId) throw new Error("Invalid admin refresh session");
+  return {
+    accessToken: issueAdminAccessToken(
+      admin.id,
+      session.sessionId,
+      process.env.JWT_ACCESS_SECRET ?? "dev-access-secret",
+      process.env.JWT_ACCESS_TTL
+    ),
+    refreshToken: session.refreshToken,
+    user: {
+      name: admin.name,
+      email: admin.email
+    }
+  };
+}
+
+export function logoutAdminSession(refreshToken: string) {
+  return revokeRefreshSession(refreshToken, "admin");
+}
+
+function issueAdminAccessToken(
+  adminId: number,
+  sessionId: number,
+  accessSecret: string,
+  rawTtl: string | undefined
+) {
+  return jwt.sign(
+    {
+      sub: adminId,
+      role: "admin",
+      type: "admin_access",
+      sid: sessionId
+    },
+    accessSecret,
+    { expiresIn: resolveJwtAccessTtl(rawTtl) }
+  );
 }

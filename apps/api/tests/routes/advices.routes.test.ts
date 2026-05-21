@@ -4,6 +4,7 @@ import test, { beforeEach } from "node:test";
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
+import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -22,10 +23,11 @@ function makeAdvicePayload() {
 
 test("erp advice CRUD persists and updates advice records", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const createResponse = await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify(makeAdvicePayload())
@@ -35,7 +37,7 @@ test("erp advice CRUD persists and updates advice records", async () => {
     assert.equal(createResponse.json.ok, true);
 
     const listResponse = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(listResponse.status, 200);
@@ -47,7 +49,7 @@ test("erp advice CRUD persists and updates advice records", async () => {
     const updateResponse = await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -61,7 +63,7 @@ test("erp advice CRUD persists and updates advice records", async () => {
     assert.equal(updateResponse.status, 200);
 
     const updatedList = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     const updated = updatedList.json.items[0];
@@ -72,10 +74,11 @@ test("erp advice CRUD persists and updates advice records", async () => {
 
 test("storefront advices only returns active advices sorted by sortOrder", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -88,7 +91,7 @@ test("storefront advices only returns active advices sorted by sortOrder", async
     await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -101,7 +104,7 @@ test("storefront advices only returns active advices sorted by sortOrder", async
     await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -124,31 +127,32 @@ test("storefront advices only returns active advices sorted by sortOrder", async
 
 test("erp advice delete removes the advice from subsequent listings", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify(makeAdvicePayload())
     });
 
     const listResponse = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     const createdId = listResponse.json.items[0].id;
 
     const deleteResponse = await request(`/api/erp/advices/${createdId}`, {
       method: "DELETE",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(deleteResponse.status, 200);
     assert.equal(deleteResponse.json.ok, true);
 
     const afterDelete = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(afterDelete.json.items.length, 0);
@@ -157,31 +161,32 @@ test("erp advice delete removes the advice from subsequent listings", async () =
 
 test("erp advice toggle-status flips active advice to inactive", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify(makeAdvicePayload())
     });
 
     const listResponse = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     const createdId = listResponse.json.items[0].id;
 
     const toggleResponse = await request(`/api/erp/advices/${createdId}/toggle-status`, {
       method: "POST",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(toggleResponse.status, 200);
     assert.equal(toggleResponse.json.ok, true);
 
     const afterToggle = await request("/api/erp/advices", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(afterToggle.json.items[0].status, "inactive");
@@ -190,10 +195,11 @@ test("erp advice toggle-status flips active advice to inactive", async () => {
 
 test("erp advice routes reject invalid ids and invalid upsert payloads", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const badCreate = await request("/api/erp/advices", {
       method: "POST",
       headers: {
-        "x-admin-basic": "admin@capella.eg:admin1234",
+        ...authHeaders,
         "content-type": "application/json"
       },
       body: JSON.stringify({
@@ -208,7 +214,7 @@ test("erp advice routes reject invalid ids and invalid upsert payloads", async (
 
     const badDelete = await request("/api/erp/advices/not-a-number", {
       method: "DELETE",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(badDelete.status, 400);
@@ -218,9 +224,10 @@ test("erp advice routes reject invalid ids and invalid upsert payloads", async (
 
 test("erp advice toggle-status returns 404 when the advice does not exist", async () => {
   await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/advices/999999/toggle-status", {
       method: "POST",
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { ...authHeaders }
     });
 
     assert.equal(response.status, 404);
