@@ -26,6 +26,7 @@ import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { pickLang } from "@capella/shared";
 import { products, categories, offers } from "@capella/shared/mock";
+import { buildLocalizedAlternates, buildProductMetadata } from "@/lib/seo";
 import {
   fetchCategories,
   fetchOffers,
@@ -51,6 +52,15 @@ const mockedGetOffersForProduct = vi.mocked(getOffersForProduct);
 const mockedGetProductsByCategory = vi.mocked(getProductsByCategory);
 
 describe("storefront SEO", () => {
+  it("builds localized alternates with the default-language canonical URL", () => {
+    expect(buildLocalizedAlternates("ar", "/products")?.canonical).toBe("/en/products");
+  });
+
+  it("builds product metadata with OpenGraph product type", () => {
+    const product = products[0]!;
+    expect((buildProductMetadata("en", product).openGraph as { type?: string } | undefined)?.type).toBe("product");
+  });
+
   it("generates product metadata with canonical and language alternates", async () => {
     const product = products[0]!;
     const category = categories.find((item) => item.id === product.categoryId)!;

@@ -36,7 +36,7 @@ export function buildLanguageAlternates(path: string) {
 
 export function buildLocalizedAlternates(lang: Language, path: string) {
   return {
-    canonical: localizePath(lang, path),
+    canonical: localizePath(defaultLanguage, path),
     languages: {
       ar: localizePath("ar", path),
       en: localizePath("en", path),
@@ -173,11 +173,11 @@ export function buildProductMetadata(lang: Language, product: Product, category?
     keywords: product.keywords,
     alternates: buildLocalizedAlternates(lang, `/products/${product.slug}`),
     openGraph: {
-      type: "website",
+      type: "product",
       title,
       description,
       url: absoluteUrl(localizePath(lang, `/products/${product.slug}`))
-    },
+    } as Metadata["openGraph"],
     twitter: {
       card: "summary_large_image",
       title,

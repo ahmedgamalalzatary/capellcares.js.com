@@ -56,24 +56,32 @@ function FilterSection({
 
   useEffect(() => {
     if (!contentRef.current) return;
+    let rafId1 = 0;
+    let rafId2 = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     if (open) {
       const h = contentRef.current.scrollHeight;
       setHeight(h);
       setIsAnimating(true);
-      const t = setTimeout(() => { setHeight("auto"); setIsAnimating(false); }, 280);
-      return () => clearTimeout(t);
+      timeoutId = setTimeout(() => { setHeight("auto"); setIsAnimating(false); }, 280);
     } else {
       const h = contentRef.current.scrollHeight;
       setHeight(h);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+      rafId1 = requestAnimationFrame(() => {
+        rafId2 = requestAnimationFrame(() => {
           setHeight(0);
           setIsAnimating(true);
-          const t = setTimeout(() => setIsAnimating(false), 280);
-          return () => clearTimeout(t);
+          timeoutId = setTimeout(() => setIsAnimating(false), 280);
         });
       });
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      cancelAnimationFrame(rafId1);
+      cancelAnimationFrame(rafId2);
+    };
   }, [open]);
 
   const lineColor = dark ? "oklch(1 0 0 / 0.1)" : "var(--hairline)";
@@ -154,32 +162,35 @@ function CategoryPill({
   return (
     <label
       style={{
-        display: "inline-flex",
+        display: "flex",
         cursor: "pointer",
-        marginInlineStart: indent ? "8px" : "0",
+        marginInlineStart: indent ? "16px" : "0",
       }}
     >
       <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
       <span
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
-          height: indent ? 26 : 30,
-          paddingInline: indent ? "10px" : "14px",
-          borderRadius: "var(--radius-pill)",
-          fontSize: indent ? "11.5px" : "12.5px",
+          width: "100%",
+          height: indent ? 30 : 34,
+          paddingInline: "14px",
+          borderRadius: "var(--radius)",
+          fontSize: indent ? "12px" : "13px",
           fontWeight: checked ? 600 : 400,
           border: checked
             ? "1px solid var(--warm)"
-            : "1px solid oklch(1 0 0 / 0.14)",
+            : "1px solid transparent",
           background: checked
-            ? "var(--warm)"
-            : "oklch(1 0 0 / 0.05)",
-          color: checked ? "var(--ink)" : "oklch(0.94 0.06 85 / 0.85)",
+            ? "oklch(0.748 0.106 70 / 0.15)"
+            : "transparent",
+          color: checked ? "var(--warm)" : "oklch(0.94 0.06 85 / 0.7)",
           transition: "background 180ms, border-color 180ms, color 180ms",
-          whiteSpace: "nowrap",
         }}
       >
+        {checked && (
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--warm)", marginInlineEnd: 10, flexShrink: 0 }} />
+        )}
         {children}
       </span>
     </label>
@@ -446,8 +457,8 @@ function FilterSidebar({
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
+                flexDirection: "column",
+                gap: 4,
                 maxHeight: "260px",
                 overflowY: "auto",
                 paddingInlineEnd: "2px",
@@ -466,11 +477,13 @@ function FilterSidebar({
                       Boolean(category && (category === parent.id || children.some((c) => c.id === category)));
 
                     return (
-                      <div key={parent.id} style={{ display: "contents" }}>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                          <CategoryPill name="cat" checked={category === parent.id} onChange={() => setCategory(parent.id)}>
-                            {pickLang(parent.name, lang)}
-                          </CategoryPill>
+                      <div key={parent.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <CategoryPill name="cat" checked={category === parent.id} onChange={() => setCategory(parent.id)}>
+                              {pickLang(parent.name, lang)}
+                            </CategoryPill>
+                          </div>
                           {children.length > 0 && (
                             <button
                               type="button"
@@ -481,8 +494,8 @@ function FilterSidebar({
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                width: 20,
-                                height: 20,
+                                width: 24,
+                                height: 24,
                                 borderRadius: "50%",
                                 border: "1px solid oklch(1 0 0 / 0.14)",
                                 background: isOpen ? "oklch(1 0 0 / 0.1)" : "transparent",
@@ -501,11 +514,15 @@ function FilterSidebar({
                           )}
                         </div>
 
-                        {children.length > 0 && isOpen && children.map((child) => (
-                          <CategoryPill key={child.id} name="cat" checked={category === child.id} onChange={() => setCategory(child.id)} indent>
-                            {pickLang(child.name, lang)}
-                          </CategoryPill>
-                        ))}
+                        {children.length > 0 && isOpen && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            {children.map((child) => (
+                              <CategoryPill key={child.id} name="cat" checked={category === child.id} onChange={() => setCategory(child.id)} indent>
+                                {pickLang(child.name, lang)}
+                              </CategoryPill>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -1094,13 +1111,13 @@ export function ProductGrid({
                 style={{
                   height: 36,
                   paddingBlock: 0,
-                  paddingInline: "12px 32px",
+                  paddingInlineStart: "12px",
+                  paddingInlineEnd: "32px",
                   fontSize: "13px",
                   borderRadius: "var(--radius-pill)",
                   appearance: "none",
                   WebkitAppearance: "none",
                   cursor: "pointer",
-                  paddingRight: "32px",
                 }}
               >
                 <option value="newest">{dict.filters.sortNewest}</option>

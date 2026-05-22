@@ -48,3 +48,53 @@ test("admin category delete rejects categories that still have active children",
     assert.equal(response.json.reason, "has-active-children");
   });
 });
+
+test("admin category create supports deeper nesting and marks the parent as non-leaf", async () => {
+  const parentSlug = `route-parent-leaf-${Date.now()}`;
+  const childSlug = `route-grandchild-cat-${Date.now()}`;
+  const [parent] = await db
+    .insert(categories)
+    .values({ slug: parentSlug, arName: "فرع أصل", enName: "Leaf Parent", isLeaf: true })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: childSlug,
+        name: { ar: "حفيد", en: "Grandchild" },
+        parentId: parent.id,
+        isLeaf: true
+      })
+    });
+
+    assert.equal(response.status, 200);
+
+    const [updatedParent] = await db.select().from(categories).where(eq(categories.id, parent.id)).limit(1);
+    const [createdChild] = await db.select().from(categories).where(eq(categories.slug, childSlug)).limit(1);
+
+    assert.equal(updatedParent?.isLeaf, false);
+    assert.equal(createdChild?.parentId, parent.id);
+  });
+});
+
+test("admin category create returns a conflict instead of crashing on duplicate slug", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: "body-care",
+        name: { ar: "العناية بالجسم", en: "Body Care" },
+        parentId: null,
+        isLeaf: false
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "slug-conflict");
+  });
+});

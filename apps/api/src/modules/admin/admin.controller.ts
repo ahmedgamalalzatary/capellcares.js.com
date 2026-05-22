@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import {
   createAdminProductRepo,
   listAdminProductsRepo,
@@ -116,17 +116,24 @@ export async function adminListCategories(_req: Request, res: Response) {
   res.json({ items: await listCategoriesRepo(true) });
 }
 
-export async function adminUpsertCategory(req: Request, res: Response) {
-  const incoming = req.body as any;
-  await upsertCategoryRepo({
-    id: incoming.id,
-    parentId: incoming.parentId,
-    slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
-    arName: incoming.name?.ar ?? incoming.arName ?? "",
-    enName: incoming.name?.en ?? incoming.enName ?? "",
-    isLeaf: Boolean(incoming.isLeaf)
-  });
-  res.json({ ok: true });
+export async function adminUpsertCategory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const incoming = req.body as any;
+    await upsertCategoryRepo({
+      id: incoming.id,
+      parentId: incoming.parentId,
+      slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
+      arName: incoming.name?.ar ?? incoming.arName ?? "",
+      enName: incoming.name?.en ?? incoming.enName ?? "",
+      isLeaf: Boolean(incoming.isLeaf)
+    });
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ ok: false, reason: "slug-conflict" });
+    }
+    next(error);
+  }
 }
 
 export async function adminSoftDeleteCategory(req: Request, res: Response) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getStore } from "@/lib/store";
 import type { Category } from "@capella/shared";
 
@@ -22,7 +22,47 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   const [parentId, setParentId] = useState<number | null>(initial?.parentId ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const parents = categories.filter((c) => !c.deletedAt && c.id !== initial?.id);
+  const availableCategories = useMemo(
+    () => categories.filter((c) => !c.deletedAt && c.id !== initial?.id),
+    [categories, initial?.id]
+  );
+  const parentOptions = useMemo(() => {
+    const byParent = new Map<number | null, Category[]>();
+    for (const category of availableCategories) {
+      const list = byParent.get(category.parentId) ?? [];
+      list.push(category);
+      byParent.set(category.parentId, list);
+    }
+
+    const flatten = (currentParentId: number | null, depth: number, path: Category[]): Array<{
+      id: number;
+      label: string;
+      pathLabel: string;
+    }> => {
+      const items = byParent.get(currentParentId) ?? [];
+      return items.flatMap((category) => {
+        const nextPath = [...path, category];
+        const pathLabel = nextPath.map((item) => item.name.ar).join(" › ");
+        const prefix = depth === 0 ? "" : `${"↳ ".repeat(depth)}`;
+        const parentLabel = path.length > 0 ? ` (${path.map((item) => item.name.ar).join(" › ")})` : "";
+
+        return [
+          {
+            id: category.id,
+            label: `${prefix}${category.name.ar}${parentLabel}`,
+            pathLabel
+          },
+          ...flatten(category.id, depth + 1, nextPath)
+        ];
+      });
+    };
+
+    return flatten(null, 0, []);
+  }, [availableCategories]);
+  const selectedParentPath = useMemo(
+    () => parentOptions.find((option) => option.id === parentId)?.pathLabel ?? null,
+    [parentId, parentOptions]
+  );
 
   const save = async () => {
     const e: Record<string, string> = {};
@@ -64,8 +104,9 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           <label>القسم الأب (اختياري)</label>
           <select className="select" value={parentId ?? ""} onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}>
             <option value="">— قسم رئيسي —</option>
-            {parents.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
+            {parentOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
           </select>
+          {selectedParentPath && <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>المسار: {selectedParentPath}</div>}
         </div>
         <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/categories")}>إلغاء</button>

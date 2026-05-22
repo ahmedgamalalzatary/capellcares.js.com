@@ -14,6 +14,10 @@ export async function upsertCategoryRepo(input: {
   enName: string;
   isLeaf: boolean;
 }) {
+  const previous = input.id
+    ? await db.select({ id: categories.id, parentId: categories.parentId }).from(categories).where(eq(categories.id, input.id)).limit(1).then((rows) => rows[0] ?? null)
+    : null;
+
   if (input.id) {
     await db
       .update(categories)
@@ -25,6 +29,8 @@ export async function upsertCategoryRepo(input: {
         isLeaf: input.isLeaf
       })
       .where(eq(categories.id, input.id));
+    await syncCategoryLeafState(previous?.parentId ?? null);
+    await syncCategoryLeafState(input.parentId);
     return { id: input.id };
   }
   const [created] = await db
@@ -37,15 +43,20 @@ export async function upsertCategoryRepo(input: {
       isLeaf: input.isLeaf
     })
     .$returningId();
+  await syncCategoryLeafState(input.parentId);
   return created;
 }
 
 export async function softDeleteCategoryRepo(id: number) {
+  const [existing] = await db.select({ parentId: categories.parentId }).from(categories).where(eq(categories.id, id)).limit(1);
   await db.update(categories).set({ deletedAt: sql`NOW()` }).where(eq(categories.id, id));
+  await syncCategoryLeafState(existing?.parentId ?? null);
 }
 
 export async function restoreCategoryRepo(id: number) {
+  const [existing] = await db.select({ parentId: categories.parentId }).from(categories).where(eq(categories.id, id)).limit(1);
   await db.update(categories).set({ deletedAt: null }).where(eq(categories.id, id));
+  await syncCategoryLeafState(existing?.parentId ?? null);
 }
 
 export async function hasLinkedProductsInCategoryRepo(id: number) {
@@ -76,4 +87,14 @@ export async function hasActiveChildrenCategoriesRepo(id: number) {
     .where(and(eq(categories.parentId, id), isNull(categories.deletedAt)))
     .limit(1);
   return rows.length > 0;
+}
+
+async function syncCategoryLeafState(parentId: number | null) {
+  if (parentId == null) return;
+
+  const hasActiveChildren = await hasActiveChildrenCategoriesRepo(parentId);
+  await db
+    .update(categories)
+    .set({ isLeaf: !hasActiveChildren })
+    .where(eq(categories.id, parentId));
 }
