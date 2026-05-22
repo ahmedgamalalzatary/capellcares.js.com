@@ -7,6 +7,7 @@ import { useStore, getStore } from "@/lib/store";
 import { formatPrice, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
+import { showErrorToast } from "@/lib/errors";
 
 export default function OffersListPage() {
   const offers = useStore((s) => s.offers);
@@ -129,7 +130,8 @@ export default function OffersListPage() {
                 setToggleError(null);
                 await getStore().toggleOfferStatus(pendingToggle.id);
                 setPendingToggle(null);
-              } catch {
+              } catch (error) {
+                showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
                 setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
               }
             }}

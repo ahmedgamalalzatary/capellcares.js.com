@@ -19,9 +19,9 @@ vi.mock("@/lib/store", () => ({
 import { CategoryForm } from "@/components/forms/category-form";
 
 const categories = [
-  { id: 1, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false },
-  { id: 2, parentId: 1, slug: "hair-oils", name: { ar: "زيوت الشعر", en: "Hair Oils" }, isLeaf: false },
-  { id: 3, parentId: 2, slug: "dry-hair", name: { ar: "شعر جاف", en: "Dry Hair" }, isLeaf: true }
+  { id: 1, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false, deletedAt: null },
+  { id: 2, parentId: 1, slug: "hair-oils", name: { ar: "زيوت الشعر", en: "Hair Oils" }, isLeaf: false, deletedAt: null },
+  { id: 3, parentId: 2, slug: "dry-hair", name: { ar: "شعر جاف", en: "Dry Hair" }, isLeaf: true, deletedAt: null }
 ];
 
 describe("CategoryForm", () => {

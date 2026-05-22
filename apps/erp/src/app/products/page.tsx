@@ -7,6 +7,7 @@ import { useStore, getStore } from "@/lib/store";
 import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
+import { showErrorToast } from "@/lib/errors";
 
 export default function ProductsListPage() {
   const products = useStore((s) => s.products);
@@ -184,6 +185,7 @@ export default function ProductsListPage() {
                   setPendingToggle(null);
                 } catch (error) {
                   console.error(error);
+                  showErrorToast(error, "تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
                   setToggleError("تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
                 } finally {
                   setIsToggling(false);

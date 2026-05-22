@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { getStore } from "@/lib/store";
+import { showErrorToast } from "@/lib/errors";
 import type { Category } from "@capella/shared";
 
 interface Props {
@@ -39,7 +40,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
       label: string;
       pathLabel: string;
     }> => {
-      const items = byParent.get(currentParentId) ?? [];
+      const items = (byParent.get(currentParentId) ?? []).slice().sort((a, b) => a.name.ar.localeCompare(b.name.ar, "ar"));
       return items.flatMap((category) => {
         const nextPath = [...path, category];
         const pathLabel = nextPath.map((item) => item.name.ar).join(" › ");
@@ -80,8 +81,12 @@ export function CategoryForm({ mode, initial, categories }: Props) {
       isLeaf: true,
       deletedAt: initial?.deletedAt ?? null
     };
-    await getStore().upsertCategory(categoryPayload);
-    router.push("/categories");
+    try {
+      await getStore().upsertCategory(categoryPayload);
+      router.push("/categories");
+    } catch (error) {
+      showErrorToast(error);
+    }
   };
 
   return (
@@ -106,7 +111,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
             <option value="">— قسم رئيسي —</option>
             {parentOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
           </select>
-          {selectedParentPath && <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>المسار: {selectedParentPath}</div>}
+          {selectedParentPath && <div className="muted selected-parent-path">المسار: {selectedParentPath}</div>}
         </div>
         <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/categories")}>إلغاء</button>

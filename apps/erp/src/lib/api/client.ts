@@ -1,4 +1,5 @@
 import { resolveApiBase } from "./base";
+import { showErrorToast } from "@/lib/errors";
 
 export const API_BASE = resolveApiBase();
 
@@ -40,6 +41,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const err = new Error(`API ${res.status} ${path}`) as Error & { status?: number; body?: unknown };
     err.status = res.status;
     err.body = body;
+    showErrorToast(err);
     throw err;
   }
   return res.json() as Promise<T>;
