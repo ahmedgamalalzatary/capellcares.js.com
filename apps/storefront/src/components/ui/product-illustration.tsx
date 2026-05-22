@@ -30,7 +30,7 @@ export function ProductIllustration({ product, className }: Props) {
   if (product.imagePath) {
     return (
       <img
-        className={className}
+        className={className ?? "h-full w-full object-cover"}
         src={product.imagePath}
         alt={product.name.en}
         loading="lazy"

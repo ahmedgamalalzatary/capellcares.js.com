@@ -99,25 +99,16 @@ function Tree({
   onDelete: (id: number) => void;
 }) {
   return (
-    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+    <ul className="tree">
       {children.map((c) => {
         const kids = tree.get(c.id) ?? [];
         const count = productCount.get(c.id) ?? 0;
         return (
-          <li key={c.id} style={{ marginBottom: 4 }}>
-            <div
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 10px",
-                paddingInlineStart: 10 + depth * 20,
-                borderRadius: 6,
-                background: depth === 0 ? "var(--bg-tint)" : "transparent",
-                fontWeight: depth === 0 ? 700 : 400
-              }}
-            >
+          <li key={c.id} className="tree__item">
+            <div className="tree__row" data-root={depth === 0 ? "true" : "false"} style={{ paddingInlineStart: 12 + depth * 20 }}>
               <Icon.Folder size={16} />
-              <Link href={`/categories/${c.id}/edit`} style={{ flex: 1 }}>
-                {c.name.ar} <span className="faint" style={{ fontSize: 12 }}>· {c.name.en}</span>
+              <Link href={`/categories/${c.id}/edit`} className="tree__title">
+                {c.name.ar} <span className="tree__meta">· {c.name.en}</span>
               </Link>
               {count > 0 && <span className="tag">{count} منتج</span>}
               {kids.length > 0 && <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>{kids.length} فرعي</span>}

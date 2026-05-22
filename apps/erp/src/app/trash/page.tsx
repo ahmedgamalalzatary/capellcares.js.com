@@ -21,27 +21,34 @@ export default function TrashPage() {
 
   return (
     <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
-      <div className="card" style={{ overflow: "hidden" }}>
-        <div className="card__head" style={{ padding: 0 }}>
+      <div className="card">
+        <div className="card__head" style={{ padding: 0, borderBottom: "1px solid var(--hairline)" }}>
           <div style={{ display: "flex" }}>
-            {(["products", "categories", "offers"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                style={{
-                  background: tab === t ? "var(--bg-elev)" : "transparent",
-                  color: tab === t ? "var(--ink)" : "var(--ink-2)",
-                  border: 0,
-                  borderBottom: `2px solid ${tab === t ? "var(--accent)" : "transparent"}`,
-                  padding: "14px 20px",
-                  fontWeight: 600,
-                  fontSize: 13
-                }}
-              >
-                {t === "products" ? "المنتجات" : t === "categories" ? "الأقسام" : "العروض"}
-                <span className="tag" style={{ marginInlineStart: 8 }}>{counts[t]}</span>
-              </button>
-            ))}
+            {(["products", "categories", "offers"] as Tab[]).map((t) => {
+              const active = tab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{
+                    background: active ? "var(--surface)" : "transparent",
+                    color: active ? "var(--ink)" : "var(--ink-3)",
+                    border: 0,
+                    borderBottom: `2px solid ${active ? "var(--accent)" : "transparent"}`,
+                    padding: "16px 22px",
+                    fontWeight: active ? 700 : 600,
+                    fontSize: 13.5,
+                    transition: "color 140ms, background 140ms",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8
+                  }}
+                >
+                  {t === "products" ? "المنتجات" : t === "categories" ? "الأقسام" : "العروض"}
+                  <span className="tag" style={{ background: active ? "var(--accent-soft)" : "var(--warm-soft)", color: active ? "var(--accent)" : "var(--ink-3)", fontWeight: 700 }}>{counts[t]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -97,6 +104,7 @@ function DeletedList({
     return <div style={{ padding: 60, textAlign: "center", color: "var(--ink-3)" }}>{empty}</div>;
   }
   return (
+    <div className="table-outer">
     <table className="table">
       <thead>
         <tr>
@@ -122,5 +130,6 @@ function DeletedList({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

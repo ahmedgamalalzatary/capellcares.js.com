@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { Icon } from "@/components/ui/icons";
 
@@ -16,19 +16,26 @@ interface Props {
 }
 
 const NAV = [
-  { href: "/dashboard", label: "لوحة التحكم", icon: <Icon.Dashboard /> },
-  { href: "/products", label: "المنتجات", icon: <Icon.Box /> },
-  { href: "/categories", label: "الأقسام", icon: <Icon.Folder /> },
-  { href: "/offers", label: "العروض", icon: <Icon.Tag /> },
-  { href: "/advices", label: "نصائح كابيلا", icon: <Icon.Sparkle /> },
-  { href: "/orders", label: "الطلبات", icon: <Icon.Eye /> },
-  { href: "/trash", label: "المحذوفات", icon: <Icon.Trash /> }
+  { href: "/dashboard", label: "الرئيسية", icon: <Icon.Dashboard /> },
+  { href: "/products",  label: "المنتجات",  icon: <Icon.Box /> },
+  { href: "/categories",label: "الأقسام",   icon: <Icon.Folder /> },
+  { href: "/offers",    label: "العروض",    icon: <Icon.Tag /> },
+  { href: "/advices",   label: "نصائح",     icon: <Icon.Sparkle /> },
+  { href: "/orders",    label: "الطلبات",   icon: <Icon.Eye /> },
+  { href: "/trash",     label: "المحذوفات", icon: <Icon.Trash /> },
 ];
 
+/* Bottom bar shows these 4; "more" sheet shows the rest */
+const BOTTOM_NAV = NAV.slice(0, 4);
+const MORE_NAV   = NAV.slice(4);
+
 export function AdminShell({ title, crumbs = [], actions, children }: Props) {
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
   const { user, hydrated, logout } = useAdminAuth();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (hydrated && !user) router.replace("/login");
@@ -37,16 +44,20 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
   if (!hydrated) return null;
   if (!user) return null;
 
+  const isMore = MORE_NAV.some((n) => pathname.startsWith(n.href));
+
   return (
     <div className="app-shell">
+      {/* ── Desktop sidebar ───────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar__brand">
-          <Icon.Logo size={32} />
+          <Icon.Logo size={34} />
           <div>
             <div className="sidebar__brand-name">Capella</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>ERP</div>
+            <div style={{ fontSize: 10.5, letterSpacing: "0.32em", color: "color-mix(in oklch, var(--canvas) 55%, transparent)" }}>ERP</div>
           </div>
         </div>
+
         <div className="sidebar__section">المنصة</div>
         {NAV.slice(0, 1).map((n) => (
           <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname === n.href}>
@@ -69,20 +80,22 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
         <div className="sidebar__user">
           <div className="sidebar__avatar">{user.name[0]}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.email}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--canvas)" }}>{user.name}</div>
+            <div style={{ fontSize: 11.5, color: "color-mix(in oklch, var(--canvas) 58%, transparent)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.email}</div>
           </div>
           <button
             onClick={() => { void logout().finally(() => router.replace("/login")); }}
-            style={{ background: "transparent", border: 0, color: "rgba(255,255,255,0.6)", padding: 6 }}
-            aria-label="خروج"
+            style={{ background: "transparent", border: 0, color: "color-mix(in oklch, var(--canvas) 68%, transparent)", padding: 8, borderRadius: 6, cursor: "pointer" }}
+            aria-label="تسجيل الخروج"
+            title="تسجيل الخروج"
           >
             <Icon.Logout />
           </button>
         </div>
       </aside>
 
-      <div>
+      {/* ── Main content ──────────────────────────────── */}
+      <div className="shell-main">
         <header className="topbar">
           <div>
             <nav className="crumbs">
@@ -95,8 +108,77 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
           </div>
           <div className="row">{actions}</div>
         </header>
+
         <main className="page">{children}</main>
       </div>
+
+      {/* ── Mobile bottom navigation bar ─────────────── */}
+      <nav className="mobile-nav" aria-label="التنقل">
+        {BOTTOM_NAV.map((n) => (
+          <Link
+            key={n.href}
+            href={n.href}
+            className="mobile-nav__item"
+            data-active={n.href === "/dashboard" ? pathname === n.href : pathname.startsWith(n.href)}
+          >
+            {n.icon}
+            <span>{n.label}</span>
+          </Link>
+        ))}
+
+        {/* More button */}
+        <button
+          className="mobile-nav__item"
+          data-active={isMore || drawerOpen}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="المزيد"
+        >
+          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+          </svg>
+          <span>المزيد</span>
+        </button>
+      </nav>
+
+      {/* ── Mobile "more" drawer ──────────────────────── */}
+      {drawerOpen && (
+        <div className="mobile-drawer-overlay" onClick={() => setDrawerOpen(false)}>
+          <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-drawer__handle" />
+
+            <div className="mobile-drawer__user">
+              <div className="sidebar__avatar" style={{ width: 40, height: 40 }}>{user.name[0]}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{user.name}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+              </div>
+            </div>
+
+            <div className="mobile-drawer__links">
+              {MORE_NAV.map((n) => (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className="mobile-drawer__link"
+                  data-active={pathname.startsWith(n.href)}
+                >
+                  <span className="mobile-drawer__link-icon">{n.icon}</span>
+                  <span>{n.label}</span>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mobile-drawer__footer">
+              <button
+                className="btn btn--danger btn--block"
+                onClick={() => { void logout().finally(() => router.replace("/login")); }}
+              >
+                <Icon.Logout /> تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

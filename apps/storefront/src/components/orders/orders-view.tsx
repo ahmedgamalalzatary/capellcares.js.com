@@ -39,39 +39,59 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
       });
   }, [user, accessToken, logout]);
 
+  const isAr = lang === "ar";
+
   if (!user || authRequired) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
-          <Icon.User size={36} />
+      <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--accent-soft) text-(--accent)">
+          <Icon.User size={32} />
         </div>
-        <h2 className="m-0 text-[26px] font-(--font-display) leading-none">{dict.orders.loginRequired}</h2>
-        <p className="max-w-[44ch] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
-        <Link href={`/${lang}/login`} className="btn btn--primary">
+        <h2 className={`m-0 leading-[1.1] ${isAr
+          ? "text-[26px] font-bold font-(--font-ar) text-(--ink)"
+          : "text-[30px] italic font-(--font-display) text-(--ink)"}`}>
+          {dict.orders.loginRequired}
+        </h2>
+        <p className="max-w-[44ch] text-[14.5px] leading-[1.7] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
+        <Link href={`/${lang}/login`} className="btn btn--primary btn--lg mt-1">
           {dict.wishlist.goLogin}
         </Link>
       </div>
     );
   }
 
-  if (loading) return <p className="py-10 text-(--ink-2)">{dict.common.loading}</p>;
+  if (loading) return <p className="py-12 text-center text-(--ink-3)">{dict.common.loading}</p>;
 
   if (orders.length === 0) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
-          <Icon.Cart size={36} />
+      <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--warm-soft) text-(--ink)">
+          <Icon.Cart size={32} />
         </div>
-        <p className="text-(--ink-2)">{dict.orders.empty}</p>
-        <Link href={`/${lang}/products`} className="btn btn--ghost">
+        <h2 className={`m-0 leading-[1.1] ${isAr
+          ? "text-[24px] font-bold font-(--font-ar) text-(--ink)"
+          : "text-[28px] italic font-(--font-display) text-(--ink)"}`}>
+          {dict.orders.empty}
+        </h2>
+        <p className="text-[14px] text-(--ink-2)">{isAr ? "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات." : "Start shopping and your orders will appear here."}</p>
+        <Link href={`/${lang}/products`} className="btn btn--primary mt-1">
           {dict.cart.keepShopping}
         </Link>
       </div>
     );
   }
 
+  const statusChip = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
+    if (s.includes("pending") || s.includes("processing")) return "chip--gold";
+    if (s.includes("cancel") || s.includes("fail")) return "chip--accent";
+    return "";
+  };
+
   return (
-    <div className="mb-20 overflow-hidden rounded-[16px] border border-(--hairline) bg-white">
+    <div className="mb-16 overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) shadow-(--shadow-1) sm:mb-20">
+     <div className="overflow-x-auto">
       <table className="table">
         <thead>
           <tr>
@@ -85,12 +105,12 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
         <tbody>
           {orders.map((order) => (
             <tr key={order.id}>
-              <td>{order.orderCode}</td>
-              <td>{order.paymentStatus}</td>
-              <td>{order.totalAmount}</td>
-              <td>{new Date(order.createdAt).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}</td>
-              <td>
-                <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost">
+              <td className="font-mono text-[13px] text-(--ink)">{order.orderCode}</td>
+              <td><span className={`chip ${statusChip(order.paymentStatus)}`}>{order.paymentStatus}</span></td>
+              <td className="text-(--ink)">{order.totalAmount}</td>
+              <td className="text-(--ink-2)">{new Date(order.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
+              <td className="text-end">
+                <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost btn--sm">
                   {dict.orders.viewDetails}
                 </Link>
               </td>
@@ -98,6 +118,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
           ))}
         </tbody>
       </table>
+     </div>
     </div>
   );
 }

@@ -101,9 +101,11 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
 
   return (
     <div className="grid gap-9 pb-20 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="hidden min-w-0 overflow-hidden rounded-[18px] border border-(--hairline) bg-(--bg-elev) p-5 shadow-(--shadow-1) lg:sticky lg:top-[120px] lg:grid lg:gap-5">
-        <div className="flex items-center justify-between">
-          <span className="text-[20px] font-(--font-display)">{dict.filters.title}</span>
+      <aside className="hidden min-w-0 overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-6 shadow-(--shadow-1) lg:sticky lg:top-[140px] lg:grid lg:gap-6">
+        <div className="flex items-center justify-between border-b border-(--hairline) pb-4">
+          <span className={lang === "ar" ? "text-[20px] font-bold font-(--font-ar) text-(--ink)" : "text-[22px] italic font-(--font-display) text-(--ink)"}>
+            {dict.filters.title}
+          </span>
           <button
             className="btn btn--ghost btn--sm"
             onClick={() => {
@@ -118,10 +120,10 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
         </div>
 
         <div className="grid gap-2">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+          <div className={`eyebrow !text-(--ink-3) !opacity-100`}>
             {dict.nav.search}
           </div>
-          <div className="flex min-w-0 items-center gap-2 rounded-[12px] border border-(--hairline) bg-white px-3.5 py-2.5 focus-within:border-accent focus-within:shadow-[0_0_0_4px_rgba(161,59,75,0.08)]">
+          <div className="flex min-w-0 items-center gap-2 rounded-[12px] border border-(--hairline) bg-(--surface) px-3.5 py-2.5 focus-within:border-(--accent) focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]">
             <Icon.Search size={16} className="text-(--ink-3)" />
             <input
               value={q}
@@ -134,11 +136,11 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
 
         {!lockCategory && (
           <div className="grid gap-2">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+            <div className={`eyebrow !text-(--ink-3) !opacity-100`}>
               {dict.filters.category}
             </div>
             <div className="grid max-h-[300px] gap-1 overflow-y-auto pr-1">
-              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--bg-tint)">
+              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--warm-soft)">
                 <input className="h-4 w-4 accent-accent" type="radio" name="cat" checked={!category} onChange={() => setCategory(undefined)} />
                 <span>{dict.nav.allCategories}</span>
               </label>
@@ -152,14 +154,14 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                     return (
                       <div key={parent.id} className="grid gap-1">
                         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
-                          <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--bg-tint)">
+                          <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--warm-soft)">
                             <input className="h-4 w-4 accent-accent" type="radio" name="cat" checked={category === parent.id} onChange={() => setCategory(parent.id)} />
                             <span>{pickLang(parent.name, lang)}</span>
                           </label>
                           {children.length > 0 && (
                             <button
                               type="button"
-                              className="grid h-7 w-7 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) hover:bg-(--bg-tint)"
+                              className="grid h-7 w-7 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) hover:bg-(--warm-soft)"
                               aria-label={lang === "ar" ? "تبديل الفئة" : "Toggle category"}
                               aria-expanded={isOpen}
                               onClick={() => toggleParent(parent.id)}
@@ -171,7 +173,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                         {children.length > 0 && isOpen && (
                           <div className="grid gap-0.5 pl-5">
                             {children.map((child) => (
-                              <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-(--ink-2) transition-colors hover:bg-(--bg-tint)">
+                              <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-(--ink-2) transition-colors hover:bg-(--warm-soft)">
                                 <input className="h-4 w-4 accent-accent" type="radio" name="cat" checked={category === child.id} onChange={() => setCategory(child.id)} />
                                 <span>{pickLang(child.name, lang)}</span>
                               </label>
@@ -182,7 +184,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                     );
                   })
                 : categories.slice(0, 14).map((item) => (
-                    <label key={item.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--bg-tint)">
+                    <label key={item.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--warm-soft)">
                       <input className="h-4 w-4 accent-accent" type="radio" name="cat" checked={category === item.id} onChange={() => setCategory(item.id)} />
                       <span>{pickLang(item.name, lang)}</span>
                     </label>
@@ -192,7 +194,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
         )}
 
         <div className="grid gap-2">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+          <div className="eyebrow !text-(--ink-3) !opacity-100">
             {dict.filters.price}
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
@@ -218,15 +220,15 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
       </aside>
 
       <div className="min-w-0">
-        <div className="mb-6 flex items-center justify-between gap-4 border-b border-(--hairline) pb-3">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-(--hairline) pb-3">
           <button className="btn btn--ghost btn--sm lg:hidden" onClick={() => setShowFilters((state) => !state)}>
             {dict.common.filters}
           </button>
-          <span className="text-sm text-(--ink-2)">
+          <span className="order-3 w-full text-sm text-(--ink-2) sm:order-none sm:w-auto">
             {dict.common.results.replace("{n}", String(filtered.length))}
           </span>
           <div className="inline-flex items-center gap-2">
-            <span className="text-sm text-(--ink-2)">{dict.filters.sortBy}</span>
+            <span className="hidden text-sm text-(--ink-2) sm:inline">{dict.filters.sortBy}</span>
             <select className="select" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
               <option value="newest">{dict.filters.sortNewest}</option>
               <option value="price-asc">{dict.filters.sortPriceAsc}</option>
@@ -237,7 +239,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
         </div>
 
         {showFilters && (
-          <div className="mb-6 grid gap-5 rounded-[18px] border border-(--hairline) bg-(--bg-elev) p-5 shadow-(--shadow-1) lg:hidden">
+          <div className="mb-6 grid gap-5 rounded-[18px] border border-(--hairline) bg-(--surface) p-5 shadow-(--shadow-1) lg:hidden">
             <div className="flex items-center justify-between">
               <span className="text-[20px] font-(--font-display)">{dict.filters.title}</span>
               <button
@@ -254,10 +256,10 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
             </div>
 
             <div className="grid gap-2">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+              <div className="eyebrow !text-(--ink-3) !opacity-100">
                 {dict.nav.search}
               </div>
-              <div className="flex min-w-0 items-center gap-2 rounded-[12px] border border-(--hairline) bg-white px-3.5 py-2.5 focus-within:border-accent focus-within:shadow-[0_0_0_4px_rgba(161,59,75,0.08)]">
+              <div className="flex min-w-0 items-center gap-2 rounded-[12px] border border-(--hairline) bg-(--surface) px-3.5 py-2.5 focus-within:border-(--accent) focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]">
                 <Icon.Search size={16} className="text-(--ink-3)" />
                 <input
                   value={q}
@@ -270,11 +272,11 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
 
             {!lockCategory && (
               <div className="grid gap-2">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+                <div className="eyebrow !text-(--ink-3) !opacity-100">
                   {dict.filters.category}
                 </div>
                 <div className="grid gap-1">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--bg-tint)">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--warm-soft)">
                     <input className="h-4 w-4 accent-accent" type="radio" name="cat-mobile" checked={!category} onChange={() => setCategory(undefined)} />
                     <span>{dict.nav.allCategories}</span>
                   </label>
@@ -286,14 +288,14 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                     return (
                       <div key={parent.id} className="grid gap-1">
                         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
-                          <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--bg-tint)">
+                          <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-(--warm-soft)">
                             <input className="h-4 w-4 accent-accent" type="radio" name="cat-mobile" checked={category === parent.id} onChange={() => setCategory(parent.id)} />
                             <span>{pickLang(parent.name, lang)}</span>
                           </label>
                           {children.length > 0 && (
                             <button
                               type="button"
-                              className="grid h-7 w-7 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) hover:bg-(--bg-tint)"
+                              className="grid h-7 w-7 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) hover:bg-(--warm-soft)"
                               aria-label={lang === "ar" ? "تبديل الفئة" : "Toggle category"}
                               aria-expanded={isOpen}
                               onClick={() => toggleParent(parent.id)}
@@ -305,7 +307,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
                         {children.length > 0 && isOpen && (
                           <div className="grid gap-0.5 pl-5">
                             {children.map((child) => (
-                              <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-(--ink-2) transition-colors hover:bg-(--bg-tint)">
+                              <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-(--ink-2) transition-colors hover:bg-(--warm-soft)">
                                 <input className="h-4 w-4 accent-accent" type="radio" name="cat-mobile" checked={category === child.id} onChange={() => setCategory(child.id)} />
                                 <span>{pickLang(child.name, lang)}</span>
                               </label>
@@ -320,7 +322,7 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
             )}
 
             <div className="grid gap-2">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+              <div className="eyebrow !text-(--ink-3) !opacity-100">
                 {dict.filters.price}
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
@@ -347,12 +349,14 @@ export function ProductGrid({ products, categories, lang, dict, initialSearch = 
         )}
 
         {filtered.length === 0 ? (
-          <div className="grid gap-2 py-20 text-center">
-            <span className="text-[22px] font-(--font-display)">{dict.common.empty}</span>
-            <p className="text-(--ink-2)">{lang === "ar" ? "جربي تغيير الفلاتر." : "Try adjusting your filters."}</p>
+          <div className="mx-auto grid max-w-[420px] gap-3 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-8 py-16 text-center">
+            <span className={lang === "ar" ? "text-[26px] font-bold font-(--font-ar) text-(--ink)" : "text-[28px] italic font-(--font-display) text-(--ink)"}>
+              {dict.common.empty}
+            </span>
+            <p className="text-[14px] leading-[1.7] text-(--ink-2)">{lang === "ar" ? "جرّبي تعديل الفلاتر أو ابحثي عن منتج آخر." : "Try adjusting your filters or search for something else."}</p>
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[repeat(auto-fill,minmax(230px,1fr))] lg:gap-7">
             {filtered.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
             ))}

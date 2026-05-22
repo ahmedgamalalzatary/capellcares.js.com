@@ -1,6 +1,6 @@
 export const en = {
   brand: "CapellaCares",
-  tagline: "Skin-deep care, head to toe.",
+  tagline: "Honest care, head to toe.",
   nav: {
     products: "Shop",
     offers: "Offers",

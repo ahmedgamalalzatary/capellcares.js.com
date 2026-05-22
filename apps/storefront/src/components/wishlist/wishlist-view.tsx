@@ -14,6 +14,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const { ids } = useWishlist();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const isAr = lang === "ar";
 
   useEffect(() => {
     fetchProducts({ lang })
@@ -24,44 +25,55 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
       .catch(() => setLoading(false));
   }, [lang]);
 
+  const EmptyShell = ({ icon, title, desc, ctaHref, ctaLabel }: {
+    icon: React.ReactNode; title: string; desc: string; ctaHref: string; ctaLabel: string;
+  }) => (
+    <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+      <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--accent-soft) text-(--accent)">
+        {icon}
+      </div>
+      <h2 className={`m-0 leading-[1.1] ${isAr
+        ? "text-[26px] font-bold font-(--font-ar) text-(--ink)"
+        : "text-[30px] italic font-(--font-display) text-(--ink)"}`}>
+        {title}
+      </h2>
+      <p className="max-w-[44ch] text-[14.5px] leading-[1.7] text-(--ink-2)">{desc}</p>
+      <Link href={ctaHref} className="btn btn--primary mt-1">{ctaLabel}</Link>
+    </div>
+  );
+
   if (!user) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
-          <Icon.Heart size={36} />
-        </div>
-        <h2 className="m-0 text-[26px] font-(--font-display) leading-none">{dict.wishlist.loginRequired}</h2>
-        <p className="max-w-[44ch] text-(--ink-2)">{dict.wishlist.loginRequiredDesc}</p>
-        <Link href={`/${lang}/login`} className="btn btn--primary">
-          {dict.wishlist.goLogin}
-        </Link>
-      </div>
+      <EmptyShell
+        icon={<Icon.Heart size={32} />}
+        title={dict.wishlist.loginRequired}
+        desc={dict.wishlist.loginRequiredDesc}
+        ctaHref={`/${lang}/login`}
+        ctaLabel={dict.wishlist.goLogin}
+      />
     );
   }
 
-  if (loading) return <p className="py-10 text-(--ink-2)">…</p>;
+  if (loading) return <p className="py-12 text-center text-(--ink-3)">{dict.common.loading}</p>;
 
   const items = products.filter((product) => ids.includes(product.id));
   if (items.length === 0) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-(--accent-soft) text-accent">
-          <Icon.Heart size={36} />
-        </div>
-        <p className="text-(--ink-2)">{dict.wishlist.empty}</p>
-        <Link href={`/${lang}/products`} className="btn btn--ghost">
-          {dict.cart.keepShopping}
-        </Link>
-      </div>
+      <EmptyShell
+        icon={<Icon.Heart size={32} />}
+        title={dict.wishlist.empty}
+        desc={isAr ? "احفظي القطع التي تعجبك بضغطة قلب وستظهر هنا." : "Tap the heart on any piece you love and it will land here."}
+        ctaHref={`/${lang}/products`}
+        ctaLabel={dict.cart.keepShopping}
+      />
     );
   }
 
   return (
-    <div className="grid gap-6 pb-20 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+    <div className="grid grid-cols-2 gap-4 pb-16 sm:gap-6 sm:pb-20 lg:grid-cols-[repeat(auto-fill,minmax(230px,1fr))] lg:gap-7">
       {items.map((product) => (
         <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
       ))}
     </div>
   );
 }
-

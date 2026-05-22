@@ -63,27 +63,32 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   ];
 
   return (
-    <div className="grid gap-8 py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
-      <div className="grid gap-4 self-start lg:sticky lg:top-[140px]">
-        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-[24px] bg-(--bg-tint)">
+    <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
+      <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-[140px]">
+        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
           <ProductIllustration product={product} className="h-4/5 w-4/5" />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {[1, 2, 3].map((index) => (
-            <div
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          {[1, 2, 3, 4].map((index) => (
+            <button
               key={index}
-              className="aspect-square rounded-[12px] border border-transparent bg-(--bg-tint) p-1"
+              type="button"
+              className="aspect-square rounded-(--radius) border border-(--hairline) bg-(--surface) p-2 transition-colors hover:border-(--warm) data-[active=true]:border-(--accent)"
+              data-active={index === 1}
+              aria-label={`view ${index}`}
             >
               <ProductIllustration product={product} />
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
-      <div className="grid gap-6 self-start lg:gap-7">
-        <div className="grid gap-2">
-          <h1 className="m-0 text-[clamp(28px,3vw,40px)] font-(--font-display) leading-tight tracking-[-0.01em]">
+      <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
+        <div className="grid gap-3">
+          <h1 className={lang === "ar"
+            ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(--font-ar) leading-[1.2] tracking-normal text-(--ink)"
+            : "m-0 text-[clamp(32px,3.4vw,48px)] italic font-(--font-display) leading-[1.05] tracking-[-0.01em] text-(--ink)"}>
             {pickLang(product.name, lang)}
           </h1>
           {(isNew || isBestseller || offers.length > 0) && (
@@ -99,10 +104,14 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
           )}
         </div>
 
-        <p className="text-(--ink-2)">{pickLang(product.description, lang)}</p>
+        <p className="max-w-[60ch] text-[15px] leading-[1.75] text-(--ink-2)">{pickLang(product.description, lang)}</p>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[32px] font-(--font-display)">{formatPrice(variant.price, lang)}</span>
+        <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
+          <span className={lang === "ar"
+            ? "text-[30px] font-bold font-(--font-ar) leading-none text-(--accent) sm:text-[36px]"
+            : "text-[32px] italic font-(--font-display) leading-none text-(--accent) sm:text-[40px]"}>
+            {formatPrice(variant.price, lang)}
+          </span>
           {isOutOfStock ? (
             <span className="chip chip--accent">{dict.common.outOfStock}</span>
           ) : variant.stock <= 5 ? (
@@ -113,7 +122,7 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+          <div className="eyebrow !text-(--ink-3) !opacity-100">
             {dict.product.selectSize}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -121,39 +130,41 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
               <button
                 key={item.id}
                 className={[
-                  "grid min-w-24 gap-0.5 rounded-[12px] border bg-white px-3.5 py-2.5 text-start transition-colors",
-                  item.stock > 0 ? "hover:border-(--ink-3)" : "cursor-not-allowed opacity-45 line-through",
-                  variantId === item.id ? "border-accent bg-(--accent-soft)" : "border-(--hairline)"
+                  "grid min-w-[112px] gap-0.5 rounded-(--radius) border px-4 py-3 text-start transition-colors",
+                  item.stock > 0 ? "hover:border-(--warm) hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
+                  variantId === item.id ? "border-(--accent) bg-(--accent-soft) text-(--ink)" : "border-(--hairline) bg-(--surface) text-(--ink-2)"
                 ].join(" ")}
                 data-active={variantId === item.id}
                 data-out={item.stock === 0 ? "true" : undefined}
                 onClick={() => item.stock > 0 && setVariantId(item.id)}
                 disabled={item.stock === 0}
               >
-                <span>{item.size}</span>
-                <span className="text-xs text-(--ink-2)">{formatPrice(item.price, lang)}</span>
+                <span className="text-[14px] font-medium">{item.size}</span>
+                <span className="text-[12px] opacity-80">{formatPrice(item.price, lang)}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div className="grid gap-2">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+          <div className="eyebrow !text-(--ink-3) !opacity-100">
             {dict.common.quantity}
           </div>
-          <div className="inline-grid grid-cols-[36px_60px_36px] items-center rounded-full border border-(--hairline) bg-white">
+          <div className="inline-grid grid-cols-[40px_64px_40px] items-center rounded-(--radius-pill) border border-(--hairline) bg-(--surface)">
             <button
-              className="grid h-10 place-items-center border-0 bg-transparent"
+              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-(--ink) disabled:opacity-30"
               onClick={() => setQty((value) => Math.max(1, value - 1))}
               aria-label="−"
+              disabled={qty <= 1}
             >
               <Icon.Minus />
             </button>
-            <span className="text-center font-semibold">{qty}</span>
+            <span className="text-center text-[15px] font-semibold text-(--ink)">{qty}</span>
             <button
-              className="grid h-10 place-items-center border-0 bg-transparent"
+              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-(--ink) disabled:opacity-30"
               onClick={() => setQty((value) => Math.min(variant.stock || 1, value + 1))}
               aria-label="+"
+              disabled={qty >= variant.stock}
             >
               <Icon.Plus />
             </button>
@@ -173,31 +184,35 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-1 border-b border-(--hairline)">
-          {tabs.map((item) => (
-            <button
-              key={item.key}
-              className="mr-4 border-0 bg-transparent px-1 py-3 text-[14px] text-(--ink-3)"
-              data-active={tab === item.key}
-              onClick={() => setTab(item.key)}
-              style={
-                tab === item.key
-                  ? { borderBottom: "2px solid var(--accent)", color: "var(--ink)" }
-                  : { borderBottom: "2px solid transparent" }
-              }
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max gap-1">
+            {tabs.map((item) => {
+              const active = tab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  className={[
+                    "relative mx-0 me-2 shrink-0 whitespace-nowrap border-0 bg-transparent px-1.5 py-3.5 text-[14px] transition-colors",
+                    active ? "text-(--ink) font-semibold" : "text-(--ink-3) hover:text-(--ink-2)"
+                  ].join(" ")}
+                  data-active={active}
+                  onClick={() => setTab(item.key)}
+                >
+                  {item.label}
+                  {active && <span className="absolute inset-x-0 -bottom-px h-[2px] bg-(--accent)" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="min-h-20 leading-7 text-(--ink-2)">
+        <div className="min-h-20 max-w-[65ch] text-[15px] leading-[1.85] text-(--ink-2)">
           {tabs.find((item) => item.key === tab)?.content}
         </div>
 
         {offers.length > 0 && (
           <div className="grid gap-2.5 pt-1">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
+            <div className="eyebrow !text-(--ink-3) !opacity-100">
               {dict.product.relatedOffers}
             </div>
             <div className="grid gap-2.5">
@@ -205,17 +220,18 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
                 <Link
                   key={offer.id}
                   href={`/${lang}/offers/${offer.slug}`}
-                  className="grid grid-cols-[80px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-white p-2.5 transition-colors hover:border-accent"
+                  className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 rounded-(--radius) border border-(--hairline) bg-(--surface) p-3 transition-colors hover:border-(--accent) hover:bg-(--accent-soft) sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4"
                 >
-                  <div className="h-[60px] w-20 overflow-hidden rounded-[8px] bg-(--bg-tint)">
+                  <div className="aspect-square h-[64px] overflow-hidden rounded-[8px] bg-(--warm-soft) sm:h-[68px] sm:w-22">
                     <OfferIllustration offer={offer} className="h-full w-full" />
                   </div>
-                  <div>
-                    <div className="font-semibold">{pickLang(offer.name, lang)}</div>
-                    <div className="text-[13px] text-(--ink-2)">
-                      {formatPrice(offer.price, lang)} · {dict.offers.save.replace("{amount}", formatPrice(offer.originalTotal - offer.price, lang))}
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-(--ink)">{pickLang(offer.name, lang)}</div>
+                    <div className="mt-0.5 text-[13px] text-(--ink-2)">
+                      {formatPrice(offer.price, lang)} · <span className="text-(--accent)">{dict.offers.save.replace("{amount}", formatPrice(offer.originalTotal - offer.price, lang))}</span>
                     </div>
                   </div>
+                  <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
                 </Link>
               ))}
             </div>

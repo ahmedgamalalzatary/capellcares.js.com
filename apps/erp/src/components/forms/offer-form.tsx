@@ -98,12 +98,12 @@ export function OfferForm({ mode, initial, products }: Props) {
   const savings = computed.originalTotal - Number(price || 0);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, alignItems: "start" }}>
+    <div className="editor-grid">
       <div className="stack stack--lg">
         <section className="card">
           <div className="card__head"><h3 className="card__title">معلومات العرض</h3></div>
           <div className="card__body stack stack--lg">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="editor-fields-2">
               <div className="field">
                 <label>الاسم بالعربية</label>
                 <input className="input" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
@@ -214,7 +214,7 @@ export function OfferForm({ mode, initial, products }: Props) {
           </div>
         </section>
 
-        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+        <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/offers")}>إلغاء</button>
           <button className="btn btn--primary" onClick={save}>{mode === "new" ? "حفظ العرض" : "حفظ التعديلات"}</button>
         </div>

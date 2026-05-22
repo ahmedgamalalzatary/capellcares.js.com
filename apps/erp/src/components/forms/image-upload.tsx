@@ -50,14 +50,15 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         void handleFile(e.dataTransfer.files?.[0]);
       }}
       style={{
-        border: `1.5px dashed ${dragOver ? "var(--accent)" : "var(--hairline-2)"}`,
-        background: dragOver ? "var(--accent-soft)" : "#fff",
-        borderRadius: 10,
-        padding: 16,
+        border: `1.5px dashed ${dragOver ? "var(--accent)" : "var(--hairline)"}`,
+        background: dragOver ? "var(--accent-soft)" : "var(--surface)",
+        borderRadius: "var(--radius-lg)",
+        padding: 22,
         display: "grid",
         gap: 12,
         placeItems: "center",
-        textAlign: "center"
+        textAlign: "center",
+        transition: "border-color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo)"
       }}
     >
       {value ? (
@@ -74,11 +75,11 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         </>
       ) : (
         <>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--bg-tint)", color: "var(--ink-3)", display: "grid", placeItems: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--warm-soft)", color: "var(--accent)", display: "grid", placeItems: "center" }}>
             <Icon.Upload />
           </div>
           <div>
-            <div style={{ fontWeight: 600 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
             <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
           </div>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>

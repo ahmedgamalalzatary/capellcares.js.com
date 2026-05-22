@@ -67,7 +67,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
             {parents.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
           </select>
         </div>
-        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+        <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/categories")}>إلغاء</button>
           <button className="btn btn--primary" onClick={save}>{mode === "new" ? "إنشاء القسم" : "حفظ التعديلات"}</button>
         </div>

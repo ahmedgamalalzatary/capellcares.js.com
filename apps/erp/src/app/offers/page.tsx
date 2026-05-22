@@ -46,8 +46,8 @@ export default function OffersListPage() {
         <div style={{ marginInlineStart: "auto" }} className="muted">{filtered.length} عرض</div>
       </div>
 
-      <div className="card" style={{ overflow: "hidden" }}>
-        <table className="table">
+      <div className="card">
+        <div className="table-outer"><table className="table">
           <thead>
             <tr>
               <th>الصورة</th>
@@ -66,13 +66,13 @@ export default function OffersListPage() {
               return (
                 <tr key={o.id}>
                   <td>
-                    <div style={{ width: 56, height: 40, background: "linear-gradient(135deg, var(--accent-soft), var(--bg-tint))", borderRadius: 6, display: "grid", placeItems: "center", color: "var(--accent)", fontWeight: 700 }}>
+                    <div className="avatar-tile avatar-tile--wide">
                       {o.name.en[0]}
                     </div>
                   </td>
                   <td>
-                    <Link href={`/offers/${o.id}/edit`} style={{ fontWeight: 600 }}>{o.name.ar}</Link>
-                    <div className="faint" style={{ fontSize: 11 }}>{o.name.en}</div>
+                    <Link href={`/offers/${o.id}/edit`} className="table-title">{o.name.ar}</Link>
+                    <div className="table-subtitle">{o.name.en}</div>
                   </td>
                   <td>{o.items.reduce((acc, it) => acc + it.qty, 0)} عنصر</td>
                    <td>{formatPrice(o.price, "ar")}</td>
@@ -109,6 +109,7 @@ export default function OffersListPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Modal

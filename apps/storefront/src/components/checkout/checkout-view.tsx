@@ -152,26 +152,40 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (orderId) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <div className="grid h-[84px] w-[84px] place-items-center rounded-full bg-(--accent-2) text-white">
-          <Icon.Check size={32} />
+      <div className="mx-auto my-8 grid max-w-[520px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-5 py-10 text-center shadow-(--shadow-1) sm:my-12 sm:px-8 sm:py-14">
+        <div className="grid h-20 w-20 place-items-center rounded-full bg-(--success) text-(--canvas)">
+          <Icon.Check size={36} />
         </div>
-        <h2 className="m-0 text-[28px] font-(--font-display) leading-none">{dict.common.orderPlaced}</h2>
-        <p className="text-(--ink-2)">{dict.common.orderPlacedDesc}</p>
-        <div className="rounded-[12px] bg-(--bg-tint) px-6 py-3 text-[28px] font-(--font-display) tracking-[0.08em]">
-          {orderId}
+        <h2 className={`m-0 leading-[1.1] ${lang === "ar"
+          ? "text-[28px] font-bold font-(--font-ar) text-(--ink)"
+          : "text-[32px] italic font-(--font-display) text-(--ink)"}`}>
+          {dict.common.orderPlaced}
+        </h2>
+        <p className="max-w-[40ch] text-[14.5px] leading-[1.7] text-(--ink-2)">{dict.common.orderPlacedDesc}</p>
+        <div className="mt-2 grid gap-1">
+          <span className="eyebrow !text-(--ink-3)">{lang === "ar" ? "رقم الطلب" : "Order code"}</span>
+          <div className={`rounded-(--radius) bg-(--warm-soft) px-7 py-3 tracking-[0.08em] text-(--ink) ${lang === "ar"
+            ? "text-[24px] font-bold font-(--font-ar)"
+            : "text-[28px] italic font-(--font-display)"}`}>
+            {orderId}
+          </div>
         </div>
-        <Link href={`/${lang}/products`} className="btn btn--primary">
-          {dict.cart.keepShopping}
-        </Link>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href={`/${lang}/orders`} className="btn btn--ghost">
+            {lang === "ar" ? "عرض طلباتي" : "View my orders"}
+          </Link>
+          <Link href={`/${lang}/products`} className="btn btn--primary">
+            {dict.cart.keepShopping}
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (resolved.length === 0) {
     return (
-      <div className="grid place-items-center gap-3 py-20 text-center">
-        <p className="text-(--ink-2)">{dict.cart.empty}</p>
+      <div className="mx-auto my-16 grid max-w-[420px] place-items-center gap-3 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-8 py-14 text-center">
+        <p className="text-[15px] text-(--ink-2)">{dict.cart.empty}</p>
         <Link href={`/${lang}/products`} className="btn btn--primary">
           {dict.cart.keepShopping}
         </Link>
@@ -180,7 +194,7 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
   }
 
   return (
-    <div className="grid gap-9 pb-20 lg:grid-cols-[1fr_380px] lg:items-start">
+    <div className="grid gap-6 pb-16 sm:gap-9 sm:pb-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
       <form
         className="grid gap-7"
         onSubmit={(e) => {
@@ -233,7 +247,7 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         <Section title={dict.checkout.payment}>
           <div className="grid gap-2.5">
             <label
-              className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-white px-4 py-3.5"
+              className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-(--surface) px-4 py-3.5"
               data-active={form.paymentMethod === "cod"}
             >
               <input type="radio" name="pay" value="cod" checked={form.paymentMethod === "cod"} onChange={() => set("paymentMethod", "cod")} />
@@ -250,34 +264,43 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
         </button>
       </form>
 
-      <aside className="sticky top-[140px] rounded-[16px] border border-(--hairline) bg-(--bg-elev) p-6">
-        <div className="text-[20px] font-(--font-display)">{dict.checkout.review}</div>
-        <hr className="hr" />
+      <aside className="rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-[140px]">
+        <span className="eyebrow !text-(--ink-3)">{lang === "ar" ? "المراجعة" : "Review"}</span>
+        <div className={`mt-1 ${lang === "ar"
+          ? "text-[22px] font-bold font-(--font-ar) text-(--ink)"
+          : "text-[24px] italic font-(--font-display) text-(--ink)"}`}>
+          {dict.checkout.review}
+        </div>
+        <div className="my-5 h-px bg-(--hairline)" />
         <ul className="m-0 grid list-none gap-3 p-0">
           {resolved.map((item) => (
-            <li key={item.key} className="flex items-start justify-between gap-3 text-sm">
-              <div>
-                <div className="font-medium">{item.title}</div>
-                <div className="text-[12px] text-(--ink-2)">
-                  {item.meta} · {dict.common.quantity}: {item.qty}
+            <li key={item.key} className="flex items-start justify-between gap-3 text-[14px]">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-(--ink)">{item.title}</div>
+                <div className="mt-0.5 text-[12px] text-(--ink-3)">
+                  {item.meta} · ×{item.qty}
                 </div>
               </div>
-              <div>{formatPrice(item.unit * item.qty, lang)}</div>
+              <div className="text-(--ink)">{formatPrice(item.unit * item.qty, lang)}</div>
             </li>
           ))}
         </ul>
-        <hr className="hr" />
-        <div className="flex items-center justify-between py-1.5">
+        <div className="my-5 h-px bg-(--hairline)" />
+        <div className="flex items-center justify-between py-1 text-[14px]">
           <span className="text-(--ink-2)">{dict.common.subtotal}</span>
-          <span>{formatPrice(subtotal, lang)}</span>
+          <span className="text-(--ink)">{formatPrice(subtotal, lang)}</span>
         </div>
-        <div className="flex items-center justify-between py-1.5">
+        <div className="flex items-center justify-between py-1 text-[14px]">
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
-          <span className="text-[12px] text-(--ink-2)">{dict.common.calculatedAtCheckout}</span>
+          <span className="text-[12px] text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
         </div>
-        <div className="flex items-center justify-between pt-2 text-[18px] font-semibold">
-          <span>{dict.common.total}</span>
-          <span className="font-(--font-display)">{formatPrice(subtotal, lang)}</span>
+        <div className="mt-4 flex items-end justify-between border-t border-(--hairline) pt-4">
+          <span className="text-[15px] font-medium text-(--ink-2)">{dict.common.total}</span>
+          <span className={`leading-none text-(--accent) ${lang === "ar"
+            ? "text-[26px] font-bold font-(--font-ar)"
+            : "text-[28px] italic font-(--font-display)"}`}>
+            {formatPrice(subtotal, lang)}
+          </span>
         </div>
       </aside>
     </div>
@@ -286,8 +309,8 @@ export function CheckoutView({ lang, dict }: { lang: Language; dict: any }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="grid gap-4 rounded-[16px] border border-(--hairline) bg-(--bg-elev) p-6">
-      <h2 className="m-0 text-[22px] font-(--font-display)">{title}</h2>
+    <section className="grid gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
+      <h2 className="m-0 text-[18px] font-medium tracking-[-0.005em] text-(--ink) sm:text-[20px]">{title}</h2>
       {children}
     </section>
   );

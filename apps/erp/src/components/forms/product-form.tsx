@@ -108,12 +108,12 @@ export function ProductForm({ mode, initial, categories }: Props) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, alignItems: "start" }}>
+    <div className="editor-grid">
       <div className="stack stack--lg">
         <section className="card">
           <div className="card__head"><h3 className="card__title">المعلومات الأساسية</h3></div>
           <div className="card__body stack stack--lg">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="editor-fields-2">
               <div className="field">
                 <label>الاسم بالعربية</label>
                 <input className="input" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
@@ -235,7 +235,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
           </div>
         </section>
 
-        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+        <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
           <button className="btn btn--primary" onClick={save}>{mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}</button>
         </div>
@@ -255,7 +255,7 @@ function BilingualField({
   return (
     <div className="field">
       <label>{label}</label>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="editor-fields-2">
         {multiline ? (
           <textarea className="textarea" placeholder="العربية" value={arVal} onChange={(e) => setAr(e.target.value)} />
         ) : (

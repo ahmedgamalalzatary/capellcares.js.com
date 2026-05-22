@@ -61,28 +61,35 @@ export default function ProductsListPage() {
         </Link>
       }
     >
-      <div className="toolbar">
-        <div className="search">
-          <Icon.Search />
-          <input
-            placeholder="ابحثي بالاسم أو SKU…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="toolbar toolbar--stacked">
+        <div className="toolbar__search">
+          <div className="search">
+            <Icon.Search />
+            <input
+              placeholder="ابحثي بالاسم أو SKU…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
-        <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
-          <option value="all">كل الحالات</option>
-          <option value="active">نشط</option>
-          <option value="inactive">غير نشط</option>
-        </select>
-        <select className="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}>
-          <option value="">كل الأقسام</option>
-          {rootCats.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
-        </select>
-        <div style={{ marginInlineStart: "auto" }} className="muted">{filtered.length} منتج</div>
+        <div className="muted toolbar__count">{filtered.length} منتج</div>
+        <div className="toolbar__filter1">
+          <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
+            <option value="all">كل الحالات</option>
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+          </select>
+        </div>
+        <div className="toolbar__filter2">
+          <select className="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}>
+            <option value="">كل الأقسام</option>
+            {rootCats.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="card" style={{ overflow: "hidden" }}>
+      <div className="card">
+        <div className="table-outer">
         <table className="table">
           <thead>
             <tr>
@@ -104,15 +111,15 @@ export default function ProductsListPage() {
               return (
                 <tr key={p.id}>
                   <td>
-                    <div style={{ width: 44, height: 44, background: "var(--bg-tint)", borderRadius: 6, display: "grid", placeItems: "center", color: "var(--ink-3)", fontWeight: 700 }}>
+                    <div className="avatar-tile">
                       {p.name.en[0]}
                     </div>
                   </td>
                   <td>
-                    <Link href={`/products/${p.id}/edit`} style={{ fontWeight: 600 }}>{p.name.ar}</Link>
-                    <div className="faint" style={{ fontSize: 11 }}>{p.name.en}</div>
+                    <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
+                    <div className="table-subtitle">{p.name.en}</div>
                   </td>
-                  <td><code style={{ fontSize: 12 }}>{p.sku}</code></td>
+                  <td><code className="mono">{p.sku}</code></td>
                   <td>{cat?.name.ar ?? "—"}</td>
                   <td>{prices.length > 1 ? formatPriceRange(Math.min(...prices), Math.max(...prices), "ar") : formatPrice(prices[0] ?? 0, "ar")}</td>
                   <td>
@@ -151,6 +158,7 @@ export default function ProductsListPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Modal

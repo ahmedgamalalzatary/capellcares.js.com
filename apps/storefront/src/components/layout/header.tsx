@@ -49,32 +49,34 @@ export function Header({ lang, dict, navGroups }: Props) {
   return (
     <header
       className={[
-        "sticky top-0 z-30 border-b border-(--hairline) bg-(--bg)",
+        "sticky top-0 z-30 border-b border-(--hairline) transition-[background,box-shadow] duration-200",
         scrolled
-          ? "bg-[rgba(250,246,241,0.92)] shadow-[0_4px_18px_rgba(42,34,28,0.05)] backdrop-blur-sm"
-          : ""
+          ? "bg-[color-mix(in_oklch,var(--canvas)_88%,transparent)] shadow-[var(--shadow-1)] backdrop-blur-md"
+          : "bg-(--canvas)"
       ].join(" ")}
     >
-      <div className="bg-(--ink) px-4 py-2 text-center text-[12px] tracking-[0.08em] text-[#faf6f1]">
+      <div className={`bg-(--ink) px-4 py-2 text-center text-[11px] text-(--canvas) sm:text-[12px] ${lang === "ar" ? "tracking-[0.04em]" : "tracking-[0.04em] sm:tracking-[0.12em]"}`}>
         {lang === "ar"
-          ? "شحن مجاني داخل القاهرة للطلبات فوق 600 جنيه"
-          : "Free Cairo delivery on orders over EGP 600"}
+          ? "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه · ادفع عند الاستلام"
+          : "Free Cairo delivery on orders over EGP 600 · Cash on delivery"}
       </div>
 
-      <div className="container grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 py-4 max-[880px]:grid-cols-[auto_1fr_auto]">
+      <div className="container grid grid-cols-[auto_auto_1fr_auto] items-center gap-3 py-3 sm:gap-4 sm:py-4 max-[880px]:grid-cols-[auto_minmax(0,1fr)_auto]">
         <button
-          className="hidden h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent p-1 text-(--ink) max-[880px]:inline-flex"
+          className="hidden h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-(--ink) sm:h-10 sm:w-10 max-[880px]:inline-flex"
           onClick={() => setMobileOpen(true)}
           aria-label="Menu"
         >
           <Icon.Menu />
         </button>
 
-        <Link href={`/${lang}`} className="inline-flex min-w-max items-center gap-2.5" aria-label={dict.brand}>
+        <Link href={`/${lang}`} className="group inline-flex min-w-0 items-center gap-2.5 max-[880px]:justify-self-center" aria-label={dict.brand}>
           <span
             className={[
-              "text-[22px] font-medium tracking-[0.01em] text-(--ink)",
-              lang === "ar" ? "font-bold font-(--font-display)" : "font-(--font-display)"
+              "text-(--ink) leading-none transition-colors group-hover:text-(--accent) whitespace-nowrap",
+              lang === "ar"
+                ? "text-[20px] font-bold font-(--font-ar) tracking-normal sm:text-[26px]"
+                : "text-[22px] font-(--font-display) italic tracking-[0.005em] sm:text-[28px]"
             ].join(" ")}
           >
             {dict.brand}
@@ -82,7 +84,7 @@ export function Header({ lang, dict, navGroups }: Props) {
         </Link>
 
         <form
-          className="flex h-11 w-full max-w-[520px] items-center gap-2.5 justify-self-end rounded-full border border-(--hairline) bg-(--bg-elev) px-[18px] py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_rgba(161,59,75,0.08)] max-[880px]:hidden"
+          className="flex h-11 w-full max-w-[520px] items-center gap-2.5 justify-self-end rounded-full border border-(--hairline) bg-(--surface) px-[18px] py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-(--accent) focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)] max-[880px]:hidden"
           onSubmit={onSearch}
         >
           <Icon.Search />
@@ -95,9 +97,9 @@ export function Header({ lang, dict, navGroups }: Props) {
           />
         </form>
 
-        <div className="inline-flex items-center gap-1">
+        <div className="inline-flex items-center gap-0.5 sm:gap-1">
           <button
-            className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--bg-tint)"
+            className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10"
             onClick={switchLang}
             aria-label="Language"
             title="Language"
@@ -107,30 +109,30 @@ export function Header({ lang, dict, navGroups }: Props) {
           </button>
 
           {user && (
-            <Link href={`/${lang}/orders`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--bg-tint)" aria-label={dict.nav.orders}>
+            <Link href={`/${lang}/orders`} className="relative hidden h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--warm-soft) sm:grid sm:h-10 sm:w-10" aria-label={dict.nav.orders}>
               <Icon.User />
             </Link>
           )}
 
-          <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--bg-tint)" aria-label={dict.nav.wishlist}>
+          <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.wishlist}>
             <Icon.Heart />
             {ids.length > 0 && (
-              <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-(--ink) px-1 text-[10px] font-semibold leading-none text-white">
+              <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-(--ink) px-1 text-[10px] font-semibold leading-none text-(--canvas)">
                 {ids.length}
               </span>
             )}
           </Link>
 
           {!user && (
-            <Link href={`/${lang}/login`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--bg-tint)" aria-label={dict.nav.account}>
+            <Link href={`/${lang}/login`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.account}>
               <Icon.User />
             </Link>
           )}
 
-          <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--bg-tint)" aria-label={dict.nav.cart}>
+          <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink) transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.cart}>
             <Icon.Cart />
             {count > 0 && (
-              <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-white">
+              <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-(--accent) px-1 text-[10px] font-semibold leading-none text-(--canvas)">
                 {count}
               </span>
             )}
@@ -138,59 +140,94 @@ export function Header({ lang, dict, navGroups }: Props) {
         </div>
       </div>
 
-      <nav className="border-t border-(--hairline) bg-[rgba(250,246,241,0.9)] py-2.5 max-[880px]:hidden" aria-label="Primary">
-        <div className="container flex flex-wrap justify-center gap-7">
-          <Link href={`/${lang}/products`} className="px-1 py-2 text-[13px] uppercase tracking-[0.06em] text-(--ink-2) transition-colors hover:text-accent">
+      <nav className="border-t border-(--hairline) bg-(--canvas) py-2.5 max-[880px]:hidden" aria-label="Primary">
+        <div className="container flex flex-wrap items-center justify-center gap-1">
+          <Link href={`/${lang}/products`} className={`rounded-(--radius-pill) px-4 py-2 text-[13px] ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"} text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-(--ink)`}>
             {dict.nav.products}
           </Link>
-          <Link href={`/${lang}/offers`} className="px-1 py-2 text-[13px] uppercase tracking-[0.06em] text-(--ink-2) transition-colors hover:text-accent">
+          {navGroups.slice(2, 7).map((g) => (
+            <Link
+              key={g.root.id}
+              href={`/${lang}/category/${g.root.slug}`}
+              className={`rounded-(--radius-pill) px-4 py-2 text-[13px] ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"} text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-(--ink)`}
+            >
+              {lang === "ar" ? g.root.name.ar : g.root.name.en}
+            </Link>
+          ))}
+          <Link href={`/${lang}/offers`} className={`rounded-(--radius-pill) px-4 py-2 text-[13px] ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"} text-(--accent) transition-colors hover:bg-(--accent-soft)`}>
             {dict.nav.offers}
           </Link>
         </div>
       </nav>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-100 grid grid-rows-[auto_1fr] bg-(--bg)" role="dialog" aria-modal="true">
-          <div className="flex items-center justify-between border-b border-(--hairline) px-5 py-4">
-            <span className="text-[20px] font-(--font-display)">{dict.brand}</span>
-            <button
-              className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) hover:bg-(--bg-tint)"
-              onClick={() => setMobileOpen(false)}
-              aria-label="Close"
-            >
-              <Icon.Close />
-            </button>
-          </div>
+      {/* Mobile drawer backdrop */}
+      <div
+        className={`fixed inset-0 z-[90] bg-black/40 transition-opacity duration-300 ${mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
 
-          <div className="grid gap-0 overflow-y-auto px-5 pb-8 pt-3">
-            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className="border-b border-(--hairline) px-2 py-4 text-base">
-              {dict.nav.products}
-            </Link>
-            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="border-b border-(--hairline) px-2 py-4 text-base">
-              {dict.nav.offers}
-            </Link>
-            {user ? (
-              <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="border-b border-(--hairline) px-2 py-4 text-base">
-                {dict.nav.orders}
-              </Link>
-            ) : null}
-
-            <div className="px-2 pb-1 pt-5 text-[11px] uppercase tracking-[0.18em] text-(--ink-3)">
-              {dict.nav.categories}
-            </div>
-            {navGroups.slice(2).map((g) => (
-              <Link
-                key={g.root.id}
-                onClick={() => setMobileOpen(false)}
-                href={`/${lang}/category/${g.root.slug}`}
-                className="border-b border-(--hairline) px-2 py-4 text-base"
-              >
-                {lang === "ar" ? g.root.name.ar : g.root.name.en}
-              </Link>
-            ))}
-          </div>
+      {/* Mobile drawer */}
+      <div
+        className={`fixed inset-y-0 z-[100] flex w-[min(320px,92vw)] flex-col bg-(--canvas) shadow-2xl transition-transform duration-300 ease-out ${lang === "ar" ? "right-0" : "left-0"} ${mobileOpen ? "translate-x-0" : lang === "ar" ? "translate-x-full" : "-translate-x-full"}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-(--hairline) px-5 py-4">
+          <span className={lang === "ar" ? "text-[22px] font-bold font-(--font-ar) text-(--ink)" : "text-[24px] italic font-(--font-display) text-(--ink)"}>{dict.brand}</span>
+          <button
+            className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink) hover:bg-(--warm-soft)"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close"
+          >
+            <Icon.Close />
+          </button>
         </div>
-      )}
+
+        <div className="flex flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
+          <form onSubmit={(e) => { onSearch(e); setMobileOpen(false); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-(--surface) px-5">
+            <Icon.Search />
+            <input
+              className="min-w-0 flex-1 border-0 bg-transparent text-(--ink) outline-none placeholder:text-(--ink-3)"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={dict.nav.search}
+              aria-label={dict.nav.search}
+            />
+          </form>
+
+          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-(--ink) transition-colors hover:bg-(--warm-soft)">
+            <span>{dict.nav.products}</span>
+            <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+          </Link>
+          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-(--accent) transition-colors hover:bg-(--accent-soft)">
+            <span>{dict.nav.offers}</span>
+            <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+          </Link>
+          {user && (
+            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-(--ink) transition-colors hover:bg-(--warm-soft)">
+              <span>{dict.nav.orders}</span>
+              <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+            </Link>
+          )}
+
+          <div className="px-2 pb-2 pt-6 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
+            {dict.nav.categories}
+          </div>
+          {navGroups.slice(2).map((g) => (
+            <Link
+              key={g.root.id}
+              onClick={() => setMobileOpen(false)}
+              href={`/${lang}/category/${g.root.slug}`}
+              className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-(--ink)"
+            >
+              <span>{lang === "ar" ? g.root.name.ar : g.root.name.en}</span>
+              <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+            </Link>
+          ))}
+        </div>
+      </div>
     </header>
   );
 }

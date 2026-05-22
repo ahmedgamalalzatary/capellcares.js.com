@@ -17,20 +17,20 @@ export default function DashboardPage() {
   const outOfStock = products.flatMap((p) => p.deletedAt ? [] : p.variants.filter((v) => v.stock === 0).map((v) => ({ p, v })));
 
   return (
-    <AdminShell title="لوحة التحكم">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+    <AdminShell title="لوحة التحكم" crumbs={[{ label: "نظرة عامة" }]}>
+      <div className="stats-grid">
         <Stat label="المنتجات النشطة" value={activeProducts.length} hint={`من إجمالي ${products.length}`} accent="var(--accent)" />
-        <Stat label="المتغيرات" value={totalVariants} hint="مقاسات وأحجام" accent="var(--accent-2)" />
-        <Stat label="العروض النشطة" value={offers.filter((o) => !o.deletedAt).length} hint={`من إجمالي ${offers.length}`} accent="var(--gold)" />
-        <Stat label="الأقسام" value={categories.filter((c) => !c.deletedAt).length} hint="تشمل الأقسام الفرعية" accent="var(--info)" />
+        <Stat label="المتغيرات" value={totalVariants} hint="مقاسات وأحجام" accent="var(--ink)" />
+        <Stat label="العروض النشطة" value={offers.filter((o) => !o.deletedAt).length} hint={`من إجمالي ${offers.length}`} accent="var(--warm)" />
+        <Stat label="الأقسام" value={categories.filter((c) => !c.deletedAt).length} hint="تشمل الأقسام الفرعية" accent="var(--ink-2)" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
+      <div className="split-grid">
         <section className="card">
           <div className="card__head">
             <h3 className="card__title">إجراءات سريعة</h3>
           </div>
-          <div className="card__body" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="card__body action-grid">
             <Action href="/products/new" icon={<Icon.Plus />} title="منتج جديد" desc="ابدئي بإنشاء منتج جديد." />
             <Action href="/offers/new" icon={<Icon.Tag />} title="عرض جديد" desc="جمّعي منتجات في باقة." />
             <Action href="/categories/new" icon={<Icon.Folder />} title="قسم جديد" desc="أضيفي قسمًا فرعيًا." />
@@ -43,14 +43,14 @@ export default function DashboardPage() {
             <h3 className="card__title">تنبيهات المخزون</h3>
             <span className="muted" style={{ fontSize: 12 }}>{lowStock.length + outOfStock.length} عنصر</span>
           </div>
-          <div style={{ maxHeight: 260, overflowY: "auto" }}>
+          <div className="panel-scroll">
             <table className="table">
               <tbody>
                 {outOfStock.slice(0, 5).map(({ p, v }) => (
                   <tr key={v.id}>
                     <td>
-                      <Link href={`/products/${p.id}/edit`} style={{ fontWeight: 600 }}>{p.name.ar}</Link>
-                      <div className="faint" style={{ fontSize: 11 }}>{v.size}</div>
+                      <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
+                      <div className="table-subtitle">{v.size}</div>
                     </td>
                     <td style={{ textAlign: "end" }}><span className="status status--deleted">نفد</span></td>
                   </tr>
@@ -58,8 +58,8 @@ export default function DashboardPage() {
                 {lowStock.slice(0, 6).map(({ p, v }) => (
                   <tr key={v.id}>
                     <td>
-                      <Link href={`/products/${p.id}/edit`} style={{ fontWeight: 600 }}>{p.name.ar}</Link>
-                      <div className="faint" style={{ fontSize: 11 }}>{v.size}</div>
+                      <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
+                      <div className="table-subtitle">{v.size}</div>
                     </td>
                     <td style={{ textAlign: "end" }}><span className="status status--draft">{v.stock}</span></td>
                   </tr>
@@ -78,6 +78,7 @@ export default function DashboardPage() {
           <h3 className="card__title">آخر المنتجات</h3>
           <Link href="/products" className="btn btn--ghost btn--sm">عرض الكل</Link>
         </div>
+        <div className="table-outer">
         <table className="table">
           <thead>
             <tr>
@@ -97,10 +98,10 @@ export default function DashboardPage() {
               return (
                 <tr key={p.id}>
                   <td>
-                    <Link href={`/products/${p.id}/edit`} style={{ fontWeight: 600 }}>{p.name.ar}</Link>
-                    <div className="faint" style={{ fontSize: 11 }}>{p.name.en}</div>
+                    <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
+                    <div className="table-subtitle">{p.name.en}</div>
                   </td>
-                  <td><code style={{ fontSize: 12 }}>{p.sku}</code></td>
+                  <td><code className="mono">{p.sku}</code></td>
                   <td>{cat?.name.ar ?? "—"}</td>
                   <td>{p.variants.length}</td>
                   <td>{min === max ? formatPrice(min, "ar") : `${formatPrice(min, "ar")} – ${formatPrice(max, "ar")}`}</td>
@@ -116,6 +117,7 @@ export default function DashboardPage() {
             })}
           </tbody>
         </table>
+        </div>
       </section>
     </AdminShell>
   );
@@ -123,23 +125,21 @@ export default function DashboardPage() {
 
 function Stat({ label, value, hint, accent }: { label: string; value: number; hint: string; accent: string }) {
   return (
-    <div className="card" style={{ padding: 18 }}>
-      <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: accent }}>{value}</div>
-      <div className="faint" style={{ fontSize: 11, marginTop: 4 }}>{hint}</div>
+    <div className="stat">
+      <div className="stat__label">{label}</div>
+      <div className="stat__value" style={{ color: accent }}>{value}</div>
+      <div className="stat__meta">{hint}</div>
     </div>
   );
 }
 
 function Action({ href, icon, title, desc }: { href: string; icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <Link href={href} style={{ display: "flex", gap: 12, padding: 14, border: "1px solid var(--hairline)", borderRadius: 8, transition: "border-color 0.12s" }}>
-      <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--accent-soft)", color: "var(--accent)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-        {icon}
-      </div>
+    <Link href={href} className="action-card">
+      <div className="action-card__icon">{icon}</div>
       <div>
-        <div style={{ fontWeight: 600 }}>{title}</div>
-        <div className="faint" style={{ fontSize: 12 }}>{desc}</div>
+        <div className="action-card__title">{title}</div>
+        <div className="action-card__desc">{desc}</div>
       </div>
     </Link>
   );
