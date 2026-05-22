@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getDict, formatPrice, languages, pickLang, type Language } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { fetchOffers } from "@/lib/api/client";
+import { buildOffersMetadata, breadcrumbJsonLd } from "@/lib/seo";
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!languages.includes(lang as Language)) notFound();
+  return buildOffersMetadata(lang as Language);
+}
 
 export default async function OffersPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
@@ -13,6 +25,17 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
 
   return (
     <main className="container">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: dict.common.breadcrumbHome, url: `/${lang}` },
+              { name: dict.offers.title }
+            ])
+          )
+        }}
+      />
       <Breadcrumb
         items={[
           { label: dict.common.breadcrumbHome, href: `/${lang}` },
@@ -84,4 +107,3 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
     </main>
   );
 }
-

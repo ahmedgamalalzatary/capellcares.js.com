@@ -47,7 +47,7 @@ function resolveFetchLanguage(lang?: string): FetchLanguage | undefined {
 async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T> {
   const resolvedLang = resolveFetchLanguage(options?.lang);
   const res = await fetch(`${API_BASE}${path}`, {
-    cache: "no-store",
+    next: { revalidate: 300 },
     headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
   });
   if (!res.ok) {

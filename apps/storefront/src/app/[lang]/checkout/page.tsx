@@ -23,3 +23,6 @@ export default async function CheckoutPage({ params }: { params: Promise<{ lang:
     </main>
   );
 }
+import { noIndexMetadata } from "@/lib/seo";
+
+export const metadata = noIndexMetadata();

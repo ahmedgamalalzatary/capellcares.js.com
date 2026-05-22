@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, languages, pickLang, type Language } from "@capella/shared";
 import { ProductGrid } from "@/components/products/product-grid";
@@ -9,6 +10,25 @@ import {
   getCategoryPath,
   getProductsByCategory
 } from "@/lib/api/client";
+import { buildCategoryMetadata, breadcrumbJsonLd } from "@/lib/seo";
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ lang: string; slug: string }>;
+}): Promise<Metadata> {
+  const { lang, slug } = await params;
+  if (!languages.includes(lang as Language)) notFound();
+  const [categories, allProducts] = await Promise.all([
+    fetchCategories({ lang }),
+    fetchProducts({ lang })
+  ]);
+  const category = getCategoryBySlug(categories, slug);
+  if (!category) notFound();
+  const products = getProductsByCategory(allProducts.filter((p) => p.status === "active"), categories, category.id);
+  const path = getCategoryPath(categories, category.id);
+  return buildCategoryMetadata(lang as Language, category, path, products.length);
+}
 
 export default async function CategoryPage({
   params
@@ -31,6 +51,21 @@ export default async function CategoryPage({
 
   return (
     <main className="container">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: dict.common.breadcrumbHome, url: `/${lang}` },
+              { name: dict.nav.products, url: `/${lang}/products` },
+              ...path.map((c, i) => ({
+                name: pickLang(c.name, lang as Language),
+                url: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}`
+              }))
+            ])
+          )
+        }}
+      />
       <Breadcrumb
         items={[
           { label: dict.common.breadcrumbHome, href: `/${lang}` },

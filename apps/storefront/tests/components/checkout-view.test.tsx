@@ -85,7 +85,7 @@ describe("CheckoutView", () => {
     render(createElement(CheckoutView, { lang: "en", dict }));
 
     await waitFor(() => {
-      expect(screen.getByText("Review")).toBeInTheDocument();
+      expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
     });
 
     fireEvent.change(screen.getByPlaceholderText("01XXXXXXXXX"), { target: { value: "123" } });

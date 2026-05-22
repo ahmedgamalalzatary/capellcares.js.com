@@ -19,3 +19,6 @@ export default async function WishlistPage({ params }: { params: Promise<{ lang:
     </main>
   );
 }
+import { noIndexMetadata } from "@/lib/seo";
+
+export const metadata = noIndexMetadata();

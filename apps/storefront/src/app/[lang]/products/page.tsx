@@ -1,9 +1,22 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDict, languages, type Language } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { fetchAdvices, fetchCategories, fetchProducts } from "@/lib/api/client";
+import { buildProductsMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<{ q?: string; category?: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!languages.includes(lang as Language)) notFound();
+  return buildProductsMetadata(lang as Language);
+}
 
 export default async function ProductsPage({
   params,

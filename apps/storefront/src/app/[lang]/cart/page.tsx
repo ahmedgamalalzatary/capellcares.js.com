@@ -19,3 +19,6 @@ export default async function CartPage({ params }: { params: Promise<{ lang: str
     </main>
   );
 }
+import { noIndexMetadata } from "@/lib/seo";
+
+export const metadata = noIndexMetadata();

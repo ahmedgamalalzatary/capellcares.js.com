@@ -114,7 +114,7 @@ describe("storefront client contracts", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/products"),
       expect.objectContaining({
-        cache: "no-store",
+        next: { revalidate: 300 },
         headers: { "x-lang": "en" }
       })
     );

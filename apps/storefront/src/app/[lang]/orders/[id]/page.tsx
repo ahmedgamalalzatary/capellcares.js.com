@@ -17,3 +17,6 @@ export default async function OrderPage({ params }: { params: Promise<{ lang: st
     </main>
   );
 }
+import { noIndexMetadata } from "@/lib/seo";
+
+export const metadata = noIndexMetadata();

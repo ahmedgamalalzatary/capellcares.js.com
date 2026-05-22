@@ -12,3 +12,6 @@ export default async function SignupPage({ params }: { params: Promise<{ lang: s
     </main>
   );
 }
+import { noIndexMetadata } from "@/lib/seo";
+
+export const metadata = noIndexMetadata();
