@@ -153,5 +153,12 @@ export const ar = {
     loginHere: "تسجيل الدخول"
   },
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
-  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" }
+  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
+  ask: {
+    button: "اسألي كابيلا",
+    placeholder: "عن ماذا تبحثين؟",
+    sections: { products: "المنتجات", categories: "الأقسام", offers: "العروض" },
+    empty: "لا نتائج لـ \"{q}\"",
+    browseAll: "تصفح كل المنتجات ←"
+  }
 } as const;

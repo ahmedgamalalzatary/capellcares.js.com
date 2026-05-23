@@ -7,6 +7,7 @@ import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { AskCapellaButton } from "@/components/search/ask-capella-button";
 import { fetchCategories } from "@/lib/api/client";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -54,6 +55,7 @@ export default async function LocaleLayout({
             <Header lang={lang as Language} dict={dict} navGroups={navGroups} />
             <div>{children}</div>
             <Footer lang={lang as Language} dict={dict} />
+            <AskCapellaButton lang={lang as Language} />
           </div>
         </CartProvider>
       </WishlistProvider>

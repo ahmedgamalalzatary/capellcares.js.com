@@ -153,5 +153,12 @@ export const en = {
     loginHere: "Log in"
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
-  badges: { new: "New", bestseller: "Bestseller", offer: "Offer" }
+  badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
+  ask: {
+    button: "Ask Capella",
+    placeholder: "What are you looking for?",
+    sections: { products: "Products", categories: "Categories", offers: "Offers" },
+    empty: "No results for \"{q}\"",
+    browseAll: "Browse all products →"
+  }
 } as const;
