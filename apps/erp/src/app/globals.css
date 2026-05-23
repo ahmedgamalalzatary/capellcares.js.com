@@ -553,7 +553,6 @@ html[lang="ar"] .page-title { letter-spacing: 0; }
    ============================================================ */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: color-mix(in oklch, var(--ink) 50%, transparent);
   backdrop-filter: blur(6px);
   z-index: 50; display: grid; place-items: center; padding: 24px;
   animation: fade-in 160ms var(--ease-out-expo);

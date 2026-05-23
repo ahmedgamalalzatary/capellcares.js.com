@@ -227,6 +227,12 @@ class ErpStore {
     await api.post(`/api/erp/products/${id}/restore`);
     await this.refetch();
   }
+  async hardDeleteProduct(id: number) {
+    await api.del(`/api/erp/products/${id}/permanent`);
+    this.products = this.products.filter((p) => p.id !== id);
+    this.emit();
+    void this.refetch();
+  }
   async toggleProductStatus(id: number) {
     await api.post(`/api/erp/products/${id}/toggle-status`);
     await this.refetch();

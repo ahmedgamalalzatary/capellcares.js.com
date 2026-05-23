@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
-import { categories, products, productVariants } from "@capella/database/drizzle/schema";
+import { categories, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 function toNumber(value: unknown): number {
@@ -326,6 +326,22 @@ export async function softDeleteProductRepo(id: number) {
 
 export async function restoreProductRepo(id: number) {
   await db.update(products).set({ deletedAt: null }).where(eq(products.id, id));
+}
+
+export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: string | null } | null> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ imagePath: products.imagePath, deletedAt: products.deletedAt })
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+    if (!row || row.deletedAt == null) return null;
+
+    await tx.delete(wishlists).where(eq(wishlists.productId, id));
+    await tx.delete(productVariants).where(eq(productVariants.productId, id));
+    await tx.delete(products).where(eq(products.id, id));
+    return { imagePath: row.imagePath ?? null };
+  });
 }
 
 export async function toggleProductStatusRepo(id: number) {

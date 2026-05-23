@@ -4,6 +4,7 @@ import {
   adminUpsertProduct,
   adminSoftDeleteProduct,
   adminRestoreProduct,
+  adminHardDeleteProduct,
   adminToggleProductStatus,
   adminSetVariantStock,
   adminListCategories,
@@ -25,6 +26,7 @@ adminRoutes.get("/products", adminListProducts);
 adminRoutes.post("/products", adminUpsertProduct);
 adminRoutes.delete("/products/:id", adminSoftDeleteProduct);
 adminRoutes.post("/products/:id/restore", adminRestoreProduct);
+adminRoutes.delete("/products/:id/permanent", adminHardDeleteProduct);
 adminRoutes.post("/products/:id/toggle-status", adminToggleProductStatus);
 adminRoutes.post("/products/:id/variants/:variantId/stock", adminSetVariantStock);
 

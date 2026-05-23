@@ -96,6 +96,28 @@ export async function adminRestoreProduct(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
+export async function adminHardDeleteProduct(req: Request, res: Response) {
+  const { hardDeleteProductRepo } = await import("../../repositories/product.repository.js");
+  const result = await hardDeleteProductRepo(Number(req.params.id));
+  if (!result) {
+    return res.status(404).json({ ok: false, reason: "not-in-trash" });
+  }
+  if (result.imagePath && result.imagePath.startsWith("/uploads/")) {
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const fileName = result.imagePath.slice("/uploads/".length);
+    const absolutePath = path.resolve(process.cwd(), "uploads", fileName);
+    try {
+      await fs.unlink(absolutePath);
+    } catch (err: any) {
+      if (err?.code !== "ENOENT") {
+        console.warn(`Failed to unlink product image ${absolutePath}:`, err?.message ?? err);
+      }
+    }
+  }
+  res.status(204).end();
+}
+
 export async function adminToggleProductStatus(req: Request, res: Response) {
   const { toggleProductStatusRepo } = await import("../../repositories/product.repository.js");
   await toggleProductStatusRepo(Number(req.params.id));

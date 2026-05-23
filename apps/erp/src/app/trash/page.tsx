@@ -4,6 +4,8 @@ import { useState } from "react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
+import { Modal } from "@/components/ui/modal";
+import { showErrorToast } from "@/lib/errors";
 
 type Tab = "products" | "categories" | "offers";
 
@@ -12,6 +14,15 @@ export default function TrashPage() {
   const categories = useStore((s) => s.categories);
   const offers = useStore((s) => s.offers);
   const [tab, setTab] = useState<Tab>("products");
+  const [pendingHardDelete, setPendingHardDelete] = useState<{ id: number; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const closeHardDeleteModal = () => {
+    if (isDeleting) return;
+    setPendingHardDelete(null);
+    setDeleteError(null);
+  };
 
   const deletedProducts = products.filter((p) => p.deletedAt);
   const deletedCategories = categories.filter((c) => c.deletedAt);
@@ -62,6 +73,7 @@ export default function TrashPage() {
               meta: new Date(p.deletedAt!).toLocaleDateString("ar-EG")
             }))}
             onRestore={(id) => getStore().restoreProduct(id)}
+            onHardDelete={(id, title) => setPendingHardDelete({ id, title })}
           />
         )}
         {tab === "categories" && (
@@ -89,15 +101,54 @@ export default function TrashPage() {
           />
         )}
       </div>
+
+      <Modal
+        open={pendingHardDelete != null}
+        title="تأكيد الحذف النهائي"
+        onClose={closeHardDeleteModal}
+        footer={
+          <>
+            <button className="btn btn--ghost btn--sm" disabled={isDeleting} onClick={closeHardDeleteModal}>إلغاء</button>
+            <button
+              className="btn btn--danger btn--sm"
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!pendingHardDelete) return;
+                try {
+                  setIsDeleting(true);
+                  setDeleteError(null);
+                  await getStore().hardDeleteProduct(pendingHardDelete.id);
+                  setPendingHardDelete(null);
+                } catch (error) {
+                  console.error(error);
+                  const message = "تعذر حذف المنتج نهائياً. حاولي مرة أخرى.";
+                  showErrorToast(error, message);
+                  setDeleteError(message);
+                } finally {
+                  setIsDeleting(false);
+                }
+              }}
+            >
+              {isDeleting ? "جارٍ الحذف..." : "حذف نهائي"}
+            </button>
+          </>
+        }
+      >
+        <p style={{ margin: 0 }}>
+          سيتم حذف "{pendingHardDelete?.title}" نهائياً مع كل بياناته. لا يمكن التراجع عن هذا الإجراء.
+        </p>
+        {deleteError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{deleteError}</p> : null}
+      </Modal>
     </AdminShell>
   );
 }
 
 function DeletedList({
-  rows, onRestore, empty
+  rows, onRestore, onHardDelete, empty
 }: {
   rows: { id: number; title: string; subtitle: string; meta: string }[];
   onRestore: (id: number) => void;
+  onHardDelete?: (id: number, title: string) => void;
   empty: string;
 }) {
   if (rows.length === 0) {
@@ -122,9 +173,20 @@ function DeletedList({
             </td>
             <td className="muted">{r.meta}</td>
             <td>
-              <button className="btn btn--ghost btn--sm" onClick={() => onRestore(r.id)}>
-                <Icon.Check /> استعادة
-              </button>
+              <div style={{ display: "inline-flex", gap: 8 }}>
+                <button className="btn btn--ghost btn--sm" onClick={() => onRestore(r.id)}>
+                  <Icon.Check /> استعادة
+                </button>
+                {onHardDelete && (
+                  <button
+                    className="btn btn--ghost btn--sm"
+                    style={{ color: "var(--danger, #c0392b)" }}
+                    onClick={() => onHardDelete(r.id, r.title)}
+                  >
+                    <Icon.Trash /> حذف نهائي
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}
