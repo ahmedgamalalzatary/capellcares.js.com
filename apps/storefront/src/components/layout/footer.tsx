@@ -2,45 +2,133 @@
 
 import Link from "next/link";
 import type { Language } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
   const isAr = lang === "ar";
 
   return (
-    <footer className="mt-24 bg-(--ink) pt-20 pb-8 text-(--canvas)">
-      <div className="container">
-        <div className="grid gap-12 md:grid-cols-2 xl:grid-cols-[1.7fr_1fr_1fr_1fr] xl:gap-16">
+    <footer
+      dir={isAr ? "rtl" : "ltr"}
+      style={{
+        background: `
+          radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.48 0.13 41 / 0.55) 0%, transparent 70%),
+          oklch(0.19 0.06 38)
+        `,
+      }}
+      className="relative mt-24 overflow-hidden pb-0 text-(--canvas)"
+    >
+      {/* Decorative top rule with gold shimmer */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, oklch(0.748 0.106 70 / 0.6) 30%, oklch(0.748 0.106 70) 50%, oklch(0.748 0.106 70 / 0.6) 70%, transparent 100%)",
+        }}
+      />
+
+      {/* Noise grain overlay for texture */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundSize: "256px 256px",
+        }}
+      />
+
+      {/* Hero brand mark — large italic name as atmosphere */}
+      <div className="relative border-b border-[oklch(0.748_0.106_70_/_0.12)] px-6 py-20 text-center">
+        <p
+          className={`mb-4 text-[11px] tracking-[0.35em] text-[oklch(0.748_0.106_70_/_0.7)] ${isAr ? "" : "uppercase"}`}
+        >
+          {isAr ? "عناية فاخرة — صُنع في مصر" : "Luxury Care — Est. Egypt"}
+        </p>
+
+        <h2
+          className={
+            isAr
+              ? "font-(--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-(--canvas)"
+              : "font-(--font-display) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-(--canvas)"
+          }
+          style={{ textShadow: "0 0 80px oklch(0.748 0.106 70 / 0.25)" }}
+        >
+          {dict.brand}
+        </h2>
+
+        <p className="mx-auto mt-6 max-w-[46ch] text-[15px] leading-[1.85] text-[oklch(0.94_0.06_85_/_0.55)]">
+          {dict.tagline}
+        </p>
+      </div>
+
+      {/* Main content grid */}
+      <div className="container relative py-16">
+        <div className="grid gap-12 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr]">
+
+          {/* Brand philosophy + contact */}
           <div className="md:col-span-2 xl:col-span-1">
-            <div className="inline-flex items-center gap-2.5">
-              <span className={isAr ? "text-[34px] font-bold font-(--font-ar)" : "text-[36px] italic font-(--font-display)"}>
-                {dict.brand}
-              </span>
-            </div>
-            <p className="mt-5 max-w-[38ch] text-[15px] leading-[1.7] text-[color-mix(in_oklch,var(--canvas)_82%,var(--ink))]">
-              {dict.tagline}
+            <p
+              className={`mb-5 text-[11px] tracking-[0.3em] text-[oklch(0.748_0.106_70)] ${isAr ? "" : "uppercase"}`}
+            >
+              {isAr ? "فلسفتنا" : "Our Philosophy"}
             </p>
 
-            <div className="mt-7">
-              <div className={`mb-3 text-[11px] tracking-[0.22em] text-(--warm) ${isAr ? "" : "uppercase"}`}>
-                {isAr ? "اشتركي في النشرة" : "Join the journal"}
-              </div>
-              <form className="flex max-w-[420px] items-center gap-1 rounded-(--radius-pill) border border-[color-mix(in_oklch,var(--canvas)_24%,transparent)] bg-[color-mix(in_oklch,var(--canvas)_8%,transparent)] p-1.5" onSubmit={(e) => e.preventDefault()}>
-                <input
-                  type="email"
-                  placeholder={isAr ? "بريدك الإلكتروني" : "Email address"}
-                  className="h-10 min-w-0 flex-1 border-0 bg-transparent px-4 text-(--canvas) outline-none placeholder:text-[color-mix(in_oklch,var(--canvas)_56%,transparent)]"
-                  aria-label={isAr ? "بريدك الإلكتروني" : "Email address"}
-                />
-                <button className="h-10 rounded-(--radius-pill) bg-(--accent) px-5 text-[13px] font-medium text-(--canvas) transition-colors hover:bg-(--accent-deep)" type="submit">
-                  {isAr ? "اشتركي" : "Subscribe"}
-                </button>
-              </form>
+            <blockquote className="mb-8 max-w-[34ch] border-s-[1.5px] border-[oklch(0.748_0.106_70_/_0.4)] ps-4 text-[15px] italic leading-[1.9] text-[oklch(0.94_0.06_85_/_0.55)] font-(--font-display)">
+              {isAr
+                ? "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ."
+                : "Every drop tells nature's story. Every ritual begins with an honest moment with yourself."}
+            </blockquote>
+
+            <div className="grid gap-3">
+              <p className={`text-[11px] tracking-[0.25em] text-[oklch(0.748_0.106_70_/_0.7)] ${isAr ? "" : "uppercase"}`}>
+                {isAr ? "تواصلي معنا" : "Reach Us"}
+              </p>
+              <a
+                href="mailto:hello@capellacare.com"
+                className="text-[13px] text-[oklch(0.94_0.06_85_/_0.5)] transition-colors hover:text-[oklch(0.748_0.106_70)]"
+              >
+                hello@capellacare.com
+              </a>
+            </div>
+
+            <div className="mt-7 flex items-center gap-4">
+              {[
+                {
+                  label: "Instagram",
+                  href: "https://instagram.com/capellacares",
+                  path: "M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5ZM12 7a5 5 0 1 1 0 10A5 5 0 0 1 12 7Zm0 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm5.25-2.25a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z",
+                },
+                {
+                  label: "TikTok",
+                  href: "https://tiktok.com/@capellacares",
+                  path: "M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07Z",
+                },
+                {
+                  label: "Pinterest",
+                  href: "https://pinterest.com/capellacares",
+                  path: "M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.86 6.39 9.29-.09-.78-.17-1.98.04-2.83.18-.77 1.22-5.17 1.22-5.17s-.31-.63-.31-1.56c0-1.46.85-2.55 1.9-2.55.9 0 1.33.67 1.33 1.48 0 .9-.57 2.26-.87 3.51-.25 1.05.52 1.9 1.55 1.9 1.85 0 3.1-2.37 3.1-5.18 0-2.14-1.44-3.74-4.04-3.74-2.94 0-4.77 2.2-4.77 4.64 0 .84.24 1.44.62 1.9.17.2.19.28.13.51-.04.17-.14.57-.18.73-.06.23-.24.32-.44.23-1.24-.51-1.82-1.88-1.82-3.42 0-2.54 2.15-5.6 6.42-5.6 3.45 0 5.73 2.51 5.73 5.2 0 3.56-1.97 6.23-4.88 6.23-.98 0-1.9-.53-2.21-1.12l-.6 2.31c-.22.83-.8 1.88-1.19 2.52.9.27 1.85.42 2.84.42 5.52 0 10-4.48 10-10S17.52 2 12 2Z",
+                },
+              ].map(({ label, href, path }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex h-9 w-9 items-center justify-center border border-[oklch(0.748_0.106_70_/_0.2)] text-[oklch(0.94_0.06_85_/_0.4)] transition-all hover:border-[oklch(0.748_0.106_70_/_0.6)] hover:text-[oklch(0.748_0.106_70)]"
+                  style={{ borderRadius: 2 }}
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
+                    <path d={path} />
+                  </svg>
+                </a>
+              ))}
             </div>
           </div>
 
-          <FooterCol title={isAr ? "تسوّقي" : "Shop"} lang={lang}>
+          {/* Shop col */}
+          <FooterCol title={isAr ? "تسوّقي" : "Shop"} isAr={isAr}>
             <FooterLink href={`/${lang}/products`}>{dict.nav.products}</FooterLink>
             <FooterLink href={`/${lang}/offers`}>{dict.nav.offers}</FooterLink>
             <FooterLink href={`/${lang}/category/skin-care`}>{isAr ? "العناية بالبشرة" : "Skin Care"}</FooterLink>
@@ -49,14 +137,16 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <FooterLink href={`/${lang}/category/organic-oils`}>{isAr ? "الزيوت العضوية" : "Organic Oils"}</FooterLink>
           </FooterCol>
 
-          <FooterCol title={isAr ? "كابيلا" : "Capella"} lang={lang}>
-            <FooterLink as="span">{isAr ? "قصّتنا" : "Our story"}</FooterLink>
+          {/* Capella col */}
+          <FooterCol title={isAr ? "كابيلا" : "Capella"} isAr={isAr}>
+            <FooterLink as="span">{isAr ? "قصّتنا" : "Our Story"}</FooterLink>
             <FooterLink as="span">{isAr ? "المكوّنات" : "Ingredients"}</FooterLink>
             <FooterLink as="span">{isAr ? "الفروع" : "Branches"}</FooterLink>
             <FooterLink as="span">{isAr ? "تواصلي معنا" : "Contact"}</FooterLink>
           </FooterCol>
 
-          <FooterCol title={isAr ? "الحساب" : "Account"} lang={lang}>
+          {/* Account col */}
+          <FooterCol title={isAr ? "الحساب" : "Account"} isAr={isAr}>
             <FooterLink href={`/${lang}/login`}>{dict.nav.login}</FooterLink>
             <FooterLink href={`/${lang}/signup`}>{dict.nav.signup}</FooterLink>
             <FooterLink href={`/${lang}/orders`}>{dict.nav.orders}</FooterLink>
@@ -64,33 +154,106 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <FooterLink href={`/${lang}/cart`}>{dict.nav.cart}</FooterLink>
           </FooterCol>
         </div>
+      </div>
 
-        <div className="mt-16 flex flex-col items-start justify-between gap-3 border-t border-[color-mix(in_oklch,var(--canvas)_18%,transparent)] pt-6 text-[13px] text-[color-mix(in_oklch,var(--canvas)_70%,transparent)] sm:flex-row sm:items-center">
-          <span>© {year} {dict.brand}. {isAr ? "كل الحقوق محفوظة." : "All rights reserved."}</span>
-          <span className="flex items-center gap-4 text-[12px] text-[color-mix(in_oklch,var(--canvas)_58%,transparent)]">
-            <span>{isAr ? "العملة: جنيه مصري" : "Currency: EGP"}</span>
-            <span aria-hidden>·</span>
-            <span>{isAr ? "صُنع في مصر" : "Made in Egypt"}</span>
+      {/* Bottom bar */}
+      <div
+        className="relative"
+        style={{ borderTop: "1px solid oklch(0.748 0.106 70 / 0.12)" }}
+      >
+        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-[oklch(0.94_0.06_85_/_0.35)] sm:flex-row">
+          <span className={isAr ? "" : "uppercase"}>
+            © {year} {dict.brand}.{" "}
+            {isAr ? "كل الحقوق محفوظة." : "All rights reserved."}
           </span>
+
+          {/* Decorative divider dots */}
+          <div className="flex items-center gap-5 uppercase">
+            <span>{isAr ? "العملة: ج.م." : "EGP"}</span>
+            <Dot />
+            <span>{isAr ? "صُنع في مصر" : "Made in Egypt"}</span>
+            <Dot />
+            <span>{isAr ? "شحن آمن" : "Secure Checkout"}</span>
+          </div>
+        </div>
+
+        {/* Large ghost brand mark at bottom edge */}
+        <div
+          aria-hidden
+          className={`pointer-events-none select-none overflow-hidden text-center leading-none ${
+            isAr
+              ? "font-(--font-ar) font-bold"
+              : "font-(--font-display) italic font-light"
+          }`}
+          style={{
+            fontSize: "clamp(80px, 18vw, 220px)",
+            color: "transparent",
+            WebkitTextStroke: "1px oklch(0.748 0.106 70 / 0.07)",
+            letterSpacing: "-0.02em",
+            marginBottom: "-0.18em",
+            lineHeight: 1,
+          }}
+        >
+          {dict.brand}
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterCol({ title, lang, children }: { title: string; lang: Language; children: React.ReactNode }) {
+function FooterCol({
+  title,
+  isAr,
+  children,
+}: {
+  title: string;
+  isAr: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <div className={`mb-4 text-[11px] tracking-[0.22em] text-(--warm) ${lang === "ar" ? "" : "uppercase"}`}>
+      <div
+        className={`mb-6 text-[10px] tracking-[0.3em] text-[oklch(0.748_0.106_70_/_0.8)] ${isAr ? "" : "uppercase"}`}
+      >
         {title}
       </div>
-      <div className="grid gap-1.5">{children}</div>
+      <div className="grid gap-3">{children}</div>
     </div>
   );
 }
 
-function FooterLink({ href, as, children }: { href?: string; as?: "span"; children: React.ReactNode }) {
-  const cls = "block text-[14px] text-[color-mix(in_oklch,var(--canvas)_82%,var(--ink))] transition-colors hover:text-(--warm)";
-  if (as === "span" || !href) return <span className={cls}>{children}</span>;
-  return <Link className={cls} href={href}>{children}</Link>;
+function FooterLink({
+  href,
+  as,
+  children,
+}: {
+  href?: string;
+  as?: "span";
+  children: React.ReactNode;
+}) {
+  const cls =
+    "block text-[13px] leading-snug tracking-wide text-[oklch(0.94_0.06_85_/_0.5)] transition-colors duration-200 hover:text-[oklch(0.748_0.106_70)]";
+  if (as === "span" || !href)
+    return <span className={cls}>{children}</span>;
+  return (
+    <Link className={cls} href={href}>
+      {children}
+    </Link>
+  );
+}
+
+function Dot() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: "inline-block",
+        width: 3,
+        height: 3,
+        borderRadius: "50%",
+        background: "oklch(0.748 0.106 70 / 0.4)",
+        verticalAlign: "middle",
+      }}
+    />
+  );
 }

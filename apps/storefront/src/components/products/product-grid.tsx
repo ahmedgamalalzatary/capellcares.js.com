@@ -343,7 +343,7 @@ function FilterSidebar({
               opacity: 0.8,
             }}
           >
-            {isAr ? "كابيلا كيرز" : "Capella Cares"}
+            {isAr ? "كابيلا كير" : "Capella Care"}
           </p>
           <span
             style={{
@@ -684,7 +684,7 @@ function MobileFilterDrawer({
         >
           <div>
             <p style={{ margin: "0 0 1px", fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--warm)", fontWeight: 700, opacity: 0.8 }}>
-              {isAr ? "كابيلا كيرز" : "Capella Cares"}
+              {isAr ? "كابيلا كير" : "Capella Care"}
             </p>
             <span
               style={{

@@ -48,7 +48,7 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
 
   return (
     <div className="mx-auto my-16 max-w-[480px] rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-10 shadow-(--shadow-1) max-[640px]:my-10 max-[640px]:p-6">
-      <span className="eyebrow !text-(--accent)">{lang === "ar" ? "كابيلا كيرز" : "Capella Cares"}</span>
+      <span className="eyebrow !text-(--accent)">{lang === "ar" ? "كابيلا كير" : "Capella Care"}</span>
       <h1 className={`mt-3 m-0 leading-[1.1] ${lang === "ar"
         ? "text-[30px] font-bold font-(--font-ar) text-(--ink)"
         : "text-[34px] italic font-(--font-display) text-(--ink)"}`}>

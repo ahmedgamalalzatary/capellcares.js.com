@@ -2,7 +2,7 @@ import type { Metadata, MetadataRoute } from "next";
 import { defaultLanguage, pickLang, type Category, type Language, type Offer, type Product } from "@capella/shared";
 
 const FALLBACK_SITE_URL = "https://capellacares.com";
-const BRAND_NAME = "Capella Cares";
+const BRAND_NAME = "Capella Care";
 
 export const PUBLIC_REVALIDATE_SECONDS = 300;
 
@@ -84,7 +84,7 @@ export function buildLocaleMetadata(lang: Language): Metadata {
   const title = isAr ? "كابيلا كير | منتجات العناية والجمال" : `${BRAND_NAME} | Beauty and self-care products`;
   const description = isAr
     ? "متجر كابيلا كير للعناية بالبشرة والجسم والشعر والمكياج والعطور، مع صفحات عربية وإنجليزية قابلة للفهرسة."
-    : "Capella Cares storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
+    : "Capella Care storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
 
   return {
     title,
@@ -110,7 +110,7 @@ export function buildProductsMetadata(lang: Language): Metadata {
   const title = isAr ? "تسوقي منتجات العناية والجمال" : "Shop beauty and self-care products";
   const description = isAr
     ? "اكتشفي منتجات العناية بالبشرة والجسم والشعر والمكياج من كابيلا كير مع تصفح عربي وإنجليزي منظم."
-    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Capella Cares.";
+    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Capella Care.";
 
   return {
     title,
@@ -135,7 +135,7 @@ export function buildCategoryMetadata(lang: Language, category: Category, path: 
   const description = trimText(
     lang === "ar"
       ? `تسوقي ${label} من كابيلا كير. تصفحي منتجات ${trail || label} مع صفحات فئات واضحة وسهلة الفهرسة.`
-      : `Shop ${label} at Capella Cares. Browse ${trail || label} products on a category page built for clear search discovery.`
+      : `Shop ${label} at Capella Care. Browse ${trail || label} products on a category page built for clear search discovery.`
   );
   const title = lang === "ar" ? `${label} | منتجات كابيلا كير` : `${label} | ${count} products`;
 
@@ -191,7 +191,7 @@ export function buildShopMetadata(lang: Language): Metadata {
   const title = isAr ? "متجر كابيلا | العروض والمنتجات المميزة" : "Capella Shop | Offers & featured products";
   const description = isAr
     ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
-    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Cares.";
+    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Care.";
 
   return {
     title,
@@ -211,10 +211,10 @@ export function buildShopMetadata(lang: Language): Metadata {
 }
 
 export function buildOffersMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Cares offers and bundles";
+  const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Care offers and bundles";
   const description = lang === "ar"
     ? "اكتشفي باقات كابيلا كير المختارة بعناية لتسوق أوفر وروتين متكامل."
-    : "Discover curated Capella Cares bundles for better-value routines and gifting.";
+    : "Discover curated Capella Care bundles for better-value routines and gifting.";
 
   return {
     title,

@@ -1,5 +1,5 @@
 export const ar = {
-  brand: "كابيلاكيرز",
+  brand: "كابيلا كير",
   tagline: "عنايةٌ صادقة، من الرأس حتى القدم.",
   nav: {
     products: "المتجر",
