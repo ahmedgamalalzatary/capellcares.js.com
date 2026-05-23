@@ -186,6 +186,30 @@ export function buildProductMetadata(lang: Language, product: Product, category?
   };
 }
 
+export function buildShopMetadata(lang: Language): Metadata {
+  const isAr = lang === "ar";
+  const title = isAr ? "متجر كابيلا | العروض والمنتجات المميزة" : "Capella Shop | Offers & featured products";
+  const description = isAr
+    ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
+    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Cares.";
+
+  return {
+    title,
+    description,
+    alternates: buildLocalizedAlternates(lang, "/shop"),
+    openGraph: {
+      title: joinTitle([title, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, "/shop"))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([title, BRAND_NAME]),
+      description
+    }
+  };
+}
+
 export function buildOffersMetadata(lang: Language): Metadata {
   const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Cares offers and bundles";
   const description = lang === "ar"

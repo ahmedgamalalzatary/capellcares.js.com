@@ -111,6 +111,7 @@ code, .mono { font-family: var(--font-mono); font-size: 12.5px; }
    Utility primitives
    ============================================================ */
 .muted { color: var(--ink-3); }
+.selected-parent-path { margin-top: 6px; font-size: 12px; }
 .faint { color: var(--ink-4); }
 .row { display: flex; align-items: center; gap: 12px; }
 .row--between { justify-content: space-between; }

@@ -48,7 +48,7 @@
   --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-ar:      "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
-  --container: 1240px;
+  --container: 1440px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -92,9 +92,7 @@
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  background:
-    radial-gradient(1200px 600px at 10% -200px, oklch(0.96 0.06 75 / 0.6), transparent 60%),
-    var(--canvas);
+  background: #fff;
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
