@@ -4,6 +4,8 @@ const apiGet = vi.fn();
 const apiPost = vi.fn();
 const apiDel = vi.fn();
 const authTokenListeners: Array<(token: string | null) => void> = [];
+const authHydrationListeners: Array<(hydrated: boolean) => void> = [];
+let adminAuthHydrated = true;
 
 vi.mock("@/lib/api/client", () => ({
   subscribeAdminAccessToken: (listener: (token: string | null) => void) => {
@@ -13,6 +15,14 @@ vi.mock("@/lib/api/client", () => ({
       if (index >= 0) authTokenListeners.splice(index, 1);
     };
   },
+  subscribeAdminAuthHydration: (listener: (hydrated: boolean) => void) => {
+    authHydrationListeners.push(listener);
+    return () => {
+      const index = authHydrationListeners.indexOf(listener);
+      if (index >= 0) authHydrationListeners.splice(index, 1);
+    };
+  },
+  isAdminAuthHydrated: () => adminAuthHydrated,
   api: {
     get: apiGet,
     post: apiPost,
@@ -28,6 +38,8 @@ afterEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   authTokenListeners.length = 0;
+  authHydrationListeners.length = 0;
+  adminAuthHydrated = true;
 });
 
 describe("ERP store", () => {
@@ -165,5 +177,48 @@ describe("ERP store", () => {
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
     expect(apiGet).toHaveBeenCalledTimes(10);
+  });
+
+  it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {
+    adminAuthHydrated = false;
+
+    apiGet
+      .mockResolvedValueOnce({
+        items: [{
+          id: 1,
+          sku: "SKU-1",
+          slug: "product-1",
+          name: { ar: "منتج", en: "Product" },
+          status: "active",
+          categoryId: 5,
+          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
+        }]
+      })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    expect(apiGet).not.toHaveBeenCalled();
+    expect(store.loading).toBe(false);
+    expect(store.loaded).toBe(false);
+
+    authTokenListeners.forEach((listener) => listener("restored-access-token"));
+    await flush();
+
+    expect(apiGet).not.toHaveBeenCalled();
+
+    authHydrationListeners.forEach((listener) => listener(true));
+    await flush();
+
+    expect(store.products).toHaveLength(1);
+    expect(store.error).toBeNull();
+    expect(apiGet).toHaveBeenCalledTimes(5);
   });
 });

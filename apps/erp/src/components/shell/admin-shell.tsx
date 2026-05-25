@@ -16,14 +16,15 @@ interface Props {
 }
 
 const NAV = [
-  { href: "/dashboard", label: "الرئيسية", icon: <Icon.Dashboard /> },
-  { href: "/products",  label: "المنتجات",  icon: <Icon.Box /> },
-  { href: "/categories",label: "الأقسام",   icon: <Icon.Folder /> },
-  { href: "/offers",    label: "العروض",    icon: <Icon.Tag /> },
-  { href: "/advices",   label: "نصائح",     icon: <Icon.Sparkle /> },
-  { href: "/orders",    label: "الطلبات",   icon: <Icon.Eye /> },
-  { href: "/trash",     label: "المحذوفات", icon: <Icon.Trash /> },
-];
+  { href: "/dashboard",  label: "الرئيسية",  icon: <Icon.Dashboard /> },
+  { href: "/products",   label: "المنتجات",  icon: <Icon.Box />       },
+  { href: "/categories", label: "الأقسام",   icon: <Icon.Folder />    },
+  { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
+  { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
+  { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
+  { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
+] as const;
+
 
 /* Bottom bar shows these 4; "more" sheet shows the rest */
 const BOTTOM_NAV = NAV.slice(0, 4);
@@ -52,28 +53,20 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
       <aside className="sidebar">
         <div className="sidebar__brand">
           <Icon.Logo size={34} />
-          <div>
+          <div className="sidebar__brand-text">
             <div className="sidebar__brand-name">Capella</div>
-            <div style={{ fontSize: 10.5, letterSpacing: "0.32em", color: "color-mix(in oklch, var(--canvas) 55%, transparent)" }}>ERP</div>
+            <div className="sidebar__brand-tag">ERP</div>
           </div>
         </div>
 
         <div className="sidebar__nav">
-          <div className="sidebar__section">المنصة</div>
-          {NAV.slice(0, 1).map((n) => (
-            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname === n.href}>
-              {n.icon}<span>{n.label}</span>
-            </Link>
-          ))}
-          <div className="sidebar__section">الكتالوج</div>
-          {NAV.slice(1, 6).map((n) => (
-            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
-              {n.icon}<span>{n.label}</span>
-            </Link>
-          ))}
-          <div className="sidebar__section">أخرى</div>
-          {NAV.slice(6).map((n) => (
-            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className="sidebar__link"
+              data-active={n.href === "/dashboard" ? pathname === n.href : pathname.startsWith(n.href)}
+            >
               {n.icon}<span>{n.label}</span>
             </Link>
           ))}
@@ -81,13 +74,13 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
 
         <div className="sidebar__user">
           <div className="sidebar__avatar">{user.name[0]}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--canvas)" }}>{user.name}</div>
-            <div style={{ fontSize: 11.5, color: "color-mix(in oklch, var(--canvas) 58%, transparent)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{user.email}</div>
+          <div className="sidebar__user-info">
+            <div className="sidebar__user-name">{user.name}</div>
+            <div className="sidebar__user-email">{user.email}</div>
           </div>
           <button
+            className="sidebar__logout"
             onClick={() => { void logout().finally(() => router.replace("/login")); }}
-            style={{ background: "transparent", border: 0, color: "color-mix(in oklch, var(--canvas) 68%, transparent)", padding: 8, borderRadius: 6, cursor: "pointer" }}
             aria-label="تسجيل الخروج"
             title="تسجيل الخروج"
           >

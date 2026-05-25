@@ -5,6 +5,8 @@ export const API_BASE = resolveApiBase();
 
 let adminAccessToken: string | null = null;
 const adminAccessTokenListeners = new Set<(token: string | null) => void>();
+let adminAuthHydrated = false;
+const adminAuthHydrationListeners = new Set<(hydrated: boolean) => void>();
 
 export function setAdminAccessToken(token: string | null) {
   adminAccessToken = token;
@@ -14,6 +16,20 @@ export function setAdminAccessToken(token: string | null) {
 export function subscribeAdminAccessToken(listener: (token: string | null) => void) {
   adminAccessTokenListeners.add(listener);
   return () => adminAccessTokenListeners.delete(listener);
+}
+
+export function setAdminAuthHydrated(hydrated: boolean) {
+  adminAuthHydrated = hydrated;
+  adminAuthHydrationListeners.forEach((listener) => listener(hydrated));
+}
+
+export function isAdminAuthHydrated() {
+  return adminAuthHydrated;
+}
+
+export function subscribeAdminAuthHydration(listener: (hydrated: boolean) => void) {
+  adminAuthHydrationListeners.add(listener);
+  return () => adminAuthHydrationListeners.delete(listener);
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

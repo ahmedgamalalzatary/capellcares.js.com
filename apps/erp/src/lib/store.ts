@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
-import { api, subscribeAdminAccessToken } from "./api/client";
+import { api, isAdminAuthHydrated, subscribeAdminAccessToken, subscribeAdminAuthHydration } from "./api/client";
 
 type Listener = () => void;
 type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -141,6 +141,7 @@ class ErpStore {
   private listeners = new Set<Listener>();
   private browserRefreshBound = false;
   private authRefreshBound = false;
+  private authHydrationBound = false;
 
   subscribe(l: Listener) {
     this.listeners.add(l);
@@ -179,7 +180,8 @@ class ErpStore {
   ensureLoaded() {
     this.bindBrowserRefresh();
     this.bindAuthRefresh();
-    if (!this.loaded && !this.loading) void this.refetch();
+    this.bindAuthHydration();
+    if (!this.loaded && !this.loading && isAdminAuthHydrated()) void this.refetch();
   }
 
   private bindBrowserRefresh() {
@@ -207,11 +209,24 @@ class ErpStore {
     }
 
     subscribeAdminAccessToken((token) => {
-      if (token && !this.loading) {
+      if (token && isAdminAuthHydrated() && !this.loading) {
         void this.refetch();
       }
     });
     this.authRefreshBound = true;
+  }
+
+  private bindAuthHydration() {
+    if (this.authHydrationBound || typeof window === "undefined") {
+      return;
+    }
+
+    subscribeAdminAuthHydration((hydrated) => {
+      if (hydrated && !this.loaded && !this.loading) {
+        void this.refetch();
+      }
+    });
+    this.authHydrationBound = true;
   }
 
   // products

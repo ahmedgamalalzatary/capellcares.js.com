@@ -995,12 +995,7 @@ export function ProductGrid({
     q || category !== initialCategory || priceRange.min || priceRange.max;
 
   return (
-    <div className="grid gap-9 pb-20 lg:grid-cols-[272px_minmax(0,1fr)]">
-      {/* ── Desktop sidebar ── */}
-      <aside className="hidden lg:block lg:sticky lg:top-35 lg:self-start">
-        <FilterSidebar {...sharedFilterProps} />
-      </aside>
-
+    <div className="grid gap-9 pb-20">
       {/* ── Product area ── */}
       <div className="min-w-0">
         {/* Toolbar row */}
@@ -1018,7 +1013,6 @@ export function ProductGrid({
         >
           {/* Mobile filter trigger */}
           <button
-            className="lg:hidden"
             onClick={() => setShowFilters(true)}
             style={{
               display: "inline-flex",

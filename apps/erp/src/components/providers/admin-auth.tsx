@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { API_BASE, setAdminAccessToken } from "@/lib/api/client";
+import { API_BASE, setAdminAccessToken, setAdminAuthHydrated } from "@/lib/api/client";
 
 interface AdminUser { name: string; email: string }
 interface AdminAuthValue {
@@ -20,6 +20,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    setAdminAuthHydrated(false);
     try {
       const raw = sessionStorage.getItem(KEY);
       if (raw) setUser(JSON.parse(raw));
@@ -44,7 +45,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setUser(null);
       })
       .finally(() => {
-        if (!cancelled) setHydrated(true);
+        if (!cancelled) {
+          setHydrated(true);
+          setAdminAuthHydrated(true);
+        }
       });
 
     return () => {

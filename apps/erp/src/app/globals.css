@@ -96,7 +96,7 @@ html, body { margin: 0; padding: 0; overflow-x: hidden; }
 body {
   background: var(--canvas);
   color: var(--ink-2);
-  font-family: var(--font-sans); /* fix: was var(--font-ar) — overrode body font for all components */
+  font-family: var(--font-ar);
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -410,70 +410,110 @@ html[lang="ar"] .table th { letter-spacing: 0.04em; text-transform: none; }
 }
 
 /* ============================================================
-   App shell — sidebar (deep ink, accent on active)
+   App shell — sidebar (deep ink, editorial active indicator)
    ============================================================ */
-.app-shell { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; }
+.app-shell { display: grid; grid-template-columns: 264px 1fr; height: 100vh; overflow: hidden; }
 
 .sidebar {
   background: var(--bg-sidebar);
   color: var(--sidebar-text);
   display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100vh;
-  border-inline-end: 1px solid color-mix(in oklch, var(--canvas) 8%, transparent);
+  height: 100vh; overflow: hidden;
+  border-inline-end: 1px solid color-mix(in oklch, var(--canvas) 7%, transparent);
 }
-/* brand header — fixed inside sidebar */
-.sidebar > .sidebar__brand { flex-shrink: 0; padding: 22px 14px 0; }
-/* nav area — scrolls when content overflows */
-.sidebar__nav {
-  flex: 1; overflow-y: auto; padding: 0 14px;
-  display: flex; flex-direction: column; gap: 2px;
-}
-/* user footer — always pinned at bottom */
-.sidebar > .sidebar__user { flex-shrink: 0; margin-top: 0; }
+
+/* ── Brand ── */
 .sidebar__brand {
+  flex-shrink: 0;
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 10px 20px 10px;
-  border-bottom: 1px solid color-mix(in oklch, var(--canvas) 12%, transparent);
-  margin-bottom: 8px;
-  margin-inline: 0;
+  padding: 20px 16px 18px;
+  border-bottom: 1px solid color-mix(in oklch, var(--canvas) 10%, transparent);
 }
+.sidebar__brand-text { display: flex; flex-direction: column; gap: 1px; }
 .sidebar__brand-name {
-  font-size: 18px; font-weight: 700; color: var(--canvas);
-  letter-spacing: 0.005em;
+  font-size: 17px; font-weight: 700; color: var(--canvas);
+  letter-spacing: 0.01em; line-height: 1;
+}
+.sidebar__brand-tag {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.30em;
+  color: color-mix(in oklch, var(--canvas) 45%, transparent);
+  line-height: 1;
+}
+
+/* ── Nav ── */
+.sidebar__nav {
+  flex: 1; overflow-y: auto; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 1px;
 }
 .sidebar__section {
-  font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: color-mix(in oklch, var(--canvas) 50%, transparent);
-  padding: 18px 12px 8px; font-weight: 700;
+  font-size: 9px; letter-spacing: 0.20em; text-transform: uppercase;
+  color: color-mix(in oklch, var(--canvas) 38%, transparent);
+  padding: 16px 8px 6px; font-weight: 700;
+  border-inline-start: 2px solid color-mix(in oklch, var(--canvas) 12%, transparent);
+  margin-inline-start: 2px;
 }
-html[lang="ar"] .sidebar__section { letter-spacing: 0.08em; text-transform: none; }
+html[lang="ar"] .sidebar__section { letter-spacing: 0.06em; text-transform: none; }
+
 .sidebar__link {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: var(--radius);
-  color: color-mix(in oklch, var(--canvas) 78%, transparent);
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 10px 9px 12px;
+  border-radius: var(--radius);
+  border-inline-start: 2px solid transparent;
+  color: color-mix(in oklch, var(--canvas) 62%, transparent);
   font-size: 13.5px; font-weight: 500;
-  transition: background var(--motion-fast), color var(--motion-fast);
+  transition: background var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast);
 }
-.sidebar__link svg { opacity: 0.72; transition: opacity var(--motion-fast); }
-.sidebar__link:hover { background: var(--bg-sidebar-hover); color: var(--canvas); }
-.sidebar__link:hover svg { opacity: 1; }
+.sidebar__link svg { flex-shrink: 0; transition: opacity var(--motion-fast); opacity: 0.6; }
+.sidebar__link:hover {
+  background: color-mix(in oklch, var(--canvas) 6%, transparent);
+  color: color-mix(in oklch, var(--canvas) 88%, transparent);
+}
+.sidebar__link:hover svg { opacity: 0.85; }
 .sidebar__link[data-active="true"] {
-  background: var(--accent); color: var(--canvas);
-  box-shadow: 0 4px 12px color-mix(in oklch, var(--accent) 40%, transparent);
+  background: color-mix(in oklch, var(--canvas) 9%, transparent);
+  color: var(--canvas);
+  border-inline-start-color: color-mix(in oklch, var(--canvas) 75%, transparent);
+  font-weight: 600;
 }
 .sidebar__link[data-active="true"] svg { opacity: 1; }
 
+/* ── User footer ── */
 .sidebar__user {
-  margin-top: auto;
-  padding: 14px 12px;
-  border-top: 1px solid color-mix(in oklch, var(--canvas) 12%, transparent);
+  flex-shrink: 0;
+  padding: 12px 14px;
+  border-top: 1px solid color-mix(in oklch, var(--canvas) 10%, transparent);
   display: flex; align-items: center; gap: 10px;
 }
 .sidebar__avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--accent); color: var(--canvas);
-  display: grid; place-items: center; font-weight: 700; font-size: 14px;
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--canvas) 16%, transparent);
+  color: var(--canvas);
+  display: grid; place-items: center; font-weight: 700; font-size: 13px;
   flex-shrink: 0;
+  border: 1px solid color-mix(in oklch, var(--canvas) 18%, transparent);
+}
+.sidebar__user-info { flex: 1; min-width: 0; }
+.sidebar__user-name {
+  font-size: 13px; font-weight: 700;
+  color: color-mix(in oklch, var(--canvas) 90%, transparent);
+  line-height: 1.3;
+}
+.sidebar__user-email {
+  font-size: 11px;
+  color: color-mix(in oklch, var(--canvas) 42%, transparent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-top: 1px;
+}
+.sidebar__logout {
+  background: transparent; border: 0; padding: 7px; border-radius: var(--radius-sm);
+  color: color-mix(in oklch, var(--canvas) 38%, transparent);
+  display: grid; place-items: center;
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+.sidebar__logout:hover {
+  background: color-mix(in oklch, var(--canvas) 10%, transparent);
+  color: color-mix(in oklch, var(--canvas) 72%, transparent);
 }
 
 /* ============================================================
@@ -773,7 +813,7 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 /* ============================================================
    Shell layout
    ============================================================ */
-.shell-main { display: flex; flex-direction: column; min-width: 0; max-width: 100%; overflow-x: hidden; }
+.shell-main { display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow-y: auto; overflow-x: hidden; }
 
 /* Table wrapper for horizontal scroll */
 .table-wrap  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -964,8 +1004,8 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
    @theme inline (Tailwind v4 token bridge)
    ============================================================ */
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans:    var(--font-sans); /* fix: was var(--font-ar) — Tailwind resolves font-sans utility through @theme, bypassing :root */
+  --font-heading: var(--font-ar);
+  --font-sans:    var(--font-sans);
   --font-mono:    var(--font-mono);
 
   --color-canvas:  var(--canvas);

@@ -103,7 +103,7 @@ body {
   font-size: 15px;
   line-height: 1.55;
 }
-html[lang="ar"] body { font-family: var(--font-sans); } /* fix: was var(--font-ar) — lang="ar" on <html> triggered this and overrode the body font globally */
+html[lang="ar"] body { font-family: var(--font-ar); }
 
 ::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
 
