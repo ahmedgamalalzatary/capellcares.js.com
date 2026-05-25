@@ -5,8 +5,7 @@
   "type": "module",
   "exports": {
     "./src/db": "./src/db.ts",
-    "./drizzle/schema": "./drizzle/schema.ts",
-    "./drizzle/relations": "./drizzle/relations.ts"
+    "./drizzle/schema": "./drizzle/schema.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
