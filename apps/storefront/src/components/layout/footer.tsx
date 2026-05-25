@@ -10,12 +10,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   return (
     <footer
       dir={isAr ? "rtl" : "ltr"}
-      style={{
-        background: `
-          radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklch, var(--warm) 40%, transparent) 0%, transparent 70%),
-          var(--canvas)
-        `,
-      }}
+      style={{ background: "#FCF5EE" }}
       className="relative mt-24 overflow-hidden pb-0 text-(--ink)"
     >
       {/* Decorative top rule */}
@@ -99,12 +94,12 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               {[
                 {
                   label: "Instagram",
-                  href: "https://instagram.com/capellacares",
+                  href: "https://www.instagram.com/capellacare?igsh=aDllZTVycjc4ZjJw&utm_source=qr",
                   path: "M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5ZM12 7a5 5 0 1 1 0 10A5 5 0 0 1 12 7Zm0 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm5.25-2.25a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z",
                 },
                 {
                   label: "TikTok",
-                  href: "https://tiktok.com/@capellacares",
+                  href: "https://www.tiktok.com/@capellacare?_r=1&_t=ZS-94lIE7a9ZKP",
                   path: "M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07Z",
                 },
                 {
@@ -149,7 +144,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           <FooterCol title={isAr ? "كابيلا" : "Capella"} isAr={isAr}>
             <FooterLink as="span">{isAr ? "قصّتنا" : "Our Story"}</FooterLink>
             <FooterLink as="span">{isAr ? "المكوّنات" : "Ingredients"}</FooterLink>
-            <FooterLink as="span">{isAr ? "الفروع" : "Branches"}</FooterLink>
+            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{isAr ? "الفروع" : "Branches"}</FooterLink>
             <FooterLink as="span">{isAr ? "تواصلي معنا" : "Contact"}</FooterLink>
           </FooterCol>
 
@@ -228,15 +223,19 @@ function FooterCol({
 function FooterLink({
   href,
   as,
+  external,
   children,
 }: {
   href?: string;
   as?: "span";
+  external?: boolean;
   children: React.ReactNode;
 }) {
   const cls = "block text-[13px] leading-snug tracking-wide text-(--ink)/50 transition-colors duration-200 hover:text-(--ink) cursor-pointer";
   if (as === "span" || !href)
     return <span className={cls}>{children}</span>;
+  if (external)
+    return <a className={cls} href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
   return (
     <Link className={cls} href={href}>
       {children}

@@ -38,7 +38,7 @@ export function ProductCard({ product, lang, dict }: Props) {
       href={`/${lang}/products/${product.slug}`}
       className="group grid overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--warm) hover:shadow-(--shadow-2)"
     >
-      <div className="relative aspect-4/5 bg-[radial-gradient(140%_100%_at_50%_0%,var(--warm-soft),var(--surface))] overflow-hidden">
+      <div className="relative aspect-4/5 overflow-hidden">
         <ProductIllustration
           product={product}
           className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
@@ -54,7 +54,7 @@ export function ProductCard({ product, lang, dict }: Props) {
 
         {/* Wishlist */}
         <button
-          className={`absolute top-3 end-3 z-10 grid h-9 w-9 place-items-center rounded-full border border-(--hairline) bg-(--canvas) text-(--ink) transition-all duration-150 hover:bg-(--warm-soft) hover:scale-105 ${has(product.id) ? "!bg-(--accent) !text-(--canvas) !border-(--accent)" : ""}`}
+          className={`absolute top-3 end-3 z-10 grid h-9 w-9 place-items-center rounded-full text-(--ink) transition-all duration-150 hover:bg-(--warm-soft) hover:scale-105 ${has(product.id) ? "!bg-(--accent) !text-(--canvas) !border-(--accent)" : ""}`}
           aria-label={dict.common.addToWishlist}
           onClick={onWish}
         >
