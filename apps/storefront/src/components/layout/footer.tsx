@@ -12,11 +12,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       dir={isAr ? "rtl" : "ltr"}
       style={{
         background: `
-          radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklch, var(--ink-2) 55%, transparent) 0%, transparent 70%),
-          var(--footer-bg)
+          radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklch, var(--warm) 40%, transparent) 0%, transparent 70%),
+          var(--canvas)
         `,
       }}
-      className="relative mt-24 overflow-hidden pb-0 text-(--canvas)"
+      className="relative mt-24 overflow-hidden pb-0 text-(--ink)"
     >
       {/* Decorative top rule */}
       <div
@@ -24,7 +24,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         className="absolute inset-x-0 top-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--canvas) 60%, transparent) 30%, var(--canvas) 50%, color-mix(in oklch, var(--canvas) 60%, transparent) 70%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--ink) 60%, transparent) 30%, var(--ink) 50%, color-mix(in oklch, var(--ink) 60%, transparent) 70%, transparent 100%)",
         }}
       />
 
@@ -41,24 +41,24 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       {/* Hero brand mark */}
       <div
         className="relative border-b px-6 py-20 text-center"
-        style={{ borderColor: "color-mix(in oklch, var(--canvas) 12%, transparent)" }}
+        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <p className={`mb-4 text-[11px] tracking-[0.35em] text-(--canvas)/70 ${isAr ? "" : "uppercase"}`}>
+        <p className={`mb-4 text-[11px] tracking-[0.35em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
           {isAr ? "عناية فاخرة — صُنع في مصر" : "Luxury Care — Est. Egypt"}
         </p>
 
         <h2
           className={
             isAr
-              ? "font-(--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-(--canvas)"
-              : "font-(--font-signature) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-(--canvas)"
+              ? "font-(--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-(--ink)"
+              : "font-(--font-signature) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-(--ink)"
           }
-          style={{ textShadow: "0 0 80px color-mix(in oklch, var(--canvas) 25%, transparent)" }}
+          style={{ textShadow: "0 0 80px color-mix(in oklch, var(--ink) 25%, transparent)" }}
         >
           {dict.brand}
         </h2>
 
-        <p className="mx-auto mt-6 max-w-[46ch] text-[15px] leading-[1.85] text-(--canvas)/55">
+        <p className="mx-auto mt-6 max-w-[46ch] text-[15px] leading-[1.85] text-(--ink)/55">
           {dict.tagline}
         </p>
       </div>
@@ -69,26 +69,27 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
           {/* Brand philosophy + contact */}
           <div className="md:col-span-2 xl:col-span-1">
-            <p className={`mb-5 text-[11px] tracking-[0.3em] text-(--canvas) ${isAr ? "" : "uppercase"}`}>
+            <p className={`mb-5 text-[11px] tracking-[0.3em] text-(--ink) ${isAr ? "" : "uppercase"}`}>
               {isAr ? "فلسفتنا" : "Our Philosophy"}
             </p>
 
             <blockquote
-              className="mb-8 max-w-[34ch] ps-4 text-[15px] italic leading-[1.9] text-(--canvas)/55 font-(--font-display)"
-              style={{ borderInlineStart: "1.5px solid color-mix(in oklch, var(--canvas) 40%, transparent)" }}
+              className="mb-8 max-w-[34ch] ps-4 text-[15px] italic leading-[1.9] text-(--ink)/55 font-(--font-display)"
+              style={{ borderInlineStart: "1.5px solid color-mix(in oklch, var(--ink) 40%, transparent)" }}
             >
               {isAr
                 ? "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ."
                 : "Every drop tells nature's story. Every ritual begins with an honest moment with yourself."}
             </blockquote>
 
+
             <div className="grid gap-3">
-              <p className={`text-[11px] tracking-[0.25em] text-(--canvas)/70 ${isAr ? "" : "uppercase"}`}>
+              <p className={`text-[11px] tracking-[0.25em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
                 {isAr ? "تواصلي معنا" : "Reach Us"}
               </p>
               <a
                 href="mailto:hello@capellacare.com"
-                className="text-[13px] text-(--canvas)/50 transition-colors hover:text-(--canvas)"
+                className="text-[13px] text-(--ink)/50 transition-colors hover:text-(--ink)"
               >
                 hello@capellacare.com
               </a>
@@ -118,13 +119,13 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-9 w-9 items-center justify-center text-(--canvas)/40 transition-all hover:text-(--canvas)"
+                  className="group flex h-9 w-9 items-center justify-center text-(--ink)/40 transition-all hover:text-(--ink)"
                   style={{
                     borderRadius: 2,
-                    border: "1px solid color-mix(in oklch, var(--canvas) 20%, transparent)",
+                    border: "1px solid color-mix(in oklch, var(--ink) 20%, transparent)",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--canvas) 60%, transparent)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--canvas) 20%, transparent)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--ink) 60%, transparent)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--ink) 20%, transparent)")}
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
                     <path d={path} />
@@ -166,9 +167,9 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       {/* Bottom bar */}
       <div
         className="relative"
-        style={{ borderTop: "1px solid color-mix(in oklch, var(--canvas) 12%, transparent)" }}
+        style={{ borderTop: "1px solid color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-(--canvas)/35 sm:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-(--ink)/35 sm:flex-row">
           <span className={isAr ? "" : "uppercase"}>
             © {year} {dict.brand}.{" "}
             {isAr ? "كل الحقوق محفوظة." : "All rights reserved."}
@@ -192,7 +193,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           style={{
             fontSize: "clamp(80px, 18vw, 220px)",
             color: "transparent",
-            WebkitTextStroke: "1px color-mix(in oklch, var(--canvas) 7%, transparent)",
+            WebkitTextStroke: "1px var(--ink)",
             letterSpacing: "-0.02em",
             marginBottom: "-0.18em",
             lineHeight: 1,
@@ -216,7 +217,7 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className={`mb-6 text-[10px] tracking-[0.3em] text-(--canvas)/80 ${isAr ? "" : "uppercase"}`}>
+      <div className={`mb-6 text-[10px] tracking-[0.3em] text-(--ink)/80 ${isAr ? "" : "uppercase"}`}>
         {title}
       </div>
       <div className="grid gap-3">{children}</div>
@@ -233,7 +234,7 @@ function FooterLink({
   as?: "span";
   children: React.ReactNode;
 }) {
-  const cls = "block text-[13px] leading-snug tracking-wide text-(--canvas)/50 transition-colors duration-200 hover:text-(--canvas)";
+  const cls = "block text-[13px] leading-snug tracking-wide text-(--ink)/50 transition-colors duration-200 hover:text-(--ink) cursor-pointer";
   if (as === "span" || !href)
     return <span className={cls}>{children}</span>;
   return (
@@ -252,7 +253,7 @@ function Dot() {
         width: 3,
         height: 3,
         borderRadius: "50%",
-        background: "color-mix(in oklch, var(--canvas) 40%, transparent)",
+        background: "color-mix(in oklch, var(--ink) 40%, transparent)",
         verticalAlign: "middle",
       }}
     />

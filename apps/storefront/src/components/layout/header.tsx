@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -77,8 +78,8 @@ export function Header({ lang, dict, navGroups }: Props) {
       className={[
         "sticky top-0 z-30 border-b border-black transition-[background,box-shadow] duration-200",
         scrolled
-          ? "bg-(--canvas)/90 shadow-(--shadow-1) backdrop-blur-md"
-          : "bg-(--canvas)"
+          ? "bg-white/90 shadow-(--shadow-1) backdrop-blur-md"
+          : "bg-white"
       ].join(" ")}
     >
       <div className={`bg-ink px-4 py-2 text-center text-[11px] text-canvas sm:text-[12px] ${lang === "ar" ? "tracking-[0.04em]" : "tracking-[0.04em] sm:tracking-[0.12em]"}`}>
@@ -100,7 +101,7 @@ export function Header({ lang, dict, navGroups }: Props) {
             <Icon.Menu />
           </button>
           <form
-            className="hidden min-[880px]:flex h-11 w-full max-w-[380px] items-center gap-2.5 rounded-full border border-black bg-(--canvas) px-4.5 py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]"
+            className="hidden min-[880px]:flex h-11 w-full max-w-[380px] items-center gap-2.5 rounded-full border border-black bg-white px-4.5 py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]"
             onSubmit={onSearch}
           >
             <Icon.Search />
@@ -115,10 +116,24 @@ export function Header({ lang, dict, navGroups }: Props) {
         </div>
 
         {/* ── Col 2: Logo (always center) ──────────────────────── */}
-        <Link href={`/${lang}`} className="group inline-flex min-w-0 items-center justify-self-center gap-2.5" aria-label={dict.brand}>
-          <span className={["text-ink leading-none transition-colors group-hover:text-accent whitespace-nowrap", isAr ? "text-[20px] font-(--font-ar) font-bold tracking-normal sm:text-[26px]" : "text-[22px] font-(--font-display) italic tracking-[0.005em] sm:text-[28px]"].join(" ")}>
-            {dict.brand}
-          </span>
+        <Link href={`/${lang}`} className="group inline-flex min-w-0 items-center justify-self-center gap-2" aria-label={dict.brand}>
+          <Image
+            src="/capella-care.png"
+            alt={dict.brand}
+            width={300}
+            height={80}
+            className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px]"
+            priority
+          />
+          <Image
+            src="/logogold.jpeg"
+            alt={dict.brand}
+            width={160}
+            height={52}
+            className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px]"
+            priority
+          />
+          
         </Link>
 
         {/* ── Col 3: icons (desktop) · compact icons (mobile) ──── */}
@@ -314,7 +329,7 @@ export function Header({ lang, dict, navGroups }: Props) {
         aria-label="Navigation"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-black px-5 py-4">
-          <span className={lang === "ar" ? "text-[22px] font-(--font-ar) font-bold text-ink" : "text-[24px] italic font-(--font-display) text-ink"}>{dict.brand}</span>
+          <Image src="/logogold.jpeg" alt={dict.brand} width={130} height={42} className="h-[34px] w-auto object-contain" />
           <button
             className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
             onClick={() => setMobileOpen(false)}
