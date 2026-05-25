@@ -58,24 +58,26 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
           </div>
         </div>
 
-        <div className="sidebar__section">المنصة</div>
-        {NAV.slice(0, 1).map((n) => (
-          <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname === n.href}>
-            {n.icon}<span>{n.label}</span>
-          </Link>
-        ))}
-        <div className="sidebar__section">الكتالوج</div>
-        {NAV.slice(1, 6).map((n) => (
-          <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
-            {n.icon}<span>{n.label}</span>
-          </Link>
-        ))}
-        <div className="sidebar__section">أخرى</div>
-        {NAV.slice(6).map((n) => (
-          <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
-            {n.icon}<span>{n.label}</span>
-          </Link>
-        ))}
+        <div className="sidebar__nav">
+          <div className="sidebar__section">المنصة</div>
+          {NAV.slice(0, 1).map((n) => (
+            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname === n.href}>
+              {n.icon}<span>{n.label}</span>
+            </Link>
+          ))}
+          <div className="sidebar__section">الكتالوج</div>
+          {NAV.slice(1, 6).map((n) => (
+            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
+              {n.icon}<span>{n.label}</span>
+            </Link>
+          ))}
+          <div className="sidebar__section">أخرى</div>
+          {NAV.slice(6).map((n) => (
+            <Link key={n.href} href={n.href} className="sidebar__link" data-active={pathname.startsWith(n.href)}>
+              {n.icon}<span>{n.label}</span>
+            </Link>
+          ))}
+        </div>
 
         <div className="sidebar__user">
           <div className="sidebar__avatar">{user.name[0]}</div>

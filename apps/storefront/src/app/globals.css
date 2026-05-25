@@ -5,27 +5,29 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Cares — Warm earthy palette, OKLCH everywhere.
-   60% canvas/surface · 30% ink · 7% warm · 3% accent
+   Capella Care — Parchment palette, OKLCH everywhere.
+   Canvas #e4d6a9 · Ink black · Surface white
+   All tones are degrees between these three anchors.
    ============================================================ */
 :root {
-  /* Source palette: #8E3200 / #A64B2A / #D7A86E / #FFEBC1 */
-  --ink:          oklch(0.422 0.149 41);     /* #8E3200 */
-  --ink-2:        oklch(0.42 0.05 45);       /* body copy */
-  --ink-3:        oklch(0.55 0.04 50);       /* meta */
-  --accent:       oklch(0.499 0.142 38);     /* #A64B2A */
-  --accent-deep:  oklch(0.44 0.14 38);       /* pressed */
-  --accent-soft:  oklch(0.92 0.04 40);       /* tinted surface for accent buttons hover */
-  --warm:         oklch(0.748 0.106 70);     /* #D7A86E */
-  --warm-soft:    oklch(0.91 0.05 75);       /* chip bg */
-  --canvas:       oklch(0.94 0.06 85);       /* #FFEBC1 */
-  --surface:      oklch(0.975 0.024 85);     /* card */
-  --surface-2:    oklch(0.99 0.012 85);      /* nested surface */
-  --text:         oklch(0.22 0.04 45);       /* body copy on cream */
-  --hairline:     oklch(0.86 0.04 75);
-  --hairline-strong: oklch(0.78 0.05 70);
-  --error:        oklch(0.499 0.165 32);     /* #B23A1F */
-  --success:      oklch(0.55 0.07 130);      /* olive, in-family */
+  /* Source palette: #e4d6a9 (canvas) · black (ink) · white (surface) */
+  --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
+  --ink-2:        oklch(0.28 0.012 85);      /* body copy */
+  --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
+  --accent:       oklch(0.32 0.018 85);      /* dark interactive — buttons, links */
+  --accent-deep:  oklch(0.18 0.012 85);      /* pressed state */
+  --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
+  --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
+  --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
+  --canvas:       oklch(0.876 0.061 93);     /* #e4d6a9 — primary background */
+  --surface:      oklch(1 0 0);              /* white — card background */
+  --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
+  --text:         oklch(0.12 0.010 85);      /* body copy */
+  --hairline:     oklch(0.78 0.028 90);      /* border */
+  --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
+  --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
+  --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
+  --footer-bg:    oklch(0.10 0.008 85);      /* footer dark ground — deepest ink degree */
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
@@ -41,12 +43,13 @@
   --radius-xl: 24px;
   --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px oklch(0.42 0.05 45 / 0.04), 0 6px 16px oklch(0.42 0.05 45 / 0.06);
-  --shadow-2: 0 12px 32px oklch(0.42 0.05 45 / 0.10);
+  --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
+  --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
 
-  --font-display: "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-ar:      "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
+  --font-sans:      "Roboto Mono", "JetBrains Mono", monospace;
+  --font-signature: "Playwrite GB S Guides", cursive;
+  --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
   --container: 1440px;
 
@@ -73,18 +76,18 @@
   --border:             var(--hairline);
   --input:              var(--hairline);
   --ring:               var(--accent);
-  --chart-1: oklch(0.499 0.142 38);
-  --chart-2: oklch(0.748 0.106 70);
-  --chart-3: oklch(0.422 0.149 41);
-  --chart-4: oklch(0.55 0.07 130);
-  --chart-5: oklch(0.55 0.04 50);
+  --chart-1: oklch(0.32 0.018 85);
+  --chart-2: oklch(0.48 0.015 85);
+  --chart-3: oklch(0.62 0.020 90);
+  --chart-4: oklch(0.75 0.025 90);
+  --chart-5: oklch(0.876 0.061 93);
   --sidebar: var(--ink);
   --sidebar-foreground: var(--canvas);
   --sidebar-primary: var(--accent);
   --sidebar-primary-foreground: var(--canvas);
-  --sidebar-accent: oklch(0.5 0.12 41);
+  --sidebar-accent: oklch(0.22 0.012 85);
   --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border: oklch(0.5 0.12 41);
+  --sidebar-border: oklch(0.22 0.012 85);
   --sidebar-ring: var(--warm);
 }
 
@@ -92,7 +95,7 @@
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  background: #fff;
+  background: var(--canvas);
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -100,9 +103,9 @@ body {
   font-size: 15px;
   line-height: 1.55;
 }
-html[lang="ar"] body { font-family: var(--font-ar); }
+html[lang="ar"] body { font-family: var(--font-sans); } /* fix: was var(--font-ar) — lang="ar" on <html> triggered this and overrode the body font globally */
 
-::selection { background: oklch(0.499 0.142 38 / 0.18); color: var(--ink); }
+::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
 
 a { color: inherit; text-decoration: none; }
 button { font: inherit; cursor: pointer; }
@@ -196,7 +199,7 @@ html[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter
 .input:hover, .select:hover, .textarea:hover { border-color: var(--hairline-strong); }
 .input:focus, .select:focus, .textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px oklch(0.499 0.142 38 / 0.14);
+  box-shadow: 0 0 0 4px oklch(0.32 0.018 85 / 0.14);
   background: var(--surface-2);
 }
 .field-error { color: var(--error); font-size: 12px; font-weight: 500; }
@@ -467,20 +470,20 @@ html, body { overflow-x: hidden; }
   --radius-4xl: 56px;
 }
 
-/* dark mode intentionally inherits the same warm palette — no cold-gray fallback. */
+/* dark mode — inverted parchment palette */
 .dark {
-  --background: oklch(0.18 0.02 45);
+  --background: oklch(0.12 0.010 85);
   --foreground: var(--canvas);
-  --card: oklch(0.22 0.025 45);
+  --card: oklch(0.18 0.012 85);
   --card-foreground: var(--canvas);
-  --popover: oklch(0.22 0.025 45);
+  --popover: oklch(0.18 0.012 85);
   --popover-foreground: var(--canvas);
   --primary: var(--canvas);
-  --primary-foreground: oklch(0.22 0.025 45);
-  --secondary: oklch(0.3 0.04 45);
+  --primary-foreground: oklch(0.12 0.010 85);
+  --secondary: oklch(0.28 0.014 85);
   --secondary-foreground: var(--canvas);
-  --muted: oklch(0.3 0.04 45);
-  --muted-foreground: oklch(0.7 0.03 70);
+  --muted: oklch(0.28 0.014 85);
+  --muted-foreground: oklch(0.65 0.020 90);
   --accent: var(--accent);
   --accent-foreground: var(--canvas);
   --destructive: var(--error);

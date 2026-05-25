@@ -75,10 +75,10 @@ export function Header({ lang, dict, navGroups }: Props) {
   return (
     <header
       className={[
-        "sticky top-0 z-30 border-b border-(--hairline) transition-[background,box-shadow] duration-200",
+        "sticky top-0 z-30 border-b border-black transition-[background,box-shadow] duration-200",
         scrolled
-          ? "bg-white/90 shadow-(--shadow-1) backdrop-blur-md"
-          : "bg-white"
+          ? "bg-(--canvas)/90 shadow-(--shadow-1) backdrop-blur-md"
+          : "bg-(--canvas)"
       ].join(" ")}
     >
       <div className={`bg-ink px-4 py-2 text-center text-[11px] text-canvas sm:text-[12px] ${lang === "ar" ? "tracking-[0.04em]" : "tracking-[0.04em] sm:tracking-[0.12em]"}`}>
@@ -100,7 +100,7 @@ export function Header({ lang, dict, navGroups }: Props) {
             <Icon.Menu />
           </button>
           <form
-            className="hidden min-[880px]:flex h-11 w-full max-w-[380px] items-center gap-2.5 rounded-full border border-(--hairline) bg-white px-4.5 py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]"
+            className="hidden min-[880px]:flex h-11 w-full max-w-[380px] items-center gap-2.5 rounded-full border border-black bg-(--canvas) px-4.5 py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]"
             onSubmit={onSearch}
           >
             <Icon.Search />
@@ -168,7 +168,7 @@ export function Header({ lang, dict, navGroups }: Props) {
 
       </div>
 
-      <nav className="relative border-t border-(--hairline) bg-white py-2.5 max-[880px]:hidden" aria-label="Primary">
+      <nav className="relative border-t border-black bg-(--canvas) py-2.5 max-[880px]:hidden" aria-label="Primary">
         <div className="container flex flex-wrap items-center justify-center gap-1">
           <Link href={`/${lang}/shop`} className={`rounded-(--radius-pill) px-4 py-2 text-[13px] ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"} text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink`}>
             {dict.nav.products}
@@ -182,13 +182,13 @@ export function Header({ lang, dict, navGroups }: Props) {
             </Link>
 
             <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2 opacity-0 transition-[opacity,visibility] duration-200 group-hover:visible group-hover:opacity-100">
-              <div className="w-max max-w-[min(960px,92vw)] overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) shadow-[0_4px_6px_oklch(0.42_0.05_45_/_0.04),0_24px_48px_oklch(0.42_0.05_45_/_0.13)]">
+              <div className="w-max max-w-[min(960px,92vw)] overflow-hidden rounded-(--radius-lg) border border-black bg-(--surface) shadow-[0_4px_6px_oklch(0.42_0.05_45_/_0.04),0_24px_48px_oklch(0.42_0.05_45_/_0.13)]">
 
                 {/* top accent hairline */}
                 <div className="h-px bg-gradient-to-r from-transparent via-(--warm) to-transparent" />
 
                 {/* header row */}
-                <div className="flex items-center justify-between border-b border-(--hairline) px-7 py-3.5">
+                <div className="flex items-center justify-between border-b border-black px-7 py-3.5">
                   <span className={`text-(--ink-3) ${lang === "ar" ? "font-(--font-ar) text-[13px]" : "font-(--font-display) italic text-[17px] tracking-[0.01em]"}`}>
                     {lang === "ar" ? "تصفح الأقسام" : "Browse by category"}
                   </span>
@@ -234,7 +234,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                 </div>
 
                 {/* footer strip */}
-                <div className="border-t border-(--hairline) bg-gradient-to-r from-(--warm-soft) via-(--canvas) to-(--warm-soft) px-7 py-3">
+                <div className="border-t border-black bg-gradient-to-r from-(--warm-soft) via-(--canvas) to-(--warm-soft) px-7 py-3">
                   <Link
                     href={`/${lang}/products`}
                     className={`text-(--ink-2) transition-colors hover:text-(--accent) ${lang === "ar" ? "font-(--font-ar) text-[12px]" : "font-(--font-display) italic text-[14px]"}`}
@@ -259,7 +259,7 @@ export function Header({ lang, dict, navGroups }: Props) {
               </Link>
 
               <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2 opacity-0 transition-[opacity,visibility] duration-150 group-hover:visible group-hover:opacity-100">
-                <div className="min-w-[520px] max-w-[820px] rounded-(--radius-lg) border border-(--hairline) bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
+                <div className="min-w-[520px] max-w-[820px] rounded-(--radius-lg) border border-black bg-(--canvas) p-6 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
                   <div className={`grid gap-x-8 gap-y-1 ${g.children.length <= 2 ? "grid-cols-2" : g.children.length <= 4 ? "grid-cols-3" : "grid-cols-4"}`}>
                     {g.children.map((child) => (
                       <div key={child.id} className="flex flex-col gap-1">
@@ -281,7 +281,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-5 border-t border-(--hairline) pt-4">
+                  <div className="mt-5 border-t border-black pt-4">
                     <Link
                       href={`/${lang}/category/${g.root.slug}`}
                       className={`text-[12px] font-medium text-(--accent) transition-colors hover:underline underline-offset-4 ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"}`}
@@ -308,12 +308,12 @@ export function Header({ lang, dict, navGroups }: Props) {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed inset-y-0 z-100 flex w-[min(320px,92vw)] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${lang === "ar" ? "right-0" : "left-0"} ${mobileOpen ? "translate-x-0" : lang === "ar" ? "translate-x-full" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 z-100 flex w-[min(320px,92vw)] flex-col bg-(--canvas) shadow-2xl transition-transform duration-300 ease-out ${lang === "ar" ? "right-0" : "left-0"} ${mobileOpen ? "translate-x-0" : lang === "ar" ? "translate-x-full" : "-translate-x-full"}`}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation"
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-(--hairline) px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-black px-5 py-4">
           <span className={lang === "ar" ? "text-[22px] font-(--font-ar) font-bold text-ink" : "text-[24px] italic font-(--font-display) text-ink"}>{dict.brand}</span>
           <button
             className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
@@ -325,7 +325,7 @@ export function Header({ lang, dict, navGroups }: Props) {
         </div>
 
         <div className="flex flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
-          <form onSubmit={(e) => { onSearch(e); setMobileOpen(false); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-white px-5">
+          <form onSubmit={(e) => { onSearch(e); setMobileOpen(false); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-black bg-(--canvas) px-5">
             <Icon.Search />
             <input
               className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
@@ -336,20 +336,20 @@ export function Header({ lang, dict, navGroups }: Props) {
             />
           </form>
 
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
+          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
             <span>{dict.nav.products}</span>
             <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
           </Link>
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
+          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
             <span>{dict.nav.allCategories}</span>
             <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
           </Link>
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-accent transition-colors hover:bg-(--accent-soft)">
+          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-accent transition-colors hover:bg-(--accent-soft)">
             <span>{dict.nav.offers}</span>
             <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
           </Link>
           {user && (
-            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
+            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
               <span>{dict.nav.orders}</span>
               <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
             </Link>
@@ -363,7 +363,7 @@ export function Header({ lang, dict, navGroups }: Props) {
               key={g.root.id}
               onClick={() => setMobileOpen(false)}
               href={`/${lang}/category/${g.root.slug}`}
-              className="flex items-center justify-between border-b border-(--hairline) px-2 py-4 text-[15px] text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink"
+              className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink"
             >
               <span>{lang === "ar" ? g.root.name.ar : g.root.name.en}</span>
               <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
@@ -371,7 +371,7 @@ export function Header({ lang, dict, navGroups }: Props) {
           ))}
 
           {/* Socials */}
-          <div className="mt-8 border-t border-(--hairline) pt-6 px-2">
+          <div className="mt-8 border-t border-black pt-6 px-2">
             <p className="mb-4 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
               {isAr ? "تابعينا" : "Follow us"}
             </p>
@@ -379,7 +379,7 @@ export function Header({ lang, dict, navGroups }: Props) {
               {[
                 {
                   label: "Facebook",
-                  href: "https://facebook.com/capellacares",
+                  href: "https://facebook.com/capellacare",
                   path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
                   stroke: true,
                 },
@@ -391,19 +391,19 @@ export function Header({ lang, dict, navGroups }: Props) {
                 },
                 {
                   label: "Instagram",
-                  href: "https://instagram.com/capellacares",
+                  href: "https://instagram.com/capellacare",
                   path: "M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5ZM12 7a5 5 0 1 1 0 10A5 5 0 0 1 12 7Zm0 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm5.25-2.25a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z",
                   stroke: false,
                 },
                 {
                   label: "TikTok",
-                  href: "https://tiktok.com/@capellacares",
+                  href: "https://tiktok.com/@capellacare",
                   path: "M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07Z",
                   stroke: false,
                 },
                 {
                   label: "YouTube",
-                  href: "https://youtube.com/@capellacares",
+                  href: "https://youtube.com/@capellacare",
                   path: "M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.97C5.12 20 12 20 12 20s6.88 0 8.59-.45a2.78 2.78 0 0 0 1.95-1.97A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z",
                   stroke: false,
                 },
@@ -414,7 +414,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-(--hairline) text-(--ink-3) transition-colors hover:border-(--accent) hover:text-(--accent)"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-black text-(--ink-3) transition-colors hover:border-(--accent) hover:text-(--accent)"
                 >
                   <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden fill={stroke ? "none" : "currentColor"} stroke={stroke ? "currentColor" : "none"} strokeWidth={stroke ? 2 : 0} strokeLinecap="round" strokeLinejoin="round">
                     <path d={path} />

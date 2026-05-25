@@ -5,35 +5,35 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Cares — ERP tokens.
-   Strategy: RESTRAINED. Cream-on-cream surfaces, ink type,
-   accent only on save / primary actions.
+   Capella Care — ERP tokens.
+   Strategy: RESTRAINED. Parchment bg, black ink, white cards.
+   All tones are degrees between canvas #e4d6a9 / black / white.
    Denser scale than storefront (14px base, smaller radii).
    ============================================================ */
 :root {
-  --ink:          oklch(0.422 0.149 41);    /* #8E3200 — sidebar, headings */
-  --ink-2:        oklch(0.32 0.04 45);      /* primary text */
-  --ink-3:        oklch(0.48 0.04 50);      /* meta */
-  --ink-4:        oklch(0.62 0.03 55);      /* placeholders, faint */
-  --accent:       oklch(0.499 0.142 38);    /* #A64B2A — save/primary */
-  --accent-deep:  oklch(0.44 0.14 38);
-  --accent-soft:  oklch(0.93 0.04 40);
-  --warm:         oklch(0.748 0.106 70);    /* #D7A86E */
-  --warm-soft:    oklch(0.92 0.04 75);
-  --canvas:       oklch(0.97 0.018 80);     /* page bg — light cream, not white */
-  --surface:      oklch(0.99 0.008 85);     /* card surface */
-  --surface-2:    oklch(0.995 0.005 85);    /* nested */
-  --hairline:     oklch(0.89 0.025 75);
-  --hairline-strong: oklch(0.82 0.04 70);
-  --error:        oklch(0.499 0.165 32);
-  --success:      oklch(0.55 0.07 130);
+  --ink:          oklch(0.12 0.010 85);     /* near-black — headings, sidebar */
+  --ink-2:        oklch(0.22 0.012 85);     /* primary text */
+  --ink-3:        oklch(0.42 0.010 85);     /* meta */
+  --ink-4:        oklch(0.60 0.008 88);     /* placeholders, faint */
+  --accent:       oklch(0.28 0.016 85);     /* dark interactive — save/primary */
+  --accent-deep:  oklch(0.16 0.010 85);     /* pressed */
+  --accent-soft:  oklch(0.87 0.036 91);     /* hover tint */
+  --warm:         oklch(0.80 0.030 90);     /* mid-step between canvas & white */
+  --warm-soft:    oklch(0.93 0.020 90);     /* near-white warm */
+  --canvas:       oklch(0.876 0.061 93);    /* #e4d6a9 — primary background */
+  --surface:      oklch(1 0 0);             /* white — card surface */
+  --surface-2:    oklch(0.975 0.014 90);    /* nested card */
+  --hairline:     oklch(0.78 0.028 90);     /* border */
+  --hairline-strong: oklch(0.62 0.022 88);  /* strong border */
+  --error:        oklch(0.499 0.165 32);    /* semantic — unchanged */
+  --success:      oklch(0.52 0.10 145);     /* semantic — unchanged */
   --gold:         var(--warm);
 
-  /* sidebar (deep ink) */
-  --bg-sidebar:        oklch(0.32 0.10 38);  /* deep burnt sienna */
-  --bg-sidebar-hover:  oklch(0.40 0.12 38);
-  --sidebar-text:      oklch(0.96 0.02 80);
-  --sidebar-text-soft: oklch(0.85 0.03 75);
+  /* sidebar (near-black) */
+  --bg-sidebar:        oklch(0.12 0.010 85);  /* near-black */
+  --bg-sidebar-hover:  oklch(0.22 0.012 85);
+  --sidebar-text:      oklch(0.876 0.061 93); /* canvas on dark sidebar */
+  --sidebar-text-soft: oklch(0.70 0.025 90);
 
   /* Legacy aliases kept so existing component code resolves. */
   --bg:           var(--canvas);
@@ -51,11 +51,13 @@
   --radius-lg: 12px;
   --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px oklch(0.30 0.05 45 / 0.06), 0 4px 12px oklch(0.30 0.05 45 / 0.04);
-  --shadow-2: 0 8px 28px oklch(0.30 0.05 45 / 0.12);
+  --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.07), 0 4px 12px oklch(0.12 0.01 85 / 0.05);
+  --shadow-2: 0 8px 28px oklch(0.12 0.01 85 / 0.14);
 
-  --font-ar:   "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-mono: "JetBrains Mono", "Menlo", "Consolas", monospace;
+  --font-sans:      "Roboto Mono", "JetBrains Mono", monospace;
+  --font-signature: "Playwrite GB S Guides", cursive;
+  --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-mono:      "Roboto Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-fast: 140ms;
@@ -85,7 +87,7 @@
   --sidebar-primary-foreground: var(--canvas);
   --sidebar-accent:     var(--bg-sidebar-hover);
   --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border:     oklch(0.40 0.10 38);
+  --sidebar-border:     oklch(0.22 0.012 85);
   --sidebar-ring:       var(--warm);
 }
 
@@ -94,7 +96,7 @@ html, body { margin: 0; padding: 0; overflow-x: hidden; }
 body {
   background: var(--canvas);
   color: var(--ink-2);
-  font-family: var(--font-ar);
+  font-family: var(--font-sans); /* fix: was var(--font-ar) — overrode body font for all components */
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -150,13 +152,13 @@ html[lang="ar"] .eyebrow { letter-spacing: 0.06em; text-transform: none; }
 .btn--primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
 
 .btn--ink { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
-.btn--ink:hover { background: oklch(0.36 0.13 41); }
+.btn--ink:hover { background: oklch(0.22 0.012 85); }
 
 .btn--ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
 .btn--ghost:hover { background: var(--warm-soft); color: var(--ink); }
 
 .btn--soft { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.btn--soft:hover { background: oklch(0.88 0.06 40); }
+.btn--soft:hover { background: oklch(0.84 0.040 91); }
 
 .btn--danger { background: var(--error); color: var(--canvas); border-color: var(--error); }
 .btn--danger:hover { background: oklch(0.44 0.16 32); }
@@ -415,16 +417,25 @@ html[lang="ar"] .table th { letter-spacing: 0.04em; text-transform: none; }
 .sidebar {
   background: var(--bg-sidebar);
   color: var(--sidebar-text);
-  padding: 22px 14px;
-  display: flex; flex-direction: column; gap: 2px;
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
   border-inline-end: 1px solid color-mix(in oklch, var(--canvas) 8%, transparent);
 }
+/* brand header — fixed inside sidebar */
+.sidebar > .sidebar__brand { flex-shrink: 0; padding: 22px 14px 0; }
+/* nav area — scrolls when content overflows */
+.sidebar__nav {
+  flex: 1; overflow-y: auto; padding: 0 14px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+/* user footer — always pinned at bottom */
+.sidebar > .sidebar__user { flex-shrink: 0; margin-top: 0; }
 .sidebar__brand {
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 10px 20px;
+  padding: 8px 10px 20px 10px;
   border-bottom: 1px solid color-mix(in oklch, var(--canvas) 12%, transparent);
   margin-bottom: 8px;
+  margin-inline: 0;
 }
 .sidebar__brand-name {
   font-size: 18px; font-weight: 700; color: var(--canvas);
@@ -953,8 +964,8 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
    @theme inline (Tailwind v4 token bridge)
    ============================================================ */
 @theme inline {
-  --font-heading: var(--font-ar);
-  --font-sans:    var(--font-ar);
+  --font-heading: var(--font-sans);
+  --font-sans:    var(--font-sans); /* fix: was var(--font-ar) — Tailwind resolves font-sans utility through @theme, bypassing :root */
   --font-mono:    var(--font-mono);
 
   --color-canvas:  var(--canvas);
