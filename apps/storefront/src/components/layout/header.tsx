@@ -26,6 +26,7 @@ export function Header({ lang, dict, navGroups }: Props) {
   const [q, setQ] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerView, setDrawerView] = useState<"main" | "categories">("main");
   const isAr = lang === "ar";
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export function Header({ lang, dict, navGroups }: Props) {
       document.body.style.width = "";
       document.body.style.overflowY = "";
       window.scrollTo(0, scrollY);
+      setDrawerView("main");
     }
     return () => {
       const scrollY = Math.abs(parseInt(document.body.style.top || "0", 10));
@@ -339,54 +341,56 @@ export function Header({ lang, dict, navGroups }: Props) {
           </button>
         </div>
 
-        <div className="flex flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
-          <form onSubmit={(e) => { onSearch(e); setMobileOpen(false); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-black bg-(--canvas) px-5">
-            <Icon.Search />
-            <input
-              className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={dict.nav.search}
-              aria-label={dict.nav.search}
-            />
-          </form>
+        <div className="relative flex-1 overflow-hidden">
+          <div
+            className="flex h-full w-[200%] transition-transform duration-300 ease-out"
+            style={{
+              transform:
+                drawerView === "categories"
+                  ? isAr
+                    ? "translateX(50%)"
+                    : "translateX(-50%)"
+                  : "translateX(0)"
+            }}
+          >
+            {/* Pane 1: main */}
+            <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
+              <form onSubmit={(e) => { onSearch(e); setMobileOpen(false); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-black bg-(--canvas) px-5">
+                <Icon.Search />
+                <input
+                  className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={dict.nav.search}
+                  aria-label={dict.nav.search}
+                />
+              </form>
 
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
-            <span>{dict.nav.products}</span>
-            <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-          </Link>
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/products`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
-            <span>{dict.nav.allCategories}</span>
-            <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-          </Link>
-          <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-accent transition-colors hover:bg-(--accent-soft)">
-            <span>{dict.nav.offers}</span>
-            <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-          </Link>
-          {user && (
-            <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
-              <span>{dict.nav.orders}</span>
-              <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-            </Link>
-          )}
+              <Link onClick={() => setMobileOpen(false)} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
+                <span>{dict.nav.products}</span>
+                <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setDrawerView("categories")}
+                className="flex items-center justify-between border-b border-black bg-transparent px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)"
+              >
+                <span>{dict.nav.allCategories}</span>
+                <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+              </button>
+              <Link onClick={() => setMobileOpen(false)} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-accent transition-colors hover:bg-(--accent-soft)">
+                <span>{dict.nav.offers}</span>
+                <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+              </Link>
+              {user && (
+                <Link onClick={() => setMobileOpen(false)} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)">
+                  <span>{dict.nav.orders}</span>
+                  <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
+                </Link>
+              )}
 
-          <div className="px-2 pb-2 pt-6 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
-            {dict.nav.categories}
-          </div>
-          {navGroups.slice(2).map((g) => (
-            <Link
-              key={g.root.id}
-              onClick={() => setMobileOpen(false)}
-              href={`/${lang}/category/${g.root.slug}`}
-              className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink"
-            >
-              <span>{lang === "ar" ? g.root.name.ar : g.root.name.en}</span>
-              <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-            </Link>
-          ))}
-
-          {/* Socials */}
-          <div className="mt-8 border-t border-black pt-6 px-2">
+              {/* Socials */}
+              <div className="mt-8 border-t border-black pt-6 px-2">
             <p className="mb-4 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
               {isAr ? "تابعينا" : "Follow us"}
             </p>
@@ -435,6 +439,36 @@ export function Header({ lang, dict, navGroups }: Props) {
                     <path d={path} />
                   </svg>
                 </a>
+              ))}
+            </div>
+          </div>
+            </div>
+
+            {/* Pane 2: categories */}
+            <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
+              <button
+                type="button"
+                onClick={() => setDrawerView("main")}
+                className="mb-2 flex items-center gap-2 border-b border-black bg-transparent px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)"
+              >
+                <Icon.Chevron className={`text-(--ink-3) ${isAr ? "" : "rotate-180"}`} />
+                <span>{isAr ? "رجوع" : "Back"}</span>
+              </button>
+
+              <div className="px-2 pb-2 pt-2 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
+                {dict.nav.allCategories}
+              </div>
+
+              {navGroups.slice(2).map((g) => (
+                <Link
+                  key={g.root.id}
+                  onClick={() => setMobileOpen(false)}
+                  href={`/${lang}/category/${g.root.slug}`}
+                  className="flex items-center justify-between border-b border-black px-2 py-4 text-[15px] text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink"
+                >
+                  <span>{isAr ? g.root.name.ar : g.root.name.en}</span>
+                  <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
+                </Link>
               ))}
             </div>
           </div>
