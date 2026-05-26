@@ -18,6 +18,12 @@ export function toOfferBase(
   offer: OfferMapperRow,
   originalTotal: number
 ): Omit<Offer, "createdAt" | "updatedAt" | "deletedAt"> {
+  const price = Number(offer.fixedPrice);
+  if (!Number.isFinite(price)) {
+    throw new Error(
+      `Invalid fixedPrice for offer id=${offer.id} slug=${offer.slug}: ${String(offer.fixedPrice)}`
+    );
+  }
   return {
     id: offer.id,
     slug: offer.slug,
@@ -30,7 +36,7 @@ export function toOfferBase(
       en: offer.enDescription ?? ""
     },
     imagePath: offer.imagePath ?? "",
-    price: Number(offer.fixedPrice),
+    price,
     originalTotal,
     stock: offer.stock,
     items: offer.items.map((item) => ({

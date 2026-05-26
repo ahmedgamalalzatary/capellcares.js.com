@@ -125,8 +125,8 @@ interface EditorActionsProps {
 export function EditorActions({ cancelLabel, saveLabel, onCancel, onSave }: EditorActionsProps) {
   return (
     <div className="editor-actions">
-      <button className="btn btn--ghost" onClick={onCancel}>{cancelLabel}</button>
-      <button className="btn btn--primary" onClick={onSave}>{saveLabel}</button>
+      <button type="button" className="btn btn--ghost" onClick={onCancel}>{cancelLabel}</button>
+      <button type="button" className="btn btn--primary" onClick={onSave}>{saveLabel}</button>
     </div>
   );
 }
