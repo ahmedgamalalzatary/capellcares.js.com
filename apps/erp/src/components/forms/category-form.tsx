@@ -5,15 +5,13 @@ import { useMemo, useState } from "react";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import type { Category } from "@capella/shared";
+import { BilingualNameFields, EditorActions } from "./editor-form-parts";
+import { slugifyFormName } from "./form-slug";
 
 interface Props {
   mode: "new" | "edit";
   initial?: Category;
   categories: Category[];
-}
-
-function slugify(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 export function CategoryForm({ mode, initial, categories }: Props) {
@@ -72,7 +70,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
-    const slug = initial?.slug ?? slugify(nameEn);
+    const slug = initial?.slug ?? slugifyFormName(nameEn);
     const categoryPayload: Omit<Category, "id"> & { id?: number } = {
       id: initial?.id,
       slug,
@@ -95,16 +93,14 @@ export function CategoryForm({ mode, initial, categories }: Props) {
         <h3 className="card__title">{mode === "new" ? "إنشاء قسم جديد" : "تعديل القسم"}</h3>
       </div>
       <div className="card__body stack stack--lg">
-        <div className="field">
-          <label>الاسم بالعربية</label>
-          <input className="input" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
-          {errors.nameAr && <span className="field-error">{errors.nameAr}</span>}
-        </div>
-        <div className="field">
-          <label>Name (English)</label>
-          <input className="input" dir="ltr" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
-          {errors.nameEn && <span className="field-error">{errors.nameEn}</span>}
-        </div>
+        <BilingualNameFields
+          arValue={nameAr}
+          enValue={nameEn}
+          onArChange={setNameAr}
+          onEnChange={setNameEn}
+          arError={errors.nameAr}
+          enError={errors.nameEn}
+        />
         <div className="field">
           <label>القسم الأب (اختياري)</label>
           <select className="select" value={parentId ?? ""} onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}>
@@ -113,10 +109,14 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           </select>
           {selectedParentPath && <div className="muted selected-parent-path">المسار: {selectedParentPath}</div>}
         </div>
-        <div className="editor-actions">
-          <button className="btn btn--ghost" onClick={() => router.push("/categories")}>إلغاء</button>
-          <button className="btn btn--primary" onClick={save}>{mode === "new" ? "إنشاء القسم" : "حفظ التعديلات"}</button>
-        </div>
+        <EditorActions
+          cancelLabel="إلغاء"
+          saveLabel={mode === "new" ? "إنشاء القسم" : "حفظ التعديلات"}
+          onCancel={() => router.push("/categories")}
+          onSave={() => {
+            void save();
+          }}
+        />
       </div>
     </div>
   );

@@ -24,7 +24,10 @@ describe("shared UI exports", () => {
     ));
 
     expect(screen.getByText("SKU")).toHaveAttribute("data-slot", "label");
-    expect(screen.getByText("Draft")).toHaveAttribute("data-slot", "badge");
+    const drafts = screen.getAllByText("Draft");
+    const badge = drafts.find((el) => el.getAttribute("data-slot") === "badge");
+    expect(badge).toBeTruthy();
+    expect(badge).toHaveAttribute("data-slot", "badge");
     expect(screen.getByRole("combobox", { name: "Status" })).toHaveAttribute("data-slot", "select-trigger");
   });
 });

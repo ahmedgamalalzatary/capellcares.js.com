@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Category, Language, Product } from "@capella/shared";
 
 import type { CategoryTreeItem, PriceRange, Sort } from "./product-grid.types";
@@ -25,6 +25,9 @@ export function useProductGridFilters({
   const [category, setCategory] = useState<number | undefined>(initialCategory);
   const [sort, setSort] = useState<Sort>("newest");
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
+
+  useEffect(() => { setQ(initialSearch); }, [initialSearch]);
+  useEffect(() => { setCategory(initialCategory); }, [initialCategory]);
 
   const categoryById = useMemo(
     () => new Map(categories.map((item) => [item.id, item])),

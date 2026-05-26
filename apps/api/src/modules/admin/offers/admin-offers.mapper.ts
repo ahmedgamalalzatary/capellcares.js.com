@@ -1,4 +1,5 @@
 import type { Offer } from "@capella/shared";
+import { toOfferBase } from "../../offers/offer-mapper.shared.js";
 
 type AdminOfferRow = {
   id: number;
@@ -21,26 +22,10 @@ export function toAdminOffer(
   originalTotal: number,
   stock: number
 ): Offer {
+  const base = toOfferBase({ ...offer, stock }, originalTotal);
+
   return {
-    id: offer.id,
-    slug: offer.slug,
-    name: {
-      ar: offer.arName,
-      en: offer.enName
-    },
-    description: {
-      ar: offer.arDescription ?? "",
-      en: offer.enDescription ?? ""
-    },
-    imagePath: offer.imagePath ?? "",
-    price: Number(offer.fixedPrice),
-    originalTotal,
-    stock,
-    items: offer.items.map((item) => ({
-      variantId: item.variantId,
-      qty: item.qty
-    })),
-    status: offer.status,
+    ...base,
     createdAt: new Date(offer.createdAt).toISOString(),
     updatedAt: new Date(offer.updatedAt).toISOString(),
     deletedAt: offer.deletedAt ? new Date(offer.deletedAt).toISOString() : null

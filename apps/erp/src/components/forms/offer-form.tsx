@@ -6,16 +6,14 @@ import type { Offer, OfferItem, Product } from "@capella/shared";
 import { formatPrice } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
+import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
+import { slugifyFormName } from "./form-slug";
 import { ImageUpload } from "./image-upload";
 
 interface Props {
   mode: "new" | "edit";
   initial?: Offer;
   products: Product[];
-}
-
-function slugify(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 interface Row { productId: number; variantId: number; qty: number }
@@ -74,7 +72,7 @@ export function OfferForm({ mode, initial, products }: Props) {
     if (Object.keys(e).length > 0) return;
 
     const id = initial?.id;
-    const slug = initial?.slug ?? slugify(nameEn);
+    const slug = initial?.slug ?? slugifyFormName(nameEn);
     const items: OfferItem[] = rows.map((r) => ({ variantId: r.variantId, qty: r.qty }));
     const offer: Omit<Offer, "id"> & { id?: number } = {
       id,
@@ -104,30 +102,21 @@ export function OfferForm({ mode, initial, products }: Props) {
           <div className="card__head"><h3 className="card__title">معلومات العرض</h3></div>
           <div className="card__body stack stack--lg">
             <div className="editor-fields-2">
-              <div className="field">
-                <label>الاسم بالعربية</label>
-                <input className="input" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
-                {errors.nameAr && <span className="field-error">{errors.nameAr}</span>}
-              </div>
-              <div className="field">
-                <label>Name (English)</label>
-                <input className="input" dir="ltr" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
-                {errors.nameEn && <span className="field-error">{errors.nameEn}</span>}
-              </div>
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>الوصف (عربي)</label>
-                <textarea className="textarea" value={descAr} onChange={(e) => setDescAr(e.target.value)} />
-              </div>
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>Description (English)</label>
-                <textarea className="textarea" dir="ltr" value={descEn} onChange={(e) => setDescEn(e.target.value)} />
-              </div>
+              <BilingualNameFields
+                arValue={nameAr}
+                enValue={nameEn}
+                onArChange={setNameAr}
+                onEnChange={setNameEn}
+                arError={errors.nameAr}
+                enError={errors.nameEn}
+              />
               <div className="field">
                 <label>سعر الباقة (جنيه)</label>
                 <input className="input" type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
                 {errors.price && <span className="field-error">{errors.price}</span>}
               </div>
             </div>
+            <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
           </div>
         </section>
 
@@ -190,13 +179,11 @@ export function OfferForm({ mode, initial, products }: Props) {
       </div>
 
       <aside className="stack stack--lg">
-        <section className="card">
-          <div className="card__head"><h3 className="card__title">صورة العرض</h3></div>
-          <div className="card__body">
-            <ImageUpload value={image} onChange={setImage} />
-            {errors.image && <div className="field-error" style={{ marginTop: 6 }}>{errors.image}</div>}
-          </div>
-        </section>
+        <ImageFieldCard
+          title="صورة العرض"
+          error={errors.image}
+          uploadSlot={<ImageUpload value={image} onChange={setImage} />}
+        />
 
         <section className="card">
           <div className="card__head"><h3 className="card__title">حسابات الباقة</h3></div>
@@ -214,10 +201,14 @@ export function OfferForm({ mode, initial, products }: Props) {
           </div>
         </section>
 
-        <div className="editor-actions">
-          <button className="btn btn--ghost" onClick={() => router.push("/offers")}>إلغاء</button>
-          <button className="btn btn--primary" onClick={save}>{mode === "new" ? "حفظ العرض" : "حفظ التعديلات"}</button>
-        </div>
+        <EditorActions
+          cancelLabel="إلغاء"
+          saveLabel={mode === "new" ? "حفظ العرض" : "حفظ التعديلات"}
+          onCancel={() => router.push("/offers")}
+          onSave={() => {
+            void save();
+          }}
+        />
       </aside>
     </div>
   );

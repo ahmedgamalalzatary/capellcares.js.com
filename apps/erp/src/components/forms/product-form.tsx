@@ -6,20 +6,14 @@ import type { Product, Category, ProductVariant } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
+import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
+import { slugifyFormName } from "./form-slug";
 import { ImageUpload } from "./image-upload";
 
 interface Props {
   mode: "new" | "edit";
   initial?: Product;
   categories: Category[];
-}
-
-function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 function newVariantId() {
@@ -79,7 +73,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
   const save = async () => {
     if (!canSave()) return;
     const id = initial?.id;
-    const slug = initial?.slug ?? slugify(nameEn || nameAr || "product");
+    const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
     const product: Product = {
       id: id ?? 0,
       sku: sku.trim() || `SKU-${Date.now()}`,
@@ -114,16 +108,14 @@ export function ProductForm({ mode, initial, categories }: Props) {
           <div className="card__head"><h3 className="card__title">المعلومات الأساسية</h3></div>
           <div className="card__body stack stack--lg">
             <div className="editor-fields-2">
-              <div className="field">
-                <label>الاسم بالعربية</label>
-                <input className="input" value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
-                {errors.nameAr && <span className="field-error">{errors.nameAr}</span>}
-              </div>
-              <div className="field">
-                <label>Name (English)</label>
-                <input className="input" dir="ltr" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
-                {errors.nameEn && <span className="field-error">{errors.nameEn}</span>}
-              </div>
+              <BilingualNameFields
+                arValue={nameAr}
+                enValue={nameEn}
+                onArChange={setNameAr}
+                onEnChange={setNameEn}
+                arError={errors.nameAr}
+                enError={errors.nameEn}
+              />
               <div className="field">
                 <label>SKU</label>
                 <input className="input" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
@@ -149,10 +141,10 @@ export function ProductForm({ mode, initial, categories }: Props) {
         <section className="card">
           <div className="card__head"><h3 className="card__title">المحتوى التسويقي</h3></div>
           <div className="card__body stack stack--lg">
-            <BilingualField label="الوصف" arVal={descAr} setAr={setDescAr} enVal={descEn} setEn={setDescEn} multiline />
-            <BilingualField label="المكونات" arVal={ingAr} setAr={setIngAr} enVal={ingEn} setEn={setIngEn} multiline />
-            <BilingualField label="طريقة الاستخدام" arVal={useAr} setAr={setUseAr} enVal={useEn} setEn={setUseEn} multiline />
-            <BilingualField label="تحذيرات" arVal={warnAr} setAr={setWarnAr} enVal={warnEn} setEn={setWarnEn} multiline />
+            <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
+            <BilingualEditorField label="المكونات" arValue={ingAr} onArChange={setIngAr} enValue={ingEn} onEnChange={setIngEn} multiline />
+            <BilingualEditorField label="طريقة الاستخدام" arValue={useAr} onArChange={setUseAr} enValue={useEn} onEnChange={setUseEn} multiline />
+            <BilingualEditorField label="تحذيرات" arValue={warnAr} onArChange={setWarnAr} enValue={warnEn} onEnChange={setWarnEn} multiline />
           </div>
         </section>
 
@@ -227,46 +219,21 @@ export function ProductForm({ mode, initial, categories }: Props) {
           </div>
         </section>
 
-        <section className="card">
-          <div className="card__head"><h3 className="card__title">صورة المنتج</h3></div>
-          <div className="card__body">
-            <ImageUpload value={image} onChange={setImage} />
-            {errors.image && <div className="field-error" style={{ marginTop: 6 }}>{errors.image}</div>}
-          </div>
-        </section>
+        <ImageFieldCard
+          title="صورة المنتج"
+          error={errors.image}
+          uploadSlot={<ImageUpload value={image} onChange={setImage} />}
+        />
 
-        <div className="editor-actions">
-          <button className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
-          <button className="btn btn--primary" onClick={save}>{mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}</button>
-        </div>
+        <EditorActions
+          cancelLabel="إلغاء"
+          saveLabel={mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}
+          onCancel={() => router.push("/products")}
+          onSave={() => {
+            void save();
+          }}
+        />
       </aside>
-    </div>
-  );
-}
-
-function BilingualField({
-  label, arVal, setAr, enVal, setEn, multiline
-}: {
-  label: string;
-  arVal: string; setAr: (v: string) => void;
-  enVal: string; setEn: (v: string) => void;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="field">
-      <label>{label}</label>
-      <div className="editor-fields-2">
-        {multiline ? (
-          <textarea className="textarea" placeholder="العربية" value={arVal} onChange={(e) => setAr(e.target.value)} />
-        ) : (
-          <input className="input" placeholder="العربية" value={arVal} onChange={(e) => setAr(e.target.value)} />
-        )}
-        {multiline ? (
-          <textarea className="textarea" dir="ltr" placeholder="English" value={enVal} onChange={(e) => setEn(e.target.value)} />
-        ) : (
-          <input className="input" dir="ltr" placeholder="English" value={enVal} onChange={(e) => setEn(e.target.value)} />
-        )}
-      </div>
     </div>
   );
 }

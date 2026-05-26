@@ -4,11 +4,12 @@
 
 Reduce real code duplication across `apps/` and `packages/` without changing product behavior.
 
-This file is the resume point for the next compacted session. It records:
+This file is the current resume point. It records:
 
-1. what was already completed
-2. what still remains
-3. the exact next recommended move
+1. what is already done
+2. the latest measured duplication state
+3. what still remains
+4. what I was about to do when interrupted
 
 ---
 
@@ -22,9 +23,9 @@ npx jscpd apps/ packages/ --threshold 5
 
 Latest result:
 
-- Total duplication: `6.37%`
-- Clones found: `128`
-- Duplicated lines: `1630`
+- Total duplication: `5.74%`
+- Clones found: `115`
+- Duplicated lines: `1485`
 
 Baseline before this plan work started:
 
@@ -32,7 +33,20 @@ Baseline before this plan work started:
 - Clones found: `147`
 - Duplicated lines: `2672`
 
-So the plan is working, but the repo is still above the `5%` target.
+Measured progression during this cleanup:
+
+- `10.22%`
+- `6.37%`
+- `6.26%`
+- `6.05%`
+- `5.99%`
+- `5.92%`
+- `5.90%`
+- `5.89%`
+- `5.81%`
+- `5.74%`
+
+So the plan is materially working, but the repo is still above the `5%` target.
 
 ---
 
@@ -65,6 +79,7 @@ Related package wiring already done:
 
 - `packages/shared/package.json`
 - `packages/shared/tsconfig.json`
+- `pnpm-lock.yaml`
 
 Tests already added:
 
@@ -98,6 +113,78 @@ Tests already updated:
 
 ---
 
+### Wave 3: Shared types, DTOs, and domain shapes
+
+Completed for the order / checkout / payment duplication that was previously identified.
+
+Updated:
+
+- `packages/shared/src/dto/order.dto.ts`
+- `packages/shared/src/types/index.ts`
+- `apps/api/src/types/domain.ts`
+
+Added compile-time drift checks:
+
+- `packages/shared/src/dto/order.dto.contract.ts`
+- `apps/api/src/types/domain.contract.ts`
+- `packages/shared/src/types/assert-type-equal.ts`
+
+Important note:
+
+- API runtime tests for this area could not be fully executed in one earlier shell because `DATABASE_URL` was missing there
+- compile-time verification for the affected packages did pass
+
+---
+
+### Wave 4 partial: ERP repeated list pages and forms
+
+Partially completed.
+
+Shared admin list-page building blocks created:
+
+- `apps/erp/src/components/admin/admin-list-toolbar.tsx`
+- `apps/erp/src/components/admin/admin-status-badge.tsx`
+- `apps/erp/src/components/admin/admin-confirm-modal.tsx`
+
+ERP pages already moved onto those shared pieces:
+
+- `apps/erp/src/app/products/page.tsx`
+- `apps/erp/src/app/offers/page.tsx`
+- `apps/erp/src/app/advices/page.tsx`
+
+Tests already added:
+
+- `apps/erp/tests/admin-list-toolbar.test.tsx`
+
+Existing ERP page tests already updated by behavior-preserving refactor:
+
+- `apps/erp/tests/products-page.test.tsx`
+- `apps/erp/tests/offers-page.test.tsx`
+- `apps/erp/tests/advices-page.test.tsx`
+
+ERP form work also progressed further:
+
+- `apps/erp/src/components/forms/editor-form-parts.tsx`
+  - `BilingualEditorField`
+  - `BilingualNameFields`
+  - `ImageFieldCard`
+  - `EditorActions`
+
+- `apps/erp/src/components/forms/form-slug.ts`
+  - `slugifyFormName`
+
+Forms already moved onto those shared pieces:
+
+- `apps/erp/src/components/forms/product-form.tsx`
+- `apps/erp/src/components/forms/offer-form.tsx`
+- `apps/erp/src/components/forms/category-form.tsx`
+
+Tests already added:
+
+- `apps/erp/tests/editor-form-parts.test.tsx`
+
+---
+
 ### Wave 5 partial: Storefront page bootstrapping helpers
 
 Partially completed.
@@ -106,12 +193,15 @@ Helpers created:
 
 - `apps/storefront/src/lib/storefront-page-context.ts`
 - `apps/storefront/src/components/layout/storefront-page-shell.tsx`
+- `apps/storefront/src/lib/storefront-detail-page.tsx`
 
 These already centralize:
 
 - `lang` validation
 - dictionary loading
-- repeated breadcrumb/page-shell structure
+- slug-page context resolution
+- repeated breadcrumb/json-ld plumbing
+- repeated page shell structure
 
 Pages already moved to these helpers:
 
@@ -133,6 +223,7 @@ Pages already moved to these helpers:
 Tests already added:
 
 - `apps/storefront/tests/unit/storefront-page-context.test.ts`
+- `apps/storefront/tests/unit/storefront-detail-page.test.tsx`
 - `apps/storefront/tests/components/storefront-page-shell.test.tsx`
 
 ---
@@ -148,6 +239,8 @@ Extracted:
 Updated:
 
 - `apps/storefront/src/components/products/product-filters-content.tsx`
+- `apps/storefront/src/components/products/mobile-filter-drawer.tsx`
+- `apps/storefront/src/components/products/product-grid-empty-state.tsx`
 
 Related quality fixes already made:
 
@@ -167,11 +260,78 @@ Tests already added or updated:
 
 ### Remaining high-value duplication
 
-1. Shared contract, DTO, and domain shape duplication
-2. ERP repeated list-page structure
-3. Storefront slug/detail page pattern duplication that still remains after helper extraction
-4. Internal self-duplication in recently split storefront product-filter components
-5. A few cross-app duplicated support files like icon sets
+1. ERP form duplication
+2. Remaining storefront slug/detail page overlap
+3. Remaining product-filter overlap
+4. API offer mapper duplication
+5. Lower-value support-file duplicates that still inflate the score
+
+---
+
+## Current Hotspots
+
+These are the most relevant remaining hotspots from the latest work and latest `jscpd` output.
+
+### 1. ERP form duplication
+
+Primary files:
+
+- `apps/erp/src/components/forms/product-form.tsx`
+- `apps/erp/src/components/forms/offer-form.tsx`
+- some overlap with `apps/erp/src/components/forms/category-form.tsx`
+
+Why this matters:
+
+- these are smaller than before, but still among the larger remaining app-level duplicated UI blocks
+- the stable name-field and action-footer seams are already extracted
+- the shared image-upload side card and shared slug helper are also extracted
+- the remaining duplication is now in the offer/product body sections, helper functions like `slugify`, and a few card/table structures
+
+### 2. Remaining storefront detail-page overlap
+
+Primary files:
+
+- `apps/storefront/src/app/[lang]/products/[slug]/page.tsx`
+- `apps/storefront/src/app/[lang]/offers/[slug]/page.tsx`
+- `apps/storefront/src/app/[lang]/category/[slug]/page.tsx`
+
+Why this matters:
+
+- helper extraction already reduced these, but there is still overlapping structure left
+
+### 3. Remaining product-filter overlap
+
+Primary files:
+
+- `apps/storefront/src/components/products/mobile-filter-drawer.tsx`
+- `apps/storefront/src/components/products/product-filters-content.tsx`
+
+Why this matters:
+
+- still explicitly flagged by `jscpd`
+
+### 4. API offer mapper duplication
+
+Primary files:
+
+- `apps/api/src/modules/admin/offers/admin-offers.mapper.ts`
+- `apps/api/src/modules/catalog/offers/offers.mapper.ts`
+
+Why this matters:
+
+- good low-risk extraction candidate after the ERP forms
+
+### 5. Lower-value / noise still inflating the score
+
+Examples:
+
+- `packages/database/drizzle/migrations/meta/0000_snapshot.json`
+- repeated tests
+- `components.json`
+- duplicated icons
+- config-file duplication
+
+These should still be treated as lower priority than production-code duplication.
 
 ---
 
@@ -183,122 +343,68 @@ These should not drive refactor work:
    - `packages/database/drizzle/migrations/meta/0000_snapshot.json`
 2. Expected test repetition
 3. Very small same-file repetition that does not hurt maintainability
+4. Config duplication unless the main product-code hotspots are already addressed
 
 ---
 
-## Remaining Waves
+## Interrupted Next Step
 
-### Wave 3: Shared Types, DTOs, and Domain Shapes
+This section records what I was about to do when you stopped me.
 
-This is the next recommended move.
+### Area I was investigating
 
-Current hotspots already identified:
+ERP form duplication.
 
-- `packages/shared/src/types/index.ts`
-- `packages/shared/src/dto/order.dto.ts`
-- `apps/api/src/types/domain.ts`
-- `apps/api/src/modules/checkout/checkout.service.ts`
-- `apps/api/src/modules/orders/orders.service.ts`
+Files inspected:
 
-Why this is next:
+- `apps/erp/src/components/forms/product-form.tsx`
+- `apps/erp/src/components/forms/offer-form.tsx`
+- `apps/erp/src/components/forms/category-form.tsx`
+- related ERP tests:
+  - `apps/erp/tests/category-form.test.tsx`
+  - `apps/erp/tests/category-form-toast.test.tsx`
+  - page tests already in `apps/erp/tests/*`
 
-- it is a real source of drift risk
-- it is showing up in duplication results
-- the exact files are already investigated
+### What I had confirmed
 
-Recommended approach:
+The safest extraction seam is not a giant generic form abstraction.
 
-1. inventory duplicated order / checkout / payment-related shapes
-2. choose one canonical definition in `packages/shared`
-3. replace API-local duplicate types with imports where possible
-4. keep only truly API-internal types in `apps/api/src/types/domain.ts`
+The stable repeated pieces appear to be:
 
-Important:
+1. bilingual content fields
+   - Arabic / English paired inputs or textareas
+2. bilingual name fields
+   - Arabic / English name inputs with inline errors
+2. shared form action footer
+   - cancel button + save button
+3. repeated side-card sections
+   - image card
+   - summary / helper cards
+4. some field wrapper patterns
+   - label + input + error blocks
 
-- do this with TDD first
-- preserve runtime behavior
-- verify API tests and typechecks before moving on
+### What has already been done from that interrupted step
 
-Suggested first files to touch:
+1. added a failing ERP test for the shared name-field extraction
+2. extracted `BilingualNameFields` into `editor-form-parts.tsx`
+3. switched `product-form.tsx`, `offer-form.tsx`, and `category-form.tsx` to it
+4. reran targeted ERP tests and `tsc`
+5. reran `jscpd`
 
-- `packages/shared/src/dto/order.dto.ts`
-- `packages/shared/src/types/index.ts`
-- `apps/api/src/types/domain.ts`
+### What I was planning to do next after that
 
-Likely affected consumers:
+1. continue reducing the remaining `offer-form.tsx` / `product-form.tsx` overlap
+2. likely extract one more stable seam only, such as:
+   - shared table/card wrappers if they remain truly identical
+   - shared row/summary sections if they remain behaviorally aligned
+3. rerun targeted ERP tests and `tsc`
+4. rerun `jscpd`
 
-- `apps/api/src/modules/checkout/checkout.service.ts`
-- `apps/api/src/modules/orders/orders.service.ts`
+### Important note
 
-Targeted verification:
+The original interrupted step is no longer just investigative.
 
-```powershell
-pnpm --filter @capella/api test -- tests/services/checkout.service.test.ts
-pnpm --filter @capella/api test -- tests/routes/checkout.routes.test.ts
-pnpm --filter @capella/api exec tsc --noEmit
-pnpm --filter @capella/shared exec tsc -p tsconfig.json --noEmit
-npx jscpd apps/ packages/ --threshold 5
-```
-
----
-
-### Wave 4: ERP repeated list pages
-
-Still not started.
-
-Primary hotspots:
-
-- `apps/erp/src/app/products/page.tsx`
-- `apps/erp/src/app/offers/page.tsx`
-- `apps/erp/src/app/advices/page.tsx`
-
-Likely extraction targets:
-
-- shared list-page header
-- shared action blocks
-- shared status rendering
-- repeated row-action helpers
-
-Constraint:
-
-- do not force a giant generic admin-table abstraction
-
----
-
-### Wave 5: Remaining storefront page duplication
-
-Partially done, but not finished.
-
-Still worth checking for repeated patterns in:
-
-- `apps/storefront/src/app/[lang]/products/[slug]/page.tsx`
-- `apps/storefront/src/app/[lang]/offers/[slug]/page.tsx`
-- `apps/storefront/src/app/[lang]/category/[slug]/page.tsx`
-
-Focus on:
-
-- repeated metadata/data-loading plumbing
-- repeated shell setup that can still be shared cleanly
-
-Constraint:
-
-- keep page intent readable
-
----
-
-### Wave 6: Remaining internal duplication in product-filter components
-
-Partially done, but not finished.
-
-Primary hotspots now:
-
-- `apps/storefront/src/components/products/product-filter-category-list.tsx`
-- `apps/storefront/src/components/products/product-filters-content.tsx`
-
-Goal:
-
-- share repeated rendering logic further
-- keep mobile/desktop differences limited to layout wrappers
+It has now been partially implemented and verified, but the ERP-form cleanup is still not complete.
 
 ---
 
@@ -306,11 +412,13 @@ Goal:
 
 Resume with this order:
 
-1. Wave 3: shared types / DTOs / domain shapes
-2. Wave 4: ERP repeated list pages
-3. Wave 5: remaining storefront page duplication
-4. Wave 6: remaining internal product-filter duplication
-5. optional final cleanup for smaller duplicated support files like icons
+1. ERP form duplication
+2. API offer mapper duplication
+3. remaining storefront detail-page overlap
+4. remaining product-filter overlap
+5. optional final cleanup for smaller support-file duplicates if still needed
+
+This order is based on the current remaining `jscpd` hotspots, not the original earlier ordering.
 
 ---
 
@@ -333,17 +441,17 @@ Start here:
 
 1. read this file
 2. inspect:
-   - `packages/shared/src/types/index.ts`
-   - `packages/shared/src/dto/order.dto.ts`
-   - `apps/api/src/types/domain.ts`
-   - `apps/api/src/modules/checkout/checkout.service.ts`
-   - `apps/api/src/modules/orders/orders.service.ts`
-3. read nearest existing API tests:
-   - `apps/api/tests/services/checkout.service.test.ts`
-   - `apps/api/tests/routes/checkout.routes.test.ts`
+   - `apps/erp/src/components/forms/product-form.tsx`
+   - `apps/erp/src/components/forms/offer-form.tsx`
+   - `apps/erp/src/components/forms/category-form.tsx`
+3. read nearest existing tests:
+   - `apps/erp/tests/category-form.test.tsx`
+   - `apps/erp/tests/category-form-toast.test.tsx`
+   - `apps/erp/tests/products-page.test.tsx`
+   - `apps/erp/tests/offers-page.test.tsx`
 4. add the failing test first
-5. implement Wave 3
-6. rerun targeted verification and `jscpd`
+5. extract only stable ERP form pieces
+6. rerun targeted ERP verification and `jscpd`
 
 ---
 
@@ -351,8 +459,8 @@ Start here:
 
 This cleanup is successful if:
 
-1. real duplication is materially reduced again from `6.37%`
-2. shared contracts stop drifting across `packages/shared` and `apps/api`
-3. ERP repeated page structure is reduced without hurting readability
-4. storefront repeated page bootstrapping is reduced further where it is actually worth it
-5. the repo gets to `5%` or below, unless the remaining overage is mostly low-value noise
+1. real duplication is materially reduced again from `5.74%`
+2. the repo reaches `5%` or lower, unless the remaining overage is clearly mostly low-value noise
+3. shared contracts stop drifting across `packages/shared` and `apps/api`
+4. ERP repeated page and form structure is reduced without hurting readability
+5. storefront repeated page and filter structure is reduced further where it is actually worth it

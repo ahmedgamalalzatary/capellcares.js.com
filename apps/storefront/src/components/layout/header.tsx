@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
@@ -68,12 +68,33 @@ export function Header({ lang, dict, navGroups }: Props) {
     router.push(`/${next}${rest === "/" ? "" : rest}`);
   };
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const navigateToSearch = (value: string, replace: boolean) => {
+    const params = new URLSearchParams();
+    const trimmed = value.trim();
+    if (trimmed) params.set("q", trimmed);
+    const qs = params.toString();
+    const href = `/${lang}/products${qs ? `?${qs}` : ""}`;
+    if (replace) router.replace(href, { scroll: false });
+    else router.push(href);
+  };
+
+  const onSearchInput = (value: string) => {
+    setQ(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => navigateToSearch(value, true), 250);
+  };
+
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (q.trim()) params.set("q", q.trim());
-    router.push(`/${lang}/products?${params.toString()}`);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    navigateToSearch(q, false);
   };
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
 
   return (
     <header
@@ -108,7 +129,7 @@ export function Header({ lang, dict, navGroups }: Props) {
             <input
               className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => onSearchInput(e.target.value)}
               placeholder={dict.nav.search}
               aria-label={dict.nav.search}
             />
@@ -358,7 +379,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                 <input
                   className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                  onChange={(e) => onSearchInput(e.target.value)}
                   placeholder={dict.nav.search}
                   aria-label={dict.nav.search}
                 />

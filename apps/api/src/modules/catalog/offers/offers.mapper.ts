@@ -1,4 +1,5 @@
 import type { Offer } from "@capella/shared";
+import { toOfferBase } from "../../offers/offer-mapper.shared.js";
 
 type OfferRow = {
   id: number;
@@ -18,25 +19,5 @@ export function toStorefrontOffer(
   offer: OfferRow,
   originalTotal: number
 ): Omit<Offer, "createdAt" | "updatedAt" | "deletedAt"> {
-  return {
-    id: offer.id,
-    slug: offer.slug,
-    name: {
-      ar: offer.arName,
-      en: offer.enName
-    },
-    description: {
-      ar: offer.arDescription ?? "",
-      en: offer.enDescription ?? ""
-    },
-    imagePath: offer.imagePath ?? "",
-    price: Number(offer.fixedPrice),
-    originalTotal,
-    stock: offer.stock,
-    items: offer.items.map((item) => ({
-      variantId: item.variantId,
-      qty: item.qty
-    })),
-    status: offer.status
-  };
+  return toOfferBase(offer, originalTotal);
 }
