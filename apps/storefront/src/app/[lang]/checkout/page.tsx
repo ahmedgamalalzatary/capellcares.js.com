@@ -1,26 +1,23 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, type Language } from "@capella/shared";
-import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { StorefrontPageShell } from "@/components/layout/storefront-page-shell";
 import { CheckoutView } from "@/components/checkout/checkout-view";
+import { resolveStorefrontPageContext } from "@/lib/storefront-page-context";
 
 export default async function CheckoutPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  const dict = getDict(lang as Language);
+  const { lang, dict } = await resolveStorefrontPageContext(params);
 
   return (
-    <main className="container">
-      <Breadcrumb items={[
+    <StorefrontPageShell
+      breadcrumbItems={[
         { label: dict.common.breadcrumbHome, href: `/${lang}` },
         { label: dict.cart.title, href: `/${lang}/cart` },
         { label: dict.checkout.title }
-      ]} />
-      <header className="page-head">
-        <span className="eyebrow">{lang === "ar" ? "آخر خطوة" : "Almost there"}</span>
-        <h1>{dict.checkout.title}</h1>
-      </header>
-      <CheckoutView lang={lang as Language} dict={dict} />
-    </main>
+      ]}
+      eyebrow={lang === "ar" ? "آخر خطوة" : "Almost there"}
+      title={dict.checkout.title}
+    >
+      <CheckoutView lang={lang} dict={dict} />
+    </StorefrontPageShell>
   );
 }
 import { noIndexMetadata } from "@/lib/seo";

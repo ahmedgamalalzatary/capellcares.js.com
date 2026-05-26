@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getDict, languages, type Language } from "@capella/shared";
+import { getDict } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductGrid } from "@/components/products/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { fetchAdvices, fetchCategories, fetchProducts } from "@/lib/api/client";
+import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { buildProductsMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -13,9 +13,8 @@ export async function generateMetadata({
   params: Promise<{ lang: string }>;
   searchParams: Promise<{ q?: string; category?: string }>;
 }): Promise<Metadata> {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  return buildProductsMetadata(lang as Language);
+  const lang = await resolveStorefrontLang(params);
+  return buildProductsMetadata(lang);
 }
 
 export default async function ProductsPage({
@@ -25,10 +24,9 @@ export default async function ProductsPage({
   params: Promise<{ lang: string }>;
   searchParams: Promise<{ q?: string; category?: string }>;
 }) {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
+  const lang = await resolveStorefrontLang(params);
   const sp = await searchParams;
-  const dict = getDict(lang as Language);
+  const dict = getDict(lang);
 
   const [products, categories, advices] = await Promise.all([
     fetchProducts({ lang }),
@@ -57,12 +55,12 @@ export default async function ProductsPage({
       <ProductGrid
         products={activeProducts}
         categories={categories.filter((c) => !c.deletedAt)}
-        lang={lang as Language}
+        lang={lang}
         dict={dict}
         initialSearch={sp.q ?? ""}
         initialCategory={sp.category ? Number(sp.category) : undefined}
       />
-      <AdviceSection advices={advices} lang={lang as Language} dict={dict} />
+      <AdviceSection advices={advices} lang={lang} dict={dict} />
     </main>
   );
 }

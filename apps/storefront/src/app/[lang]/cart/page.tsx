@@ -1,22 +1,19 @@
 import { notFound } from "next/navigation";
-import { getDict, languages, type Language } from "@capella/shared";
-import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { StorefrontPageShell } from "@/components/layout/storefront-page-shell";
 import { CartView } from "@/components/cart/cart-view";
+import { resolveStorefrontPageContext } from "@/lib/storefront-page-context";
 
 export default async function CartPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  const dict = getDict(lang as Language);
+  const { lang, dict } = await resolveStorefrontPageContext(params);
 
   return (
-    <main className="container">
-      <Breadcrumb items={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.cart.title }]} />
-      <header className="page-head">
-        <span className="eyebrow">{lang === "ar" ? "خطوة قبل الدفع" : "One step from checkout"}</span>
-        <h1>{dict.cart.title}</h1>
-      </header>
-      <CartView lang={lang as Language} dict={dict} />
-    </main>
+    <StorefrontPageShell
+      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.cart.title }]}
+      eyebrow={lang === "ar" ? "خطوة قبل الدفع" : "One step from checkout"}
+      title={dict.cart.title}
+    >
+      <CartView lang={lang} dict={dict} />
+    </StorefrontPageShell>
   );
 }
 import { noIndexMetadata } from "@/lib/seo";

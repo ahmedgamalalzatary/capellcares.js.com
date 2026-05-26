@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
 import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
 
 export default function ProductsListPage() {
@@ -62,32 +64,30 @@ export default function ProductsListPage() {
         </Link>
       }
     >
-      <div className="toolbar toolbar--stacked">
-        <div className="toolbar__search">
-          <div className="search">
-            <Icon.Search />
-            <input
-              placeholder="ابحثي بالاسم أو SKU…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="muted toolbar__count">{filtered.length} منتج</div>
-        <div className="toolbar__filter1">
-          <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
-            <option value="all">كل الحالات</option>
-            <option value="active">نشط</option>
-            <option value="inactive">غير نشط</option>
-          </select>
-        </div>
-        <div className="toolbar__filter2">
-          <select className="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}>
-            <option value="">كل الأقسام</option>
-            {rootCats.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
-          </select>
-        </div>
-      </div>
+      <AdminListToolbar
+        stacked
+        searchPlaceholder="ابحثي بالاسم أو SKU…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        countLabel={`${filtered.length} منتج`}
+        extraControls={(
+          <>
+            <div className="toolbar__filter1">
+              <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
+                <option value="all">كل الحالات</option>
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+              </select>
+            </div>
+            <div className="toolbar__filter2">
+              <select className="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}>
+                <option value="">كل الأقسام</option>
+                {rootCats.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+      />
 
       <div className="card">
         <div className="table-outer">
@@ -128,11 +128,7 @@ export default function ProductsListPage() {
                       : stockSum < 10 ? <span className="status status--draft">{stockSum}</span>
                       : <span className="status status--active">{stockSum}</span>}
                   </td>
-                  <td>
-                    {p.status === "active"
-                      ? <span className="status status--active">نشط</span>
-                      : <span className="status status--inactive">غير نشط</span>}
-                  </td>
+                  <td><AdminStatusBadge active={p.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
                       <button
@@ -162,7 +158,7 @@ export default function ProductsListPage() {
         </div>
       </div>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
         onClose={() => {
@@ -170,32 +166,24 @@ export default function ProductsListPage() {
           setPendingToggle(null);
           setToggleError(null);
         }}
-        footer={
-          <>
-            <button className="btn btn--ghost btn--sm" disabled={isToggling} onClick={() => { setPendingToggle(null); setToggleError(null); }}>إلغاء</button>
-            <button
-              className="btn btn--primary btn--sm"
-              disabled={isToggling}
-              onClick={async () => {
-                if (!pendingToggle) return;
-                try {
-                  setIsToggling(true);
-                  setToggleError(null);
-                  await getStore().toggleProductStatus(pendingToggle.id);
-                  setPendingToggle(null);
-                } catch (error) {
-                  console.error(error);
-                  showErrorToast(error, "تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
-                  setToggleError("تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
-                } finally {
-                  setIsToggling(false);
-                }
-              }}
-            >
-              {isToggling ? "جارٍ التحديث..." : "تأكيد"}
-            </button>
-          </>
-        }
+        confirmLabel={isToggling ? "جارٍ التحديث..." : "تأكيد"}
+        disableCancel={isToggling}
+        disableConfirm={isToggling}
+        onConfirm={async () => {
+          if (!pendingToggle) return;
+          try {
+            setIsToggling(true);
+            setToggleError(null);
+            await getStore().toggleProductStatus(pendingToggle.id);
+            setPendingToggle(null);
+          } catch (error) {
+            console.error(error);
+            showErrorToast(error, "تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
+            setToggleError("تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
+          } finally {
+            setIsToggling(false);
+          }
+        }}
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
@@ -203,21 +191,18 @@ export default function ProductsListPage() {
             : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
         {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
-      </Modal>
+      </AdminConfirmModal>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingDelete != null}
         title="تأكيد الحذف"
         onClose={() => setPendingDelete(null)}
-        footer={
-          <>
-            <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(null)}>إلغاء</button>
-            <button className="btn btn--danger btn--sm" onClick={onDelete}>حذف المنتج</button>
-          </>
-        }
+        confirmLabel="حذف المنتج"
+        confirmClassName="btn btn--danger btn--sm"
+        onConfirm={onDelete}
       >
         <p style={{ margin: 0 }}>سيتم نقل المنتج إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
-      </Modal>
+      </AdminConfirmModal>
     </AdminShell>
   );
 }

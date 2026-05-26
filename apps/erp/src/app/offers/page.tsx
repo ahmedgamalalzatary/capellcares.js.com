@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
 import { formatPrice, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
 
 export default function OffersListPage() {
@@ -39,13 +41,12 @@ export default function OffersListPage() {
       crumbs={[{ label: "العروض" }]}
       actions={<Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link>}
     >
-      <div className="toolbar">
-        <div className="search">
-          <Icon.Search />
-          <input placeholder="ابحثي عن عرض…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div style={{ marginInlineStart: "auto" }} className="muted">{filtered.length} عرض</div>
-      </div>
+      <AdminListToolbar
+        searchPlaceholder="ابحثي عن عرض…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        countLabel={`${filtered.length} عرض`}
+      />
 
       <div className="card">
         <div className="table-outer"><table className="table">
@@ -79,11 +80,7 @@ export default function OffersListPage() {
                    <td>{formatPrice(o.price, "ar")}</td>
                    <td className="faint" style={{ textDecoration: "line-through" }}>{formatPrice(o.originalTotal, "ar")}</td>
                    <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
-                   <td>
-                     {o.status === "active"
-                       ? <span className="status status--active">نشط</span>
-                       : <span className="status status--inactive">غير نشط</span>}
-                   </td>
+                   <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                    <td>
                      <div className="row" style={{ gap: 4 }}>
                        <button
@@ -113,32 +110,25 @@ export default function OffersListPage() {
         </div>
       </div>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
         onClose={() => {
           setPendingToggle(null);
           setToggleError(null);
         }}
-        footer={<>
-          <button className="btn btn--ghost btn--sm" onClick={() => { setPendingToggle(null); setToggleError(null); }}>إلغاء</button>
-          <button
-            className="btn btn--primary btn--sm"
-            onClick={async () => {
-              if (!pendingToggle) return;
-              try {
-                setToggleError(null);
-                await getStore().toggleOfferStatus(pendingToggle.id);
-                setPendingToggle(null);
-              } catch (error) {
-                showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
-                setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
-              }
-            }}
-          >
-            تأكيد
-          </button>
-        </>}
+        confirmLabel="تأكيد"
+        onConfirm={async () => {
+          if (!pendingToggle) return;
+          try {
+            setToggleError(null);
+            await getStore().toggleOfferStatus(pendingToggle.id);
+            setPendingToggle(null);
+          } catch (error) {
+            showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+            setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+          }
+        }}
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
@@ -146,19 +136,18 @@ export default function OffersListPage() {
             : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
         {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
-      </Modal>
+      </AdminConfirmModal>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingDelete != null}
         title="تأكيد الحذف"
         onClose={() => setPendingDelete(null)}
-        footer={<>
-          <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(null)}>إلغاء</button>
-          <button className="btn btn--danger btn--sm" onClick={onDelete}>حذف العرض</button>
-        </>}
+        confirmLabel="حذف العرض"
+        confirmClassName="btn btn--danger btn--sm"
+        onConfirm={onDelete}
       >
         <p style={{ margin: 0 }}>سيتم نقل العرض إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
-      </Modal>
+      </AdminConfirmModal>
     </AdminShell>
   );
 }

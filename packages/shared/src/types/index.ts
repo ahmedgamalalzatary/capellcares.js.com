@@ -2,6 +2,8 @@ import type { Language } from "../constants/languages.js";
 import type { ProductStatus } from "../constants/product-status.js";
 import type { PaymentMethod } from "../constants/payment-methods.js";
 
+export type { Assert, IsEqual } from "./assert-type-equal.js";
+
 export type Bilingual = { ar: string; en: string };
 export type PaymentStatus = "pending" | "accepted" | "denied";
 

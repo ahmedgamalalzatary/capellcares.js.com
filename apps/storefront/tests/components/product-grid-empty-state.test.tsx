@@ -10,7 +10,10 @@ describe("ProductGridEmptyState", () => {
 
     render(createElement(ProductGridEmptyState, {
       lang: "en",
-      dict: { common: { empty: "Nothing found", clear: "Clear" } },
+      dict: {
+        common: { empty: "Nothing found", clear: "Clear" },
+        filters: { emptyDesc: "Try adjusting your filters or search for something else." }
+      },
       hasActiveFilters: true,
       onClear
     }));

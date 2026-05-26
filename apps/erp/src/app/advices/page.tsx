@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { getStore, useStore } from "@/lib/store";
-import { Modal } from "@/components/ui/modal";
 import { Icon } from "@/components/ui/icons";
 import type { Advice } from "@capella/shared";
 
@@ -33,13 +35,12 @@ export default function AdvicesPage() {
         </Link>
       }
     >
-      <div className="toolbar">
-        <div className="search">
-          <Icon.Search />
-          <input placeholder="ابحثي عن نصيحة…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div style={{ marginInlineStart: "auto" }} className="muted">{filtered.length} نصيحة</div>
-      </div>
+      <AdminListToolbar
+        searchPlaceholder="ابحثي عن نصيحة…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        countLabel={`${filtered.length} نصيحة`}
+      />
 
       <div className="card">
         <div className="table-outer">
@@ -64,11 +65,7 @@ export default function AdvicesPage() {
                     {advice.videoUrl || "—"}
                   </td>
                   <td>{advice.sortOrder}</td>
-                  <td>
-                    {advice.status === "active"
-                      ? <span className="status status--active">نشط</span>
-                      : <span className="status status--inactive">غير نشط</span>}
-                  </td>
+                  <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
                       <button
@@ -100,55 +97,38 @@ export default function AdvicesPage() {
         </div>
       </div>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
         onClose={() => setPendingToggle(null)}
-        footer={
-          <>
-            <button className="btn btn--ghost btn--sm" onClick={() => setPendingToggle(null)}>إلغاء</button>
-            <button
-              className="btn btn--primary btn--sm"
-              onClick={async () => {
-                if (!pendingToggle) return;
-                await getStore().toggleAdviceStatus(pendingToggle.id);
-                setPendingToggle(null);
-              }}
-            >
-              تأكيد
-            </button>
-          </>
-        }
+        confirmLabel="تأكيد"
+        onConfirm={async () => {
+          if (!pendingToggle) return;
+          await getStore().toggleAdviceStatus(pendingToggle.id);
+          setPendingToggle(null);
+        }}
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
-      </Modal>
+      </AdminConfirmModal>
 
-      <Modal
+      <AdminConfirmModal
         open={pendingDelete != null}
         title="تأكيد الحذف"
         onClose={() => setPendingDelete(null)}
-        footer={
-          <>
-            <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(null)}>إلغاء</button>
-            <button
-              className="btn btn--danger btn--sm"
-              onClick={() => {
-                if (!pendingDelete) return;
-                void getStore().deleteAdvice(pendingDelete.id);
-                setPendingDelete(null);
-              }}
-            >
-              حذف
-            </button>
-          </>
-        }
+        confirmLabel="حذف"
+        confirmClassName="btn btn--danger btn--sm"
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          void getStore().deleteAdvice(pendingDelete.id);
+          setPendingDelete(null);
+        }}
       >
         <p style={{ margin: 0 }}>سيتم حذف هذه النصيحة نهائيًا. هل تريدين المتابعة؟</p>
-      </Modal>
+      </AdminConfirmModal>
     </AdminShell>
   );
 }

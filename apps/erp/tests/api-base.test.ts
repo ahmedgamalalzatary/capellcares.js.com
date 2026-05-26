@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { resolveApiBase } from "@/lib/api/base";
+import { resolveApiBase } from "@capella/shared/api/base";
 
 describe("resolveApiBase", () => {
   afterEach(() => {

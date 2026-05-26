@@ -1,43 +1,11 @@
-import type { CheckoutItemDto } from "./checkout.dto.js";
+import type { Order, OrderItem, OrderSummary } from "../types/index.js";
+import type { CheckoutRequestDto } from "./checkout.dto.js";
 
-export interface OrderItemDto {
-  id: number;
-  orderId: number;
-  itemType: "product_variant" | "offer";
-  variantId: number | null;
-  offerId: number | null;
-  qty: number;
-  unitPrice: number;
-  lineTotal: number;
-  snapshotNameAr: string | null;
-  snapshotNameEn: string | null;
-  snapshotSizeLabel: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface OrderDto {
-  id: number;
-  orderCode: string;
-  customerType: "guest" | "registered";
-  customerId: number | null;
-  fullName: string;
-  phone: string;
-  email: string;
-  governorate: string;
-  cityArea: string;
-  addressLine: string;
-  buildingApartment: string;
-  notes: string | null;
-  paymentMethod: "cod";
-  paymentStatus: "pending" | "accepted" | "denied";
-  totalAmount: number;
-  createdAt?: string;
-  items: OrderItemDto[];
-}
+export type OrderItemDto = OrderItem;
+export type OrderDto = Order;
 
 export interface CreateOrderDto {
-  checkout: CheckoutItemDto[];
+  checkout: CheckoutRequestDto["items"];
 }
 
-export interface OrderSummaryDto extends Omit<OrderDto, "items"> {}
+export type OrderSummaryDto = OrderSummary;

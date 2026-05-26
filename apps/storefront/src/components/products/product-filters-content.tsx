@@ -1,11 +1,12 @@
 "use client";
 
-import { pickLang, type Category, type Language } from "@capella/shared";
+import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
 import { CategoryPill } from "./category-pill";
 import { FilterSection } from "./filter-section";
 import type { CategoryTreeItem, PriceRange } from "./product-grid.types";
+import { ProductFilterCategoryList } from "./product-filter-category-list";
 import { PriceInput } from "./price-input";
 
 interface ProductFiltersContentProps {
@@ -98,166 +99,17 @@ export function ProductFiltersContent({
 
       {!lockCategory && (
         <FilterSection label={dict.filters.category} defaultOpen dark>
-          {isMobile ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              <CategoryPill name="cat-mobile" checked={!category} onChange={() => setCategory(undefined)}>
-                {dict.nav.allCategories}
-              </CategoryPill>
-
-              {categoryTree.length > 0
-                ? categoryTree.map(({ parent, children }) => {
-                    const isOpen =
-                      openParents[parent.id] ??
-                      Boolean(category && (category === parent.id || children.some((item) => item.id === category)));
-
-                    return (
-                      <div key={parent.id} style={{ display: "contents" }}>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                          <CategoryPill name="cat-mobile" checked={category === parent.id} onChange={() => setCategory(parent.id)}>
-                            {pickLang(parent.name, lang)}
-                          </CategoryPill>
-                          {children.length > 0 && (
-                            <button
-                              type="button"
-                              aria-label={dict.filters.toggleCategory}
-                              aria-expanded={isOpen}
-                              onClick={() => toggleParent(parent.id)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: 20,
-                                height: 20,
-                                borderRadius: "50%",
-                                border: "1px solid oklch(1 0 0 / 0.14)",
-                                background: isOpen ? "oklch(1 0 0 / 0.1)" : "transparent",
-                                color: "oklch(0.94 0.06 85 / 0.5)",
-                                cursor: "pointer",
-                                transition: "background 160ms"
-                              }}
-                            >
-                              <svg
-                                width="8"
-                                height="8"
-                                viewBox="0 0 10 10"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                style={{
-                                  transition: "transform 260ms cubic-bezier(0.16,1,0.3,1)",
-                                  transform: isOpen ? "rotate(90deg)" : "rotate(0deg)"
-                                }}
-                              >
-                                <path d="M3 2l4 3-4 3" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                        {children.length > 0 && isOpen && children.map((child) => (
-                          <CategoryPill key={child.id} name="cat-mobile" checked={category === child.id} onChange={() => setCategory(child.id)} indent>
-                            {pickLang(child.name, lang)}
-                          </CategoryPill>
-                        ))}
-                      </div>
-                    );
-                  })
-                : categories.slice(0, 14).map((item) => (
-                    <CategoryPill key={item.id} name="cat-mobile" checked={category === item.id} onChange={() => setCategory(item.id)}>
-                      {pickLang(item.name, lang)}
-                    </CategoryPill>
-                  ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                maxHeight: "260px",
-                overflowY: "auto",
-                paddingInlineEnd: "2px",
-                scrollbarWidth: "thin",
-                scrollbarColor: "oklch(1 0 0 / 0.1) transparent"
-              }}
-            >
-              <CategoryPill name="cat" checked={!category} onChange={() => setCategory(undefined)}>
-                {dict.nav.allCategories}
-              </CategoryPill>
-
-              {categoryTree.length > 0
-                ? categoryTree.map(({ parent, children }) => {
-                    const isOpen =
-                      openParents[parent.id] ??
-                      Boolean(category && (category === parent.id || children.some((item) => item.id === category)));
-
-                    return (
-                      <div key={parent.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <CategoryPill name="cat" checked={category === parent.id} onChange={() => setCategory(parent.id)}>
-                              {pickLang(parent.name, lang)}
-                            </CategoryPill>
-                          </div>
-                          {children.length > 0 && (
-                            <button
-                              type="button"
-                              aria-label={dict.filters.toggleCategory}
-                              aria-expanded={isOpen}
-                              onClick={() => toggleParent(parent.id)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: 24,
-                                height: 24,
-                                borderRadius: "50%",
-                                border: "1px solid oklch(1 0 0 / 0.14)",
-                                background: isOpen ? "oklch(1 0 0 / 0.1)" : "transparent",
-                                color: "oklch(0.94 0.06 85 / 0.5)",
-                                cursor: "pointer",
-                                flexShrink: 0,
-                                transition: "background 160ms"
-                              }}
-                            >
-                              <svg
-                                width="8"
-                                height="8"
-                                viewBox="0 0 10 10"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                style={{
-                                  transition: "transform 260ms cubic-bezier(0.16,1,0.3,1)",
-                                  transform: isOpen ? "rotate(90deg)" : "rotate(0deg)"
-                                }}
-                              >
-                                <path d="M3 2l4 3-4 3" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-
-                        {children.length > 0 && isOpen && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            {children.map((child) => (
-                              <CategoryPill key={child.id} name="cat" checked={category === child.id} onChange={() => setCategory(child.id)} indent>
-                                {pickLang(child.name, lang)}
-                              </CategoryPill>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                : categories.slice(0, 14).map((item) => (
-                    <CategoryPill key={item.id} name="cat" checked={category === item.id} onChange={() => setCategory(item.id)}>
-                      {pickLang(item.name, lang)}
-                    </CategoryPill>
-                  ))}
-            </div>
-          )}
+          <ProductFilterCategoryList
+            mode={mode}
+            lang={lang}
+            dict={dict}
+            category={category}
+            setCategory={setCategory}
+            categories={categories}
+            categoryTree={categoryTree}
+            openParents={openParents}
+            toggleParent={toggleParent}
+          />
         </FilterSection>
       )}
 

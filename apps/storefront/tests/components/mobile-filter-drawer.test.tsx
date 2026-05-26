@@ -20,7 +20,16 @@ describe("MobileFilterDrawer", () => {
       lang: "en",
       dict: {
         nav: { search: "Search", allCategories: "All categories" },
-        filters: { title: "Filters", category: "Category", price: "Price", priceMin: "Min", priceMax: "Max" },
+        filters: {
+          title: "Filters",
+          category: "Category",
+          price: "Price",
+          priceMin: "Min",
+          priceMax: "Max",
+          closeFilters: "Close filters",
+          showResults: "Show results",
+          toggleCategory: "Toggle category"
+        },
         common: { clear: "Clear" }
       },
       q: "",
@@ -48,7 +57,16 @@ describe("MobileFilterDrawer", () => {
       lang: "en",
       dict: {
         nav: { search: "Search", allCategories: "All categories" },
-        filters: { title: "Filters", category: "Category", price: "Price", priceMin: "Min", priceMax: "Max" },
+        filters: {
+          title: "Filters",
+          category: "Category",
+          price: "Price",
+          priceMin: "Min",
+          priceMax: "Max",
+          closeFilters: "Close filters",
+          showResults: "Show results",
+          toggleCategory: "Toggle category"
+        },
         common: { clear: "Clear" }
       },
       q: "",

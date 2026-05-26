@@ -142,7 +142,7 @@ export function MobileFilterDrawer({
               flexShrink: 0,
               marginBottom: "2px"
             }}
-            aria-label={dict.filters.closeFilters}
+            aria-label={dict.filters.closeFilters ?? "Close filters"}
           >
             <Icon.Close size={13} />
           </button>
@@ -184,7 +184,7 @@ export function MobileFilterDrawer({
             {dict.common.clear}
           </button>
           <button onClick={onClose} className="btn btn--primary btn--sm" style={{ flex: 2 }}>
-            {dict.filters.showResults}
+            {dict.filters.showResults ?? "Show results"}
           </button>
         </div>
       </div>

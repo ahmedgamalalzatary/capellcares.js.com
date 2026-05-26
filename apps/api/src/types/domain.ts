@@ -1,7 +1,16 @@
-export type Language = "ar" | "en";
-export type ProductStatus = "active" | "inactive";
-export type PaymentMethod = "cod";
-export type PaymentStatus = "pending" | "accepted" | "denied";
+import type {
+  CheckoutRequestDto,
+  Language as SharedLanguage,
+  Order as SharedOrder,
+  PaymentMethod as SharedPaymentMethod,
+  PaymentStatus as SharedPaymentStatus,
+  ProductStatus as SharedProductStatus
+} from "@capella/shared";
+
+export type Language = SharedLanguage;
+export type ProductStatus = SharedProductStatus;
+export type PaymentMethod = SharedPaymentMethod;
+export type PaymentStatus = SharedPaymentStatus;
 
 export interface ProductVariant {
   id: string;
@@ -26,43 +35,6 @@ export interface Product {
   variants: ProductVariant[];
 }
 
-export interface CheckoutItem {
-  type: "product" | "offer";
-  variantId?: number;
-  offerId?: number;
-  qty: number;
-}
-
-export interface CheckoutPayload {
-  fullName: string;
-  phone: string;
-  email: string;
-  governorate: string;
-  cityArea: string;
-  addressLine: string;
-  buildingApartment: string;
-  notes?: string;
-  paymentMethod: PaymentMethod;
-  items: CheckoutItem[];
-  customerId?: number | null;
-}
-
-export interface Order {
-  id: number;
-  orderCode: string;
-  customerType: "guest" | "registered";
-  customerId: number | null;
-  fullName: string;
-  phone: string;
-  email: string;
-  governorate: string;
-  cityArea: string;
-  addressLine: string;
-  buildingApartment: string;
-  notes: string;
-  paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
-  totalAmount: number;
-  createdAt: string;
-  items: Array<{ variantId: string; qty: number; unitPrice: number; lineTotal: number }>;
-}
+export type CheckoutItem = CheckoutRequestDto["items"][number];
+export type CheckoutPayload = CheckoutRequestDto;
+export type Order = SharedOrder;

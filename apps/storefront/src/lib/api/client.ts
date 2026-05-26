@@ -1,5 +1,5 @@
 import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
-import { resolveApiBase } from "./base";
+import { resolveApiBase } from "@capella/shared/api/base";
 
 export const API_BASE = resolveApiBase();
 type FetchLanguage = "ar" | "en";

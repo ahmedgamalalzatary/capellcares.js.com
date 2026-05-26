@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getDict, formatPrice, languages, pickLang, type Language } from "@capella/shared";
+import { getDict, formatPrice, pickLang } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { fetchOffers } from "@/lib/api/client";
+import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { buildOffersMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -12,15 +12,13 @@ export async function generateMetadata({
 }: {
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  return buildOffersMetadata(lang as Language);
+  const lang = await resolveStorefrontLang(params);
+  return buildOffersMetadata(lang);
 }
 
 export default async function OffersPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  const dict = getDict(lang as Language);
+  const lang = await resolveStorefrontLang(params);
+  const dict = getDict(lang);
   const offers = await fetchOffers({ lang });
 
   return (
@@ -76,24 +74,24 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
                   <h3 className={`m-0 leading-[1.15] ${isAr
                     ? "text-[22px] font-bold font-(--font-ar) text-(--ink)"
                     : "text-[26px] italic font-(--font-display) text-(--ink)"}`}>
-                    {pickLang(offer.name, lang as Language)}
+                    {pickLang(offer.name, lang)}
                   </h3>
                   <p className="line-clamp-2 text-[13.5px] leading-[1.65] text-(--ink-2)">
-                    {pickLang(offer.description, lang as Language)}
+                    {pickLang(offer.description, lang)}
                   </p>
                   <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
                     <span className={`leading-none text-(--accent) ${isAr
                       ? "text-[24px] font-bold font-(--font-ar)"
                       : "text-[26px] italic font-(--font-display)"}`}>
-                      {formatPrice(offer.price, lang as Language)}
+                      {formatPrice(offer.price, lang)}
                     </span>
                     {savings > 0 && (
                       <>
                         <span className="text-[13px] text-(--ink-3) line-through">
-                          {formatPrice(offer.originalTotal, lang as Language)}
+                          {formatPrice(offer.originalTotal, lang)}
                         </span>
                         <span className="chip chip--accent">
-                          {dict.offers.save.replace("{amount}", formatPrice(savings, lang as Language))}
+                          {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}
                         </span>
                       </>
                     )}

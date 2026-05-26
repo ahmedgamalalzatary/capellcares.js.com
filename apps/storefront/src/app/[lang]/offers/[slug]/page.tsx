@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getDict, languages, type Language } from "@capella/shared";
+import { pickLang } from "@capella/shared";
 import { OfferDetail } from "@/components/offers/offer-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { fetchOfferBySlug, fetchProducts } from "@/lib/api/client";
+import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { breadcrumbJsonLd, buildOfferMetadata, offerJsonLd } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -11,19 +11,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ lang: string; slug: string }>;
 }): Promise<Metadata> {
-  const { lang, slug } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  const offer = await fetchOfferBySlug(slug, { lang });
-  if (!offer || offer.deletedAt) notFound();
-  return buildOfferMetadata(lang as Language, offer);
+  const { lang, slug } = await resolveStorefrontSlugPageContext(params);
+  const offer = requireStorefrontValue(await fetchOfferBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
+  return buildOfferMetadata(lang, offer);
 }
 
 export default async function OfferDetailsPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
-  const { lang, slug } = await params;
-  if (!languages.includes(lang as Language)) notFound();
-  const offer = await fetchOfferBySlug(slug, { lang });
-  if (!offer || offer.deletedAt) notFound();
-  const dict = getDict(lang as Language);
+  const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
+  const offer = requireStorefrontValue(await fetchOfferBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
   const products = await fetchProducts({ lang });
 
   const items = offer.items.map((it) => {
@@ -41,30 +36,22 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
 
   return (
     <main className="container">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbJsonLd([
-              { name: dict.common.breadcrumbHome, url: `/${lang}` },
-              { name: dict.offers.title, url: `/${lang}/offers` },
-              { name: offer.name[lang as Language] }
-            ])
-          )
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(offerJsonLd(lang as Language, offer)) }}
-      />
+      <StorefrontJsonLd payloads={[
+        breadcrumbJsonLd([
+          { name: dict.common.breadcrumbHome, url: `/${lang}` },
+          { name: dict.offers.title, url: `/${lang}/offers` },
+          { name: pickLang(offer.name, lang) }
+        ]),
+        offerJsonLd(lang, offer)
+      ]} />
       <Breadcrumb
         items={[
           { label: dict.common.breadcrumbHome, href: `/${lang}` },
           { label: dict.offers.title, href: `/${lang}/offers` },
-          { label: offer.name[lang as Language] }
+          { label: pickLang(offer.name, lang) }
         ]}
       />
-      <OfferDetail offer={offer} items={items} lang={lang as Language} dict={dict} />
+      <OfferDetail offer={offer} items={items} lang={lang} dict={dict} />
     </main>
   );
 }
