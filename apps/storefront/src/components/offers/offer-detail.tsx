@@ -54,7 +54,7 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
       </div>
 
       <div className="grid gap-5 self-start sm:gap-6">
-        <span className="eyebrow !text-(--accent)">{isAr ? "باقة كابيلا" : "Capella bundle"}</span>
+        <span className="eyebrow !text-(--accent)">{dict.offers.bundleEyebrow}</span>
         <h1 className={`m-0 leading-[1.05] ${isAr
           ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(--font-ar) tracking-normal text-(--ink)"
           : "text-[clamp(30px,3.4vw,46px)] italic font-(--font-display) tracking-[-0.01em] text-(--ink)"}`}>
@@ -104,7 +104,7 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
 
         <div className="grid gap-2 sm:grid-cols-2">
           <button className="btn btn--primary btn--lg btn--block" onClick={add} disabled={!inStock}>
-            <Icon.Cart size={18} /> {added ? (isAr ? "أُضيف ✓" : "Added ✓") : dict.offers.addBundleToCart}
+            <Icon.Cart size={18} /> {added ? dict.offers.added : dict.offers.addBundleToCart}
           </button>
           <button className="btn btn--ghost btn--lg btn--block" onClick={buyNow} disabled={!inStock}>
             {dict.common.buyNow}
@@ -113,7 +113,7 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
 
         {!inStock && (
           <p className="rounded-(--radius) bg-[color-mix(in_oklch,var(--error)_10%,transparent)] px-4 py-3 text-[13px] text-(--error)">
-            {isAr ? "أحد المنتجات بالباقة غير متوفر حاليًا." : "One of the products in this bundle is currently unavailable."}
+            {dict.offers.unavailable}
           </p>
         )}
       </div>

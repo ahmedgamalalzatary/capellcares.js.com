@@ -10,8 +10,15 @@
     "test": "turbo run test",
     "test:staging-smoke": "playwright test tests/e2e/staging/critical"
   },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.24.3",
+      "postcss": "^8.5.10",
+      "qs": "^6.15.2"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "turbo": "^2.0.0"
+    "turbo": "^2.9.14"
   }
 }

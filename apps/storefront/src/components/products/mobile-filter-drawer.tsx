@@ -108,7 +108,7 @@ export function MobileFilterDrawer({
         >
           <div>
             <p style={{ margin: "0 0 1px", fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--warm)", fontWeight: 700, opacity: 0.8 }}>
-              {isAr ? "كابيلا كير" : "Capella Care"}
+              {dict.brand}
             </p>
             <span
               style={{
@@ -142,7 +142,7 @@ export function MobileFilterDrawer({
               flexShrink: 0,
               marginBottom: "2px"
             }}
-            aria-label={isAr ? "إغلاق" : "Close filters"}
+            aria-label={dict.filters.closeFilters}
           >
             <Icon.Close size={13} />
           </button>
@@ -184,7 +184,7 @@ export function MobileFilterDrawer({
             {dict.common.clear}
           </button>
           <button onClick={onClose} className="btn btn--primary btn--sm" style={{ flex: 2 }}>
-            {isAr ? "عرض النتائج" : "Show results"}
+            {dict.filters.showResults}
           </button>
         </div>
       </div>

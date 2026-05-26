@@ -41,15 +41,13 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {/* Hero */}
       <header className="page-head">
         <span className="eyebrow !text-(--accent)">
-          {isAr ? "متجر كابيلا" : "The Capella Shop"}
+          {dict.shop.eyebrow}
         </span>
         <h1>
-          {isAr ? "كل ما تحتاجينه، في مكان واحد." : "Everything you need, in one place."}
+          {dict.shop.heading}
         </h1>
         <p>
-          {isAr
-            ? "عروض مختارة، منتجات جديدة وأكثر مبيعًا، ونصائح عناية من كابيلا."
-            : "Curated offers, new arrivals, bestsellers, and care advice — all from Capella."}
+          {dict.shop.description}
         </p>
       </header>
 
@@ -59,7 +57,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
           <header className="mb-8 flex items-end justify-between border-t border-(--hairline) pt-10">
             <div className="grid gap-1.5">
               <span className="eyebrow !text-(--accent)">
-                {isAr ? "باقات كابيلا" : "Capella bundles"}
+                {dict.shop.bundlesEyebrow}
               </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(--font-ar) leading-[1.25] text-(--ink)"
@@ -71,7 +69,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               href={`/${lang}/offers`}
               className={`shrink-0 text-[13px] text-(--accent) underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
             >
-              {isAr ? "كل العروض ←" : "View all →"}
+              {dict.shop.viewAllOffers}
             </Link>
           </header>
 
@@ -131,19 +129,19 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
           <header className="mb-8 flex items-end justify-between border-t border-(--hairline) pt-10">
             <div className="grid gap-1.5">
               <span className="eyebrow">
-                {isAr ? "الأحدث والأكثر مبيعًا" : "New & Bestsellers"}
+                {dict.shop.newAndBestsellers}
               </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(--font-ar) leading-[1.25] text-(--ink)"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-(--ink)"}>
-                {isAr ? "منتجات مميزة" : "Featured products"}
+                {dict.shop.featuredHeading}
               </h2>
             </div>
             <Link
               href={`/${lang}/products`}
               className={`shrink-0 text-[13px] text-(--ink-2) underline-offset-4 hover:underline hover:text-ink ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
             >
-              {isAr ? "كل المنتجات ←" : "View all →"}
+              {dict.shop.viewAllProducts}
             </Link>
           </header>
 

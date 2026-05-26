@@ -15,7 +15,13 @@ export const ar = {
     logout: "تسجيل الخروج",
     search: "ابحث عن منتج",
     categories: "الأقسام",
-    allCategories: "كل الأقسام"
+    allCategories: "كل الأقسام",
+    announcement: "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه · ادفع عند الاستلام",
+    browseByCategory: "تصفح الأقسام",
+    viewAll: "كل المنتجات ←",
+    exploreCollection: "← استعرض المجموعة الكاملة",
+    viewAllCategory: "كل {name} ←",
+    followUs: "تابعينا"
   },
   common: {
     addToCart: "أضف إلى السلة",
@@ -73,7 +79,12 @@ export const ar = {
     sortNewest: "الأحدث",
     sortPriceAsc: "السعر: من الأقل للأعلى",
     sortPriceDesc: "السعر: من الأعلى للأقل",
-    sortName: "الاسم"
+    sortName: "الاسم",
+    closeFilters: "إغلاق",
+    showResults: "عرض النتائج",
+    emptyDesc: "جرّبي تعديل الفلاتر أو ابحثي عن منتج آخر.",
+    toggleCategory: "تبديل الفئة",
+    to: "إلى"
   },
   cart: {
     title: "سلة التسوق",
@@ -90,7 +101,8 @@ export const ar = {
     empty: "لم تضف أي منتج بعد.",
     loginRequired: "تحتاج إلى حساب لاستخدام المفضلة",
     loginRequiredDesc: "أنشئ حسابًا مجانيًا أو سجل دخولك لحفظ المنتجات في المفضلة.",
-    goLogin: "تسجيل الدخول"
+    goLogin: "تسجيل الدخول",
+    savedEmpty: "احفظي القطع التي تعجبك بضغطة قلب وستظهر هنا."
   },
   orders: {
     title: "طلباتي",
@@ -105,11 +117,15 @@ export const ar = {
     paymentStatus: "حالة الدفع",
     items: "العناصر",
     viewDetails: "عرض التفاصيل",
-    backToOrders: "الرجوع إلى الطلبات"
+    backToOrders: "الرجوع إلى الطلبات",
+    startShopping: "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات."
   },
   advices: {
     title: "نصائح كابيلا",
-    description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا."
+    description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا.",
+    eyebrow: "نصائح كابيلا",
+    tipBadge: "نصيحة",
+    readMore: "اقرئي المزيد ←"
   },
   checkout: {
     title: "إتمام الطلب",
@@ -137,7 +153,10 @@ export const ar = {
     save: "وفر {amount}",
     includes: "تتضمن",
     addBundleToCart: "أضف الباقة إلى السلة",
-    listEmpty: "لا توجد عروض حاليًا."
+    listEmpty: "لا توجد عروض حاليًا.",
+    bundleEyebrow: "باقة كابيلا",
+    added: "أُضيف ✓",
+    unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا."
   },
   auth: {
     loginTitle: "أهلًا بعودتك",
@@ -159,6 +178,41 @@ export const ar = {
     placeholder: "عن ماذا تبحثين؟",
     sections: { products: "المنتجات", categories: "الأقسام", offers: "العروض" },
     empty: "لا نتائج لـ \"{q}\"",
-    browseAll: "تصفح كل المنتجات ←"
+    browseAll: "تصفح كل المنتجات ←",
+    welcome: "أهلاً! أنا كابيلا 👋 أخبريني عن ما تبحثين عنه وسأساعدك.",
+    assistantName: "كابيلا",
+    assistant: "مساعدتك في التسوق",
+    typeMessage: "اكتبي رسالتك…",
+    noResults: "لم أجد نتائج لـ \"{query}\" 😔",
+    found: "وجدت هذا لكِ 🌿"
+  },
+  shop: {
+    eyebrow: "متجر كابيلا",
+    heading: "كل ما تحتاجينه، في مكان واحد.",
+    description: "عروض مختارة، منتجات جديدة وأكثر مبيعًا، ونصائح عناية من كابيلا.",
+    bundlesEyebrow: "باقات كابيلا",
+    viewAllOffers: "كل العروض ←",
+    newAndBestsellers: "الأحدث والأكثر مبيعًا",
+    featuredHeading: "منتجات مميزة",
+    viewAllProducts: "كل المنتجات ←"
+  },
+  footer: {
+    luxuryTagline: "عناية فاخرة — صُنع في مصر",
+    ourPhilosophy: "فلسفتنا",
+    philosophy: "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ.",
+    reachUs: "تواصلي معنا",
+    shopTitle: "تسوّقي",
+    skinCare: "العناية بالبشرة",
+    hairCare: "العناية بالشعر",
+    fragrances: "العطور",
+    organicOils: "الزيوت العضوية",
+    capellaTitle: "كابيلا",
+    ourStory: "قصّتنا",
+    branches: "الفروع",
+    contact: "تواصلي معنا",
+    rights: "كل الحقوق محفوظة.",
+    currency: "العملة: ج.م.",
+    madeIn: "صُنع في مصر",
+    secureCheckout: "شحن آمن"
   }
 } as const;

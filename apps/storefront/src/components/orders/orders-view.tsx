@@ -73,7 +73,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
           : "text-[28px] italic font-(--font-display) text-(--ink)"}`}>
           {dict.orders.empty}
         </h2>
-        <p className="text-[14px] text-(--ink-2)">{isAr ? "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات." : "Start shopping and your orders will appear here."}</p>
+        <p className="text-[14px] text-(--ink-2)">{dict.orders.startShopping}</p>
         <Link href={`/${lang}/products`} className="btn btn--primary mt-1">
           {dict.cart.keepShopping}
         </Link>

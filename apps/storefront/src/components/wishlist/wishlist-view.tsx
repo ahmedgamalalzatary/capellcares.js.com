@@ -62,7 +62,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
       <EmptyShell
         icon={<Icon.Heart size={32} />}
         title={dict.wishlist.empty}
-        desc={isAr ? "احفظي القطع التي تعجبك بضغطة قلب وستظهر هنا." : "Tap the heart on any piece you love and it will land here."}
+        desc={dict.wishlist.savedEmpty}
         ctaHref={`/${lang}/products`}
         ctaLabel={dict.cart.keepShopping}
       />

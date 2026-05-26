@@ -8,7 +8,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
   return (
     <section className="mt-16 mb-24">
       <header className="mb-10 grid gap-2 border-t border-(--hairline) pt-12">
-        <span className="eyebrow !text-(--accent)">{isAr ? "نصائح كابيلا" : "Capella Journal"}</span>
+        <span className="eyebrow !text-(--accent)">{dict.advices.eyebrow}</span>
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(--font-ar) leading-[1.25] text-(--ink)"
           : "m-0 text-[clamp(28px,2.8vw,40px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-(--ink)"}>
@@ -33,7 +33,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
                 />
               ) : null}
               <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-(--accent) px-3 py-1.5 text-[10px] tracking-[0.16em] uppercase text-(--canvas) start-4">
-                {isAr ? "نصيحة" : "Tip"}
+                {dict.advices.tipBadge}
               </span>
             </div>
 
@@ -54,7 +54,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 text-[13px] font-medium text-(--accent) underline-offset-4 hover:underline"
                   >
-                    {isAr ? "اقرئي المزيد ←" : "Read more →"}
+                    {dict.advices.readMore}
                   </a>
                 </div>
               )}

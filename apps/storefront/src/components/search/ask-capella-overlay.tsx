@@ -26,6 +26,7 @@ const EMPTY_RESULTS: Results = { products: [], categories: [], offers: [] };
 export function AskCapellaOverlay({ lang, onClose }: Props) {
   const dict = getDict(lang);
   const isAr = lang === "ar";
+  const avatarInitial = dict.ask.assistantName.charAt(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pending, startTransition] = useTransition();
@@ -81,10 +82,10 @@ export function AskCapellaOverlay({ lang, onClose }: Props) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-(--font-display) italic text-[16px] leading-none text-white">
-              {isAr ? "كابيلا" : "Capella"}
+              {dict.ask.assistantName}
             </p>
             <p className="mt-0.5 text-[11px] text-white/70">
-              {isAr ? "مساعدتك في التسوق" : "Your shopping assistant"}
+              {dict.ask.assistant}
             </p>
           </div>
           <button
@@ -100,11 +101,9 @@ export function AskCapellaOverlay({ lang, onClose }: Props) {
         {/* Messages */}
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {/* Welcome */}
-          <CapellaBubble isAr={isAr}>
+          <CapellaBubble initial={avatarInitial}>
             <p className="text-[13.5px] leading-[1.65] text-(--ink-2)">
-              {isAr
-                ? "أهلاً! أنا كابيلا 👋 أخبريني عن ما تبحثين عنه وسأساعدك."
-                : "Hi there! I'm Capella 👋 Tell me what you're looking for and I'll help you find it."}
+              {dict.ask.welcome}
             </p>
           </CapellaBubble>
 
@@ -112,14 +111,14 @@ export function AskCapellaOverlay({ lang, onClose }: Props) {
             msg.role === "user" ? (
               <UserBubble key={i} text={msg.text} />
             ) : (
-              <CapellaBubble key={i} isAr={isAr}>
+              <CapellaBubble key={i} initial={avatarInitial}>
                 <ReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} onClose={onClose} />
               </CapellaBubble>
             )
           )}
 
           {pending && (
-            <CapellaBubble isAr={isAr}>
+            <CapellaBubble initial={avatarInitial}>
               <div className="flex items-center gap-1.5 py-1">
                 {[0, 1, 2].map((i) => (
                   <span
@@ -145,7 +144,7 @@ export function AskCapellaOverlay({ lang, onClose }: Props) {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isAr ? "اكتبي رسالتك…" : "Type a message…"}
+              placeholder={dict.ask.typeMessage}
               disabled={pending}
               className="min-w-0 flex-1 border-0 bg-transparent text-[13.5px] text-(--ink) outline-none placeholder:text-(--ink-3) disabled:opacity-50"
             />
@@ -190,11 +189,11 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function CapellaBubble({ children, isAr }: { children: React.ReactNode; isAr: boolean }) {
+function CapellaBubble({ children, initial }: { children: React.ReactNode; isAr?: boolean; initial: string }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-(--accent) to-(--warm) text-[11px] text-white font-bold">
-        {isAr ? "ك" : "C"}
+        {initial}
       </div>
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-[var(--shadow-1)]">
         {children}
@@ -219,7 +218,7 @@ function ReplyContent({
     return (
       <div className="text-[13.5px] leading-[1.65]">
         <p className="text-(--ink-2)">
-          {isAr ? `لم أجد نتائج لـ "${query}" 😔` : `I couldn't find anything for "${query}" 😔`}
+          {dict.ask.noResults.replace("{query}", query)}
         </p>
         <Link
           href={`/${lang}/products`}
@@ -235,7 +234,7 @@ function ReplyContent({
   return (
     <div className="flex flex-col gap-3 text-[13px]">
       <p className="text-(--ink-2) leading-[1.6]">
-        {isAr ? `وجدت هذا لكِ 🌿` : `Here's what I found for you 🌿`}
+        {dict.ask.found}
       </p>
 
       {results.products.length > 0 && (

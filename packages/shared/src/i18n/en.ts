@@ -15,7 +15,13 @@ export const en = {
     logout: "Log out",
     search: "Search products",
     categories: "Categories",
-    allCategories: "All categories"
+    allCategories: "All categories",
+    announcement: "Free Cairo delivery on orders over EGP 600 · Cash on delivery",
+    browseByCategory: "Browse by category",
+    viewAll: "View all →",
+    exploreCollection: "Explore the full collection →",
+    viewAllCategory: "All {name} →",
+    followUs: "Follow us"
   },
   common: {
     addToCart: "Add to cart",
@@ -73,7 +79,12 @@ export const en = {
     sortNewest: "Newest",
     sortPriceAsc: "Price: low to high",
     sortPriceDesc: "Price: high to low",
-    sortName: "Name"
+    sortName: "Name",
+    closeFilters: "Close filters",
+    showResults: "Show results",
+    emptyDesc: "Try adjusting your filters or search for something else.",
+    toggleCategory: "Toggle category",
+    to: "TO"
   },
   cart: {
     title: "Your cart",
@@ -90,7 +101,8 @@ export const en = {
     empty: "You haven't saved anything yet.",
     loginRequired: "Wishlist requires an account",
     loginRequiredDesc: "Create a free account or log in to save products to your wishlist.",
-    goLogin: "Log in"
+    goLogin: "Log in",
+    savedEmpty: "Tap the heart on any piece you love and it will land here."
   },
   orders: {
     title: "Your orders",
@@ -105,11 +117,15 @@ export const en = {
     paymentStatus: "Payment status",
     items: "Items",
     viewDetails: "View details",
-    backToOrders: "Back to orders"
+    backToOrders: "Back to orders",
+    startShopping: "Start shopping and your orders will appear here."
   },
   advices: {
     title: "Capella Advices",
-    description: "Helpful guidance, shopping tips, and routine ideas from Capella."
+    description: "Helpful guidance, shopping tips, and routine ideas from Capella.",
+    eyebrow: "Capella Journal",
+    tipBadge: "Tip",
+    readMore: "Read more →"
   },
   checkout: {
     title: "Checkout",
@@ -137,7 +153,10 @@ export const en = {
     save: "Save {amount}",
     includes: "Includes",
     addBundleToCart: "Add bundle to cart",
-    listEmpty: "No offers available right now."
+    listEmpty: "No offers available right now.",
+    bundleEyebrow: "Capella bundle",
+    added: "Added ✓",
+    unavailable: "One of the products in this bundle is currently unavailable."
   },
   auth: {
     loginTitle: "Welcome back",
@@ -159,6 +178,41 @@ export const en = {
     placeholder: "What are you looking for?",
     sections: { products: "Products", categories: "Categories", offers: "Offers" },
     empty: "No results for \"{q}\"",
-    browseAll: "Browse all products →"
+    browseAll: "Browse all products →",
+    welcome: "Hi there! I'm Capella 👋 Tell me what you're looking for and I'll help you find it.",
+    assistantName: "Capella",
+    assistant: "Your shopping assistant",
+    typeMessage: "Type a message…",
+    noResults: "I couldn't find anything for \"{query}\" 😔",
+    found: "Here's what I found for you 🌿"
+  },
+  shop: {
+    eyebrow: "The Capella Shop",
+    heading: "Everything you need, in one place.",
+    description: "Curated offers, new arrivals, bestsellers, and care advice — all from Capella.",
+    bundlesEyebrow: "Capella bundles",
+    viewAllOffers: "View all →",
+    newAndBestsellers: "New & Bestsellers",
+    featuredHeading: "Featured products",
+    viewAllProducts: "View all →"
+  },
+  footer: {
+    luxuryTagline: "Luxury Care — Est. Egypt",
+    ourPhilosophy: "Our Philosophy",
+    philosophy: "Every drop tells nature's story. Every ritual begins with an honest moment with yourself.",
+    reachUs: "Reach Us",
+    shopTitle: "Shop",
+    skinCare: "Skin Care",
+    hairCare: "Hair Care",
+    fragrances: "Fragrances",
+    organicOils: "Organic Oils",
+    capellaTitle: "Capella",
+    ourStory: "Our Story",
+    branches: "Branches",
+    contact: "Contact",
+    rights: "All rights reserved.",
+    currency: "EGP",
+    madeIn: "Made in Egypt",
+    secureCheckout: "Secure Checkout"
   }
 } as const;

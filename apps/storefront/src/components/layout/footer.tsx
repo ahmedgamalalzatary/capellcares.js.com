@@ -39,7 +39,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
         <p className={`mb-4 text-[11px] tracking-[0.35em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
-          {isAr ? "عناية فاخرة — صُنع في مصر" : "Luxury Care — Est. Egypt"}
+          {dict.footer.luxuryTagline}
         </p>
 
         <h2
@@ -65,22 +65,20 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           {/* Brand philosophy + contact */}
           <div className="md:col-span-2 xl:col-span-1">
             <p className={`mb-5 text-[11px] tracking-[0.3em] text-(--ink) ${isAr ? "" : "uppercase"}`}>
-              {isAr ? "فلسفتنا" : "Our Philosophy"}
+              {dict.footer.ourPhilosophy}
             </p>
 
             <blockquote
               className="mb-8 max-w-[34ch] ps-4 text-[15px] italic leading-[1.9] text-(--ink)/55 font-(--font-display)"
               style={{ borderInlineStart: "1.5px solid color-mix(in oklch, var(--ink) 40%, transparent)" }}
             >
-              {isAr
-                ? "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ."
-                : "Every drop tells nature's story. Every ritual begins with an honest moment with yourself."}
+              {dict.footer.philosophy}
             </blockquote>
 
 
             <div className="grid gap-3">
               <p className={`text-[11px] tracking-[0.25em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
-                {isAr ? "تواصلي معنا" : "Reach Us"}
+                {dict.footer.reachUs}
               </p>
               <a
                 href="mailto:hello@capellacare.com"
@@ -131,25 +129,25 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           </div>
 
           {/* Shop col */}
-          <FooterCol title={isAr ? "تسوّقي" : "Shop"} isAr={isAr}>
+          <FooterCol title={dict.footer.shopTitle} isAr={isAr}>
             <FooterLink href={`/${lang}/products`}>{dict.nav.products}</FooterLink>
             <FooterLink href={`/${lang}/offers`}>{dict.nav.offers}</FooterLink>
-            <FooterLink href={`/${lang}/category/skin-care`}>{isAr ? "العناية بالبشرة" : "Skin Care"}</FooterLink>
-            <FooterLink href={`/${lang}/category/hair-care`}>{isAr ? "العناية بالشعر" : "Hair Care"}</FooterLink>
-            <FooterLink href={`/${lang}/category/fragrances`}>{isAr ? "العطور" : "Fragrances"}</FooterLink>
-            <FooterLink href={`/${lang}/category/organic-oils`}>{isAr ? "الزيوت العضوية" : "Organic Oils"}</FooterLink>
+            <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
+            <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.hairCare}</FooterLink>
+            <FooterLink href={`/${lang}/category/fragrances`}>{dict.footer.fragrances}</FooterLink>
+            <FooterLink href={`/${lang}/category/organic-oils`}>{dict.footer.organicOils}</FooterLink>
           </FooterCol>
 
           {/* Capella col */}
-          <FooterCol title={isAr ? "كابيلا" : "Capella"} isAr={isAr}>
-            <FooterLink as="span">{isAr ? "قصّتنا" : "Our Story"}</FooterLink>
-            <FooterLink as="span">{isAr ? "المكوّنات" : "Ingredients"}</FooterLink>
-            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{isAr ? "الفروع" : "Branches"}</FooterLink>
-            <FooterLink as="span">{isAr ? "تواصلي معنا" : "Contact"}</FooterLink>
+          <FooterCol title={dict.footer.capellaTitle} isAr={isAr}>
+            <FooterLink as="span">{dict.footer.ourStory}</FooterLink>
+            <FooterLink as="span">{dict.product.ingredients}</FooterLink>
+            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.branches}</FooterLink>
+            <FooterLink as="span">{dict.footer.contact}</FooterLink>
           </FooterCol>
 
           {/* Account col */}
-          <FooterCol title={isAr ? "الحساب" : "Account"} isAr={isAr}>
+          <FooterCol title={dict.nav.account} isAr={isAr}>
             <FooterLink href={`/${lang}/login`}>{dict.nav.login}</FooterLink>
             <FooterLink href={`/${lang}/signup`}>{dict.nav.signup}</FooterLink>
             <FooterLink href={`/${lang}/orders`}>{dict.nav.orders}</FooterLink>
@@ -167,15 +165,15 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-(--ink)/35 sm:flex-row">
           <span className={isAr ? "" : "uppercase"}>
             © {year} {dict.brand}.{" "}
-            {isAr ? "كل الحقوق محفوظة." : "All rights reserved."}
+            {dict.footer.rights}
           </span>
 
           <div className="flex items-center gap-5 uppercase">
-            <span>{isAr ? "العملة: ج.م." : "EGP"}</span>
+            <span>{dict.footer.currency}</span>
             <Dot />
-            <span>{isAr ? "صُنع في مصر" : "Made in Egypt"}</span>
+            <span>{dict.footer.madeIn}</span>
             <Dot />
-            <span>{isAr ? "شحن آمن" : "Secure Checkout"}</span>
+            <span>{dict.footer.secureCheckout}</span>
           </div>
         </div>
 

@@ -67,9 +67,7 @@ export function ProductGridEmptyState({
           margin: 0
         }}
       >
-        {isAr
-          ? "جرّبي تعديل الفلاتر أو ابحثي عن منتج آخر."
-          : "Try adjusting your filters or search for something else."}
+        {dict.filters.emptyDesc}
       </p>
       {hasActiveFilters && (
         <button onClick={onClear} className="btn btn--ghost btn--sm" style={{ justifySelf: "center" }}>

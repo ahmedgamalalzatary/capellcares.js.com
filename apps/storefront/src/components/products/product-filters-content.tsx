@@ -119,7 +119,7 @@ export function ProductFiltersContent({
                           {children.length > 0 && (
                             <button
                               type="button"
-                              aria-label={isAr ? "تبديل الفئة" : "Toggle category"}
+                              aria-label={dict.filters.toggleCategory}
                               aria-expanded={isOpen}
                               onClick={() => toggleParent(parent.id)}
                               style={{
@@ -202,7 +202,7 @@ export function ProductFiltersContent({
                           {children.length > 0 && (
                             <button
                               type="button"
-                              aria-label={isAr ? "تبديل الفئة" : "Toggle category"}
+                              aria-label={dict.filters.toggleCategory}
                               aria-expanded={isOpen}
                               onClick={() => toggleParent(parent.id)}
                               style={{
@@ -267,7 +267,7 @@ export function ProductFiltersContent({
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: 1, height: "1px", background: "oklch(1 0 0 / 0.1)" }} />
             <span style={{ fontSize: "10px", color: "oklch(0.94 0.06 85 / 0.35)", letterSpacing: "0.1em", fontWeight: 600 }}>
-              {isAr ? "إلى" : "TO"}
+              {dict.filters.to}
             </span>
             <div style={{ flex: 1, height: "1px", background: "oklch(1 0 0 / 0.1)" }} />
           </div>

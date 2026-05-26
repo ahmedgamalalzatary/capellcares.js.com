@@ -85,9 +85,7 @@ export function Header({ lang, dict, navGroups }: Props) {
       ].join(" ")}
     >
       <div className={`bg-ink px-4 py-2 text-center text-[11px] text-canvas sm:text-[12px] ${lang === "ar" ? "tracking-[0.04em]" : "tracking-[0.04em] sm:tracking-[0.12em]"}`}>
-        {lang === "ar"
-          ? "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه · ادفع عند الاستلام"
-          : "Free Cairo delivery on orders over EGP 600 · Cash on delivery"}
+        {dict.nav.announcement}
       </div>
 
       <div className="container grid items-center gap-3 py-3 sm:gap-4 sm:py-4 max-[880px]:grid-cols-[auto_minmax(0,1fr)_auto] min-[880px]:grid-cols-[1fr_auto_1fr]">
@@ -207,13 +205,13 @@ export function Header({ lang, dict, navGroups }: Props) {
                 {/* header row */}
                 <div className="flex items-center justify-between border-b border-black px-7 py-3.5">
                   <span className={`text-(--ink-3) ${lang === "ar" ? "font-(--font-ar) text-[13px]" : "font-(--font-display) italic text-[17px] tracking-[0.01em]"}`}>
-                    {lang === "ar" ? "تصفح الأقسام" : "Browse by category"}
+                    {dict.nav.browseByCategory}
                   </span>
                   <Link
                     href={`/${lang}/products`}
                     className={`text-[11px] text-(--accent) transition-opacity hover:opacity-70 ${lang === "ar" ? "font-(--font-ar)" : "uppercase tracking-[0.14em]"}`}
                   >
-                    {lang === "ar" ? "كل المنتجات ←" : "View all →"}
+                    {dict.nav.viewAll}
                   </Link>
                 </div>
 
@@ -256,7 +254,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                     href={`/${lang}/products`}
                     className={`text-(--ink-2) transition-colors hover:text-(--accent) ${lang === "ar" ? "font-(--font-ar) text-[12px]" : "font-(--font-display) italic text-[14px]"}`}
                   >
-                    {lang === "ar" ? "← استعرض المجموعة الكاملة" : "Explore the full collection →"}
+                    {dict.nav.exploreCollection}
                   </Link>
                 </div>
 
@@ -303,7 +301,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                       href={`/${lang}/category/${g.root.slug}`}
                       className={`text-[12px] font-medium text-(--accent) transition-colors hover:underline underline-offset-4 ${lang === "ar" ? "" : "uppercase tracking-[0.08em]"}`}
                     >
-                      {lang === "ar" ? `كل ${g.root.name.ar} ←` : `All ${g.root.name.en} →`}
+                      {dict.nav.viewAllCategory.replace("{name}", isAr ? g.root.name.ar : g.root.name.en)}
                     </Link>
                   </div>
                 </div>
@@ -392,7 +390,7 @@ export function Header({ lang, dict, navGroups }: Props) {
               {/* Socials */}
               <div className="mt-8 border-t border-black pt-6 px-2">
             <p className="mb-4 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
-              {isAr ? "تابعينا" : "Follow us"}
+              {dict.nav.followUs}
             </p>
             <div className="flex items-center gap-3">
               {[
@@ -452,7 +450,7 @@ export function Header({ lang, dict, navGroups }: Props) {
                 className="mb-2 flex items-center gap-2 border-b border-black bg-transparent px-2 py-4 text-[15px] text-ink transition-colors hover:bg-(--warm-soft)"
               >
                 <Icon.Chevron className={`text-(--ink-3) ${isAr ? "" : "rotate-180"}`} />
-                <span>{isAr ? "رجوع" : "Back"}</span>
+                <span>{dict.common.back}</span>
               </button>
 
               <div className="px-2 pb-2 pt-2 text-[10px] uppercase tracking-[0.22em] text-(--ink-3)">
