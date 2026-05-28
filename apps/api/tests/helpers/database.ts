@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or, sql } from "drizzle-orm";
 import {
   categories,
   adminUsers,
@@ -24,7 +24,20 @@ export async function resetApiTestDatabase() {
   await db.delete(orders);
   await db.delete(advices);
   await clearTransientProducts();
-  await db.delete(categories).where(inArray(categories.slug, ["route-parent-cat", "route-child-cat"]));
+  await db.delete(categories).where(
+    or(
+      inArray(categories.slug, [
+        "route-parent-cat",
+        "route-child-cat",
+        "her-skin",
+        "his-skin",
+        "her-skin-dry",
+        "his-skin-dry"
+      ]),
+      sql`${categories.slug} like 'route-parent-leaf-%'`,
+      sql`${categories.slug} like 'route-grandchild-cat-%'`
+    )
+  );
   await clearTestSeed();
   await seedTestData();
 }

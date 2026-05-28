@@ -9,7 +9,7 @@ const { toastError } = vi.hoisted(() => ({
 const push = vi.fn();
 const upsertCategory = vi.fn().mockRejectedValue(Object.assign(new Error("API 409 /api/erp/categories"), {
   status: 409,
-  body: { reason: "slug-conflict" }
+  body: { reason: "category-name-conflict" }
 }));
 
 vi.mock("next/navigation", () => ({
@@ -47,7 +47,7 @@ describe("CategoryForm toast errors", () => {
     });
 
     await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("اسم القسم الإنجليزي مستخدم بالفعل. غيّري الاسم ثم أعيدي المحاولة.");
+      expect(toastError).toHaveBeenCalledWith("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.");
     });
 
     expect(push).not.toHaveBeenCalled();

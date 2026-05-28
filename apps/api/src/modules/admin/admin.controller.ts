@@ -151,7 +151,10 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
     });
     res.json({ ok: true });
   } catch (error: any) {
-    if (error?.code === "ER_DUP_ENTRY") {
+    if (error?.code === "CATEGORY_NAME_CONFLICT") {
+      return res.status(409).json({ ok: false, reason: "category-name-conflict" });
+    }
+    if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
     }
     next(error);
@@ -249,4 +252,17 @@ async function calculateOfferInventory(items: Array<{ variantId: number; qty: nu
     originalTotal,
     stock: Number.isFinite(stock) ? stock : 0
   };
+}
+
+function isDuplicateEntryError(error: unknown) {
+  const candidate = error as
+    | { code?: string; message?: string; cause?: { code?: string; message?: string } }
+    | undefined;
+
+  return (
+    candidate?.code === "ER_DUP_ENTRY" ||
+    candidate?.cause?.code === "ER_DUP_ENTRY" ||
+    candidate?.message?.includes("Duplicate entry") ||
+    candidate?.cause?.message?.includes("Duplicate entry")
+  );
 }

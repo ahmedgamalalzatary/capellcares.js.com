@@ -12,6 +12,7 @@ type AppError = Error & {
 
 const apiReasonMessages: Record<string, string> = {
   "slug-conflict": "اسم القسم الإنجليزي مستخدم بالفعل. غيّري الاسم ثم أعيدي المحاولة.",
+  "category-name-conflict": "اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.",
   "has-products": "لا يمكن حذف القسم لأنه يحتوي على منتجات مرتبطة.",
   "has-active-children": "لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية نشطة.",
   "cannot-activate-incomplete-product": "لا يمكن تفعيل المنتج قبل استكمال كل البيانات المطلوبة."

@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { categories, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
@@ -15,15 +15,51 @@ export async function upsertCategoryRepo(input: {
   isLeaf: boolean;
 }) {
   const previous = input.id
-    ? await db.select({ id: categories.id, parentId: categories.parentId }).from(categories).where(eq(categories.id, input.id)).limit(1).then((rows) => rows[0] ?? null)
+    ? await db
+        .select({ id: categories.id, parentId: categories.parentId })
+        .from(categories)
+        .where(eq(categories.id, input.id))
+        .limit(1)
+        .then((rows) => rows[0] ?? null)
     : null;
+  const allCategories = await db
+    .select({
+      id: categories.id,
+      parentId: categories.parentId,
+      slug: categories.slug,
+      arName: categories.arName,
+      enName: categories.enName,
+      deletedAt: categories.deletedAt
+    })
+    .from(categories);
+
+  const lineage = buildCategoryLineage(input.parentId, allCategories);
+  const isGrandchildCategory = lineage.length === 2;
+  const resolvedSlug = isGrandchildCategory
+    ? buildGrandchildSlug(lineage, input.slug)
+    : input.slug;
+
+  if (isGrandchildCategory) {
+    const conflict = await findSameParentGrandchildNameConflict({
+      id: input.id,
+      parentId: input.parentId,
+      arName: input.arName,
+      enName: input.enName
+    });
+
+    if (conflict) {
+      const error = new Error("Category name already exists under this parent");
+      (error as Error & { code?: string }).code = "CATEGORY_NAME_CONFLICT";
+      throw error;
+    }
+  }
 
   if (input.id) {
     await db
       .update(categories)
       .set({
         parentId: input.parentId,
-        slug: input.slug,
+        slug: resolvedSlug,
         arName: input.arName,
         enName: input.enName,
         isLeaf: input.isLeaf
@@ -37,7 +73,7 @@ export async function upsertCategoryRepo(input: {
     .insert(categories)
     .values({
       parentId: input.parentId,
-      slug: input.slug,
+      slug: resolvedSlug,
       arName: input.arName,
       enName: input.enName,
       isLeaf: input.isLeaf
@@ -97,4 +133,63 @@ async function syncCategoryLeafState(parentId: number | null) {
     .update(categories)
     .set({ isLeaf: !hasActiveChildren })
     .where(eq(categories.id, parentId));
+}
+
+function buildCategoryLineage(
+  parentId: number | null,
+  rows: Array<{
+    id: number;
+    parentId: number | null;
+    slug: string;
+  }>
+) {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const lineage: typeof rows = [];
+  let currentParentId = parentId;
+
+  while (currentParentId != null) {
+    const current = byId.get(currentParentId);
+    if (!current) {
+      break;
+    }
+    lineage.unshift(current);
+    currentParentId = current.parentId;
+  }
+
+  return lineage;
+}
+
+function buildGrandchildSlug(
+  lineage: Array<{
+    slug: string;
+  }>,
+  childSlug: string
+) {
+  const directParent = lineage[lineage.length - 1];
+  return directParent ? `${directParent.slug}-${childSlug}` : childSlug;
+}
+
+async function findSameParentGrandchildNameConflict(input: {
+  id?: number;
+  parentId: number | null;
+  arName: string;
+  enName: string;
+}) {
+  if (input.parentId == null) {
+    return null;
+  }
+
+  return db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.parentId, input.parentId),
+        isNull(categories.deletedAt),
+        or(eq(categories.arName, input.arName), eq(categories.enName, input.enName)),
+        input.id ? ne(categories.id, input.id) : undefined
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
 }
