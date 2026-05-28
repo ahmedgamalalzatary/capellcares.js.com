@@ -91,7 +91,7 @@ describe("ProductsListPage", () => {
     fireEvent.change(textboxes[1]!, { target: { value: "Product" } });
     fireEvent.change(textboxes[2]!, { target: { value: "ERP-MEDIA-001" } });
     fireEvent.change(textboxes[3]!, { target: { value: "test, product" } });
-    fireEvent.click(form.getByLabelText("نشط (يظهر في المتجر)"));
+    fireEvent.click(form.getByRole("radio", { name: /نشط/ }));
     fireEvent.change(form.getAllByRole("combobox")[0]!, { target: { value: "5" } });
 
     const initialSpinbuttons = form.getAllByRole("spinbutton");

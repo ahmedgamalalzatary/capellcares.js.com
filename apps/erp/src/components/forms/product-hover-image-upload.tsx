@@ -67,7 +67,6 @@ export function ProductHoverImageUpload({ value, onChange }: Props) {
             <img src={value} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
             <div className="stack" style={{ gap: 4 }}>
               <strong style={{ fontSize: 13 }}>صورة hover</strong>
-              <span className="muted" style={{ fontSize: 12 }}>{value}</span>
             </div>
           </div>
         </div>

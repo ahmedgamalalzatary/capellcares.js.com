@@ -99,9 +99,9 @@ export function ProductMediaUpload({ value, onChange }: Props) {
                 )}
                 <div className="stack" style={{ gap: 4 }}>
                   <strong style={{ fontSize: 13 }}>{item.type === "image" ? "صورة" : "فيديو"}</strong>
-                  <span className="muted" style={{ fontSize: 12 }}>
-                    {index === 0 && item.type === "image" ? "الصورة الأساسية" : item.url}
-                  </span>
+                  {index === 0 && item.type === "image" ? (
+                    <span className="muted" style={{ fontSize: 12 }}>الصورة الأساسية</span>
+                  ) : null}
                 </div>
               </div>
               <div className="row" style={{ gap: 6 }}>
