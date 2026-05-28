@@ -48,12 +48,41 @@ function resolveFetchLanguage(lang?: string): FetchLanguage | undefined {
   return undefined;
 }
 
+function resolveMediaUrl(url: string | null | undefined): string {
+  const value = url?.trim() ?? "";
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (value.startsWith("/uploads/")) {
+    return `${API_BASE}${value}`;
+  }
+
+  return value;
+}
+
+function isConnectionFailure(error: unknown): boolean {
+  return error instanceof TypeError;
+}
+
 async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T> {
   const resolvedLang = resolveFetchLanguage(options?.lang);
-  const res = await fetch(`${API_BASE}${path}`, {
-    next: { revalidate: 300 },
-    headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      next: { revalidate: 300 },
+      headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
+    });
+  } catch (error) {
+    if (isConnectionFailure(error)) {
+      return null as T;
+    }
+    throw error;
+  }
   if (!res.ok) {
     if (res.status === 404) return null as T;
     throw new Error(`API ${res.status} ${path}`);
@@ -62,15 +91,16 @@ async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T>
 }
 
 function normalizeProduct(product: ProductApiShape): Product {
+  const normalizedImagePath = resolveMediaUrl(product.imagePath ?? "");
   const media = product.media?.length
-    ? product.media
-    : product.imagePath
-      ? [{ type: "image" as const, url: product.imagePath }]
+    ? product.media.map((item) => ({ ...item, url: resolveMediaUrl(item.url) }))
+    : normalizedImagePath
+      ? [{ type: "image" as const, url: normalizedImagePath }]
       : [];
 
   return {
     ...product,
-    imagePath: product.imagePath ?? media.find((item) => item.type === "image")?.url ?? "",
+    imagePath: normalizedImagePath || (media.find((item) => item.type === "image")?.url ?? ""),
     media
   };
 }
@@ -111,12 +141,20 @@ export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[
 }
 
 async function authedGetJSON<T>(path: string, accessToken: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    cache: "no-store",
-    headers: {
-      authorization: `Bearer ${accessToken}`
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      cache: "no-store",
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
+    });
+  } catch (error) {
+    if (isConnectionFailure(error)) {
+      return null as T;
     }
-  });
+    throw error;
+  }
   if (!res.ok) {
     if (res.status === 404) return null as T;
     throw new Error(`API ${res.status} ${path}`);

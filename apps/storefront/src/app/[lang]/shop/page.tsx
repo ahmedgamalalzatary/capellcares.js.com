@@ -4,8 +4,8 @@ import { getDict, formatPrice, pickLang, type Language } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
-import { fetchAdvices, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
+import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -22,11 +22,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const dict = getDict(lang);
   const isAr = lang === "ar";
 
-  const [products, offers, advices] = await Promise.all([
-    fetchProducts({ lang }),
-    fetchOffers({ lang }),
-    fetchAdvices({ lang })
-  ]);
+  const { products, offers, advices } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
   const featuredProducts = products.filter(

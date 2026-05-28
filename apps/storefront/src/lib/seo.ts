@@ -173,7 +173,7 @@ export function buildProductMetadata(lang: Language, product: Product, category?
     keywords: product.keywords,
     alternates: buildLocalizedAlternates(lang, `/products/${product.slug}`),
     openGraph: {
-      type: "product",
+      type: "website",
       title,
       description,
       url: absoluteUrl(localizePath(lang, `/products/${product.slug}`))

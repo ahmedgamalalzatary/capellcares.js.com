@@ -1,14 +1,10 @@
 import type { MetadataRoute } from "next";
 import { languages, type Language } from "@capella/shared";
-import { fetchCategories, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { absoluteUrl, localizePath } from "@/lib/seo";
+import { loadSitemapData } from "@/lib/storefront-static-data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, categories, offers] = await Promise.all([
-    fetchProducts(),
-    fetchCategories(),
-    fetchOffers()
-  ]);
+  const { products, categories, offers } = await loadSitemapData();
 
   const productEntries = products
     .filter((product) => product.status === "active" && !product.deletedAt)

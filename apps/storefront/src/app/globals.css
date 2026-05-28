@@ -51,7 +51,7 @@
   --font-signature: "Playwrite GB S Guides", cursive;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
-  --container: 1440px;
+  --container: 1700px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);

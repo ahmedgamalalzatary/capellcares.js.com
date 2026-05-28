@@ -125,7 +125,11 @@ describe("storefront client contracts", () => {
     );
     assertConformsTo(result[0], storefrontProductContract);
     assertForbiddenFieldsAbsent(result[0], ["buyingPrice"]);
-    expect(result[0]?.media).toEqual(productBoundaryPayload.media);
+    expect(result[0]?.media).toEqual([
+      { type: "image", url: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
+      { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" },
+      { type: "video", url: "http://localhost:4000/uploads/body-lotion-demo.mp4" }
+    ]);
   });
 
   it("offers conform to the shared offer contract using raw API boundary payloads", async () => {
@@ -187,6 +191,33 @@ describe("storefront client contracts", () => {
 
     const result = await fetchProducts({ lang: "en" });
 
-    expect(result[0]?.media).toEqual([{ type: "image", url: "/uploads/legacy-only.jpg" }]);
+    expect(result[0]?.media).toEqual([{ type: "image", url: "http://localhost:4000/uploads/legacy-only.jpg" }]);
+  });
+
+  it("normalizes legacy relative upload URLs to the API origin", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [{
+            ...productBoundaryPayload,
+            imagePath: "/uploads/body-lotion-primary.jpg",
+            media: [
+              { type: "image", url: "/uploads/body-lotion-primary.jpg" },
+              { type: "image", url: "/uploads/body-lotion-hover.jpg" }
+            ]
+          }]
+        })
+      })
+    );
+
+    const result = await fetchProducts({ lang: "en" });
+
+    expect(result[0]?.imagePath).toBe("http://localhost:4000/uploads/body-lotion-primary.jpg");
+    expect(result[0]?.media).toEqual([
+      { type: "image", url: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
+      { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" }
+    ]);
   });
 });

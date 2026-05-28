@@ -46,7 +46,7 @@ export function ProductMediaUpload({ value, onChange }: Props) {
           const result = await api.uploadMedia(file);
           return {
             type: file.type.startsWith("video/") ? "video" as const : "image" as const,
-            url: result.path
+            url: result.url
           };
         })
       );

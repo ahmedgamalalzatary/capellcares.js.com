@@ -224,34 +224,6 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
         <div className="min-h-20 max-w-[65ch] text-[15px] leading-[1.85] text-(--ink-2)">
           {tabs.find((item) => item.key === tab)?.content}
         </div>
-
-        {offers.length > 0 && (
-          <div className="grid gap-2.5 pt-1">
-            <div className="eyebrow !text-(--ink-3) !opacity-100">
-              {dict.product.relatedOffers}
-            </div>
-            <div className="grid gap-2.5">
-              {offers.map((offer) => (
-                <Link
-                  key={offer.id}
-                  href={`/${lang}/offers/${offer.slug}`}
-                  className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 rounded-(--radius) border border-(--hairline) bg-(--surface) p-3 transition-colors hover:border-(--accent) hover:bg-(--accent-soft) sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4"
-                >
-                  <div className="aspect-square h-[64px] overflow-hidden rounded-[8px] bg-(--warm-soft) sm:h-[68px] sm:w-22">
-                    <OfferIllustration offer={offer} className="h-full w-full" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-(--ink)">{pickLang(offer.name, lang)}</div>
-                    <div className="mt-0.5 text-[13px] text-(--ink-2)">
-                      {formatPrice(offer.price, lang)} · <span className="text-(--accent)">{dict.offers.save.replace("{amount}", formatPrice(offer.originalTotal - offer.price, lang))}</span>
-                    </div>
-                  </div>
-                  <Icon.Chevron className={`text-(--ink-3) ${lang === "ar" ? "rotate-180" : ""}`} />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

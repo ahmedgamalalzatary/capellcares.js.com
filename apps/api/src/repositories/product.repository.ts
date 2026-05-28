@@ -2,6 +2,8 @@ import { and, asc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { categories, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
+const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
+
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
 }
@@ -36,6 +38,26 @@ type ProductMediaItem = {
   url: string;
 };
 
+function getPublicUploadsBase(): string {
+  const configured = (process.env.HOSTINGER_PUBLIC_BASE_URL ?? "").trim();
+  if (!configured || configured.includes("example.com/uploads")) {
+    return FALLBACK_PUBLIC_UPLOADS_BASE;
+  }
+  return configured.replace(/\/+$/, "");
+}
+
+function resolvePublicMediaUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  if (url.startsWith("/uploads/")) {
+    return `${getPublicUploadsBase()}${url.slice("/uploads".length)}`;
+  }
+
+  return url;
+}
+
 function normalizeMedia(
   rows: Array<{ mediaType: "image" | "video"; url: string; sortOrder: number }> | undefined,
   imagePath: string | null | undefined
@@ -43,14 +65,14 @@ function normalizeMedia(
   const ordered = (rows ?? [])
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((row) => ({ type: row.mediaType, url: row.url }));
+    .map((row) => ({ type: row.mediaType, url: resolvePublicMediaUrl(row.url) }));
 
   if (ordered.length > 0) {
     return ordered;
   }
 
   if (imagePath) {
-    return [{ type: "image", url: imagePath }];
+    return [{ type: "image", url: resolvePublicMediaUrl(imagePath) }];
   }
 
   return [];
@@ -58,7 +80,7 @@ function normalizeMedia(
 
 function resolvePrimaryImagePath(media: ProductMediaItem[], imagePath: string | null | undefined) {
   const firstImage = media.find((item) => item.type === "image");
-  return firstImage?.url ?? imagePath ?? null;
+  return firstImage?.url ?? (imagePath ? resolvePublicMediaUrl(imagePath) : null);
 }
 
 async function loadMediaRows(productIds: number[]) {

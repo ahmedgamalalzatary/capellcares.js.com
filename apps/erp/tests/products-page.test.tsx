@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, vi } from "vitest";
 
 const { uploadMedia } = vi.hoisted(() => ({
-  uploadMedia: vi.fn(async (file: File) => ({ url: `/uploads/${file.name}`, path: `/uploads/${file.name}`, fileName: file.name }))
+  uploadMedia: vi.fn(async (file: File) => ({ url: `http://localhost:4000/uploads/${file.name}`, path: `/uploads/${file.name}`, fileName: file.name }))
 }));
 
 const toggleProductStatus = vi.fn().mockRejectedValue(new Error("toggle failed"));
@@ -119,10 +119,10 @@ describe("ProductsListPage", () => {
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({
         media: [
-          { type: "video", url: expect.stringContaining("demo.mp4") },
-          { type: "image", url: expect.stringContaining("hover.jpg") }
+          { type: "video", url: expect.stringContaining("http://localhost:4000/uploads/demo.mp4") },
+          { type: "image", url: expect.stringContaining("http://localhost:4000/uploads/hover.jpg") }
         ],
-        imagePath: expect.stringContaining("hover.jpg")
+        imagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg")
       }));
     });
   });
