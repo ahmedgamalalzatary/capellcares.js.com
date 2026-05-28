@@ -43,6 +43,8 @@ services:
       UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-20971520}
       UPLOAD_ALLOWED_MIME_TYPES: ${UPLOAD_ALLOWED_MIME_TYPES:-image/png,image/jpeg,image/webp,video/mp4,video/webm}
       HOSTINGER_PUBLIC_BASE_URL: ${HOSTINGER_PUBLIC_BASE_URL:?set HOSTINGER_PUBLIC_BASE_URL in env file}
+      STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:-http://storefront:3000}
+      STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
     depends_on:
       mysql:
         condition: service_healthy

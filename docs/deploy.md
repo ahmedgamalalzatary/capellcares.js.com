@@ -378,3 +378,26 @@ Local Docker:
 - `down -v` deletes Docker volumes, including MySQL data.
 - `docker-compose.yml` reads deployment values from the `--env-file` argument.
 - Inside Docker, services talk to each other by service name such as `mysql` and `api`, not `localhost`.
+
+## Migration Tracking Gotcha
+
+`drizzle-kit push` does **not** populate the `__drizzle_migrations` tracking table. A DB that was first bootstrapped with `push` will reject a later `db:migrate` run with a silent failure (the spinner hides the real `CREATE TABLE ... already exists` error):
+
+```
+$ drizzle-kit migrate
+[⣯] applying migrations...
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] Exit status 1
+```
+
+Pick a tool per DB and stick with it for that DB's entire lifetime:
+
+- **Local Docker / disposable DBs:** continue using `drizzle-kit push` for every schema sync. Do not switch to `db:migrate` against a `push`-bootstrapped DB.
+- **Production / DBs with valuable data:** use `db:migrate` from the very first apply against a fresh DB. Never run `push` against a DB you intend to migrate later.
+
+To debug a silent migrate failure, query the tracking table directly:
+
+```bash
+docker compose --env-file .env.docker exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at;"'
+```
+
+If the table is empty but business tables (e.g. `admin_users`, `products`) exist, the DB was bootstrapped with `push` and cannot be switched to `migrate` without manual hash backfill or a `down -v` reset.
