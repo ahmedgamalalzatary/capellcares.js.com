@@ -9,6 +9,40 @@ import { api, isAdminAuthHydrated, subscribeAdminAccessToken, subscribeAdminAuth
 
 type Listener = () => void;
 type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
+type SalesSummary = {
+  totalOrders: number;
+  totalUnitsSold: number;
+  totalRevenue: number;
+};
+type SalesProductTotal = {
+  productId: number;
+  productName: string;
+  unitsSold: number;
+  revenue: number;
+};
+type SalesVariantTotal = {
+  variantId: number;
+  productId: number;
+  productName: string;
+  variantLabel: string;
+  unitsSold: number;
+  revenue: number;
+};
+type SalesOrderBreakdown = {
+  orderId: number;
+  orderCode: string;
+  paymentStatus: "pending" | "accepted" | "denied";
+  totalAmount: number;
+  unitsSold: number;
+  createdAt: string;
+  items: Array<{ label: string; unitsSold: number }>;
+};
+type SalesAnalytics = {
+  summary: SalesSummary;
+  productTotals: SalesProductTotal[];
+  variantTotals: SalesVariantTotal[];
+  orders: SalesOrderBreakdown[];
+};
 type ProductApiShape = {
   id: number;
   sku?: string;
@@ -135,6 +169,12 @@ class ErpStore {
   offers: Offer[] = [];
   advices: Advice[] = [];
   orders: OrderSummary[] = [];
+  sales: SalesAnalytics = {
+    summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
+    productTotals: [],
+    variantTotals: [],
+    orders: []
+  };
   loaded = false;
   loading = false;
   error: string | null = null;
@@ -155,18 +195,20 @@ class ErpStore {
     this.loading = true;
     this.emit();
     try {
-      const [p, c, o, a, orderData] = await Promise.all([
+      const [p, c, o, a, orderData, salesData] = await Promise.all([
         api.get<{ items: ProductApiShape[] }>("/api/erp/products"),
         api.get<{ items: CategoryApiShape[] }>("/api/erp/categories"),
         api.get<{ items: Offer[] }>("/api/erp/offers"),
         api.get<{ items: Advice[] }>("/api/erp/advices"),
-        api.get<{ items: OrderSummary[] }>("/api/erp/orders")
+        api.get<{ items: OrderSummary[] }>("/api/erp/orders"),
+        api.get<SalesAnalytics>("/api/erp/sales")
       ]);
       this.products = p.items.map(normalizeProduct);
       this.categories = c.items.map(normalizeCategory);
       this.offers = o.items;
       this.advices = a.items;
       this.orders = orderData.items;
+      this.sales = salesData;
       this.loaded = true;
       this.error = null;
     } catch (e) {

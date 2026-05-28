@@ -22,6 +22,7 @@ const NAV = [
   { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
   { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
   { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
+  { href: "/sales",      label: "المبيعات",  icon: <Icon.Tag />       },
   { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
 ] as const;
 

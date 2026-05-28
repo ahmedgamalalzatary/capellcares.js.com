@@ -19,6 +19,7 @@ import {
 } from "./admin.controller.js";
 import { adminAdvicesRoutes } from "../advices/admin-advices.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
+import { getAdminSalesController } from "../orders/orders.controller.js";
 
 export const adminRoutes = Router();
 
@@ -34,6 +35,7 @@ adminRoutes.get("/categories", adminListCategories);
 adminRoutes.post("/categories", adminUpsertCategory);
 adminRoutes.delete("/categories/:id", adminSoftDeleteCategory);
 adminRoutes.post("/categories/:id/restore", adminRestoreCategory);
+adminRoutes.get("/sales", getAdminSalesController);
 
 adminRoutes.get("/offers", adminListOffers);
 adminRoutes.post("/offers", adminUpsertOffer);

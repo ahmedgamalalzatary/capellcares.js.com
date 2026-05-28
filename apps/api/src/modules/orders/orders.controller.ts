@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { findOrderByIdRepo, listOrdersRepo, updateOrderPaymentStatusRepo } from "../../repositories/order.repository.js";
+import { findOrderByIdRepo, getSalesAnalyticsRepo, listOrdersRepo, updateOrderPaymentStatusRepo } from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
@@ -11,6 +11,10 @@ function parsePositiveId(value: string) {
 
 export async function listAdminOrdersController(_req: AuthenticatedRequest, res: Response) {
   res.json({ items: await listOrdersRepo() });
+}
+
+export async function getAdminSalesController(_req: AuthenticatedRequest, res: Response) {
+  res.json(await getSalesAnalyticsRepo());
 }
 
 export async function getAdminOrderController(req: AuthenticatedRequest, res: Response) {

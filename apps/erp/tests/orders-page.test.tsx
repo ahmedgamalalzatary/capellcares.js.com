@@ -37,7 +37,6 @@ vi.mock("@/lib/store", () => ({
 }));
 
 import OrdersPage from "@/app/orders/page";
-
 describe("OrdersPage", () => {
   it("renders an explicit details action linking to the ERP order detail page", () => {
     render(createElement(OrdersPage));
