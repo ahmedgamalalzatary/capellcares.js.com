@@ -6,6 +6,7 @@ type ProductRow = {
   slug: string;
   keywords: string[];
   imagePath: string | null;
+  hoverImagePath?: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   youtubeUrl?: string | null;
   status: "active" | "inactive";
@@ -39,6 +40,7 @@ export function toStorefrontProduct(product: ProductRow): Omit<Product, "buyingP
     warnings: product.warnings,
     keywords: product.keywords,
     imagePath: product.imagePath ?? "",
+    hoverImagePath: product.hoverImagePath ?? "",
     media: product.media ?? (product.imagePath ? [{ type: "image", url: product.imagePath }] : []),
     youtubeUrl: product.youtubeUrl ?? undefined,
     status: product.status,

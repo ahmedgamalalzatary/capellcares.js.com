@@ -7,6 +7,7 @@ import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
+import { ProductHoverImageUpload } from "./product-hover-image-upload";
 import { slugifyFormName } from "./form-slug";
 import { ProductMediaUpload } from "./product-media-upload";
 
@@ -40,6 +41,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
   const [media, setMedia] = useState(
     initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
   );
+  const [hoverImagePath, setHoverImagePath] = useState(initial?.hoverImagePath ?? "");
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
@@ -89,6 +91,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       keywords: keywords.split(",").map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
       imagePath: primaryImage,
+      hoverImagePath,
       media,
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,
@@ -227,6 +230,11 @@ export function ProductForm({ mode, initial, categories }: Props) {
           title="وسائط المنتج"
           error={errors.image}
           uploadSlot={<ProductMediaUpload value={media} onChange={setMedia} />}
+        />
+
+        <ImageFieldCard
+          title="صورة Hover لبطاقة المنتج"
+          uploadSlot={<ProductHoverImageUpload value={hoverImagePath} onChange={setHoverImagePath} />}
         />
 
         <EditorActions

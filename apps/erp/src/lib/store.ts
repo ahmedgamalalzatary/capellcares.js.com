@@ -65,6 +65,7 @@ type ProductApiShape = {
   keywords?: string[] | string;
   buyingPrice?: number | string;
   imagePath?: string | null;
+  hoverImagePath?: string | null;
   media?: ProductMedia[];
   youtubeUrl?: string | null;
   status?: "active" | "inactive";
@@ -130,6 +131,7 @@ function normalizeProduct(input: ProductApiShape): Product {
         : [],
     buyingPrice: toNumber(input.buyingPrice),
     imagePath: input.imagePath ?? input.media?.find((item) => item.type === "image")?.url ?? "",
+    hoverImagePath: input.hoverImagePath ?? "",
     media: input.media?.length
       ? input.media
       : input.imagePath

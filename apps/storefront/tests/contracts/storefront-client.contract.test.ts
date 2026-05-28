@@ -36,6 +36,7 @@ const productBoundaryPayload = {
   },
   keywords: ["body", "hydration"],
   imagePath: null,
+  hoverImagePath: null,
   media: [
     { type: "image", url: "/uploads/body-lotion-primary.jpg" },
     { type: "image", url: "/uploads/body-lotion-hover.jpg" },
@@ -203,6 +204,7 @@ describe("storefront client contracts", () => {
           items: [{
             ...productBoundaryPayload,
             imagePath: "/uploads/body-lotion-primary.jpg",
+            hoverImagePath: "/uploads/body-lotion-hover-dedicated.jpg",
             media: [
               { type: "image", url: "/uploads/body-lotion-primary.jpg" },
               { type: "image", url: "/uploads/body-lotion-hover.jpg" }
@@ -215,6 +217,7 @@ describe("storefront client contracts", () => {
     const result = await fetchProducts({ lang: "en" });
 
     expect(result[0]?.imagePath).toBe("http://localhost:4000/uploads/body-lotion-primary.jpg");
+    expect(result[0]?.hoverImagePath).toBe("http://localhost:4000/uploads/body-lotion-hover-dedicated.jpg");
     expect(result[0]?.media).toEqual([
       { type: "image", url: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
       { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" }

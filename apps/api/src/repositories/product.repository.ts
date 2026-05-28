@@ -83,6 +83,10 @@ function resolvePrimaryImagePath(media: ProductMediaItem[], imagePath: string | 
   return firstImage?.url ?? (imagePath ? resolvePublicMediaUrl(imagePath) : null);
 }
 
+function resolveHoverImagePath(hoverImagePath: string | null | undefined) {
+  return hoverImagePath ? resolvePublicMediaUrl(hoverImagePath) : null;
+}
+
 async function loadMediaRows(productIds: number[]) {
   if (productIds.length === 0) {
     return new Map<number, Array<{ mediaType: "image" | "video"; url: string; sortOrder: number }>>();
@@ -148,6 +152,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       keywords: products.keywords,
       buyingPrice: products.buyingPrice,
       imagePath: products.imagePath,
+      hoverImagePath: products.hoverImagePath,
       status: products.status,
       categoryId: products.categoryId,
       deletedAt: products.deletedAt,
@@ -186,6 +191,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     return {
       ...r,
       imagePath: resolvePrimaryImagePath(media, r.imagePath),
+      hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
       media,
       keywords: toKeywords(r.keywords),
       buyingPrice: toNumber(r.buyingPrice),
@@ -219,6 +225,7 @@ export async function findVisibleProductBySlug(slug: string) {
       enWarnings: products.enWarnings,
       youtubeUrl: products.youtubeUrl,
       imagePath: products.imagePath,
+      hoverImagePath: products.hoverImagePath,
       status: products.status,
       isNew: products.isNew,
       isBestseller: products.isBestseller,
@@ -250,6 +257,7 @@ export async function findVisibleProductBySlug(slug: string) {
   return {
     ...product,
     imagePath: resolvePrimaryImagePath(media, product.imagePath),
+    hoverImagePath: resolveHoverImagePath(product.hoverImagePath) ?? "",
     media,
     keywords: toKeywords(product.keywords),
     buyingPrice: toNumber(product.buyingPrice),
@@ -291,6 +299,7 @@ export async function listAdminProductsRepo() {
     return {
       ...r,
       imagePath: resolvePrimaryImagePath(media, r.imagePath),
+      hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
       media,
       variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
     };
@@ -315,6 +324,7 @@ export async function createAdminProductRepo(input: {
   enWarnings?: string | null;
   youtubeUrl?: string | null;
   imagePath?: string | null;
+  hoverImagePath?: string | null;
   media?: ProductMediaItem[];
   categoryId: number;
   status: "active" | "inactive";
@@ -351,6 +361,7 @@ export async function createAdminProductRepo(input: {
           enWarnings: input.enWarnings ?? null,
           youtubeUrl: input.youtubeUrl ?? null,
           imagePath: primaryImagePath,
+          hoverImagePath: input.hoverImagePath ?? null,
           categoryId: input.categoryId,
           status: input.status,
           isNew: input.isNew ?? false,
@@ -379,6 +390,7 @@ export async function createAdminProductRepo(input: {
     enWarnings: input.enWarnings ?? null,
     youtubeUrl: input.youtubeUrl ?? null,
     imagePath: primaryImagePath,
+    hoverImagePath: input.hoverImagePath ?? null,
     categoryId: input.categoryId,
     status: input.status,
     isNew: input.isNew ?? false,

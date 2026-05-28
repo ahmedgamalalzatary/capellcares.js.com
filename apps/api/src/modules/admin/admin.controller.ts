@@ -23,6 +23,7 @@ import { db } from "@capella/database/src/db";
 import { productVariants } from "@capella/database/drizzle/schema";
 import { inArray } from "drizzle-orm";
 import { toAdminOffer } from "./offers/admin-offers.mapper.js";
+import { triggerStorefrontProductRevalidation } from "./storefront-revalidation.js";
 
 // ---- products ----
 
@@ -34,6 +35,7 @@ export async function adminUpsertProduct(req: Request, res: Response) {
   const incoming = req.body as any;
   const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
   const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
+  const resolvedSlug = toSlug(incoming.slug || productNameEn || productNameAr);
   const productVariants = incoming.variants ?? [];
   const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
   const productStatus = incoming.status ?? "inactive";
@@ -53,7 +55,7 @@ export async function adminUpsertProduct(req: Request, res: Response) {
   const created = await createAdminProductRepo({
     id: incoming.id ? Number(incoming.id) : undefined,
     sku: incoming.sku ?? "",
-    slug: toSlug(incoming.slug || productNameEn || productNameAr),
+    slug: resolvedSlug,
     arName: productNameAr,
     enName: productNameEn,
     buyingPrice: Number(incoming.buyingPrice ?? 0),
@@ -68,6 +70,7 @@ export async function adminUpsertProduct(req: Request, res: Response) {
     enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
     youtubeUrl: incoming.youtubeUrl ?? null,
     imagePath: incoming.imagePath ?? null,
+    hoverImagePath: incoming.hoverImagePath ?? null,
     media: Array.isArray(incoming.media)
       ? incoming.media
         .map((item: any) => ({
@@ -89,6 +92,11 @@ export async function adminUpsertProduct(req: Request, res: Response) {
       stockQty: Number(v.stockQty ?? v.stock ?? 0)
     }))
   );
+  try {
+    await triggerStorefrontProductRevalidation(resolvedSlug);
+  } catch (error) {
+    console.warn("Failed to trigger storefront revalidation for product", resolvedSlug, error);
+  }
   res.json({ ok: true });
 }
 

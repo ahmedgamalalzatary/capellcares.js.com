@@ -32,6 +32,7 @@ export const productSchema = z.object({
   enWarnings: z.string().nullable(),
   youtubeUrl: z.string().nullable(),
   imagePath: z.string().nullable(),
+  hoverImagePath: z.string().nullable(),
   media: z.array(productMediaSchema),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),

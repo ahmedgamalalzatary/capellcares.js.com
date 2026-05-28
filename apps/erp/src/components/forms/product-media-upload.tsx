@@ -63,7 +63,7 @@ export function ProductMediaUpload({ value, onChange }: Props) {
     <div className="stack">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="muted" style={{ fontSize: 12 }}>
-          أول صورة هي الأساسية، والثانية تظهر عند تمرير بطاقة المنتج.
+          أول صورة هي الأساسية في المتجر. باقي الصور والفيديوهات تظهر داخل معرض صفحة المنتج.
         </div>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
           <Icon.Upload size={14} /> إضافة وسائط
@@ -100,7 +100,7 @@ export function ProductMediaUpload({ value, onChange }: Props) {
                 <div className="stack" style={{ gap: 4 }}>
                   <strong style={{ fontSize: 13 }}>{item.type === "image" ? "صورة" : "فيديو"}</strong>
                   <span className="muted" style={{ fontSize: 12 }}>
-                    {index === 0 && item.type === "image" ? "الصورة الأساسية" : index === 1 && item.type === "image" ? "صورة hover" : item.url}
+                    {index === 0 && item.type === "image" ? "الصورة الأساسية" : item.url}
                   </span>
                 </div>
               </div>

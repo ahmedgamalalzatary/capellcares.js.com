@@ -42,6 +42,7 @@ export interface Product {
   keywords: string[];
   buyingPrice: number;
   imagePath: string;
+  hoverImagePath?: string;
   media?: ProductMedia[];
   youtubeUrl?: string;
   status: ProductStatus;

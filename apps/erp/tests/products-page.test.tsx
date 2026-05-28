@@ -79,7 +79,7 @@ describe("ProductsListPage", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("submits ordered product media after remove and reorder actions", async () => {
+  it("submits gallery media separately from the dedicated hover image", async () => {
     const view = render(createElement(ProductForm, {
       mode: "new",
       categories: [{ id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
@@ -98,17 +98,24 @@ describe("ProductsListPage", () => {
     fireEvent.change(initialSpinbuttons[0]!, { target: { value: "10" } });
 
     const mediaInput = form.getByTestId("product-media-input");
-    const files = [
-      new File(["one"], "primary.jpg", { type: "image/jpeg" }),
-      new File(["two"], "hover.jpg", { type: "image/jpeg" }),
-      new File(["three"], "demo.mp4", { type: "video/mp4" })
-    ];
+    fireEvent.change(mediaInput, {
+      target: {
+        files: [
+          new File(["one"], "primary.jpg", { type: "image/jpeg" }),
+          new File(["three"], "demo.mp4", { type: "video/mp4" })
+        ]
+      }
+    });
 
-    fireEvent.change(mediaInput, { target: { files } });
+    const hoverInput = form.getByTestId("product-hover-image-input");
+    fireEvent.change(hoverInput, {
+      target: {
+        files: [new File(["two"], "hover.jpg", { type: "image/jpeg" })]
+      }
+    });
 
-    const mediaItems = await form.findAllByTestId("product-media-item");
-    fireEvent.click(within(mediaItems[2]!).getByRole("button", { name: "تحريك لأعلى" }));
-    fireEvent.click(within(mediaItems[0]!).getByRole("button", { name: "إزالة" }));
+    await form.findAllByTestId("product-media-item");
+    await screen.findByText("صورة hover");
 
     fireEvent.change(form.getByPlaceholderText("100ml"), { target: { value: "100ml" } });
     const numericInputs = form.getAllByRole("spinbutton");
@@ -119,10 +126,11 @@ describe("ProductsListPage", () => {
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({
         media: [
-          { type: "video", url: expect.stringContaining("http://localhost:4000/uploads/demo.mp4") },
-          { type: "image", url: expect.stringContaining("http://localhost:4000/uploads/hover.jpg") }
+          { type: "image", url: expect.stringContaining("http://localhost:4000/uploads/primary.jpg") },
+          { type: "video", url: expect.stringContaining("http://localhost:4000/uploads/demo.mp4") }
         ],
-        imagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg")
+        imagePath: expect.stringContaining("http://localhost:4000/uploads/primary.jpg"),
+        hoverImagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg")
       }));
     });
   });

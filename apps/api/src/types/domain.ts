@@ -29,6 +29,7 @@ export interface Product {
   enDescription?: string;
   keywords: string[];
   imagePath?: string;
+  hoverImagePath?: string;
   categorySlug: string;
   status: ProductStatus;
   deletedAt: string | null;

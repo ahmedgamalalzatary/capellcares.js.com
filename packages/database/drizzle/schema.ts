@@ -40,6 +40,7 @@ export const products = mysqlTable("products", {
   enWarnings: text("en_warnings"),
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
+  hoverImagePath: varchar("hover_image_path", { length: 1024 }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   isNew: boolean("is_new").notNull().default(false),
   isBestseller: boolean("is_bestseller").notNull().default(false),

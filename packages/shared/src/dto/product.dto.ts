@@ -30,6 +30,7 @@ export interface ProductDto {
   enWarnings: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
+  hoverImagePath: string | null;
   media: ProductMediaDto[];
   status: "active" | "inactive";
   isNew: boolean;

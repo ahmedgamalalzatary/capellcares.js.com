@@ -6,6 +6,7 @@ type FetchLanguage = "ar" | "en";
 type ProductApiShape = Product & {
   media?: Array<{ type: "image" | "video"; url: string }>;
   imagePath?: string | null;
+  hoverImagePath?: string | null;
 };
 
 type CategoryApiShape = {
@@ -101,6 +102,7 @@ function normalizeProduct(product: ProductApiShape): Product {
   return {
     ...product,
     imagePath: normalizedImagePath || (media.find((item) => item.type === "image")?.url ?? ""),
+    hoverImagePath: resolveMediaUrl(product.hoverImagePath ?? ""),
     media
   };
 }

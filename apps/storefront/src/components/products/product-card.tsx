@@ -26,7 +26,7 @@ export function ProductCard({ product, lang, dict }: Props) {
   const isAr = lang === "ar";
   const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
   const primaryImage = imageMedia[0]?.url ?? product.imagePath;
-  const hoverImage = imageMedia[1]?.url ?? primaryImage;
+  const hoverImage = product.hoverImagePath || primaryImage;
   const [previewImage, setPreviewImage] = useState(primaryImage);
 
   const onWish = (e: React.MouseEvent) => {

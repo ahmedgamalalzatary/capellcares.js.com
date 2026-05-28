@@ -207,7 +207,7 @@ test("admin product upsert activates a complete product successfully", async () 
   });
 });
 
-test("admin product upsert persists ordered media and keeps the first image as imagePath", async () => {
+test("admin product upsert persists ordered media and a dedicated hover image separately", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -221,9 +221,10 @@ test("admin product upsert persists ordered media and keeps the first image as i
       body: JSON.stringify({
         ...makeCompleteProduct(ids.leafCategoryId),
         sku: "ROUTE-MEDIA-COMPLETE",
+        hoverImagePath: "/uploads/route-hover-dedicated.jpg",
         media: [
           { type: "image", url: "/uploads/route-primary.jpg" },
-          { type: "image", url: "/uploads/route-hover.jpg" },
+          { type: "image", url: "/uploads/route-gallery-secondary.jpg" },
           { type: "video", url: "/uploads/route-demo.mp4" }
         ]
       })
@@ -234,13 +235,14 @@ test("admin product upsert persists ordered media and keeps the first image as i
   });
 
   const [created] = await db
-    .select({ id: products.id, imagePath: products.imagePath })
+    .select({ id: products.id, imagePath: products.imagePath, hoverImagePath: products.hoverImagePath })
     .from(products)
     .where(eq(products.sku, "ROUTE-MEDIA-COMPLETE"))
     .limit(1);
 
   assert.ok(created, "expected created product to exist");
   assert.equal(created.imagePath, "/uploads/route-primary.jpg");
+  assert.equal(created.hoverImagePath, "/uploads/route-hover-dedicated.jpg");
 
   const mediaRows = await db
     .select({
@@ -253,7 +255,7 @@ test("admin product upsert persists ordered media and keeps the first image as i
 
   assert.deepEqual(mediaRows, [
     { mediaType: "image", url: "/uploads/route-primary.jpg", sortOrder: 1 },
-    { mediaType: "image", url: "/uploads/route-hover.jpg", sortOrder: 2 },
+    { mediaType: "image", url: "/uploads/route-gallery-secondary.jpg", sortOrder: 2 },
     { mediaType: "video", url: "/uploads/route-demo.mp4", sortOrder: 3 }
   ]);
 });

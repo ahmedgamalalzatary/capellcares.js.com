@@ -29,6 +29,13 @@
       "when": 1780358400000,
       "tag": "0003_product_media",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1780617600000,
+      "tag": "0004_product_hover_image",
+      "breakpoints": true
     }
   ]
 }

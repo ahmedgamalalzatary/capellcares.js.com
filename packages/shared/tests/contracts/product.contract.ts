@@ -17,6 +17,7 @@ export const storefrontProductContract = z.object({
   warnings: bilingualSchema,
   keywords: z.array(z.string()),
   imagePath: z.string().nullable(),
+  hoverImagePath: z.string().nullable(),
   media: z.array(
     z.object({
       type: z.enum(["image", "video"]),
