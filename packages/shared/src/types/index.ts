@@ -25,6 +25,11 @@ export interface ProductVariant {
   sortOrder?: number;
 }
 
+export interface ProductMedia {
+  type: "image" | "video";
+  url: string;
+}
+
 export interface Product {
   id: number;
   sku: string;
@@ -37,6 +42,7 @@ export interface Product {
   keywords: string[];
   buyingPrice: number;
   imagePath: string;
+  media?: ProductMedia[];
   youtubeUrl?: string;
   status: ProductStatus;
   isNew: boolean;

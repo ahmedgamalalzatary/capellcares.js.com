@@ -2,19 +2,21 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
 
-type AllowedMimeType = "image/png" | "image/jpeg" | "image/webp";
+type AllowedMimeType = "image/png" | "image/jpeg" | "image/webp" | "video/mp4" | "video/webm";
 
 const MIME_TO_EXTENSION: Record<AllowedMimeType, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
-  "image/webp": "webp"
+  "image/webp": "webp",
+  "video/mp4": "mp4",
+  "video/webm": "webm"
 };
 
 function sanitizeFileName(input: string): string {
   return basename(input).replace(/[^a-zA-Z0-9._-]/g, "-");
 }
 
-export async function saveImageBuffer(input: {
+export async function saveMediaBuffer(input: {
   uploadsDir: string;
   fileName: string;
   mimeType: AllowedMimeType;

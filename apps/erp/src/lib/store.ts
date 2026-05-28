@@ -4,7 +4,7 @@
 // through the API and trigger a refetch so storefront sees the same data.
 
 import { useSyncExternalStore } from "react";
-import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import type { Advice, Category, Offer, Order, OrderSummary, Product, ProductMedia } from "@capella/shared";
 import { api, isAdminAuthHydrated, subscribeAdminAccessToken, subscribeAdminAuthHydration } from "./api/client";
 
 type Listener = () => void;
@@ -65,6 +65,7 @@ type ProductApiShape = {
   keywords?: string[] | string;
   buyingPrice?: number | string;
   imagePath?: string | null;
+  media?: ProductMedia[];
   youtubeUrl?: string | null;
   status?: "active" | "inactive";
   categoryId?: number | string;
@@ -128,7 +129,12 @@ function normalizeProduct(input: ProductApiShape): Product {
         ? input.keywords.split(",").map((x) => x.trim()).filter(Boolean)
         : [],
     buyingPrice: toNumber(input.buyingPrice),
-    imagePath: input.imagePath ?? "",
+    imagePath: input.imagePath ?? input.media?.find((item) => item.type === "image")?.url ?? "",
+    media: input.media?.length
+      ? input.media
+      : input.imagePath
+        ? [{ type: "image", url: input.imagePath }]
+        : [],
     youtubeUrl: input.youtubeUrl ?? undefined,
     status: input.status ?? "inactive",
     isNew: input.isNew ?? false,

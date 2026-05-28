@@ -5,7 +5,7 @@ import { mkdir, writeFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { eq } from "drizzle-orm";
-import { products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -205,6 +205,57 @@ test("admin product upsert activates a complete product successfully", async () 
     assert.equal(response.status, 200);
     assert.equal(response.json.ok, true);
   });
+});
+
+test("admin product upsert persists ordered media and keeps the first image as imagePath", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: "ROUTE-MEDIA-COMPLETE",
+        media: [
+          { type: "image", url: "/uploads/route-primary.jpg" },
+          { type: "image", url: "/uploads/route-hover.jpg" },
+          { type: "video", url: "/uploads/route-demo.mp4" }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [created] = await db
+    .select({ id: products.id, imagePath: products.imagePath })
+    .from(products)
+    .where(eq(products.sku, "ROUTE-MEDIA-COMPLETE"))
+    .limit(1);
+
+  assert.ok(created, "expected created product to exist");
+  assert.equal(created.imagePath, "/uploads/route-primary.jpg");
+
+  const mediaRows = await db
+    .select({
+      mediaType: productMedia.mediaType,
+      url: productMedia.url,
+      sortOrder: productMedia.sortOrder
+    })
+    .from(productMedia)
+    .where(eq(productMedia.productId, created.id));
+
+  assert.deepEqual(mediaRows, [
+    { mediaType: "image", url: "/uploads/route-primary.jpg", sortOrder: 1 },
+    { mediaType: "image", url: "/uploads/route-hover.jpg", sortOrder: 2 },
+    { mediaType: "video", url: "/uploads/route-demo.mp4", sortOrder: 3 }
+  ]);
 });
 
 test("admin product toggle-status flips the persisted DB status", async () => {

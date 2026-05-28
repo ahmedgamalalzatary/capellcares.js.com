@@ -60,6 +60,16 @@ export const productVariants = mysqlTable("product_variants", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const productMedia = mysqlTable("product_media", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  mediaType: mysqlEnum("media_type", ["image", "video"]).notNull(),
+  url: varchar("url", { length: 1024 }).notNull(),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const offers = mysqlTable("offers", {
   id: int("id").autoincrement().primaryKey(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),

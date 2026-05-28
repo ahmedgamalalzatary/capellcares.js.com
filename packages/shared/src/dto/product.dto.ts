@@ -7,6 +7,11 @@ export interface ProductVariantDto {
   sortOrder: number;
 }
 
+export interface ProductMediaDto {
+  type: "image" | "video";
+  url: string;
+}
+
 export interface ProductDto {
   id: number;
   sku: string;
@@ -25,6 +30,7 @@ export interface ProductDto {
   enWarnings: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
+  media: ProductMediaDto[];
   status: "active" | "inactive";
   isNew: boolean;
   isBestseller: boolean;

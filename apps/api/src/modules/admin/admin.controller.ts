@@ -68,6 +68,14 @@ export async function adminUpsertProduct(req: Request, res: Response) {
     enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
     youtubeUrl: incoming.youtubeUrl ?? null,
     imagePath: incoming.imagePath ?? null,
+    media: Array.isArray(incoming.media)
+      ? incoming.media
+        .map((item: any) => ({
+          type: item?.type === "video" ? "video" : "image",
+          url: String(item?.url ?? "").trim()
+        }))
+        .filter((item: any) => item.url)
+      : undefined,
     categoryId: Number(incoming.categoryId ?? 0),
     status: productStatus,
     isNew: incoming.isNew ?? false,

@@ -1,9 +1,9 @@
 import { resolve } from "node:path";
-import { saveImageBuffer } from "../../services/image.service.js";
-import type { UploadImagePayload } from "./uploads.schemas.js";
+import { saveMediaBuffer } from "../../services/image.service.js";
+import type { UploadMediaPayload } from "./uploads.schemas.js";
 
 function getAllowedMimeTypes() {
-  const raw = process.env.UPLOAD_ALLOWED_MIME_TYPES ?? "image/png,image/jpeg,image/webp";
+  const raw = process.env.UPLOAD_ALLOWED_MIME_TYPES ?? "image/png,image/jpeg,image/webp,video/mp4,video/webm";
   return new Set(
     raw
       .split(",")
@@ -13,8 +13,8 @@ function getAllowedMimeTypes() {
 }
 
 function getMaxBytes() {
-  const parsed = Number(process.env.UPLOAD_MAX_BYTES ?? 4 * 1024 * 1024);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 4 * 1024 * 1024;
+  const parsed = Number(process.env.UPLOAD_MAX_BYTES ?? 20 * 1024 * 1024);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 20 * 1024 * 1024;
 }
 
 function resolvePublicBaseUrl(): string {
@@ -25,8 +25,8 @@ function resolvePublicBaseUrl(): string {
   return configured;
 }
 
-export async function uploadBase64Image(
-  payload: UploadImagePayload,
+export async function uploadBase64Media(
+  payload: UploadMediaPayload,
   options?: {
     uploadsDir?: string;
     publicBaseUrl?: string;
@@ -49,7 +49,7 @@ export async function uploadBase64Image(
     options?.publicBaseUrl ??
     resolvePublicBaseUrl();
 
-  return saveImageBuffer({
+  return saveMediaBuffer({
     uploadsDir,
     fileName: payload.fileName,
     mimeType: payload.mimeType,

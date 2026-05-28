@@ -1,5 +1,5 @@
-import { and, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
-import { categories, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { and, asc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { categories, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 function toNumber(value: unknown): number {
@@ -29,6 +29,61 @@ function mapVariant(v: {
     stock: v.stockQty,
     sortOrder: v.sortOrder
   };
+}
+
+type ProductMediaItem = {
+  type: "image" | "video";
+  url: string;
+};
+
+function normalizeMedia(
+  rows: Array<{ mediaType: "image" | "video"; url: string; sortOrder: number }> | undefined,
+  imagePath: string | null | undefined
+): ProductMediaItem[] {
+  const ordered = (rows ?? [])
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((row) => ({ type: row.mediaType, url: row.url }));
+
+  if (ordered.length > 0) {
+    return ordered;
+  }
+
+  if (imagePath) {
+    return [{ type: "image", url: imagePath }];
+  }
+
+  return [];
+}
+
+function resolvePrimaryImagePath(media: ProductMediaItem[], imagePath: string | null | undefined) {
+  const firstImage = media.find((item) => item.type === "image");
+  return firstImage?.url ?? imagePath ?? null;
+}
+
+async function loadMediaRows(productIds: number[]) {
+  if (productIds.length === 0) {
+    return new Map<number, Array<{ mediaType: "image" | "video"; url: string; sortOrder: number }>>();
+  }
+
+  const rows = await db
+    .select({
+      productId: productMedia.productId,
+      mediaType: productMedia.mediaType,
+      url: productMedia.url,
+      sortOrder: productMedia.sortOrder
+    })
+    .from(productMedia)
+    .where(inArray(productMedia.productId, productIds))
+    .orderBy(asc(productMedia.sortOrder), asc(productMedia.id));
+
+  const byProduct = new Map<number, Array<{ mediaType: "image" | "video"; url: string; sortOrder: number }>>();
+  for (const row of rows) {
+    const list = byProduct.get(row.productId) ?? [];
+    list.push(row);
+    byProduct.set(row.productId, list);
+  }
+  return byProduct;
 }
 
 export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
@@ -84,6 +139,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
 
   if (rows.length === 0) return [];
   const productIds = rows.map((r) => r.id);
+  const mediaByProduct = await loadMediaRows(productIds);
   const variantsRows = await db
     .select({
       id: productVariants.id,
@@ -103,17 +159,22 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     variantsByProduct.set(v.productId, list);
   }
 
-  return rows.map((r) => ({
-    ...r,
-    keywords: toKeywords(r.keywords),
-    buyingPrice: toNumber(r.buyingPrice),
-    variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
-    name: { ar: r.arName, en: r.enName },
-    description: { ar: "", en: "" },
-    ingredients: { ar: "", en: "" },
-    howToUse: { ar: "", en: "" },
-    warnings: { ar: "", en: "" }
-  }));
+  return rows.map((r) => {
+    const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+    return {
+      ...r,
+      imagePath: resolvePrimaryImagePath(media, r.imagePath),
+      media,
+      keywords: toKeywords(r.keywords),
+      buyingPrice: toNumber(r.buyingPrice),
+      variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
+      name: { ar: r.arName, en: r.enName },
+      description: { ar: "", en: "" },
+      ingredients: { ar: "", en: "" },
+      howToUse: { ar: "", en: "" },
+      warnings: { ar: "", en: "" }
+    };
+  });
 }
 
 export async function findVisibleProductBySlug(slug: string) {
@@ -149,6 +210,7 @@ export async function findVisibleProductBySlug(slug: string) {
     .limit(1);
   const product = rows[0];
   if (!product) return null;
+  const mediaByProduct = await loadMediaRows([product.id]);
 
   const variantsRows = await db
     .select({
@@ -162,8 +224,11 @@ export async function findVisibleProductBySlug(slug: string) {
     .from(productVariants)
     .where(eq(productVariants.productId, product.id));
 
+  const media = normalizeMedia(mediaByProduct.get(product.id), product.imagePath);
   return {
     ...product,
+    imagePath: resolvePrimaryImagePath(media, product.imagePath),
+    media,
     keywords: toKeywords(product.keywords),
     buyingPrice: toNumber(product.buyingPrice),
     variants: variantsRows.map(mapVariant).sort((a, b) => a.sortOrder - b.sortOrder),
@@ -178,6 +243,7 @@ export async function findVisibleProductBySlug(slug: string) {
 export async function listAdminProductsRepo() {
   const rows = await db.select().from(products);
   if (rows.length === 0) return [];
+  const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
 
   const variantsRows = await db
     .select({
@@ -198,10 +264,15 @@ export async function listAdminProductsRepo() {
     variantsByProduct.set(v.productId, list);
   }
 
-  return rows.map((r) => ({
-    ...r,
-    variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
-  }));
+  return rows.map((r) => {
+    const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+    return {
+      ...r,
+      imagePath: resolvePrimaryImagePath(media, r.imagePath),
+      media,
+      variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
+    };
+  });
 }
 
 export async function createAdminProductRepo(input: {
@@ -222,11 +293,15 @@ export async function createAdminProductRepo(input: {
   enWarnings?: string | null;
   youtubeUrl?: string | null;
   imagePath?: string | null;
+  media?: ProductMediaItem[];
   categoryId: number;
   status: "active" | "inactive";
   isNew?: boolean;
   isBestseller?: boolean;
 }) {
+  const media = input.media ?? normalizeMedia(undefined, input.imagePath ?? null);
+  const primaryImagePath = resolvePrimaryImagePath(media, input.imagePath ?? null);
+
   if (input.id) {
     const [existing] = await db
       .select({ id: products.id })
@@ -253,13 +328,14 @@ export async function createAdminProductRepo(input: {
           arWarnings: input.arWarnings ?? null,
           enWarnings: input.enWarnings ?? null,
           youtubeUrl: input.youtubeUrl ?? null,
-          imagePath: input.imagePath ?? null,
+          imagePath: primaryImagePath,
           categoryId: input.categoryId,
           status: input.status,
           isNew: input.isNew ?? false,
           isBestseller: input.isBestseller ?? false
         })
         .where(eq(products.id, input.id));
+      await replaceProductMediaRepo(input.id, media);
       return { id: input.id };
     }
   }
@@ -280,13 +356,30 @@ export async function createAdminProductRepo(input: {
     arWarnings: input.arWarnings ?? null,
     enWarnings: input.enWarnings ?? null,
     youtubeUrl: input.youtubeUrl ?? null,
-    imagePath: input.imagePath ?? null,
+    imagePath: primaryImagePath,
     categoryId: input.categoryId,
     status: input.status,
     isNew: input.isNew ?? false,
     isBestseller: input.isBestseller ?? false
   }).$returningId();
+  await replaceProductMediaRepo(created.id, media);
   return created;
+}
+
+export async function replaceProductMediaRepo(productId: number, media: ProductMediaItem[]) {
+  await db.delete(productMedia).where(eq(productMedia.productId, productId));
+  if (media.length === 0) {
+    return;
+  }
+
+  await db.insert(productMedia).values(
+    media.map((item, index) => ({
+      productId,
+      mediaType: item.type,
+      url: item.url,
+      sortOrder: index + 1
+    }))
+  );
 }
 
 export async function addVariantRepo(input: {
@@ -338,6 +431,7 @@ export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: st
     if (!row || row.deletedAt == null) return null;
 
     await tx.delete(wishlists).where(eq(wishlists.productId, id));
+    await tx.delete(productMedia).where(eq(productMedia.productId, id));
     await tx.delete(productVariants).where(eq(productVariants.productId, id));
     await tx.delete(products).where(eq(products.id, id));
     return { imagePath: row.imagePath ?? null };

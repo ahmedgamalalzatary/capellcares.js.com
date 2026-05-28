@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { pickLang, formatPrice, formatPriceRange, getProductBadgeState, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -23,6 +24,10 @@ export function ProductCard({ product, lang, dict }: Props) {
   const maxPrice = Math.max(...prices);
   const { isNew, isBestseller, isOffer, isOutOfStock } = getProductBadgeState(product);
   const isAr = lang === "ar";
+  const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
+  const primaryImage = imageMedia[0]?.url ?? product.imagePath;
+  const hoverImage = imageMedia[1]?.url ?? primaryImage;
+  const [previewImage, setPreviewImage] = useState(primaryImage);
 
   const onWish = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,10 +42,12 @@ export function ProductCard({ product, lang, dict }: Props) {
     <Link
       href={`/${lang}/products/${product.slug}`}
       className="group grid overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--warm) hover:shadow-(--shadow-2)"
+      onMouseEnter={() => setPreviewImage(hoverImage)}
+      onMouseLeave={() => setPreviewImage(primaryImage)}
     >
       <div className="relative aspect-4/5 overflow-hidden">
         <ProductIllustration
-          product={product}
+          product={{ ...product, imagePath: previewImage }}
           className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
         />
 

@@ -36,6 +36,11 @@ const productBoundaryPayload = {
   },
   keywords: ["body", "hydration"],
   imagePath: null,
+  media: [
+    { type: "image", url: "/uploads/body-lotion-primary.jpg" },
+    { type: "image", url: "/uploads/body-lotion-hover.jpg" },
+    { type: "video", url: "/uploads/body-lotion-demo.mp4" }
+  ],
   youtubeUrl: null,
   status: "active" as const,
   isNew: true,
@@ -120,6 +125,7 @@ describe("storefront client contracts", () => {
     );
     assertConformsTo(result[0], storefrontProductContract);
     assertForbiddenFieldsAbsent(result[0], ["buyingPrice"]);
+    expect(result[0]?.media).toEqual(productBoundaryPayload.media);
   });
 
   it("offers conform to the shared offer contract using raw API boundary payloads", async () => {
@@ -166,5 +172,21 @@ describe("storefront client contracts", () => {
 
     const result = await fetchAdvices({ lang: "ar" });
     assertConformsTo(result[0], storefrontAdviceContract);
+  });
+
+  it("synthesizes media from legacy imagePath-only product payloads", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [{ ...productBoundaryPayload, media: undefined, imagePath: "/uploads/legacy-only.jpg" }]
+        })
+      })
+    );
+
+    const result = await fetchProducts({ lang: "en" });
+
+    expect(result[0]?.media).toEqual([{ type: "image", url: "/uploads/legacy-only.jpg" }]);
   });
 });

@@ -32,6 +32,12 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
+  const media = useMemo(
+    () => (product.media?.length ? product.media : product.imagePath ? [{ type: "image" as const, url: product.imagePath }] : []),
+    [product.media, product.imagePath]
+  );
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const activeMedia = media[activeMediaIndex] ?? media[0] ?? null;
 
   const variant = useMemo(() => product.variants.find((item) => item.id === variantId)!, [variantId, product.variants]);
   const isOutOfStock = variant.stock === 0;
@@ -66,19 +72,28 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
     <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
       <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-[140px]">
         <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
-          <ProductIllustration product={product} className="h-4/5 w-4/5" />
+          {activeMedia?.type === "video" ? (
+            <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en} />
+          ) : (
+            <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} className="h-4/5 w-4/5" />
+          )}
         </div>
 
         <div className="grid grid-cols-4 gap-2 sm:gap-3">
-          {[1, 2, 3, 4].map((index) => (
+          {(media.length ? media : [{ type: "image" as const, url: product.imagePath }]).map((item, index) => (
             <button
-              key={index}
+              key={`${item.type}-${item.url}-${index}`}
               type="button"
               className="aspect-square rounded-(--radius) border border-(--hairline) bg-(--surface) p-2 transition-colors hover:border-(--warm) data-[active=true]:border-(--accent)"
-              data-active={index === 1}
-              aria-label={`view ${index}`}
+              data-active={activeMediaIndex === index}
+              aria-label={`view ${index + 1}`}
+              onClick={() => setActiveMediaIndex(index)}
             >
-              <ProductIllustration product={product} />
+              {item.type === "video" ? (
+                <video src={item.url} aria-label={`${product.name.en} video ${index + 1}`} />
+              ) : (
+                <ProductIllustration product={{ ...product, imagePath: item.url }} />
+              )}
             </button>
           ))}
         </div>
@@ -241,4 +256,3 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
     </div>
   );
 }
-

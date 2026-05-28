@@ -8,7 +8,7 @@ import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { slugifyFormName } from "./form-slug";
-import { ImageUpload } from "./image-upload";
+import { ProductMediaUpload } from "./product-media-upload";
 
 interface Props {
   mode: "new" | "edit";
@@ -37,7 +37,9 @@ export function ProductForm({ mode, initial, categories }: Props) {
   const [keywords, setKeywords] = useState((initial?.keywords ?? []).join(", "));
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
-  const [image, setImage] = useState<string | null>(initial?.imagePath ?? null);
+  const [media, setMedia] = useState(
+    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
+  );
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
@@ -62,7 +64,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       if (variants.length === 0 || variants.some((v) => !v.size.trim() || v.price <= 0)) e.variants = "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح";
       if (!categoryId) e.categoryId = "اختاري قسمًا";
       if (!keywords.trim()) e.keywords = "أضيفي كلمات مفتاحية";
-      if (!image) e.image = "أضيفي صورة المنتج";
+      if (!media.some((item) => item.type === "image")) e.image = "أضيفي صورة المنتج";
     } else {
       if (!nameAr.trim() && !nameEn.trim()) e.nameAr = "أدخلي اسم المنتج بالعربية أو الإنجليزية على الأقل";
     }
@@ -74,6 +76,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
     if (!canSave()) return;
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
+    const primaryImage = media.find((item) => item.type === "image")?.url ?? "";
     const product: Product = {
       id: id ?? 0,
       sku: sku.trim() || `SKU-${Date.now()}`,
@@ -85,7 +88,8 @@ export function ProductForm({ mode, initial, categories }: Props) {
       warnings: { ar: warnAr, en: warnEn },
       keywords: keywords.split(",").map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
-      imagePath: image ?? "",
+      imagePath: primaryImage,
+      media,
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,
       isNew,
@@ -220,9 +224,9 @@ export function ProductForm({ mode, initial, categories }: Props) {
         </section>
 
         <ImageFieldCard
-          title="صورة المنتج"
+          title="وسائط المنتج"
           error={errors.image}
-          uploadSlot={<ImageUpload value={image} onChange={setImage} />}
+          uploadSlot={<ProductMediaUpload value={media} onChange={setMedia} />}
         />
 
         <EditorActions

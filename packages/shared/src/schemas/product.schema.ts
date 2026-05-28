@@ -9,6 +9,11 @@ export const productVariantSchema = z.object({
   sortOrder: z.number().int()
 });
 
+export const productMediaSchema = z.object({
+  type: z.enum(["image", "video"]),
+  url: z.string().min(1)
+});
+
 export const productSchema = z.object({
   id: z.number().int().positive(),
   sku: z.string().min(1),
@@ -27,6 +32,7 @@ export const productSchema = z.object({
   enWarnings: z.string().nullable(),
   youtubeUrl: z.string().nullable(),
   imagePath: z.string().nullable(),
+  media: z.array(productMediaSchema),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),
   isBestseller: z.boolean(),

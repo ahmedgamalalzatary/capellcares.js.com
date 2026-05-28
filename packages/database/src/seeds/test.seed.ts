@@ -4,6 +4,7 @@ import {
   customers,
   offerItems,
   offers,
+  productMedia,
   productVariants,
   products
 } from "../../drizzle/schema.js";
@@ -34,6 +35,7 @@ export async function clearTestSeed() {
       await db.delete(offerItems).where(inArray(offerItems.variantId, variantIds));
     }
 
+    await db.delete(productMedia).where(inArray(productMedia.productId, productIds));
     await db.delete(productVariants).where(inArray(productVariants.productId, productIds));
     await db.delete(products).where(inArray(products.id, productIds));
   }
@@ -73,6 +75,9 @@ export async function seedTestData() {
     categoryId: leafCategory.id,
     buyingPrice: "15.00"
   });
+
+  await ensureProductImageMedia(firstProductId, "/uploads/test-baseline.png");
+  await ensureProductImageMedia(secondProductId, "/uploads/test-baseline.png");
 
   const firstVariantId = await ensureVariant({
     productId: firstProductId,
@@ -165,7 +170,8 @@ async function ensureProduct(input: {
       throw error;
     });
 
-  return created.id;
+  const [product] = await db.select({ id: products.id }).from(products).where(eq(products.sku, input.sku)).limit(1);
+  return product?.id ?? created.id;
 }
 
 async function ensureVariant(input: {
@@ -185,6 +191,29 @@ async function ensureVariant(input: {
   }
 
   const [created] = await db.insert(productVariants).values(input).$returningId();
+  return created.id;
+}
+
+async function ensureProductImageMedia(productId: number, url: string) {
+  const [existing] = await db
+    .select()
+    .from(productMedia)
+    .where(eq(productMedia.productId, productId))
+    .limit(1);
+  if (existing) {
+    return existing.id;
+  }
+
+  const [created] = await db
+    .insert(productMedia)
+    .values({
+      productId,
+      mediaType: "image",
+      url,
+      sortOrder: 1
+    })
+    .$returningId();
+
   return created.id;
 }
 

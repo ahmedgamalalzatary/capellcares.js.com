@@ -22,6 +22,12 @@ test("storefront product endpoints conform to the shared product contract", asyn
     const product = response.json.items[0];
     assertConformsTo(product, storefrontProductContract);
     assertForbiddenFieldsAbsent(product, ["buyingPrice"]);
+    assert.ok(Array.isArray(product.media), "expected product media array");
+    assert.ok(product.media.length > 0, "expected product to expose at least one media item");
+    assert.deepEqual(product.media[0], {
+      type: "image",
+      url: product.imagePath
+    });
   });
 });
 

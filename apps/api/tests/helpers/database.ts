@@ -9,6 +9,7 @@ import {
   offers,
   orderItems,
   orders,
+  productMedia,
   productVariants,
   products,
   wishlists
@@ -115,13 +116,14 @@ async function clearTransientProducts() {
       "ROUTE-NO-EN",
       "ROUTE-NO-AR",
       "ROUTE-INACTIVE-INCOMPLETE",
-      "ROUTE-ACTIVE-COMPLETE"
+      "ROUTE-ACTIVE-COMPLETE",
+      "ROUTE-MEDIA-COMPLETE"
     ]));
 
   const serviceRows = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.slug, "service-test-product"));
+    .where(or(eq(products.slug, "service-test-product"), eq(products.slug, "complete-product")));
 
   const rowsWithService = [...rows, ...serviceRows.filter((serviceRow) => !rows.some((row) => row.id === serviceRow.id))];
 
@@ -139,6 +141,7 @@ async function clearTransientProducts() {
   if (variantIds.length > 0) {
     await db.delete(offerItems).where(inArray(offerItems.variantId, variantIds));
   }
+  await db.delete(productMedia).where(inArray(productMedia.productId, productIds));
   await db.delete(productVariants).where(inArray(productVariants.productId, productIds));
   await db.delete(products).where(inArray(products.id, productIds));
 }

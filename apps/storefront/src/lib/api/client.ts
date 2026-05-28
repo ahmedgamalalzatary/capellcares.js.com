@@ -3,6 +3,10 @@ import { resolveApiBase } from "@capella/shared/api/base";
 
 export const API_BASE = resolveApiBase();
 type FetchLanguage = "ar" | "en";
+type ProductApiShape = Product & {
+  media?: Array<{ type: "image" | "video"; url: string }>;
+  imagePath?: string | null;
+};
 
 type CategoryApiShape = {
   id: number;
@@ -57,19 +61,34 @@ async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T>
   return res.json() as Promise<T>;
 }
 
+function normalizeProduct(product: ProductApiShape): Product {
+  const media = product.media?.length
+    ? product.media
+    : product.imagePath
+      ? [{ type: "image" as const, url: product.imagePath }]
+      : [];
+
+  return {
+    ...product,
+    imagePath: product.imagePath ?? media.find((item) => item.type === "image")?.url ?? "",
+    media
+  };
+}
+
 export async function fetchProducts(params?: { q?: string; category?: string; lang?: string }): Promise<Product[]> {
   const search = new URLSearchParams();
   if (params?.q) search.set("q", params.q);
   if (params?.category) search.set("category", params.category);
   const qs = search.toString();
-  const data = await getJSON<{ items: Product[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`, {
+  const data = await getJSON<{ items: ProductApiShape[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`, {
     lang: params?.lang
   });
-  return data?.items ?? [];
+  return (data?.items ?? []).map(normalizeProduct);
 }
 
 export async function fetchProductBySlug(slug: string, options?: { lang?: string }): Promise<Product | null> {
-  return getJSON<Product>(`/api/v1/products/${encodeURIComponent(slug)}`, options);
+  const product = await getJSON<ProductApiShape>(`/api/v1/products/${encodeURIComponent(slug)}`, options);
+  return product ? normalizeProduct(product) : null;
 }
 
 export async function fetchCategories(options?: { lang?: string }): Promise<Category[]> {

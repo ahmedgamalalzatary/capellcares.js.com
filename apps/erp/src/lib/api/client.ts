@@ -68,6 +68,17 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  uploadMedia: (file: File) =>
+    file.arrayBuffer().then((buffer) =>
+      request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
+        method: "POST",
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type,
+          contentBase64: arrayBufferToBase64(buffer)
+        })
+      })
+    ),
   uploadImage: (file: File) =>
     file.arrayBuffer().then((buffer) =>
       request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {

@@ -40,8 +40,8 @@ services:
       ADMIN_NAME: ${ADMIN_NAME:-Capella Admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in env file}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in env file}
-      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-4194304}
-      UPLOAD_ALLOWED_MIME_TYPES: ${UPLOAD_ALLOWED_MIME_TYPES:-image/png,image/jpeg,image/webp}
+      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-20971520}
+      UPLOAD_ALLOWED_MIME_TYPES: ${UPLOAD_ALLOWED_MIME_TYPES:-image/png,image/jpeg,image/webp,video/mp4,video/webm}
       HOSTINGER_PUBLIC_BASE_URL: ${HOSTINGER_PUBLIC_BASE_URL:?set HOSTINGER_PUBLIC_BASE_URL in env file}
     depends_on:
       mysql:
