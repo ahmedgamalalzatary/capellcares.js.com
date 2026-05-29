@@ -108,6 +108,7 @@ describe("ERP store", () => {
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({
         items: [{
           id: 1,
@@ -119,6 +120,7 @@ describe("ERP store", () => {
           variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 0 }]
         }]
       })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
@@ -136,7 +138,7 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    expect(apiGet).toHaveBeenCalledTimes(10);
+    expect(apiGet).toHaveBeenCalledTimes(12);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {
@@ -146,6 +148,7 @@ describe("ERP store", () => {
       .mockRejectedValueOnce(new Error("API 401 /api/erp/offers"))
       .mockRejectedValueOnce(new Error("API 401 /api/erp/advices"))
       .mockRejectedValueOnce(new Error("API 401 /api/erp/orders"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/sales"))
       .mockResolvedValueOnce({
         items: [{
           id: 1,
@@ -157,6 +160,7 @@ describe("ERP store", () => {
           variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
         }]
       })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
@@ -176,7 +180,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(10);
+    expect(apiGet).toHaveBeenCalledTimes(12);
   });
 
   it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {
@@ -194,6 +198,7 @@ describe("ERP store", () => {
           variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
         }]
       })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
@@ -219,6 +224,6 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(5);
+    expect(apiGet).toHaveBeenCalledTimes(6);
   });
 });
