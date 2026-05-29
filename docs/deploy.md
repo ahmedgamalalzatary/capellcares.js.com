@@ -44,6 +44,13 @@ NEXT_PUBLIC_DEV_ADMIN_PASSWORD
 
 Use this only when the VPS database has no valuable data. `down -v` deletes the MySQL volume.
 
+> **Production NEVER uses `drizzle-kit push` — not even on a fresh DB.**
+> Push does not populate the `__drizzle_migrations` ledger, so a push-bootstrapped
+> production DB will permanently reject every later `db:migrate` (see "Migration
+> Tracking Gotcha" below). The very first command to touch a production DB must be
+> `db:migrate` so the ledger is seeded correctly from `0000`. This is what lets you
+> ship future schema changes without data loss and without resetting the DB.
+
 Start on the VPS:
 
 ```bash
@@ -75,10 +82,10 @@ docker compose --env-file .env.production ps
 docker compose --env-file .env.production logs api --tail 80
 ```
 
-Push the current schema directly:
+Apply migrations to bootstrap the schema (NOT push — see warning above):
 
 ```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
+docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
 ```
 
 Verify auth tables exist:
@@ -373,8 +380,10 @@ Local Docker:
 
 ## Rules
 
-- Fresh/disposable DBs can use `drizzle-kit push`.
-- Databases with valuable data should use `db:migrate`.
+- **Production / the VPS always uses `db:migrate`, never `drizzle-kit push` — including on a fresh DB.** Bootstrapping production with push permanently breaks future migrations.
+- `drizzle-kit push` is for **local/disposable DBs only** (local Docker, throwaway beta DBs you can `down -v`).
+- Pick one tool per DB and keep it for that DB's entire lifetime. Never switch a push-bootstrapped DB to `db:migrate`, and never run push against a DB you intend to migrate.
+- Schema change workflow for migration-tracked DBs: edit `drizzle/schema.ts` → `db:generate` (commit the new migration file) → `db:migrate` on the target.
 - `down -v` deletes Docker volumes, including MySQL data.
 - `docker-compose.yml` reads deployment values from the `--env-file` argument.
 - Inside Docker, services talk to each other by service name such as `mysql` and `api`, not `localhost`.
@@ -392,7 +401,19 @@ $ drizzle-kit migrate
 Pick a tool per DB and stick with it for that DB's entire lifetime:
 
 - **Local Docker / disposable DBs:** continue using `drizzle-kit push` for every schema sync. Do not switch to `db:migrate` against a `push`-bootstrapped DB.
-- **Production / DBs with valuable data:** use `db:migrate` from the very first apply against a fresh DB. Never run `push` against a DB you intend to migrate later.
+- **Production / the VPS / DBs with valuable data:** use `db:migrate` from the very first apply against a fresh DB. NEVER run `push` against production — not even once, not even on an empty DB. A single push bootstrap leaves `__drizzle_migrations` empty and blocks every future `db:migrate`, which is exactly the failure you must not hit at launch.
+
+If a beta VPS was already push-bootstrapped (and therefore can't migrate), reset it while it still has no valuable data:
+
+```bash
+docker compose --env-file .env.production down -v        # wipes the beta DB
+docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production up -d
+docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
+docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
+```
+
+After this, only ever `db:migrate` on that VPS.
 
 To debug a silent migrate failure, query the tracking table directly:
 
