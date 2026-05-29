@@ -30,17 +30,21 @@ jobs:
       NEXT_PUBLIC_API_URL: http://localhost:4000
       JWT_ACCESS_SECRET: ci-access-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
-      ALLOW_DEV_ADMIN_FALLBACK: "true"
-      DEV_ADMIN_EMAIL: admin@capella.eg
-      DEV_ADMIN_PASSWORD: admin1234
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
       COOKIE_SECURE: "false"
+      ADMIN_NAME: CI Admin
+      ADMIN_EMAIL: ci-admin@capella.eg
+      ADMIN_PASSWORD: ci-admin-password
+      STOREFRONT_REVALIDATE_SECRET: ci-revalidate-secret
+      HOSTINGER_PUBLIC_BASE_URL: http://localhost/uploads
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
