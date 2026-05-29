@@ -10,7 +10,23 @@
     },
     "lint": {},
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "passThroughEnv": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "TEST_DATABASE_URL",
+        "NEXT_PUBLIC_API_URL",
+        "JWT_ACCESS_SECRET",
+        "JWT_REFRESH_SECRET",
+        "JWT_ACCESS_TTL",
+        "JWT_REFRESH_TTL",
+        "COOKIE_SECURE",
+        "ADMIN_NAME",
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "STOREFRONT_REVALIDATE_SECRET",
+        "HOSTINGER_PUBLIC_BASE_URL"
+      ]
     }
   }
 }
