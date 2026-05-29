@@ -25,11 +25,10 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV API_INTERNAL_URL=http://api:4000
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/storefront/node_modules ./apps/storefront/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY . .
-COPY --from=builder /app/apps/storefront/.next ./apps/storefront/.next
-WORKDIR /app/apps/storefront
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+COPY --from=builder /app/apps/storefront/.next/standalone ./
+COPY --from=builder /app/apps/storefront/.next/static ./apps/storefront/.next/static
+COPY --from=builder /app/apps/storefront/public ./apps/storefront/public
 EXPOSE 3000
-CMD ["pnpm", "start"]
+CMD ["node", "apps/storefront/server.js"]

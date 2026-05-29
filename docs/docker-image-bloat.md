@@ -1,5 +1,29 @@
 # Docker Image Bloat & Production Hygiene
 
+## Resolution status (2026-05-29)
+
+All 9 problems addressed. Changes validated locally; full image rebuild + container
+healthcheck pass still pending (next session).
+
+| # | Problem | Status | Fix |
+| --- | --- | --- | --- |
+| 1 | `tsx` runs TS in prod (API) | ✅ Fixed | esbuild bundle → `dist/server.js`, `CMD node dist/server.js` |
+| 2 | `COPY . .` into runners | ✅ Fixed | runners copy only standalone/bundle output |
+| 3 | No `output: standalone` | ✅ Fixed | added to both `next.config.ts` + `outputFileTracingRoot` |
+| 4 | Full `node_modules` to Next runners | ✅ Fixed | standalone runners drop the `COPY node_modules` lines |
+| 5 | Redundant `node_modules` in API runner | ✅ Fixed | `pnpm deploy --legacy --prod` flattened prod-only tree |
+| 6 | `.dockerignore` misses `.env.docker`/`.env.production` | ✅ Fixed | `.env.*` + `!.env.example` |
+| 7 | `.env.example` dev-fallback vars | ✅ Fixed | replaced with `ADMIN_*` bootstrap block |
+| 8 | Revalidation env not wired | ✅ Already done (commit `0b54ab6`) | — |
+| 9 | `push` breaks later `db:migrate` | ✅ No change needed | `deploy.md` already uses `db:migrate` for prod; `push` only for local/disposable per convention |
+
+**Notes for the rebuild:**
+- Bundle externals must all be **direct** deps of `@capella/api` — `mysql2` was added because the inlined `@capella/database` imports it.
+- `pnpm deploy` needs `--legacy` on pnpm v10+ (we don't inject workspace packages since they're bundled in).
+- Lockfile changed (`esbuild`, `mysql2` added) — rebuild with the updated `pnpm-lock.yaml`.
+
+---
+
 Current image sizes:
 
 | Image | Current | Target |
@@ -51,7 +75,7 @@ The runner stage copies the entire repo (all apps, packages, configs, test files
 ## Problem 3 — Next.js apps don't emit `output: 'standalone'`
 
 **Where:**
-- `apps/storefront/next.config.ts` (lines 3–14)
+- `apps/storefront/next.config.ts` (lines 42–56)
 - `apps/erp/next.config.ts` (lines 42–55)
 
 Neither config sets `output: 'standalone'`, so Next.js doesn't emit a self-contained server bundle. This forces the Dockerfile to ship full `node_modules` and source instead of just the runtime bundle.
@@ -137,7 +161,7 @@ This excludes every `.env.*` file (including `.env.docker`, `.env.production`) w
 
 ## Problem 7 — `.env.example` still advertises removed dev-fallback variables
 
-**Where:** `.env.example:26–31`
+**Where:** `.env.example:27–31`
 
 ```env
 ALLOW_DEV_ADMIN_FALLBACK=true
@@ -159,26 +183,26 @@ ADMIN_PASSWORD=replace-with-strong-admin-password
 
 ---
 
-## Problem 8 — Storefront revalidation env vars not wired into Compose
+## Problem 8 — Storefront revalidation env vars not wired into Compose — ✅ RESOLVED
 
-**Where:** `docker-compose.yml` (`api` service environment block, lines 31–45)
+**Where:** `docker-compose.yml` (`api` service environment block, lines 31–47)
 
-`.env.docker` defines `STOREFRONT_BASE_URL` and `STOREFRONT_REVALIDATE_SECRET`, which the API needs to trigger on-demand ISR revalidation in the storefront (see commit `3d5c7b0` — "on-demand storefront revalidation"). Neither variable is forwarded to the `api` container in `docker-compose.yml`, so inside Docker the API has no way to reach the storefront's revalidate endpoint.
+`.env.docker` defines `STOREFRONT_BASE_URL` and `STOREFRONT_REVALIDATE_SECRET`, which the API needs to trigger on-demand ISR revalidation in the storefront (see commit `3d5c7b0` — "on-demand storefront revalidation").
 
-**Recommended fix:** add the variables to the `api` service environment block, defaulting `STOREFRONT_BASE_URL` to the internal service name:
+This was originally missing, but is now fixed (commit `0b54ab6`). Both variables are forwarded to the `api` container in `docker-compose.yml:46–47`:
 
 ```yaml
 STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:-http://storefront:3000}
 STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
 ```
 
-Note: in Docker, the API should talk to the storefront via the service hostname `http://storefront:3000`, not `localhost:3000` as `.env.docker` currently implies.
+`STOREFRONT_BASE_URL` correctly defaults to the internal service hostname `http://storefront:3000`. No further action needed.
 
 ---
 
 ## Problem 9 — `drizzle-kit push` leaves `__drizzle_migrations` empty, breaking later `db:migrate`
 
-**Where:** the Fresh DB Flow in `docs/deploy.md` (lines 78–83 production, 204–208 local) uses:
+**Where:** the Fresh DB Flow in `docs/deploy.md` (line 81 production, line 207 local) uses:
 
 ```bash
 drizzle-kit push --config=drizzle.config.ts
@@ -200,4 +224,4 @@ $ drizzle-kit migrate
 
 1. **Stop using `push` for any DB you intend to keep.** Use `db:migrate` even for the first apply against a fresh DB — drizzle-kit will apply `0000` cleanly and populate the tracking table.
 2. **If a `push`-bootstrapped DB must keep its data,** backfill `__drizzle_migrations` by computing each migration file's drizzle hash (sha256 of normalized SQL per drizzle-kit's algorithm) and inserting one row per applied file. This is fragile and only viable when the live schema exactly matches the latest migration's final state.
-3. **Document the lock-in:** if `push` remains the Fresh-DB tool, update `docs/deploy.md` to state that such DBs cannot later be migrated and must continue using `push` for their entire lifetime.
+3. **Document the lock-in:** if `push` remains the Fresh-DB tool, update `docs/deploy.md` to state that such DBs cannot later be migrated and must continue using `push` for their entire lifetime. (Partially done — `docs/deploy.md:376–394` now documents this lock-in, but `push` is still prescribed as the fresh-DB tool, so the underlying handoff break remains.)

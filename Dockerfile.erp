@@ -25,11 +25,9 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV API_INTERNAL_URL=http://api:4000
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/erp/node_modules ./apps/erp/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY . .
-COPY --from=builder /app/apps/erp/.next ./apps/erp/.next
-WORKDIR /app/apps/erp
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
+COPY --from=builder /app/apps/erp/.next/standalone ./
+COPY --from=builder /app/apps/erp/.next/static ./apps/erp/.next/static
 EXPOSE 3001
-CMD ["pnpm", "start"]
+CMD ["node", "apps/erp/server.js"]

@@ -3,22 +3,24 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable
 
-FROM base AS deps
+FROM base AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps/api/package.json apps/api/package.json
-COPY packages/database/package.json packages/database/package.json
-COPY packages/shared/package.json packages/shared/package.json
+COPY . .
 RUN pnpm install --frozen-lockfile
+# Bundle the API (inlining @capella/* TS + pure-JS deps) into a single
+# dist/server.js. Only mysql2 stays external, so the runtime node_modules is
+# just mysql2 + its transitive deps (~5 MB) instead of the whole workspace
+# dependency closure (which would drag in @capella/shared's React/Radix/Lucide).
+RUN pnpm --filter @capella/api build:bundle
+RUN mkdir -p /prod && cd /prod \
+    && npm init -y >/dev/null \
+    && npm install --omit=dev --no-audit --no-fund mysql2@^3.11.3
 
 FROM base AS runner
-WORKDIR /app
+WORKDIR /app/apps/api
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY . .
-RUN mkdir -p apps/api/uploads
+COPY --from=builder /prod/node_modules ./node_modules
+COPY --from=builder /app/apps/api/dist ./dist
+RUN mkdir -p uploads
 EXPOSE 4000
-CMD ["pnpm", "--dir", "apps/api", "exec", "tsx", "src/server.ts"]
+CMD ["node", "dist/server.mjs"]
