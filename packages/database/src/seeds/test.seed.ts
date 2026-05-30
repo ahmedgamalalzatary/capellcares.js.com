@@ -1,10 +1,11 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, notInArray } from "drizzle-orm";
 import {
   categories,
   customers,
   offerItems,
   offers,
   orderItems,
+  orders,
   productMedia,
   productVariants,
   products
@@ -18,14 +19,43 @@ const rootCategorySlug = "body-care";
 const leafCategorySlug = "body-lotion";
 
 export async function clearTestSeed() {
+  if (process.env.NODE_ENV !== "test" && process.env.ALLOW_DB_WIPE !== "true") {
+    throw new Error("clearTestSeed may only run in tests or when ALLOW_DB_WIPE=true.");
+  }
+
   await db.delete(orderItems);
+  await db.delete(orders);
   await db.delete(offerItems);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);
   await db.delete(products);
   await db.delete(customers);
-  await db.delete(categories);
+
+  for (;;) {
+    const childRows = await db.select({ parentId: categories.parentId }).from(categories);
+    const parentIds = childRows
+      .map((row) => row.parentId)
+      .filter((parentId): parentId is number => parentId !== null);
+
+    const leafRows = parentIds.length
+      ? await db
+          .select({ id: categories.id })
+          .from(categories)
+          .where(notInArray(categories.id, parentIds))
+      : await db.select({ id: categories.id }).from(categories);
+
+    if (leafRows.length === 0) {
+      break;
+    }
+
+    await db.delete(categories).where(
+      inArray(
+        categories.id,
+        leafRows.map((row) => row.id)
+      )
+    );
+  }
 }
 
 export async function seedTestData() {
