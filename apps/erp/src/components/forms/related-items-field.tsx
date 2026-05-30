@@ -14,6 +14,7 @@ interface Props {
   value: RelatedItemRef[];
   options: RelatedOption[];
   onChange: (next: RelatedItemRef[]) => void;
+  disabled?: boolean;
 }
 
 function refKey(ref: { type: RelatedItemType; id: number }): string {
@@ -26,24 +27,25 @@ const TYPE_LABEL: Record<RelatedItemType, string> = {
   collection: "مجموعة"
 };
 
-export function RelatedItemsField({ value, options, onChange }: Props) {
+export function RelatedItemsField({ value, options, onChange, disabled = false }: Props) {
   const optionByKey = new Map(options.map((option) => [refKey(option), option]));
   const selectedKeys = new Set(value.map(refKey));
   const available = options.filter((option) => !selectedKeys.has(refKey(option)));
 
   const add = (key: string) => {
     const option = optionByKey.get(key);
-    if (!option || selectedKeys.has(key)) return;
+    if (disabled || !option || selectedKeys.has(key)) return;
     onChange([...value, { type: option.type, id: option.id }]);
   };
 
   const remove = (index: number) => {
+    if (disabled) return;
     onChange(value.filter((_, i) => i !== index));
   };
 
   const move = (index: number, delta: number) => {
     const target = index + delta;
-    if (target < 0 || target >= value.length) return;
+    if (disabled || target < 0 || target >= value.length) return;
     const next = [...value];
     const [moved] = next.splice(index, 1);
     next.splice(target, 0, moved!);
@@ -58,11 +60,13 @@ export function RelatedItemsField({ value, options, onChange }: Props) {
 
   return (
     <div className="field" data-testid="related-items-field">
-      <label>العناصر المرتبطة</label>
+      <label htmlFor="related-items-add">العناصر المرتبطة</label>
       <select
         className="input"
+        id="related-items-add"
         data-testid="related-items-add"
         value=""
+        disabled={disabled}
         onChange={(event) => {
           if (event.target.value) add(event.target.value);
         }}
@@ -85,7 +89,7 @@ export function RelatedItemsField({ value, options, onChange }: Props) {
                   type="button"
                   className="btn btn--ghost btn--sm"
                   aria-label="تحريك لأعلى"
-                  disabled={index === 0}
+                  disabled={disabled || index === 0}
                   onClick={() => move(index, -1)}
                 >
                   <span aria-hidden="true">↑</span>
@@ -94,7 +98,7 @@ export function RelatedItemsField({ value, options, onChange }: Props) {
                   type="button"
                   className="btn btn--ghost btn--sm"
                   aria-label="تحريك لأسفل"
-                  disabled={index === value.length - 1}
+                  disabled={disabled || index === value.length - 1}
                   onClick={() => move(index, 1)}
                 >
                   <span aria-hidden="true">↓</span>
@@ -103,6 +107,7 @@ export function RelatedItemsField({ value, options, onChange }: Props) {
                   type="button"
                   className="btn btn--ghost btn--sm"
                   aria-label="إزالة"
+                  disabled={disabled}
                   onClick={() => remove(index)}
                 >
                   <Icon.Trash />

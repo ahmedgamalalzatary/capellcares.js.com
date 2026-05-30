@@ -17,6 +17,7 @@ interface Props {
   initial?: Product;
   categories: Category[];
   relatedOptions?: RelatedOption[];
+  relatedItemsAvailable?: boolean;
 }
 
 function newVariantId() {
@@ -30,7 +31,7 @@ type Requirement = {
   ok: boolean;
 };
 
-export function ProductForm({ mode, initial, categories, relatedOptions = [] }: Props) {
+export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: Props) {
   const router = useRouter();
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
@@ -57,7 +58,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [] }: 
   const [variants, setVariants] = useState<ProductVariant[]>(
     initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
   );
-  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[]>(initial?.relatedItems ?? []);
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // A product can never relate to itself.
@@ -136,11 +137,13 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [] }: 
       categoryId: categoryId ?? 0,
       variants: variants.map((v, i) => ({ ...v, productId: id ?? 0, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
       offerIds: initial?.offerIds ?? [],
-      relatedItems,
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null
     };
+    if (relatedItems !== undefined) {
+      product.relatedItems = relatedItems;
+    }
     await getStore().upsertProduct(product);
     router.push("/products");
   };
@@ -337,10 +340,16 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [] }: 
               </div>
             </div>
             <div className="card__body">
+              {!relatedItemsAvailable && (
+                <div className="field-error" style={{ marginBottom: 10 }}>
+                  تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي البيانات، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية.
+                </div>
+              )}
               <RelatedItemsField
-                value={relatedItems}
+                value={relatedItems ?? []}
                 options={relatedSelectableOptions}
                 onChange={setRelatedItems}
+                disabled={!relatedItemsAvailable}
               />
             </div>
           </section>

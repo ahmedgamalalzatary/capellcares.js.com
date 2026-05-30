@@ -114,7 +114,7 @@ describe("EditProductPage data plumbing", () => {
     ]);
   });
 
-  it("does not render the form when existing related links fail to load", async () => {
+  it("renders the form in safe mode when existing related links fail to load", async () => {
     capturedProps = null;
     apiGet.mockRejectedValueOnce(new Error("boom"));
 
@@ -131,7 +131,9 @@ describe("EditProductPage data plumbing", () => {
     await waitFor(() => {
       expect(screen.getByText(/تعذر تحميل العناصر المرتبطة/)).toBeInTheDocument();
     });
-    expect(screen.queryByTestId("product-form")).not.toBeInTheDocument();
-    expect(capturedProps).toBeNull();
+    expect(screen.getByTestId("product-form")).toBeInTheDocument();
+    expect(capturedProps.initial.id).toBe(1);
+    expect(capturedProps.initial.relatedItems).toBeUndefined();
+    expect(capturedProps.relatedItemsAvailable).toBe(false);
   });
 });

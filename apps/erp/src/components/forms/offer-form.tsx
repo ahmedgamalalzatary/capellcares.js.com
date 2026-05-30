@@ -16,11 +16,12 @@ interface Props {
   initial?: Offer;
   products: Product[];
   relatedOptions?: RelatedOption[];
+  relatedItemsAvailable?: boolean;
 }
 
-interface Row { productId: number; variantId: number; qty: number }
+interface Row { id?: number; productId: number; variantId: number; qty: number }
 
-export function OfferForm({ mode, initial, products, relatedOptions = [] }: Props) {
+export function OfferForm({ mode, initial, products, relatedOptions = [], relatedItemsAvailable = true }: Props) {
   const router = useRouter();
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
@@ -32,10 +33,10 @@ export function OfferForm({ mode, initial, products, relatedOptions = [] }: Prop
     if (!initial) return [];
     return initial.items.map((it) => {
       const product = products.find((p) => p.variants.some((v) => v.id === it.variantId));
-      return { productId: product?.id ?? 0, variantId: it.variantId, qty: it.qty };
+      return { id: it.id, productId: product?.id ?? 0, variantId: it.variantId, qty: it.qty };
     });
   });
-  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[]>(initial?.relatedItems ?? []);
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // An offer can never relate to itself.
@@ -62,7 +63,11 @@ export function OfferForm({ mode, initial, products, relatedOptions = [] }: Prop
       const next = [...s];
       next[i] = { ...next[i], ...patch };
       if (patch.productId != null) {
+        next[i].id = undefined;
         next[i].variantId = 0;
+      }
+      if (patch.variantId != null && patch.variantId !== s[i]?.variantId) {
+        next[i].id = undefined;
       }
       return next;
     });
@@ -81,7 +86,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [] }: Prop
 
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn);
-    const items: OfferItem[] = rows.map((r) => ({ variantId: r.variantId, qty: r.qty }));
+    const items: OfferItem[] = rows.map((r) => ({ id: r.id, variantId: r.variantId, qty: r.qty }));
     const offer: Omit<Offer, "id"> & { id?: number } = {
       id,
       slug,
@@ -92,12 +97,14 @@ export function OfferForm({ mode, initial, products, relatedOptions = [] }: Prop
       originalTotal: computed.originalTotal,
       stock: initial?.stock ?? 0,
       items,
-      relatedItems,
       status: "active",
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null
     };
+    if (relatedItems !== undefined) {
+      offer.relatedItems = relatedItems;
+    }
     await getStore().upsertOffer(offer);
     router.push("/offers");
   };
@@ -213,10 +220,16 @@ export function OfferForm({ mode, initial, products, relatedOptions = [] }: Prop
         <section className="card">
           <div className="card__head"><h3 className="card__title">العناصر المرتبطة</h3></div>
           <div className="card__body">
+            {!relatedItemsAvailable && (
+              <div className="field-error" style={{ marginBottom: 10 }}>
+                تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي البيانات، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية.
+              </div>
+            )}
             <RelatedItemsField
-              value={relatedItems}
+              value={relatedItems ?? []}
               options={relatedSelectableOptions}
               onChange={setRelatedItems}
+              disabled={!relatedItemsAvailable}
             />
           </div>
         </section>

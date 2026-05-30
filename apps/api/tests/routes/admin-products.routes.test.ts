@@ -5,7 +5,7 @@ import { mkdir, writeFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { and, asc, eq, or } from "drizzle-orm";
-import { productMedia, products, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
+import { offerItems, productMedia, products, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -330,6 +330,163 @@ test("admin product detail returns a related-items array for editing", async () 
   });
 });
 
+test("admin product upsert preserves existing related links when relatedItems is omitted", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(relatedItems).values([
+    {
+      sourceType: "product",
+      sourceId: ids.productOneId,
+      targetType: "product",
+      targetId: ids.productTwoId,
+      rank: 1
+    },
+    {
+      sourceType: "product",
+      sourceId: ids.productTwoId,
+      targetType: "product",
+      targetId: ids.productOneId,
+      rank: 1
+    }
+  ]);
+
+  const before = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, ids.productOneId)))
+    .orderBy(asc(relatedItems.rank), asc(relatedItems.id));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "UPDATED-WITHOUT-RELATED",
+        name: { ar: "محدث", en: "Updated" },
+        description: { ar: "وصف", en: "Description" },
+        keywords: ["skincare"],
+        imagePath: "/uploads/test.jpg",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        variants: [{ size: "100ml", price: 250, stock: 10 }]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const after = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, ids.productOneId)))
+    .orderBy(asc(relatedItems.rank), asc(relatedItems.id));
+
+  assert.deepEqual(after, before);
+});
+
+test("admin product upsert preserves linked variant ids when editing an existing variant", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(offerItems).values({
+    offerId: ids.offerId,
+    variantId: ids.firstVariantId,
+    qty: 1
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
+        name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+        description: { ar: "محدث", en: "Updated" },
+        keywords: ["test", "baseline"],
+        imagePath: "/uploads/test-baseline.png",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        variants: [
+          { id: ids.firstVariantId, size: "150ml", price: 99, stock: 7 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [updatedVariant] = await db
+    .select({
+      id: productVariants.id,
+      sizeLabel: productVariants.sizeLabel,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty
+    })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId))
+    .limit(1);
+
+  assert.ok(updatedVariant, "expected linked variant row to be updated in place");
+  assert.equal(updatedVariant.sizeLabel, "150ml");
+  assert.equal(Number(updatedVariant.sellingPrice), 99);
+  assert.equal(updatedVariant.stockQty, 7);
+
+  const offerLinks = await db
+    .select({ variantId: offerItems.variantId })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, ids.offerId));
+
+  assert.deepEqual(offerLinks, [{ variantId: ids.firstVariantId }]);
+});
+
+test("admin product upsert rejects removing a variant that is used by an offer", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(offerItems).values({
+    offerId: ids.offerId,
+    variantId: ids.firstVariantId,
+    qty: 1
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
+        name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+        description: { ar: "وصف", en: "Description" },
+        keywords: ["test", "baseline"],
+        imagePath: "/uploads/test-baseline.png",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        variants: []
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-offers");
+  });
+});
+
 test("admin product toggle-status flips the persisted DB status", async () => {
   const ids = await getBaselineIds();
 
@@ -444,6 +601,49 @@ test("admin hard-delete removes product, variants, wishlists, and image file", a
   assert.equal(remainingWishlists.length, 0, "expected wishlist rows to be removed");
 
   await assert.rejects(access(absolutePath), "expected image file to be unlinked");
+});
+
+test("admin soft-delete rejects products whose variants are used by offers", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(offerItems).values({
+    offerId: ids.offerId,
+    variantId: ids.firstVariantId,
+    qty: 1
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-offers");
+  });
+});
+
+test("admin hard-delete rejects products whose variants are used by offers", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(offerItems).values({
+    offerId: ids.offerId,
+    variantId: ids.firstVariantId,
+    qty: 1
+  });
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-offers");
+  });
 });
 
 test("admin hard-delete on a product that is not soft-deleted returns 404 and leaves data intact", async () => {

@@ -1,4 +1,4 @@
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers } from "@capella/database/drizzle/schema";
 
@@ -44,7 +44,7 @@ export async function upsertOfferRepo(input: {
   fixedPrice: number;
   status: "active" | "inactive";
   visibility?: "visible" | "hidden";
-  items: Array<{ variantId: number; qty: number }>;
+  items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
   let offerId = input.id;
   if (offerId) {
@@ -62,7 +62,6 @@ export async function upsertOfferRepo(input: {
         visibility: input.visibility ?? "visible"
       })
       .where(eq(offers.id, offerId));
-    await db.delete(offerItems).where(eq(offerItems.offerId, offerId));
   } else {
     const [created] = await db
       .insert(offers)
@@ -80,10 +79,32 @@ export async function upsertOfferRepo(input: {
       .$returningId();
     offerId = created.id;
   }
-  if (input.items.length > 0) {
-    await db.insert(offerItems).values(
-      input.items.map((item) => ({ offerId: offerId!, variantId: item.variantId, qty: item.qty }))
-    );
+  const existingItems = await db
+    .select({ id: offerItems.id })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, offerId!));
+  const existingIds = existingItems.map((item) => item.id);
+  const keptIds = input.items
+    .map((item) => item.id)
+    .filter((id): id is number => Number.isInteger(id) && existingIds.includes(id));
+
+  if (existingIds.length > 0) {
+    const removedIds = existingIds.filter((id) => !keptIds.includes(id));
+    if (removedIds.length > 0) {
+      await db.delete(offerItems).where(inArray(offerItems.id, removedIds));
+    }
+  }
+
+  for (const item of input.items) {
+    if (item.id && existingIds.includes(item.id)) {
+      await db
+        .update(offerItems)
+        .set({ variantId: item.variantId, qty: item.qty })
+        .where(eq(offerItems.id, item.id));
+      continue;
+    }
+
+    await db.insert(offerItems).values({ offerId: offerId!, variantId: item.variantId, qty: item.qty });
   }
   return { id: offerId! };
 }

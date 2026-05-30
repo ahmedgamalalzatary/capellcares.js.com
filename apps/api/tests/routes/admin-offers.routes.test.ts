@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, or } from "drizzle-orm";
 import { offerItems, offers, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
@@ -143,7 +143,12 @@ test("admin offer upsert persists mirrored related links", async () => {
   assert.deepEqual(offerLinks, [{ targetType: "product", targetId: ids.productOneId, rank: 1 }]);
   assert.deepEqual(productLinks, [{ targetType: "offer", targetId: created.id, rank: 1 }]);
 
-  await db.delete(relatedItems);
+  await db.delete(relatedItems).where(
+    or(
+      and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, created.id)),
+      and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, ids.productOneId))
+    )
+  );
   await db.delete(offerItems).where(eq(offerItems.offerId, created.id));
   await db.delete(offers).where(eq(offers.id, created.id));
 });
@@ -161,6 +166,130 @@ test("admin offer detail returns a related-items array for editing", async () =>
     assert.equal(response.json.id, ids.offerId);
     assert.ok(Array.isArray(response.json.relatedItems));
   });
+});
+
+test("admin offer upsert preserves existing related links when relatedItems is omitted", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(relatedItems).values([
+    {
+      sourceType: "offer",
+      sourceId: ids.offerId,
+      targetType: "product",
+      targetId: ids.productOneId,
+      rank: 1
+    },
+    {
+      sourceType: "product",
+      sourceId: ids.productOneId,
+      targetType: "offer",
+      targetId: ids.offerId,
+      rank: 1
+    }
+  ]);
+
+  const before = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, ids.offerId)))
+    .orderBy(asc(relatedItems.rank), asc(relatedItems.id));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.offerId,
+        slug: `offer-${ids.offerId}`,
+        name: { ar: "عرض محدث", en: "Updated Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 199,
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const after = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, ids.offerId)))
+    .orderBy(asc(relatedItems.rank), asc(relatedItems.id));
+
+  assert.deepEqual(after, before);
+});
+
+test("admin offer upsert updates existing offer items in place when ids are provided", async () => {
+  const ids = await getBaselineIds();
+
+  const existingItems = await db
+    .select({
+      id: offerItems.id,
+      variantId: offerItems.variantId,
+      qty: offerItems.qty
+    })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, ids.offerId))
+    .orderBy(asc(offerItems.id));
+
+  assert.ok(existingItems.length > 0, "expected baseline offer items");
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.offerId,
+        slug: "test-offer-baseline",
+        name: { ar: "عرض تجريبي", en: "Baseline Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: 88,
+        status: "active",
+        visibility: "visible",
+        items: existingItems.map((item, index) => ({
+          id: item.id,
+          variantId: item.variantId,
+          qty: item.qty + index + 1
+        }))
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const updatedItems = await db
+    .select({
+      id: offerItems.id,
+      variantId: offerItems.variantId,
+      qty: offerItems.qty
+    })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, ids.offerId))
+    .orderBy(asc(offerItems.id));
+
+  assert.deepEqual(
+    updatedItems,
+    existingItems.map((item, index) => ({
+      id: item.id,
+      variantId: item.variantId,
+      qty: item.qty + index + 1
+    }))
+  );
 });
 
 test("admin offers list returns ERP offer shape with bilingual name", async () => {

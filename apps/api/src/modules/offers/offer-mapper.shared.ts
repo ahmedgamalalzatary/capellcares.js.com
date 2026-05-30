@@ -11,7 +11,7 @@ type OfferMapperRow = {
   fixedPrice: unknown;
   stock: number;
   status: "active" | "inactive";
-  items: Array<{ variantId: number; qty: number }>;
+  items: Array<{ id?: number; variantId: number; qty: number }>;
 };
 
 export function toOfferBase(
@@ -40,6 +40,7 @@ export function toOfferBase(
     originalTotal,
     stock: offer.stock,
     items: offer.items.map((item) => ({
+      id: item.id,
       variantId: item.variantId,
       qty: item.qty
     })),

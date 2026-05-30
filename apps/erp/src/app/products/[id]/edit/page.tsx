@@ -57,15 +57,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   if (!product) return notFound();
 
-  if (relatedItemsError) {
-    return (
-      <AdminShell title={`تعديل: ${product.name.ar}`} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
-        <div className="card">تعذر تحميل العناصر المرتبطة. لم يتم فتح نموذج الحفظ لتجنب حذف العلاقات الحالية. {relatedItemsError}</div>
-      </AdminShell>
-    );
-  }
-
-  if (relatedItems === null) {
+  if (relatedItems === null && !relatedItemsError) {
     return (
       <AdminShell title={`تعديل: ${product.name.ar}`} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
         <div className="card">جاري تحميل بيانات المنتج...</div>
@@ -78,11 +70,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       title={`تعديل: ${product.name.ar}`}
       crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}
     >
+      {relatedItemsError && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المنتج، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+        </div>
+      )}
       <ProductForm
         mode="edit"
-        initial={{ ...product, relatedItems }}
+        initial={relatedItems === null ? product : { ...product, relatedItems }}
         categories={categories}
         relatedOptions={buildRelatedOptions(products, offers)}
+        relatedItemsAvailable={!relatedItemsError}
       />
     </AdminShell>
   );

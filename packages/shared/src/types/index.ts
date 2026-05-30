@@ -82,6 +82,7 @@ export type StorefrontOfferDetail = Omit<Offer, "relatedItems"> & {
 };
 
 export interface OfferItem {
+  id?: number;
   variantId: number;
   qty: number;
 }

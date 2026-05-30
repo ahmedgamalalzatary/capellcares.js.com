@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { formatPrice, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
+import { ProductIllustration } from "@/components/ui/product-illustration";
+import { OfferIllustration } from "@/components/ui/offer-illustration";
 
 interface Props {
   items: RelatedItemCard[];
@@ -10,6 +12,13 @@ interface Props {
 function hrefFor(item: RelatedItemCard, lang: Language): string {
   const segment = item.type === "offer" ? "offers" : "products";
   return `/${lang}/${segment}/${item.slug}`;
+}
+
+function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
+  if (item.type === "offer") {
+    return lang === "ar" ? "عرض" : "Offer";
+  }
+  return lang === "ar" ? "منتج" : "Product";
 }
 
 export function RelatedItems({ items, lang, title }: Props) {
@@ -31,10 +40,38 @@ export function RelatedItems({ items, lang, title }: Props) {
           <div className="related-item" data-testid="related-item" key={`${item.type}-${item.id}`}>
             <Link
               href={hrefFor(item, lang)}
-              className="grid gap-2 rounded-(--radius) border border-(--hairline) bg-(--surface) p-3 transition-colors hover:border-(--warm)"
+              className="group grid overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--warm) hover:shadow-(--shadow-2)"
             >
-              <span className="text-[14px] font-medium text-(--ink)">{pickLang(item.name, lang)}</span>
-              <span className="text-[13px] text-(--accent)">{formatPrice(item.price, lang)}</span>
+              <div className="relative aspect-4/5 overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
+                {item.type === "offer" ? (
+                  <OfferIllustration
+                    offer={{ slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" }}
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <ProductIllustration
+                    product={{ slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" }}
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                )}
+                <span className="absolute top-3 start-3 rounded-full bg-(--surface) px-2.5 py-1 text-[11px] font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                  {itemTypeLabel(item, lang)}
+                </span>
+              </div>
+              <div className="grid gap-2 p-4 sm:p-5">
+                <h3 className={lang === "ar"
+                  ? "m-0 text-[15px] font-bold font-(--font-ar) leading-[1.25] text-(--ink)"
+                  : "m-0 text-[17px] italic font-(--font-display) leading-[1.15] text-(--ink)"}>
+                  {pickLang(item.name, lang)}
+                </h3>
+                <div className="mt-1 flex items-end gap-2 border-t border-(--hairline) pt-3">
+                  <span className={lang === "ar"
+                    ? "text-[18px] font-bold font-(--font-ar) leading-none text-(--accent)"
+                    : "text-[20px] italic font-(--font-display) leading-none text-(--accent)"}>
+                    {formatPrice(item.price, lang)}
+                  </span>
+                </div>
+              </div>
             </Link>
           </div>
         ))}

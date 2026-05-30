@@ -21,6 +21,15 @@ describe("getErrorMessage", () => {
     expect(getErrorMessage(error)).toBe("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.");
   });
 
+  it("maps linked offer conflicts to a human-readable message", () => {
+    const error = Object.assign(new Error("API 409 /api/erp/products/1"), {
+      status: 409,
+      body: { reason: "linked-to-offers" }
+    });
+
+    expect(getErrorMessage(error)).toBe("لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّلي العرض أولًا ثم أعيدي المحاولة.");
+  });
+
   it("falls back to the original error message when there is no known mapping", () => {
     expect(getErrorMessage(new Error("toggle failed"))).toBe("toggle failed");
   });

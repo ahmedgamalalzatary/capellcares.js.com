@@ -53,8 +53,8 @@ describe("OfferDetail", () => {
       lang: "en",
       dict,
       relatedItems: [
-        { type: "product", id: 2, slug: "related-product", name: { ar: "", en: "Related Product" }, imagePath: null, price: 30 },
-        { type: "offer", id: 3, slug: "related-offer", name: { ar: "", en: "Related Offer" }, imagePath: null, price: 40 }
+        { type: "product", id: 2, slug: "related-product", name: { ar: "", en: "Related Product" }, imagePath: "/uploads/related-product.jpg", price: 30 },
+        { type: "offer", id: 3, slug: "related-offer", name: { ar: "", en: "Related Offer" }, imagePath: "/uploads/related-offer.jpg", price: 40 }
       ]
     }));
 
@@ -62,6 +62,8 @@ describe("OfferDetail", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]!.querySelector("a")).toHaveAttribute("href", "/en/products/related-product");
     expect(rows[1]!.querySelector("a")).toHaveAttribute("href", "/en/offers/related-offer");
+    expect(screen.getByRole("img", { name: "Related Product" })).toHaveAttribute("src", "/uploads/related-product.jpg");
+    expect(screen.getByRole("img", { name: "Related Offer" })).toHaveAttribute("src", "/uploads/related-offer.jpg");
   });
 
   it("renders no related section when there are none", () => {

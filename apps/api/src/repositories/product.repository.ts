@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
-import { categories, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { categories, offerItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
@@ -432,22 +432,68 @@ export async function addVariantRepo(input: {
 
 export async function replaceVariantsRepo(
   productId: number,
-  variants: Array<{ sizeLabel: string; sellingPrice: number; stockQty: number }>
+  variants: Array<{ id?: number; sizeLabel: string; sellingPrice: number; stockQty: number }>
 ) {
-  await db.delete(productVariants).where(eq(productVariants.productId, productId));
-  if (variants.length === 0) return;
-  await db.insert(productVariants).values(
-    variants.map((v, index) => ({
-      productId,
-      sizeLabel: v.sizeLabel,
-      sellingPrice: sql`${v.sellingPrice}`,
-      stockQty: v.stockQty,
-      sortOrder: index + 1
-    }))
-  );
+  await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(eq(productVariants.productId, productId));
+
+    const existingIds = existing.map((row) => row.id);
+    const requestedExistingIds = variants
+      .map((variant) => variant.id)
+      .filter((id): id is number => Number.isInteger(id) && existingIds.includes(id));
+
+    const removedIds = existingIds.filter((id) => !requestedExistingIds.includes(id));
+    if (removedIds.length > 0) {
+      const linkedRows = await tx
+        .select({ variantId: offerItems.variantId })
+        .from(offerItems)
+        .where(inArray(offerItems.variantId, removedIds))
+        .limit(1);
+      if (linkedRows.length > 0) {
+        const error = new Error("linked-to-offers") as Error & { code?: string };
+        error.code = "PRODUCT_VARIANT_LINKED_TO_OFFERS";
+        throw error;
+      }
+
+      await tx.delete(productVariants).where(inArray(productVariants.id, removedIds));
+    }
+
+    for (let index = 0; index < variants.length; index += 1) {
+      const variant = variants[index]!;
+      const sortOrder = index + 1;
+      if (variant.id && existingIds.includes(variant.id)) {
+        await tx
+          .update(productVariants)
+          .set({
+            sizeLabel: variant.sizeLabel,
+            sellingPrice: sql`${variant.sellingPrice}`,
+            stockQty: variant.stockQty,
+            sortOrder
+          })
+          .where(eq(productVariants.id, variant.id));
+      } else {
+        await tx.insert(productVariants).values({
+          productId,
+          sizeLabel: variant.sizeLabel,
+          sellingPrice: sql`${variant.sellingPrice}`,
+          stockQty: variant.stockQty,
+          sortOrder
+        });
+      }
+    }
+  });
 }
 
 export async function softDeleteProductRepo(id: number) {
+  const linked = await hasOfferLinkedVariantsForProductRepo(id);
+  if (linked) {
+    const error = new Error("linked-to-offers") as Error & { code?: string };
+    error.code = "PRODUCT_LINKED_TO_OFFERS";
+    throw error;
+  }
   await db.update(products).set({ deletedAt: sql`NOW()` }).where(eq(products.id, id));
 }
 
@@ -457,6 +503,18 @@ export async function restoreProductRepo(id: number) {
 
 export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: string | null } | null> {
   return db.transaction(async (tx) => {
+    const linked = await tx
+      .select({ variantId: offerItems.variantId })
+      .from(offerItems)
+      .innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+      .where(eq(productVariants.productId, id))
+      .limit(1);
+    if (linked.length > 0) {
+      const error = new Error("linked-to-offers") as Error & { code?: string };
+      error.code = "PRODUCT_LINKED_TO_OFFERS";
+      throw error;
+    }
+
     const [row] = await tx
       .select({ imagePath: products.imagePath, deletedAt: products.deletedAt })
       .from(products)
@@ -483,4 +541,14 @@ export async function toggleProductStatusRepo(id: number) {
 
 export async function setVariantStockRepo(variantId: number, stockQty: number) {
   await db.update(productVariants).set({ stockQty }).where(eq(productVariants.id, variantId));
+}
+
+export async function hasOfferLinkedVariantsForProductRepo(productId: number) {
+  const linked = await db
+    .select({ variantId: offerItems.variantId })
+    .from(offerItems)
+    .innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+    .where(eq(productVariants.productId, productId))
+    .limit(1);
+  return linked.length > 0;
 }

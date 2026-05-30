@@ -15,7 +15,8 @@ const apiReasonMessages: Record<string, string> = {
   "category-name-conflict": "اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.",
   "has-products": "لا يمكن حذف القسم لأنه يحتوي على منتجات مرتبطة.",
   "has-active-children": "لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية نشطة.",
-  "cannot-activate-incomplete-product": "لا يمكن تفعيل المنتج قبل استكمال كل البيانات المطلوبة."
+  "cannot-activate-incomplete-product": "لا يمكن تفعيل المنتج قبل استكمال كل البيانات المطلوبة.",
+  "linked-to-offers": "لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّلي العرض أولًا ثم أعيدي المحاولة."
 };
 
 export function getErrorMessage(error: unknown, fallback = "حدث خطأ غير متوقع. حاولي مرة أخرى."): string {

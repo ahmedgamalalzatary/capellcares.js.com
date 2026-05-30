@@ -109,4 +109,31 @@ describe("OfferForm related items", () => {
       );
     });
   });
+
+  it("preserves existing offer item ids when saving an edited offer", async () => {
+    upsertOffer.mockClear();
+    const view = render(
+      createElement(OfferForm, {
+        mode: "edit",
+        initial: {
+          ...completeOffer(1),
+          items: [{ id: 77, variantId: 1, qty: 1 }]
+        } as any,
+        products,
+        relatedOptions
+      })
+    );
+    const form = within(view.container);
+
+    fireEvent.change(form.getByDisplayValue("1"), { target: { value: "3" } });
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
+
+    await waitFor(() => {
+      expect(upsertOffer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          items: [{ id: 77, variantId: 1, qty: 3 }]
+        })
+      );
+    });
+  });
 });

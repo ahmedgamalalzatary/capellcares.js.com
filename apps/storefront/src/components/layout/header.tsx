@@ -139,19 +139,11 @@ export function Header({ lang, dict, navGroups }: Props) {
         {/* ── Col 2: Logo (always center) ──────────────────────── */}
         <Link href={`/${lang}`} className="group inline-flex min-w-0 items-center justify-self-center" aria-label={dict.brand}>
           <Image
-            src="/capell-care-removebg-preview.png"
+            src="/image.jpeg"
             alt=""
             width={160}
             height={52}
             className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px] -mr-2"
-            priority
-          />
-          <Image
-            src="/logoblack-removebg-preview.png"
-            alt={dict.brand}
-            width={160}
-            height={52}
-            className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px]"
             priority
           />
           

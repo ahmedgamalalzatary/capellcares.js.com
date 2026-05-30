@@ -56,15 +56,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
   if (!offer) return notFound();
 
-  if (relatedItemsError) {
-    return (
-      <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
-        <div className="card">تعذر تحميل العناصر المرتبطة. لم يتم فتح نموذج الحفظ لتجنب حذف العلاقات الحالية. {relatedItemsError}</div>
-      </AdminShell>
-    );
-  }
-
-  if (relatedItems === null) {
+  if (relatedItems === null && !relatedItemsError) {
     return (
       <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
         <div className="card">جاري تحميل بيانات العرض...</div>
@@ -74,11 +66,17 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
   return (
     <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
+      {relatedItemsError && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات العرض، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+        </div>
+      )}
       <OfferForm
         mode="edit"
-        initial={{ ...offer, relatedItems }}
+        initial={relatedItems === null ? offer : { ...offer, relatedItems }}
         products={products}
         relatedOptions={buildRelatedOptions(products, offers)}
+        relatedItemsAvailable={!relatedItemsError}
       />
     </AdminShell>
   );

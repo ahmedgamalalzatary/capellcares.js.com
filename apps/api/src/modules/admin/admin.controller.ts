@@ -37,12 +37,17 @@ function parseRelatedItems(value: unknown): RelatedRef[] {
   if (!Array.isArray(value)) {
     return [];
   }
+  const seen = new Set<string>();
   const refs: RelatedRef[] = [];
   for (const item of value) {
     const type = (item as any)?.type;
     const id = Number((item as any)?.id);
     if (RELATED_ENTITY_TYPES.includes(type) && Number.isInteger(id) && id > 0) {
-      refs.push({ type, id });
+      const key = `${type}:${id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        refs.push({ type, id });
+      }
     }
   }
   return refs;
@@ -66,81 +71,98 @@ export async function adminGetProduct(req: Request, res: Response) {
 }
 
 export async function adminUpsertProduct(req: Request, res: Response) {
-  const incoming = req.body as any;
-  const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
-  const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
-  const resolvedSlug = toSlug(incoming.slug || productNameEn || productNameAr);
-  const productVariants = incoming.variants ?? [];
-  const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
-  const productStatus = incoming.status ?? "inactive";
-  if (
-    productStatus === "active" &&
-    (
-      !productNameAr ||
-      !productNameEn ||
-      productKeywords.length === 0 ||
-      !incoming.imagePath ||
-      !incoming.categoryId ||
-      productVariants.length === 0
-    )
-  ) {
-    return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
-  }
-  const created = await createAdminProductRepo({
-    id: incoming.id ? Number(incoming.id) : undefined,
-    sku: incoming.sku ?? "",
-    slug: resolvedSlug,
-    arName: productNameAr,
-    enName: productNameEn,
-    buyingPrice: Number(incoming.buyingPrice ?? 0),
-    keywords: productKeywords.join(","),
-    arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
-    enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
-    arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,
-    enIngredients: incoming.ingredients?.en ?? incoming.enIngredients ?? null,
-    arHowToUse: incoming.howToUse?.ar ?? incoming.arHowToUse ?? null,
-    enHowToUse: incoming.howToUse?.en ?? incoming.enHowToUse ?? null,
-    arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
-    enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
-    youtubeUrl: incoming.youtubeUrl ?? null,
-    imagePath: incoming.imagePath ?? null,
-    hoverImagePath: incoming.hoverImagePath ?? null,
-    media: Array.isArray(incoming.media)
-      ? incoming.media
-        .map((item: any) => ({
-          type: item?.type === "video" ? "video" : "image",
-          url: String(item?.url ?? "").trim()
-        }))
-        .filter((item: any) => item.url)
-      : undefined,
-    categoryId: Number(incoming.categoryId ?? 0),
-    status: productStatus,
-    isNew: incoming.isNew ?? false,
-    isBestseller: incoming.isBestseller ?? false
-  });
-  await replaceVariantsRepo(
-    created.id,
-    productVariants.map((v: any) => ({
-      sizeLabel: v.sizeLabel ?? v.size ?? "",
-      sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
-      stockQty: Number(v.stockQty ?? v.stock ?? 0)
-    }))
-  );
-  const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
-    (target) => !(target.type === "product" && target.id === created.id)
-  );
-  await setRelatedLinksForSourceRepo({ type: "product", id: created.id }, relatedRefs);
   try {
-    await triggerStorefrontProductRevalidation(resolvedSlug);
-  } catch (error) {
-    console.warn("Failed to trigger storefront revalidation for product", resolvedSlug, error);
+    const incoming = req.body as any;
+    const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
+    const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
+    const resolvedSlug = toSlug(incoming.slug || productNameEn || productNameAr);
+    const productVariants = incoming.variants ?? [];
+    const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
+    const productStatus = incoming.status ?? "inactive";
+    if (
+      productStatus === "active" &&
+      (
+        !productNameAr ||
+        !productNameEn ||
+        productKeywords.length === 0 ||
+        !incoming.imagePath ||
+        !incoming.categoryId ||
+        productVariants.length === 0
+      )
+    ) {
+      return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
+    }
+    const created = await createAdminProductRepo({
+      id: incoming.id ? Number(incoming.id) : undefined,
+      sku: incoming.sku ?? "",
+      slug: resolvedSlug,
+      arName: productNameAr,
+      enName: productNameEn,
+      buyingPrice: Number(incoming.buyingPrice ?? 0),
+      keywords: productKeywords.join(","),
+      arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
+      enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
+      arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,
+      enIngredients: incoming.ingredients?.en ?? incoming.enIngredients ?? null,
+      arHowToUse: incoming.howToUse?.ar ?? incoming.arHowToUse ?? null,
+      enHowToUse: incoming.howToUse?.en ?? incoming.enHowToUse ?? null,
+      arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
+      enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
+      youtubeUrl: incoming.youtubeUrl ?? null,
+      imagePath: incoming.imagePath ?? null,
+      hoverImagePath: incoming.hoverImagePath ?? null,
+      media: Array.isArray(incoming.media)
+        ? incoming.media
+          .map((item: any) => ({
+            type: item?.type === "video" ? "video" : "image",
+            url: String(item?.url ?? "").trim()
+          }))
+          .filter((item: any) => item.url)
+        : undefined,
+      categoryId: Number(incoming.categoryId ?? 0),
+      status: productStatus,
+      isNew: incoming.isNew ?? false,
+      isBestseller: incoming.isBestseller ?? false
+    });
+    await replaceVariantsRepo(
+      created.id,
+      productVariants.map((v: any) => ({
+        id: v.id ? Number(v.id) : undefined,
+        sizeLabel: v.sizeLabel ?? v.size ?? "",
+        sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
+        stockQty: Number(v.stockQty ?? v.stock ?? 0)
+      }))
+    );
+    if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
+      const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
+        (target) => !(target.type === "product" && target.id === created.id)
+      );
+      await setRelatedLinksForSourceRepo({ type: "product", id: created.id }, relatedRefs);
+    }
+    try {
+      await triggerStorefrontProductRevalidation(resolvedSlug);
+    } catch (error) {
+      console.warn("Failed to trigger storefront revalidation for product", resolvedSlug, error);
+    }
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "PRODUCT_VARIANT_LINKED_TO_OFFERS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    throw error;
   }
-  res.json({ ok: true });
 }
 
 export async function adminSoftDeleteProduct(req: Request, res: Response) {
   const { softDeleteProductRepo } = await import("../../repositories/product.repository.js");
-  await softDeleteProductRepo(Number(req.params.id));
+  try {
+    await softDeleteProductRepo(Number(req.params.id));
+  } catch (error: any) {
+    if (error?.code === "PRODUCT_LINKED_TO_OFFERS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    throw error;
+  }
   res.json({ ok: true });
 }
 
@@ -152,7 +174,15 @@ export async function adminRestoreProduct(req: Request, res: Response) {
 
 export async function adminHardDeleteProduct(req: Request, res: Response) {
   const { hardDeleteProductRepo } = await import("../../repositories/product.repository.js");
-  const result = await hardDeleteProductRepo(Number(req.params.id));
+  let result;
+  try {
+    result = await hardDeleteProductRepo(Number(req.params.id));
+  } catch (error: any) {
+    if (error?.code === "PRODUCT_LINKED_TO_OFFERS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    throw error;
+  }
   if (!result) {
     return res.status(404).json({ ok: false, reason: "not-in-trash" });
   }
@@ -268,12 +298,18 @@ export async function adminUpsertOffer(req: Request, res: Response) {
     fixedPrice: Number(incoming.price ?? incoming.fixedPrice ?? 0),
     status: incoming.status ?? "inactive",
     visibility: incoming.visibility ?? "visible",
-    items: (incoming.items ?? []).map((item: any) => ({ variantId: Number(item.variantId), qty: Number(item.qty) }))
+    items: (incoming.items ?? []).map((item: any) => ({
+      id: item.id ? Number(item.id) : undefined,
+      variantId: Number(item.variantId),
+      qty: Number(item.qty)
+    }))
   });
-  const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
-    (target) => !(target.type === "offer" && target.id === offerId)
-  );
-  await setRelatedLinksForSourceRepo({ type: "offer", id: offerId }, relatedRefs);
+  if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
+    const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
+      (target) => !(target.type === "offer" && target.id === offerId)
+    );
+    await setRelatedLinksForSourceRepo({ type: "offer", id: offerId }, relatedRefs);
+  }
   res.json({ ok: true });
 }
 
