@@ -1,18 +1,43 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
+import type { RelatedItemRef } from "@capella/shared";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { ProductForm } from "@/components/forms/product-form";
+import { buildRelatedOptions } from "@/components/forms/related-options";
+import { api } from "@/lib/api/client";
 import { useStore } from "@/lib/store";
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const products = useStore((s) => s.products);
+  const offers = useStore((s) => s.offers);
   const categories = useStore((s) => s.categories);
   const loaded = useStore((s) => s.loaded);
   const error = useStore((s) => s.error);
   const product = products.find((p) => p.id === Number(id));
+
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
+  const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setRelatedItems(null);
+    setRelatedItemsError(null);
+    api
+      .get<{ relatedItems?: RelatedItemRef[] }>(`/api/erp/products/${id}`)
+      .then((detail) => {
+        if (active) setRelatedItems(detail.relatedItems ?? []);
+      })
+      .catch((error) => {
+        if (active) {
+          setRelatedItemsError(error instanceof Error ? error.message : "تعذر تحميل العناصر المرتبطة.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   if (!loaded) {
     return (
@@ -32,12 +57,33 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   if (!product) return notFound();
 
+  if (relatedItemsError) {
+    return (
+      <AdminShell title={`تعديل: ${product.name.ar}`} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
+        <div className="card">تعذر تحميل العناصر المرتبطة. لم يتم فتح نموذج الحفظ لتجنب حذف العلاقات الحالية. {relatedItemsError}</div>
+      </AdminShell>
+    );
+  }
+
+  if (relatedItems === null) {
+    return (
+      <AdminShell title={`تعديل: ${product.name.ar}`} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
+        <div className="card">جاري تحميل بيانات المنتج...</div>
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell
       title={`تعديل: ${product.name.ar}`}
       crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}
     >
-      <ProductForm mode="edit" initial={product} categories={categories} />
+      <ProductForm
+        mode="edit"
+        initial={{ ...product, relatedItems }}
+        categories={categories}
+        relatedOptions={buildRelatedOptions(products, offers)}
+      />
     </AdminShell>
   );
 }

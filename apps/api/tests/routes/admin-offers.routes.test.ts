@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
-import { eq } from "drizzle-orm";
-import { offerItems, offers } from "@capella/database/drizzle/schema";
+import { and, asc, eq } from "drizzle-orm";
+import { offerItems, offers, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -98,6 +98,69 @@ test("admin offer upsert creates a new offer when the payload has no id", async 
 
   await db.delete(offerItems).where(eq(offerItems.offerId, createdOffer.id));
   await db.delete(offers).where(eq(offers.id, createdOffer.id));
+});
+
+test("admin offer upsert persists mirrored related links", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-related-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض مرتبط", en: "Related Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 199,
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }],
+        relatedItems: [{ type: "product", id: ids.productOneId }]
+      })
+    });
+
+    assert.equal(createResponse.status, 200);
+    assert.equal(createResponse.json.ok, true);
+  });
+
+  const [created] = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug)).limit(1);
+  assert.ok(created, "expected created offer to exist");
+
+  const offerLinks = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, created.id)))
+    .orderBy(asc(relatedItems.id));
+  const productLinks = await db
+    .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId, rank: relatedItems.rank })
+    .from(relatedItems)
+    .where(and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, ids.productOneId)))
+    .orderBy(asc(relatedItems.id));
+
+  assert.deepEqual(offerLinks, [{ targetType: "product", targetId: ids.productOneId, rank: 1 }]);
+  assert.deepEqual(productLinks, [{ targetType: "offer", targetId: created.id, rank: 1 }]);
+
+  await db.delete(relatedItems);
+  await db.delete(offerItems).where(eq(offerItems.offerId, created.id));
+  await db.delete(offers).where(eq(offers.id, created.id));
+});
+
+test("admin offer detail returns a related-items array for editing", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${ids.offerId}`, {
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.id, ids.offerId);
+    assert.ok(Array.isArray(response.json.relatedItems));
+  });
 });
 
 test("admin offers list returns ERP offer shape with bilingual name", async () => {

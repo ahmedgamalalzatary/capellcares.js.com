@@ -51,10 +51,35 @@ export interface Product {
   categoryId: number;
   variants: ProductVariant[];
   offerIds?: number[];
+  relatedItems?: RelatedItemRef[];
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
 }
+
+export type RelatedItemType = "product" | "offer" | "collection";
+
+export interface RelatedItemRef {
+  type: RelatedItemType;
+  id: number;
+}
+
+export interface RelatedItemCard {
+  type: RelatedItemType;
+  id: number;
+  slug: string;
+  name: Bilingual;
+  imagePath: string | null;
+  price: number;
+}
+
+export type StorefrontProductDetail = Omit<Product, "relatedItems"> & {
+  relatedItems?: RelatedItemCard[];
+};
+
+export type StorefrontOfferDetail = Omit<Offer, "relatedItems"> & {
+  relatedItems?: RelatedItemCard[];
+};
 
 export interface OfferItem {
   variantId: number;
@@ -72,6 +97,7 @@ export interface Offer {
   items: OfferItem[];
   stock: number;
   status: "active" | "inactive";
+  relatedItems?: RelatedItemRef[];
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;

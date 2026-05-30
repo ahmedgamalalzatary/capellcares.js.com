@@ -5,6 +5,7 @@ import { productVariants } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../repositories/category.repository.js";
 import { findOfferBySlugRepo, listVisibleOffersRepo } from "../../repositories/offer.repository.js";
 import { findVisibleProductBySlug, findVisibleProducts } from "../../repositories/product.repository.js";
+import { getStorefrontRelatedCardsRepo } from "../../repositories/related-item.repository.js";
 import { toStorefrontOffer } from "./offers/offers.mapper.js";
 
 export async function listProducts(req: Request, res: Response) {
@@ -53,7 +54,8 @@ export async function getOfferBySlug(req: Request, res: Response) {
   const offer = await findOfferBySlugRepo(req.params.slug);
   if (!offer) return res.status(404).json({ message: "Offer not found" });
   const inventory = await calculateOfferInventory(offer.items);
-  res.json(toStorefrontOffer({ ...offer, stock: inventory.stock }, inventory.originalTotal));
+  const relatedItems = await getStorefrontRelatedCardsRepo({ type: "offer", id: offer.id });
+  res.json({ ...toStorefrontOffer({ ...offer, stock: inventory.stock }, inventory.originalTotal), relatedItems });
 }
 
 async function calculateOfferInventory(items: Array<{ variantId: number; qty: number }>) {

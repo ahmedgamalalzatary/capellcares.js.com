@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer } from "@capella/shared";
+import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
+import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -18,9 +19,10 @@ interface Props {
   offers: Offer[];
   lang: Language;
   dict: any;
+  relatedItems?: RelatedItemCard[];
 }
 
-export function ProductDetail({ product, offers, lang, dict }: Props) {
+export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
   const wishlist = useWishlist();
@@ -69,6 +71,7 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
   ];
 
   return (
+    <>
     <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
       <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-[140px]">
         <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
@@ -226,5 +229,7 @@ export function ProductDetail({ product, offers, lang, dict }: Props) {
         </div>
       </div>
     </div>
+    <RelatedItems items={relatedItems} lang={lang} title={dict.product?.related} />
+    </>
   );
 }

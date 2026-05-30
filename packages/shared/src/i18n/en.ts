@@ -65,6 +65,7 @@ export const en = {
     howToUse: "How to use",
     warnings: "Warnings",
     relatedOffers: "Part of these offers",
+    related: "You may also like",
     sku: "SKU",
     selectSize: "Select size",
     moreSizes: "{n} sizes"
@@ -156,7 +157,8 @@ export const en = {
     listEmpty: "No offers available right now.",
     bundleEyebrow: "Capella bundle",
     added: "Added ✓",
-    unavailable: "One of the products in this bundle is currently unavailable."
+    unavailable: "One of the products in this bundle is currently unavailable.",
+    related: "You may also like"
   },
   auth: {
     loginTitle: "Welcome back",

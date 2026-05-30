@@ -22,13 +22,47 @@ import { toSlug } from "../../services/slug.service.js";
 import { db } from "@capella/database/src/db";
 import { productVariants } from "@capella/database/drizzle/schema";
 import { inArray } from "drizzle-orm";
+import {
+  listRelatedLinksForSourceRepo,
+  setRelatedLinksForSourceRepo,
+  type RelatedEntityType,
+  type RelatedRef
+} from "../../repositories/related-item.repository.js";
 import { toAdminOffer } from "./offers/admin-offers.mapper.js";
 import { triggerStorefrontProductRevalidation } from "./storefront-revalidation.js";
+
+const RELATED_ENTITY_TYPES: RelatedEntityType[] = ["product", "offer", "collection"];
+
+function parseRelatedItems(value: unknown): RelatedRef[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const refs: RelatedRef[] = [];
+  for (const item of value) {
+    const type = (item as any)?.type;
+    const id = Number((item as any)?.id);
+    if (RELATED_ENTITY_TYPES.includes(type) && Number.isInteger(id) && id > 0) {
+      refs.push({ type, id });
+    }
+  }
+  return refs;
+}
 
 // ---- products ----
 
 export async function adminListProducts(_req: Request, res: Response) {
   res.json({ items: await listAdminProductsRepo() });
+}
+
+export async function adminGetProduct(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const product = (await listAdminProductsRepo()).find((item) => item.id === id);
+  if (!product) {
+    return res.status(404).json({ ok: false, reason: "not-found" });
+  }
+
+  const relatedItems = await listRelatedLinksForSourceRepo("product", id);
+  return res.json({ ...product, relatedItems });
 }
 
 export async function adminUpsertProduct(req: Request, res: Response) {
@@ -92,6 +126,10 @@ export async function adminUpsertProduct(req: Request, res: Response) {
       stockQty: Number(v.stockQty ?? v.stock ?? 0)
     }))
   );
+  const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
+    (target) => !(target.type === "product" && target.id === created.id)
+  );
+  await setRelatedLinksForSourceRepo({ type: "product", id: created.id }, relatedRefs);
   try {
     await triggerStorefrontProductRevalidation(resolvedSlug);
   } catch (error) {
@@ -205,9 +243,21 @@ export async function adminListOffers(_req: Request, res: Response) {
   res.json({ items });
 }
 
+export async function adminGetOffer(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const offer = (await listOffersRepo(true)).find((item) => item.id === id);
+  if (!offer) {
+    return res.status(404).json({ ok: false, reason: "not-found" });
+  }
+
+  const inventory = await calculateOfferInventory(offer.items);
+  const relatedItems = await listRelatedLinksForSourceRepo("offer", id);
+  return res.json({ ...toAdminOffer(offer, inventory.originalTotal, inventory.stock), relatedItems });
+}
+
 export async function adminUpsertOffer(req: Request, res: Response) {
   const incoming = req.body as any;
-  await upsertOfferRepo({
+  const { id: offerId } = await upsertOfferRepo({
     id: incoming.id,
     slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
     arName: incoming.name?.ar ?? incoming.arName ?? "",
@@ -220,6 +270,10 @@ export async function adminUpsertOffer(req: Request, res: Response) {
     visibility: incoming.visibility ?? "visible",
     items: (incoming.items ?? []).map((item: any) => ({ variantId: Number(item.variantId), qty: Number(item.qty) }))
   });
+  const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
+    (target) => !(target.type === "offer" && target.id === offerId)
+  );
+  await setRelatedLinksForSourceRepo({ type: "offer", id: offerId }, relatedRefs);
   res.json({ ok: true });
 }
 

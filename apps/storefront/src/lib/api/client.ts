@@ -1,4 +1,14 @@
-import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import type {
+  Advice,
+  Category,
+  Offer,
+  Order,
+  OrderSummary,
+  Product,
+  RelatedItemCard,
+  StorefrontOfferDetail,
+  StorefrontProductDetail
+} from "@capella/shared";
 import { resolveApiBase } from "@capella/shared/api/base";
 
 export const API_BASE = resolveApiBase();
@@ -7,6 +17,14 @@ type ProductApiShape = Product & {
   media?: Array<{ type: "image" | "video"; url: string }>;
   imagePath?: string | null;
   hoverImagePath?: string | null;
+};
+
+type ProductDetailApiShape = Omit<ProductApiShape, "relatedItems"> & {
+  relatedItems?: RelatedItemCard[];
+};
+
+type OfferDetailApiShape = Omit<Offer, "relatedItems"> & {
+  relatedItems?: RelatedItemCard[];
 };
 
 type CategoryApiShape = {
@@ -91,7 +109,7 @@ async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T>
   return res.json() as Promise<T>;
 }
 
-function normalizeProduct(product: ProductApiShape): Product {
+function normalizeProduct<T extends ProductApiShape>(product: T): T {
   const normalizedImagePath = resolveMediaUrl(product.imagePath ?? "");
   const media = product.media?.length
     ? product.media.map((item) => ({ ...item, url: resolveMediaUrl(item.url) }))
@@ -123,6 +141,14 @@ export async function fetchProductBySlug(slug: string, options?: { lang?: string
   return product ? normalizeProduct(product) : null;
 }
 
+export async function fetchProductDetailBySlug(
+  slug: string,
+  options?: { lang?: string }
+): Promise<StorefrontProductDetail | null> {
+  const product = await getJSON<ProductDetailApiShape>(`/api/v1/products/${encodeURIComponent(slug)}`, options);
+  return product ? normalizeProduct(product) : null;
+}
+
 export async function fetchCategories(options?: { lang?: string }): Promise<Category[]> {
   const data = await getJSON<{ items: CategoryApiShape[] }>(`/api/v1/categories`, options);
   return (data?.items ?? []).map(normalizeCategory);
@@ -135,6 +161,13 @@ export async function fetchOffers(options?: { lang?: string }): Promise<Offer[]>
 
 export async function fetchOfferBySlug(slug: string, options?: { lang?: string }): Promise<Offer | null> {
   return getJSON<Offer>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
+}
+
+export async function fetchOfferDetailBySlug(
+  slug: string,
+  options?: { lang?: string }
+): Promise<StorefrontOfferDetail | null> {
+  return getJSON<OfferDetailApiShape>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
 }
 
 export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[]> {

@@ -12,12 +12,15 @@ import {
   productMedia,
   productVariants,
   products,
+  relatedItems,
   wishlists
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
+  await db.delete(relatedItems);
+  await db.delete(offers).where(sql`${offers.slug} like 'rel-offer-%'`);
   await db.delete(authSessions);
   await db.delete(adminUsers);
   await db.delete(wishlists);
@@ -117,7 +120,8 @@ async function clearTransientProducts() {
       "ROUTE-NO-AR",
       "ROUTE-INACTIVE-INCOMPLETE",
       "ROUTE-ACTIVE-COMPLETE",
-      "ROUTE-MEDIA-COMPLETE"
+      "ROUTE-MEDIA-COMPLETE",
+      "ROUTE-RELATED-PRODUCT"
     ]));
 
   const serviceRows = await db

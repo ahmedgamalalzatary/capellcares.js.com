@@ -4,8 +4,8 @@ import test, { beforeEach } from "node:test";
 import { mkdir, writeFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { eq } from "drizzle-orm";
-import { productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { and, asc, eq, or } from "drizzle-orm";
+import { productMedia, products, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -258,6 +258,76 @@ test("admin product upsert persists ordered media and a dedicated hover image se
     { mediaType: "image", url: "/uploads/route-gallery-secondary.jpg", sortOrder: 2 },
     { mediaType: "video", url: "/uploads/route-demo.mp4", sortOrder: 3 }
   ]);
+});
+
+test("admin product upsert persists mirrored related product links", async () => {
+  const ids = await getBaselineIds();
+
+  const createResponse = await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    return request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: "ROUTE-RELATED-PRODUCT",
+        relatedItems: [{ type: "product", id: ids.productTwoId }]
+      })
+    });
+  });
+
+  assert.equal(createResponse.status, 200);
+  assert.equal(createResponse.json.ok, true);
+
+  const [created] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.sku, "ROUTE-RELATED-PRODUCT"))
+    .limit(1);
+
+  assert.ok(created, "expected created product to exist");
+
+  const relatedRows = await db
+    .select({
+      sourceType: relatedItems.sourceType,
+      sourceId: relatedItems.sourceId,
+      targetType: relatedItems.targetType,
+      targetId: relatedItems.targetId,
+      rank: relatedItems.rank
+    })
+    .from(relatedItems)
+    .where(
+      or(
+        and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, created.id)),
+        and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, ids.productTwoId))
+      )
+    )
+    .orderBy(asc(relatedItems.id));
+
+  assert.deepEqual(relatedRows, [
+    { sourceType: "product", sourceId: created.id, targetType: "product", targetId: ids.productTwoId, rank: 1 },
+    { sourceType: "product", sourceId: ids.productTwoId, targetType: "product", targetId: created.id, rank: 1 }
+  ]);
+});
+
+test("admin product detail returns a related-items array for editing", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}`, {
+      headers: {
+        ...authHeaders
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.id, ids.productOneId);
+    assert.ok(Array.isArray(response.json.relatedItems));
+  });
 });
 
 test("admin product toggle-status flips the persisted DB status", async () => {

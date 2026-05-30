@@ -4,6 +4,7 @@ import { ProductDetail } from "@/components/products/product-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import {
   fetchProductBySlug,
+  fetchProductDetailBySlug,
   fetchCategories,
   fetchOffers,
   fetchProducts,
@@ -37,7 +38,7 @@ export default async function ProductDetailsPage({
 }) {
   const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
   const product = requireStorefrontValue(
-    await fetchProductBySlug(slug, { lang }),
+    await fetchProductDetailBySlug(slug, { lang }),
     (candidate) => !candidate || candidate.status !== "active" || Boolean(candidate.deletedAt)
   );
   const [categories, allOffers, allProducts] = await Promise.all([
@@ -74,7 +75,13 @@ export default async function ProductDetailsPage({
           { label: pickLang(product.name, lang) }
         ]}
       />
-      <ProductDetail product={product} offers={offers} lang={lang} dict={dict} />
+      <ProductDetail
+        product={product}
+        offers={offers}
+        lang={lang}
+        dict={dict}
+        relatedItems={product.relatedItems ?? []}
+      />
     </main>
   );
 }

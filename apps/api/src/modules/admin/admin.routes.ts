@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   adminListProducts,
+  adminGetProduct,
   adminUpsertProduct,
   adminSoftDeleteProduct,
   adminRestoreProduct,
@@ -12,6 +13,7 @@ import {
   adminSoftDeleteCategory,
   adminRestoreCategory,
   adminListOffers,
+  adminGetOffer,
   adminUpsertOffer,
   adminSoftDeleteOffer,
   adminRestoreOffer,
@@ -24,6 +26,7 @@ import { getAdminSalesController } from "../orders/orders.controller.js";
 export const adminRoutes = Router();
 
 adminRoutes.get("/products", adminListProducts);
+adminRoutes.get("/products/:id", adminGetProduct);
 adminRoutes.post("/products", adminUpsertProduct);
 adminRoutes.delete("/products/:id", adminSoftDeleteProduct);
 adminRoutes.post("/products/:id/restore", adminRestoreProduct);
@@ -38,6 +41,7 @@ adminRoutes.post("/categories/:id/restore", adminRestoreCategory);
 adminRoutes.get("/sales", getAdminSalesController);
 
 adminRoutes.get("/offers", adminListOffers);
+adminRoutes.get("/offers/:id", adminGetOffer);
 adminRoutes.post("/offers", adminUpsertOffer);
 adminRoutes.delete("/offers/:id", adminSoftDeleteOffer);
 adminRoutes.post("/offers/:id/restore", adminRestoreOffer);

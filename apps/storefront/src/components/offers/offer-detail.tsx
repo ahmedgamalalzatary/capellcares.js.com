@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, type Language, type Offer, type Product } from "@capella/shared";
+import { pickLang, formatPrice, type Language, type Offer, type Product, type RelatedItemCard } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
+import { RelatedItems } from "@/components/products/related-items";
 
 interface ItemEntry {
   qty: number;
@@ -23,9 +24,10 @@ interface Props {
   items: ItemEntry[];
   lang: Language;
   dict: any;
+  relatedItems?: RelatedItemCard[];
 }
 
-export function OfferDetail({ offer, items, lang, dict }: Props) {
+export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
   const [added, setAdded] = useState(false);
@@ -45,6 +47,7 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
 
   const isAr = lang === "ar";
   return (
+    <>
     <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-[64px]">
       <div className="relative overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
         <div className="absolute end-4 top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-(--accent) px-3 py-1.5 text-[11px] tracking-[0.16em] text-(--canvas) uppercase sm:end-5 sm:top-5">
@@ -118,6 +121,8 @@ export function OfferDetail({ offer, items, lang, dict }: Props) {
         )}
       </div>
     </div>
+    <RelatedItems items={relatedItems} lang={lang} title={dict.offers?.related} />
+    </>
   );
 }
 

@@ -2,13 +2,15 @@
 
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/components/forms/offer-form";
+import { buildRelatedOptions } from "@/components/forms/related-options";
 import { useStore } from "@/lib/store";
 
 export default function NewOfferPage() {
   const products = useStore((s) => s.products);
+  const offers = useStore((s) => s.offers);
   return (
     <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "عرض جديد" }]}>
-      <OfferForm mode="new" products={products} />
+      <OfferForm mode="new" products={products} relatedOptions={buildRelatedOptions(products, offers)} />
     </AdminShell>
   );
 }

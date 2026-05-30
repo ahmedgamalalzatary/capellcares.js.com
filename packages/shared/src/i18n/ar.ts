@@ -65,6 +65,7 @@ export const ar = {
     howToUse: "طريقة الاستخدام",
     warnings: "تحذيرات",
     relatedOffers: "ضمن هذه العروض",
+    related: "قد يعجبك أيضًا",
     sku: "كود المنتج",
     selectSize: "اختر الحجم",
     moreSizes: "{n} أحجام"
@@ -156,7 +157,8 @@ export const ar = {
     listEmpty: "لا توجد عروض حاليًا.",
     bundleEyebrow: "باقة كابيلا",
     added: "أُضيف ✓",
-    unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا."
+    unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا.",
+    related: "قد يعجبك أيضًا"
   },
   auth: {
     loginTitle: "أهلًا بعودتك",

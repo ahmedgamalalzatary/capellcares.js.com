@@ -2,23 +2,25 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import type { Offer, OfferItem, Product } from "@capella/shared";
+import type { Offer, OfferItem, Product, RelatedItemRef } from "@capella/shared";
 import { formatPrice } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { slugifyFormName } from "./form-slug";
 import { ImageUpload } from "./image-upload";
+import { RelatedItemsField, type RelatedOption } from "./related-items-field";
 
 interface Props {
   mode: "new" | "edit";
   initial?: Offer;
   products: Product[];
+  relatedOptions?: RelatedOption[];
 }
 
 interface Row { productId: number; variantId: number; qty: number }
 
-export function OfferForm({ mode, initial, products }: Props) {
+export function OfferForm({ mode, initial, products, relatedOptions = [] }: Props) {
   const router = useRouter();
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
@@ -33,7 +35,13 @@ export function OfferForm({ mode, initial, products }: Props) {
       return { productId: product?.id ?? 0, variantId: it.variantId, qty: it.qty };
     });
   });
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[]>(initial?.relatedItems ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // An offer can never relate to itself.
+  const relatedSelectableOptions = relatedOptions.filter(
+    (option) => !(option.type === "offer" && option.id === initial?.id)
+  );
 
   const computed = useMemo(() => {
     let originalTotal = 0;
@@ -84,6 +92,7 @@ export function OfferForm({ mode, initial, products }: Props) {
       originalTotal: computed.originalTotal,
       stock: initial?.stock ?? 0,
       items,
+      relatedItems,
       status: "active",
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -198,6 +207,17 @@ export function OfferForm({ mode, initial, products }: Props) {
               </span>
             </div>
             {savings < 0 && <p className="field-error">سعر الباقة أعلى من السعر الأصلي.</p>}
+          </div>
+        </section>
+
+        <section className="card">
+          <div className="card__head"><h3 className="card__title">العناصر المرتبطة</h3></div>
+          <div className="card__body">
+            <RelatedItemsField
+              value={relatedItems}
+              options={relatedSelectableOptions}
+              onChange={setRelatedItems}
+            />
           </div>
         </section>
 

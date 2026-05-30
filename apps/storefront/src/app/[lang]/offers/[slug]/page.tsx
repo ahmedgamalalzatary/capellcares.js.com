@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
 import { OfferDetail } from "@/components/offers/offer-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { fetchOfferBySlug, fetchProducts } from "@/lib/api/client";
+import { fetchOfferBySlug, fetchOfferDetailBySlug, fetchProducts } from "@/lib/api/client";
 import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { breadcrumbJsonLd, buildOfferMetadata, offerJsonLd } from "@/lib/seo";
 
@@ -18,7 +18,7 @@ export async function generateMetadata({
 
 export default async function OfferDetailsPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
   const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
-  const offer = requireStorefrontValue(await fetchOfferBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
+  const offer = requireStorefrontValue(await fetchOfferDetailBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
   const products = await fetchProducts({ lang });
 
   const items = offer.items.map((it) => {
@@ -51,7 +51,13 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
           { label: pickLang(offer.name, lang) }
         ]}
       />
-      <OfferDetail offer={offer} items={items} lang={lang} dict={dict} />
+      <OfferDetail
+        offer={offer}
+        items={items}
+        lang={lang}
+        dict={dict}
+        relatedItems={offer.relatedItems ?? []}
+      />
     </main>
   );
 }

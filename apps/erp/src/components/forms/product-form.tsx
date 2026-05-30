@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import type { Product, Category, ProductVariant } from "@capella/shared";
+import type { Product, Category, ProductVariant, RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
@@ -10,11 +10,13 @@ import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./edi
 import { ProductHoverImageUpload } from "./product-hover-image-upload";
 import { slugifyFormName } from "./form-slug";
 import { ProductMediaUpload } from "./product-media-upload";
+import { RelatedItemsField, type RelatedOption } from "./related-items-field";
 
 interface Props {
   mode: "new" | "edit";
   initial?: Product;
   categories: Category[];
+  relatedOptions?: RelatedOption[];
 }
 
 function newVariantId() {
@@ -28,7 +30,7 @@ type Requirement = {
   ok: boolean;
 };
 
-export function ProductForm({ mode, initial, categories }: Props) {
+export function ProductForm({ mode, initial, categories, relatedOptions = [] }: Props) {
   const router = useRouter();
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
@@ -55,7 +57,13 @@ export function ProductForm({ mode, initial, categories }: Props) {
   const [variants, setVariants] = useState<ProductVariant[]>(
     initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
   );
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[]>(initial?.relatedItems ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // A product can never relate to itself.
+  const relatedSelectableOptions = relatedOptions.filter(
+    (option) => !(option.type === "product" && option.id === initial?.id)
+  );
 
   const updateVariant = (id: number, patch: Partial<ProductVariant>) => {
     setVariants((vs) => vs.map((v) => v.id === id ? { ...v, ...patch } : v));
@@ -128,6 +136,7 @@ export function ProductForm({ mode, initial, categories }: Props) {
       categoryId: categoryId ?? 0,
       variants: variants.map((v, i) => ({ ...v, productId: id ?? 0, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
       offerIds: initial?.offerIds ?? [],
+      relatedItems,
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null
@@ -316,6 +325,23 @@ export function ProductForm({ mode, initial, categories }: Props) {
                 <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
                 {errors.categoryId && <div className="field-error" style={{ marginTop: 6 }}>{errors.categoryId}</div>}
               </div>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="card__head">
+              <div className="section-num">
+                <span className="section-num__digit">05</span>
+                <span className="section-num__rule" />
+                <h3 className="card__title">العناصر المرتبطة</h3>
+              </div>
+            </div>
+            <div className="card__body">
+              <RelatedItemsField
+                value={relatedItems}
+                options={relatedSelectableOptions}
+                onChange={setRelatedItems}
+              />
             </div>
           </section>
 

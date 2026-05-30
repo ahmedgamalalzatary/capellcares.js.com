@@ -66,6 +66,103 @@ vi.mock("@/lib/store", () => ({
 import ProductsListPage from "@/app/products/page";
 import { ProductForm } from "@/components/forms/product-form";
 
+const relatedOptions = [
+  { type: "product" as const, id: 1, name: { ar: "منتج حالي", en: "Current Product" }, slug: "product-1" },
+  { type: "product" as const, id: 2, name: { ar: "منتج آخر", en: "Other Product" }, slug: "product-2" },
+  { type: "offer" as const, id: 3, name: { ar: "عرض مرتبط", en: "Related Offer" }, slug: "offer-3" }
+];
+
+function minimalProduct(id: number) {
+  return {
+    id,
+    sku: `SKU-${id}`,
+    slug: `product-${id}`,
+    name: { ar: "منتج", en: "Product" },
+    description: { ar: "", en: "" },
+    ingredients: { ar: "", en: "" },
+    howToUse: { ar: "", en: "" },
+    warnings: { ar: "", en: "" },
+    keywords: [],
+    buyingPrice: 10,
+    imagePath: "",
+    media: [],
+    status: "inactive" as const,
+    isNew: false,
+    isBestseller: false,
+    categoryId: 5,
+    variants: [{ id: 11, productId: id, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+    createdAt: "",
+    updatedAt: ""
+  };
+}
+
+describe("ProductForm related items", () => {
+  it("renders the related-items selector", () => {
+    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
+    const form = within(view.container);
+    expect(form.getByTestId("related-items-field")).toBeInTheDocument();
+    expect(form.getByTestId("related-items-add")).toBeInTheDocument();
+  });
+
+  it("excludes the current product from its own related options", () => {
+    const view = render(
+      createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions })
+    );
+    const select = within(view.container).getByTestId("related-items-add") as HTMLSelectElement;
+    const values = Array.from(select.querySelectorAll("option")).map((option) => option.value);
+    expect(values).not.toContain("product:1");
+    expect(values).toContain("product:2");
+    expect(values).toContain("offer:3");
+  });
+
+  it("saves the selected related items in the chosen order", async () => {
+    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
+    const form = within(view.container);
+    fireEvent.change(form.getAllByRole("textbox")[0]!, { target: { value: "منتج" } });
+
+    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "product:2" } });
+    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "offer:3" } });
+
+    fireEvent.click(form.getByRole("button", { name: "حفظ المنتج" }));
+
+    await waitFor(() => {
+      expect(upsertProduct).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relatedItems: [
+            { type: "product", id: 2 },
+            { type: "offer", id: 3 }
+          ]
+        })
+      );
+    });
+  });
+
+  it("reorders a related item up and saves the new order", async () => {
+    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
+    const form = within(view.container);
+    fireEvent.change(form.getAllByRole("textbox")[0]!, { target: { value: "منتج" } });
+
+    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "product:2" } });
+    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "offer:3" } });
+
+    const rows = form.getAllByTestId("related-item-row");
+    fireEvent.click(within(rows[1]!).getByRole("button", { name: "تحريك لأعلى" }));
+
+    fireEvent.click(form.getByRole("button", { name: "حفظ المنتج" }));
+
+    await waitFor(() => {
+      expect(upsertProduct).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relatedItems: [
+            { type: "offer", id: 3 },
+            { type: "product", id: 2 }
+          ]
+        })
+      );
+    });
+  });
+});
+
 describe("ProductsListPage", () => {
   it("keeps the toggle modal open, shows an error, and resets loading when status toggle fails", async () => {
     render(createElement(ProductsListPage));

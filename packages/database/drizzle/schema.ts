@@ -7,8 +7,13 @@ import {
   mysqlTable,
   text,
   timestamp,
+  unique,
   varchar
 } from "drizzle-orm/mysql-core";
+
+export const relatedItemEntityTypes = ["product", "offer", "collection"] as const;
+
+export const relatedItemTargetTypes = ["product", "offer", "collection"] as const;
 
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
@@ -108,6 +113,27 @@ export const offerItems = mysqlTable("offer_items", {
   qty: int("qty").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
+
+export const relatedItems = mysqlTable(
+  "related_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sourceType: mysqlEnum("source_type", relatedItemEntityTypes).notNull(),
+    sourceId: int("source_id").notNull(),
+    targetType: mysqlEnum("target_type", relatedItemEntityTypes).notNull(),
+    targetId: int("target_id").notNull(),
+    rank: int("rank").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    relatedItemsLinkUnique: unique("related_items_link_unique").on(
+      table.sourceType,
+      table.sourceId,
+      table.targetType,
+      table.targetId
+    )
+  })
+);
 
 export const customers = mysqlTable("customers", {
   id: int("id").autoincrement().primaryKey(),
