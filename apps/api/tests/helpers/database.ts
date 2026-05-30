@@ -20,28 +20,19 @@ import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.se
 
 export async function resetApiTestDatabase() {
   await db.delete(relatedItems);
-  await db.delete(offers).where(sql`${offers.slug} like 'rel-offer-%'`);
   await db.delete(authSessions);
-  await db.delete(adminUsers);
   await db.delete(wishlists);
   await db.delete(orderItems);
+  await db.delete(offerItems);
   await db.delete(orders);
+  await db.delete(offers);
   await db.delete(advices);
-  await clearTransientProducts();
-  await db.delete(categories).where(
-    or(
-      inArray(categories.slug, [
-        "route-parent-cat",
-        "route-child-cat",
-        "her-skin",
-        "his-skin",
-        "her-skin-dry",
-        "his-skin-dry"
-      ]),
-      sql`${categories.slug} like 'route-parent-leaf-%'`,
-      sql`${categories.slug} like 'route-grandchild-cat-%'`
-    )
-  );
+  await db.delete(productMedia);
+  await db.delete(productVariants);
+  await db.delete(products);
+  await db.delete(customers);
+  await db.delete(categories);
+  await db.delete(adminUsers);
   await clearTestSeed();
   await seedTestData();
 }
@@ -103,49 +94,4 @@ export async function getBaselineIds() {
     firstVariantId: firstVariant.id,
     secondVariantId: secondVariant.id
   };
-}
-
-async function clearTransientProducts() {
-  const rows = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(inArray(products.sku, [
-      "ROUTE-ACTIVE-001",
-      "ERP-SKU-TEST-001",
-      "ERP-SKU-TEST-002",
-      "ROUTE-NO-VARIANTS",
-      "ROUTE-NO-KEYWORDS",
-      "ROUTE-NO-IMAGE",
-      "ROUTE-NO-EN",
-      "ROUTE-NO-AR",
-      "ROUTE-INACTIVE-INCOMPLETE",
-      "ROUTE-ACTIVE-COMPLETE",
-      "ROUTE-MEDIA-COMPLETE",
-      "ROUTE-RELATED-PRODUCT"
-    ]));
-
-  const serviceRows = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(or(eq(products.slug, "service-test-product"), eq(products.slug, "complete-product")));
-
-  const rowsWithService = [...rows, ...serviceRows.filter((serviceRow) => !rows.some((row) => row.id === serviceRow.id))];
-
-  if (rowsWithService.length === 0) {
-    return;
-  }
-
-  const productIds = rowsWithService.map((row) => row.id);
-  const variantRows = await db
-    .select({ id: productVariants.id })
-    .from(productVariants)
-    .where(inArray(productVariants.productId, productIds));
-
-  const variantIds = variantRows.map((row) => row.id);
-  if (variantIds.length > 0) {
-    await db.delete(offerItems).where(inArray(offerItems.variantId, variantIds));
-  }
-  await db.delete(productMedia).where(inArray(productMedia.productId, productIds));
-  await db.delete(productVariants).where(inArray(productVariants.productId, productIds));
-  await db.delete(products).where(inArray(products.id, productIds));
 }

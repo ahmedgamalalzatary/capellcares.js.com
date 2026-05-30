@@ -7,10 +7,12 @@ test("triggerStorefrontProductRevalidation posts the updated product slug to the
   const calls: Array<{ input: string; init?: RequestInit }> = [];
 
   const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     calls.push({ input: String(input), init });
     return new Response(null, { status: 200 });
   }) as typeof fetch;
+  process.env.NODE_ENV = "development";
 
   try {
     await triggerStorefrontProductRevalidation("body-lotion-250", {
@@ -19,6 +21,7 @@ test("triggerStorefrontProductRevalidation posts the updated product slug to the
     });
   } finally {
     globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
   }
 
   assert.equal(calls.length, 1);

@@ -27,7 +27,7 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     price: 125.5,
     originalTotal: 180,
     stock: 4,
-    items: [{ variantId: 11, qty: 2 }],
+    items: [{ id: undefined, variantId: 11, qty: 2 }],
     status: "active"
   });
 });

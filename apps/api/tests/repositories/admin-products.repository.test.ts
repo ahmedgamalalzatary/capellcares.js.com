@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { loadWorkspaceEnv } from "../../src/config/env.js";
+import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
 loadWorkspaceEnv();
 
@@ -14,6 +15,8 @@ test("createAdminProductRepo creates product when provided id does not exist", a
   const sku = `TDD-SKU-${Date.now()}`;
   const slug = `tdd-product-${Date.now()}`;
   const requestedId = 987654321;
+  await resetApiTestDatabase();
+  const ids = await getBaselineIds();
 
   const created = await createAdminProductRepo({
     id: requestedId,
@@ -24,7 +27,7 @@ test("createAdminProductRepo creates product when provided id does not exist", a
     buyingPrice: 10,
     keywords: "test,repo",
     imagePath: "/uploads/test.png",
-    categoryId: 1,
+    categoryId: ids.leafCategoryId,
     status: "inactive",
     isNew: false,
     isBestseller: false
@@ -38,7 +41,7 @@ test("createAdminProductRepo creates product when provided id does not exist", a
 
   assert.ok(createdProduct, "expected product row to be inserted");
   assert.equal(createdProduct.sku, sku);
-  assert.equal(createdProduct.categoryId, 1);
+  assert.equal(createdProduct.categoryId, ids.leafCategoryId);
   assert.notEqual(createdProduct.id, requestedId);
   assert.equal(created.id, createdProduct.id);
   await db.delete(products).where(eq(products.id, createdProduct.id));

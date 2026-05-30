@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { loadWorkspaceEnv } from "../../src/config/env.js";
+import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
 loadWorkspaceEnv();
 
@@ -13,6 +14,8 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
 
   const unique = Date.now();
   const sku = `ERP-SKU-${unique}`;
+  await resetApiTestDatabase();
+  const ids = await getBaselineIds();
   const created = await createAdminProduct({
     sku,
     name: { ar: "منتج اختبار", en: "Service Test Product" },
@@ -25,7 +28,7 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
     imagePath: "/uploads/service-test.png",
     youtubeUrl: "https://youtube.com/watch?v=test",
     status: "inactive",
-    categoryId: 1,
+    categoryId: ids.leafCategoryId,
     variants: [{ id: 1111, productId: 0, size: "100ml", price: 45, stock: 7 }],
     offerIds: [],
     createdAt: new Date().toISOString(),
@@ -48,7 +51,7 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
   assert.equal(createdProduct.sku, sku);
   assert.equal(createdProduct.arName, "منتج اختبار");
   assert.equal(createdProduct.enName, "Service Test Product");
-  assert.equal(createdProduct.categoryId, 1);
+  assert.equal(createdProduct.categoryId, ids.leafCategoryId);
 
   const createdVariants = await db
     .select({

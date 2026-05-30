@@ -14,10 +14,18 @@ function resolveRevalidateSecret(): string {
   return (process.env.STOREFRONT_REVALIDATE_SECRET ?? DEFAULT_REVALIDATE_SECRET).trim();
 }
 
+function shouldSkipStorefrontRevalidation(): boolean {
+  return process.env.NODE_ENV === "test";
+}
+
 export async function triggerStorefrontProductRevalidation(
   slug: string,
   options: TriggerStorefrontProductRevalidationOptions = {}
 ) {
+  if (shouldSkipStorefrontRevalidation()) {
+    return;
+  }
+
   const storefrontBaseUrl = (options.storefrontBaseUrl ?? resolveStorefrontBaseUrl()).replace(/\/+$/, "");
   const secret = options.secret ?? resolveRevalidateSecret();
 

@@ -12,6 +12,10 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
+function serialTest(name: string, fn: () => Promise<void>) {
+  return test(name, { concurrency: false }, fn);
+}
+
 beforeEach(async () => {
   await resetApiTestDatabase();
 });
@@ -29,7 +33,7 @@ function makeCompleteProduct(categoryId: number) {
   };
 }
 
-test("admin product upsert rejects activating a product with no variants", async () => {
+serialTest("admin product upsert rejects activating a product with no variants", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -56,7 +60,7 @@ test("admin product upsert rejects activating a product with no variants", async
   });
 });
 
-test("admin product upsert rejects activating a product with no keywords", async () => {
+serialTest("admin product upsert rejects activating a product with no keywords", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -83,7 +87,7 @@ test("admin product upsert rejects activating a product with no keywords", async
   });
 });
 
-test("admin product upsert rejects activating a product with no image", async () => {
+serialTest("admin product upsert rejects activating a product with no image", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -109,7 +113,7 @@ test("admin product upsert rejects activating a product with no image", async ()
   });
 });
 
-test("admin product upsert rejects activating a product missing the English name", async () => {
+serialTest("admin product upsert rejects activating a product missing the English name", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -136,7 +140,7 @@ test("admin product upsert rejects activating a product missing the English name
   });
 });
 
-test("admin product upsert rejects activating a product missing the Arabic name", async () => {
+serialTest("admin product upsert rejects activating a product missing the Arabic name", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -163,7 +167,7 @@ test("admin product upsert rejects activating a product missing the Arabic name"
   });
 });
 
-test("admin product upsert allows an incomplete product when status is inactive", async () => {
+serialTest("admin product upsert allows an incomplete product when status is inactive", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -188,7 +192,7 @@ test("admin product upsert allows an incomplete product when status is inactive"
   });
 });
 
-test("admin product upsert activates a complete product successfully", async () => {
+serialTest("admin product upsert activates a complete product successfully", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -207,7 +211,7 @@ test("admin product upsert activates a complete product successfully", async () 
   });
 });
 
-test("admin product upsert persists ordered media and a dedicated hover image separately", async () => {
+serialTest("admin product upsert persists ordered media and a dedicated hover image separately", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -260,7 +264,7 @@ test("admin product upsert persists ordered media and a dedicated hover image se
   ]);
 });
 
-test("admin product upsert persists mirrored related product links", async () => {
+serialTest("admin product upsert persists mirrored related product links", async () => {
   const ids = await getBaselineIds();
 
   const createResponse = await withTestServer(app, async (request) => {
@@ -313,7 +317,7 @@ test("admin product upsert persists mirrored related product links", async () =>
   ]);
 });
 
-test("admin product detail returns a related-items array for editing", async () => {
+serialTest("admin product detail returns a related-items array for editing", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -330,8 +334,12 @@ test("admin product detail returns a related-items array for editing", async () 
   });
 });
 
-test("admin product upsert preserves existing related links when relatedItems is omitted", async () => {
+serialTest("admin product upsert preserves existing related links when relatedItems is omitted", async () => {
   const ids = await getBaselineIds();
+
+  // This test replaces productOne's variant set, which requires its variant not be
+  // linked to the baseline offer (the seed links it). Unlink it for this scenario.
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await db.insert(relatedItems).values([
     {
@@ -365,8 +373,12 @@ test("admin product upsert preserves existing related links when relatedItems is
         "content-type": "application/json"
       },
       body: JSON.stringify({
+        // Keep the seed SKU/slug so the seed-based test reset can still find and
+        // clean this row (renaming to a fresh SKU escapes cleanup and pollutes
+        // later runs via products_sku_unique).
         id: ids.productOneId,
-        sku: "UPDATED-WITHOUT-RELATED",
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
         name: { ar: "محدث", en: "Updated" },
         description: { ar: "وصف", en: "Description" },
         keywords: ["skincare"],
@@ -390,14 +402,11 @@ test("admin product upsert preserves existing related links when relatedItems is
   assert.deepEqual(after, before);
 });
 
-test("admin product upsert preserves linked variant ids when editing an existing variant", async () => {
+serialTest("admin product upsert preserves linked variant ids when editing an existing variant", async () => {
   const ids = await getBaselineIds();
 
-  await db.insert(offerItems).values({
-    offerId: ids.offerId,
-    variantId: ids.firstVariantId,
-    qty: 1
-  });
+  // The baseline seed already links productOne's variant to the baseline offer
+  // (a duplicate offer_item would violate the offer_items unique constraint).
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -448,17 +457,17 @@ test("admin product upsert preserves linked variant ids when editing an existing
     .from(offerItems)
     .where(eq(offerItems.offerId, ids.offerId));
 
-  assert.deepEqual(offerLinks, [{ variantId: ids.firstVariantId }]);
+  // Editing the variant in place must preserve its existing offer link.
+  assert.ok(
+    offerLinks.some((link) => link.variantId === ids.firstVariantId),
+    "expected the edited variant to remain linked to the offer"
+  );
 });
 
-test("admin product upsert rejects removing a variant that is used by an offer", async () => {
+serialTest("admin product upsert normalizes variant size whitespace before saving", async () => {
   const ids = await getBaselineIds();
 
-  await db.insert(offerItems).values({
-    offerId: ids.offerId,
-    variantId: ids.firstVariantId,
-    qty: 1
-  });
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -478,7 +487,50 @@ test("admin product upsert rejects removing a variant that is used by an offer",
         imagePath: "/uploads/test-baseline.png",
         status: "active",
         categoryId: ids.leafCategoryId,
-        variants: []
+        variants: [{ id: ids.firstVariantId, size: "  100   ml  ", price: 99, stock: 7 }]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [updatedVariant] = await db
+    .select({ sizeLabel: productVariants.sizeLabel })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId))
+    .limit(1);
+
+  assert.equal(updatedVariant?.sizeLabel, "100 ml");
+});
+
+serialTest("admin product upsert rejects removing a variant that is used by an offer", async () => {
+  const ids = await getBaselineIds();
+
+  // The baseline seed already links productOne's variant to the baseline offer.
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
+        name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+        description: { ar: "وصف", en: "Description" },
+        keywords: ["test", "baseline"],
+        imagePath: "/uploads/test-baseline.png",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        // Drop the offer-linked variant (no id matching the seed variant) while
+        // keeping the product active with a different new variant, so the request
+        // passes activation validation and reaches the offer-link guard.
+        variants: [{ size: "250ml", price: 99, stock: 5 }]
       })
     });
 
@@ -487,7 +539,7 @@ test("admin product upsert rejects removing a variant that is used by an offer",
   });
 });
 
-test("admin product toggle-status flips the persisted DB status", async () => {
+serialTest("admin product toggle-status flips the persisted DB status", async () => {
   const ids = await getBaselineIds();
 
   const [before] = await db
@@ -544,7 +596,7 @@ test("admin product toggle-status flips the persisted DB status", async () => {
   assert.equal(afterSecondToggle.status, "active");
 });
 
-test("admin products list includes soft-deleted products for ERP trash", async () => {
+serialTest("admin products list includes soft-deleted products for ERP trash", async () => {
   const ids = await getBaselineIds();
 
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
@@ -564,8 +616,11 @@ test("admin products list includes soft-deleted products for ERP trash", async (
   });
 });
 
-test("admin hard-delete removes product, variants, wishlists, and image file", async () => {
+serialTest("admin hard-delete removes product, variants, wishlists, and image file", async () => {
   const ids = await getBaselineIds();
+
+  // Unlink the seed offer item so productOne is freely hard-deletable.
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   const uploadsDir = resolve(process.cwd(), "uploads");
   const fileName = `test-hard-delete-${ids.productOneId}.jpg`;
@@ -603,14 +658,12 @@ test("admin hard-delete removes product, variants, wishlists, and image file", a
   await assert.rejects(access(absolutePath), "expected image file to be unlinked");
 });
 
-test("admin soft-delete rejects products whose variants are used by offers", async () => {
+serialTest("admin soft-delete rejects products whose variants are used by offers", async () => {
   const ids = await getBaselineIds();
 
-  await db.insert(offerItems).values({
-    offerId: ids.offerId,
-    variantId: ids.firstVariantId,
-    qty: 1
-  });
+  // The baseline seed already links productOne's variant to the baseline offer,
+  // so no extra offer_item is needed (and a duplicate would violate the
+  // offer_items (offer_id, variant_id) unique constraint).
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -624,14 +677,11 @@ test("admin soft-delete rejects products whose variants are used by offers", asy
   });
 });
 
-test("admin hard-delete rejects products whose variants are used by offers", async () => {
+serialTest("admin hard-delete rejects products whose variants are used by offers", async () => {
   const ids = await getBaselineIds();
 
-  await db.insert(offerItems).values({
-    offerId: ids.offerId,
-    variantId: ids.firstVariantId,
-    qty: 1
-  });
+  // Baseline seed already links productOne's variant to the baseline offer
+  // (a duplicate offer_item would violate the new unique constraint).
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
 
   await withTestServer(app, async (request) => {
@@ -646,8 +696,11 @@ test("admin hard-delete rejects products whose variants are used by offers", asy
   });
 });
 
-test("admin hard-delete on a product that is not soft-deleted returns 404 and leaves data intact", async () => {
+serialTest("admin hard-delete on a product that is not soft-deleted returns 404 and leaves data intact", async () => {
   const ids = await getBaselineIds();
+
+  // Unlink the seed offer item so the only reason for a non-204 is the trash check.
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -667,8 +720,10 @@ test("admin hard-delete on a product that is not soft-deleted returns 404 and le
   assert.ok(stillThere, "expected product to still exist");
 });
 
-test("admin hard-delete tolerates a missing image file", async () => {
+serialTest("admin hard-delete tolerates a missing image file", async () => {
   const ids = await getBaselineIds();
+  // Unlink the seed offer item so productOne is freely hard-deletable.
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
   await db.update(products).set({ deletedAt: new Date(), imagePath: "/uploads/does-not-exist.jpg" }).where(eq(products.id, ids.productOneId));
 
   await withTestServer(app, async (request) => {

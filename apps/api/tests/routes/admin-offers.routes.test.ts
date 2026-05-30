@@ -9,11 +9,15 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 
+function serialTest(name: string, fn: () => Promise<void>) {
+  return test(name, { concurrency: false }, fn);
+}
+
 beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-test("admin offer upsert creates a new offer when the payload has no id", async () => {
+serialTest("admin offer upsert creates a new offer when the payload has no id", async () => {
   const ids = await getBaselineIds();
   const slug = `route-offer-${Date.now()}`;
 
@@ -100,7 +104,7 @@ test("admin offer upsert creates a new offer when the payload has no id", async 
   await db.delete(offers).where(eq(offers.id, createdOffer.id));
 });
 
-test("admin offer upsert persists mirrored related links", async () => {
+serialTest("admin offer upsert persists mirrored related links", async () => {
   const ids = await getBaselineIds();
   const slug = `route-offer-related-${Date.now()}`;
 
@@ -153,7 +157,7 @@ test("admin offer upsert persists mirrored related links", async () => {
   await db.delete(offers).where(eq(offers.id, created.id));
 });
 
-test("admin offer detail returns a related-items array for editing", async () => {
+serialTest("admin offer detail returns a related-items array for editing", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -168,7 +172,7 @@ test("admin offer detail returns a related-items array for editing", async () =>
   });
 });
 
-test("admin offer upsert preserves existing related links when relatedItems is omitted", async () => {
+serialTest("admin offer upsert preserves existing related links when relatedItems is omitted", async () => {
   const ids = await getBaselineIds();
 
   await db.insert(relatedItems).values([
@@ -228,7 +232,7 @@ test("admin offer upsert preserves existing related links when relatedItems is o
   assert.deepEqual(after, before);
 });
 
-test("admin offer upsert updates existing offer items in place when ids are provided", async () => {
+serialTest("admin offer upsert updates existing offer items in place when ids are provided", async () => {
   const ids = await getBaselineIds();
 
   const existingItems = await db
@@ -292,7 +296,62 @@ test("admin offer upsert updates existing offer items in place when ids are prov
   );
 });
 
-test("admin offers list returns ERP offer shape with bilingual name", async () => {
+serialTest("admin offer upsert merges duplicate variant rows before persisting", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-merge-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض دمج", en: "Merged Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: 88,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.firstVariantId, qty: 2 },
+          { variantId: ids.secondVariantId, qty: 3 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [createdOffer] = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(eq(offers.slug, slug))
+    .limit(1);
+
+  assert.ok(createdOffer, "expected merged offer to exist");
+
+  const createdItems = await db
+    .select({
+      variantId: offerItems.variantId,
+      qty: offerItems.qty
+    })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, createdOffer.id))
+    .orderBy(asc(offerItems.variantId));
+
+  assert.deepEqual(createdItems, [
+    { variantId: ids.firstVariantId, qty: 3 },
+    { variantId: ids.secondVariantId, qty: 3 }
+  ]);
+});
+
+serialTest("admin offers list returns ERP offer shape with bilingual name", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/offers", {
@@ -311,7 +370,7 @@ test("admin offers list returns ERP offer shape with bilingual name", async () =
   });
 });
 
-test("admin offer toggle-status flips the persisted DB status", async () => {
+serialTest("admin offer toggle-status flips the persisted DB status", async () => {
   const ids = await getBaselineIds();
 
   const [before] = await db

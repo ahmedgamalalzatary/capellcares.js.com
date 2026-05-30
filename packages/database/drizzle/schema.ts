@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   datetime,
@@ -49,22 +50,42 @@ export const products = mysqlTable("products", {
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   isNew: boolean("is_new").notNull().default(false),
   isBestseller: boolean("is_bestseller").notNull().default(false),
-  categoryId: int("category_id").notNull(),
+  categoryId: int("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "restrict" }),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-export const productVariants = mysqlTable("product_variants", {
-  id: int("id").autoincrement().primaryKey(),
-  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
-  sizeLabel: varchar("size_label", { length: 64 }).notNull(),
-  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
-  stockQty: int("stock_qty").notNull().default(0),
-  sortOrder: int("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
-});
+export const productVariants = mysqlTable(
+  "product_variants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    sizeLabel: varchar("size_label", { length: 64 }).notNull(),
+    sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
+    stockQty: int("stock_qty").notNull().default(0),
+    sortOrder: int("sort_order").notNull().default(0),
+    deletedAt: datetime("deleted_at"),
+    // Uniqueness must ignore soft-deleted rows: a deleted 100ml variant must not
+    // block creating a new 100ml variant for the same product. MySQL has no
+    // partial unique index, so we key uniqueness off a generated column that is
+    // NULL for soft-deleted rows (multiple NULLs are allowed in a unique index).
+    activeSizeLabel: varchar("active_size_label", { length: 64 }).generatedAlwaysAs(
+      sql`(case when \`deleted_at\` is null then \`size_label\` else null end)`,
+      { mode: "stored" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    productActiveSizeUnique: unique("product_variants_active_size_unique").on(
+      table.productId,
+      table.activeSizeLabel
+    )
+  })
+);
 
 export const productMedia = mysqlTable("product_media", {
   id: int("id").autoincrement().primaryKey(),
@@ -106,13 +127,26 @@ export const advices = mysqlTable("advices", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-export const offerItems = mysqlTable("offer_items", {
-  id: int("id").autoincrement().primaryKey(),
-  offerId: int("offer_id").notNull(),
-  variantId: int("variant_id").notNull(),
-  qty: int("qty").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
+export const offerItems = mysqlTable(
+  "offer_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    offerId: int("offer_id")
+      .notNull()
+      .references(() => offers.id, { onDelete: "cascade" }),
+    variantId: int("variant_id")
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "restrict" }),
+    qty: int("qty").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    offerVariantUnique: unique("offer_items_offer_variant_unique").on(
+      table.offerId,
+      table.variantId
+    )
+  })
+);
 
 export const relatedItems = mysqlTable(
   "related_items",
@@ -166,12 +200,21 @@ export const authSessions = mysqlTable("auth_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-export const wishlists = mysqlTable("wishlists", {
-  id: int("id").autoincrement().primaryKey(),
-  customerId: int("customer_id").notNull(),
-  productId: int("product_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
+export const wishlists = mysqlTable(
+  "wishlists",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    customerId: int("customer_id").notNull(),
+    productId: int("product_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    customerProductUnique: unique("wishlists_customer_product_unique").on(
+      table.customerId,
+      table.productId
+    )
+  })
+);
 
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
@@ -195,10 +238,12 @@ export const orders = mysqlTable("orders", {
 
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
-  orderId: int("order_id").notNull(),
+  orderId: int("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
   itemType: mysqlEnum("item_type", ["product_variant", "offer"]).notNull(),
-  variantId: int("variant_id"),
-  offerId: int("offer_id"),
+  variantId: int("variant_id").references(() => productVariants.id, { onDelete: "restrict" }),
+  offerId: int("offer_id").references(() => offers.id, { onDelete: "restrict" }),
   qty: int("qty").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),

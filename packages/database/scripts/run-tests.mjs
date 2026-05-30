@@ -8,15 +8,13 @@ const workspaceRoot = resolve(packageRoot, "..", "..");
 process.env.NODE_ENV = "test";
 
 // Load the workspace .env.test into process.env before spawning the test child.
-// The child inherits process.env, so even modules that import the DB client at
-// import time (e.g. route tests) get a real connection URL. Existing env vars
-// win, so CI can override without editing the file.
+// The child inherits process.env, so modules that import the DB client at import
+// time (e.g. integrity.test.ts) get a real connection URL. Existing env vars win,
+// so CI can override without editing the file.
 const testEnvPath = resolve(workspaceRoot, ".env.test");
 if (existsSync(testEnvPath) && typeof process.loadEnvFile === "function") {
   const preexisting = { ...process.env };
   process.loadEnvFile(testEnvPath);
-  // process.loadEnvFile overwrites; restore vars that were already set so CI
-  // can override the checked-in defaults.
   for (const [key, value] of Object.entries(preexisting)) {
     process.env[key] = value;
   }

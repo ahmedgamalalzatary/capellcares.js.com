@@ -2,6 +2,25 @@ import { eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers } from "@capella/database/drizzle/schema";
 
+function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: number }>) {
+  const merged = new Map<number, { id?: number; variantId: number; qty: number }>();
+
+  for (const item of items) {
+    const current = merged.get(item.variantId);
+    if (current) {
+      current.qty += item.qty;
+      if (!current.id && item.id) {
+        current.id = item.id;
+      }
+      continue;
+    }
+
+    merged.set(item.variantId, { ...item });
+  }
+
+  return [...merged.values()];
+}
+
 export async function listOffersRepo(includeDeleted = false) {
   const rows = await db.select().from(offers).where(includeDeleted ? undefined : isNull(offers.deletedAt));
   return Promise.all(
@@ -46,6 +65,7 @@ export async function upsertOfferRepo(input: {
   visibility?: "visible" | "hidden";
   items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
+  const mergedItems = mergeOfferItems(input.items);
   let offerId = input.id;
   if (offerId) {
     await db
@@ -84,9 +104,9 @@ export async function upsertOfferRepo(input: {
     .from(offerItems)
     .where(eq(offerItems.offerId, offerId!));
   const existingIds = existingItems.map((item) => item.id);
-  const keptIds = input.items
+  const keptIds = mergedItems
     .map((item) => item.id)
-    .filter((id): id is number => Number.isInteger(id) && existingIds.includes(id));
+    .filter((id): id is number => typeof id === "number" && existingIds.includes(id));
 
   if (existingIds.length > 0) {
     const removedIds = existingIds.filter((id) => !keptIds.includes(id));
@@ -95,7 +115,7 @@ export async function upsertOfferRepo(input: {
     }
   }
 
-  for (const item of input.items) {
+  for (const item of mergedItems) {
     if (item.id && existingIds.includes(item.id)) {
       await db
         .update(offerItems)

@@ -4,6 +4,7 @@ import {
   customers,
   offerItems,
   offers,
+  orderItems,
   productMedia,
   productVariants,
   products
@@ -17,31 +18,14 @@ const rootCategorySlug = "body-care";
 const leafCategorySlug = "body-lotion";
 
 export async function clearTestSeed() {
-  const seededProducts = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(inArray(products.sku, seedSkus));
-
-  const productIds = seededProducts.map((product) => product.id);
-
-  if (productIds.length > 0) {
-    const seededVariants = await db
-      .select({ id: productVariants.id })
-      .from(productVariants)
-      .where(inArray(productVariants.productId, productIds));
-
-    const variantIds = seededVariants.map((variant) => variant.id);
-    if (variantIds.length > 0) {
-      await db.delete(offerItems).where(inArray(offerItems.variantId, variantIds));
-    }
-
-    await db.delete(productMedia).where(inArray(productMedia.productId, productIds));
-    await db.delete(productVariants).where(inArray(productVariants.productId, productIds));
-    await db.delete(products).where(inArray(products.id, productIds));
-  }
-
-  await db.delete(offers).where(eq(offers.slug, seedOfferSlug));
-  await db.delete(customers).where(eq(customers.email, seedCustomerEmail));
+  await db.delete(orderItems);
+  await db.delete(offerItems);
+  await db.delete(productMedia);
+  await db.delete(productVariants);
+  await db.delete(offers);
+  await db.delete(products);
+  await db.delete(customers);
+  await db.delete(categories);
 }
 
 export async function seedTestData() {

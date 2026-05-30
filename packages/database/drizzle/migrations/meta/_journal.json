@@ -43,6 +43,13 @@
       "when": 1780704000000,
       "tag": "0005_related_items",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1780790400000,
+      "tag": "0006_db_integrity",
+      "breakpoints": true
     }
   ]
 }

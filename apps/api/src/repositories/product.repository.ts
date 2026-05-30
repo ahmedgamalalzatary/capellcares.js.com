@@ -1,8 +1,12 @@
 import { and, asc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
-import { categories, offerItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { categories, offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
+
+function normalizeVariantSizeLabel(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -177,7 +181,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       sortOrder: productVariants.sortOrder
     })
     .from(productVariants)
-    .where(inArray(productVariants.productId, productIds));
+    .where(and(inArray(productVariants.productId, productIds), isNull(productVariants.deletedAt)));
 
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
@@ -251,7 +255,7 @@ export async function findVisibleProductBySlug(slug: string) {
       sortOrder: productVariants.sortOrder
     })
     .from(productVariants)
-    .where(eq(productVariants.productId, product.id));
+    .where(and(eq(productVariants.productId, product.id), isNull(productVariants.deletedAt)));
 
   const media = normalizeMedia(mediaByProduct.get(product.id), product.imagePath);
   return {
@@ -285,7 +289,7 @@ export async function listAdminProductsRepo() {
       sortOrder: productVariants.sortOrder
     })
     .from(productVariants)
-    .where(inArray(productVariants.productId, rows.map((r) => r.id)));
+    .where(and(inArray(productVariants.productId, rows.map((r) => r.id)), isNull(productVariants.deletedAt)));
 
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
@@ -424,7 +428,7 @@ export async function addVariantRepo(input: {
 }) {
   await db.insert(productVariants).values({
     productId: input.productId,
-    sizeLabel: input.sizeLabel,
+    sizeLabel: normalizeVariantSizeLabel(input.sizeLabel),
     sellingPrice: sql`${input.sellingPrice}`,
     stockQty: input.stockQty
   });
@@ -443,7 +447,7 @@ export async function replaceVariantsRepo(
     const existingIds = existing.map((row) => row.id);
     const requestedExistingIds = variants
       .map((variant) => variant.id)
-      .filter((id): id is number => Number.isInteger(id) && existingIds.includes(id));
+      .filter((id): id is number => typeof id === "number" && existingIds.includes(id));
 
     const removedIds = existingIds.filter((id) => !requestedExistingIds.includes(id));
     if (removedIds.length > 0) {
@@ -458,7 +462,25 @@ export async function replaceVariantsRepo(
         throw error;
       }
 
-      await tx.delete(productVariants).where(inArray(productVariants.id, removedIds));
+      // Variants that were sold must be preserved for order history: order_items
+      // -> product_variants is ON DELETE RESTRICT, so hard-deleting them would
+      // raise a raw FK error. Soft-delete those and hard-delete the rest.
+      const soldRows = await tx
+        .select({ variantId: orderItems.variantId })
+        .from(orderItems)
+        .where(inArray(orderItems.variantId, removedIds));
+      const soldIds = [...new Set(soldRows.map((row) => row.variantId).filter((id): id is number => id != null))];
+      const hardDeletableIds = removedIds.filter((id) => !soldIds.includes(id));
+
+      if (soldIds.length > 0) {
+        await tx
+          .update(productVariants)
+          .set({ deletedAt: sql`NOW()` })
+          .where(inArray(productVariants.id, soldIds));
+      }
+      if (hardDeletableIds.length > 0) {
+        await tx.delete(productVariants).where(inArray(productVariants.id, hardDeletableIds));
+      }
     }
 
     for (let index = 0; index < variants.length; index += 1) {
@@ -468,7 +490,7 @@ export async function replaceVariantsRepo(
         await tx
           .update(productVariants)
           .set({
-            sizeLabel: variant.sizeLabel,
+            sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
             sellingPrice: sql`${variant.sellingPrice}`,
             stockQty: variant.stockQty,
             sortOrder
@@ -477,7 +499,7 @@ export async function replaceVariantsRepo(
       } else {
         await tx.insert(productVariants).values({
           productId,
-          sizeLabel: variant.sizeLabel,
+          sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
           sellingPrice: sql`${variant.sellingPrice}`,
           stockQty: variant.stockQty,
           sortOrder
@@ -512,6 +534,20 @@ export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: st
     if (linked.length > 0) {
       const error = new Error("linked-to-offers") as Error & { code?: string };
       error.code = "PRODUCT_LINKED_TO_OFFERS";
+      throw error;
+    }
+
+    // Sold variants must survive for order history (order_items -> RESTRICT), so a
+    // product with any sold variant cannot be permanently deleted; it stays in trash.
+    const sold = await tx
+      .select({ variantId: orderItems.variantId })
+      .from(orderItems)
+      .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
+      .where(eq(productVariants.productId, id))
+      .limit(1);
+    if (sold.length > 0) {
+      const error = new Error("linked-to-orders") as Error & { code?: string };
+      error.code = "PRODUCT_LINKED_TO_ORDERS";
       throw error;
     }
 
