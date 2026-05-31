@@ -1,5 +1,5 @@
 import type { Metadata, MetadataRoute } from "next";
-import { defaultLanguage, pickLang, type Category, type Language, type Offer, type Product } from "@capella/shared";
+import { defaultLanguage, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
 
 const FALLBACK_SITE_URL = "https://capellacares.com";
 const BRAND_NAME = "Capella Care";
@@ -233,6 +233,29 @@ export function buildOffersMetadata(lang: Language): Metadata {
   };
 }
 
+export function buildCollectionsMetadata(lang: Language): Metadata {
+  const title = lang === "ar" ? "مجموعات كابيلا كير" : "Capella Care collections";
+  const description = lang === "ar"
+    ? "اكتشفي مجموعات كابيلا كير المجمعة حسب القسم لروتين متكامل وسعر أوفر."
+    : "Discover Capella Care collections grouped by category for complete routines at a better price.";
+
+  return {
+    title,
+    description,
+    alternates: buildLocalizedAlternates(lang, "/collections"),
+    openGraph: {
+      title: joinTitle([title, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, "/collections"))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([title, BRAND_NAME]),
+      description
+    }
+  };
+}
+
 export function buildOfferMetadata(lang: Language, offer: Offer): Metadata {
   const name = pickLang(offer.name, lang);
   const description = trimText(pickLang(offer.description, lang));
@@ -246,6 +269,28 @@ export function buildOfferMetadata(lang: Language, offer: Offer): Metadata {
       title,
       description,
       url: absoluteUrl(localizePath(lang, `/offers/${offer.slug}`))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description
+    }
+  };
+}
+
+export function buildCollectionMetadata(lang: Language, collection: Collection): Metadata {
+  const name = pickLang(collection.name, lang);
+  const description = trimText(pickLang(collection.description, lang));
+  const title = joinTitle([name, BRAND_NAME]);
+
+  return {
+    title,
+    description,
+    alternates: buildLocalizedAlternates(lang, `/collections/${collection.slug}`),
+    openGraph: {
+      title,
+      description,
+      url: absoluteUrl(localizePath(lang, `/collections/${collection.slug}`))
     },
     twitter: {
       card: "summary_large_image",
@@ -311,6 +356,23 @@ export function offerJsonLd(lang: Language, offer: Offer) {
       priceCurrency: "EGP",
       price: offer.price,
       availability: offer.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    }
+  };
+}
+
+export function collectionJsonLd(lang: Language, collection: Collection) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: pickLang(collection.name, lang),
+    description: pickLang(collection.description, lang),
+    image: [absoluteUrl(collection.imagePath)],
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(localizePath(lang, `/collections/${collection.slug}`)),
+      priceCurrency: "EGP",
+      price: collection.price,
+      availability: collection.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     }
   };
 }

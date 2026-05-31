@@ -1,6 +1,7 @@
 export * from "./auth.dto.js";
 export * from "./advice.dto.js";
 export * from "./category.dto.js";
+export * from "./collection.dto.js";
 export * from "./checkout.dto.js";
 export * from "./offer.dto.js";
 export * from "./order.dto.js";

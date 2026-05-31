@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   EG_PHONE_REGEX,
   PAYMENT_METHODS,
+  type Collection,
   pickLang
 } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
-import { fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -36,7 +37,11 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [placing, setPlacing] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [{ products, offers }, setCatalog] = useState<CheckoutCatalogState>({ products: [], offers: [] });
+  const [{ products, offers, collections }, setCatalog] = useState<CheckoutCatalogState & { collections: Collection[] }>({
+    products: [],
+    offers: [],
+    collections: []
+  });
 
   useEffect(() => {
     setForm((state) => ({
@@ -47,9 +52,9 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   }, [user?.email, user?.name]);
 
   useEffect(() => {
-    Promise.all([fetchProducts({ lang }), fetchOffers({ lang })])
-      .then(([nextProducts, nextOffers]) => {
-        setCatalog({ products: nextProducts, offers: nextOffers });
+    Promise.all([fetchProducts({ lang }), fetchOffers({ lang }), fetchCollections({ lang })])
+      .then(([nextProducts, nextOffers, nextCollections]) => {
+        setCatalog({ products: nextProducts, offers: nextOffers, collections: nextCollections });
       })
       .catch(() => {});
   }, [lang]);
@@ -70,18 +75,30 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
           };
         }
 
-        const offer = offers.find((item) => item.id === line.offerId);
-        if (!offer) return null;
+        if (line.type === "offer") {
+          const offer = offers.find((item) => item.id === line.offerId);
+          if (!offer) return null;
+          return {
+            key: `o${line.offerId}`,
+            title: pickLang(offer.name, lang),
+            meta: dict.offers.badge,
+            unit: offer.price,
+            qty: line.qty
+          };
+        }
+
+        const collection = collections.find((item) => item.id === line.collectionId);
+        if (!collection) return null;
         return {
-          key: `o${line.offerId}`,
-          title: pickLang(offer.name, lang),
-          meta: dict.offers.badge,
-          unit: offer.price,
+          key: `c${line.collectionId}`,
+          title: pickLang(collection.name, lang),
+          meta: lang === "ar" ? "مجموعة" : "Collection",
+          unit: collection.price,
           qty: line.qty
         };
       })
       .filter(Boolean) as CheckoutResolvedItem[];
-  }, [dict.offers.badge, lang, lines, offers, products]);
+  }, [collections, dict.offers.badge, lang, lines, offers, products]);
 
   const subtotal = resolved.reduce((acc, item) => acc + item.unit * item.qty, 0);
 
@@ -121,7 +138,9 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         items: lines.map((line) =>
           line.type === "product"
             ? { type: "product", variantId: line.variantId, qty: line.qty }
-            : { type: "offer", offerId: line.offerId, qty: line.qty }
+            : line.type === "offer"
+              ? { type: "offer", offerId: line.offerId, qty: line.qty }
+              : { type: "collection", collectionId: line.collectionId, qty: line.qty }
         )
       };
 

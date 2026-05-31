@@ -10,7 +10,13 @@ export interface CheckoutOfferItemDto {
   qty: number;
 }
 
-export type CheckoutItemDto = CheckoutProductItemDto | CheckoutOfferItemDto;
+export interface CheckoutCollectionItemDto {
+  type: "collection";
+  collectionId: number;
+  qty: number;
+}
+
+export type CheckoutItemDto = CheckoutProductItemDto | CheckoutOfferItemDto | CheckoutCollectionItemDto;
 
 export interface CheckoutRequestDto {
   fullName: string;

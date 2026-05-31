@@ -9,6 +9,8 @@ export function AskCapellaReplyContent({
   query,
   lang,
   dict,
+  error = false,
+  errorMessage,
   onClose
 }: {
   results: AskCapellaResults;

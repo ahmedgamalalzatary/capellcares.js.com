@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
 import { languages, dir, getDict } from "@capella/shared";
 import { CartProvider } from "@/components/providers/cart-provider";
@@ -50,7 +50,9 @@ export default async function LocaleLayout({
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
             />
-            <Header lang={lang} dict={dict} navGroups={navGroups} />
+            <Suspense fallback={null}>
+              <Header lang={lang} dict={dict} navGroups={navGroups} />
+            </Suspense>
             <div>{children}</div>
             <Footer lang={lang} dict={dict} />
             <AskCapellaButton lang={lang} />

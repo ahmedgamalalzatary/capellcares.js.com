@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 
@@ -36,6 +36,24 @@ export async function createOrderFromCheckout(
         snapshotNameAr: variant.arName,
         snapshotNameEn: variant.enName,
         snapshotSizeLabel: variant.sizeLabel
+      });
+      continue;
+    }
+    if (item.type === "collection") {
+      const collectionId = Number(item.collectionId);
+      const [collection] = await db.select().from(collections).where(eq(collections.id, collectionId)).limit(1);
+      if (!collection) throw new Error(`Collection not found: ${collectionId}`);
+      pricedItems.push({
+        itemType: "collection",
+        variantId: null,
+        offerId: null,
+        collectionId,
+        qty: item.qty,
+        unitPrice: Number(collection.fixedPrice),
+        lineTotal: Number(collection.fixedPrice) * item.qty,
+        snapshotNameAr: collection.arName,
+        snapshotNameEn: collection.enName,
+        snapshotSizeLabel: null
       });
       continue;
     }

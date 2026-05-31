@@ -4,6 +4,7 @@ export const ar = {
   nav: {
     products: "المتجر",
     offers: "العروض",
+    collections: "المجموعات",
     bestsellers: "الأكثر مبيعًا",
     new: "وصل حديثًا",
     cart: "السلة",
@@ -160,6 +161,18 @@ export const ar = {
     unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا.",
     related: "قد يعجبك أيضًا"
   },
+  collections: {
+    title: "المجموعات",
+    badge: "مجموعة",
+    listEmpty: "لا توجد مجموعات حاليًا.",
+    related: "قد يعجبك أيضًا",
+    categoryLabel: "القسم",
+    itemsLabel: "العناصر المضمنة",
+    addCollectionToCart: "أضف المجموعة إلى السلة",
+    added: "أُضيف ✓",
+    unavailable: "أحد المنتجات داخل هذه المجموعة غير متوفر حاليًا.",
+    collectionEyebrow: "مجموعة كابيلا"
+  },
   auth: {
     loginTitle: "أهلًا بعودتك",
     loginCta: "تسجيل الدخول",
@@ -194,6 +207,8 @@ export const ar = {
     description: "عروض مختارة، منتجات جديدة وأكثر مبيعًا، ونصائح عناية من كابيلا.",
     bundlesEyebrow: "باقات كابيلا",
     viewAllOffers: "كل العروض ←",
+    collectionsEyebrow: "مجموعات كابيلا",
+    viewAllCollections: "كل المجموعات ←",
     newAndBestsellers: "الأحدث والأكثر مبيعًا",
     featuredHeading: "منتجات مميزة",
     viewAllProducts: "كل المنتجات ←"

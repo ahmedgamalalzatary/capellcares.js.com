@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
@@ -69,7 +69,7 @@ export async function setRelatedLinksForSourceRepo(
         targetType: source.type,
         targetId: source.id,
         rank: await nextRankForSource(tx, target.type, target.id)
-      }).onDuplicateKeyUpdate({ set: { rank: relatedItems.rank } });
+      }).onDuplicateKeyUpdate({ set: { rank: sql`${relatedItems.rank}` } });
     }
   };
 

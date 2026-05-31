@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CartLine } from "@capella/shared";
-import { fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { clearCartLines, loadCartLines, normalizeCartLine, saveCartLines } from "@/lib/cart";
 
 interface CartContextValue {
@@ -19,7 +19,9 @@ const CartContext = createContext<CartContextValue | null>(null);
 function lineKey(line: CartLine) {
   return line.type === "product"
     ? `p:${line.productId}:${line.variantId}`
-    : `o:${line.offerId}`;
+    : line.type === "offer"
+      ? `o:${line.offerId}`
+      : `c:${line.collectionId}`;
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -43,8 +45,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    Promise.all([fetchProducts(), fetchOffers()])
-      .then(([products, offers]) => {
+    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
+      .then(([products, offers, collections]) => {
         if (cancelled) return;
 
         const productVariants = new Map(products.map((product) => [
@@ -52,13 +54,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
           new Set(product.variants.map((variant) => variant.id))
         ]));
         const offerIds = new Set(offers.map((offer) => offer.id));
+        const collectionIds = new Set(collections.map((collection) => collection.id));
 
         setLines((current) => current.filter((line) => {
           if (line.type === "product") {
             return productVariants.get(line.productId)?.has(line.variantId) ?? false;
           }
 
-          return offerIds.has(line.offerId);
+          if (line.type === "offer") {
+            return offerIds.has(line.offerId);
+          }
+
+          return collectionIds.has(line.collectionId);
         }));
       })
       .catch(() => {});

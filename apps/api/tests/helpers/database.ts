@@ -5,11 +5,7 @@ import {
   authSessions,
   customers,
   advices,
-  offerItems,
   offers,
-  orderItems,
-  orders,
-  productMedia,
   productVariants,
   products,
   relatedItems,
@@ -22,16 +18,7 @@ export async function resetApiTestDatabase() {
   await db.delete(relatedItems);
   await db.delete(authSessions);
   await db.delete(wishlists);
-  await db.delete(orderItems);
-  await db.delete(offerItems);
-  await db.delete(orders);
-  await db.delete(offers);
   await db.delete(advices);
-  await db.delete(productMedia);
-  await db.delete(productVariants);
-  await db.delete(products);
-  await db.delete(customers);
-  await db.delete(categories);
   await db.delete(adminUsers);
   await clearTestSeed();
   await seedTestData();

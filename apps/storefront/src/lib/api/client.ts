@@ -1,10 +1,12 @@
 import type {
   Advice,
   Category,
+  Collection,
   Offer,
   Order,
   OrderSummary,
   Product,
+  StorefrontCollectionDetail,
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
@@ -20,6 +22,7 @@ import {
 } from "./client/selectors";
 import type {
   CategoryApiShape,
+  CollectionDetailApiShape,
   OfferDetailApiShape,
   ProductApiShape,
   ProductDetailApiShape
@@ -59,8 +62,17 @@ export async function fetchOffers(options?: { lang?: string }): Promise<Offer[]>
   return data?.items ?? [];
 }
 
+export async function fetchCollections(options?: { lang?: string }): Promise<Collection[]> {
+  const data = await getJSON<{ items: Collection[] }>(`/api/v1/collections`, options);
+  return data?.items ?? [];
+}
+
 export async function fetchOfferBySlug(slug: string, options?: { lang?: string }): Promise<Offer | null> {
   return getJSON<Offer>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
+}
+
+export async function fetchCollectionBySlug(slug: string, options?: { lang?: string }): Promise<Collection | null> {
+  return getJSON<Collection>(`/api/v1/collections/${encodeURIComponent(slug)}`, options);
 }
 
 export async function fetchOfferDetailBySlug(
@@ -68,6 +80,13 @@ export async function fetchOfferDetailBySlug(
   options?: { lang?: string }
 ): Promise<StorefrontOfferDetail | null> {
   return getJSON<OfferDetailApiShape>(`/api/v1/offers/${encodeURIComponent(slug)}`, options);
+}
+
+export async function fetchCollectionDetailBySlug(
+  slug: string,
+  options?: { lang?: string }
+): Promise<StorefrontCollectionDetail | null> {
+  return getJSON<CollectionDetailApiShape>(`/api/v1/collections/${encodeURIComponent(slug)}`, options);
 }
 
 export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[]> {

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { offers, productVariants, products, relatedItems } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offers, productVariants, products, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
@@ -33,6 +33,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
 
   const productIds = ordered.filter((ref) => ref.type === "product").map((ref) => ref.id);
   const offerIds = ordered.filter((ref) => ref.type === "offer").map((ref) => ref.id);
+  const collectionIds = ordered.filter((ref) => ref.type === "collection").map((ref) => ref.id);
 
   const productCards = new Map<number, StorefrontRelatedCard>();
   if (productIds.length > 0) {
@@ -112,9 +113,66 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
     }
   }
 
+  const collectionCards = new Map<number, StorefrontRelatedCard>();
+  if (collectionIds.length > 0) {
+    const rows = await db
+      .select({
+        id: collections.id,
+        slug: collections.slug,
+        arName: collections.arName,
+        enName: collections.enName,
+        imagePath: collections.imagePath,
+        fixedPrice: collections.fixedPrice
+      })
+      .from(collections)
+      .where(
+        and(
+          inArray(collections.id, collectionIds),
+          eq(collections.status, "active"),
+          eq(collections.visibility, "visible"),
+          isNull(collections.deletedAt)
+        )
+      );
+
+    const itemRows = rows.length
+      ? await db
+          .select({
+            collectionId: collectionItems.collectionId,
+            variantId: collectionItems.variantId,
+            qty: collectionItems.qty,
+            stockQty: productVariants.stockQty
+          })
+          .from(collectionItems)
+          .innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
+          .where(inArray(collectionItems.collectionId, rows.map((row) => row.id)))
+      : [];
+
+    for (const row of rows) {
+      const items = itemRows.filter((item) => item.collectionId === row.id);
+      const stock = items.reduce((minAvailable, item) => {
+        const availableBundles = item.qty > 0 ? Math.floor(item.stockQty / item.qty) : 0;
+        return Math.min(minAvailable, availableBundles);
+      }, Number.POSITIVE_INFINITY);
+      if (!Number.isFinite(stock) || stock <= 0) {
+        continue;
+      }
+      collectionCards.set(row.id, {
+        type: "collection",
+        id: row.id,
+        slug: row.slug,
+        name: { ar: row.arName, en: row.enName },
+        imagePath: row.imagePath ?? null,
+        price: Number(row.fixedPrice)
+      });
+    }
+  }
+
   return ordered.flatMap((ref) => {
-    // "collection" targets are intentionally not hydrated into storefront cards yet; they are dropped here.
-    const card = ref.type === "product" ? productCards.get(ref.id) : ref.type === "offer" ? offerCards.get(ref.id) : undefined;
+    const card = ref.type === "product"
+      ? productCards.get(ref.id)
+      : ref.type === "offer"
+        ? offerCards.get(ref.id)
+        : collectionCards.get(ref.id);
     return card ? [card] : [];
   });
 }

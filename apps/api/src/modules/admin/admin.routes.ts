@@ -13,11 +13,17 @@ import {
   adminSoftDeleteCategory,
   adminRestoreCategory,
   adminListOffers,
+  adminListCollections,
   adminGetOffer,
+  adminGetCollection,
   adminUpsertOffer,
+  adminUpsertCollection,
   adminSoftDeleteOffer,
+  adminSoftDeleteCollection,
   adminRestoreOffer,
-  adminToggleOfferStatus
+  adminRestoreCollection,
+  adminToggleOfferStatus,
+  adminToggleCollectionStatus
 } from "./admin.controller.js";
 import { adminAdvicesRoutes } from "../advices/admin-advices.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
@@ -46,5 +52,12 @@ adminRoutes.post("/offers", adminUpsertOffer);
 adminRoutes.delete("/offers/:id", adminSoftDeleteOffer);
 adminRoutes.post("/offers/:id/restore", adminRestoreOffer);
 adminRoutes.post("/offers/:id/toggle-status", adminToggleOfferStatus);
+
+adminRoutes.get("/collections", adminListCollections);
+adminRoutes.get("/collections/:id", adminGetCollection);
+adminRoutes.post("/collections", adminUpsertCollection);
+adminRoutes.delete("/collections/:id", adminSoftDeleteCollection);
+adminRoutes.post("/collections/:id/restore", adminRestoreCollection);
+adminRoutes.post("/collections/:id/toggle-status", adminToggleCollectionStatus);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);

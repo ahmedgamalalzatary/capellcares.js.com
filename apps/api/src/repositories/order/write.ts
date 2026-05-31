@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode } from "./shared.js";
 
@@ -10,8 +10,9 @@ interface OrderItem {
   qty: number;
   unitPrice: number;
   lineTotal: number;
-  itemType?: "product_variant" | "offer";
+  itemType?: "product_variant" | "offer" | "collection";
   offerId?: number | null;
+  collectionId?: number | null;
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
@@ -75,6 +76,30 @@ export async function createOrderWithItems(input: {
           await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
         }
       } else {
+        if (item.itemType === "collection") {
+          if (item.collectionId == null) {
+            throw new Error("Order item.itemType=collection requires non-null item.collectionId before querying collectionItems");
+          }
+
+          const underlyingItems = await tx
+            .select({
+              variantId: collectionItems.variantId,
+              bundleQty: collectionItems.qty
+            })
+            .from(collectionItems)
+            .where(eq(collectionItems.collectionId, item.collectionId));
+
+          if (underlyingItems.length === 0) {
+            throw new Error(`No collectionItems found for item.collectionId=${item.collectionId}`);
+          }
+
+          for (const underlyingItem of underlyingItems) {
+            const requiredQty = underlyingItem.bundleQty * item.qty;
+            await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
+          }
+          continue;
+        }
+
         if (item.variantId == null) {
           throw new Error("Order item requires non-null item.variantId before calling decrementVariantStock");
         }
@@ -101,6 +126,7 @@ export async function createOrderWithItems(input: {
         itemType: item.itemType ?? "product_variant",
         variantId: item.variantId ?? null,
         offerId: item.offerId ?? null,
+        collectionId: item.collectionId ?? null,
         qty: item.qty,
         unitPrice: sql`${item.unitPrice}`,
         lineTotal: sql`${item.lineTotal}`,

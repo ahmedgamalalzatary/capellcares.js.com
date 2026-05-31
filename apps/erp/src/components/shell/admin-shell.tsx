@@ -19,6 +19,7 @@ const NAV = [
   { href: "/dashboard",  label: "الرئيسية",  icon: <Icon.Dashboard /> },
   { href: "/products",   label: "المنتجات",  icon: <Icon.Box />       },
   { href: "/categories", label: "الأقسام",   icon: <Icon.Folder />    },
+  { href: "/collections", label: "المجموعات", icon: <Icon.Tag />      },
   { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
   { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
   { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },

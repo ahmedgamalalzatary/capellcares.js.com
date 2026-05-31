@@ -1,6 +1,8 @@
 import { eq, inArray, notInArray } from "drizzle-orm";
 import {
   categories,
+  collectionItems,
+  collections,
   customers,
   offerItems,
   offers,
@@ -24,8 +26,10 @@ export async function clearTestSeed() {
   }
 
   await db.delete(orderItems);
+  await db.delete(collectionItems);
   await db.delete(orders);
   await db.delete(offerItems);
+  await db.delete(collections);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);

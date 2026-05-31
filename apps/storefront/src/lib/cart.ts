@@ -34,6 +34,17 @@ export function normalizeCartLine(line: unknown): CartLine | null {
     }
   }
 
+  if ((line as CartLine).type === "collection") {
+    const collectionLine = line as Partial<CartLine & { type: "collection" }>;
+    if (Number.isInteger(collectionLine.collectionId) && Number.isInteger(collectionLine.qty) && collectionLine.qty! > 0) {
+      return {
+        type: "collection",
+        collectionId: collectionLine.collectionId!,
+        qty: collectionLine.qty!
+      };
+    }
+  }
+
   return null;
 }
 

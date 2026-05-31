@@ -15,6 +15,14 @@ export {
   adminUpsertCategory
 } from "./categories/admin-categories.controller.js";
 export {
+  adminGetCollection,
+  adminListCollections,
+  adminRestoreCollection,
+  adminSoftDeleteCollection,
+  adminToggleCollectionStatus,
+  adminUpsertCollection
+} from "./collections/admin-collections.controller.js";
+export {
   adminGetOffer,
   adminListOffers,
   adminRestoreOffer,

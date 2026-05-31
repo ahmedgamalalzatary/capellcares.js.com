@@ -12,10 +12,12 @@ import {
   assertConformsTo,
   assertForbiddenFieldsAbsent,
   storefrontCategoryContract,
+  storefrontCollectionContract,
   storefrontOfferContract,
   storefrontProductContract,
   storefrontRelatedItemContract
 } from "@capella/shared/tests/contracts";
+import { collectionItems, collections } from "@capella/database/drizzle/schema";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -42,6 +44,33 @@ test("storefront offer endpoints conform to the shared offer contract", async ()
     const offer = response.json.items[0];
     assertConformsTo(offer, storefrontOfferContract);
     assert.equal(typeof offer.stock, "number");
+  });
+});
+
+test("storefront collection endpoints conform to the shared collection contract", async () => {
+  const ids = await getBaselineIds();
+  const [createdCollection] = await db
+    .insert(collections)
+    .values({
+      slug: `contract-collection-${Date.now()}`,
+      arName: "مجموعة العقود",
+      enName: "Contract Collection",
+      fixedPrice: "90.00",
+      categoryId: ids.leafCategoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+  await db.insert(collectionItems).values([
+    { collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: createdCollection.id, variantId: ids.secondVariantId, qty: 1 }
+  ]);
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/collections");
+    const collection = response.json.items.find((item: any) => item.id === createdCollection.id);
+    assert.ok(collection, "expected created collection in storefront list");
+    assertConformsTo(collection, storefrontCollectionContract);
   });
 });
 
@@ -94,6 +123,40 @@ test("storefront offer detail returns its related items", async () => {
 
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/offers/test-offer-baseline");
+    assert.equal(response.status, 200);
+    assert.ok(Array.isArray(response.json.relatedItems), "expected relatedItems array");
+    assert.deepEqual(
+      response.json.relatedItems.map((item: any) => ({ type: item.type, id: item.id })),
+      [{ type: "product", id: ids.productOneId }]
+    );
+  });
+});
+
+test("storefront collection detail returns its related items", async () => {
+  const ids = await getBaselineIds();
+  const slug = `related-collection-${Date.now()}`;
+  const [createdCollection] = await db
+    .insert(collections)
+    .values({
+      slug,
+      arName: "مجموعة علاقات",
+      enName: "Related Collection",
+      fixedPrice: "90.00",
+      categoryId: ids.leafCategoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+  await db.insert(collectionItems).values([
+    { collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: createdCollection.id, variantId: ids.secondVariantId, qty: 1 }
+  ]);
+  await setRelatedLinksForSourceRepo({ type: "collection", id: createdCollection.id }, [
+    { type: "product", id: ids.productOneId }
+  ]);
+
+  await withTestServer(app, async (request) => {
+    const response = await request(`/api/v1/collections/${slug}`);
     assert.equal(response.status, 200);
     assert.ok(Array.isArray(response.json.relatedItems), "expected relatedItems array");
     assert.deepEqual(

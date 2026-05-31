@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -73,4 +73,61 @@ test("createOrderFromCheckout deducts offer stock from each included variant mul
 
   assert.equal(firstVariant?.stockQty, 8);
   assert.equal(secondVariant?.stockQty, 4);
+});
+
+test("createOrderFromCheckout stores a collection order line and deducts each underlying variant multiplied by quantity", async () => {
+  const ids = await getBaselineIds();
+
+  const [createdCollection] = await db
+    .insert(collections)
+    .values({
+      slug: `checkout-collection-${Date.now()}`,
+      arName: "مجموعة دفع",
+      enName: "Checkout Collection",
+      fixedPrice: "90.00",
+      categoryId: ids.leafCategoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+
+  await db.insert(collectionItems).values([
+    { collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: createdCollection.id, variantId: ids.secondVariantId, qty: 2 }
+  ]);
+
+  const result = await createOrderFromCheckout({
+    fullName: "Checkout Collection",
+    phone: "01012345678",
+    email: "collection-checkout@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 3",
+    buildingApartment: "Building 6",
+    paymentMethod: "cod",
+    items: [{ type: "collection", collectionId: createdCollection.id, qty: 2 }]
+  });
+
+  const variants = await db
+    .select({ id: productVariants.id, stockQty: productVariants.stockQty })
+    .from(productVariants)
+    .where(inArray(productVariants.id, [ids.firstVariantId, ids.secondVariantId]));
+  const [createdOrderItem] = await db
+    .select({
+      itemType: orderItems.itemType,
+      collectionId: orderItems.collectionId,
+      qty: orderItems.qty
+    })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, result.id))
+    .limit(1);
+
+  const firstVariant = variants.find((variant) => variant.id === ids.firstVariantId);
+  const secondVariant = variants.find((variant) => variant.id === ids.secondVariantId);
+
+  assert.equal(firstVariant?.stockQty, 8);
+  assert.equal(secondVariant?.stockQty, 2);
+  assert.equal(createdOrderItem?.itemType, "collection");
+  assert.equal(createdOrderItem?.collectionId, createdCollection.id);
+  assert.equal(createdOrderItem?.qty, 2);
 });

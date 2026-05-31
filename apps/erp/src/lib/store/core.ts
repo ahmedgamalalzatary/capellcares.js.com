@@ -1,6 +1,6 @@
 "use client";
 
-import type { Advice, Category, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product } from "@capella/shared";
 import { api, isAdminAuthHydrated, subscribeAdminAccessToken, subscribeAdminAuthHydration } from "../api/client";
 import { normalizeCategory, normalizeProduct } from "./normalizers";
 import type {
@@ -15,6 +15,7 @@ import type {
 export class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
+  collections: Collection[] = [];
   offers: Offer[] = [];
   advices: Advice[] = [];
   orders: OrderSummary[] = [];
@@ -42,6 +43,7 @@ export class ErpStore {
     return {
       products: this.products,
       categories: this.categories,
+      collections: this.collections,
       offers: this.offers,
       advices: this.advices,
       orders: this.orders,
@@ -61,9 +63,10 @@ export class ErpStore {
     this.loading = true;
     this.emit();
     try {
-      const [p, c, o, a, orderData, salesData] = await Promise.all([
+      const [p, c, collectionData, o, a, orderData, salesData] = await Promise.all([
         api.get<{ items: ProductApiShape[] }>("/api/erp/products"),
         api.get<{ items: CategoryApiShape[] }>("/api/erp/categories"),
+        api.get<{ items: Collection[] }>("/api/erp/collections"),
         api.get<{ items: Offer[] }>("/api/erp/offers"),
         api.get<{ items: Advice[] }>("/api/erp/advices"),
         api.get<{ items: OrderSummary[] }>("/api/erp/orders"),
@@ -75,6 +78,7 @@ export class ErpStore {
       }
       this.products = p.items.map(normalizeProduct);
       this.categories = c.items.map(normalizeCategory);
+      this.collections = collectionData.items;
       this.offers = o.items;
       this.advices = a.items;
       this.orders = orderData.items;
@@ -207,8 +211,18 @@ export class ErpStore {
     await this.refetch();
   }
 
+  async upsertCollection(collection: Omit<Collection, "id"> & { id?: number }) {
+    await api.post("/api/erp/collections", collection);
+    await this.refetch();
+  }
+
   async softDeleteOffer(id: number) {
     await api.del(`/api/erp/offers/${id}`);
+    await this.refetch();
+  }
+
+  async softDeleteCollection(id: number) {
+    await api.del(`/api/erp/collections/${id}`);
     await this.refetch();
   }
 
@@ -217,8 +231,18 @@ export class ErpStore {
     await this.refetch();
   }
 
+  async restoreCollection(id: number) {
+    await api.post(`/api/erp/collections/${id}/restore`);
+    await this.refetch();
+  }
+
   async toggleOfferStatus(id: number) {
     await api.post(`/api/erp/offers/${id}/toggle-status`);
+    await this.refetch();
+  }
+
+  async toggleCollectionStatus(id: number) {
+    await api.post(`/api/erp/collections/${id}/toggle-status`);
     await this.refetch();
   }
 

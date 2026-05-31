@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { and, eq, sql } from "drizzle-orm";
-import { offers, relatedItems } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offers, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   listRelatedLinksForSourceRepo,
@@ -26,6 +26,26 @@ async function createOffer(slug: string): Promise<number> {
       visibility: "visible"
     })
     .$returningId();
+  return created.id;
+}
+
+async function createCollection(slug: string, categoryId: number, variantIds: [number, number]): Promise<number> {
+  const [created] = await db
+    .insert(collections)
+    .values({
+      slug,
+      arName: slug,
+      enName: slug,
+      fixedPrice: sql`10`,
+      categoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+  await db.insert(collectionItems).values([
+    { collectionId: created.id, variantId: variantIds[0], qty: 1 },
+    { collectionId: created.id, variantId: variantIds[1], qty: 1 }
+  ]);
   return created.id;
 }
 
@@ -141,4 +161,23 @@ test("offer<->offer relations work both ways", async () => {
 
   assert.deepEqual(await listRelatedLinksForSourceRepo("offer", offerA), [{ type: "offer", id: offerB }]);
   assert.deepEqual(await listRelatedLinksForSourceRepo("offer", offerB), [{ type: "offer", id: offerA }]);
+});
+
+test("collection<->product relations work both ways", async () => {
+  const ids = await getBaselineIds();
+  const collectionId = await createCollection("rel-collection-product", ids.leafCategoryId, [
+    ids.firstVariantId,
+    ids.secondVariantId
+  ]);
+
+  await setRelatedLinksForSourceRepo({ type: "collection", id: collectionId }, [
+    { type: "product", id: ids.productOneId }
+  ]);
+
+  assert.deepEqual(await listRelatedLinksForSourceRepo("collection", collectionId), [
+    { type: "product", id: ids.productOneId }
+  ]);
+  assert.deepEqual(await listRelatedLinksForSourceRepo("product", ids.productOneId), [
+    { type: "collection", id: collectionId }
+  ]);
 });

@@ -7,7 +7,7 @@ import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { db } from "@capella/database/src/db";
-import { orders } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, orders } from "@capella/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
@@ -147,5 +147,48 @@ test("checkout route uses the authenticated customer id instead of trusting the 
 
     assert.equal(order?.customerType, "registered");
     assert.equal(order?.customerId, ids.customerId);
+  });
+});
+
+test("checkout route accepts buyable collection items", async () => {
+  const ids = await getBaselineIds();
+
+  const [createdCollection] = await db
+    .insert(collections)
+    .values({
+      slug: `route-collection-${Date.now()}`,
+      arName: "مجموعة مسار",
+      enName: "Route Collection",
+      fixedPrice: "90.00",
+      categoryId: ids.leafCategoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+
+  await db.insert(collectionItems).values([
+    { collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: createdCollection.id, variantId: ids.secondVariantId, qty: 1 }
+  ]);
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Collection Customer",
+        phone: "01012345678",
+        email: "collection-route@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        items: [{ type: "collection", collectionId: createdCollection.id, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 201);
+    assert.ok(response.json.id);
   });
 });

@@ -113,6 +113,25 @@ export const offers = mysqlTable("offers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const collections = mysqlTable("collections", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 191 }).notNull().unique(),
+  arName: varchar("ar_name", { length: 255 }).notNull(),
+  enName: varchar("en_name", { length: 255 }).notNull(),
+  arDescription: text("ar_description"),
+  enDescription: text("en_description"),
+  imagePath: varchar("image_path", { length: 1024 }),
+  fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
+  categoryId: int("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "restrict" }),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  visibility: mysqlEnum("visibility", ["visible", "hidden"]).notNull().default("visible"),
+  deletedAt: datetime("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const advices = mysqlTable("advices", {
   id: int("id").autoincrement().primaryKey(),
   arTitle: varchar("ar_title", { length: 255 }).notNull(),
@@ -143,6 +162,27 @@ export const offerItems = mysqlTable(
   (table) => ({
     offerVariantUnique: unique("offer_items_offer_variant_unique").on(
       table.offerId,
+      table.variantId
+    )
+  })
+);
+
+export const collectionItems = mysqlTable(
+  "collection_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    collectionId: int("collection_id")
+      .notNull()
+      .references(() => collections.id, { onDelete: "cascade" }),
+    variantId: int("variant_id")
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "restrict" }),
+    qty: int("qty").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    collectionVariantUnique: unique("collection_items_collection_variant_unique").on(
+      table.collectionId,
       table.variantId
     )
   })
@@ -241,9 +281,10 @@ export const orderItems = mysqlTable("order_items", {
   orderId: int("order_id")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
-  itemType: mysqlEnum("item_type", ["product_variant", "offer"]).notNull(),
+  itemType: mysqlEnum("item_type", ["product_variant", "offer", "collection"]).notNull(),
   variantId: int("variant_id").references(() => productVariants.id, { onDelete: "restrict" }),
   offerId: int("offer_id").references(() => offers.id, { onDelete: "restrict" }),
+  collectionId: int("collection_id").references(() => collections.id, { onDelete: "restrict" }),
   qty: int("qty").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),

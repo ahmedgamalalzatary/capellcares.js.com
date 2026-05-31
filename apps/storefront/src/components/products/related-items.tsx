@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatPrice, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
+import { CollectionIllustration } from "@/components/ui/collection-illustration";
 
 interface Props {
   items: RelatedItemCard[];
@@ -10,13 +11,16 @@ interface Props {
 }
 
 function hrefFor(item: RelatedItemCard, lang: Language): string {
-  const segment = item.type === "offer" ? "offers" : "products";
+  const segment = item.type === "offer" ? "offers" : item.type === "collection" ? "collections" : "products";
   return `/${lang}/${segment}/${item.slug}`;
 }
 
 function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
   if (item.type === "offer") {
     return lang === "ar" ? "عرض" : "Offer";
+  }
+  if (item.type === "collection") {
+    return lang === "ar" ? "مجموعة" : "Collection";
   }
   return lang === "ar" ? "منتج" : "Product";
 }
@@ -46,6 +50,12 @@ export function RelatedItems({ items, lang, title }: Props) {
                 {item.type === "offer" ? (
                   <OfferIllustration
                     offer={{ slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" }}
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : item.type === "collection" ? (
+                  <CollectionIllustration
+                    collection={{ slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" }}
+                    lang={lang}
                     className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 ) : (

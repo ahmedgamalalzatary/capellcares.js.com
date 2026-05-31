@@ -73,11 +73,40 @@ export interface RelatedItemCard {
   price: number;
 }
 
+export interface CollectionItem {
+  id?: number;
+  variantId: number;
+  qty: number;
+}
+
+export interface Collection {
+  id: number;
+  slug: string;
+  name: Bilingual;
+  description: Bilingual;
+  imagePath: string;
+  price: number;
+  originalTotal: number;
+  categoryId: number;
+  items: CollectionItem[];
+  stock: number;
+  status: "active" | "inactive";
+  visibility: "visible" | "hidden";
+  relatedItems?: RelatedItemRef[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
 export type StorefrontProductDetail = Omit<Product, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
 };
 
 export type StorefrontOfferDetail = Omit<Offer, "relatedItems"> & {
+  relatedItems?: RelatedItemCard[];
+};
+
+export type StorefrontCollectionDetail = Omit<Collection, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
 };
 
@@ -125,9 +154,10 @@ export interface Advice {
 export interface OrderItem {
   id: number;
   orderId: number;
-  itemType: "product_variant" | "offer";
+  itemType: "product_variant" | "offer" | "collection";
   variantId: number | null;
   offerId: number | null;
+  collectionId: number | null;
   qty: number;
   unitPrice: number;
   lineTotal: number;
@@ -172,7 +202,12 @@ export interface CartLineOffer {
   offerId: number;
   qty: number;
 }
-export type CartLine = CartLineProduct | CartLineOffer;
+export interface CartLineCollection {
+  type: "collection";
+  collectionId: number;
+  qty: number;
+}
+export type CartLine = CartLineProduct | CartLineOffer | CartLineCollection;
 
 export interface CheckoutForm {
   fullName: string;

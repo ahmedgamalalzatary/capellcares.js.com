@@ -1,4 +1,4 @@
-import type { Advice, Category, Offer, OrderSummary, Product, ProductMedia } from "@capella/shared";
+import type { Advice, Category, Collection, Offer, OrderSummary, Product, ProductMedia } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -94,6 +94,7 @@ export type CategoryApiShape = {
 export type ErpStoreSnapshot = {
   products: Product[];
   categories: Category[];
+  collections: Collection[];
   offers: Offer[];
   advices: Advice[];
   orders: OrderSummary[];

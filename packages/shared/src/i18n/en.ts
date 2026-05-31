@@ -4,6 +4,7 @@ export const en = {
   nav: {
     products: "Shop",
     offers: "Offers",
+    collections: "Collections",
     bestsellers: "Bestsellers",
     new: "New",
     cart: "Cart",
@@ -160,6 +161,18 @@ export const en = {
     unavailable: "One of the products in this bundle is currently unavailable.",
     related: "You may also like"
   },
+  collections: {
+    title: "Collections",
+    badge: "Collection",
+    listEmpty: "No collections available right now.",
+    related: "You may also like",
+    categoryLabel: "Category",
+    itemsLabel: "Included items",
+    addCollectionToCart: "Add collection to cart",
+    added: "Added ✓",
+    unavailable: "One of the products in this collection is currently unavailable.",
+    collectionEyebrow: "Capella collection"
+  },
   auth: {
     loginTitle: "Welcome back",
     loginCta: "Log in",
@@ -194,6 +207,8 @@ export const en = {
     description: "Curated offers, new arrivals, bestsellers, and care advice — all from Capella.",
     bundlesEyebrow: "Capella bundles",
     viewAllOffers: "View all →",
+    collectionsEyebrow: "Capella collections",
+    viewAllCollections: "View all →",
     newAndBestsellers: "New & Bestsellers",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"

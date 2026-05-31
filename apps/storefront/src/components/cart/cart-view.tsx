@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
-import { pickLang, formatPrice, type Language, type Product, type Offer } from "@capella/shared";
-import { fetchProducts, fetchOffers } from "@/lib/api/client";
+import { pickLang, formatPrice, type Language, type Product, type Offer, type Collection } from "@capella/shared";
+import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -16,7 +16,7 @@ interface Resolved {
   unitPrice: number;
   qty: number;
   slug: string;
-  type: "product" | "offer";
+  type: "product" | "offer" | "collection";
   illustration: React.ReactNode;
 }
 
@@ -24,12 +24,14 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, setQty, remove, keyOf } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchProducts(), fetchOffers()])
-      .then(([p, o]) => {
+    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
+      .then(([p, o, c]) => {
         setProducts(p);
         setOffers(o);
+        setCollections(c);
       })
       .catch(() => {});
   }, []);
@@ -54,21 +56,40 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           };
         }
 
-        const o = offers.find((o) => o.id === l.offerId);
-        if (!o) return null;
+        if (l.type === "offer") {
+          const o = offers.find((o) => o.id === l.offerId);
+          if (!o) return null;
+          return {
+            key,
+            type: "offer" as const,
+            title: pickLang(o.name, lang),
+            meta: dict.offers.badge,
+            unitPrice: o.price,
+            qty: l.qty,
+            slug: `/${lang}/offers/${o.slug}`,
+            illustration: <OfferIllustration offer={o} />
+          };
+        }
+
+        const collection = collections.find((item) => item.id === l.collectionId);
+        if (!collection) return null;
         return {
           key,
-          type: "offer" as const,
-          title: pickLang(o.name, lang),
-          meta: dict.offers.badge,
-          unitPrice: o.price,
+          type: "collection" as const,
+          title: pickLang(collection.name, lang),
+          meta: lang === "ar" ? "مجموعة" : "Collection",
+          unitPrice: collection.price,
           qty: l.qty,
-          slug: `/${lang}/offers/${o.slug}`,
-          illustration: <OfferIllustration offer={o} />
+          slug: `/${lang}/collections/${collection.slug}`,
+          illustration: (
+            <div className="grid h-full w-full place-items-center text-[11px] font-semibold text-(--ink-2)">
+              {lang === "ar" ? "مجموعة" : "Collection"}
+            </div>
+          )
         };
       })
       .filter(Boolean) as Resolved[];
-  }, [lines, lang, dict, keyOf, products, offers]);
+  }, [lines, lang, dict, keyOf, products, offers, collections]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
 
@@ -193,4 +214,3 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
     </div>
   );
 }
-

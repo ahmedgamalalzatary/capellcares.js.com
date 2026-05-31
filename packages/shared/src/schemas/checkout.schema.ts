@@ -12,6 +12,12 @@ export const checkoutOfferItemSchema = z.object({
   qty: z.number().int().positive()
 });
 
+export const checkoutCollectionItemSchema = z.object({
+  type: z.literal("collection"),
+  collectionId: z.number().int().positive(),
+  qty: z.number().int().positive()
+});
+
 export const checkoutSchema = z.object({
   fullName: z.string().min(1),
   phone: z.string().min(1),
@@ -23,5 +29,5 @@ export const checkoutSchema = z.object({
   notes: z.string().optional(),
   paymentMethod: z.literal("cod"),
   customerId: z.number().int().positive().nullable().optional(),
-  items: z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema])).min(1)
+  items: z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema, checkoutCollectionItemSchema])).min(1)
 });

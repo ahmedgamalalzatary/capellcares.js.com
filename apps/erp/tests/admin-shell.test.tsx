@@ -31,4 +31,11 @@ describe("AdminShell", () => {
     const salesLinks = screen.getAllByText("المبيعات");
     expect(salesLinks.length).toBeGreaterThan(0);
   });
+
+  it("includes a visible collections navigation item", () => {
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    const collectionLinks = screen.getAllByText("المجموعات");
+    expect(collectionLinks.length).toBeGreaterThan(0);
+  });
 });
