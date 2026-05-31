@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { db } from "@capella/database/src/db";
 import {
   createAdminProductRepo,
   listAdminProductsRepo,
@@ -72,53 +73,57 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
     }
-    const created = await createAdminProductRepo({
-      id: incoming.id ? Number(incoming.id) : undefined,
-      sku: incoming.sku ?? "",
-      slug: resolvedSlug,
-      arName: productNameAr,
-      enName: productNameEn,
-      buyingPrice: Number(incoming.buyingPrice ?? 0),
-      keywords: productKeywords.join(","),
-      arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
-      enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
-      arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,
-      enIngredients: incoming.ingredients?.en ?? incoming.enIngredients ?? null,
-      arHowToUse: incoming.howToUse?.ar ?? incoming.arHowToUse ?? null,
-      enHowToUse: incoming.howToUse?.en ?? incoming.enHowToUse ?? null,
-      arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
-      enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
-      youtubeUrl: incoming.youtubeUrl ?? null,
-      imagePath: incoming.imagePath ?? null,
-      hoverImagePath: incoming.hoverImagePath ?? null,
-      media: Array.isArray(incoming.media)
-        ? incoming.media
-          .map((item: any) => ({
-            type: item?.type === "video" ? "video" : "image",
-            url: String(item?.url ?? "").trim()
-          }))
-          .filter((item: any) => item.url)
-        : undefined,
-      categoryId: Number(incoming.categoryId ?? 0),
-      status: productStatus,
-      isNew: incoming.isNew ?? false,
-      isBestseller: incoming.isBestseller ?? false
-    });
-    await replaceVariantsRepo(
-      created.id,
-      productVariants.map((v: any) => ({
-        id: v.id ? Number(v.id) : undefined,
-        sizeLabel: v.sizeLabel ?? v.size ?? "",
-        sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
-        stockQty: Number(v.stockQty ?? v.stock ?? 0)
-      }))
-    );
-    if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
-      const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
-        (target) => !(target.type === "product" && target.id === created.id)
+    const created = await db.transaction(async (tx) => {
+      const product = await createAdminProductRepo({
+        id: incoming.id ? Number(incoming.id) : undefined,
+        sku: incoming.sku ?? "",
+        slug: resolvedSlug,
+        arName: productNameAr,
+        enName: productNameEn,
+        buyingPrice: Number(incoming.buyingPrice ?? 0),
+        keywords: productKeywords.join(","),
+        arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
+        enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
+        arIngredients: incoming.ingredients?.ar ?? incoming.arIngredients ?? null,
+        enIngredients: incoming.ingredients?.en ?? incoming.enIngredients ?? null,
+        arHowToUse: incoming.howToUse?.ar ?? incoming.arHowToUse ?? null,
+        enHowToUse: incoming.howToUse?.en ?? incoming.enHowToUse ?? null,
+        arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
+        enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
+        youtubeUrl: incoming.youtubeUrl ?? null,
+        imagePath: incoming.imagePath ?? null,
+        hoverImagePath: incoming.hoverImagePath ?? null,
+        media: Array.isArray(incoming.media)
+          ? incoming.media
+            .map((item: any) => ({
+              type: item?.type === "video" ? "video" : "image",
+              url: String(item?.url ?? "").trim()
+            }))
+            .filter((item: any) => item.url)
+          : undefined,
+        categoryId: Number(incoming.categoryId ?? 0),
+        status: productStatus,
+        isNew: incoming.isNew ?? false,
+        isBestseller: incoming.isBestseller ?? false
+      }, tx);
+      await replaceVariantsRepo(
+        product.id,
+        productVariants.map((v: any) => ({
+          id: v.id ? Number(v.id) : undefined,
+          sizeLabel: v.sizeLabel ?? v.size ?? "",
+          sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
+          stockQty: Number(v.stockQty ?? v.stock ?? 0)
+        })),
+        tx
       );
-      await setRelatedLinksForSourceRepo({ type: "product", id: created.id }, relatedRefs);
-    }
+      if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
+        const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
+          (target) => !(target.type === "product" && target.id === product.id)
+        );
+        await setRelatedLinksForSourceRepo({ type: "product", id: product.id }, relatedRefs, tx);
+      }
+      return product;
+    });
     try {
       await triggerStorefrontProductRevalidation(resolvedSlug);
     } catch (error) {
@@ -172,10 +177,16 @@ export async function adminHardDeleteProduct(req: Request, res: Response, next: 
   if (result.imagePath && result.imagePath.startsWith("/uploads/")) {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
+    const uploadsDir = path.resolve(process.cwd(), "uploads");
     const fileName = result.imagePath.slice("/uploads/".length);
-    const absolutePath = path.resolve(process.cwd(), "uploads", fileName);
+    const absolutePath = path.resolve(uploadsDir, fileName);
+    const relativePath = path.relative(uploadsDir, absolutePath);
     try {
-      await fs.unlink(absolutePath);
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+        console.warn(`Skipped unlink outside uploads directory: ${absolutePath}`);
+      } else {
+        await fs.unlink(absolutePath);
+      }
     } catch (err: any) {
       if (err?.code !== "ENOENT") {
         console.warn(`Failed to unlink product image ${absolutePath}:`, err?.message ?? err);

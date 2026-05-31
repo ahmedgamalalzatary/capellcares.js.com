@@ -22,7 +22,7 @@ function isConnectionFailure(error: unknown): boolean {
   return error instanceof TypeError;
 }
 
-export async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T> {
+export async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T | null> {
   const resolvedLang = resolveFetchLanguage(options?.lang);
   let response: Response;
   try {
@@ -32,20 +32,20 @@ export async function getJSON<T>(path: string, options?: { lang?: string }): Pro
     });
   } catch (error) {
     if (isConnectionFailure(error)) {
-      return null as T;
+      return null;
     }
     throw error;
   }
   if (!response.ok) {
     if (response.status === 404) {
-      return null as T;
+      return null;
     }
     throw new Error(`API ${response.status} ${path}`);
   }
   return response.json() as Promise<T>;
 }
 
-export async function authedGetJSON<T>(path: string, accessToken: string): Promise<T> {
+export async function authedGetJSON<T>(path: string, accessToken: string): Promise<T | null> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
@@ -56,13 +56,13 @@ export async function authedGetJSON<T>(path: string, accessToken: string): Promi
     });
   } catch (error) {
     if (isConnectionFailure(error)) {
-      return null as T;
+      return null;
     }
     throw error;
   }
   if (!response.ok) {
     if (response.status === 404) {
-      return null as T;
+      return null;
     }
     throw new Error(`API ${response.status} ${path}`);
   }

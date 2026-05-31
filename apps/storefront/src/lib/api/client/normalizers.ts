@@ -46,5 +46,5 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T {
     imagePath: normalizedImagePath || (media.find((item) => item.type === "image")?.url ?? ""),
     hoverImagePath: resolveMediaUrl(product.hoverImagePath ?? ""),
     media
-  };
+  } as T;
 }

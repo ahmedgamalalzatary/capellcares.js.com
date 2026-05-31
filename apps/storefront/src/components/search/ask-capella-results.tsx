@@ -15,8 +15,18 @@ export function AskCapellaReplyContent({
   query: string;
   lang: Language;
   dict: ReturnType<typeof getDict>;
+  error?: boolean;
+  errorMessage?: string;
   onClose: () => void;
 }) {
+  if (error) {
+    return (
+      <div className="text-[13.5px] leading-[1.65]">
+        <p className="text-(--ink-2)">{errorMessage ?? dict.ask.noResults.replace("{query}", query)}</p>
+      </div>
+    );
+  }
+
   const hasResults = results.products.length > 0 || results.categories.length > 0 || results.offers.length > 0;
 
   if (!hasResults) {
@@ -55,7 +65,9 @@ export function AskCapellaReplyContent({
               <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-(--ink)">{pickLang(product.name, lang)}</p>
-                <p className="text-[11px] text-(--ink-3)">{formatPrice(product.variants[0]?.price ?? 0, lang)}</p>
+                {product.variants?.[0]?.price != null && (
+                  <p className="text-[11px] text-(--ink-3)">{formatPrice(product.variants[0].price, lang)}</p>
+                )}
               </div>
             </Link>
           ))}

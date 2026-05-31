@@ -3,11 +3,12 @@ import { relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   deleteLink,
-  linkExists,
   nextRankForSource,
   sameRef,
   type RelatedRef
 } from "./shared.js";
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Reconciles a source entity's related list to exactly `targets`, in the given
@@ -22,22 +23,27 @@ import {
  */
 export async function setRelatedLinksForSourceRepo(
   source: RelatedRef,
-  targets: RelatedRef[]
+  targets: RelatedRef[],
+  executor?: DbTransaction
 ): Promise<void> {
-  for (const target of targets) {
+  const uniqueTargets = targets.filter((target, index) =>
+    targets.findIndex((candidate) => sameRef(candidate, target)) === index
+  );
+
+  for (const target of uniqueTargets) {
     if (sameRef(source, target)) {
       throw new Error("related-item-self-reference");
     }
   }
 
-  await db.transaction(async (tx) => {
+  const run = async (tx: DbTransaction) => {
     const existing = await tx
       .select({ targetType: relatedItems.targetType, targetId: relatedItems.targetId })
       .from(relatedItems)
       .where(and(eq(relatedItems.sourceType, source.type), eq(relatedItems.sourceId, source.id)));
 
     for (const row of existing) {
-      const stillWanted = targets.some((target) => sameRef(target, { type: row.targetType, id: row.targetId }));
+      const stillWanted = uniqueTargets.some((target) => sameRef(target, { type: row.targetType, id: row.targetId }));
       if (!stillWanted) {
         const target = { type: row.targetType, id: row.targetId };
         await deleteLink(tx, source, target);
@@ -45,41 +51,32 @@ export async function setRelatedLinksForSourceRepo(
       }
     }
 
-    for (let index = 0; index < targets.length; index++) {
-      const target = targets[index];
+    for (let index = 0; index < uniqueTargets.length; index++) {
+      const target = uniqueTargets[index];
       const rank = index + 1;
 
-      if (await linkExists(tx, source, target)) {
-        await tx
-          .update(relatedItems)
-          .set({ rank })
-          .where(
-            and(
-              eq(relatedItems.sourceType, source.type),
-              eq(relatedItems.sourceId, source.id),
-              eq(relatedItems.targetType, target.type),
-              eq(relatedItems.targetId, target.id)
-            )
-          );
-      } else {
-        await tx.insert(relatedItems).values({
-          sourceType: source.type,
-          sourceId: source.id,
-          targetType: target.type,
-          targetId: target.id,
-          rank
-        });
-      }
+      await tx.insert(relatedItems).values({
+        sourceType: source.type,
+        sourceId: source.id,
+        targetType: target.type,
+        targetId: target.id,
+        rank
+      }).onDuplicateKeyUpdate({ set: { rank } });
 
-      if (!(await linkExists(tx, target, source))) {
-        await tx.insert(relatedItems).values({
-          sourceType: target.type,
-          sourceId: target.id,
-          targetType: source.type,
-          targetId: source.id,
-          rank: await nextRankForSource(tx, target.type, target.id)
-        });
-      }
+      await tx.insert(relatedItems).values({
+        sourceType: target.type,
+        sourceId: target.id,
+        targetType: source.type,
+        targetId: source.id,
+        rank: await nextRankForSource(tx, target.type, target.id)
+      }).onDuplicateKeyUpdate({ set: { rank: relatedItems.rank } });
     }
-  });
+  };
+
+  if (executor) {
+    await run(executor);
+    return;
+  }
+
+  await db.transaction(run);
 }

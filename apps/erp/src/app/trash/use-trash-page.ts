@@ -72,6 +72,7 @@ export function useTrashPage() {
     if (!pendingHardDelete) {
       return;
     }
+    // This hook currently exposes hard delete only for products; other trash tabs use restore-only actions.
     try {
       setIsDeleting(true);
       setDeleteError(null);

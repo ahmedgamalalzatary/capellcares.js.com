@@ -37,11 +37,12 @@ export function ProductsTable({
               const category = categories.find((candidate) => candidate.id === product.categoryId);
               const prices = product.variants.map((variant) => variant.price);
               const stockSum = product.variants.reduce((accumulator, variant) => accumulator + variant.stock, 0);
+              const avatarInitial = product.name.en?.trim().charAt(0) || product.name.ar?.trim().charAt(0) || "?";
               return (
                 <tr key={product.id}>
                   <td>
                     <div className="avatar-tile">
-                      {product.name.en[0]}
+                      {avatarInitial}
                     </div>
                   </td>
                   <td>

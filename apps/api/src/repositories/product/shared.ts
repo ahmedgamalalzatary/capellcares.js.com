@@ -157,10 +157,16 @@ export async function addVariantRepo(input: {
   sellingPrice: number;
   stockQty: number;
 }) {
+  const [row] = await db
+    .select({ maxSortOrder: sql<number | null>`max(${productVariants.sortOrder})` })
+    .from(productVariants)
+    .where(eq(productVariants.productId, input.productId));
+
   await db.insert(productVariants).values({
     productId: input.productId,
     sizeLabel: normalizeVariantSizeLabel(input.sizeLabel),
     sellingPrice: sql`${input.sellingPrice}`,
-    stockQty: input.stockQty
+    stockQty: input.stockQty,
+    sortOrder: Number(row?.maxSortOrder ?? 0) + 1
   });
 }

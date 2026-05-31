@@ -46,7 +46,7 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
     setInput("");
     setMessages((previous) => [...previous, { role: "user", text: query }]);
 
-    startTransition(async () => {
+    void (async () => {
       try {
         const queryLower = query.toLowerCase();
         const [products, allCategories, allOffers] = await Promise.all([
@@ -66,13 +66,22 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
           offers
         };
 
-        setMessages((previous) => [...previous, { role: "capella", results, query }]);
+        startTransition(() => {
+          setMessages((previous) => [...previous, { role: "capella", results, query }]);
+        });
       } catch {
-        // Network/fetch failure: respond with an empty result set instead of leaving the query hanging.
         const results: AskCapellaResults = { products: [], categories: [], offers: [] };
-        setMessages((previous) => [...previous, { role: "capella", results, query }]);
+        startTransition(() => {
+          setMessages((previous) => [...previous, {
+            role: "capella",
+            results,
+            query,
+            error: true,
+            errorMessage: isAr ? "حدث خطأ مؤقت. حاولي مرة أخرى." : "Temporary error. Please try again."
+          }]);
+        });
       }
-    });
+    })();
   }
 
   return {

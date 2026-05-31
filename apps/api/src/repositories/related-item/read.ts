@@ -64,8 +64,9 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
       if (!inStock) {
         continue;
       }
-      const price = variants.length
-        ? Math.min(...variants.map((variant) => Number(variant.sellingPrice)))
+      const inStockVariants = variants.filter((variant) => variant.stockQty > 0);
+      const price = inStockVariants.length
+        ? Math.min(...inStockVariants.map((variant) => Number(variant.sellingPrice)))
         : 0;
       productCards.set(row.id, {
         type: "product",

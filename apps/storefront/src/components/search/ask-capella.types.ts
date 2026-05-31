@@ -13,4 +13,4 @@ export interface AskCapellaResults {
 
 export type AskCapellaMessage =
   | { role: "user"; text: string }
-  | { role: "capella"; results: AskCapellaResults; query: string };
+  | { role: "capella"; results: AskCapellaResults; query: string; error?: boolean; errorMessage?: string };

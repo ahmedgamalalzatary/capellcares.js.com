@@ -36,7 +36,13 @@ export function useProductsPage() {
           }
 
           let current: typeof category | undefined = category;
+          const visited = new Set<number>();
           while (current) {
+            if (visited.has(current.id)) {
+              current = undefined;
+              break;
+            }
+            visited.add(current.id);
             if (current.id === categoryFilter) {
               break;
             }

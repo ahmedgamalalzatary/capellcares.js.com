@@ -5,6 +5,18 @@ import { allowedPaymentStatuses, generateOrderCode } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+interface OrderItem {
+  variantId: number | null;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  itemType?: "product_variant" | "offer";
+  offerId?: number | null;
+  snapshotNameAr?: string | null;
+  snapshotNameEn?: string | null;
+  snapshotSizeLabel?: string | null;
+}
+
 /**
  * Atomically decrements variant stock only if enough is available. The conditional
  * `WHERE stockQty >= requiredQty` makes the check-and-decrement a single statement, so
@@ -37,25 +49,25 @@ export async function createOrderWithItems(input: {
     paymentStatus: "pending" | "accepted" | "denied";
     totalAmount: number;
   };
-  items: Array<{ variantId: number; qty: number; unitPrice: number; lineTotal: number }>;
+  items: OrderItem[];
 }) {
   return db.transaction(async (tx) => {
     for (const item of input.items) {
-      if ((item as any).itemType === "offer") {
+      if (item.itemType === "offer") {
         const underlyingItems = await tx
           .select({
             variantId: offerItems.variantId,
             bundleQty: offerItems.qty
           })
           .from(offerItems)
-          .where(eq(offerItems.offerId, (item as any).offerId));
+          .where(eq(offerItems.offerId, item.offerId ?? 0));
 
         for (const underlyingItem of underlyingItems) {
           const requiredQty = underlyingItem.bundleQty * item.qty;
           await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
         }
       } else {
-        await decrementVariantStock(tx, item.variantId, item.qty);
+        await decrementVariantStock(tx, item.variantId ?? 0, item.qty);
       }
     }
 
@@ -75,15 +87,15 @@ export async function createOrderWithItems(input: {
     await tx.insert(orderItems).values(
       input.items.map((item) => ({
         orderId: order.id,
-        itemType: (item as any).itemType ?? "product_variant",
-        variantId: (item as any).variantId ?? null,
-        offerId: (item as any).offerId ?? null,
+        itemType: item.itemType ?? "product_variant",
+        variantId: item.variantId ?? null,
+        offerId: item.offerId ?? null,
         qty: item.qty,
         unitPrice: sql`${item.unitPrice}`,
         lineTotal: sql`${item.lineTotal}`,
-        snapshotNameAr: (item as any).snapshotNameAr ?? null,
-        snapshotNameEn: (item as any).snapshotNameEn ?? null,
-        snapshotSizeLabel: (item as any).snapshotSizeLabel ?? null
+        snapshotNameAr: item.snapshotNameAr ?? null,
+        snapshotNameEn: item.snapshotNameEn ?? null,
+        snapshotSizeLabel: item.snapshotSizeLabel ?? null
       }))
     );
 

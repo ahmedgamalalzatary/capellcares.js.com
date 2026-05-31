@@ -11,6 +11,10 @@ import {
   toNumber
 } from "./shared.js";
 
+function escapeLikeTerm(value: string) {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
 export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
   const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
   if (params.category) {
@@ -32,11 +36,12 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   }
   if (params.q?.trim()) {
     const q = params.q.trim();
+    const pattern = `%${escapeLikeTerm(q)}%`;
     const hasArabic = /[\u0600-\u06FF]/.test(q);
     filters.push(
       or(
-        like(hasArabic ? products.arName : products.enName, `%${q}%`),
-        like(products.keywords, `%${q}%`)
+        sql`${hasArabic ? products.arName : products.enName} LIKE ${pattern} ESCAPE '\\'`,
+        sql`${products.keywords} LIKE ${pattern} ESCAPE '\\'`
       )!
     );
   }

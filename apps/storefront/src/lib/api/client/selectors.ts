@@ -1,7 +1,7 @@
 import type { Category, Offer, Product } from "@capella/shared";
 
 export function getCategoryById(categories: Category[], id: number): Category | undefined {
-  return categories.find((category) => category.id === id);
+  return categories.find((category) => category.id === id && !category.deletedAt);
 }
 
 export function getCategoryBySlug(categories: Category[], slug: string): Category | undefined {

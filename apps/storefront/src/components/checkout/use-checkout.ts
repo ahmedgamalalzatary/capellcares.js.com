@@ -116,7 +116,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         addressLine: form.addressLine,
         buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
-        paymentMethod: "cod",
+        paymentMethod: form.paymentMethod,
         customerId: user?.id ?? null,
         items: lines.map((line) =>
           line.type === "product"

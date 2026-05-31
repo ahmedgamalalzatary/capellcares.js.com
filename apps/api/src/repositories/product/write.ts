@@ -9,6 +9,8 @@ import {
   resolvePrimaryImagePath
 } from "./shared.js";
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export async function createAdminProductRepo(input: {
   id?: number;
   sku: string;
@@ -33,54 +35,52 @@ export async function createAdminProductRepo(input: {
   status: "active" | "inactive";
   isNew?: boolean;
   isBestseller?: boolean;
-}) {
+}, executor?: DbTransaction) {
   const media = input.media ?? normalizeMedia(undefined, input.imagePath ?? null);
   const primaryImagePath = resolvePrimaryImagePath(media, input.imagePath ?? null);
+  const repo = executor ?? db;
 
   if (input.id) {
     const id = input.id;
-    const [existing] = await db
+    const [existing] = await repo
       .select({ id: products.id })
       .from(products)
       .where(eq(products.id, id))
       .limit(1);
 
     if (existing) {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(products)
-          .set({
-            sku: input.sku,
-            slug: input.slug,
-            arName: input.arName,
-            enName: input.enName,
-            buyingPrice: sql`${input.buyingPrice}`,
-            keywords: input.keywords,
-            arDescription: input.arDescription ?? null,
-            enDescription: input.enDescription ?? null,
-            arIngredients: input.arIngredients ?? null,
-            enIngredients: input.enIngredients ?? null,
-            arHowToUse: input.arHowToUse ?? null,
-            enHowToUse: input.enHowToUse ?? null,
-            arWarnings: input.arWarnings ?? null,
-            enWarnings: input.enWarnings ?? null,
-            youtubeUrl: input.youtubeUrl ?? null,
-            imagePath: primaryImagePath,
-            hoverImagePath: input.hoverImagePath ?? null,
-            categoryId: input.categoryId,
-            status: input.status,
-            isNew: input.isNew ?? false,
-            isBestseller: input.isBestseller ?? false
-          })
-          .where(eq(products.id, id));
-        await replaceProductMediaRepo(id, media, tx);
-      });
+      await repo
+        .update(products)
+        .set({
+          sku: input.sku,
+          slug: input.slug,
+          arName: input.arName,
+          enName: input.enName,
+          buyingPrice: sql`${input.buyingPrice}`,
+          keywords: input.keywords,
+          arDescription: input.arDescription ?? null,
+          enDescription: input.enDescription ?? null,
+          arIngredients: input.arIngredients ?? null,
+          enIngredients: input.enIngredients ?? null,
+          arHowToUse: input.arHowToUse ?? null,
+          enHowToUse: input.enHowToUse ?? null,
+          arWarnings: input.arWarnings ?? null,
+          enWarnings: input.enWarnings ?? null,
+          youtubeUrl: input.youtubeUrl ?? null,
+          imagePath: primaryImagePath,
+          hoverImagePath: input.hoverImagePath ?? null,
+          categoryId: input.categoryId,
+          status: input.status,
+          isNew: input.isNew ?? false,
+          isBestseller: input.isBestseller ?? false
+        })
+        .where(eq(products.id, id));
+      await replaceProductMediaRepo(id, media, executor);
       return { id };
     }
   }
 
-  return db.transaction(async (tx) => {
-    const [created] = await tx.insert(products).values({
+  const [created] = await repo.insert(products).values({
       sku: input.sku,
       slug: input.slug,
       arName: input.arName,
@@ -103,16 +103,16 @@ export async function createAdminProductRepo(input: {
       isNew: input.isNew ?? false,
       isBestseller: input.isBestseller ?? false
     }).$returningId();
-    await replaceProductMediaRepo(created.id, media, tx);
-    return created;
-  });
+  await replaceProductMediaRepo(created.id, media, executor);
+  return created;
 }
 
 export async function replaceVariantsRepo(
   productId: number,
-  variants: Array<{ id?: number; sizeLabel: string; sellingPrice: number; stockQty: number }>
+  variants: Array<{ id?: number; sizeLabel: string; sellingPrice: number; stockQty: number }>,
+  executor?: DbTransaction
 ) {
-  await db.transaction(async (tx) => {
+  const run = async (tx: DbTransaction) => {
     const existing = await tx
       .select({ id: productVariants.id })
       .from(productVariants)
@@ -177,7 +177,14 @@ export async function replaceVariantsRepo(
         });
       }
     }
-  });
+  };
+
+  if (executor) {
+    await run(executor);
+    return;
+  }
+
+  await db.transaction(run);
 }
 
 export async function softDeleteProductRepo(id: number) {

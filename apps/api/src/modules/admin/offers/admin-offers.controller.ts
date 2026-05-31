@@ -83,14 +83,51 @@ async function calculateOfferInventory(items: Array<{ variantId: number; qty: nu
   };
 }
 
+function computeOfferInventoryFromMap(
+  items: Array<{ variantId: number; qty: number }>,
+  variantMap: Map<number, { sellingPrice: unknown; stockQty: number }>
+) {
+  if (items.length === 0) {
+    return { originalTotal: 0, stock: 0 };
+  }
+
+  const originalTotal = items.reduce((sum, item) => {
+    const variant = variantMap.get(item.variantId);
+    return sum + Number(variant?.sellingPrice ?? 0) * item.qty;
+  }, 0);
+
+  const stock = items.reduce((minAvailable, item) => {
+    const variant = variantMap.get(item.variantId);
+    const availableBundles = item.qty > 0
+      ? Math.floor((variant?.stockQty ?? 0) / item.qty)
+      : 0;
+    return Math.min(minAvailable, availableBundles);
+  }, Number.POSITIVE_INFINITY);
+
+  return {
+    originalTotal,
+    stock: Number.isFinite(stock) ? stock : 0
+  };
+}
+
 export async function adminListOffers(_req: Request, res: Response) {
   const offers = await listOffersRepo(true);
-  const items = await Promise.all(
-    offers.map(async (offer) => {
-      const inventory = await calculateOfferInventory(offer.items);
-      return toAdminOffer(offer, inventory.originalTotal, inventory.stock);
-    })
-  );
+  const variantIds = [...new Set(offers.flatMap((offer) => offer.items.map((item) => item.variantId)))];
+  const variantRows = variantIds.length === 0
+    ? []
+    : await db
+        .select({
+          id: productVariants.id,
+          sellingPrice: productVariants.sellingPrice,
+          stockQty: productVariants.stockQty
+        })
+        .from(productVariants)
+        .where(inArray(productVariants.id, variantIds));
+  const variantMap = new Map(variantRows.map((row) => [row.id, row] as const));
+  const items = offers.map((offer) => {
+    const inventory = computeOfferInventoryFromMap(offer.items, variantMap);
+    return toAdminOffer(offer, inventory.originalTotal, inventory.stock);
+  });
   res.json({ items });
 }
 

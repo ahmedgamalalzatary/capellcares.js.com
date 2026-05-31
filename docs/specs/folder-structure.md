@@ -90,22 +90,17 @@ capella/
 │  │  │  │  │  ├─ components/
 │  │  │  │  │  │  ├─ checkout-form.tsx
 │  │  │  │  │  │  └─ checkout-summary.tsx
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  └─ use-checkout.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  └─ checkout-view.types.ts
-│  │  │  │  │  └─ checkout-view.tsx
+│  │  │  │  │  ├─ checkout-view.types.ts
+│  │  │  │  │  ├─ checkout-view.tsx
+│  │  │  │  │  └─ use-checkout.ts
 │  │  │  │  ├─ layout/
 │  │  │  │  │  ├─ header/
 │  │  │  │  │  │  ├─ components/
 │  │  │  │  │  │  │  ├─ desktop-nav.tsx
 │  │  │  │  │  │  │  └─ mobile-drawer.tsx
-│  │  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  │  └─ search.ts
-│  │  │  │  │  │  ├─ shared/
-│  │  │  │  │  │  │  └─ socials.ts
-│  │  │  │  │  │  └─ types/
-│  │  │  │  │  │     └─ header.types.ts
+│  │  │  │  │  │  ├─ header.types.ts
+│  │  │  │  │  │  ├─ search.ts
+│  │  │  │  │  │  └─ socials.ts
 │  │  │  │  │  ├─ breadcrumb.tsx
 │  │  │  │  │  ├─ footer.tsx
 │  │  │  │  │  ├─ header.tsx
@@ -158,12 +153,11 @@ capella/
 │  │  │  │     └─ wishlist-view.tsx
 │  │  │  └─ lib/
 │  │  │     ├─ api/
-│  │  │     │  ├─ lib/
-│  │  │     │  │  ├─ client.http.ts
-│  │  │     │  │  ├─ client.normalizers.ts
-│  │  │     │  │  └─ client.selectors.ts
-│  │  │     │  ├─ types/
-│  │  │     │  │  └─ client.types.ts
+│  │  │     │  ├─ client/
+│  │  │     │  │  ├─ http.ts
+│  │  │     │  │  ├─ normalizers.ts
+│  │  │     │  │  ├─ selectors.ts
+│  │  │     │  │  └─ types.ts
 │  │  │     │  └─ client.ts
 │  │  │     ├─ cart.ts
 │  │  │     ├─ nav.ts
@@ -407,17 +401,16 @@ capella/
 │     │  ├─ repositories/
 │     │  │  ├─ order/
 │     │  │  │  ├─ read.ts
+│     │  │  │  ├─ shared.ts
 │     │  │  │  └─ write.ts
 │     │  │  ├─ product/
 │     │  │  │  ├─ read.ts
+│     │  │  │  ├─ shared.ts
 │     │  │  │  └─ write.ts
 │     │  │  ├─ related-item/
 │     │  │  │  ├─ read.ts
+│     │  │  │  ├─ shared.ts
 │     │  │  │  └─ write.ts
-│     │  │  ├─ shared/
-│     │  │  │  ├─ order.repository.shared.ts
-│     │  │  │  ├─ product.repository.shared.ts
-│     │  │  │  └─ related-item.repository.shared.ts
 │     │  │  ├─ admin-user.repository.ts
 │     │  │  ├─ advice.repository.ts
 │     │  │  ├─ auth-session.repository.ts

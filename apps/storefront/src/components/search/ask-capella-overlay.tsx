@@ -64,7 +64,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
               <UserBubble key={i} text={msg.text} />
             ) : (
               <CapellaBubble key={i} initial={avatarInitial}>
-                <AskCapellaReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} onClose={onClose} />
+                <AskCapellaReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} error={msg.error} errorMessage={msg.errorMessage} onClose={onClose} />
               </CapellaBubble>
             )
           )}
