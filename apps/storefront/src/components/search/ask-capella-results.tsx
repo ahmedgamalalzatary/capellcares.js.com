@@ -38,7 +38,7 @@ export function AskCapellaReplyContent({
         <Link
           href={`/${lang}/products`}
           onClick={onClose}
-          className="mt-2 inline-block font-(--font-display) italic text-[14px] text-(--accent) underline-offset-4 hover:underline"
+          className="mt-2 inline-block font-(--font-display) italic text-[14px] text-accent underline-offset-4 hover:underline"
         >
           {dict.ask.browseAll}
         </Link>
@@ -64,7 +64,7 @@ export function AskCapellaReplyContent({
             >
               <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-(--ink)">{pickLang(product.name, lang)}</p>
+                <p className="truncate font-semibold text-ink">{pickLang(product.name, lang)}</p>
                 {product.variants?.[0]?.price != null && (
                   <p className="text-[11px] text-(--ink-3)">{formatPrice(product.variants[0].price, lang)}</p>
                 )}
@@ -83,7 +83,7 @@ export function AskCapellaReplyContent({
                 key={category.id}
                 href={`/${lang}/category/${category.slug}`}
                 onClick={onClose}
-                className="rounded-(--radius-pill) border border-(--hairline) bg-(--canvas) px-3 py-1 text-[12px] text-(--ink-2) transition-colors hover:border-(--warm) hover:bg-(--warm-soft)"
+                className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1 text-[12px] text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
               >
                 {pickLang(category.name, lang)}
               </Link>
@@ -104,7 +104,7 @@ export function AskCapellaReplyContent({
                 onClick={onClose}
                 className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
               >
-                <span className="truncate text-(--ink)">{pickLang(offer.name, lang)}</span>
+                <span className="truncate text-ink">{pickLang(offer.name, lang)}</span>
                 {savings > 0 && (
                   <span className="chip chip--accent shrink-0 text-[10px]">
                     {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}
