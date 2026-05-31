@@ -59,8 +59,18 @@ async function validateCollectionItems(categoryId: number, items: Array<{ varian
     return "collection-min-two-variants";
   }
 
+  for (const item of items) {
+    if (!Number.isInteger(item.variantId) || item.variantId < 1) {
+      return "collection-item-invalid-variant";
+    }
+    if (!Number.isInteger(item.qty) || item.qty < 1) {
+      return "collection-item-invalid-qty";
+    }
+  }
+
   const variantIds = items.map((item) => item.variantId);
-  if (new Set(variantIds).size < 2) {
+  const variantIdsDistinct = [...new Set(variantIds)];
+  if (variantIdsDistinct.length < 2) {
     return "collection-min-two-variants";
   }
 
@@ -71,9 +81,9 @@ async function validateCollectionItems(categoryId: number, items: Array<{ varian
     })
     .from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))
-    .where(and(inArray(productVariants.id, variantIds), isNull(productVariants.deletedAt), isNull(products.deletedAt)));
+    .where(and(inArray(productVariants.id, variantIdsDistinct), isNull(productVariants.deletedAt), isNull(products.deletedAt)));
 
-  if (rows.length !== variantIds.length) {
+  if (rows.length !== variantIdsDistinct.length) {
     return "collection-item-not-found";
   }
 

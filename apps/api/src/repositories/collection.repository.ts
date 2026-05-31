@@ -69,9 +69,10 @@ export async function upsertCollectionRepo(input: {
   items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
   const mergedItems = mergeCollectionItems(input.items);
+  return db.transaction(async (tx) => {
   let collectionId = input.id;
   if (collectionId) {
-    await db
+    await tx
       .update(collections)
       .set({
         slug: input.slug,
@@ -87,7 +88,7 @@ export async function upsertCollectionRepo(input: {
       })
       .where(eq(collections.id, collectionId));
   } else {
-    const [created] = await db
+    const [created] = await tx
       .insert(collections)
       .values({
         slug: input.slug,
@@ -105,7 +106,7 @@ export async function upsertCollectionRepo(input: {
     collectionId = created.id;
   }
 
-  const existingItems = await db
+  const existingItems = await tx
     .select({ id: collectionItems.id })
     .from(collectionItems)
     .where(eq(collectionItems.collectionId, collectionId!));
@@ -117,23 +118,24 @@ export async function upsertCollectionRepo(input: {
   if (existingIds.length > 0) {
     const removedIds = existingIds.filter((id) => !keptIds.includes(id));
     if (removedIds.length > 0) {
-      await db.delete(collectionItems).where(inArray(collectionItems.id, removedIds));
+      await tx.delete(collectionItems).where(inArray(collectionItems.id, removedIds));
     }
   }
 
   for (const item of mergedItems) {
     if (item.id && existingIds.includes(item.id)) {
-      await db
+      await tx
         .update(collectionItems)
         .set({ variantId: item.variantId, qty: item.qty })
         .where(eq(collectionItems.id, item.id));
       continue;
     }
 
-    await db.insert(collectionItems).values({ collectionId: collectionId!, variantId: item.variantId, qty: item.qty });
+    await tx.insert(collectionItems).values({ collectionId: collectionId!, variantId: item.variantId, qty: item.qty });
   }
 
   return { id: collectionId! };
+  });
 }
 
 export async function softDeleteCollectionRepo(id: number) {

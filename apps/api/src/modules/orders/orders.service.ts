@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
@@ -41,7 +41,18 @@ export async function createOrderFromCheckout(
     }
     if (item.type === "collection") {
       const collectionId = Number(item.collectionId);
-      const [collection] = await db.select().from(collections).where(eq(collections.id, collectionId)).limit(1);
+      const [collection] = await db
+        .select()
+        .from(collections)
+        .where(
+          and(
+            eq(collections.id, collectionId),
+            eq(collections.status, "active"),
+            eq(collections.visibility, "visible"),
+            isNull(collections.deletedAt)
+          )
+        )
+        .limit(1);
       if (!collection) throw new Error(`Collection not found: ${collectionId}`);
       pricedItems.push({
         itemType: "collection",

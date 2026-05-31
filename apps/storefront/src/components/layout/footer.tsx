@@ -11,7 +11,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
     <footer
       dir={isAr ? "rtl" : "ltr"}
       style={{ background: "#FCF5EE" }}
-      className="relative mt-24 overflow-hidden pb-0 text-(--ink)"
+      className="relative mt-24 overflow-hidden pb-0 text-ink"
     >
       {/* Decorative top rule */}
       <div
@@ -38,22 +38,22 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         className="relative border-b px-6 py-20 text-center"
         style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <p className={`mb-4 text-[11px] tracking-[0.35em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
+        <p className={`mb-4 text-[11px] tracking-[0.35em] text-ink/70 ${isAr ? "" : "uppercase"}`}>
           {dict.footer.luxuryTagline}
         </p>
 
         <h2
           className={
             isAr
-              ? "font-(--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-(--ink)"
-              : "font-(--font-signature) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-(--ink)"
+              ? "font-(family-name:--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-ink"
+              : "font-(family-name:--font-signature) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-ink"
           }
           style={{ textShadow: "0 0 80px color-mix(in oklch, var(--ink) 25%, transparent)" }}
         >
           {dict.brand}
         </h2>
 
-        <p className="mx-auto mt-6 max-w-[46ch] text-[15px] leading-[1.85] text-(--ink)/55">
+        <p className="mx-auto mt-6 max-w-[46ch] text-[15px] leading-[1.85] text-ink/55">
           {dict.tagline}
         </p>
       </div>
@@ -64,12 +64,12 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
           {/* Brand philosophy + contact */}
           <div className="md:col-span-2 xl:col-span-1">
-            <p className={`mb-5 text-[11px] tracking-[0.3em] text-(--ink) ${isAr ? "" : "uppercase"}`}>
+            <p className={`mb-5 text-[11px] tracking-[0.3em] text-ink ${isAr ? "" : "uppercase"}`}>
               {dict.footer.ourPhilosophy}
             </p>
 
             <blockquote
-              className="mb-8 max-w-[34ch] ps-4 text-[15px] italic leading-[1.9] text-(--ink)/55 font-(--font-display)"
+              className="mb-8 max-w-[34ch] ps-4 text-[15px] italic leading-[1.9] text-ink/55 font-(family-name:--font-display)"
               style={{ borderInlineStart: "1.5px solid color-mix(in oklch, var(--ink) 40%, transparent)" }}
             >
               {dict.footer.philosophy}
@@ -77,12 +77,12 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
 
             <div className="grid gap-3">
-              <p className={`text-[11px] tracking-[0.25em] text-(--ink)/70 ${isAr ? "" : "uppercase"}`}>
+              <p className={`text-[11px] tracking-[0.25em] text-ink/70 ${isAr ? "" : "uppercase"}`}>
                 {dict.footer.reachUs}
               </p>
               <a
                 href="mailto:hello@capellacare.com"
-                className="text-[13px] text-(--ink)/50 transition-colors hover:text-(--ink)"
+                className="text-[13px] text-ink/50 transition-colors hover:text-ink"
               >
                 hello@capellacare.com
               </a>
@@ -112,7 +112,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-9 w-9 items-center justify-center text-(--ink)/40 transition-all hover:text-(--ink)"
+                  className="group flex h-9 w-9 items-center justify-center text-ink/40 transition-all hover:text-ink"
                   style={{
                     borderRadius: 2,
                     border: "1px solid color-mix(in oklch, var(--ink) 20%, transparent)",
@@ -162,7 +162,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         className="relative"
         style={{ borderTop: "1px solid color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-(--ink)/35 sm:flex-row">
+        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-ink/35 sm:flex-row">
           <span className={isAr ? "" : "uppercase"}>
             © {year} {dict.footer.creator}.{" "}
             {dict.footer.rights}
@@ -210,7 +210,7 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className={`mb-6 text-[10px] tracking-[0.3em] text-(--ink)/80 ${isAr ? "" : "uppercase"}`}>
+      <div className={`mb-6 text-[10px] tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
         {title}
       </div>
       <div className="grid gap-3">{children}</div>
@@ -229,7 +229,7 @@ function FooterLink({
   external?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = "block text-[13px] leading-snug tracking-wide text-(--ink)/50 transition-colors duration-200 hover:text-(--ink) cursor-pointer";
+  const cls = "block text-[13px] leading-snug tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink cursor-pointer";
   if (as === "span" || !href)
     return <span className={cls}>{children}</span>;
   if (external)

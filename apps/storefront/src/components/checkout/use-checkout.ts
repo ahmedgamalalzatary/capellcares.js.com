@@ -92,13 +92,13 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         return {
           key: `c${line.collectionId}`,
           title: pickLang(collection.name, lang),
-          meta: lang === "ar" ? "مجموعة" : "Collection",
+          meta: dict.collections.badge,
           unit: collection.price,
           qty: line.qty
         };
       })
       .filter(Boolean) as CheckoutResolvedItem[];
-  }, [collections, dict.offers.badge, lang, lines, offers, products]);
+  }, [collections, dict.collections.badge, dict.offers.badge, lang, lines, offers, products]);
 
   const subtotal = resolved.reduce((acc, item) => acc + item.unit * item.qty, 0);
 

@@ -72,10 +72,14 @@ export function useCollectionForm({
     if (!categoryId) nextErrors.categoryId = "اختاري القسم";
     if (price <= 0) nextErrors.price = "أدخلي سعر المجموعة";
     if (!image) nextErrors.image = "أضيفي صورة";
-    if (rows.length < 2 || distinctVariantIds.size < 2) nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
-    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) nextErrors.rows = "أكملي بيانات كل عنصر";
-    if (distinctVariantIds.size !== rows.length) nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
-    if (rows.some((row) => {
+    const rowsComplete = !rows.some((row) => !row.productId || !row.variantId || row.qty <= 0);
+    if (rows.length < 2 || distinctVariantIds.size < 2) {
+      nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
+    } else if (!rowsComplete) {
+      nextErrors.rows = "أكملي بيانات كل عنصر";
+    } else if (distinctVariantIds.size !== rows.length) {
+      nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
+    } else if (rows.some((row) => {
       const product = products.find((candidate) => candidate.id === row.productId);
       return product?.categoryId !== categoryId;
     })) {

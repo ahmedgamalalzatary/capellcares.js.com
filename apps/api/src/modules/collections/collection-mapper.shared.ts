@@ -20,6 +20,11 @@ export function toCollectionBase(
   collection: CollectionMapperRow,
   originalTotal: number
 ): Omit<Collection, "createdAt" | "updatedAt" | "deletedAt"> {
+  if (collection.fixedPrice == null || collection.fixedPrice === "") {
+    throw new Error(
+      `Invalid fixedPrice for collection id=${collection.id} slug=${collection.slug}: ${String(collection.fixedPrice)}`
+    );
+  }
   const price = Number(collection.fixedPrice);
   if (!Number.isFinite(price)) {
     throw new Error(
