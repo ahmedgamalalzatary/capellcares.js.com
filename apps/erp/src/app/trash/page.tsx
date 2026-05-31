@@ -2,8 +2,8 @@
 
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Modal } from "@/components/ui/modal";
-import { DeletedList } from "./deleted-list";
-import { useTrashPage } from "./use-trash-page";
+import { DeletedList } from "../../components/trash/deleted-list";
+import { useTrashPage } from "../../hooks/use-trash-page";
 
 export default function TrashPage() {
   const {

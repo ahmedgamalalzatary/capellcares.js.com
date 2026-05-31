@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { MobileFilterDrawer } from "@/components/products/mobile-filter-drawer";
+import { MobileFilterDrawer } from "@/components/products/filters/mobile-filter-drawer";
 import type { Category } from "@capella/shared";
 
 const categories: Category[] = [

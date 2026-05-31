@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { ProductGridEmptyState } from "@/components/products/product-grid-empty-state";
+import { ProductGridEmptyState } from "@/components/products/grid/product-grid-empty-state";
 
 describe("ProductGridEmptyState", () => {
   it("renders the empty state copy and clear button when filters are active", () => {

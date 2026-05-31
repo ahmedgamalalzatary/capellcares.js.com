@@ -13,7 +13,7 @@ describe("storefront revalidate route", () => {
   });
 
   it("revalidates localized product and listing paths for a valid ERP request", async () => {
-    const { POST } = await import("@/app/api/revalidate/route");
+    const { POST } = await import("@/lib/api/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",

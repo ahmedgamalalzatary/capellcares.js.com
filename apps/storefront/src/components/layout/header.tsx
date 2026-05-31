@@ -7,10 +7,10 @@ import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { HeaderDesktopNav } from "./header/components/desktop-nav";
-import { HeaderMobileDrawer } from "./header/components/mobile-drawer";
-import { useHeaderSearch } from "./header/search";
-import type { HeaderProps } from "./header/header.types";
+import { HeaderDesktopNav } from "./header/desktop-nav";
+import { HeaderMobileDrawer } from "./header/mobile-drawer";
+import { useHeaderSearch } from "../../hooks/use-search";
+import type { HeaderProps } from "../../types/header.types";
 
 export function Header({ lang, dict, navGroups }: HeaderProps) {
   const { count } = useCart();
@@ -101,7 +101,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
             className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px] -mr-2"
             priority
           />
-          
+
         </Link>
 
         <div className="flex items-center justify-end">

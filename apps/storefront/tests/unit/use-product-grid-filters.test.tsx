@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { useProductGridFilters } from "@/components/products/use-product-grid-filters";
+import { useProductGridFilters } from "@/hooks/use-product-grid-filters";
 import type { Category, Product } from "@capella/shared";
 
 const products: Product[] = [

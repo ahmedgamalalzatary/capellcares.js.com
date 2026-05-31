@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { ProductGridToolbar } from "@/components/products/product-grid-toolbar";
+import { ProductGridToolbar } from "@/components/products/grid/product-grid-toolbar";
 
 describe("ProductGridToolbar", () => {
   it("renders the result count and forwards sort and filter actions", () => {

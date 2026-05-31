@@ -5,8 +5,8 @@ import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Icon } from "@/components/ui/icons";
-import { ProductsTable } from "./products-table";
-import { useProductsPage } from "./use-products-page";
+import { ProductsTable } from "../../components/products-table";
+import { useProductsPage } from "../../hooks/use-products-page";
 
 export default function ProductsListPage() {
   const {

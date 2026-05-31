@@ -1,13 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { loginRequest, logoutRequest, refreshAccessToken, signupRequest } from "./lib/auth-provider.api";
-import { readStoredAuthUser, writeStoredAuthUser } from "./lib/auth-provider.storage";
-import type { AuthContextValue, AuthProviderProps, AuthUser } from "./auth-provider.types";
+import { loginRequest, logoutRequest, refreshAccessToken, signupRequest } from "../../lib/auth-provider.api";
+import { readStoredAuthUser, writeStoredAuthUser } from "../../lib/auth-provider.storage";
+import type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/auth-provider.types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export type { AuthContextValue, AuthProviderProps, AuthUser } from "./auth-provider.types";
+export type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/auth-provider.types";
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);

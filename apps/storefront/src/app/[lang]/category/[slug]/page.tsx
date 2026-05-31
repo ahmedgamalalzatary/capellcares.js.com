@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
-import { ProductGrid } from "@/components/products/product-grid";
+import { ProductGrid } from "@/components/products/grid/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import {
   fetchCategories,

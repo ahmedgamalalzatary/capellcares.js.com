@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Category } from "@capella/shared";
-import { ProductFilterCategoryList } from "@/components/products/product-filter-category-list";
+import { ProductFilterCategoryList } from "@/components/products/filters/product-filter-category-list";
 
 const categories: Category[] = [
   { id: 1, parentId: null, slug: "care", name: { ar: "العناية", en: "Care" }, isLeaf: false },

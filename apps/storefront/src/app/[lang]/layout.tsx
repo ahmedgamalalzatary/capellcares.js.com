@@ -6,7 +6,7 @@ import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { AskCapellaButton } from "@/components/search/ask-capella-button";
+import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
 import { fetchCategories } from "@/lib/api/client";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";

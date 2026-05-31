@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useProductForm } from "./lib/use-product-form";
+import { useProductForm } from "../../hooks/forms/use-product-form";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./editor-form-parts";
 import { ProductHoverImageUpload } from "./product-hover-image-upload";
 import { ProductMediaUpload } from "./product-media-upload";
 import { RelatedItemsField } from "./related-items-field";
-import type { ProductFormProps } from "./types/product-form.types";
+import type { ProductFormProps } from "../../types/forms/product-form.types";
 
 export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
   const router = useRouter();

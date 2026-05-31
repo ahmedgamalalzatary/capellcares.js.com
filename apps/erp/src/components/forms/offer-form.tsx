@@ -6,8 +6,8 @@ import { Icon } from "@/components/ui/icons";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { ImageUpload } from "./image-upload";
 import { RelatedItemsField } from "./related-items-field";
-import { useOfferForm } from "./lib/use-offer-form";
-import type { OfferFormProps } from "./types/offer-form.types";
+import { useOfferForm } from "../../hooks/forms/use-offer-form";
+import type { OfferFormProps } from "../../types/forms/offer-form.types";
 
 export function OfferForm({ mode, initial, products, relatedOptions = [], relatedItemsAvailable = true }: OfferFormProps) {
   const router = useRouter();

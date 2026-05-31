@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
-import { CheckoutForm } from "./components/checkout-form";
-import { CheckoutSummary } from "./components/checkout-summary";
-import { useCheckout } from "./use-checkout";
-import type { CheckoutViewProps } from "./checkout-view.types";
+import { CheckoutForm } from "./checkout-form";
+import { CheckoutSummary } from "./checkout-summary";
+import { useCheckout } from "../../hooks/use-checkout";
+import type { CheckoutViewProps } from "../../types/checkout-view.types";
 
 export function CheckoutView({ lang, dict }: CheckoutViewProps) {
   const { lines } = useCart();

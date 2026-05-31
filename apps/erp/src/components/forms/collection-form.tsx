@@ -5,9 +5,9 @@ import { formatPrice } from "@capella/shared";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { ImageUpload } from "./image-upload";
-import { useCollectionForm } from "./lib/use-collection-form";
+import { useCollectionForm } from "../../hooks/forms/use-collection-form";
 import { RelatedItemsField } from "./related-items-field";
-import type { CollectionFormProps } from "./types/collection-form.types";
+import type { CollectionFormProps } from "../../types/forms/collection-form.types";
 import { Icon } from "@/components/ui/icons";
 
 export function CollectionForm({
