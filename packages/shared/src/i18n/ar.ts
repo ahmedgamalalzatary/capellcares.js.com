@@ -215,6 +215,7 @@ export const ar = {
     rights: "كل الحقوق محفوظة.",
     currency: "العملة: ج.م.",
     madeIn: "صُنع في مصر",
-    secureCheckout: "شحن آمن"
+    secureCheckout: "شحن آمن",
+    creator: "بت تيك"
   }
 } as const;

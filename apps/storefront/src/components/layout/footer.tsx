@@ -164,7 +164,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       >
         <div className="container flex flex-col items-center justify-between gap-4 py-6 text-[11px] tracking-[0.12em] text-(--ink)/35 sm:flex-row">
           <span className={isAr ? "" : "uppercase"}>
-            © {year} {dict.brand}.{" "}
+            © {year} {dict.footer.creator}.{" "}
             {dict.footer.rights}
           </span>
 
@@ -181,7 +181,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         <div
           aria-hidden
           className={`pointer-events-none select-none overflow-hidden text-center leading-none ${
-            isAr ? "font-(--font-ar) font-bold" : "font-(--font-signature) italic font-light"
+            isAr ? " font-bold" : " italic font-light"
           }`}
           style={{
             fontSize: "clamp(80px, 18vw, 220px)",

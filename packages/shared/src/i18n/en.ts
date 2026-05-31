@@ -215,6 +215,7 @@ export const en = {
     rights: "All rights reserved.",
     currency: "EGP",
     madeIn: "Made in Egypt",
-    secureCheckout: "Secure Checkout"
+    secureCheckout: "Secure Checkout",
+    creator: "bit Tech"
   }
 } as const;
