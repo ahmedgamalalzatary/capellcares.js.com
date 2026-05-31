@@ -1,71 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
-import { type Language, type Offer, type Category, pickLang, formatPrice, getDict } from "@capella/shared";
-import { fetchProducts, fetchCategories, fetchOffers } from "@/lib/api/client";
-import type { Product } from "@capella/shared";
+import type { ReactNode } from "react";
+import { AskCapellaReplyContent } from "./ask-capella-results";
+import { useAskCapella } from "./use-ask-capella";
+import type { AskCapellaOverlayProps } from "./ask-capella.types";
 
-interface Props {
-  lang: Language;
-  onClose: () => void;
-}
-
-interface Results {
-  products: Product[];
-  categories: Category[];
-  offers: Offer[];
-}
-
-type Message =
-  | { role: "user"; text: string }
-  | { role: "capella"; results: Results; query: string };
-
-const EMPTY_RESULTS: Results = { products: [], categories: [], offers: [] };
-
-export function AskCapellaOverlay({ lang, onClose }: Props) {
-  const dict = getDict(lang);
-  const isAr = lang === "ar";
-  const avatarInitial = dict.ask.assistantName.charAt(0);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [pending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, pending]);
-
-  function send() {
-    const q = input.trim();
-    if (!q || pending) return;
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", text: q }]);
-
-    startTransition(async () => {
-      const qLower = q.toLowerCase();
-      const [products, allCategories, allOffers] = await Promise.all([
-        fetchProducts({ q, lang }),
-        fetchCategories({ lang }),
-        fetchOffers({ lang })
-      ]);
-      const categories = allCategories
-        .filter((c) => !c.deletedAt && pickLang(c.name, lang).toLowerCase().includes(qLower))
-        .slice(0, 4);
-      const offers = allOffers
-        .filter((o) => !o.deletedAt && o.status === "active" && pickLang(o.name, lang).toLowerCase().includes(qLower))
-        .slice(0, 3);
-      const results: Results = { products: products.slice(0, 5), categories, offers };
-      setMessages((prev) => [...prev, { role: "capella", results, query: q }]);
-    });
-  }
+export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
+  const {
+    avatarInitial,
+    bottomRef,
+    dict,
+    input,
+    inputRef,
+    isAr,
+    messages,
+    pending,
+    send,
+    setInput
+  } = useAskCapella({ lang, onClose });
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-end p-4 sm:p-6 pointer-events-none">
@@ -112,7 +64,7 @@ export function AskCapellaOverlay({ lang, onClose }: Props) {
               <UserBubble key={i} text={msg.text} />
             ) : (
               <CapellaBubble key={i} initial={avatarInitial}>
-                <ReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} onClose={onClose} />
+                <AskCapellaReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} onClose={onClose} />
               </CapellaBubble>
             )
           )}
@@ -189,7 +141,7 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function CapellaBubble({ children, initial }: { children: React.ReactNode; isAr?: boolean; initial: string }) {
+function CapellaBubble({ children, initial }: { children: ReactNode; initial: string }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-(--accent) to-(--warm) text-[11px] text-white font-bold">
@@ -198,106 +150,6 @@ function CapellaBubble({ children, initial }: { children: React.ReactNode; isAr?
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-[var(--shadow-1)]">
         {children}
       </div>
-    </div>
-  );
-}
-
-function ReplyContent({
-  results, query, lang, dict, onClose
-}: {
-  results: Results;
-  query: string;
-  lang: Language;
-  dict: ReturnType<typeof getDict>;
-  onClose: () => void;
-}) {
-  const isAr = lang === "ar";
-  const hasResults = results.products.length > 0 || results.categories.length > 0 || results.offers.length > 0;
-
-  if (!hasResults) {
-    return (
-      <div className="text-[13.5px] leading-[1.65]">
-        <p className="text-(--ink-2)">
-          {dict.ask.noResults.replace("{query}", query)}
-        </p>
-        <Link
-          href={`/${lang}/products`}
-          onClick={onClose}
-          className="mt-2 inline-block font-(--font-display) italic text-[14px] text-(--accent) underline-offset-4 hover:underline"
-        >
-          {dict.ask.browseAll}
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3 text-[13px]">
-      <p className="text-(--ink-2) leading-[1.6]">
-        {dict.ask.found}
-      </p>
-
-      {results.products.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.products}</p>
-          {results.products.map((p) => (
-            <Link
-              key={p.id}
-              href={`/${lang}/products/${p.slug}`}
-              onClick={onClose}
-              className="flex items-center gap-2.5 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
-            >
-              <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-(--ink)">{pickLang(p.name, lang)}</p>
-                <p className="text-[11px] text-(--ink-3)">{formatPrice(p.variants[0]?.price ?? 0, lang)}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {results.categories.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.categories}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {results.categories.map((c) => (
-              <Link
-                key={c.id}
-                href={`/${lang}/category/${c.slug}`}
-                onClick={onClose}
-                className="rounded-(--radius-pill) border border-(--hairline) bg-(--canvas) px-3 py-1 text-[12px] text-(--ink-2) transition-colors hover:border-(--warm) hover:bg-(--warm-soft)"
-              >
-                {pickLang(c.name, lang)}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {results.offers.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.offers}</p>
-          {results.offers.map((o) => {
-            const savings = o.originalTotal - o.price;
-            return (
-              <Link
-                key={o.id}
-                href={`/${lang}/offers/${o.slug}`}
-                onClick={onClose}
-                className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
-              >
-                <span className="truncate text-(--ink)">{pickLang(o.name, lang)}</span>
-                {savings > 0 && (
-                  <span className="chip chip--accent shrink-0 text-[10px]">
-                    {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ This file defines the canonical folder and boundary expectations for the Capella
 
 Treat this as the implementation baseline unless a new explicit product decision replaces it. The tree is intentionally pragmatic: required boundaries are strict, but helper folders/files are created when the implementation needs them.
 
-This tree was last reconciled against the actual codebase on 2026-05-31. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories (e.g. `apps/api/src/modules/admin/categories`, `apps/api/src/modules/catalog/categories`) exist on disk but are not listed because they hold no files.
+This tree was last reconciled against the actual codebase on 2026-05-31, including the separation-of-concerns sweep that moved per-file internals into adjacent `lib/`, `components/`, `types/`, `shared/`, and repository `read/write` subfolders while keeping the original top-level module paths stable. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories (e.g. `apps/api/src/modules/catalog/categories`) exist on disk but are not listed because they hold no files.
 
 ## Locked Project Decisions
 
@@ -87,8 +87,25 @@ capella/
 │  │  │  │  ├─ cart/
 │  │  │  │  │  └─ cart-view.tsx
 │  │  │  │  ├─ checkout/
+│  │  │  │  │  ├─ components/
+│  │  │  │  │  │  ├─ checkout-form.tsx
+│  │  │  │  │  │  └─ checkout-summary.tsx
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  └─ use-checkout.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  └─ checkout-view.types.ts
 │  │  │  │  │  └─ checkout-view.tsx
 │  │  │  │  ├─ layout/
+│  │  │  │  │  ├─ header/
+│  │  │  │  │  │  ├─ components/
+│  │  │  │  │  │  │  ├─ desktop-nav.tsx
+│  │  │  │  │  │  │  └─ mobile-drawer.tsx
+│  │  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  │  └─ search.ts
+│  │  │  │  │  │  ├─ shared/
+│  │  │  │  │  │  │  └─ socials.ts
+│  │  │  │  │  │  └─ types/
+│  │  │  │  │  │     └─ header.types.ts
 │  │  │  │  │  ├─ breadcrumb.tsx
 │  │  │  │  │  ├─ footer.tsx
 │  │  │  │  │  ├─ header.tsx
@@ -116,10 +133,21 @@ capella/
 │  │  │  │  │  ├─ related-items.tsx
 │  │  │  │  │  └─ use-product-grid-filters.ts
 │  │  │  │  ├─ providers/
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  ├─ auth-provider.api.ts
+│  │  │  │  │  │  └─ auth-provider.storage.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  └─ auth-provider.types.ts
 │  │  │  │  │  ├─ auth-provider.tsx
 │  │  │  │  │  ├─ cart-provider.tsx
 │  │  │  │  │  └─ wishlist-provider.tsx
 │  │  │  │  ├─ search/
+│  │  │  │  │  ├─ components/
+│  │  │  │  │  │  └─ ask-capella-results.tsx
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  └─ use-ask-capella.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  └─ ask-capella.types.ts
 │  │  │  │  │  ├─ ask-capella-button.tsx
 │  │  │  │  │  └─ ask-capella-overlay.tsx
 │  │  │  │  ├─ ui/
@@ -130,6 +158,12 @@ capella/
 │  │  │  │     └─ wishlist-view.tsx
 │  │  │  └─ lib/
 │  │  │     ├─ api/
+│  │  │     │  ├─ lib/
+│  │  │     │  │  ├─ client.http.ts
+│  │  │     │  │  ├─ client.normalizers.ts
+│  │  │     │  │  └─ client.selectors.ts
+│  │  │     │  ├─ types/
+│  │  │     │  │  └─ client.types.ts
 │  │  │     │  └─ client.ts
 │  │  │     ├─ cart.ts
 │  │  │     ├─ nav.ts
@@ -200,10 +234,23 @@ capella/
 │  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ products/
 │  │  │  │  │  ├─ [id]/edit/page.tsx
+│  │  │  │  │  ├─ components/
+│  │  │  │  │  │  └─ products-table.tsx
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  └─ use-products-page.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  └─ products-page.types.ts
 │  │  │  │  │  ├─ new/page.tsx
 │  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ sales/page.tsx
-│  │  │  │  ├─ trash/page.tsx
+│  │  │  │  ├─ trash/
+│  │  │  │  │  ├─ components/
+│  │  │  │  │  │  └─ deleted-list.tsx
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  └─ use-trash-page.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  └─ trash-page.types.ts
+│  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ layout.tsx
 │  │  │  │  ├─ page.tsx
 │  │  │  │  └─ globals.css
@@ -213,6 +260,12 @@ capella/
 │  │  │  │  │  ├─ admin-list-toolbar.tsx
 │  │  │  │  │  └─ admin-status-badge.tsx
 │  │  │  │  ├─ forms/
+│  │  │  │  │  ├─ lib/
+│  │  │  │  │  │  ├─ use-offer-form.ts
+│  │  │  │  │  │  └─ use-product-form.ts
+│  │  │  │  │  ├─ types/
+│  │  │  │  │  │  ├─ offer-form.types.ts
+│  │  │  │  │  │  └─ product-form.types.ts
 │  │  │  │  │  ├─ advice-form.tsx
 │  │  │  │  │  ├─ category-form.tsx
 │  │  │  │  │  ├─ category-picker.tsx
@@ -239,6 +292,10 @@ capella/
 │  │  │  └─ lib/
 │  │  │     ├─ api/
 │  │  │     │  └─ client.ts
+│  │  │     ├─ store/
+│  │  │     │  ├─ core.ts
+│  │  │     │  ├─ normalizers.ts
+│  │  │     │  └─ types.ts
 │  │  │     ├─ errors.ts
 │  │  │     ├─ store.ts
 │  │  │     └─ utils.ts
@@ -296,9 +353,14 @@ capella/
 │     │  │  │  │  ├─ admin-auth.routes.ts
 │     │  │  │  │  ├─ admin-auth.schemas.ts
 │     │  │  │  │  └─ admin-auth.service.ts
+│     │  │  │  ├─ categories/
+│     │  │  │  │  └─ admin-categories.controller.ts
 │     │  │  │  ├─ offers/
+│     │  │  │  │  ├─ admin-offers.controller.ts
 │     │  │  │  │  └─ admin-offers.mapper.ts
 │     │  │  │  └─ products/
+│     │  │  │     ├─ lib/
+│     │  │  │     │  └─ admin-product-input.ts
 │     │  │  │     ├─ admin-products.controller.ts
 │     │  │  │     ├─ admin-products.routes.ts
 │     │  │  │     └─ admin-products.service.ts
@@ -343,6 +405,19 @@ capella/
 │     │  │     ├─ wishlist.routes.ts
 │     │  │     └─ wishlist.service.ts
 │     │  ├─ repositories/
+│     │  │  ├─ order/
+│     │  │  │  ├─ read.ts
+│     │  │  │  └─ write.ts
+│     │  │  ├─ product/
+│     │  │  │  ├─ read.ts
+│     │  │  │  └─ write.ts
+│     │  │  ├─ related-item/
+│     │  │  │  ├─ read.ts
+│     │  │  │  └─ write.ts
+│     │  │  ├─ shared/
+│     │  │  │  ├─ order.repository.shared.ts
+│     │  │  │  ├─ product.repository.shared.ts
+│     │  │  │  └─ related-item.repository.shared.ts
 │     │  │  ├─ admin-user.repository.ts
 │     │  │  ├─ advice.repository.ts
 │     │  │  ├─ auth-session.repository.ts

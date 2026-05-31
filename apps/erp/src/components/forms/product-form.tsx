@@ -1,151 +1,57 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import type { Product, Category, ProductVariant, RelatedItemRef } from "@capella/shared";
-import { getStore } from "@/lib/store";
+import { useProductForm } from "./lib/use-product-form";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./editor-form-parts";
 import { ProductHoverImageUpload } from "./product-hover-image-upload";
-import { slugifyFormName } from "./form-slug";
 import { ProductMediaUpload } from "./product-media-upload";
-import { RelatedItemsField, type RelatedOption } from "./related-items-field";
+import { RelatedItemsField } from "./related-items-field";
+import type { ProductFormProps } from "./types/product-form.types";
 
-interface Props {
-  mode: "new" | "edit";
-  initial?: Product;
-  categories: Category[];
-  relatedOptions?: RelatedOption[];
-  relatedItemsAvailable?: boolean;
-}
-
-function newVariantId() {
-  return Math.floor(Math.random() * 1_000_000) + 1_000_000;
-}
-
-type Requirement = {
-  key: string;
-  label: string;
-  target: string;
-  ok: boolean;
-};
-
-export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: Props) {
+export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
   const router = useRouter();
-  const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
-  const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
-  const [descAr, setDescAr] = useState(initial?.description.ar ?? "");
-  const [descEn, setDescEn] = useState(initial?.description.en ?? "");
-  const [ingAr, setIngAr] = useState(initial?.ingredients.ar ?? "");
-  const [ingEn, setIngEn] = useState(initial?.ingredients.en ?? "");
-  const [useAr, setUseAr] = useState(initial?.howToUse.ar ?? "");
-  const [useEn, setUseEn] = useState(initial?.howToUse.en ?? "");
-  const [warnAr, setWarnAr] = useState(initial?.warnings.ar ?? "");
-  const [warnEn, setWarnEn] = useState(initial?.warnings.en ?? "");
-  const [sku, setSku] = useState(initial?.sku ?? "");
-  const [buyingPrice, setBuyingPrice] = useState(initial?.buyingPrice ?? 0);
-  const [keywords, setKeywords] = useState((initial?.keywords ?? []).join(", "));
-  const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
-  const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
-  const [media, setMedia] = useState(
-    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
-  );
-  const [hoverImagePath, setHoverImagePath] = useState(initial?.hoverImagePath ?? "");
-  const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
-  const [isNew, setIsNew] = useState(initial?.isNew ?? false);
-  const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
-  const [variants, setVariants] = useState<ProductVariant[]>(
-    initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
-  );
-  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // A product can never relate to itself.
-  const relatedSelectableOptions = relatedOptions.filter(
-    (option) => !(option.type === "product" && option.id === initial?.id)
-  );
-
-  const updateVariant = (id: number, patch: Partial<ProductVariant>) => {
-    setVariants((vs) => vs.map((v) => v.id === id ? { ...v, ...patch } : v));
-  };
-  const addVariant = () => setVariants((vs) => [...vs, { id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]);
-  const removeVariant = (id: number) => setVariants((vs) => vs.length === 1 ? vs : vs.filter((v) => v.id !== id));
-
-  const requirements: Requirement[] = useMemo(() => [
-    { key: "nameAr", label: "الاسم بالعربية", target: "section-basics", ok: nameAr.trim().length > 0 },
-    { key: "nameEn", label: "Name (EN)", target: "section-basics", ok: nameEn.trim().length > 0 },
-    { key: "buyingPrice", label: "سعر الشراء", target: "section-basics", ok: !!buyingPrice && buyingPrice > 0 },
-    { key: "keywords", label: "كلمات مفتاحية", target: "section-basics", ok: keywords.trim().length > 0 },
-    { key: "categoryId", label: "اختيار قسم", target: "section-publish", ok: !!categoryId },
-    { key: "image", label: "صورة المنتج", target: "section-media", ok: media.some((item) => item.type === "image") },
-    { key: "variants", label: "مقاس وسعر", target: "section-variants", ok: variants.length > 0 && variants.every((v) => v.size.trim() && v.price > 0) }
-  ], [nameAr, nameEn, buyingPrice, keywords, categoryId, media, variants]);
-
-  const completedCount = requirements.filter((r) => r.ok).length;
-  const totalCount = requirements.length;
-  const missing = requirements.filter((r) => !r.ok);
-  const canActivate = missing.length === 0;
+  const {
+    nameAr, setNameAr,
+    nameEn, setNameEn,
+    descAr, setDescAr,
+    descEn, setDescEn,
+    ingAr, setIngAr,
+    ingEn, setIngEn,
+    useAr, setUseAr,
+    useEn, setUseEn,
+    warnAr, setWarnAr,
+    warnEn, setWarnEn,
+    sku, setSku,
+    buyingPrice, setBuyingPrice,
+    keywords, setKeywords,
+    youtubeUrl, setYoutubeUrl,
+    categoryId, setCategoryId,
+    media, setMedia,
+    hoverImagePath, setHoverImagePath,
+    status, setStatus,
+    isNew, setIsNew,
+    isBestseller, setIsBestseller,
+    variants,
+    relatedItems,
+    setRelatedItems,
+    errors,
+    relatedSelectableOptions,
+    updateVariant,
+    addVariant,
+    removeVariant,
+    completedCount,
+    totalCount,
+    missing,
+    canActivate,
+    save
+  } = useProductForm({ initial, relatedOptions });
 
   const scrollTo = (id: string) => {
     if (typeof document === "undefined") return;
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const wantActive = status === "active";
-  const canSave = () => {
-    const e: Record<string, string> = {};
-    if (wantActive) {
-      if (!nameAr.trim()) e.nameAr = "مطلوب لتفعيل المنتج";
-      if (!nameEn.trim()) e.nameEn = "مطلوب لتفعيل المنتج";
-      if (!buyingPrice || buyingPrice <= 0) e.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
-      if (variants.length === 0 || variants.some((v) => !v.size.trim() || v.price <= 0)) e.variants = "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح";
-      if (!categoryId) e.categoryId = "اختاري قسمًا";
-      if (!keywords.trim()) e.keywords = "أضيفي كلمات مفتاحية";
-      if (!media.some((item) => item.type === "image")) e.image = "أضيفي صورة المنتج";
-    } else {
-      if (!nameAr.trim() && !nameEn.trim()) e.nameAr = "أدخلي اسم المنتج بالعربية أو الإنجليزية على الأقل";
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const save = async () => {
-    if (!canSave()) return;
-    const id = initial?.id;
-    const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
-    const primaryImage = media.find((item) => item.type === "image")?.url ?? "";
-    const product: Product = {
-      id: id ?? 0,
-      sku: sku.trim() || `SKU-${Date.now()}`,
-      slug,
-      name: { ar: nameAr, en: nameEn },
-      description: { ar: descAr, en: descEn },
-      ingredients: { ar: ingAr, en: ingEn },
-      howToUse: { ar: useAr, en: useEn },
-      warnings: { ar: warnAr, en: warnEn },
-      keywords: keywords.split(",").map((s) => s.trim()).filter(Boolean),
-      buyingPrice: Number(buyingPrice) || 0,
-      imagePath: primaryImage,
-      hoverImagePath,
-      media,
-      youtubeUrl: youtubeUrl.trim() || undefined,
-      status,
-      isNew,
-      isBestseller,
-      categoryId: categoryId ?? 0,
-      variants: variants.map((v, i) => ({ ...v, productId: id ?? 0, sortOrder: i + 1, stock: Math.max(0, v.stock), price: Math.max(0, v.price) })),
-      offerIds: initial?.offerIds ?? [],
-      createdAt: initial?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deletedAt: null
-    };
-    if (relatedItems !== undefined) {
-      product.relatedItems = relatedItems;
-    }
-    await getStore().upsertProduct(product);
-    router.push("/products");
   };
 
   const heroTitle = nameAr.trim() || nameEn.trim();
@@ -393,7 +299,12 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
         </div>
         <div className="save-bar__actions">
           <button type="button" className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
-          <button type="button" className="btn btn--primary" onClick={() => { void save(); }}>
+          <button type="button" className="btn btn--primary" onClick={async () => {
+            const saved = await save();
+            if (saved) {
+              router.push("/products");
+            }
+          }}>
             {mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}
           </button>
         </div>

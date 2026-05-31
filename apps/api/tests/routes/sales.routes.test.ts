@@ -94,6 +94,14 @@ test("erp sales aggregates direct product orders, offer orders, and all payment 
     assert.equal(productOne.unitsSold, 3);
     assert.equal(productTwo.unitsSold, 1);
 
+    // Offer revenue is the actual paid bundle price (lineTotal), allocated across components,
+    // so per-variant revenue reconciles with totalRevenue rather than summing catalog prices.
+    const variantRevenueSum = response.json.variantTotals.reduce((sum: number, item: any) => sum + item.revenue, 0);
+    assert.ok(
+      Math.abs(variantRevenueSum - response.json.summary.totalRevenue) < 0.01,
+      `variant revenue ${variantRevenueSum} should reconcile with totalRevenue ${response.json.summary.totalRevenue}`
+    );
+
     const firstVariant = response.json.variantTotals.find((item: any) => item.variantId === ids.firstVariantId);
     const secondVariant = response.json.variantTotals.find((item: any) => item.variantId === ids.secondVariantId);
     assert.ok(firstVariant);

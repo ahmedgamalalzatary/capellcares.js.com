@@ -1,0 +1,75 @@
+import type { Category, Product } from "@capella/shared";
+import type { CategoryApiShape, ProductApiShape } from "./types";
+
+function toNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toBilingual(
+  value: { ar?: string; en?: string } | undefined,
+  arFallback?: string,
+  enFallback?: string
+) {
+  return {
+    ar: value?.ar ?? arFallback ?? "",
+    en: value?.en ?? enFallback ?? ""
+  };
+}
+
+export function normalizeProduct(input: ProductApiShape): Product {
+  return {
+    id: toNumber(input.id),
+    sku: input.sku ?? "",
+    slug: input.slug ?? "",
+    name: toBilingual(input.name, input.arName, input.enName),
+    description: toBilingual(input.description, input.arDescription ?? undefined, input.enDescription ?? undefined),
+    ingredients: toBilingual(input.ingredients, input.arIngredients ?? undefined, input.enIngredients ?? undefined),
+    howToUse: toBilingual(input.howToUse, input.arHowToUse ?? undefined, input.enHowToUse ?? undefined),
+    warnings: toBilingual(input.warnings, input.arWarnings ?? undefined, input.enWarnings ?? undefined),
+    keywords: Array.isArray(input.keywords)
+      ? input.keywords
+      : typeof input.keywords === "string"
+        ? input.keywords.split(",").map((x) => x.trim()).filter(Boolean)
+        : [],
+    buyingPrice: toNumber(input.buyingPrice),
+    imagePath: input.imagePath ?? input.media?.find((item) => item.type === "image")?.url ?? "",
+    hoverImagePath: input.hoverImagePath ?? "",
+    media: input.media?.length
+      ? input.media
+      : input.imagePath
+        ? [{ type: "image", url: input.imagePath }]
+        : [],
+    youtubeUrl: input.youtubeUrl ?? undefined,
+    status: input.status ?? "inactive",
+    isNew: input.isNew ?? false,
+    isBestseller: input.isBestseller ?? false,
+    categoryId: toNumber(input.categoryId),
+    variants: (input.variants ?? []).map((v, index) => ({
+      id: toNumber(v.id),
+      productId: toNumber(v.productId, toNumber(input.id)),
+      size: v.size ?? v.sizeLabel ?? "",
+      price: toNumber(v.price ?? v.sellingPrice),
+      stock: toNumber(v.stock ?? v.stockQty),
+      sortOrder: toNumber(v.sortOrder, index + 1)
+    })),
+    offerIds: [],
+    createdAt: input.createdAt ?? "",
+    updatedAt: input.updatedAt ?? "",
+    deletedAt: input.deletedAt ?? null
+  };
+}
+
+export function normalizeCategory(input: CategoryApiShape): Category {
+  return {
+    id: Number(input.id),
+    parentId: input.parentId == null ? null : Number(input.parentId),
+    slug: input.slug,
+    name: {
+      ar: input.name?.ar ?? input.arName ?? "",
+      en: input.name?.en ?? input.enName ?? ""
+    },
+    isLeaf: Boolean(input.isLeaf ?? true),
+    deletedAt: input.deletedAt ?? null
+  };
+}
