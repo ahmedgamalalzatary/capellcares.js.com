@@ -54,20 +54,31 @@ export async function createOrderWithItems(input: {
   return db.transaction(async (tx) => {
     for (const item of input.items) {
       if (item.itemType === "offer") {
+        if (item.offerId == null) {
+          throw new Error("Order item.itemType=offer requires non-null item.offerId before querying offerItems");
+        }
+
         const underlyingItems = await tx
           .select({
             variantId: offerItems.variantId,
             bundleQty: offerItems.qty
           })
           .from(offerItems)
-          .where(eq(offerItems.offerId, item.offerId ?? 0));
+          .where(eq(offerItems.offerId, item.offerId));
+
+        if (underlyingItems.length === 0) {
+          throw new Error(`No offerItems found for item.offerId=${item.offerId}`);
+        }
 
         for (const underlyingItem of underlyingItems) {
           const requiredQty = underlyingItem.bundleQty * item.qty;
           await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
         }
       } else {
-        await decrementVariantStock(tx, item.variantId ?? 0, item.qty);
+        if (item.variantId == null) {
+          throw new Error("Order item requires non-null item.variantId before calling decrementVariantStock");
+        }
+        await decrementVariantStock(tx, item.variantId, item.qty);
       }
     }
 

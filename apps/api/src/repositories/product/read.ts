@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, like, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { categories, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {

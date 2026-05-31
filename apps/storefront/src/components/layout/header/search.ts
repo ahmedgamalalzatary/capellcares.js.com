@@ -47,6 +47,10 @@ export function useHeaderSearch(lang: Language) {
 
   useEffect(() => {
     if (paramQ !== q) {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
       setQ(paramQ);
     }
   }, [paramQ, q]);

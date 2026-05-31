@@ -66,3 +66,51 @@ test("createOrderWithItems does not oversell when two orders race for the last u
   // Stock floored at 0 — never negative.
   assert.equal(await getStock(ids.firstVariantId), 0);
 });
+
+test("createOrderWithItems rejects offer items with null offerId before querying offerItems", async () => {
+  await assert.rejects(
+    createOrderWithItems({
+      order: {
+        customerType: "guest",
+        customerId: null,
+        fullName: "Stock Tester",
+        phone: "01000000000",
+        email: "stock@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street",
+        buildingApartment: "1",
+        notes: "",
+        paymentMethod: "cod",
+        paymentStatus: "pending",
+        totalAmount: 35
+      },
+      items: [{ variantId: null, offerId: null, itemType: "offer", qty: 1, unitPrice: 35, lineTotal: 35 }]
+    }),
+    /item\.offerId.*offerItems/
+  );
+});
+
+test("createOrderWithItems rejects non-offer items with null variantId before decrementVariantStock", async () => {
+  await assert.rejects(
+    createOrderWithItems({
+      order: {
+        customerType: "guest",
+        customerId: null,
+        fullName: "Stock Tester",
+        phone: "01000000000",
+        email: "stock@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street",
+        buildingApartment: "1",
+        notes: "",
+        paymentMethod: "cod",
+        paymentStatus: "pending",
+        totalAmount: 35
+      },
+      items: [{ variantId: null, qty: 1, unitPrice: 35, lineTotal: 35 }]
+    }),
+    /item\.variantId.*decrementVariantStock/
+  );
+});
