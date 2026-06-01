@@ -1,6 +1,6 @@
 import type { NextFunction, Response } from "express";
 import type { ErpAuthenticatedRequest } from "./admin-auth.middleware.js";
-import { hasErpPermission, syncPermissionCatalog, type ErpPermissionKey } from "../services/erp-permissions.service.js";
+import { hasErpPermission, type ErpPermissionKey } from "../services/erp-permissions.service.js";
 
 type PermissionResolver = ErpPermissionKey | ((req: ErpAuthenticatedRequest) => ErpPermissionKey | null);
 
@@ -24,7 +24,6 @@ export function requireErpPermission(permission: PermissionResolver) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    await syncPermissionCatalog();
     if (!(await hasErpPermission(adminUser.id, resolvedPermission))) {
       return res.status(403).json({ message: "Forbidden" });
     }

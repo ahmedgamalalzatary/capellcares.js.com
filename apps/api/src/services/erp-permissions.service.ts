@@ -160,16 +160,18 @@ export async function updateAdminUserPermissions(adminEmail: string, requestedKe
         .from(permissions)
         .where(inArray(permissions.key, normalizedKeys));
 
-  await db.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUser.id));
+  await db.transaction(async (tx) => {
+    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUser.id));
 
-  if (permissionRows.length > 0) {
-    await db.insert(adminUserPermissions).values(
-      permissionRows.map((permission) => ({
-        adminUserId: adminUser.id,
-        permissionId: permission.id
-      }))
-    );
-  }
+    if (permissionRows.length > 0) {
+      await tx.insert(adminUserPermissions).values(
+        permissionRows.map((permission) => ({
+          adminUserId: adminUser.id,
+          permissionId: permission.id
+        }))
+      );
+    }
+  });
 }
 
 export async function hasErpPermission(adminUserId: number, permissionKey: string) {
