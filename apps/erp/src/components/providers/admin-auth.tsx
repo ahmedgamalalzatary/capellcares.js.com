@@ -3,7 +3,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { API_BASE, setAdminAccessToken, setAdminAuthHydrated } from "@/lib/api/client";
 
-interface AdminUser { name: string; email: string }
+type AdminUserRole = "admin" | "staff";
+
+interface AdminUser {
+  name: string;
+  email: string;
+  role: AdminUserRole;
+}
 interface AdminAuthValue {
   user: AdminUser | null;
   hydrated: boolean;

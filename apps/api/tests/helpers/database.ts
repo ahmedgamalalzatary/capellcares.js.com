@@ -1,9 +1,11 @@
 import { eq, inArray, or, sql } from "drizzle-orm";
 import {
   categories,
+  adminUserPermissions,
   adminUsers,
   authSessions,
   customers,
+  permissions,
   advices,
   offers,
   productVariants,
@@ -19,7 +21,9 @@ export async function resetApiTestDatabase() {
   await db.delete(authSessions);
   await db.delete(wishlists);
   await db.delete(advices);
+  await db.delete(adminUserPermissions);
   await db.delete(adminUsers);
+  await db.delete(permissions);
   await clearTestSeed();
   await seedTestData();
 }
@@ -30,6 +34,21 @@ export async function createTestCustomer(input: {
   passwordHash: string;
 }) {
   const [created] = await db.insert(customers).values(input).$returningId();
+  return created.id;
+}
+
+export async function createTestAdminUser(input: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role?: "admin" | "staff";
+  isActive?: boolean;
+}) {
+  const [created] = await db.insert(adminUsers).values({
+    role: "staff",
+    isActive: true,
+    ...input
+  }).$returningId();
   return created.id;
 }
 

@@ -223,10 +223,34 @@ export const adminUsers = mysqlTable("admin_users", {
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
-  role: mysqlEnum("role", ["admin"]).notNull().default("admin"),
+  role: mysqlEnum("role", ["admin", "staff"]).notNull().default("admin"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
+
+export const permissions = mysqlTable("permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 191 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const adminUserPermissions = mysqlTable(
+  "admin_user_permissions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    adminUserId: int("admin_user_id").notNull().references(() => adminUsers.id, { onDelete: "cascade" }),
+    permissionId: int("permission_id").notNull().references(() => permissions.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    adminUserPermissionUnique: unique("admin_user_permissions_unique").on(
+      table.adminUserId,
+      table.permissionId
+    )
+  })
+);
 
 export const authSessions = mysqlTable("auth_sessions", {
   id: int("id").autoincrement().primaryKey(),

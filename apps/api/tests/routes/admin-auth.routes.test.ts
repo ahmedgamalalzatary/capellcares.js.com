@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test, { afterEach, beforeEach } from "node:test";
 
+import bcrypt from "bcryptjs";
 import { app } from "../../src/app.js";
-import { resetApiTestDatabase } from "../helpers/database.js";
+import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 
 const previousEnv = {
@@ -97,5 +98,39 @@ test("erp admin logout revokes the current refresh session", async () => {
     });
 
     assert.equal(refreshResponse.status, 401);
+  });
+});
+
+test("erp auth refresh returns the staff user linked to the refresh session", async () => {
+  await createTestAdminUser({
+    name: "Staff User",
+    email: "staff@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const loginResponse = await request("/api/erp/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "staff@capella.test",
+        password: "StaffPass123"
+      })
+    });
+
+    assert.equal(loginResponse.status, 200);
+    const refreshCookie = loginResponse.headers.get("set-cookie");
+    assert.ok(refreshCookie);
+
+    const refreshResponse = await request("/api/erp/auth/refresh", {
+      method: "POST",
+      headers: { cookie: refreshCookie }
+    });
+
+    assert.equal(refreshResponse.status, 200);
+    assert.equal(refreshResponse.json.user.email, "staff@capella.test");
+    assert.equal(refreshResponse.json.user.role, "staff");
   });
 });

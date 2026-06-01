@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
 import {
   adminListProducts,
   adminGetProduct,
@@ -31,33 +32,33 @@ import { getAdminSalesController } from "../orders/orders.controller.js";
 
 export const adminRoutes = Router();
 
-adminRoutes.get("/products", adminListProducts);
-adminRoutes.get("/products/:id", adminGetProduct);
-adminRoutes.post("/products", adminUpsertProduct);
-adminRoutes.delete("/products/:id", adminSoftDeleteProduct);
-adminRoutes.post("/products/:id/restore", adminRestoreProduct);
-adminRoutes.delete("/products/:id/permanent", adminHardDeleteProduct);
-adminRoutes.post("/products/:id/toggle-status", adminToggleProductStatus);
-adminRoutes.post("/products/:id/variants/:variantId/stock", adminSetVariantStock);
+adminRoutes.get("/products", requireErpPermission("products.read"), adminListProducts);
+adminRoutes.get("/products/:id", requireErpPermission("products.read"), adminGetProduct);
+adminRoutes.post("/products", requireErpPermission((req) => (req.body?.id ? "products.update" : "products.create")), adminUpsertProduct);
+adminRoutes.delete("/products/:id", requireErpPermission("products.soft_delete"), adminSoftDeleteProduct);
+adminRoutes.post("/products/:id/restore", requireErpPermission("products.restore"), adminRestoreProduct);
+adminRoutes.delete("/products/:id/permanent", requireErpPermission("products.permanent_delete"), adminHardDeleteProduct);
+adminRoutes.post("/products/:id/toggle-status", requireErpPermission("products.toggle_status"), adminToggleProductStatus);
+adminRoutes.post("/products/:id/variants/:variantId/stock", requireErpPermission("products.stock_update"), adminSetVariantStock);
 
-adminRoutes.get("/categories", adminListCategories);
-adminRoutes.post("/categories", adminUpsertCategory);
-adminRoutes.delete("/categories/:id", adminSoftDeleteCategory);
-adminRoutes.post("/categories/:id/restore", adminRestoreCategory);
-adminRoutes.get("/sales", getAdminSalesController);
+adminRoutes.get("/categories", requireErpPermission("categories.read"), adminListCategories);
+adminRoutes.post("/categories", requireErpPermission((req) => (req.body?.id ? "categories.update" : "categories.create")), adminUpsertCategory);
+adminRoutes.delete("/categories/:id", requireErpPermission("categories.soft_delete"), adminSoftDeleteCategory);
+adminRoutes.post("/categories/:id/restore", requireErpPermission("categories.restore"), adminRestoreCategory);
+adminRoutes.get("/sales", requireErpPermission("sales.read"), getAdminSalesController);
 
-adminRoutes.get("/offers", adminListOffers);
-adminRoutes.get("/offers/:id", adminGetOffer);
-adminRoutes.post("/offers", adminUpsertOffer);
-adminRoutes.delete("/offers/:id", adminSoftDeleteOffer);
-adminRoutes.post("/offers/:id/restore", adminRestoreOffer);
-adminRoutes.post("/offers/:id/toggle-status", adminToggleOfferStatus);
+adminRoutes.get("/offers", requireErpPermission("offers.read"), adminListOffers);
+adminRoutes.get("/offers/:id", requireErpPermission("offers.read"), adminGetOffer);
+adminRoutes.post("/offers", requireErpPermission((req) => (req.body?.id ? "offers.update" : "offers.create")), adminUpsertOffer);
+adminRoutes.delete("/offers/:id", requireErpPermission("offers.soft_delete"), adminSoftDeleteOffer);
+adminRoutes.post("/offers/:id/restore", requireErpPermission("offers.restore"), adminRestoreOffer);
+adminRoutes.post("/offers/:id/toggle-status", requireErpPermission("offers.toggle_status"), adminToggleOfferStatus);
 
-adminRoutes.get("/collections", adminListCollections);
-adminRoutes.get("/collections/:id", adminGetCollection);
-adminRoutes.post("/collections", adminUpsertCollection);
-adminRoutes.delete("/collections/:id", adminSoftDeleteCollection);
-adminRoutes.post("/collections/:id/restore", adminRestoreCollection);
-adminRoutes.post("/collections/:id/toggle-status", adminToggleCollectionStatus);
+adminRoutes.get("/collections", requireErpPermission("collections.read"), adminListCollections);
+adminRoutes.get("/collections/:id", requireErpPermission("collections.read"), adminGetCollection);
+adminRoutes.post("/collections", requireErpPermission((req) => (req.body?.id ? "collections.update" : "collections.create")), adminUpsertCollection);
+adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_delete"), adminSoftDeleteCollection);
+adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), adminRestoreCollection);
+adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), adminToggleCollectionStatus);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);
