@@ -42,7 +42,7 @@ export function mapVariant(v: {
   };
 }
 
-export function getPublicUploadsBase(): string {
+function getPublicUploadsBase(): string {
   const configured = (process.env.HOSTINGER_PUBLIC_BASE_URL ?? "").trim();
   if (!configured || configured.includes("example.com/uploads")) {
     return FALLBACK_PUBLIC_UPLOADS_BASE;
@@ -50,7 +50,7 @@ export function getPublicUploadsBase(): string {
   return configured.replace(/\/+$/, "");
 }
 
-export function resolvePublicMediaUrl(url: string): string {
+function resolvePublicMediaUrl(url: string): string {
   if (/^https?:\/\//i.test(url)) {
     return url;
   }

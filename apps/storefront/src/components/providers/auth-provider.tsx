@@ -7,8 +7,6 @@ import type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/auth-provider.types";
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);

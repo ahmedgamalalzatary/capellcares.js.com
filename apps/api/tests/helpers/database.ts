@@ -28,7 +28,7 @@ export async function resetApiTestDatabase() {
   await seedTestData();
 }
 
-export async function createTestCustomer(input: {
+async function createTestCustomer(input: {
   name: string;
   email: string;
   passwordHash: string;

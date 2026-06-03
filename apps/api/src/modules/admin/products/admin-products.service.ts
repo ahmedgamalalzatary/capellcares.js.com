@@ -1,4 +1,4 @@
-import { addVariantRepo, createAdminProductRepo, listAdminProductsRepo } from "../../../repositories/product.repository.js";
+import { addVariantRepo, createAdminProductRepo } from "../../../repositories/product.repository.js";
 import type { Product } from "../../../types/domain.js";
 import {
   canActivateAdminProduct,
@@ -9,10 +9,6 @@ import {
 
 function toSlug(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-export function listAdminProducts() {
-  return listAdminProductsRepo();
 }
 
 export async function createAdminProduct(input: Omit<Product, "id" | "slug" | "deletedAt"> | ErpProductInput) {

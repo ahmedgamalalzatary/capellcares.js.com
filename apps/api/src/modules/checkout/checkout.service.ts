@@ -3,7 +3,7 @@ import type { CheckoutPayload } from "../../types/domain.js";
 
 const egyptPhonePattern = /^(?:\+20|0)?1[0-2,5]\d{8}$/;
 
-export function validateCheckoutPayload(payload: CheckoutPayload) {
+function validateCheckoutPayload(payload: CheckoutPayload) {
   const requiredFields: Array<keyof CheckoutPayload> = [
     "fullName",
     "phone",

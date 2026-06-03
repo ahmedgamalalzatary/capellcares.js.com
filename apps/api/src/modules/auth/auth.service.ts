@@ -59,7 +59,7 @@ export function logoutCustomerSession(token: string) {
   return revokeRefreshSession(token, "customer");
 }
 
-export function issueAccessToken(userId: number, sessionId?: number) {
+function issueAccessToken(userId: number, sessionId?: number) {
   return jwt.sign(
     { sub: userId, role: "customer", sid: sessionId },
     ACCESS_SECRET,

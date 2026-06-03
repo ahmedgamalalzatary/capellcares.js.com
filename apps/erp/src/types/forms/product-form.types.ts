@@ -1,4 +1,4 @@
-import type { Category, Product, RelatedItemRef } from "@capella/shared";
+import type { Category, Product } from "@capella/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface ProductFormProps {
@@ -17,7 +17,3 @@ export type Requirement = {
 };
 
 export type ProductFormErrors = Record<string, string>;
-
-export type ProductFormSavePayload = Product & {
-  relatedItems?: RelatedItemRef[];
-};

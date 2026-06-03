@@ -1,5 +1,4 @@
 import type {
-  Category,
   Collection,
   Offer,
   Product,
@@ -37,5 +36,3 @@ export type CategoryApiShape = {
   isLeaf?: boolean;
   deletedAt?: string | null;
 };
-
-export type CategorySelectorInput = Category[];

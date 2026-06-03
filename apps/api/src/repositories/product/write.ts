@@ -253,7 +253,7 @@ export async function setVariantStockRepo(variantId: number, stockQty: number) {
   await db.update(productVariants).set({ stockQty }).where(eq(productVariants.id, variantId));
 }
 
-export async function hasOfferLinkedVariantsForProductRepo(productId: number) {
+async function hasOfferLinkedVariantsForProductRepo(productId: number) {
   const linked = await db
     .select({ variantId: offerItems.variantId })
     .from(offerItems)

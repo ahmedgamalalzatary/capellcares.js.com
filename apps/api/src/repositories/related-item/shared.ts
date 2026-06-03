@@ -36,7 +36,7 @@ export async function nextRankForSource(
   return Number(row?.maxRank ?? 0) + 1;
 }
 
-export async function linkExists(executor: RelatedItemExecutor, source: RelatedRef, target: RelatedRef): Promise<boolean> {
+async function linkExists(executor: RelatedItemExecutor, source: RelatedRef, target: RelatedRef): Promise<boolean> {
   const [row] = await executor
     .select({ id: relatedItems.id })
     .from(relatedItems)

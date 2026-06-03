@@ -1,6 +1,6 @@
 import type { AuthUser } from "../types/auth-provider.types";
 
-export const AUTH_STORAGE_KEY = "capella.auth.v1";
+const AUTH_STORAGE_KEY = "capella.auth.v1";
 
 export function readStoredAuthUser(): AuthUser | null {
   try {

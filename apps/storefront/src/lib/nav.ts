@@ -1,12 +1,12 @@
 import { type Category, type Language, pickLang } from "@capella/shared";
 
-export interface NavLeaf {
+interface NavLeaf {
   id: number;
   slug: string;
   label: string;
 }
 
-export interface NavChild extends NavLeaf {
+interface NavChild extends NavLeaf {
   grandchildren: NavLeaf[];
 }
 

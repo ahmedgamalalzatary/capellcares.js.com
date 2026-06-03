@@ -6,7 +6,7 @@ import {
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
-export const ERP_PERMISSION_KEYS = [
+const ERP_PERMISSION_KEYS = [
   "dashboard.read",
   "products.read",
   "products.create",
@@ -196,14 +196,4 @@ export async function replaceAdminUserPermissions(
 export async function hasErpPermission(adminUserId: number, permissionKey: string) {
   const effectivePermissions = await getEffectiveAdminPermissions(adminUserId);
   return effectivePermissions.includes(permissionKey as ErpPermissionKey);
-}
-
-export async function getPermissionIdByKey(permissionKey: string) {
-  const [permission] = await db
-    .select({ id: permissions.id })
-    .from(permissions)
-    .where(eq(permissions.key, permissionKey))
-    .limit(1);
-
-  return permission?.id ?? null;
 }

@@ -12,7 +12,7 @@ type LoadWorkspaceEnvOptions = {
 const DEFAULT_ENV_FILE_NAME = ".env";
 const TEST_ENV_FILE_NAME = ".env.test";
 
-export function resolveWorkspaceEnvPath(
+function resolveWorkspaceEnvPath(
   cwd = process.cwd(),
   envFileName = DEFAULT_ENV_FILE_NAME
 ): string {

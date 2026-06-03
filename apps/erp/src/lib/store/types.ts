@@ -2,39 +2,35 @@ import type { Advice, Category, Collection, Offer, OrderSummary, Product, Produc
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
-export type SalesSummary = {
-  totalOrders: number;
-  totalUnitsSold: number;
-  totalRevenue: number;
-};
-export type SalesProductTotal = {
-  productId: number;
-  productName: string;
-  unitsSold: number;
-  revenue: number;
-};
-export type SalesVariantTotal = {
-  variantId: number;
-  productId: number;
-  productName: string;
-  variantLabel: string;
-  unitsSold: number;
-  revenue: number;
-};
-export type SalesOrderBreakdown = {
-  orderId: number;
-  orderCode: string;
-  paymentStatus: "pending" | "accepted" | "denied";
-  totalAmount: number;
-  unitsSold: number;
-  createdAt: string;
-  items: Array<{ label: string; unitsSold: number }>;
-};
 export type SalesAnalytics = {
-  summary: SalesSummary;
-  productTotals: SalesProductTotal[];
-  variantTotals: SalesVariantTotal[];
-  orders: SalesOrderBreakdown[];
+  summary: {
+    totalOrders: number;
+    totalUnitsSold: number;
+    totalRevenue: number;
+  };
+  productTotals: Array<{
+    productId: number;
+    productName: string;
+    unitsSold: number;
+    revenue: number;
+  }>;
+  variantTotals: Array<{
+    variantId: number;
+    productId: number;
+    productName: string;
+    variantLabel: string;
+    unitsSold: number;
+    revenue: number;
+  }>;
+  orders: Array<{
+    orderId: number;
+    orderCode: string;
+    paymentStatus: "pending" | "accepted" | "denied";
+    totalAmount: number;
+    unitsSold: number;
+    createdAt: string;
+    items: Array<{ label: string; unitsSold: number }>;
+  }>;
 };
 export type ProductApiShape = {
   id: number;

@@ -32,7 +32,7 @@ export function resolveRefreshTtlMs(raw = process.env.JWT_REFRESH_TTL) {
   return value * multipliers[unit]!;
 }
 
-export function hashRefreshToken(token: string) {
+function hashRefreshToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 

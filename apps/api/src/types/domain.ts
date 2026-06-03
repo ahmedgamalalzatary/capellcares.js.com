@@ -2,22 +2,11 @@ import type {
   CheckoutRequestDto,
   Language as SharedLanguage,
   Order as SharedOrder,
-  PaymentMethod as SharedPaymentMethod,
-  PaymentStatus as SharedPaymentStatus,
-  ProductStatus as SharedProductStatus
+  PaymentStatus as SharedPaymentStatus
 } from "@capella/shared";
 
 export type Language = SharedLanguage;
-export type ProductStatus = SharedProductStatus;
-export type PaymentMethod = SharedPaymentMethod;
 export type PaymentStatus = SharedPaymentStatus;
-
-export interface ProductVariant {
-  id: string;
-  sizeLabel: string;
-  sellingPrice: number;
-  stockQty: number;
-}
 
 export interface Product {
   id: number;
@@ -31,11 +20,15 @@ export interface Product {
   imagePath?: string;
   hoverImagePath?: string;
   categorySlug: string;
-  status: ProductStatus;
+  status: "active" | "inactive";
   deletedAt: string | null;
-  variants: ProductVariant[];
+  variants: Array<{
+    id: string;
+    sizeLabel: string;
+    sellingPrice: number;
+    stockQty: number;
+  }>;
 }
 
-export type CheckoutItem = CheckoutRequestDto["items"][number];
 export type CheckoutPayload = CheckoutRequestDto;
 export type Order = SharedOrder;

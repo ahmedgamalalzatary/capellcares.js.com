@@ -6,9 +6,3 @@ export interface HeaderProps {
   dict: any;
   navGroups: NavGroup[];
 }
-
-export type HeaderSearchHandlers = {
-  q: string;
-  onSearchInput: (value: string) => void;
-  onSearch: (e: React.FormEvent) => void;
-};

@@ -48,7 +48,7 @@ export function normalizeCartLine(line: unknown): CartLine | null {
   return null;
 }
 
-export function normalizeCartLines(raw: unknown): CartLine[] {
+function normalizeCartLines(raw: unknown): CartLine[] {
   if (!Array.isArray(raw)) return [];
   return raw.map(normalizeCartLine).filter((line): line is CartLine => line !== null);
 }

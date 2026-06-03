@@ -4,13 +4,13 @@ import { defaultLanguage, pickLang, type Category, type Collection, type Languag
 const FALLBACK_SITE_URL = "https://capellacares.com";
 const BRAND_NAME = "Capella Care";
 
-export const PUBLIC_REVALIDATE_SECONDS = 300;
+const PUBLIC_REVALIDATE_SECONDS = 300;
 
-export function getSiteUrl(): string {
+function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim() || FALLBACK_SITE_URL;
 }
 
-export function getMetadataBase(): URL {
+function getMetadataBase(): URL {
   return new URL(getSiteUrl());
 }
 
@@ -23,18 +23,7 @@ export function absoluteUrl(path: string): string {
   return new URL(path, getSiteUrl()).toString();
 }
 
-export function buildLanguageAlternates(path: string) {
-  return {
-    canonical: localizePath(defaultLanguage, path),
-    languages: {
-      ar: localizePath("ar", path),
-      en: localizePath("en", path),
-      "x-default": localizePath(defaultLanguage, path)
-    }
-  } as Metadata["alternates"];
-}
-
-export function buildLocalizedAlternates(lang: Language, path: string) {
+function buildLocalizedAlternates(_lang: Language, path: string) {
   return {
     canonical: localizePath(defaultLanguage, path),
     languages: {

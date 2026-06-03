@@ -107,7 +107,6 @@ export {
   getCategoryById,
   getCategoryBySlug,
   getCategoryPath,
-  getDescendantCategoryIds,
   getProductsByCategory,
   getOffersForProduct
 };

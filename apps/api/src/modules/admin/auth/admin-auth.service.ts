@@ -78,7 +78,7 @@ export async function loginAdmin(
   };
 }
 
-export async function bootstrapAdminUser(env: NodeJS.ProcessEnv = process.env) {
+async function bootstrapAdminUser(env: NodeJS.ProcessEnv = process.env) {
   const email = env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = env.ADMIN_PASSWORD;
   const name = env.ADMIN_NAME?.trim() || "Capella Admin";

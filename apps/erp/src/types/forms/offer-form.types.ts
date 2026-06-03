@@ -16,18 +16,6 @@ export interface OfferFormRow {
   qty: number;
 }
 
-export interface OfferFormBreakdownRow {
-  product?: Product;
-  variant?: Product["variants"][number];
-  subtotal: number;
-  row: OfferFormRow;
-}
-
-export interface OfferFormComputed {
-  originalTotal: number;
-  breakdown: OfferFormBreakdownRow[];
-}
-
 export interface UseOfferFormResult {
   nameAr: string;
   setNameAr: (value: string) => void;
@@ -46,7 +34,15 @@ export interface UseOfferFormResult {
   setRelatedItems: (value: RelatedItemRef[] | undefined) => void;
   errors: Record<string, string>;
   relatedSelectableOptions: RelatedOption[];
-  computed: OfferFormComputed;
+  computed: {
+    originalTotal: number;
+    breakdown: Array<{
+      product?: Product;
+      variant?: Product["variants"][number];
+      subtotal: number;
+      row: OfferFormRow;
+    }>;
+  };
   addRow: () => void;
   removeRow: (index: number) => void;
   updateRow: (index: number, patch: Partial<OfferFormRow>) => void;

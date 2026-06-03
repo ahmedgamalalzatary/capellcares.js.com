@@ -6,11 +6,10 @@ export {
 export {
   createAdminProductRepo,
   hardDeleteProductRepo,
-  hasOfferLinkedVariantsForProductRepo,
   replaceVariantsRepo,
   restoreProductRepo,
   setVariantStockRepo,
   softDeleteProductRepo,
   toggleProductStatusRepo
 } from "./product/write.js";
-export { addVariantRepo, replaceProductMediaRepo, type ProductMediaItem } from "./product/shared.js";
+export { addVariantRepo } from "./product/shared.js";
