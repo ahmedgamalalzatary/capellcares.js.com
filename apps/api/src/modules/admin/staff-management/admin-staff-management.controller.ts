@@ -91,6 +91,21 @@ export async function listAdminStaffController(_req: ErpAuthenticatedRequest, re
   res.json({ items });
 }
 
+export async function getAdminStaffController(req: ErpAuthenticatedRequest, res: Response) {
+  const staffId = parseStaffId(req.params.id);
+  if (staffId == null) {
+    return res.status(400).json({ error: "Invalid id" });
+  }
+
+  const staffUser = await findStaffUserById(staffId);
+  if (!staffUser) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  const permissionKeys = await getEffectiveAdminPermissions(staffId);
+  res.json({ item: toStaffDto(staffUser, permissionKeys) });
+}
+
 export async function listStaffPermissionCatalogController(_req: ErpAuthenticatedRequest, res: Response) {
   const dependencies = getPermissionDependencies();
   const items = (await listPermissionCatalog()).map((key) => ({ key, dependencies: dependencies[key] ?? [] }));

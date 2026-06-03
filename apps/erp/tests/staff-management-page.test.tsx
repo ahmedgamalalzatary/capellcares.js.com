@@ -63,13 +63,6 @@ describe("StaffManagementPage", () => {
         ok: true,
         status: 200,
         json: async () => ({
-          items: [{ key: "products.read" }, { key: "orders.update_payment_status" }]
-        })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
           items: [
             {
               id: 11,
@@ -89,7 +82,9 @@ describe("StaffManagementPage", () => {
       expect(screen.getByText("orders-staff@capella.test")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("إضافة عضو")).toBeInTheDocument();
-    expect(screen.getByText("orders.update_payment_status")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /إضافة عضو/i })).toHaveAttribute("href", "/staff/new");
+    expect(screen.getByRole("link", { name: "تعديل" })).toHaveAttribute("href", "/staff/11/edit");
+    expect(screen.queryByText("orders.update_payment_status")).not.toBeInTheDocument();
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 });

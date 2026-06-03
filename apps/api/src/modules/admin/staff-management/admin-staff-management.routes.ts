@@ -3,6 +3,7 @@ import { Router } from "express";
 import type { ErpAuthenticatedRequest } from "../../../middlewares/admin-auth.middleware.js";
 import {
   createAdminStaffController,
+  getAdminStaffController,
   listAdminStaffController,
   listStaffPermissionCatalogController,
   updateAdminStaffController
@@ -28,5 +29,6 @@ export const adminStaffManagementRoutes = Router();
 adminStaffManagementRoutes.use(requireAdminRole);
 adminStaffManagementRoutes.get("/permissions", wrapAsync(listStaffPermissionCatalogController));
 adminStaffManagementRoutes.get("/", wrapAsync(listAdminStaffController));
+adminStaffManagementRoutes.get("/:id", wrapAsync(getAdminStaffController));
 adminStaffManagementRoutes.post("/", wrapAsync(createAdminStaffController));
 adminStaffManagementRoutes.put("/:id", wrapAsync(updateAdminStaffController));

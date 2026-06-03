@@ -7,31 +7,31 @@
 /* ============================================================
    Capella Care — ERP tokens.
    Strategy: RESTRAINED. Parchment bg, black ink, white cards.
-   All tones are degrees between canvas #e4d6a9 / black / white.
+   All tones are degrees between canvas #f1f0ed / black / white.
    Denser scale than storefront (14px base, smaller radii).
    ============================================================ */
 :root {
-  --ink:          oklch(0.12 0.010 85);     /* near-black — headings, sidebar */
-  --ink-2:        oklch(0.22 0.012 85);     /* primary text */
-  --ink-3:        oklch(0.42 0.010 85);     /* meta */
-  --ink-4:        oklch(0.60 0.008 88);     /* placeholders, faint */
-  --accent:       oklch(0.28 0.016 85);     /* dark interactive — save/primary */
-  --accent-deep:  oklch(0.16 0.010 85);     /* pressed */
-  --accent-soft:  oklch(0.87 0.036 91);     /* hover tint */
-  --warm:         oklch(0.80 0.030 90);     /* mid-step between canvas & white */
-  --warm-soft:    oklch(0.93 0.020 90);     /* near-white warm */
-  --canvas:       oklch(0.876 0.061 93);    /* #e4d6a9 — primary background */
+  --ink:          oklch(0.12 0 0);          /* near-black — headings, sidebar */
+  --ink-2:        oklch(0.22 0 0);          /* primary text */
+  --ink-3:        oklch(0.42 0 0);          /* meta */
+  --ink-4:        oklch(0.60 0 0);          /* placeholders, faint */
+  --accent:       oklch(0.28 0 0);          /* dark interactive — save/primary */
+  --accent-deep:  oklch(0.16 0 0);          /* pressed */
+  --accent-soft:  oklch(0.92 0 0);          /* neutral hover tint (no warm hue) */
+  --warm:         oklch(0.82 0 0);          /* neutral mid-step between canvas & white */
+  --warm-soft:    oklch(0.94 0 0);          /* neutral near-white step */
+  --canvas:       oklch(0.955 0.004 90);    /* #f1f0ed — primary background */
   --surface:      oklch(1 0 0);             /* white — card surface */
-  --surface-2:    oklch(0.975 0.014 90);    /* nested card */
-  --hairline:     oklch(0.78 0.028 90);     /* border */
-  --hairline-strong: oklch(0.62 0.022 88);  /* strong border */
+  --surface-2:    oklch(0.975 0 0);         /* nested card */
+  --hairline:     oklch(0.80 0 0);          /* neutral border */
+  --hairline-strong: oklch(0.62 0 0);       /* neutral strong border */
   --error:        oklch(0.499 0.165 32);    /* semantic — unchanged */
   --success:      oklch(0.52 0.10 145);     /* semantic — unchanged */
   --gold:         var(--warm);
 
   /* sidebar (white) */
   --bg-sidebar:        oklch(1 0 0);            /* white */
-  --bg-sidebar-hover:  oklch(0.97 0.008 90);    /* very light warm tint on hover */
+  --bg-sidebar-hover:  oklch(0.97 0 0);         /* very light neutral tint on hover */
   --sidebar-text:      oklch(0.12 0.010 85);   /* near-black ink on light sidebar */
   --sidebar-text-soft: oklch(0.42 0.010 85);   /* ink-3 for meta text */
 
@@ -588,6 +588,140 @@ html[lang="ar"] .page-title { letter-spacing: 0; }
 /* checkbox */
 .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* ============================================================
+   Staff form — name / email / password in one row
+   ============================================================ */
+.staff-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .staff-fields { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   Switch toggle (pill)
+   ============================================================ */
+.switch {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+  cursor: pointer; user-select: none;
+}
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch__track {
+  position: relative;
+  width: 42px; height: 24px; flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--canvas);
+  border: 1px solid var(--hairline-strong);
+  transition: background var(--motion-fast) var(--ease-out-expo),
+              border-color var(--motion-fast) var(--ease-out-expo);
+}
+.switch__track::after {
+  content: "";
+  position: absolute; top: 2px; inset-inline-start: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition: transform var(--motion-fast) var(--ease-out-expo);
+}
+.switch input:checked + .switch__track {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.switch input:checked + .switch__track::after { transform: translateX(18px); }
+html[lang="ar"] .switch input:checked + .switch__track::after { transform: translateX(-18px); }
+.switch input:focus-visible + .switch__track {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 22%, transparent);
+}
+.switch__text { display: grid; gap: 1px; }
+.switch__title { font-weight: 700; color: var(--ink); font-size: 13px; }
+.switch__hint  { font-size: 11.5px; color: var(--ink-3); }
+
+/* ============================================================
+   Permission picker (grouped chips with custom check box)
+   ============================================================ */
+.perm-group {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.perm-group__head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--canvas);
+}
+.perm-group__title { font-weight: 700; color: var(--ink); font-size: 13.5px; }
+.perm-group__count {
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700;
+  color: var(--ink-3);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--ink) 7%, transparent);
+}
+.perm-group__count[data-full="true"] { color: var(--canvas); background: var(--ink); }
+.perm-group__all { margin-inline-start: auto; }
+.perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  padding: 14px 16px;
+}
+.perm-chip {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer; user-select: none;
+  transition: border-color var(--motion-fast), background var(--motion-fast), box-shadow var(--motion-fast);
+}
+.perm-chip:hover { border-color: var(--hairline-strong); background: var(--canvas); }
+.perm-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.perm-chip__box {
+  width: 18px; height: 18px; flex-shrink: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--hairline-strong);
+  background: var(--surface);
+  display: grid; place-items: center;
+  color: transparent;
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+}
+.perm-chip__text { display: grid; gap: 1px; min-width: 0; }
+.perm-chip__label { font-weight: 600; color: var(--ink-2); font-size: 12.5px; line-height: 1.2; }
+.perm-chip__key {
+  font-family: var(--font-mono);
+  font-size: 9.5px; letter-spacing: 0.02em;
+  color: var(--ink-4);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.perm-chip[data-checked="true"] {
+  border-color: var(--ink);
+  background: var(--canvas);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.perm-chip[data-checked="true"] .perm-chip__box {
+  background: var(--ink); border-color: var(--ink); color: var(--canvas);
+}
+.perm-chip[data-checked="true"] .perm-chip__label { color: var(--ink); }
+
+/* ============================================================
+   Staff page — restricted palette: only #f1f0ed / black / white
+   (no warm/parchment fills, no semantic green)
+   ============================================================ */
+.staff-page .table th { background: var(--canvas); }
+.staff-page .table tbody tr:hover td { background: var(--canvas); }
+.staff-page .tag { background: var(--canvas); color: var(--ink-2); }
+.staff-page .status { background: var(--canvas); }
+.staff-page .status--active { color: var(--ink); }
+.staff-page .status--inactive { color: var(--ink-3); }
+.staff-page .status--active::before,
+.staff-page .status--inactive::before { background: currentColor; }
 
 /* ============================================================
    Modal

@@ -54,6 +54,33 @@ test("admin can list staff users", async () => {
   });
 });
 
+test("admin can read a single staff user by id", async () => {
+  const staffId = await createTestAdminUser({
+    name: "Detail Staff",
+    email: "detail-staff@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/staff/${staffId}`, {
+      headers: authHeaders
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.json.item, {
+      id: staffId,
+      name: "Detail Staff",
+      email: "detail-staff@capella.test",
+      role: "staff",
+      isActive: true,
+      permissionKeys: []
+    });
+  });
+});
+
 test("admin can create active staff with explicit permissions", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
