@@ -16,7 +16,6 @@ import {
   getCategoryById,
   getCategoryBySlug,
   getCategoryPath,
-  getDescendantCategoryIds,
   getOffersForProduct,
   getProductsByCategory
 } from "./client/selectors";

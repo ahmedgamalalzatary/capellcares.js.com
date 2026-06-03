@@ -1,5 +1,4 @@
 import type {
-  Collection,
   Offer,
   Product,
   StorefrontCollectionDetail,

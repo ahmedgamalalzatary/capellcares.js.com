@@ -73,7 +73,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
     }
-    const created = await db.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       const product = await createAdminProductRepo({
         id: incoming.id ? Number(incoming.id) : undefined,
         sku: incoming.sku ?? "",

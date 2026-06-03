@@ -1,4 +1,4 @@
-import type { Category, Product } from "@capella/shared";
+import type { Category } from "@capella/shared";
 import { API_BASE } from "./http";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 

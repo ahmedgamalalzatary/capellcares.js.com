@@ -173,7 +173,6 @@ test("storefront orders list only returns the authenticated customer's orders", 
   ]);
 
   await withTestServer(app, async (request) => {
-    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/v1/orders", {
       headers: {
         authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
@@ -207,7 +206,6 @@ test("storefront order detail rejects access to another customer's order", async
   }).$returningId();
 
   await withTestServer(app, async (request) => {
-    const authHeaders = await getAdminAuthHeaders(request);
     const response = await request(`/api/v1/orders/${created.id}`, {
       headers: {
         authorization: `Bearer ${issueCustomerToken(ids.customerId + 999)}`

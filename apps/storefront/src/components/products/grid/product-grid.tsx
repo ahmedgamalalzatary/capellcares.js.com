@@ -20,7 +20,6 @@ export function ProductGrid({
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
 
-  const isAr = lang === "ar";
   const {
     q,
     setQ,

@@ -1,4 +1,4 @@
-import { eq, inArray, or, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   categories,
   adminUserPermissions,
@@ -26,15 +26,6 @@ export async function resetApiTestDatabase() {
   await db.delete(permissions);
   await clearTestSeed();
   await seedTestData();
-}
-
-async function createTestCustomer(input: {
-  name: string;
-  email: string;
-  passwordHash: string;
-}) {
-  const [created] = await db.insert(customers).values(input).$returningId();
-  return created.id;
 }
 
 export async function createTestAdminUser(input: {

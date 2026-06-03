@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDict, formatPrice, pickLang, type Language } from "@capella/shared";
+import { getDict, formatPrice, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";

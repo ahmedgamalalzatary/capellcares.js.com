@@ -36,22 +36,6 @@ export async function nextRankForSource(
   return Number(row?.maxRank ?? 0) + 1;
 }
 
-async function linkExists(executor: RelatedItemExecutor, source: RelatedRef, target: RelatedRef): Promise<boolean> {
-  const [row] = await executor
-    .select({ id: relatedItems.id })
-    .from(relatedItems)
-    .where(
-      and(
-        eq(relatedItems.sourceType, source.type),
-        eq(relatedItems.sourceId, source.id),
-        eq(relatedItems.targetType, target.type),
-        eq(relatedItems.targetId, target.id)
-      )
-    )
-    .limit(1);
-  return Boolean(row);
-}
-
 export async function deleteLink(executor: RelatedItemExecutor, source: RelatedRef, target: RelatedRef): Promise<void> {
   await executor
     .delete(relatedItems)

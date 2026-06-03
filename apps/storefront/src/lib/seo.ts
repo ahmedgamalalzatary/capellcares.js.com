@@ -4,8 +4,6 @@ import { defaultLanguage, pickLang, type Category, type Collection, type Languag
 const FALLBACK_SITE_URL = "https://capellacares.com";
 const BRAND_NAME = "Capella Care";
 
-const PUBLIC_REVALIDATE_SECONDS = 300;
-
 function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim() || FALLBACK_SITE_URL;
 }

@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import { db } from "@capella/database/src/db";
 import {
   adminUserPermissions,
-  adminUsers,
   permissions
 } from "@capella/database/drizzle/schema";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";

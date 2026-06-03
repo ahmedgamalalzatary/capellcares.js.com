@@ -3,7 +3,6 @@
 import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
-import { CategoryPill } from "../category-pill";
 import { FilterSection } from "./filter-section";
 import type { CategoryTreeItem, PriceRange } from "../../../types/product-grid.types";
 import { ProductFilterCategoryList } from "./product-filter-category-list";
@@ -42,7 +41,6 @@ export function ProductFiltersContent({
   lockCategory,
   mode
 }: ProductFiltersContentProps) {
-  const isAr = lang === "ar";
   const isMobile = mode === "mobile";
 
   return (

@@ -44,7 +44,3 @@ export function revokeAuthSession(id: number) {
     .set({ revokedAt: new Date() })
     .where(eq(authSessions.id, id));
 }
-
-function deleteAuthSessionsForTests() {
-  return db.delete(authSessions);
-}

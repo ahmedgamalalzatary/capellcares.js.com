@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 

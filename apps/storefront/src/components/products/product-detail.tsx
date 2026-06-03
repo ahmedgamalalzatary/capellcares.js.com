@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
-import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";

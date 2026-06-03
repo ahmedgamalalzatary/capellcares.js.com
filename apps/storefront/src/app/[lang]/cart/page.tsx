@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { StorefrontPageShell } from "@/components/layout/storefront-page-shell";
 import { CartView } from "@/components/cart/cart-view";
 import { resolveStorefrontPageContext } from "@/lib/storefront-page-context";

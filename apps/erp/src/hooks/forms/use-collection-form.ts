@@ -33,11 +33,6 @@ export function useCollectionForm({
     (option) => !(option.type === "collection" && option.id === initial?.id)
   );
 
-  const categoryProducts = useMemo(
-    () => products.filter((product) => !product.deletedAt && product.categoryId === categoryId),
-    [categoryId, products]
-  );
-
   const originalTotal = useMemo(() => rows.reduce((sum, row) => {
     const product = products.find((candidate) => candidate.id === row.productId);
     const variant = product?.variants.find((candidate) => candidate.id === row.variantId);

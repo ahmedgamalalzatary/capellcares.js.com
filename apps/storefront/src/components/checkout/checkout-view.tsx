@@ -9,7 +9,7 @@ import { useCheckout } from "../../hooks/use-checkout";
 import type { CheckoutViewProps } from "../../types/checkout-view.types";
 
 export function CheckoutView({ lang, dict }: CheckoutViewProps) {
-  const { lines } = useCart();
+  useCart();
   const { form, errors, placing, orderId, resolved, subtotal, setField, placeOrder } = useCheckout({ lang, dict });
 
   if (orderId) {
