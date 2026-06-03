@@ -22,6 +22,21 @@ services:
       retries: 12
       start_period: 20s
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: builder
+    container_name: capella-migrate
+    restart: "no"
+    working_dir: /app/packages/database
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-capella}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-capella}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["pnpm", "db:migrate"]
+
   api:
     build:
       context: .
@@ -46,8 +61,8 @@ services:
       STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:-http://storefront:3000}
       STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
     depends_on:
-      mysql:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:4000:4000"
     volumes:

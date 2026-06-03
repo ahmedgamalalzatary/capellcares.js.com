@@ -24,13 +24,9 @@ const NAV = [
   { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
   { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
   { href: "/sales",      label: "المبيعات",  icon: <Icon.Tag />       },
+  { href: "/staff",      label: "فريق العمل", icon: <Icon.Eye />      },
   { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
 ] as const;
-
-
-/* Bottom bar shows these 4; "more" sheet shows the rest */
-const BOTTOM_NAV = NAV.slice(0, 4);
-const MORE_NAV   = NAV.slice(4);
 
 export function AdminShell({ title, crumbs = [], actions, children }: Props) {
   const router   = useRouter();
@@ -47,7 +43,10 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
   if (!hydrated) return null;
   if (!user) return null;
 
-  const isMore = MORE_NAV.some((n) => pathname.startsWith(n.href));
+  const nav = user.role === "admin" ? NAV : NAV.filter((item) => item.href !== "/staff");
+  const bottomNav = nav.slice(0, 4);
+  const moreNav = nav.slice(4);
+  const isMore = moreNav.some((n) => pathname.startsWith(n.href));
 
   return (
     <div className="app-shell">
@@ -62,7 +61,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
         </div>
 
         <div className="sidebar__nav">
-          {NAV.map((n) => (
+          {nav.map((n) => (
             <Link
               key={n.href}
               href={n.href}
@@ -111,7 +110,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
 
       {/* ── Mobile bottom navigation bar ─────────────── */}
       <nav className="mobile-nav" aria-label="التنقل">
-        {BOTTOM_NAV.map((n) => (
+        {bottomNav.map((n) => (
           <Link
             key={n.href}
             href={n.href}
@@ -152,7 +151,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
             </div>
 
             <div className="mobile-drawer__links">
-              {MORE_NAV.map((n) => (
+              {moreNav.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}

@@ -29,6 +29,7 @@ import {
 import { adminAdvicesRoutes } from "../advices/admin-advices.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
+import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
 
 export const adminRoutes = Router();
 
@@ -60,5 +61,6 @@ adminRoutes.post("/collections", requireErpPermission((req) => (req.body?.id ? "
 adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_delete"), adminSoftDeleteCollection);
 adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), adminRestoreCollection);
 adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), adminToggleCollectionStatus);
+adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);

@@ -33,6 +33,25 @@ export function findFirstAdminUser() {
     .then((rows) => rows[0] ?? null);
 }
 
+export function listStaffUsers() {
+  return db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.role, "staff"));
+}
+
+export function findStaffUserById(id: number) {
+  return db
+    .select()
+    .from(adminUsers)
+    .where(eq(adminUsers.id, id))
+    .limit(1)
+    .then((rows) => {
+      const row = rows[0] ?? null;
+      return row?.role === "staff" ? row : null;
+    });
+}
+
 export async function createAdminUser(input: {
   name: string;
   email: string;
@@ -47,7 +66,7 @@ export async function createAdminUser(input: {
 export async function updateAdminUser(id: number, input: {
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   role?: AdminUserRole;
   isActive?: boolean;
 }) {

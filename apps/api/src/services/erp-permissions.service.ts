@@ -111,6 +111,12 @@ export async function syncPermissionCatalog() {
   }
 }
 
+export async function listPermissionCatalog() {
+  await syncPermissionCatalog();
+  const rows = await db.select({ key: permissions.key }).from(permissions);
+  return rows.map((row) => row.key).sort();
+}
+
 export async function getEffectiveAdminPermissions(adminUserId: number) {
   const [adminUser] = await db
     .select({ role: adminUsers.role })
@@ -152,6 +158,12 @@ export async function updateAdminUserPermissions(adminEmail: string, requestedKe
     return;
   }
 
+  await replaceAdminUserPermissions(adminUser.id, requestedKeys);
+}
+
+export async function replaceAdminUserPermissions(adminUserId: number, requestedKeys: string[]) {
+  await syncPermissionCatalog();
+
   const normalizedKeys = normalizePermissionKeys(requestedKeys);
   const permissionRows = normalizedKeys.length === 0
     ? []
@@ -161,12 +173,12 @@ export async function updateAdminUserPermissions(adminEmail: string, requestedKe
         .where(inArray(permissions.key, normalizedKeys));
 
   await db.transaction(async (tx) => {
-    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUser.id));
+    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUserId));
 
     if (permissionRows.length > 0) {
       await tx.insert(adminUserPermissions).values(
         permissionRows.map((permission) => ({
-          adminUserId: adminUser.id,
+          adminUserId,
           permissionId: permission.id
         }))
       );
