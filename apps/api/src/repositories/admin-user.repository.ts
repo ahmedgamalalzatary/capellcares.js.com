@@ -5,9 +5,10 @@ import { db } from "@capella/database/src/db";
 export type AdminUserRole = "admin" | "staff";
 
 export type AdminUserRecord = typeof adminUsers.$inferSelect;
+type AdminUserDbExecutor = Pick<typeof db, "select" | "insert" | "update">;
 
-export function findAdminUserByEmail(email: string) {
-  return db
+export function findAdminUserByEmail(email: string, executor: AdminUserDbExecutor = db) {
+  return executor
     .select()
     .from(adminUsers)
     .where(eq(adminUsers.email, email))
@@ -15,8 +16,8 @@ export function findAdminUserByEmail(email: string) {
     .then((rows) => rows[0] ?? null);
 }
 
-export function findAdminUserById(id: number) {
-  return db
+export function findAdminUserById(id: number, executor: AdminUserDbExecutor = db) {
+  return executor
     .select()
     .from(adminUsers)
     .where(eq(adminUsers.id, id))
@@ -24,8 +25,8 @@ export function findAdminUserById(id: number) {
     .then((rows) => rows[0] ?? null);
 }
 
-export function findFirstAdminUser() {
-  return db
+export function findFirstAdminUser(executor: AdminUserDbExecutor = db) {
+  return executor
     .select()
     .from(adminUsers)
     .where(eq(adminUsers.role, "admin"))
@@ -33,15 +34,15 @@ export function findFirstAdminUser() {
     .then((rows) => rows[0] ?? null);
 }
 
-export function listStaffUsers() {
-  return db
+export function listStaffUsers(executor: AdminUserDbExecutor = db) {
+  return executor
     .select()
     .from(adminUsers)
     .where(eq(adminUsers.role, "staff"));
 }
 
-export function findStaffUserById(id: number) {
-  return db
+export function findStaffUserById(id: number, executor: AdminUserDbExecutor = db) {
+  return executor
     .select()
     .from(adminUsers)
     .where(eq(adminUsers.id, id))
@@ -58,8 +59,8 @@ export async function createAdminUser(input: {
   passwordHash: string;
   role?: AdminUserRole;
   isActive?: boolean;
-}) {
-  const [row] = await db.insert(adminUsers).values(input).$returningId();
+}, executor: AdminUserDbExecutor = db) {
+  const [row] = await executor.insert(adminUsers).values(input).$returningId();
   return row;
 }
 
@@ -69,8 +70,8 @@ export async function updateAdminUser(id: number, input: {
   passwordHash?: string;
   role?: AdminUserRole;
   isActive?: boolean;
-}) {
-  await db
+}, executor: AdminUserDbExecutor = db) {
+  await executor
     .update(adminUsers)
     .set(input)
     .where(eq(adminUsers.id, id));

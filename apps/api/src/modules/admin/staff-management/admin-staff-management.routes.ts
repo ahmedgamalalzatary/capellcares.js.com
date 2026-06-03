@@ -15,10 +15,18 @@ function requireAdminRole(req: ErpAuthenticatedRequest, res: Response, next: Nex
   return next();
 }
 
+function wrapAsync(
+  handler: (req: ErpAuthenticatedRequest, res: Response, next: NextFunction) => Promise<unknown>
+) {
+  return (req: ErpAuthenticatedRequest, res: Response, next: NextFunction) => {
+    void Promise.resolve(handler(req, res, next)).catch(next);
+  };
+}
+
 export const adminStaffManagementRoutes = Router();
 
 adminStaffManagementRoutes.use(requireAdminRole);
-adminStaffManagementRoutes.get("/permissions", listStaffPermissionCatalogController);
-adminStaffManagementRoutes.get("/", listAdminStaffController);
-adminStaffManagementRoutes.post("/", createAdminStaffController);
-adminStaffManagementRoutes.put("/:id", updateAdminStaffController);
+adminStaffManagementRoutes.get("/permissions", wrapAsync(listStaffPermissionCatalogController));
+adminStaffManagementRoutes.get("/", wrapAsync(listAdminStaffController));
+adminStaffManagementRoutes.post("/", wrapAsync(createAdminStaffController));
+adminStaffManagementRoutes.put("/:id", wrapAsync(updateAdminStaffController));

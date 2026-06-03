@@ -17,6 +17,7 @@ type StaffUser = {
 
 type PermissionItem = {
   key: string;
+  dependencies?: string[];
 };
 
 type StaffFormState = {
@@ -25,35 +26,6 @@ type StaffFormState = {
   password: string;
   isActive: boolean;
   permissionKeys: string[];
-};
-
-const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
-  "products.create": ["products.read"],
-  "products.update": ["products.read"],
-  "products.soft_delete": ["products.read"],
-  "products.restore": ["products.read", "trash.read"],
-  "products.permanent_delete": ["products.read", "trash.read"],
-  "products.toggle_status": ["products.read"],
-  "products.stock_update": ["products.read"],
-  "categories.create": ["categories.read"],
-  "categories.update": ["categories.read"],
-  "categories.soft_delete": ["categories.read"],
-  "categories.restore": ["categories.read", "trash.read"],
-  "offers.create": ["offers.read"],
-  "offers.update": ["offers.read"],
-  "offers.soft_delete": ["offers.read"],
-  "offers.restore": ["offers.read", "trash.read"],
-  "offers.toggle_status": ["offers.read"],
-  "collections.create": ["collections.read"],
-  "collections.update": ["collections.read"],
-  "collections.soft_delete": ["collections.read"],
-  "collections.restore": ["collections.read", "trash.read"],
-  "collections.toggle_status": ["collections.read"],
-  "advices.create": ["advices.read"],
-  "advices.update": ["advices.read"],
-  "advices.delete": ["advices.read"],
-  "advices.toggle_status": ["advices.read"],
-  "orders.update_payment_status": ["orders.read"]
 };
 
 function createEmptyForm(): StaffFormState {
@@ -66,7 +38,7 @@ function createEmptyForm(): StaffFormState {
   };
 }
 
-function normalizePermissionKeys(keys: string[]) {
+function normalizePermissionKeys(keys: string[], dependencies: Record<string, string[]>) {
   const resolved = new Set<string>();
 
   function addKey(key: string) {
@@ -74,7 +46,7 @@ function normalizePermissionKeys(keys: string[]) {
       return;
     }
     resolved.add(key);
-    for (const dependency of PERMISSION_DEPENDENCIES[key] ?? []) {
+    for (const dependency of dependencies[key] ?? []) {
       addKey(dependency);
     }
   }
@@ -86,10 +58,24 @@ function normalizePermissionKeys(keys: string[]) {
   return [...resolved].sort();
 }
 
+function getPermissionDependencies(items: PermissionItem[]) {
+  const dependencies: Record<string, string[]> = {};
+
+  for (const item of items) {
+    if (!Array.isArray(item.dependencies) || item.dependencies.some((dependency) => typeof dependency !== "string")) {
+      throw new Error(`Invalid dependencies for permission ${item.key}`);
+    }
+    dependencies[item.key] = [...item.dependencies];
+  }
+
+  return dependencies;
+}
+
 export default function StaffManagementPage() {
   const { user, hydrated } = useAdminAuth();
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [permissionCatalog, setPermissionCatalog] = useState<PermissionItem[]>([]);
+  const [permissionDependencies, setPermissionDependencies] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
@@ -118,8 +104,14 @@ export default function StaffManagementPage() {
         api.get<{ items: StaffUser[] }>("/api/erp/staff")
       ]);
       setPermissionCatalog(permissionsResponse.items);
+      try {
+        setPermissionDependencies(getPermissionDependencies(permissionsResponse.items));
+      } catch {
+        setPermissionDependencies({});
+      }
       setStaffUsers(staffResponse.items);
     } catch (loadError) {
+      setPermissionDependencies({});
       setError(getErrorMessage(loadError));
     } finally {
       setLoading(false);
@@ -154,7 +146,7 @@ export default function StaffManagementPage() {
   function togglePermission(key: string, checked: boolean) {
     setForm((current) => {
       const nextKeys = checked
-        ? normalizePermissionKeys([...current.permissionKeys, key])
+        ? normalizePermissionKeys([...current.permissionKeys, key], permissionDependencies)
         : current.permissionKeys.filter((currentKey) => currentKey !== key);
 
       return {
@@ -174,7 +166,7 @@ export default function StaffManagementPage() {
       email: form.email,
       password: form.password,
       isActive: form.isActive,
-      permissionKeys: normalizePermissionKeys(form.permissionKeys)
+      permissionKeys: normalizePermissionKeys(form.permissionKeys, permissionDependencies)
     };
 
     try {

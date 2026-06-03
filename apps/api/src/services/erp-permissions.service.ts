@@ -47,6 +47,7 @@ export const ERP_PERMISSION_KEYS = [
 export type ErpPermissionKey = (typeof ERP_PERMISSION_KEYS)[number];
 
 const ERP_PERMISSION_KEY_SET = new Set<string>(ERP_PERMISSION_KEYS);
+type PermissionsDbExecutor = Pick<typeof db, "select" | "insert" | "delete">;
 
 const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissionKey[]>> = {
   "products.create": ["products.read"],
@@ -117,8 +118,14 @@ export async function listPermissionCatalog() {
   return rows.map((row) => row.key).sort();
 }
 
-export async function getEffectiveAdminPermissions(adminUserId: number) {
-  const [adminUser] = await db
+export function getPermissionDependencies() {
+  return Object.fromEntries(
+    ERP_PERMISSION_KEYS.map((key) => [key, [...(ERP_PERMISSION_DEPENDENCIES[key] ?? [])]])
+  );
+}
+
+export async function getEffectiveAdminPermissions(adminUserId: number, executor: PermissionsDbExecutor = db) {
+  const [adminUser] = await executor
     .select({ role: adminUsers.role })
     .from(adminUsers)
     .where(eq(adminUsers.id, adminUserId))
@@ -132,7 +139,7 @@ export async function getEffectiveAdminPermissions(adminUserId: number) {
     return [...ERP_PERMISSION_KEYS];
   }
 
-  const rows = await db
+  const rows = await executor
     .select({ key: permissions.key })
     .from(adminUserPermissions)
     .innerJoin(permissions, eq(permissions.id, adminUserPermissions.permissionId))
@@ -161,29 +168,29 @@ export async function updateAdminUserPermissions(adminEmail: string, requestedKe
   await replaceAdminUserPermissions(adminUser.id, requestedKeys);
 }
 
-export async function replaceAdminUserPermissions(adminUserId: number, requestedKeys: string[]) {
-  await syncPermissionCatalog();
-
+export async function replaceAdminUserPermissions(
+  adminUserId: number,
+  requestedKeys: string[],
+  executor: PermissionsDbExecutor = db
+) {
   const normalizedKeys = normalizePermissionKeys(requestedKeys);
   const permissionRows = normalizedKeys.length === 0
     ? []
-    : await db
+    : await executor
         .select({ id: permissions.id, key: permissions.key })
         .from(permissions)
         .where(inArray(permissions.key, normalizedKeys));
 
-  await db.transaction(async (tx) => {
-    await tx.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUserId));
+  await executor.delete(adminUserPermissions).where(eq(adminUserPermissions.adminUserId, adminUserId));
 
-    if (permissionRows.length > 0) {
-      await tx.insert(adminUserPermissions).values(
-        permissionRows.map((permission) => ({
-          adminUserId,
-          permissionId: permission.id
-        }))
-      );
-    }
-  });
+  if (permissionRows.length > 0) {
+    await executor.insert(adminUserPermissions).values(
+      permissionRows.map((permission) => ({
+        adminUserId,
+        permissionId: permission.id
+      }))
+    );
+  }
 }
 
 export async function hasErpPermission(adminUserId: number, permissionKey: string) {

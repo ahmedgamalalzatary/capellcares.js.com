@@ -44,12 +44,9 @@ NEXT_PUBLIC_DEV_ADMIN_PASSWORD
 
 Use this only when the VPS database has no valuable data. `down -v` deletes the MySQL volume.
 
-> **Production NEVER uses `drizzle-kit push` — not even on a fresh DB.**
-> Push does not populate the `__drizzle_migrations` ledger, so a push-bootstrapped
-> production DB will permanently reject every later `db:migrate` (see "Migration
-> Tracking Gotcha" below). The very first command to touch a production DB must be
-> `db:migrate` so the ledger is seeded correctly from `0000`. This is what lets you
-> ship future schema changes without data loss and without resetting the DB.
+> `docker compose up -d` now includes a one-shot `migrate` service. It waits for
+> MySQL, runs `db:migrate`, exits successfully, and only then allows the API to
+> start. An exited `migrate` container is the expected healthy state.
 
 Start on the VPS:
 
@@ -79,13 +76,8 @@ Verify containers are created and healthy enough to run commands:
 
 ```bash
 docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs migrate --tail 80
 docker compose --env-file .env.production logs api --tail 80
-```
-
-Apply migrations to bootstrap the schema (NOT push — see warning above):
-
-```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
 ```
 
 Verify auth tables exist:
@@ -146,16 +138,11 @@ Verify containers are created and the API container can run commands:
 
 ```bash
 docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs migrate --tail 80
 docker compose --env-file .env.production logs api --tail 80
 ```
 
-Apply migrations:
-
-```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
-```
-
-Verify schema after migrations:
+Verify schema after the migrate service completes:
 
 ```bash
 docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
@@ -183,7 +170,7 @@ Use this when your local Docker database has no valuable data.
 Run from the repo root on Windows:
 
 ```cmd
-D:\Documents\currentwork\capella\capellastore\capellacares.js.com>
+D:\Documents\currentwork\capella\capellastore>
 ```
 
 Verify local Compose config:
@@ -205,13 +192,8 @@ Verify containers are running:
 
 ```cmd
 docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs migrate --tail 80
 docker compose --env-file .env.docker logs api --tail 80
-```
-
-Push the current schema directly:
-
-```cmd
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
 ```
 
 Verify auth tables exist:
@@ -241,7 +223,7 @@ curl http://localhost:4000/health
 
 ## Local Docker Existing DB Flow
 
-Use this when you want to keep your local Docker database volume.
+Use this when you want to keep your local Docker database volume and it was already bootstrapped with `db:migrate`.
 
 ```cmd
 docker compose --env-file .env.docker config > nul
@@ -249,10 +231,17 @@ docker compose --env-file .env.docker pull mysql
 docker compose --env-file .env.docker build --no-cache
 docker compose --env-file .env.docker up -d
 docker compose --env-file .env.docker ps
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:migrate
+docker compose --env-file .env.docker logs migrate --tail 80
 docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES LIKE 'admin_users'; SHOW TABLES LIKE 'auth_sessions';\""
 docker compose --env-file .env.docker ps
 curl http://localhost:4000/health
+```
+
+If this local DB was ever bootstrapped with `drizzle-kit push`, reset it once before adopting migrate-only:
+
+```cmd
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker up -d
 ```
 
 ## Local Non-Docker Fresh DB
@@ -260,9 +249,16 @@ curl http://localhost:4000/health
 Use this when MySQL is running on your host machine and `.env` points to it.
 
 ```cmd
-pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
+pnpm --filter @capella/database db:migrate
 pnpm --filter @capella/database db:seed
 pnpm dev
+```
+
+For schema changes, generate a migration first:
+
+```cmd
+pnpm --filter @capella/database db:generate
+pnpm --filter @capella/database db:migrate
 ```
 
 Verify local non-Docker services:
@@ -326,6 +322,7 @@ docker compose --env-file .env.production logs --tail 100
 Service logs:
 
 ```bash
+docker compose --env-file .env.production logs migrate --tail 80
 docker compose --env-file .env.production logs api --tail 80
 docker compose --env-file .env.production logs storefront --tail 80
 docker compose --env-file .env.production logs erp --tail 80
@@ -380,40 +377,25 @@ Local Docker:
 
 ## Rules
 
-- **Production / the VPS always uses `db:migrate`, never `drizzle-kit push` — including on a fresh DB.** Bootstrapping production with push permanently breaks future migrations.
-- `drizzle-kit push` is for **local/disposable DBs only** (local Docker, throwaway beta DBs you can `down -v`).
-- Pick one tool per DB and keep it for that DB's entire lifetime. Never switch a push-bootstrapped DB to `db:migrate`, and never run push against a DB you intend to migrate.
-- Schema change workflow for migration-tracked DBs: edit `drizzle/schema.ts` → `db:generate` (commit the new migration file) → `db:migrate` on the target.
+- Use `db:migrate` everywhere: local non-Docker, local Docker, staging, and production.
+- `docker compose up -d` runs the one-shot `migrate` service automatically before `api`.
+- Schema change workflow: edit `drizzle/schema.ts` → `db:generate` (commit the new migration file) → `db:migrate`.
+- If a local DB was ever bootstrapped with `drizzle-kit push`, reset it once with `down -v` before adopting migrate-only.
 - `down -v` deletes Docker volumes, including MySQL data.
 - `docker-compose.yml` reads deployment values from the `--env-file` argument.
 - Inside Docker, services talk to each other by service name such as `mysql` and `api`, not `localhost`.
 
-## Migration Tracking Gotcha
+## Legacy Push Reset Warning
 
-`drizzle-kit push` does **not** populate the `__drizzle_migrations` tracking table. A DB that was first bootstrapped with `push` will reject a later `db:migrate` run with a silent failure (the spinner hides the real `CREATE TABLE ... already exists` error):
+Older local databases that were created with `drizzle-kit push` do **not** have a usable `__drizzle_migrations` history. If you point `db:migrate` at one of those DBs, Drizzle can try to replay the initial migrations into tables that already exist and fail.
 
+Reset any old local push-bootstrapped DB once:
+
+```cmd
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker build --no-cache
+docker compose --env-file .env.docker up -d
 ```
-$ drizzle-kit migrate
-[⣯] applying migrations...
-[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] Exit status 1
-```
-
-Pick a tool per DB and stick with it for that DB's entire lifetime:
-
-- **Local Docker / disposable DBs:** continue using `drizzle-kit push` for every schema sync. Do not switch to `db:migrate` against a `push`-bootstrapped DB.
-- **Production / the VPS / DBs with valuable data:** use `db:migrate` from the very first apply against a fresh DB. NEVER run `push` against production — not even once, not even on an empty DB. A single push bootstrap leaves `__drizzle_migrations` empty and blocks every future `db:migrate`, which is exactly the failure you must not hit at launch.
-
-If a beta VPS was already push-bootstrapped (and therefore can't migrate), reset it while it still has no valuable data:
-
-```bash
-docker compose --env-file .env.production down -v        # wipes the beta DB
-docker compose --env-file .env.production build --no-cache
-docker compose --env-file .env.production up -d
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:migrate
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
-```
-
-After this, only ever `db:migrate` on that VPS.
 
 To debug a silent migrate failure, query the tracking table directly:
 

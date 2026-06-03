@@ -1,7 +1,9 @@
 import type { Response } from "express";
 import bcrypt from "bcryptjs";
+import { db } from "@capella/database/src/db";
 import {
   createAdminUser,
+  findAdminUserByEmail,
   findStaffUserById,
   listStaffUsers,
   updateAdminUser,
@@ -10,8 +12,10 @@ import {
 import type { ErpAuthenticatedRequest } from "../../../middlewares/admin-auth.middleware.js";
 import {
   getEffectiveAdminPermissions,
+  getPermissionDependencies,
   listPermissionCatalog,
-  replaceAdminUserPermissions
+  replaceAdminUserPermissions,
+  syncPermissionCatalog
 } from "../../../services/erp-permissions.service.js";
 
 type StaffMutationInput = {
@@ -88,27 +92,58 @@ export async function listAdminStaffController(_req: ErpAuthenticatedRequest, re
 }
 
 export async function listStaffPermissionCatalogController(_req: ErpAuthenticatedRequest, res: Response) {
-  const items = (await listPermissionCatalog()).map((key) => ({ key }));
+  const dependencies = getPermissionDependencies();
+  const items = (await listPermissionCatalog()).map((key) => ({ key, dependencies: dependencies[key] ?? [] }));
   res.json({ items });
 }
 
 export async function createAdminStaffController(req: ErpAuthenticatedRequest, res: Response) {
-  const input = parseStaffMutationBody(req.body, { requirePassword: true });
-  const passwordHash = await bcrypt.hash(input.password ?? "", 10);
-  const created = await createAdminUser({
-    name: input.name,
-    email: input.email,
-    passwordHash,
-    role: "staff",
-    isActive: input.isActive
-  });
-  const staffUser = await findStaffUserById(created.id);
-  if (!staffUser) {
-    throw new Error("Staff user not found after creation");
+  let input: StaffMutationInput;
+  try {
+    input = parseStaffMutationBody(req.body, { requirePassword: true });
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ error: error.message });
+    }
+    throw error;
   }
-  await replaceAdminUserPermissions(staffUser.id, input.permissionKeys);
-  const permissionKeys = await getEffectiveAdminPermissions(staffUser.id);
-  res.status(201).json({ item: toStaffDto(staffUser, permissionKeys) });
+
+  const existingUser = await findAdminUserByEmail(input.email);
+  if (existingUser) {
+    return res.status(409).json({ error: "Staff email already exists" });
+  }
+
+  const passwordHash = await bcrypt.hash(input.password ?? "", 10);
+  await syncPermissionCatalog();
+
+  try {
+    const item = await db.transaction(async (tx) => {
+      const created = await createAdminUser(
+        {
+          name: input.name,
+          email: input.email,
+          passwordHash,
+          role: "staff",
+          isActive: input.isActive
+        },
+        tx
+      );
+      const staffUser = await findStaffUserById(created.id, tx);
+      if (!staffUser) {
+        throw new Error("Staff user not found after creation");
+      }
+      await replaceAdminUserPermissions(staffUser.id, input.permissionKeys, tx);
+      const permissionKeys = await getEffectiveAdminPermissions(staffUser.id, tx);
+      return toStaffDto(staffUser, permissionKeys);
+    });
+
+    res.status(201).json({ item });
+  } catch (error) {
+    if (isDuplicateAdminEmailError(error)) {
+      return res.status(409).json({ error: "Staff email already exists" });
+    }
+    throw error;
+  }
 }
 
 export async function updateAdminStaffController(req: ErpAuthenticatedRequest, res: Response) {
@@ -144,4 +179,16 @@ export async function updateAdminStaffController(req: ErpAuthenticatedRequest, r
 
   const permissionKeys = await getEffectiveAdminPermissions(staffId);
   res.json({ item: toStaffDto(updatedStaffUser, permissionKeys) });
+}
+
+function isDuplicateAdminEmailError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { cause?: { code?: string; sqlMessage?: string } };
+  return (
+    candidate.cause?.code === "ER_DUP_ENTRY" &&
+    candidate.cause?.sqlMessage?.includes("admin_users_email_unique") === true
+  );
 }

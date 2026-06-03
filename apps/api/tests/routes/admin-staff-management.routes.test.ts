@@ -77,6 +77,68 @@ test("admin can create active staff with explicit permissions", async () => {
   });
 });
 
+test("admin staff create returns 400 for invalid payload instead of crashing", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/staff", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "",
+        email: "invalid-staff@capella.test",
+        password: "StaffPass123",
+        isActive: true,
+        permissionKeys: []
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { error: "Staff name is required" });
+  });
+});
+
+test("admin staff create returns 409 for duplicate email without mutating permissions", async () => {
+  const existingStaffId = await createTestAdminUser({
+    name: "Existing Staff",
+    email: "duplicate-staff@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/staff", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Duplicate Staff",
+        email: "duplicate-staff@capella.test",
+        password: "StaffPass123",
+        isActive: true,
+        permissionKeys: ["orders.update_payment_status"]
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.json, { error: "Staff email already exists" });
+  });
+
+  const allStaffUsers = await db
+    .select({ id: adminUsers.id, email: adminUsers.email })
+    .from(adminUsers)
+    .where(eq(adminUsers.role, "staff"));
+
+  assert.deepEqual(allStaffUsers, [{ id: existingStaffId, email: "duplicate-staff@capella.test" }]);
+
+  const assignedPermissions = await db
+    .select({ permissionId: adminUserPermissions.permissionId })
+    .from(adminUserPermissions)
+    .where(eq(adminUserPermissions.adminUserId, existingStaffId));
+
+  assert.deepEqual(assignedPermissions, []);
+});
+
 test("admin can edit staff without replacing password when password is blank", async () => {
   const staffId = await createTestAdminUser({
     name: "Editable Staff",
@@ -277,6 +339,13 @@ test("admin can read the permission catalog for assignment UI", async () => {
 
     assert.equal(response.status, 200);
     assert.ok(Array.isArray(response.json.items));
-    assert.ok(response.json.items.some((item: { key: string }) => item.key === "orders.update_payment_status"));
+    assert.ok(
+      response.json.items.some(
+        (item: { key: string; dependencies?: string[] }) =>
+          item.key === "orders.update_payment_status" &&
+          Array.isArray(item.dependencies) &&
+          item.dependencies.includes("orders.read")
+      )
+    );
   });
 });
