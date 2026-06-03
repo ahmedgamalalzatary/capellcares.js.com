@@ -5,7 +5,24 @@ const apiPost = vi.fn();
 const apiDel = vi.fn();
 const authTokenListeners: Array<(token: string | null) => void> = [];
 const authHydrationListeners: Array<(hydrated: boolean) => void> = [];
+const authUserListeners: Array<(user: unknown) => void> = [];
 let adminAuthHydrated = true;
+let adminAuthUser: unknown = {
+  name: "Admin User",
+  email: "admin@capella.test",
+  role: "admin",
+  permissionKeys: [
+    "dashboard.read",
+    "products.read",
+    "categories.read",
+    "collections.read",
+    "offers.read",
+    "advices.read",
+    "orders.read",
+    "sales.read",
+    "trash.read"
+  ]
+};
 
 vi.mock("@/lib/api/client", () => ({
   subscribeAdminAccessToken: (listener: (token: string | null) => void) => {
@@ -22,6 +39,14 @@ vi.mock("@/lib/api/client", () => ({
       if (index >= 0) authHydrationListeners.splice(index, 1);
     };
   },
+  subscribeAdminAuthUser: (listener: (user: unknown) => void) => {
+    authUserListeners.push(listener);
+    return () => {
+      const index = authUserListeners.indexOf(listener);
+      if (index >= 0) authUserListeners.splice(index, 1);
+    };
+  },
+  getAdminAuthUser: () => adminAuthUser,
   isAdminAuthHydrated: () => adminAuthHydrated,
   api: {
     get: apiGet,
@@ -39,7 +64,24 @@ afterEach(() => {
   vi.clearAllMocks();
   authTokenListeners.length = 0;
   authHydrationListeners.length = 0;
+  authUserListeners.length = 0;
   adminAuthHydrated = true;
+  adminAuthUser = {
+    name: "Admin User",
+    email: "admin@capella.test",
+    role: "admin",
+    permissionKeys: [
+      "dashboard.read",
+      "products.read",
+      "categories.read",
+      "collections.read",
+      "offers.read",
+      "advices.read",
+      "orders.read",
+      "sales.read",
+      "trash.read"
+    ]
+  };
 });
 
 describe("ERP store", () => {
@@ -268,5 +310,70 @@ describe("ERP store", () => {
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
     expect(apiGet).toHaveBeenCalledTimes(7);
+  });
+
+  it("preloads only datasets allowed by the current staff permissions", async () => {
+    adminAuthUser = {
+      name: "Staff User",
+      email: "staff@capella.test",
+      role: "staff",
+      permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
+    };
+
+    apiGet
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    expect(apiGet.mock.calls.map(([path]) => path)).toEqual([
+      "/api/erp/orders",
+      "/api/erp/sales"
+    ]);
+    expect(store.loaded).toBe(true);
+    expect(store.error).toBeNull();
+  });
+
+  it("applies permission changes on the next protected interaction without re-login", async () => {
+    adminAuthUser = {
+      name: "Staff User",
+      email: "staff@capella.test",
+      role: "staff",
+      permissionKeys: ["orders.read"]
+    };
+
+    apiGet
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    expect(apiGet.mock.calls.map(([path]) => path)).toEqual(["/api/erp/orders"]);
+
+    adminAuthUser = {
+      name: "Staff User",
+      email: "staff@capella.test",
+      role: "staff",
+      permissionKeys: ["orders.read", "sales.read"]
+    };
+    authUserListeners.forEach((listener) => listener(adminAuthUser));
+    await flush();
+
+    expect(apiGet.mock.calls.map(([path]) => path)).toEqual([
+      "/api/erp/orders",
+      "/api/erp/orders",
+      "/api/erp/sales"
+    ]);
+    expect(store.error).toBeNull();
   });
 });

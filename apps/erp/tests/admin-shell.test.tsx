@@ -46,7 +46,7 @@ describe("AdminShell", () => {
 
   it("hides the staff management navigation item for staff users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff" },
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["sales.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -58,7 +58,7 @@ describe("AdminShell", () => {
 
   it("includes a visible sales navigation item", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["dashboard.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -71,7 +71,7 @@ describe("AdminShell", () => {
 
   it("includes a visible collections navigation item", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["dashboard.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -80,5 +80,28 @@ describe("AdminShell", () => {
 
     const collectionLinks = screen.getAllByText("المجموعات");
     expect(collectionLinks.length).toBeGreaterThan(0);
+  });
+
+  it("shows only authorized module navigation items for staff users", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: {
+        name: "Staff User",
+        email: "staff@capella.test",
+        role: "staff",
+        permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
+      },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    expect(screen.getAllByText("الرئيسية").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("الطلبات").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("المبيعات").length).toBeGreaterThan(0);
+    expect(screen.queryAllByText("المنتجات")).toHaveLength(0);
+    expect(screen.queryAllByText("الأقسام")).toHaveLength(0);
+    expect(screen.queryAllByText("المحذوفات")).toHaveLength(0);
+    expect(screen.queryAllByText("فريق العمل")).toHaveLength(0);
   });
 });

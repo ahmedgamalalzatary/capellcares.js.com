@@ -4,6 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 
 const toggleAdviceStatus = vi.fn().mockResolvedValue(undefined);
 
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => ({
+    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["advices.read", "advices.create", "advices.update", "advices.delete", "advices.toggle_status"] },
+    hydrated: true,
+    logout: vi.fn()
+  })
+}));
+
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children, actions }: any) => createElement("div", null, actions, children)
 }));

@@ -3,10 +3,19 @@ import { showErrorToast } from "@/lib/errors";
 
 export const API_BASE = resolveApiBase();
 
+export type AdminAuthUser = {
+  name: string;
+  email: string;
+  role: "admin" | "staff";
+  permissionKeys: string[];
+};
+
 let adminAccessToken: string | null = null;
 const adminAccessTokenListeners = new Set<(token: string | null) => void>();
 let adminAuthHydrated = false;
 const adminAuthHydrationListeners = new Set<(hydrated: boolean) => void>();
+let adminAuthUser: AdminAuthUser | null = null;
+const adminAuthUserListeners = new Set<(user: AdminAuthUser | null) => void>();
 
 export function setAdminAccessToken(token: string | null) {
   adminAccessToken = token;
@@ -23,6 +32,15 @@ export function setAdminAuthHydrated(hydrated: boolean) {
   adminAuthHydrationListeners.forEach((listener) => listener(hydrated));
 }
 
+export function setAdminAuthUser(user: AdminAuthUser | null) {
+  adminAuthUser = user;
+  adminAuthUserListeners.forEach((listener) => listener(user));
+}
+
+export function getAdminAuthUser() {
+  return adminAuthUser;
+}
+
 export function isAdminAuthHydrated() {
   return adminAuthHydrated;
 }
@@ -30,6 +48,11 @@ export function isAdminAuthHydrated() {
 export function subscribeAdminAuthHydration(listener: (hydrated: boolean) => void) {
   adminAuthHydrationListeners.add(listener);
   return () => adminAuthHydrationListeners.delete(listener);
+}
+
+export function subscribeAdminAuthUser(listener: (user: AdminAuthUser | null) => void) {
+  adminAuthUserListeners.add(listener);
+  return () => adminAuthUserListeners.delete(listener);
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { canReadErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 
@@ -15,8 +18,17 @@ function statusChip(status: string) {
 }
 
 export default function OrdersPage() {
+  const { user } = useAdminAuth();
   const orders = useStore((s) => s.orders);
   const [search, setSearch] = useState("");
+
+  if (!canReadErpModule(user, "orders")) {
+    return (
+      <AdminShell title="الطلبات" crumbs={[{ label: "الطلبات" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
+      </AdminShell>
+    );
+  }
 
   const filtered = useMemo(() => {
     if (!search.trim()) return orders;

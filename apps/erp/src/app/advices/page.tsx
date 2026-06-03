@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { getStore, useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import type { Advice } from "@capella/shared";
 
 export default function AdvicesPage() {
+  const { user } = useAdminAuth();
   const advices = useStore((s) => s.advices);
   const [search, setSearch] = useState("");
   const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
@@ -25,15 +29,23 @@ export default function AdvicesPage() {
     );
   }, [advices, search]);
 
+  if (!canReadErpModule(user, "advices")) {
+    return (
+      <AdminShell title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell
       title="نصائح كابيلا"
       crumbs={[{ label: "نصائح كابيلا" }]}
-      actions={
+      actions={canCreateErpModule(user, "advices") ? (
         <Link href="/advices/new" className="btn btn--primary btn--sm">
           <Icon.Plus /> نصيحة جديدة
         </Link>
-      }
+      ) : undefined}
     >
       <AdminListToolbar
         searchPlaceholder="ابحثي عن نصيحة…"
@@ -68,23 +80,29 @@ export default function AdvicesPage() {
                   <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
-                      <button
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => setPendingToggle(advice)}
-                        title={advice.status === "active" ? "إيقاف" : "تفعيل"}
-                      >
-                        {advice.status === "active" ? <Icon.X /> : <Icon.Check />}
-                      </button>
-                      <Link href={`/advices/${advice.id}/edit`} className="btn btn--ghost btn--sm">
-                        <Icon.Edit />
-                      </Link>
-                      <button
-                        className="btn btn--ghost btn--sm"
-                        style={{ color: "var(--danger)" }}
-                        onClick={() => setPendingDelete(advice)}
-                      >
-                        <Icon.Trash />
-                      </button>
+                      {canToggleErpModule(user, "advices") && (
+                        <button
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => setPendingToggle(advice)}
+                          title={advice.status === "active" ? "إيقاف" : "تفعيل"}
+                        >
+                          {advice.status === "active" ? <Icon.X /> : <Icon.Check />}
+                        </button>
+                      )}
+                      {canUpdateErpModule(user, "advices") && (
+                        <Link href={`/advices/${advice.id}/edit`} className="btn btn--ghost btn--sm">
+                          <Icon.Edit />
+                        </Link>
+                      )}
+                      {hasErpPermission(user, "advices.delete") && (
+                        <button
+                          className="btn btn--ghost btn--sm"
+                          style={{ color: "var(--danger)" }}
+                          onClick={() => setPendingDelete(advice)}
+                        >
+                          <Icon.Trash />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
+import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { formatPrice, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
 
 export default function OffersListPage() {
+  const { user } = useAdminAuth();
   const offers = useStore((s) => s.offers);
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
@@ -35,11 +39,19 @@ export default function OffersListPage() {
     setPendingDelete(null);
   };
 
+  if (!canReadErpModule(user, "offers")) {
+    return (
+      <AdminShell title="العروض" crumbs={[{ label: "العروض" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell
       title="العروض"
       crumbs={[{ label: "العروض" }]}
-      actions={<Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link>}
+      actions={canCreateErpModule(user, "offers") ? <Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link> : undefined}
     >
       <AdminListToolbar
         searchPlaceholder="ابحثي عن عرض…"
@@ -83,20 +95,22 @@ export default function OffersListPage() {
                    <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                    <td>
                      <div className="row" style={{ gap: 4 }}>
-                       <button
-                         className="btn btn--ghost btn--sm"
-                         onClick={() => {
-                           setToggleError(null);
-                           setPendingToggle(o);
-                         }}
-                         title={o.status === "active" ? "إيقاف" : "تفعيل"}
-                       >
-                         {o.status === "active" ? <Icon.X /> : <Icon.Check />}
-                       </button>
-                       <Link href={`/offers/${o.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>
-                       <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(o.id)} style={{ color: "var(--danger)" }}>
+                       {canToggleErpModule(user, "offers") && (
+                         <button
+                           className="btn btn--ghost btn--sm"
+                           onClick={() => {
+                             setToggleError(null);
+                             setPendingToggle(o);
+                           }}
+                           title={o.status === "active" ? "إيقاف" : "تفعيل"}
+                         >
+                           {o.status === "active" ? <Icon.X /> : <Icon.Check />}
+                         </button>
+                       )}
+                       {canUpdateErpModule(user, "offers") && <Link href={`/offers/${o.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>}
+                       {canSoftDeleteErpModule(user, "offers") && <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(o.id)} style={{ color: "var(--danger)" }}>
                          <Icon.Trash />
-                       </button>
+                       </button>}
                     </div>
                   </td>
                 </tr>

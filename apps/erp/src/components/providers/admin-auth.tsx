@@ -1,17 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { API_BASE, setAdminAccessToken, setAdminAuthHydrated } from "@/lib/api/client";
-
-type AdminUserRole = "admin" | "staff";
-
-interface AdminUser {
-  name: string;
-  email: string;
-  role: AdminUserRole;
-}
+import { API_BASE, setAdminAccessToken, setAdminAuthHydrated, setAdminAuthUser, type AdminAuthUser } from "@/lib/api/client";
 interface AdminAuthValue {
-  user: AdminUser | null;
+  user: AdminAuthUser | null;
   hydrated: boolean;
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => Promise<void>;
@@ -21,7 +13,7 @@ const Ctx = createContext<AdminAuthValue | null>(null);
 const KEY = "capella.admin.v1";
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const [user, setUser] = useState<AdminAuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -29,7 +21,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setAdminAuthHydrated(false);
     try {
       const raw = sessionStorage.getItem(KEY);
-      if (raw) setUser(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<AdminAuthUser>;
+        setUser({
+          name: parsed.name ?? "",
+          email: parsed.email ?? "",
+          role: parsed.role === "staff" ? "staff" : "admin",
+          permissionKeys: Array.isArray(parsed.permissionKeys) ? parsed.permissionKeys : []
+        });
+      }
     } catch {}
 
     fetch(`${API_BASE}/api/erp/auth/refresh`, {
@@ -44,11 +44,15 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         if (!cancelled) {
           setAdminAccessToken(data.accessToken ?? null);
-          if (data.user) setUser(data.user);
+          setUser(data.user ?? null);
+          setAdminAuthUser(data.user ?? null);
         }
       })
       .catch(() => {
-        if (!cancelled) setUser(null);
+        if (!cancelled) {
+          setUser(null);
+          setAdminAuthUser(null);
+        }
       })
       .finally(() => {
         if (!cancelled) {
@@ -61,6 +65,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setAdminAuthUser(user);
+  }, [user]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -80,6 +88,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     if (res.ok) {
       const data = await res.json();
       setUser(data.user);
+      setAdminAuthUser(data.user);
       setAdminAccessToken(data.accessToken);
       return { ok: true };
     }
@@ -94,6 +103,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       setUser(null);
+      setAdminAuthUser(null);
       setAdminAccessToken(null);
     }
   }, []);

@@ -4,6 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 
 const toggleOfferStatus = vi.fn().mockRejectedValue(new Error("toggle failed"));
 
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => ({
+    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["offers.read", "offers.create", "offers.update", "offers.soft_delete", "offers.toggle_status"] },
+    hydrated: true,
+    logout: vi.fn()
+  })
+}));
+
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children, actions }: any) => createElement("div", null, actions, children)
 }));

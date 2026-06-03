@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Icon } from "@/components/ui/icons";
+import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { ProductsTable } from "../../components/products-table";
 import { useProductsPage } from "../../hooks/use-products-page";
 
 export default function ProductsListPage() {
+  const { user } = useAdminAuth();
   const {
     categories,
     search,
@@ -30,14 +34,24 @@ export default function ProductsListPage() {
     confirmDelete
   } = useProductsPage();
 
+  if (!canReadErpModule(user, "products")) {
+    return (
+      <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell
       title="المنتجات"
       crumbs={[{ label: "المنتجات" }]}
       actions={
-        <Link href="/products/new" className="btn btn--primary btn--sm">
-          <Icon.Plus /> منتج جديد
-        </Link>
+        canCreateErpModule(user, "products") ? (
+          <Link href="/products/new" className="btn btn--primary btn--sm">
+            <Icon.Plus /> منتج جديد
+          </Link>
+        ) : undefined
       }
     >
       <AdminListToolbar
@@ -68,6 +82,9 @@ export default function ProductsListPage() {
       <ProductsTable
         products={filteredProducts}
         categories={categories}
+        canToggle={canToggleErpModule(user, "products")}
+        canEdit={canUpdateErpModule(user, "products")}
+        canDelete={canSoftDeleteErpModule(user, "products")}
         onToggle={(product) => {
           setPendingToggle(product);
         }}

@@ -13,22 +13,26 @@ import {
   rotateRefreshSession,
   revokeRefreshSession
 } from "../../../services/auth-session.service.js";
+import { getEffectiveAdminPermissions } from "../../../services/erp-permissions.service.js";
 import type { AdminLoginInput } from "./admin-auth.schemas.js";
 
 type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
 type JwtDurationUnit = "ms" | "s" | "m" | "h" | "d" | "w" | "y";
 type JwtDuration = `${number}${JwtDurationUnit}`;
-type ErpAuthUser = Pick<AdminUserRecord, "name" | "email" | "role">;
+type ErpAuthUser = Pick<AdminUserRecord, "name" | "email" | "role"> & {
+  permissionKeys: string[];
+};
 
 function isJwtDuration(value: string): value is JwtDuration {
   return /^(\d+)(ms|s|m|h|d|w|y)$/.test(value);
 }
 
-function toErpAuthUser(adminUser: AdminUserRecord): ErpAuthUser {
+async function toErpAuthUser(adminUser: AdminUserRecord): Promise<ErpAuthUser> {
   return {
     name: adminUser.name,
     email: adminUser.email,
-    role: adminUser.role
+    role: adminUser.role,
+    permissionKeys: await getEffectiveAdminPermissions(adminUser.id)
   };
 }
 
@@ -74,7 +78,7 @@ export async function loginAdmin(
   return {
     accessToken,
     refreshToken: session.refreshToken,
-    user: toErpAuthUser(admin)
+    user: await toErpAuthUser(admin)
   };
 }
 
@@ -113,7 +117,7 @@ export async function refreshAdminSession(refreshToken: string) {
       process.env.JWT_ACCESS_TTL
     ),
     refreshToken: session.refreshToken,
-    user: toErpAuthUser(admin)
+    user: await toErpAuthUser(admin)
   };
 }
 

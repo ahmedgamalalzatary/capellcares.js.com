@@ -28,6 +28,31 @@ const NAV = [
   { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
 ] as const;
 
+function canAccessNavItem(user: { role: "admin" | "staff"; permissionKeys?: string[] }, href: string) {
+  if (user.role === "admin") {
+    return true;
+  }
+
+  if (href === "/staff") {
+    return false;
+  }
+
+  const requiredPermissionByHref: Record<string, string> = {
+    "/dashboard": "dashboard.read",
+    "/products": "products.read",
+    "/categories": "categories.read",
+    "/offers": "offers.read",
+    "/collections": "collections.read",
+    "/advices": "advices.read",
+    "/orders": "orders.read",
+    "/sales": "sales.read",
+    "/trash": "trash.read"
+  };
+
+  const requiredPermission = requiredPermissionByHref[href];
+  return requiredPermission ? (user.permissionKeys ?? []).includes(requiredPermission) : false;
+}
+
 export function AdminShell({ title, crumbs = [], actions, children }: Props) {
   const router   = useRouter();
   const pathname = usePathname();
@@ -43,7 +68,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
   if (!hydrated) return null;
   if (!user) return null;
 
-  const nav = user.role === "admin" ? NAV : NAV.filter((item) => item.href !== "/staff");
+  const nav = NAV.filter((item) => canAccessNavItem(user, item.href));
   const bottomNav = nav.slice(0, 4);
   const moreNav = nav.slice(4);
   const isMore = moreNav.some((n) => pathname.startsWith(n.href));

@@ -1,6 +1,12 @@
 import { createElement } from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
 
 const { uploadMedia } = vi.hoisted(() => ({
   uploadMedia: vi.fn(async (file: File) => ({ url: `http://localhost:4000/uploads/${file.name}`, path: `/uploads/${file.name}`, fileName: file.name }))
@@ -11,6 +17,10 @@ const upsertProduct = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children, actions }: any) => createElement("div", null, actions, children)
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
 }));
 
 vi.mock("next/navigation", () => ({
@@ -65,6 +75,21 @@ vi.mock("@/lib/store", () => ({
 
 import ProductsListPage from "@/app/products/page";
 import { ProductForm } from "@/components/forms/product-form";
+
+afterEach(() => {
+  cleanup();
+});
+
+beforeEach(() => {
+  mockedUseAdminAuth.mockReset();
+  mockedUseAdminAuth.mockReturnValue({
+    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+    hydrated: true,
+    logout: vi.fn()
+  });
+  toggleProductStatus.mockClear();
+  upsertProduct.mockClear();
+});
 
 const relatedOptions = [
   { type: "product" as const, id: 1, name: { ar: "منتج حالي", en: "Current Product" }, slug: "product-1" },
@@ -164,7 +189,40 @@ describe("ProductForm related items", () => {
 });
 
 describe("ProductsListPage", () => {
+  it("shows a 403 state for staff without products.read", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(ProductsListPage));
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى المنتجات.")).toBeInTheDocument();
+  });
+
+  it("hides create and mutation actions for staff without the matching product action permissions", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(ProductsListPage));
+
+    expect(screen.queryByRole("link", { name: /منتج جديد/ })).not.toBeInTheDocument();
+    expect(screen.queryByTitle("إيقاف")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/تعديل/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/حذف/)).not.toBeInTheDocument();
+  });
+
   it("keeps the toggle modal open, shows an error, and resets loading when status toggle fails", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
     render(createElement(ProductsListPage));
 
     fireEvent.click(screen.getByTitle("إيقاف"));

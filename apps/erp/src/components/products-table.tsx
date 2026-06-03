@@ -8,11 +8,17 @@ import { Icon } from "@/components/ui/icons";
 export function ProductsTable({
   products,
   categories,
+  canToggle,
+  canEdit,
+  canDelete,
   onToggle,
   onDelete
 }: {
   products: Product[];
   categories: Array<{ id: number; name: { ar: string; en: string } }>;
+  canToggle: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   onToggle: (product: Product) => void;
   onDelete: (id: number) => void;
 }) {
@@ -60,17 +66,21 @@ export function ProductsTable({
                   <td><AdminStatusBadge active={product.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
-                      <button
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => onToggle(product)}
-                        title={product.status === "active" ? "إيقاف" : "تفعيل"}
-                      >
-                        {product.status === "active" ? <Icon.X /> : <Icon.Check />}
-                      </button>
-                      <Link href={`/products/${product.id}/edit`} className="btn btn--ghost btn--sm" aria-label={`تعديل ${product.name.ar}`} title="تعديل"><Icon.Edit /></Link>
-                      <button className="btn btn--ghost btn--sm" onClick={() => onDelete(product.id)} style={{ color: "var(--danger)" }} aria-label={`حذف ${product.name.ar}`} title="حذف">
-                        <Icon.Trash />
-                      </button>
+                      {canToggle && (
+                        <button
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => onToggle(product)}
+                          title={product.status === "active" ? "إيقاف" : "تفعيل"}
+                        >
+                          {product.status === "active" ? <Icon.X /> : <Icon.Check />}
+                        </button>
+                      )}
+                      {canEdit && <Link href={`/products/${product.id}/edit`} className="btn btn--ghost btn--sm" aria-label={`تعديل ${product.name.ar}`} title="تعديل"><Icon.Edit /></Link>}
+                      {canDelete && (
+                        <button className="btn btn--ghost btn--sm" onClick={() => onDelete(product.id)} style={{ color: "var(--danger)" }} aria-label={`حذف ${product.name.ar}`} title="حذف">
+                          <Icon.Trash />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

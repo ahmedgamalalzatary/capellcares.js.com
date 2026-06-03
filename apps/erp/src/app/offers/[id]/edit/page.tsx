@@ -3,13 +3,17 @@
 import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import type { RelatedItemRef } from "@capella/shared";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/components/forms/offer-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
 import { api } from "@/lib/api/client";
+import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
 export default function EditOfferPage({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAdminAuth();
   const { id } = use(params);
   const offers = useStore((s) => s.offers);
   const products = useStore((s) => s.products);
@@ -19,6 +23,22 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
   const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
+
+  if (!canReadErpModule(user, "offers")) {
+    return (
+      <AdminShell title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
+      </AdminShell>
+    );
+  }
+
+  if (!canUpdateErpModule(user, "offers")) {
+    return (
+      <AdminShell title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية تعديل العروض." />
+      </AdminShell>
+    );
+  }
   useEffect(() => {
     let active = true;
     setRelatedItems(null);

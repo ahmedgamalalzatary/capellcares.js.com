@@ -3,6 +3,7 @@ import test, { afterEach, beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
 import { app } from "../../src/app.js";
+import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 
@@ -109,6 +110,7 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
     role: "staff",
     isActive: true
   });
+  await updateAdminUserPermissions("staff@capella.test", ["orders.update_payment_status"]);
 
   await withTestServer(app, async (request) => {
     const loginResponse = await request("/api/erp/auth/login", {
@@ -132,5 +134,6 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
     assert.equal(refreshResponse.status, 200);
     assert.equal(refreshResponse.json.user.email, "staff@capella.test");
     assert.equal(refreshResponse.json.user.role, "staff");
+    assert.deepEqual(refreshResponse.json.user.permissionKeys, ["orders.read", "orders.update_payment_status"]);
   });
 });

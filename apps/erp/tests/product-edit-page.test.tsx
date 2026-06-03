@@ -4,6 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => cleanup());
 
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
+
 import { buildRelatedOptions } from "@/components/forms/related-options";
 
 const apiGet = vi.fn();
@@ -14,6 +20,10 @@ vi.mock("@/lib/api/client", () => ({
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
 }));
 
 vi.mock("next/navigation", () => ({
@@ -84,8 +94,34 @@ describe("buildRelatedOptions", () => {
 });
 
 describe("EditProductPage data plumbing", () => {
+  it("shows a 403 state for staff without products.update", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    await act(async () => {
+      render(
+        createElement(
+          Suspense,
+          { fallback: null },
+          createElement(EditProductPage, { params: Promise.resolve({ id: "1" }) })
+        )
+      );
+    });
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
+  });
+
   it("fetches existing related links and passes them plus options to the form", async () => {
     capturedProps = null;
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
     apiGet.mockResolvedValueOnce({ relatedItems: [{ type: "product", id: 2 }] });
 
     await act(async () => {
@@ -116,6 +152,11 @@ describe("EditProductPage data plumbing", () => {
 
   it("renders the form in safe mode when existing related links fail to load", async () => {
     capturedProps = null;
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
     apiGet.mockRejectedValueOnce(new Error("boom"));
 
     await act(async () => {

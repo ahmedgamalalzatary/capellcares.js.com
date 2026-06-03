@@ -3,13 +3,17 @@
 import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import type { RelatedItemRef } from "@capella/shared";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { ProductForm } from "@/components/forms/product-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
 import { api } from "@/lib/api/client";
+import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAdminAuth();
   const { id } = use(params);
   const products = useStore((s) => s.products);
   const offers = useStore((s) => s.offers);
@@ -20,6 +24,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
   const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
+
+  if (!canReadErpModule(user, "products")) {
+    return (
+      <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
+      </AdminShell>
+    );
+  }
+
+  if (!canUpdateErpModule(user, "products")) {
+    return (
+      <AdminShell title="تعديل المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية تعديل المنتجات." />
+      </AdminShell>
+    );
+  }
+
   useEffect(() => {
     let active = true;
     setRelatedItems(null);

@@ -2,15 +2,35 @@
 
 import { use } from "react";
 import { notFound } from "next/navigation";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { AdviceForm } from "@/components/forms/advice-form";
+import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
 export default function EditAdvicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAdminAuth();
   const { id } = use(params);
   const advices = useStore((s) => s.advices);
   const loaded = useStore((s) => s.loaded);
   const advice = advices.find((a) => a.id === Number(id));
+
+  if (!canReadErpModule(user, "advices")) {
+    return (
+      <AdminShell title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
+      </AdminShell>
+    );
+  }
+
+  if (!canUpdateErpModule(user, "advices")) {
+    return (
+      <AdminShell title="تعديل النصيحة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية تعديل النصائح." />
+      </AdminShell>
+    );
+  }
 
   if (!loaded) {
     return (

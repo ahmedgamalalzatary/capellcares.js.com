@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Order, PaymentStatus } from "@capella/shared";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { hasErpPermission } from "@/lib/erp-permissions";
 import { getStore } from "@/lib/store";
 
 function statusChip(status: string) {
@@ -15,9 +18,22 @@ function statusChip(status: string) {
 }
 
 export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; crumbLabel: string }) {
+  const { user } = useAdminAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  if (!hasErpPermission(user, "orders.read")) {
+    return (
+      <AdminShell
+        title="تفاصيل الطلب"
+        crumbs={[{ label: "الطلبات", href: "/orders" }, { label: "غير مصرح" }]}
+        actions={<Link href="/orders" className="btn btn--ghost btn--sm">رجوع للطلبات</Link>}
+      >
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
+      </AdminShell>
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +55,8 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
       cancelled = true;
     };
   }, [orderId]);
+
+  const canUpdatePaymentStatus = hasErpPermission(user, "orders.update_payment_status");
 
   return (
     <AdminShell
@@ -80,7 +98,11 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
                 id="order-payment-status"
                 className="select"
                 value={order.paymentStatus}
+                disabled={!canUpdatePaymentStatus}
                 onChange={async (e) => {
+                  if (!canUpdatePaymentStatus) {
+                    return;
+                  }
                   const paymentStatus = e.target.value as PaymentStatus;
                   await getStore().updateOrderPaymentStatus(orderId, paymentStatus);
                   setOrder((prev) => prev ? { ...prev, paymentStatus } : prev);

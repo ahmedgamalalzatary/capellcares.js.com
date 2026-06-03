@@ -2,16 +2,28 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore, getStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { Modal } from "@/components/ui/modal";
 import type { Category } from "@capella/shared";
 
 export default function CategoriesPage() {
+  const { user } = useAdminAuth();
   const categories = useStore((s) => s.categories);
   const products = useStore((s) => s.products);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
+
+  if (!canReadErpModule(user, "categories")) {
+    return (
+      <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
+      </AdminShell>
+    );
+  }
 
   const tree = useMemo(() => {
     const children = new Map<number | null, Category[]>();
@@ -48,7 +60,7 @@ export default function CategoriesPage() {
     <AdminShell
       title="الأقسام"
       crumbs={[{ label: "الأقسام" }]}
-      actions={<Link href="/categories/new" className="btn btn--primary btn--sm"><Icon.Plus /> قسم جديد</Link>}
+      actions={canCreateErpModule(user, "categories") ? <Link href="/categories/new" className="btn btn--primary btn--sm"><Icon.Plus /> قسم جديد</Link> : undefined}
     >
       <div className="card">
         <div className="card__head">
@@ -61,6 +73,8 @@ export default function CategoriesPage() {
             depth={0}
             tree={tree}
             productCount={productCount}
+            canEdit={canUpdateErpModule(user, "categories")}
+            canDelete={canSoftDeleteErpModule(user, "categories")}
             onDelete={onAskDelete}
           />
         </div>
@@ -96,6 +110,8 @@ function Tree({
   depth: number;
   tree: Map<number | null, Category[]>;
   productCount: Map<number, number>;
+  canEdit: boolean;
+  canDelete: boolean;
   onDelete: (id: number) => void;
 }) {
   return (
@@ -113,11 +129,11 @@ function Tree({
               {count > 0 && <span className="tag">{count} منتج</span>}
               {kids.length > 0 && <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>{kids.length} فرعي</span>}
               <div className="row" style={{ gap: 4 }}>
-                <Link href={`/categories/${c.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>
-                <button className="btn btn--ghost btn--sm" onClick={() => onDelete(c.id)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>
+                {canEdit && <Link href={`/categories/${c.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>}
+                {canDelete && <button className="btn btn--ghost btn--sm" onClick={() => onDelete(c.id)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>}
               </div>
             </div>
-            {kids.length > 0 && <Tree children={kids} depth={depth + 1} tree={tree} productCount={productCount} onDelete={onDelete} />}
+            {kids.length > 0 && <Tree children={kids} depth={depth + 1} tree={tree} productCount={productCount} canEdit={canEdit} canDelete={canDelete} onDelete={onDelete} />}
           </li>
         );
       })}

@@ -3,6 +3,7 @@ import test, { beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";
 import {
   loginAdmin,
   refreshAdminSession
@@ -103,6 +104,7 @@ test("loginAdmin allows active staff through the ERP login endpoint", async () =
     role: "staff",
     isActive: true
   });
+  await updateAdminUserPermissions("staff@capella.eg", ["orders.update_payment_status"]);
 
   const result = await loginAdmin(
     { email: "staff@capella.eg", password: staffPassword },
@@ -111,6 +113,7 @@ test("loginAdmin allows active staff through the ERP login endpoint", async () =
 
   assert.equal(result.user.email, "staff@capella.eg");
   assert.equal(result.user.role, "staff");
+  assert.deepEqual(result.user.permissionKeys, ["orders.read", "orders.update_payment_status"]);
 });
 
 test("loginAdmin rejects inactive staff", async () => {
@@ -132,4 +135,34 @@ test("loginAdmin rejects inactive staff", async () => {
     () => loginAdmin({ email: "inactive-staff@capella.eg", password: "staff1234" }, { env }),
     /invalid/i
   );
+});
+
+test("refreshAdminSession returns effective permission keys for staff users", async () => {
+  const env: NodeJS.ProcessEnv = {
+    JWT_ACCESS_SECRET: "test-access-secret",
+    ADMIN_NAME: "Bootstrap Admin",
+    ADMIN_EMAIL: "admin@capella.eg",
+    ADMIN_PASSWORD: "admin1234"
+  };
+
+  await loginAdmin({ email: env.ADMIN_EMAIL!, password: env.ADMIN_PASSWORD! }, { env });
+
+  const staffPassword = "staff1234";
+  await createTestAdminUser({
+    name: "Active Staff",
+    email: "staff-permissions@capella.eg",
+    passwordHash: await bcrypt.hash(staffPassword, 10),
+    role: "staff",
+    isActive: true
+  });
+  await updateAdminUserPermissions("staff-permissions@capella.eg", ["products.update"]);
+
+  const loginResult = await loginAdmin(
+    { email: "staff-permissions@capella.eg", password: staffPassword },
+    { env }
+  );
+
+  const refreshed = await refreshAdminSession(loginResult.refreshToken);
+
+  assert.deepEqual(refreshed.user.permissionKeys, ["products.read", "products.update"]);
 });

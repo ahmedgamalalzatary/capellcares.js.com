@@ -1,7 +1,15 @@
 "use client";
 
 import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product } from "@capella/shared";
-import { api, isAdminAuthHydrated, subscribeAdminAccessToken, subscribeAdminAuthHydration } from "../api/client";
+import {
+  api,
+  getAdminAuthUser,
+  isAdminAuthHydrated,
+  subscribeAdminAccessToken,
+  subscribeAdminAuthHydration,
+  subscribeAdminAuthUser,
+  type AdminAuthUser
+} from "../api/client";
 import { normalizeCategory, normalizeProduct } from "./normalizers";
 import type {
   CategoryApiShape,
@@ -33,6 +41,7 @@ export class ErpStore {
   private browserRefreshBound = false;
   private authRefreshBound = false;
   private authHydrationBound = false;
+  private authUserBound = false;
 
   subscribe(l: Listener) {
     this.listeners.add(l);
@@ -63,26 +72,28 @@ export class ErpStore {
     this.loading = true;
     this.emit();
     try {
-      const [p, c, collectionData, o, a, orderData, salesData] = await Promise.all([
-        api.get<{ items: ProductApiShape[] }>("/api/erp/products"),
-        api.get<{ items: CategoryApiShape[] }>("/api/erp/categories"),
-        api.get<{ items: Collection[] }>("/api/erp/collections"),
-        api.get<{ items: Offer[] }>("/api/erp/offers"),
-        api.get<{ items: Advice[] }>("/api/erp/advices"),
-        api.get<{ items: OrderSummary[] }>("/api/erp/orders"),
-        api.get<SalesAnalytics>("/api/erp/sales")
-      ]);
+      const authUser = getAdminAuthUser();
+      const requests = this.getPreloadRequests(authUser);
+      const results = await Promise.all(requests.map((request) => request.load()));
       // Ignore stale responses: a newer refetch has superseded this one.
       if (reqId !== this.latestRefetchId) {
         return;
       }
-      this.products = p.items.map(normalizeProduct);
-      this.categories = c.items.map(normalizeCategory);
-      this.collections = collectionData.items;
-      this.offers = o.items;
-      this.advices = a.items;
-      this.orders = orderData.items;
-      this.sales = salesData;
+      this.products = [];
+      this.categories = [];
+      this.collections = [];
+      this.offers = [];
+      this.advices = [];
+      this.orders = [];
+      this.sales = {
+        summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
+        productTotals: [],
+        variantTotals: [],
+        orders: []
+      };
+      results.forEach((result, index) => {
+        requests[index]?.assign(result, this);
+      });
       this.loaded = true;
       this.error = null;
     } catch (e) {
@@ -102,6 +113,7 @@ export class ErpStore {
     this.bindBrowserRefresh();
     this.bindAuthRefresh();
     this.bindAuthHydration();
+    this.bindAuthUser();
     if (!this.loaded && !this.loading && isAdminAuthHydrated()) void this.refetch();
   }
 
@@ -148,6 +160,74 @@ export class ErpStore {
       }
     });
     this.authHydrationBound = true;
+  }
+
+  private bindAuthUser() {
+    if (this.authUserBound || typeof window === "undefined") {
+      return;
+    }
+
+    subscribeAdminAuthUser(() => {
+      this.loaded = false;
+      if (isAdminAuthHydrated() && !this.loading) {
+        void this.refetch();
+      }
+    });
+    this.authUserBound = true;
+  }
+
+  private getPreloadRequests(authUser: AdminAuthUser | null) {
+    const canRead = authUser?.role === "admin"
+      ? () => true
+      : (permissionKey: string) => authUser?.permissionKeys.includes(permissionKey) ?? false;
+
+    return [
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductApiShape[] }>("/api/erp/products"),
+        assign: (result: { items: ProductApiShape[] }, store: ErpStore) => {
+          store.products = result.items.map(normalizeProduct);
+        }
+      },
+      canRead("categories.read") && {
+        load: () => api.get<{ items: CategoryApiShape[] }>("/api/erp/categories"),
+        assign: (result: { items: CategoryApiShape[] }, store: ErpStore) => {
+          store.categories = result.items.map(normalizeCategory);
+        }
+      },
+      canRead("collections.read") && {
+        load: () => api.get<{ items: Collection[] }>("/api/erp/collections"),
+        assign: (result: { items: Collection[] }, store: ErpStore) => {
+          store.collections = result.items;
+        }
+      },
+      canRead("offers.read") && {
+        load: () => api.get<{ items: Offer[] }>("/api/erp/offers"),
+        assign: (result: { items: Offer[] }, store: ErpStore) => {
+          store.offers = result.items;
+        }
+      },
+      canRead("advices.read") && {
+        load: () => api.get<{ items: Advice[] }>("/api/erp/advices"),
+        assign: (result: { items: Advice[] }, store: ErpStore) => {
+          store.advices = result.items;
+        }
+      },
+      canRead("orders.read") && {
+        load: () => api.get<{ items: OrderSummary[] }>("/api/erp/orders"),
+        assign: (result: { items: OrderSummary[] }, store: ErpStore) => {
+          store.orders = result.items;
+        }
+      },
+      canRead("sales.read") && {
+        load: () => api.get<SalesAnalytics>("/api/erp/sales"),
+        assign: (result: SalesAnalytics, store: ErpStore) => {
+          store.sales = result;
+        }
+      }
+    ].filter(Boolean) as Array<{
+      load: () => Promise<unknown>;
+      assign: (result: any, store: ErpStore) => void;
+    }>;
   }
 
   async upsertProduct(p: Product) {
