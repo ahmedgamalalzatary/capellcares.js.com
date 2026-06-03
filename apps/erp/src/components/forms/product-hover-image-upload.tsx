@@ -2,14 +2,15 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
-import { api } from "@/lib/api/client";
+import { api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  uploadContext?: ErpUploadContext;
 }
 
-export function ProductHoverImageUpload({ value, onChange }: Props) {
+export function ProductHoverImageUpload({ value, onChange, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +18,15 @@ export function ProductHoverImageUpload({ value, onChange }: Props) {
   const handleFiles = async (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
+    if (!uploadContext) {
+      setError("رفع صورة الـ hover متاح فقط داخل مسارات التعديل المصرح بها.");
+      return;
+    }
 
     setUploading(true);
     setError(null);
     try {
-      const result = await api.uploadImage(file);
+      const result = await api.uploadImage(file, uploadContext);
       onChange(result.url);
     } catch (uploadError) {
       const message = uploadError instanceof Error ? uploadError.message : "فشل رفع صورة الـ hover";
@@ -43,7 +48,7 @@ export function ProductHoverImageUpload({ value, onChange }: Props) {
               <Icon.Trash size={14} /> إزالة الصورة
             </button>
           ) : null}
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
             <Icon.Upload size={14} /> رفع صورة hover
           </button>
         </div>
@@ -74,6 +79,7 @@ export function ProductHoverImageUpload({ value, onChange }: Props) {
         <div className="muted" style={{ fontSize: 12 }}>لا توجد صورة hover لهذا المنتج.</div>
       )}
 
+      {!uploadContext ? <div className="muted" style={{ fontSize: 12 }}>رفع صورة hover متاح فقط أثناء تعديل منتج موجود.</div> : null}
       {uploading ? <div className="muted" style={{ fontSize: 12 }}>جارِ رفع صورة hover...</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>

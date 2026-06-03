@@ -2,15 +2,16 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
-import { api } from "@/lib/api/client";
+import { api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
   value: string | null;
   onChange: (imageUrl: string | null) => void;
   hint?: string;
+  uploadContext?: ErpUploadContext;
 }
 
-export function ImageUpload({ value, onChange, hint }: Props) {
+export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -26,11 +27,15 @@ export function ImageUpload({ value, onChange, hint }: Props) {
       setError("حجم الصورة أكبر من 4MB.");
       return;
     }
+    if (!uploadContext) {
+      setError("رفع الصور متاح فقط داخل مسارات التعديل المصرح بها.");
+      return;
+    }
 
     setUploading(true);
     setError(null);
     try {
-      const result = await api.uploadImage(file);
+      const result = await api.uploadImage(file, uploadContext);
       onChange(result.url);
     } catch (uploadError) {
       const message = uploadError instanceof Error ? uploadError.message : "فشل رفع الصورة";
@@ -65,7 +70,7 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         <>
           <img src={value} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
           <div className="row" style={{ gap: 8 }}>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
               <Icon.Upload size={14} /> استبدال الصورة
             </button>
             <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange(null)} disabled={uploading}>
@@ -82,7 +87,7 @@ export function ImageUpload({ value, onChange, hint }: Props) {
             <div style={{ fontWeight: 700, fontSize: 13.5 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
             <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
           </div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
             <Icon.Upload size={14} /> اختيار صورة
           </button>
         </>
@@ -94,6 +99,7 @@ export function ImageUpload({ value, onChange, hint }: Props) {
         style={{ display: "none" }}
         onChange={(e) => { void handleFile(e.target.files?.[0]); }}
       />
+      {!uploadContext && <div className="faint" style={{ fontSize: 12 }}>رفع الصور متاح فقط أثناء تعديل عنصر موجود.</div>}
       {uploading && <div className="faint" style={{ fontSize: 12 }}>جارِ رفع الصورة...</div>}
       {error && <div className="field-error" style={{ marginTop: 4 }}>{error}</div>}
     </div>

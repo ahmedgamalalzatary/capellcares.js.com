@@ -83,7 +83,7 @@ export class ErpStore {
     try {
       const authUser = getAdminAuthUser();
       const requests = this.getPreloadRequests(authUser);
-      const results = await Promise.all(requests.map((request) => request.load()));
+      const results = await Promise.allSettled(requests.map((request) => request.load()));
       // Ignore stale responses: a newer refetch has superseded this one.
       if (reqId !== this.latestRefetchId) {
         return;
@@ -95,11 +95,23 @@ export class ErpStore {
       this.advices = [];
       this.orders = [];
       this.sales = this.createEmptySales();
+      let firstError: unknown = null;
       results.forEach((result, index) => {
-        requests[index]?.assign(result, this);
+        if (result.status === "fulfilled") {
+          requests[index]?.assign(result.value, this);
+          return;
+        }
+
+        if (firstError == null) {
+          firstError = result.reason;
+        }
       });
       this.loaded = true;
-      this.error = null;
+      this.error = firstError instanceof Error
+        ? firstError.message
+        : firstError != null
+          ? "Failed to load"
+          : null;
     } catch (e) {
       if (reqId !== this.latestRefetchId) {
         return;

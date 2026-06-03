@@ -10,7 +10,7 @@ export function DeletedList({
   empty
 }: {
   rows: TrashListRow[];
-  onRestore: (id: number) => void;
+  onRestore?: (id: number) => void;
   onHardDelete?: (id: number, title: string) => void;
   empty: string;
 }) {
@@ -38,9 +38,11 @@ export function DeletedList({
               <td className="muted">{row.meta}</td>
               <td>
                 <div style={{ display: "inline-flex", gap: 8 }}>
-                  <button className="btn btn--ghost btn--sm" onClick={() => onRestore(row.id)}>
-                    <Icon.Check /> استعادة
-                  </button>
+                  {onRestore && (
+                    <button className="btn btn--ghost btn--sm" onClick={() => onRestore(row.id)}>
+                      <Icon.Check /> استعادة
+                    </button>
+                  )}
                   {onHardDelete && (
                     <button
                       className="btn btn--ghost btn--sm"

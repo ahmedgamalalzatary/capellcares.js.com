@@ -6,9 +6,21 @@ const hardDeleteProduct = vi.fn();
 const restoreProduct = vi.fn();
 const restoreCategory = vi.fn();
 const restoreOffer = vi.fn();
+const useAdminAuth = vi.fn(() => ({
+  user: {
+    name: "Admin User",
+    email: "admin@capella.test",
+    role: "admin" as const,
+    permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
+  }
+}));
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => useAdminAuth()
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -62,6 +74,16 @@ describe("TrashPage hard delete", () => {
   beforeEach(() => {
     hardDeleteProduct.mockReset();
     restoreProduct.mockReset();
+    restoreCategory.mockReset();
+    restoreOffer.mockReset();
+    useAdminAuth.mockReturnValue({
+      user: {
+        name: "Admin User",
+        email: "admin@capella.test",
+        role: "admin",
+        permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
+      }
+    });
   });
   afterEach(() => {
     cleanup();
@@ -106,5 +128,27 @@ describe("TrashPage hard delete", () => {
     render(createElement(TrashPage));
     fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
     expect(screen.queryByRole("button", { name: /حذف نهائي/ })).not.toBeInTheDocument();
+  });
+
+  it("hides restore and permanent-delete actions when trash access lacks the underlying module permission", () => {
+    useAdminAuth.mockReturnValue({
+      user: {
+        name: "Restricted Staff",
+        email: "staff@capella.test",
+        role: "staff",
+        permissionKeys: ["trash.read"]
+      }
+    });
+
+    render(createElement(TrashPage));
+
+    expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /حذف نهائي/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
+    expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
+    expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
   });
 });

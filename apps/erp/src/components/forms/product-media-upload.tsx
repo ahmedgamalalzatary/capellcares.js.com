@@ -3,14 +3,15 @@
 import { useRef, useState } from "react";
 import type { ProductMedia } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import { api } from "@/lib/api/client";
+import { api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
   value: ProductMedia[];
   onChange: (media: ProductMedia[]) => void;
+  uploadContext?: ErpUploadContext;
 }
 
-export function ProductMediaUpload({ value, onChange }: Props) {
+export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,13 +38,17 @@ export function ProductMediaUpload({ value, onChange }: Props) {
       setError("يمكن رفع فيديو واحد فقط لكل منتج.");
       return;
     }
+    if (!uploadContext) {
+      setError("رفع الوسائط متاح فقط داخل مسارات التعديل المصرح بها.");
+      return;
+    }
 
     setUploading(true);
     setError(null);
     try {
       const uploaded = await Promise.all(
         Array.from(files).map(async (file) => {
-          const result = await api.uploadMedia(file);
+          const result = await api.uploadMedia(file, uploadContext);
           return {
             type: file.type.startsWith("video/") ? "video" as const : "image" as const,
             url: result.url
@@ -65,7 +70,7 @@ export function ProductMediaUpload({ value, onChange }: Props) {
         <div className="muted" style={{ fontSize: 12 }}>
           أول صورة هي الأساسية في المتجر. باقي الصور والفيديوهات تظهر داخل معرض صفحة المنتج.
         </div>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading}>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
           <Icon.Upload size={14} /> إضافة وسائط
         </button>
       </div>
@@ -125,6 +130,7 @@ export function ProductMediaUpload({ value, onChange }: Props) {
       )}
 
       {uploading ? <div className="muted" style={{ fontSize: 12 }}>جارِ رفع الوسائط...</div> : null}
+      {!uploadContext ? <div className="muted" style={{ fontSize: 12 }}>رفع الوسائط متاح فقط أثناء تعديل منتج موجود.</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>
   );

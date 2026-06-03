@@ -5,14 +5,26 @@ import { useMemo, useState } from "react";
 import { formatPrice } from "@capella/shared";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { canCreateErpModule, canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 
 export default function CollectionsListPage() {
+  const { user } = useAdminAuth();
   const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
   const [search, setSearch] = useState("");
+
+  if (!canReadErpModule(user, "collections")) {
+    return (
+      <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
+      </AdminShell>
+    );
+  }
 
   const visibleCollections = useMemo(
     () => collections.filter((collection) => !collection.deletedAt),
@@ -34,9 +46,11 @@ export default function CollectionsListPage() {
       title="المجموعات"
       crumbs={[{ label: "المجموعات" }]}
       actions={
-        <Link href="/collections/new" className="btn btn--primary btn--sm">
-          <Icon.Plus /> مجموعة جديدة
-        </Link>
+        canCreateErpModule(user, "collections") ? (
+          <Link href="/collections/new" className="btn btn--primary btn--sm">
+            <Icon.Plus /> مجموعة جديدة
+          </Link>
+        ) : undefined
       }
     >
       <AdminListToolbar
@@ -65,9 +79,13 @@ export default function CollectionsListPage() {
                 return (
                   <tr key={collection.id}>
                     <td>
-                      <Link href={`/collections/${collection.id}/edit`} className="table-title">
-                        {collection.name.ar}
-                      </Link>
+                      {canUpdateErpModule(user, "collections") ? (
+                        <Link href={`/collections/${collection.id}/edit`} className="table-title">
+                          {collection.name.ar}
+                        </Link>
+                      ) : (
+                        <span className="table-title">{collection.name.ar}</span>
+                      )}
                       <div className="table-subtitle">{collection.name.en}</div>
                     </td>
                     <td>{category?.name.ar ?? "—"}</td>

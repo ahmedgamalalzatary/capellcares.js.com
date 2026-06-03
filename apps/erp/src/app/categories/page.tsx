@@ -17,14 +17,6 @@ export default function CategoriesPage() {
   const products = useStore((s) => s.products);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
 
-  if (!canReadErpModule(user, "categories")) {
-    return (
-      <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
-      </AdminShell>
-    );
-  }
-
   const tree = useMemo(() => {
     const children = new Map<number | null, Category[]>();
     for (const c of categories) {
@@ -55,6 +47,14 @@ export default function CategoriesPage() {
     getStore().softDeleteCategory(pendingDelete.id);
     setPendingDelete(null);
   };
+
+  if (!canReadErpModule(user, "categories")) {
+    return (
+      <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell
@@ -104,7 +104,7 @@ export default function CategoriesPage() {
 }
 
 function Tree({
-  children, depth, tree, productCount, onDelete
+  children, depth, tree, productCount, canEdit, canDelete, onDelete
 }: {
   children: Category[];
   depth: number;

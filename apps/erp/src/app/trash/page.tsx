@@ -1,11 +1,15 @@
 "use client";
 
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { canRestoreErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { Modal } from "@/components/ui/modal";
 import { DeletedList } from "../../components/trash/deleted-list";
 import { useTrashPage } from "../../hooks/use-trash-page";
 
 export default function TrashPage() {
+  const { user } = useAdminAuth();
   const {
     tab,
     setTab,
@@ -23,6 +27,14 @@ export default function TrashPage() {
     restoreCategory,
     restoreOffer
   } = useTrashPage();
+
+  if (!hasErpPermission(user, "trash.read")) {
+    return (
+      <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المحذوفات." />
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
@@ -61,22 +73,22 @@ export default function TrashPage() {
           <DeletedList
             empty="لا توجد منتجات محذوفة."
             rows={deletedProducts}
-            onRestore={restoreProduct}
-            onHardDelete={(id, title) => setPendingHardDelete({ id, title })}
+            onRestore={canRestoreErpModule(user, "products") ? restoreProduct : undefined}
+            onHardDelete={hasErpPermission(user, "products.permanent_delete") ? (id, title) => setPendingHardDelete({ id, title }) : undefined}
           />
         )}
         {tab === "categories" && (
           <DeletedList
             empty="لا توجد أقسام محذوفة."
             rows={deletedCategories}
-            onRestore={restoreCategory}
+            onRestore={canRestoreErpModule(user, "categories") ? restoreCategory : undefined}
           />
         )}
         {tab === "offers" && (
           <DeletedList
             empty="لا توجد عروض محذوفة."
             rows={deletedOffers}
-            onRestore={restoreOffer}
+            onRestore={canRestoreErpModule(user, "offers") ? restoreOffer : undefined}
           />
         )}
       </div>

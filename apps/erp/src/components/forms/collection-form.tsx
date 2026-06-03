@@ -149,7 +149,7 @@ export function CollectionForm({
         <ImageFieldCard
           title="صورة المجموعة"
           error={errors.image}
-          uploadSlot={<ImageUpload value={image} onChange={setImage} />}
+          uploadSlot={<ImageUpload value={image} onChange={setImage} uploadContext={mode === "edit" ? "collections.update" : undefined} />}
         />
 
         <section className="card">

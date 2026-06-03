@@ -3,13 +3,17 @@
 import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import type { RelatedItemRef } from "@capella/shared";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { CollectionForm } from "@/components/forms/collection-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { api } from "@/lib/api/client";
+import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
 export default function EditCollectionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAdminAuth();
   const { id } = use(params);
   const collections = useStore((s) => s.collections);
   const products = useStore((s) => s.products);
@@ -40,6 +44,22 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
       active = false;
     };
   }, [id]);
+
+  if (!canReadErpModule(user, "collections")) {
+    return (
+      <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
+      </AdminShell>
+    );
+  }
+
+  if (!canUpdateErpModule(user, "collections")) {
+    return (
+      <AdminShell title="تعديل المجموعة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية تعديل المجموعات." />
+      </AdminShell>
+    );
+  }
 
   if (!loaded) {
     return (

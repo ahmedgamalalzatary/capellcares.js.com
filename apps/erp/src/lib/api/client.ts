@@ -10,12 +10,19 @@ export type AdminAuthUser = {
   permissionKeys: string[];
 };
 
+export type ErpUploadContext =
+  | "products.update"
+  | "offers.update"
+  | "collections.update"
+  | "advices.update";
+
 let adminAccessToken: string | null = null;
 const adminAccessTokenListeners = new Set<(token: string | null) => void>();
 let adminAuthHydrated = false;
 const adminAuthHydrationListeners = new Set<(hydrated: boolean) => void>();
 let adminAuthUser: AdminAuthUser | null = null;
 const adminAuthUserListeners = new Set<(user: AdminAuthUser | null) => void>();
+const adminSessionInvalidationListeners = new Set<() => void>();
 
 export function setAdminAccessToken(token: string | null) {
   adminAccessToken = token;
@@ -41,6 +48,12 @@ export function getAdminAuthUser() {
   return adminAuthUser;
 }
 
+export function invalidateAdminSession() {
+  setAdminAccessToken(null);
+  setAdminAuthUser(null);
+  adminSessionInvalidationListeners.forEach((listener) => listener());
+}
+
 export function isAdminAuthHydrated() {
   return adminAuthHydrated;
 }
@@ -53,6 +66,11 @@ export function subscribeAdminAuthHydration(listener: (hydrated: boolean) => voi
 export function subscribeAdminAuthUser(listener: (user: AdminAuthUser | null) => void) {
   adminAuthUserListeners.add(listener);
   return () => adminAuthUserListeners.delete(listener);
+}
+
+export function subscribeAdminSessionInvalidation(listener: () => void) {
+  adminSessionInvalidationListeners.add(listener);
+  return () => adminSessionInvalidationListeners.delete(listener);
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -77,6 +95,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let body: unknown = null;
     try { body = await res.json(); } catch {}
+    const message = body && typeof body === "object" && "message" in body ? (body as { message?: unknown }).message : undefined;
+    if (res.status === 401 && message === "Invalid admin token") {
+      invalidateAdminSession();
+    }
     const err = new Error(`API ${res.status} ${path}`) as Error & { status?: number; body?: unknown };
     err.status = res.status;
     err.body = body;
@@ -92,10 +114,11 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  uploadMedia: (file: File) =>
+  uploadMedia: (file: File, context?: ErpUploadContext) =>
     file.arrayBuffer().then((buffer) =>
       request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
         method: "POST",
+        headers: context ? { "x-capella-upload-context": context } : undefined,
         body: JSON.stringify({
           fileName: file.name,
           mimeType: file.type,
@@ -103,10 +126,11 @@ export const api = {
         })
       })
     ),
-  uploadImage: (file: File) =>
+  uploadImage: (file: File, context?: ErpUploadContext) =>
     file.arrayBuffer().then((buffer) =>
       request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
         method: "POST",
+        headers: context ? { "x-capella-upload-context": context } : undefined,
         body: JSON.stringify({
           fileName: file.name,
           mimeType: file.type,

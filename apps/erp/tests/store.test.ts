@@ -375,4 +375,45 @@ describe("ERP store", () => {
     ]);
     expect(store.error).toBeNull();
   });
+
+  it("keeps unrelated authorized datasets when one staff preload request fails", async () => {
+    adminAuthUser = {
+      name: "Staff User",
+      email: "staff@capella.test",
+      role: "staff",
+      permissionKeys: ["orders.read", "sales.read"]
+    };
+
+    apiGet
+      .mockResolvedValueOnce({
+        items: [{
+          id: 7,
+          orderCode: "ABCD-007",
+          customerType: "registered",
+          customerId: 1,
+          fullName: "Seed Customer",
+          phone: "01012345678",
+          email: "seed-customer@capella.test",
+          governorate: "Cairo",
+          cityArea: "Nasr City",
+          addressLine: "Street 10",
+          buildingApartment: "Building 4",
+          notes: null,
+          paymentMethod: "cod",
+          paymentStatus: "pending",
+          totalAmount: 150,
+          createdAt: new Date().toISOString()
+        }]
+      })
+      .mockRejectedValueOnce(new Error("API 403 /api/erp/sales"));
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    await store.refetch();
+
+    expect(store.orders).toHaveLength(1);
+    expect(store.loaded).toBe(true);
+    expect(store.error).toBe("API 403 /api/erp/sales");
+  });
 });

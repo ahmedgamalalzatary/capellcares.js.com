@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test, { afterEach, beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
+import { adminUsers } from "@capella/database/drizzle/schema";
+import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
@@ -135,5 +138,43 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
     assert.equal(refreshResponse.json.user.email, "staff@capella.test");
     assert.equal(refreshResponse.json.user.role, "staff");
     assert.deepEqual(refreshResponse.json.user.permissionKeys, ["orders.read", "orders.update_payment_status"]);
+  });
+});
+
+test("erp auth refresh rejects deactivated staff sessions", async () => {
+  await createTestAdminUser({
+    name: "Staff User",
+    email: "inactive-refresh@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const loginResponse = await request("/api/erp/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "inactive-refresh@capella.test",
+        password: "StaffPass123"
+      })
+    });
+
+    assert.equal(loginResponse.status, 200);
+    const refreshCookie = loginResponse.headers.get("set-cookie");
+    assert.ok(refreshCookie);
+
+    await db
+      .update(adminUsers)
+      .set({ isActive: false })
+      .where(eq(adminUsers.email, "inactive-refresh@capella.test"));
+
+    const refreshResponse = await request("/api/erp/auth/refresh", {
+      method: "POST",
+      headers: { cookie: refreshCookie }
+    });
+
+    assert.equal(refreshResponse.status, 401);
+    assert.deepEqual(refreshResponse.json, { message: "Invalid refresh token" });
   });
 });

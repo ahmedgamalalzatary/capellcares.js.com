@@ -1,9 +1,19 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
 }));
 
 vi.mock("@/components/shell/admin-shell", () => ({
@@ -12,18 +22,88 @@ vi.mock("@/components/shell/admin-shell", () => ({
 
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector({
-    collections: [],
-    categories: []
+    collections: [{
+      id: 1,
+      slug: "collection-1",
+      name: { ar: "مجموعة", en: "Collection" },
+      description: { ar: "", en: "" },
+      imagePath: "",
+      price: 100,
+      originalTotal: 150,
+      categoryId: 7,
+      items: [{ variantId: 3, qty: 1 }],
+      stock: 2,
+      status: "active",
+      createdAt: "",
+      updatedAt: ""
+    }],
+    categories: [{ id: 7, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
   })
 }));
 
 import CollectionsListPage from "@/app/collections/page";
+import NewCollectionPage from "@/app/collections/new/page";
 
 describe("CollectionsListPage", () => {
+  beforeEach(() => {
+    mockedUseAdminAuth.mockReset();
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows a 403 state for staff without collections.read", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(CollectionsListPage));
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
+  });
+
   it("renders a clickable link to create a new collection", () => {
     render(createElement(CollectionsListPage));
 
     const link = screen.getByRole("link", { name: /مجموعة جديدة/ });
     expect(link).toHaveAttribute("href", "/collections/new");
+  });
+
+  it("hides create and edit actions for read-only staff", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(CollectionsListPage));
+
+    expect(screen.queryByRole("link", { name: /مجموعة جديدة/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /مجموعة/ })).not.toBeInTheDocument();
+    expect(screen.getByText("مجموعة")).toBeInTheDocument();
+  });
+});
+
+describe("NewCollectionPage", () => {
+  it("shows a 403 state for staff without collections.create", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(NewCollectionPage));
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية إنشاء المجموعات.")).toBeInTheDocument();
   });
 });

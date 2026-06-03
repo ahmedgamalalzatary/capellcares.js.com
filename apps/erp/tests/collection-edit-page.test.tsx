@@ -14,6 +14,16 @@ vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
 }));
 
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
+}));
+
 vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("notFound");
@@ -87,8 +97,35 @@ vi.mock("@/lib/store", () => ({
 import EditCollectionPage from "@/app/collections/[id]/edit/page";
 
 describe("EditCollectionPage data plumbing", () => {
+  it("shows a 403 state for staff without collections.update", async () => {
+    apiGet.mockResolvedValue({ relatedItems: [] });
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    await act(async () => {
+      render(
+        createElement(
+          Suspense,
+          { fallback: null },
+          createElement(EditCollectionPage, { params: Promise.resolve({ id: "4" }) })
+        )
+      );
+    });
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية تعديل المجموعات.")).toBeInTheDocument();
+  });
+
   it("fetches existing related links and passes them plus options to the form", async () => {
     capturedProps = null;
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
     apiGet.mockResolvedValueOnce({ relatedItems: [{ type: "offer", id: 8 }] });
 
     await act(async () => {
@@ -118,6 +155,11 @@ describe("EditCollectionPage data plumbing", () => {
 
   it("renders the form in safe mode when existing related links fail to load", async () => {
     capturedProps = null;
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
     apiGet.mockRejectedValueOnce(new Error("boom"));
 
     await act(async () => {

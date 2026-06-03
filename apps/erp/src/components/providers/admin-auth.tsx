@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { API_BASE, setAdminAccessToken, setAdminAuthHydrated, setAdminAuthUser, type AdminAuthUser } from "@/lib/api/client";
+import { API_BASE, setAdminAccessToken, setAdminAuthHydrated, setAdminAuthUser, subscribeAdminSessionInvalidation, type AdminAuthUser } from "@/lib/api/client";
 interface AdminAuthValue {
   user: AdminAuthUser | null;
   hydrated: boolean;
@@ -66,6 +66,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => subscribeAdminSessionInvalidation(() => {
+    setUser(null);
+    setAdminAccessToken(null);
+    setAdminAuthUser(null);
+  }), []);
 
   useEffect(() => {
     setAdminAuthUser(user);

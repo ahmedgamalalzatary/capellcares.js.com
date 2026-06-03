@@ -236,7 +236,8 @@ describe("ProductsListPage", () => {
 
   it("submits gallery media separately from the dedicated hover image", async () => {
     const view = render(createElement(ProductForm, {
-      mode: "new",
+      mode: "edit",
+      initial: minimalProduct(1),
       categories: [{ id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
     }));
     const form = within(view.container);
@@ -276,7 +277,7 @@ describe("ProductsListPage", () => {
     const numericInputs = form.getAllByRole("spinbutton");
     fireEvent.change(numericInputs[1]!, { target: { value: "25" } });
     fireEvent.change(numericInputs[2]!, { target: { value: "4" } });
-    fireEvent.click(form.getByRole("button", { name: "حفظ المنتج" }));
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({
