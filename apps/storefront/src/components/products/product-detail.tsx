@@ -72,8 +72,8 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
   return (
     <>
     <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-[60px]">
-      <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-[140px]">
-        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
+      <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
+        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
           {activeMedia?.type === "video" ? (
             <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
               <track kind="captions" />
@@ -88,7 +88,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <button
               key={`${item.type}-${item.url}-${index}`}
               type="button"
-              className="aspect-square rounded-(--radius) border border-(--hairline) bg-(--surface) p-2 transition-colors hover:border-(--warm) data-[active=true]:border-(--accent)"
+              className="aspect-square rounded-(--radius) border border-(--hairline) bg-surface p-2 transition-colors hover:border-warm data-[active=true]:border-(--accent)"
               data-active={activeMediaIndex === index}
               aria-label={`view ${index + 1}`}
               onClick={() => setActiveMediaIndex(index)}
@@ -108,8 +108,8 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
       <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
         <div className="grid gap-3">
           <h1 className={lang === "ar"
-            ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(--font-ar) leading-[1.2] tracking-normal text-(--ink)"
-            : "m-0 text-[clamp(32px,3.4vw,48px)] italic font-(--font-display) leading-[1.05] tracking-[-0.01em] text-(--ink)"}>
+            ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
+            : "m-0 text-[clamp(32px,3.4vw,48px)] italic font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(product.name, lang)}
           </h1>
           {(isNew || isBestseller || offers.length > 0) && (
@@ -125,12 +125,12 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
           )}
         </div>
 
-        <p className="max-w-[60ch] text-[15px] leading-[1.75] text-(--ink-2)">{pickLang(product.description, lang)}</p>
+        <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(product.description, lang)}</p>
 
         <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
           <span className={lang === "ar"
-            ? "text-[30px] font-bold font-(--font-ar) leading-none text-(--accent) sm:text-[36px]"
-            : "text-[32px] italic font-(--font-display) leading-none text-(--accent) sm:text-[40px]"}>
+            ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
+            : "text-3xl italic font-(--font-display) leading-none text-accent sm:text-[40px]"}>
             {formatPrice(variant.price, lang)}
           </span>
           {isOutOfStock ? (
@@ -143,7 +143,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
         </div>
 
         <div className="grid gap-2">
-          <div className="eyebrow !text-(--ink-3) !opacity-100">
+          <div className="eyebrow text-(--ink-3)! !opacity-100">
             {dict.product.selectSize}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -152,37 +152,37 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
                 key={item.id}
                 className={[
                   "grid min-w-[112px] gap-0.5 rounded-(--radius) border px-4 py-3 text-start transition-colors",
-                  item.stock > 0 ? "hover:border-(--warm) hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
-                  variantId === item.id ? "border-(--accent) bg-(--accent-soft) text-(--ink)" : "border-(--hairline) bg-(--surface) text-(--ink-2)"
+                  item.stock > 0 ? "hover:border-warm hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
+                  variantId === item.id ? "border-(--accent) bg-(--accent-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                 ].join(" ")}
                 data-active={variantId === item.id}
                 data-out={item.stock === 0 ? "true" : undefined}
                 onClick={() => item.stock > 0 && setVariantId(item.id)}
                 disabled={item.stock === 0}
               >
-                <span className="text-[14px] font-medium">{item.size}</span>
-                <span className="text-[12px] opacity-80">{formatPrice(item.price, lang)}</span>
+                <span className="text-sm font-medium">{item.size}</span>
+                <span className="text-xs opacity-80">{formatPrice(item.price, lang)}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div className="grid gap-2">
-          <div className="eyebrow !text-(--ink-3) !opacity-100">
+          <div className="eyebrow text-(--ink-3)! !opacity-100">
             {dict.common.quantity}
           </div>
-          <div className="inline-grid grid-cols-[40px_64px_40px] items-center rounded-(--radius-pill) border border-(--hairline) bg-(--surface)">
+          <div className="inline-grid grid-cols-[40px_64px_40px] items-center rounded-(--radius-pill) border border-(--hairline) bg-surface">
             <button
-              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-(--ink) disabled:opacity-30"
+              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-ink disabled:opacity-30"
               onClick={() => setQty((value) => Math.max(1, value - 1))}
               aria-label="−"
               disabled={qty <= 1}
             >
               <Icon.Minus />
             </button>
-            <span className="text-center text-[15px] font-semibold text-(--ink)">{qty}</span>
+            <span className="text-center text-base font-semibold text-ink">{qty}</span>
             <button
-              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-(--ink) disabled:opacity-30"
+              className="grid h-11 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:text-ink disabled:opacity-30"
               onClick={() => setQty((value) => Math.min(variant.stock || 1, value + 1))}
               aria-label="+"
               disabled={qty >= variant.stock}
@@ -213,21 +213,21 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
                 <button
                   key={item.key}
                   className={[
-                    "relative mx-0 me-2 shrink-0 whitespace-nowrap border-0 bg-transparent px-1.5 py-3.5 text-[14px] transition-colors",
-                    active ? "text-(--ink) font-semibold" : "text-(--ink-3) hover:text-(--ink-2)"
+                    "relative mx-0 me-2 shrink-0 whitespace-nowrap border-0 bg-transparent px-1.5 py-3.5 text-sm transition-colors",
+                    active ? "text-ink font-semibold" : "text-(--ink-3) hover:text-(--ink-2)"
                   ].join(" ")}
                   data-active={active}
                   onClick={() => setTab(item.key)}
                 >
                   {item.label}
-                  {active && <span className="absolute inset-x-0 -bottom-px h-[2px] bg-(--accent)" />}
+                  {active && <span className="absolute inset-x-0 -bottom-px h-[2px] bg-accent" />}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="min-h-20 max-w-[65ch] text-[15px] leading-[1.85] text-(--ink-2)">
+        <div className="min-h-20 max-w-[65ch] text-base leading-[1.85] text-(--ink-2)">
           {tabs.find((item) => item.key === tab)?.content}
         </div>
       </div>

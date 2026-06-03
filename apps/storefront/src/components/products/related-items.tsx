@@ -34,8 +34,8 @@ export function RelatedItems({ items, lang, title }: Props) {
     <section className="grid gap-4 border-t border-(--hairline) py-6 sm:py-8" data-testid="related-items">
       {title && (
         <h2 className={lang === "ar"
-          ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(--font-ar) text-(--ink)"
-          : "m-0 text-[clamp(22px,2.4vw,30px)] italic font-(--font-display) text-(--ink)"}>
+          ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
+          : "m-0 text-[clamp(22px,2.4vw,30px)] italic font-(--font-display) text-ink"}>
           {title}
         </h2>
       )}
@@ -44,7 +44,7 @@ export function RelatedItems({ items, lang, title }: Props) {
           <div className="related-item" data-testid="related-item" key={`${item.type}-${item.id}`}>
             <Link
               href={hrefFor(item, lang)}
-              className="group grid overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--warm) hover:shadow-(--shadow-2)"
+              className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
             >
               <div className="relative aspect-4/5 overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
                 {item.type === "offer" ? (
@@ -64,20 +64,20 @@ export function RelatedItems({ items, lang, title }: Props) {
                     className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
-                <span className="absolute top-3 start-3 rounded-full bg-(--surface) px-2.5 py-1 text-[11px] font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                <span className="absolute top-3 inset-s-3 rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
                   {itemTypeLabel(item, lang)}
                 </span>
               </div>
               <div className="grid gap-2 p-4 sm:p-5">
                 <h3 className={lang === "ar"
-                  ? "m-0 text-[15px] font-bold font-(--font-ar) leading-[1.25] text-(--ink)"
-                  : "m-0 text-[17px] italic font-(--font-display) leading-[1.15] text-(--ink)"}>
+                  ? "m-0 text-base font-bold font-(family-name:--font-ar) leading-tight text-ink"
+                  : "m-0 text-[17px] italic font-(--font-display) leading-[1.15] text-ink"}>
                   {pickLang(item.name, lang)}
                 </h3>
                 <div className="mt-1 flex items-end gap-2 border-t border-(--hairline) pt-3">
                   <span className={lang === "ar"
-                    ? "text-[18px] font-bold font-(--font-ar) leading-none text-(--accent)"
-                    : "text-[20px] italic font-(--font-display) leading-none text-(--accent)"}>
+                    ? "text-lg font-bold font-(family-name:--font-ar) leading-none text-accent"
+                    : "text-xl italic font-(--font-display) leading-none text-accent"}>
                     {formatPrice(item.price, lang)}
                   </span>
                 </div>

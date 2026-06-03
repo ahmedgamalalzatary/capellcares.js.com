@@ -54,30 +54,30 @@ export function CollectionDetail({
 
   return (
     <>
-      <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-[64px]">
-        <div className="relative overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
-          <div className="absolute end-4 top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-(--accent) px-3 py-1.5 text-[11px] tracking-[0.16em] text-(--canvas) uppercase sm:end-5 sm:top-5">
+      <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-16">
+        <div className="relative overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
+          <div className="absolute inset-e-4 top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] text-canvas uppercase sm:inset-e-5 sm:top-5">
             ★ {dict.collections.badge}
           </div>
-          <CollectionIllustration collection={collection} lang={lang} className="min-h-[260px] w-full sm:min-h-[360px] lg:min-h-[420px]" />
+          <CollectionIllustration collection={collection} lang={lang} className="min-h-65 w-full sm:min-h-90 lg:min-h-105" />
         </div>
 
         <div className="grid gap-5 self-start sm:gap-6">
-          <span className="eyebrow !text-(--accent)">{dict.collections.collectionEyebrow}</span>
+          <span className="eyebrow text-accent!">{dict.collections.collectionEyebrow}</span>
           <h1 className={`m-0 leading-[1.05] ${isAr
-            ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(--font-ar) tracking-normal text-(--ink)"
-            : "text-[clamp(30px,3.4vw,46px)] italic font-(--font-display) tracking-[-0.01em] text-(--ink)"}`}>
+            ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(family-name:--font-ar) tracking-normal text-ink"
+            : "text-[clamp(30px,3.4vw,46px)] italic font-(--font-display) tracking-[-0.01em] text-ink"}`}>
             {pickLang(collection.name, lang)}
           </h1>
-          <p className="max-w-[60ch] text-[15px] leading-[1.75] text-(--ink-2)">{pickLang(collection.description, lang)}</p>
+          <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(collection.description, lang)}</p>
           {category && (
-            <div className="text-[13px] text-(--ink-3)">{dict.collections.categoryLabel}: {pickLang(category.name, lang)}</div>
+            <div className="text-sm text-(--ink-3)">{dict.collections.categoryLabel}: {pickLang(category.name, lang)}</div>
           )}
 
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
-            <span className={`leading-none text-(--accent) ${isAr
-              ? "text-[30px] font-bold font-(--font-ar) sm:text-[36px]"
-              : "text-[32px] italic font-(--font-display) sm:text-[40px]"}`}>
+            <span className={`leading-none text-accent ${isAr
+              ? "text-3xl font-bold font-(family-name:--font-ar) sm:text-[36px]"
+              : "text-3xl italic font-(--font-display) sm:text-[40px]"}`}>
               {formatPrice(collection.price, lang)}
             </span>
             {savings > 0 && (
@@ -89,22 +89,22 @@ export function CollectionDetail({
           </div>
 
           <div className="grid gap-3">
-            <div className="eyebrow !text-(--ink-3)">{dict.collections.itemsLabel}</div>
+            <div className="eyebrow text-(--ink-3)!">{dict.collections.itemsLabel}</div>
             <div className="grid gap-2">
               {items.map((item) => (
                 <Link
                   key={`${item.product.id}-${item.variantId}`}
                   href={`/${lang}/products/${item.product.slug}`}
-                  className="grid grid-cols-[68px_1fr_auto] items-center gap-4 rounded-(--radius) border border-(--hairline) bg-(--surface) p-3 transition-colors hover:border-(--warm) hover:bg-(--warm-soft)"
+                  className="grid grid-cols-[68px_1fr_auto] items-center gap-4 rounded-(--radius) border border-(--hairline) bg-surface p-3 transition-colors hover:border-warm hover:bg-(--warm-soft)"
                 >
-                  <div className="h-[68px] w-[68px] overflow-hidden rounded-[10px] bg-(--warm-soft)">
+                  <div className="h-17 w-17 overflow-hidden rounded-md bg-(--warm-soft)">
                     <ProductIllustration product={item.product} className="h-full w-full" />
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-(--ink)">{pickLang(item.product.name, lang)}</div>
-                    <div className="mt-0.5 text-[13px] text-(--ink-3)">{item.size} · ×{item.qty}</div>
+                    <div className="truncate font-medium text-ink">{pickLang(item.product.name, lang)}</div>
+                    <div className="mt-0.5 text-sm text-(--ink-3)">{item.size} · ×{item.qty}</div>
                   </div>
-                  <div className="ms-auto text-[14px] text-(--ink)">{formatPrice(item.unitPrice * item.qty, lang)}</div>
+                  <div className="ms-auto text-sm text-ink">{formatPrice(item.unitPrice * item.qty, lang)}</div>
                 </Link>
               ))}
             </div>
@@ -120,7 +120,7 @@ export function CollectionDetail({
           </div>
 
           {!inStock && (
-            <p className="rounded-(--radius) bg-[color-mix(in_oklch,var(--error)_10%,transparent)] px-4 py-3 text-[13px] text-(--error)">
+            <p className="rounded-(--radius) bg-[color-mix(in_oklch,var(--error)_10%,transparent)] px-4 py-3 text-sm text-(--error)">
               {dict.collections.unavailable}
             </p>
           )}

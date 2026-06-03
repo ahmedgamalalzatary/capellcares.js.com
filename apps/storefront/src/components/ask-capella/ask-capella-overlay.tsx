@@ -33,10 +33,10 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-(--font-display) italic text-[16px] leading-none text-white">
+            <p className="font-(--font-display) italic text-base leading-none text-white">
               {dict.ask.assistantName}
             </p>
-            <p className="mt-0.5 text-[11px] text-white/70">
+            <p className="mt-0.5 text-xs text-white/70">
               {dict.ask.assistant}
             </p>
           </div>
@@ -54,7 +54,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {/* Welcome */}
           <CapellaBubble initial={avatarInitial}>
-            <p className="text-[13.5px] leading-[1.65] text-(--ink-2)">
+            <p className="text-sm leading-[1.65] text-(--ink-2)">
               {dict.ask.welcome}
             </p>
           </CapellaBubble>
@@ -98,7 +98,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
               onChange={(e) => setInput(e.target.value)}
               placeholder={dict.ask.typeMessage}
               disabled={pending}
-              className="min-w-0 flex-1 border-0 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-(--ink-3) disabled:opacity-50"
+              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-ink outline-none placeholder:text-(--ink-3) disabled:opacity-50"
             />
             <button
               type="submit"
@@ -134,7 +134,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="max-w-[75%] rounded-[18px_18px_4px_18px] bg-accent px-4 py-2.5 text-[13.5px] leading-[1.6] text-white">
+      <div className="max-w-[75%] rounded-[18px_18px_4px_18px] bg-accent px-4 py-2.5 text-sm leading-[1.6] text-white">
         {text}
       </div>
     </div>
@@ -144,7 +144,7 @@ function UserBubble({ text }: { text: string }) {
 function CapellaBubble({ children, initial }: { children: ReactNode; initial: string }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-warm text-[11px] text-white font-bold">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-warm text-xs text-white font-bold">
         {initial}
       </div>
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">

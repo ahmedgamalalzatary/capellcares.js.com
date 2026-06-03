@@ -82,7 +82,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           qty: l.qty,
           slug: `/${lang}/collections/${collection.slug}`,
           illustration: (
-            <div className="grid h-full w-full place-items-center text-[11px] font-semibold text-(--ink-2)">
+            <div className="grid h-full w-full place-items-center text-xs font-semibold text-(--ink-2)">
               {lang === "ar" ? "مجموعة" : "Collection"}
             </div>
           )
@@ -95,16 +95,16 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (resolved.length === 0) {
     return (
-      <div className="mx-auto my-10 grid max-w-[460px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-16">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-(--warm-soft) text-(--ink)">
+      <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-16">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-(--warm-soft) text-ink">
           <Icon.Cart size={26} />
         </div>
         <h1 className={`m-0 leading-[1.1] ${lang === "ar"
-          ? "text-[28px] font-bold font-(--font-ar) text-(--ink)"
-          : "text-[32px] italic font-(--font-display) text-(--ink)"}`}>
+          ? "text-3xl font-bold font-(family-name:--font-ar) text-ink"
+          : "text-3xl italic font-(--font-display) text-ink"}`}>
           {dict.cart.empty}
         </h1>
-        <p className="max-w-[34ch] text-[14.5px] leading-[1.7] text-(--ink-2)">
+        <p className="max-w-[34ch] text-sm leading-[1.7] text-(--ink-2)">
           {lang === "ar" ? "ابدئي رحلتك مع كابيلا اليوم. اختاري قطعةً واحدة وستفعل عجائب." : "Pick one calm, considered piece. Let it do the work."}
         </p>
         <Link href={`/${lang}/products`} className="btn btn--primary btn--lg mt-2">
@@ -121,8 +121,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           <thead>
             <tr>
               <th>{dict.cart.item}</th>
-              <th className="w-[140px]">{dict.cart.qty}</th>
-              <th className="w-[120px] text-end">{dict.cart.price}</th>
+              <th className="w-35">{dict.cart.qty}</th>
+              <th className="w-30 text-end">{dict.cart.price}</th>
               <th className="w-12"></th>
             </tr>
           </thead>
@@ -131,17 +131,17 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
               <tr key={r.key}>
                 <td>
                   <Link href={r.slug} className="flex items-center gap-3 sm:gap-3.5">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-[10px] bg-(--warm-soft) sm:h-16 sm:w-16">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft) sm:h-16 sm:w-16">
                       {r.illustration}
                     </div>
                     <div className="min-w-0">
                       <div className="truncate font-semibold">{r.title}</div>
-                      <div className="text-[12px] text-(--ink-2) sm:text-sm">{r.meta}</div>
+                      <div className="text-xs text-(--ink-2) sm:text-sm">{r.meta}</div>
                     </div>
                   </Link>
                 </td>
                 <td>
-                  <div className="inline-grid grid-cols-[32px_40px_32px] items-center rounded-full border border-(--hairline) bg-(--surface)">
+                  <div className="inline-grid grid-cols-[32px_40px_32px] items-center rounded-full border border-(--hairline) bg-surface">
                     <button
                       className="grid h-8 place-items-center rounded-full border-0 bg-transparent"
                       onClick={() => setQty(r.key, r.qty - 1)}
@@ -175,28 +175,28 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         </table>
       </div>
 
-      <aside className="self-start rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-[140px]">
-        <span className="eyebrow !text-(--ink-3)">{lang === "ar" ? "الفاتورة" : "Summary"}</span>
+      <aside className="self-start rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
+        <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "الفاتورة" : "Summary"}</span>
         <div className={`mt-1 ${lang === "ar"
-          ? "text-[22px] font-bold font-(--font-ar) text-(--ink)"
-          : "text-[26px] italic font-(--font-display) text-(--ink)"}`}>
+          ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
+          : "text-2xl italic font-(--font-display) text-ink"}`}>
           {lang === "ar" ? "ملخّص الطلب" : "Your order"}
         </div>
         <div className="my-5 h-px bg-(--hairline)" />
-        <div className="flex items-center justify-between py-1.5 text-[14px]">
+        <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-(--ink-2)">{dict.common.subtotal}</span>
-          <span className="text-(--ink)">{formatPrice(subtotal, lang)}</span>
+          <span className="text-ink">{formatPrice(subtotal, lang)}</span>
         </div>
-        <div className="flex items-center justify-between py-1.5 text-[14px]">
+        <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
-          <span className="text-[13px] text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
+          <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
         </div>
         <div className="my-5 h-px bg-(--hairline)" />
         <div className="flex items-end justify-between pt-1">
-          <span className="text-[15px] font-medium text-(--ink-2)">{dict.common.total}</span>
-          <span className={`text-(--accent) leading-none ${lang === "ar"
-            ? "text-[26px] font-bold font-(--font-ar)"
-            : "text-[28px] italic font-(--font-display)"}`}>
+          <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
+          <span className={`text-accent leading-none ${lang === "ar"
+            ? "text-2xl font-bold font-(family-name:--font-ar)"
+            : "text-3xl italic font-(--font-display)"}`}>
             {formatPrice(subtotal, lang)}
           </span>
         </div>
@@ -206,7 +206,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         <Link href={`/${lang}/products`} className="btn btn--ghost btn--block mt-2">
           {dict.cart.keepShopping}
         </Link>
-        <div className="mt-5 flex items-center gap-2 text-[12px] text-(--ink-3)">
+        <div className="mt-5 flex items-center gap-2 text-xs text-(--ink-3)">
           <Icon.Check size={14} />
           <span>{lang === "ar" ? "الدفع عند الاستلام · شحن للقاهرة والجيزة" : "Cash on delivery · Cairo & Giza shipping"}</span>
         </div>

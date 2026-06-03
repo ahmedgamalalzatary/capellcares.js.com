@@ -43,16 +43,16 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (!user || authRequired) {
     return (
-      <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-        <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--accent-soft) text-(--accent)">
+      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-19 w-19 place-items-center rounded-full bg-(--accent-soft) text-accent">
           <Icon.User size={32} />
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
-          ? "text-[26px] font-bold font-(--font-ar) text-(--ink)"
-          : "text-[30px] italic font-(--font-display) text-(--ink)"}`}>
+          ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
+          : "text-3xl italic font-(--font-display) text-ink"}`}>
           {dict.orders.loginRequired}
         </h2>
-        <p className="max-w-[44ch] text-[14.5px] leading-[1.7] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
+        <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
         <Link href={`/${lang}/login`} className="btn btn--primary btn--lg mt-1">
           {dict.wishlist.goLogin}
         </Link>
@@ -64,16 +64,16 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (orders.length === 0) {
     return (
-      <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-        <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--warm-soft) text-(--ink)">
+      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-19 w-19 place-items-center rounded-full bg-(--warm-soft) text-ink">
           <Icon.Cart size={32} />
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
-          ? "text-[24px] font-bold font-(--font-ar) text-(--ink)"
-          : "text-[28px] italic font-(--font-display) text-(--ink)"}`}>
+          ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
+          : "text-3xl italic font-(--font-display) text-ink"}`}>
           {dict.orders.empty}
         </h2>
-        <p className="text-[14px] text-(--ink-2)">{dict.orders.startShopping}</p>
+        <p className="text-sm text-(--ink-2)">{dict.orders.startShopping}</p>
         <Link href={`/${lang}/products`} className="btn btn--primary mt-1">
           {dict.cart.keepShopping}
         </Link>
@@ -90,7 +90,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   };
 
   return (
-    <div className="mb-16 overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) shadow-(--shadow-1) sm:mb-20">
+    <div className="mb-16 overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1) sm:mb-20">
      <div className="overflow-x-auto">
       <table className="table">
         <thead>
@@ -105,9 +105,9 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
         <tbody>
           {orders.map((order) => (
             <tr key={order.id}>
-              <td className="font-mono text-[13px] text-(--ink)">{order.orderCode}</td>
+              <td className="font-mono text-sm text-ink">{order.orderCode}</td>
               <td><span className={`chip ${statusChip(order.paymentStatus)}`}>{order.paymentStatus}</span></td>
-              <td className="text-(--ink)">{order.totalAmount}</td>
+              <td className="text-ink">{order.totalAmount}</td>
               <td className="text-(--ink-2)">{new Date(order.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
               <td className="text-end">
                 <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost btn--sm">

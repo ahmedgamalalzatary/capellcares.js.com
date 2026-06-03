@@ -47,14 +47,14 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
   };
 
   return (
-    <div className="mx-auto my-16 max-w-[480px] rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-10 shadow-(--shadow-1) max-[640px]:my-10 max-[640px]:p-6">
-      <span className="eyebrow !text-(--accent)">{lang === "ar" ? "كابيلا كير" : "Capella Care"}</span>
+    <div className="mx-auto my-16 max-w-120 rounded-lg border border-(--hairline) bg-surface p-10 shadow-(--shadow-1) max-[640px]:my-10 max-[640px]:p-6">
+      <span className="eyebrow text-accent!">{lang === "ar" ? "كابيلا كير" : "Capella Care"}</span>
       <h1 className={`mt-3 m-0 leading-[1.1] ${lang === "ar"
-        ? "text-[30px] font-bold font-(--font-ar) text-(--ink)"
-        : "text-[34px] italic font-(--font-display) text-(--ink)"}`}>
+        ? "text-3xl font-bold font-(family-name:--font-ar) text-ink"
+        : "text-[34px] italic font-(--font-display) text-ink"}`}>
         {mode === "login" ? dict.auth.loginTitle : dict.auth.signupTitle}
       </h1>
-      <p className="mt-3 text-[14.5px] leading-[1.7] text-(--ink-2)">
+      <p className="mt-3 text-sm leading-[1.7] text-(--ink-2)">
         {mode === "login"
           ? lang === "ar"
             ? "أهلاً بعودتك. سجّلي الدخول لمتابعة رحلتك مع كابيلا."
@@ -109,11 +109,11 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       <div className="mt-6 text-center text-sm text-(--ink-2)">
         {mode === "login" ? (
           <>
-            {dict.auth.noAccount} <Link href={`/${lang}/signup`} className="font-semibold text-(--accent) underline-offset-4 hover:underline">{dict.auth.signupHere}</Link>
+            {dict.auth.noAccount} <Link href={`/${lang}/signup`} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.signupHere}</Link>
           </>
         ) : (
           <>
-            {dict.auth.haveAccount} <Link href={`/${lang}/login`} className="font-semibold text-(--accent) underline-offset-4 hover:underline">{dict.auth.loginHere}</Link>
+            {dict.auth.haveAccount} <Link href={`/${lang}/login`} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.loginHere}</Link>
           </>
         )}
       </div>

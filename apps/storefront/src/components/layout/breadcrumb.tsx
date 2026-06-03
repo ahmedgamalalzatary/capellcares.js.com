@@ -19,12 +19,12 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
             {item.href && !isLast ? (
               <Link
                 href={item.href}
-                className="transition-colors hover:text-(--accent)"
+                className="transition-colors hover:text-accent"
               >
                 {item.label}
               </Link>
             ) : (
-              <span className={isLast ? "text-(--ink)" : ""}>{item.label}</span>
+              <span className={isLast ? "text-ink" : ""}>{item.label}</span>
             )}
             {!isLast && (
               <Icon.Chevron size={11} className="arrow-flip opacity-60" />

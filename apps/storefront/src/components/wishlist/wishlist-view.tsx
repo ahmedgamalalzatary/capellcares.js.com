@@ -13,16 +13,16 @@ function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
   isAr: boolean; icon: React.ReactNode; title: string; desc: string; ctaHref: string; ctaLabel: string;
 }) {
   return (
-    <div className="mx-auto my-10 grid max-w-[480px] place-items-center gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-      <div className="grid h-[76px] w-[76px] place-items-center rounded-full bg-(--accent-soft) text-(--accent)">
+    <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+      <div className="grid h-19 w-19 place-items-center rounded-full bg-(--accent-soft) text-accent">
         {icon}
       </div>
       <h2 className={`m-0 leading-[1.1] ${isAr
-        ? "text-[26px] font-bold font-(--font-ar) text-(--ink)"
-        : "text-[30px] italic font-(--font-display) text-(--ink)"}`}>
+        ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
+        : "text-3xl italic font-(--font-display) text-ink"}`}>
         {title}
       </h2>
-      <p className="max-w-[44ch] text-[14.5px] leading-[1.7] text-(--ink-2)">{desc}</p>
+      <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{desc}</p>
       <Link href={ctaHref} className="btn btn--primary mt-1">{ctaLabel}</Link>
     </div>
   );

@@ -41,7 +41,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow !text-(--accent)">{lang === "ar" ? "باقات كابيلا" : "Capella bundles"}</span>
+        <span className="eyebrow text-accent!">{lang === "ar" ? "باقات كابيلا" : "Capella bundles"}</span>
         <h1>{dict.offers.title}</h1>
         <p className="max-w-[62ch] text-(--ink-2)">
           {lang === "ar"
@@ -61,33 +61,33 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
               <Link
                 key={offer.id}
                 href={`/${lang}/offers/${offer.slug}`}
-                className="group grid overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-(--surface) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--warm) hover:shadow-(--shadow-2)"
+                className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
               >
                 <div className="relative aspect-16/10 bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
                   <OfferIllustration offer={offer} className="h-full w-full" />
-                  <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-(--accent) px-3 py-1.5 text-[10px] tracking-[0.16em] uppercase text-(--canvas) start-4">
+                  <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4">
                     ★ {dict.offers.badge}
                   </span>
                 </div>
 
                 <div className="grid gap-3 p-5 sm:p-6">
                   <h3 className={`m-0 leading-[1.15] ${isAr
-                    ? "text-[22px] font-bold font-(--font-ar) text-(--ink)"
-                    : "text-[26px] italic font-(--font-display) text-(--ink)"}`}>
+                    ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
+                    : "text-2xl italic font-(--font-display) text-ink"}`}>
                     {pickLang(offer.name, lang)}
                   </h3>
-                  <p className="line-clamp-2 text-[13.5px] leading-[1.65] text-(--ink-2)">
+                  <p className="line-clamp-2 text-sm leading-[1.65] text-(--ink-2)">
                     {pickLang(offer.description, lang)}
                   </p>
                   <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
-                    <span className={`leading-none text-(--accent) ${isAr
-                      ? "text-[24px] font-bold font-(--font-ar)"
-                      : "text-[26px] italic font-(--font-display)"}`}>
+                    <span className={`leading-none text-accent ${isAr
+                      ? "text-2xl font-bold font-(family-name:--font-ar)"
+                      : "text-2xl italic font-(--font-display)"}`}>
                       {formatPrice(offer.price, lang)}
                     </span>
                     {savings > 0 && (
                       <>
-                        <span className="text-[13px] text-(--ink-3) line-through">
+                        <span className="text-sm text-(--ink-3) line-through">
                           {formatPrice(offer.originalTotal, lang)}
                         </span>
                         <span className="chip chip--accent">

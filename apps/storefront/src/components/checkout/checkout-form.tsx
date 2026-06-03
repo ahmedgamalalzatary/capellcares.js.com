@@ -65,19 +65,19 @@ export function CheckoutForm({
       <Section title={dict.checkout.payment}>
         <div className="grid gap-2.5">
           <label
-            className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-(--surface) px-4 py-3.5"
+            className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-surface px-4 py-3.5"
             data-active={form.paymentMethod === "cod"}
           >
             <input type="radio" name="pay" value="cod" aria-label={dict.checkout.cod} checked={form.paymentMethod === "cod"} onChange={() => setField("paymentMethod", "cod")} />
             <div>
               <div className="font-semibold">{dict.checkout.cod}</div>
-              <div className="text-[13px] text-(--ink-2)">{dict.checkout.codDesc}</div>
+              <div className="text-sm text-(--ink-2)">{dict.checkout.codDesc}</div>
             </div>
           </label>
         </div>
       </Section>
 
-      {errors.submit && <span className="text-[13px] text-(--danger)">{errors.submit}</span>}
+      {errors.submit && <span className="text-sm text-(--danger)">{errors.submit}</span>}
 
       <button type="submit" className="btn btn--primary btn--block h-[52px]" disabled={placing}>
         {placing ? dict.common.loading : dict.checkout.placeOrder}
@@ -88,8 +88,8 @@ export function CheckoutForm({
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="grid gap-4 rounded-(--radius-lg) border border-(--hairline) bg-(--surface) p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
-      <h2 className="m-0 text-[18px] font-medium tracking-[-0.005em] text-(--ink) sm:text-[20px]">{title}</h2>
+    <section className="grid gap-4 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
+      <h2 className="m-0 text-lg font-medium tracking-[-0.005em] text-ink sm:text-xl">{title}</h2>
       {children}
     </section>
   );
@@ -112,7 +112,7 @@ function Field({
         {label}
         {children}
       </label>
-      {error && <span className="text-[12px] text-(--danger)">{error}</span>}
+      {error && <span className="text-xs text-(--danger)">{error}</span>}
     </div>
   );
 }
