@@ -349,7 +349,6 @@ describe("ERP store", () => {
     apiGet
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
 
     const { getStore } = await import("@/lib/store");

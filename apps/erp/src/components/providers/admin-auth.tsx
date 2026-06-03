@@ -23,10 +23,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       const raw = sessionStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<AdminAuthUser>;
+        const role = parsed.role === "admin" || parsed.role === "staff" ? parsed.role : "staff";
         setUser({
           name: parsed.name ?? "",
           email: parsed.email ?? "",
-          role: parsed.role === "staff" ? "staff" : "admin",
+          role,
           permissionKeys: Array.isArray(parsed.permissionKeys) ? parsed.permissionKeys : []
         });
       }

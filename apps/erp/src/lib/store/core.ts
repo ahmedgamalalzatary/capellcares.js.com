@@ -67,6 +67,15 @@ export class ErpStore {
     this.listeners.forEach((l) => l());
   }
 
+  private createEmptySales(): SalesAnalytics {
+    return {
+      summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
+      productTotals: [],
+      variantTotals: [],
+      orders: []
+    };
+  }
+
   async refetch() {
     const reqId = ++this.latestRefetchId;
     this.loading = true;
@@ -85,12 +94,7 @@ export class ErpStore {
       this.offers = [];
       this.advices = [];
       this.orders = [];
-      this.sales = {
-        summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
-        productTotals: [],
-        variantTotals: [],
-        orders: []
-      };
+      this.sales = this.createEmptySales();
       results.forEach((result, index) => {
         requests[index]?.assign(result, this);
       });
@@ -220,8 +224,14 @@ export class ErpStore {
       },
       canRead("sales.read") && {
         load: () => api.get<SalesAnalytics>("/api/erp/sales"),
-        assign: (result: SalesAnalytics, store: ErpStore) => {
-          store.sales = result;
+        assign: (result: Partial<SalesAnalytics>, store: ErpStore) => {
+          const emptySales = store.createEmptySales();
+          store.sales = {
+            summary: result.summary ?? emptySales.summary,
+            productTotals: result.productTotals ?? emptySales.productTotals,
+            variantTotals: result.variantTotals ?? emptySales.variantTotals,
+            orders: result.orders ?? emptySales.orders
+          };
         }
       }
     ].filter(Boolean) as Array<{

@@ -24,21 +24,6 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
   const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
 
-  if (!canReadErpModule(user, "offers")) {
-    return (
-      <AdminShell title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
-      </AdminShell>
-    );
-  }
-
-  if (!canUpdateErpModule(user, "offers")) {
-    return (
-      <AdminShell title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل العروض." />
-      </AdminShell>
-    );
-  }
   useEffect(() => {
     let active = true;
     setRelatedItems(null);
@@ -57,6 +42,22 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
       active = false;
     };
   }, [id]);
+
+  if (!canReadErpModule(user, "offers")) {
+    return (
+      <AdminShell title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
+      </AdminShell>
+    );
+  }
+
+  if (!canUpdateErpModule(user, "offers")) {
+    return (
+      <AdminShell title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية تعديل العروض." />
+      </AdminShell>
+    );
+  }
 
   if (!loaded) {
     return (
