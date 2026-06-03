@@ -130,9 +130,11 @@ export function StaffEditorForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Re-sync only when the target record/mode changes, not on every parent
+  // re-render (initialValues is a fresh object each render at the call sites).
   useEffect(() => {
     setForm(initialValues);
-  }, [initialValues]);
+  }, [staffId, mode]);
 
   useEffect(() => {
     let active = true;

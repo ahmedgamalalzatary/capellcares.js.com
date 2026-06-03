@@ -6,23 +6,20 @@ import { type StaffUser } from "@/components/admin/staff-editor-form";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { api } from "@/lib/api/client";
-import { getErrorMessage } from "@/lib/errors";
 import { Icon } from "@/components/ui/icons";
 
 export default function StaffManagementPage() {
   const { user, hydrated } = useAdminAuth();
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   async function loadStaffManagement() {
     setLoading(true);
-    setError(null);
     try {
       const staffResponse = await api.get<{ items: StaffUser[] }>("/api/erp/staff");
       setStaffUsers(staffResponse.items);
-    } catch (loadError) {
-      setError(getErrorMessage(loadError));
+    } catch {
+      setStaffUsers([]);
     } finally {
       setLoading(false);
     }

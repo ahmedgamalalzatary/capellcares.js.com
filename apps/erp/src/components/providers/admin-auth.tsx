@@ -67,11 +67,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  useEffect(() => subscribeAdminSessionInvalidation(() => {
-    setUser(null);
-    setAdminAccessToken(null);
-    setAdminAuthUser(null);
-  }), []);
+  useEffect(() => {
+    const unsubscribe = subscribeAdminSessionInvalidation(() => {
+      setUser(null);
+      setAdminAccessToken(null);
+      setAdminAuthUser(null);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     setAdminAuthUser(user);
