@@ -54,8 +54,8 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                 enError={errors.nameEn}
               />
               <div className="field">
-                <label>سعر الباقة (جنيه)</label>
-                <input className="input" type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                <label htmlFor="offer-price">سعر الباقة (جنيه)</label>
+                <input id="offer-price" className="input" type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
                 {errors.price && <span className="field-error">{errors.price}</span>}
               </div>
             </div>

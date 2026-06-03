@@ -65,15 +65,15 @@ export function CollectionForm({
                 enError={errors.nameEn}
               />
               <div className="field">
-                <label>السعر (جنيه)</label>
-                <input className="input" type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                <label htmlFor="collection-price">السعر (جنيه)</label>
+                <input id="collection-price" className="input" type="number" min="0" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
                 {errors.price && <span className="field-error">{errors.price}</span>}
               </div>
             </div>
 
             <div className="field">
-              <label>القسم</label>
-              <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+              <label htmlFor="collection-category">القسم</label>
+              <CategoryPicker id="collection-category" categories={categories} value={categoryId} onChange={setCategoryId} />
               {errors.categoryId && <span className="field-error">{errors.categoryId}</span>}
             </div>
 

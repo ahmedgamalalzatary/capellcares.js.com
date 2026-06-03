@@ -72,8 +72,9 @@ export function AdviceForm({ mode, initial }: Props) {
         <div className="card__body form-stack">
           <div className="editor-fields-2">
             <div className="field">
-              <label>العنوان بالعربية</label>
+              <label htmlFor="advice-title-ar">العنوان بالعربية</label>
               <input
+                id="advice-title-ar"
                 className="input"
                 placeholder="عنوان النصيحة"
                 value={form.title.ar}
@@ -81,8 +82,9 @@ export function AdviceForm({ mode, initial }: Props) {
               />
             </div>
             <div className="field">
-              <label>Title in English</label>
+              <label htmlFor="advice-title-en">Title in English</label>
               <input
+                id="advice-title-en"
                 className="input"
                 placeholder="Advice title"
                 value={form.title.en}
@@ -93,8 +95,9 @@ export function AdviceForm({ mode, initial }: Props) {
 
           <div className="editor-fields-2">
             <div className="field">
-              <label>الوصف بالعربية</label>
+              <label htmlFor="advice-desc-ar">الوصف بالعربية</label>
               <textarea
+                id="advice-desc-ar"
                 className="textarea"
                 rows={4}
                 placeholder="وصف النصيحة"
@@ -103,8 +106,9 @@ export function AdviceForm({ mode, initial }: Props) {
               />
             </div>
             <div className="field">
-              <label>Description in English</label>
+              <label htmlFor="advice-desc-en">Description in English</label>
               <textarea
+                id="advice-desc-en"
                 className="textarea"
                 rows={4}
                 placeholder="Advice description"
@@ -115,8 +119,9 @@ export function AdviceForm({ mode, initial }: Props) {
           </div>
 
           <div className="field">
-            <label>رابط يوتيوب أو إنستجرام</label>
+            <label htmlFor="advice-video-url">رابط يوتيوب أو إنستجرام</label>
             <input
+              id="advice-video-url"
               className="input"
               placeholder="https://…"
               value={form.videoUrl}
@@ -141,8 +146,9 @@ export function AdviceForm({ mode, initial }: Props) {
           <div className="card__head"><h3 className="card__title">الإعدادات</h3></div>
           <div className="card__body form-stack">
             <div className="field">
-              <label>الحالة</label>
+              <label htmlFor="advice-status">الحالة</label>
               <select
+                id="advice-status"
                 className="select"
                 value={form.status}
                 onChange={(e) => set("status", e.target.value as "active" | "inactive")}
@@ -152,8 +158,9 @@ export function AdviceForm({ mode, initial }: Props) {
               </select>
             </div>
             <div className="field">
-              <label>الترتيب</label>
+              <label htmlFor="advice-sort-order">الترتيب</label>
               <input
+                id="advice-sort-order"
                 className="input"
                 type="number"
                 value={form.sortOrder}

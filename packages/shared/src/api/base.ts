@@ -7,7 +7,7 @@ function deriveBrowserApiBase(): string {
 
   const { protocol, hostname, port } = window.location;
   if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `${protocol}//${hostname}:${port === "3001" || port === "3000" ? "4000" : "4000"}`;
+    return `${protocol}//${hostname}:4000`;
   }
 
   if (hostname.startsWith("api.")) {

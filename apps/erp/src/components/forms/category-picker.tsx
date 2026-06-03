@@ -7,10 +7,11 @@ interface Props {
   categories: Category[];
   value: number | null;
   onChange: (id: number | null) => void;
+  id?: string;
 }
 
 // Chained dropdowns that drill down to a leaf category.
-export function CategoryPicker({ categories, value, onChange }: Props) {
+export function CategoryPicker({ categories, value, onChange, id }: Props) {
   const byId = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const childrenOf = useMemo(() => {
     const m = new Map<number | null, Category[]>();
@@ -51,6 +52,7 @@ export function CategoryPicker({ categories, value, onChange }: Props) {
           return (
             <select
               key={depth}
+              id={depth === 0 ? id : undefined}
               className="select"
               value={selectedAtDepth}
               onChange={(e) => {

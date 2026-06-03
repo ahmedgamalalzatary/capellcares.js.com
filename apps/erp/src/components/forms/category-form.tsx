@@ -102,8 +102,8 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           enError={errors.nameEn}
         />
         <div className="field">
-          <label>القسم الأب (اختياري)</label>
-          <select className="select" value={parentId ?? ""} onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}>
+          <label htmlFor="category-parent">القسم الأب (اختياري)</label>
+          <select id="category-parent" className="select" value={parentId ?? ""} onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}>
             <option value="">— قسم رئيسي —</option>
             {parentOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
           </select>

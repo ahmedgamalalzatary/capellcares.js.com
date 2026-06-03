@@ -28,8 +28,8 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
   const auth = useAuth();
   const { isNew, isBestseller } = getProductBadgeState(product);
 
-  const inStockVariants = product.variants.filter((variant) => variant.stock > 0);
-  const [variantId, setVariantId] = useState<number>(inStockVariants[0]?.id ?? product.variants[0].id);
+  const firstInStockVariant = product.variants.find((variant) => variant.stock > 0);
+  const [variantId, setVariantId] = useState<number>(firstInStockVariant?.id ?? product.variants[0].id);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
@@ -75,7 +75,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
       <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-[140px]">
         <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-(--radius-lg) border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-(--radius-xl)">
           {activeMedia?.type === "video" ? (
-            <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en} />
+            <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
+              <track kind="captions" />
+            </video>
           ) : (
             <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} className="h-4/5 w-4/5" />
           )}
@@ -92,7 +94,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
               onClick={() => setActiveMediaIndex(index)}
             >
               {item.type === "video" ? (
-                <video src={item.url} aria-label={`${product.name.en} video ${index + 1}`} />
+                <video src={item.url} aria-label={`${product.name.en} video ${index + 1}`}>
+                  <track kind="captions" />
+                </video>
               ) : (
                 <ProductIllustration product={{ ...product, imagePath: item.url }} />
               )}

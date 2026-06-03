@@ -138,8 +138,14 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
 
       {/* ── Mobile "more" drawer ──────────────────────── */}
       {drawerOpen && (
-        <div className="mobile-drawer-overlay" onClick={() => setDrawerOpen(false)}>
-          <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-drawer-overlay">
+          <button
+            type="button"
+            aria-label="إغلاق"
+            onClick={() => setDrawerOpen(false)}
+            style={{ position: "absolute", inset: 0, border: 0, padding: 0, background: "transparent", cursor: "default" }}
+          />
+          <div className="mobile-drawer" style={{ position: "relative" }}>
             <div className="mobile-drawer__handle" />
 
             <div className="mobile-drawer__user">

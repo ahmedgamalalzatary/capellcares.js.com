@@ -65,8 +65,9 @@ export default function LoginPage() {
 
           <div className="stack" style={{ marginTop: 28, gap: 16 }}>
             <div className="field">
-              <label>البريد الإلكتروني</label>
+              <label htmlFor="login-email">البريد الإلكتروني</label>
               <input
+                id="login-email"
                 className="input"
                 type="email"
                 value={email}
@@ -77,8 +78,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="field">
-              <label>كلمة المرور</label>
+              <label htmlFor="login-password">كلمة المرور</label>
               <input
+                id="login-password"
                 className="input"
                 type="password"
                 value={password}

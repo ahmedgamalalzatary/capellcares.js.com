@@ -75,8 +75,9 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
               </div>
             </div>
             <div style={{ display: "grid", gap: 6 }}>
-              <label className="eyebrow" style={{ color: "var(--ink-3)", fontSize: 10.5 }}>حاله الدفع</label>
+              <label htmlFor="order-payment-status" className="eyebrow" style={{ color: "var(--ink-3)", fontSize: 10.5 }}>حاله الدفع</label>
               <select
+                id="order-payment-status"
                 className="select"
                 value={order.paymentStatus}
                 onChange={async (e) => {

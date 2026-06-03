@@ -108,22 +108,22 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                   enError={errors.nameEn}
                 />
                 <div className="field">
-                  <label>SKU</label>
-                  <input className="input" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
+                  <label htmlFor="product-sku">SKU</label>
+                  <input id="product-sku" className="input" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
                 </div>
                 <div className="field">
-                  <label>سعر الشراء (للداخلية)</label>
-                  <input className="input" type="number" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(Number(e.target.value))} />
+                  <label htmlFor="product-buying-price">سعر الشراء (للداخلية)</label>
+                  <input id="product-buying-price" className="input" type="number" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(Number(e.target.value))} />
                   {errors.buyingPrice && <span className="field-error">{errors.buyingPrice}</span>}
                 </div>
                 <div className="field" style={{ gridColumn: "1 / -1" }}>
-                  <label>كلمات مفتاحية (مفصولة بفواصل)</label>
-                  <input className="input" value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
+                  <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل)</label>
+                  <input id="product-keywords" className="input" value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
                   {errors.keywords && <span className="field-error">{errors.keywords}</span>}
                 </div>
                 <div className="field" style={{ gridColumn: "1 / -1" }}>
-                  <label>رابط فيديو يوتيوب (اختياري)</label>
-                  <input className="input" dir="ltr" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/…" />
+                  <label htmlFor="product-youtube">رابط فيديو يوتيوب (اختياري)</label>
+                  <input id="product-youtube" className="input" dir="ltr" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/…" />
                 </div>
               </div>
             </div>
@@ -160,16 +160,16 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                 {variants.map((v) => (
                   <div className="variant-row" key={v.id}>
                     <div className="field">
-                      <label>المقاس</label>
-                      <input className="input" value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
+                      <label htmlFor={`variant-size-${v.id}`}>المقاس</label>
+                      <input id={`variant-size-${v.id}`} className="input" value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
                     </div>
                     <div className="field">
-                      <label>السعر</label>
-                      <input className="input" type="number" min="0" value={v.price} onChange={(e) => updateVariant(v.id, { price: Number(e.target.value) })} />
+                      <label htmlFor={`variant-price-${v.id}`}>السعر</label>
+                      <input id={`variant-price-${v.id}`} className="input" type="number" min="0" value={v.price} onChange={(e) => updateVariant(v.id, { price: Number(e.target.value) })} />
                     </div>
                     <div className="field">
-                      <label>المخزون</label>
-                      <input className="input" type="number" min="0" value={v.stock} onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })} />
+                      <label htmlFor={`variant-stock-${v.id}`}>المخزون</label>
+                      <input id={`variant-stock-${v.id}`} className="input" type="number" min="0" value={v.stock} onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })} />
                     </div>
                     <button
                       type="button"
@@ -230,8 +230,8 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               </div>
 
               <div className="field">
-                <label>القسم</label>
-                <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+                <label htmlFor="product-category">القسم</label>
+                <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
                 {errors.categoryId && <div className="field-error" style={{ marginTop: 6 }}>{errors.categoryId}</div>}
               </div>
             </div>

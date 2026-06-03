@@ -59,17 +59,22 @@ export function MobileFilterDrawer({
 
   return (
     <>
-      <div
+      <button
+        type="button"
+        aria-label={isAr ? "إغلاق" : "Close"}
         onClick={onClose}
         style={{
           position: "fixed",
           inset: 0,
+          border: 0,
+          padding: 0,
           background: "oklch(0.22 0.04 45 / 0.45)",
           backdropFilter: "blur(4px)",
           WebkitBackdropFilter: "blur(4px)",
           zIndex: 50,
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
+          cursor: "pointer",
           transition: "opacity 280ms cubic-bezier(0.16,1,0.3,1)"
         }}
       />

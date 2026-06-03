@@ -68,7 +68,7 @@ export function CheckoutForm({
             className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-(--surface) px-4 py-3.5"
             data-active={form.paymentMethod === "cod"}
           >
-            <input type="radio" name="pay" value="cod" checked={form.paymentMethod === "cod"} onChange={() => setField("paymentMethod", "cod")} />
+            <input type="radio" name="pay" value="cod" aria-label={dict.checkout.cod} checked={form.paymentMethod === "cod"} onChange={() => setField("paymentMethod", "cod")} />
             <div>
               <div className="font-semibold">{dict.checkout.cod}</div>
               <div className="text-[13px] text-(--ink-2)">{dict.checkout.codDesc}</div>

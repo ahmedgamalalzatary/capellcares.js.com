@@ -7,6 +7,7 @@ import { errorMiddleware } from "./middlewares/error.middleware.js";
 
 export const app = express();
 
+app.disable("x-powered-by");
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());

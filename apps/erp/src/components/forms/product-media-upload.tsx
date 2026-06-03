@@ -95,7 +95,9 @@ export function ProductMediaUpload({ value, onChange }: Props) {
                 {item.type === "image" ? (
                   <img src={item.url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
                 ) : (
-                  <video src={item.url} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
+                  <video src={item.url} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }}>
+                    <track kind="captions" />
+                  </video>
                 )}
                 <div className="stack" style={{ gap: 4 }}>
                   <strong style={{ fontSize: 13 }}>{item.type === "image" ? "صورة" : "فيديو"}</strong>

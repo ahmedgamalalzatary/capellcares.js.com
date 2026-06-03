@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, ReactNode } from "react";
+import { useId, type ChangeEvent, type ReactNode } from "react";
 
 interface LocalizedTextFieldProps {
   value: string;
@@ -9,6 +9,7 @@ interface LocalizedTextFieldProps {
   dir?: "ltr";
   multiline?: boolean;
   error?: string;
+  id?: string;
 }
 
 function LocalizedTextField({
@@ -17,9 +18,11 @@ function LocalizedTextField({
   placeholder,
   dir,
   multiline = false,
-  error
+  error,
+  id
 }: LocalizedTextFieldProps) {
   const commonProps = {
+    id,
     value,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
     placeholder,
@@ -83,15 +86,17 @@ export function BilingualNameFields({
   arError,
   enError
 }: BilingualNameFieldsProps) {
+  const arId = useId();
+  const enId = useId();
   return (
     <>
       <div className="field">
-        <label>الاسم بالعربية</label>
-        <LocalizedTextField value={arValue} onChange={onArChange} placeholder="" error={arError} />
+        <label htmlFor={arId}>الاسم بالعربية</label>
+        <LocalizedTextField id={arId} value={arValue} onChange={onArChange} placeholder="" error={arError} />
       </div>
       <div className="field">
-        <label>Name (English)</label>
-        <LocalizedTextField value={enValue} onChange={onEnChange} placeholder="" dir="ltr" error={enError} />
+        <label htmlFor={enId}>Name (English)</label>
+        <LocalizedTextField id={enId} value={enValue} onChange={onEnChange} placeholder="" dir="ltr" error={enError} />
       </div>
     </>
   );
