@@ -30,6 +30,26 @@ ADMIN_EMAIL=your-admin-email
 ADMIN_PASSWORD=your-strong-admin-password
 ```
 
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` are the source of truth for the
+single admin account. The API reconciles the admin row to these values **at
+startup** (`ensureBootstrapAdmin`), not during login. Changing them takes effect
+on the next API restart/redeploy, not on the next login.
+
+### Fail-closed secrets and CORS (production)
+
+When `NODE_ENV=production`, the API refuses to boot if any of these is missing —
+there is no public dev-default fallback:
+
+```env
+JWT_ACCESS_SECRET=your-long-random-access-secret
+STOREFRONT_REVALIDATE_SECRET=your-long-random-revalidate-secret
+# Comma-separated allowlist of browser origins permitted to send credentialed
+# requests. No arbitrary-origin reflection in production.
+CORS_ALLOWED_ORIGINS=https://erp.example.com,https://shop.example.com
+```
+
+Outside production these fall back to dev defaults / `localhost:3000,localhost:3001`.
+
 Remove old ERP dev fallback variables from production and Docker env files:
 
 ```env
