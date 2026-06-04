@@ -1,9 +1,8 @@
 import { addVariantRepo, createAdminProductRepo } from "../../../repositories/product.repository.js";
-import type { Product } from "../../../types/domain.js";
 import {
   canActivateAdminProduct,
   normalizeAdminProductInput,
-  type ErpProductInput,
+  type AdminProductInput,
   type NormalizedProductInput
 } from "./lib/admin-product-input.js";
 
@@ -11,7 +10,7 @@ function toSlug(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-export async function createAdminProduct(input: Omit<Product, "id" | "slug" | "deletedAt"> | ErpProductInput) {
+export async function createAdminProduct(input: AdminProductInput) {
   const normalized: NormalizedProductInput = normalizeAdminProductInput(input);
   const slugBase = normalized.enName || normalized.arName || normalized.sku || "product";
   const slug = toSlug(slugBase);

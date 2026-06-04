@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
-const REVALIDATE_SECRET = process.env.STOREFRONT_REVALIDATE_SECRET?.trim() || "dev-revalidate-secret";
+import { resolveRevalidateSecret } from "./revalidate-secret";
+
+const REVALIDATE_SECRET = resolveRevalidateSecret();
 
 type RevalidatePayload = {
   entity?: string;

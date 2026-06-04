@@ -4,7 +4,9 @@ loadWorkspaceEnv();
 
 const { app } = await import("./app.js");
 const { syncPermissionCatalog } = await import("./services/erp-permissions.service.js");
+const { ensureBootstrapAdmin } = await import("./modules/admin/auth/admin-auth.service.js");
 
+await ensureBootstrapAdmin();
 await syncPermissionCatalog();
 
 const port = Number(process.env.PORT ?? 4000);

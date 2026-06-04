@@ -1,3 +1,5 @@
+import { resolveSecret } from "../../config/secrets.js";
+
 const DEFAULT_STOREFRONT_BASE_URL = "http://localhost:3000";
 const DEFAULT_REVALIDATE_SECRET = "dev-revalidate-secret";
 
@@ -11,7 +13,10 @@ function resolveStorefrontBaseUrl(): string {
 }
 
 function resolveRevalidateSecret(): string {
-  return (process.env.STOREFRONT_REVALIDATE_SECRET ?? DEFAULT_REVALIDATE_SECRET).trim();
+  return resolveSecret("STOREFRONT_REVALIDATE_SECRET", {
+    value: process.env.STOREFRONT_REVALIDATE_SECRET,
+    devFallback: DEFAULT_REVALIDATE_SECRET
+  }).trim();
 }
 
 function shouldSkipStorefrontRevalidation(): boolean {

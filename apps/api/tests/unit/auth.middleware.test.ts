@@ -76,6 +76,50 @@ test("authMiddleware assigns req.user and calls next for a valid token", () => {
   assert.equal(res.statusCode, 200);
 });
 
+test("authMiddleware rejects admin access tokens on customer routes", () => {
+  const token = createToken({ sub: 1, role: "admin", type: "admin_access" });
+  const req = createRequest(`Bearer ${token}`);
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
+});
+
+test("authMiddleware rejects staff access tokens on customer routes", () => {
+  const token = createToken({ sub: 1, role: "staff", type: "admin_access" });
+  const req = createRequest(`Bearer ${token}`);
+  const res = createResponse();
+  let nextCalled = false;
+
+  authMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
+});
+
+test("optionalAuthMiddleware leaves req.user unset for admin tokens", () => {
+  const token = createToken({ sub: 1, role: "admin", type: "admin_access" });
+  const req = createRequest(`Bearer ${token}`) as { headers: { authorization?: string }; user?: { id: number; role: string } };
+  const res = createResponse();
+  let nextCalled = false;
+
+  optionalAuthMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(req.user, undefined);
+  assert.equal(nextCalled, true);
+});
+
 test("authMiddleware rejects non-integer subject values", () => {
   const token = createToken({ sub: 42.5, role: "customer" });
   const req = createRequest(`Bearer ${token}`);

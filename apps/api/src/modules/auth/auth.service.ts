@@ -6,8 +6,12 @@ import {
   rotateRefreshSession,
   revokeRefreshSession
 } from "../../services/auth-session.service.js";
+import { resolveSecret } from "../../config/secrets.js";
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
+const ACCESS_SECRET = resolveSecret("JWT_ACCESS_SECRET", {
+  value: process.env.JWT_ACCESS_SECRET,
+  devFallback: "dev-access-secret"
+});
 
 type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
 type JwtDurationUnit = "ms" | "s" | "m" | "h" | "d" | "w" | "y";
@@ -61,7 +65,7 @@ export function logoutCustomerSession(token: string) {
 
 function issueAccessToken(userId: number, sessionId?: number) {
   return jwt.sign(
-    { sub: userId, role: "customer", sid: sessionId },
+    { sub: userId, role: "customer", type: "customer_access", sid: sessionId },
     ACCESS_SECRET,
     { expiresIn: resolveJwtAccessTtl(process.env.JWT_ACCESS_TTL) }
   );

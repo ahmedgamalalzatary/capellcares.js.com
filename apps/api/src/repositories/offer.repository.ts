@@ -66,9 +66,10 @@ export async function upsertOfferRepo(input: {
   items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
   const mergedItems = mergeOfferItems(input.items);
+  return db.transaction(async (tx) => {
   let offerId = input.id;
   if (offerId) {
-    await db
+    await tx
       .update(offers)
       .set({
         slug: input.slug,
@@ -83,7 +84,7 @@ export async function upsertOfferRepo(input: {
       })
       .where(eq(offers.id, offerId));
   } else {
-    const [created] = await db
+    const [created] = await tx
       .insert(offers)
       .values({
         slug: input.slug,
@@ -99,7 +100,7 @@ export async function upsertOfferRepo(input: {
       .$returningId();
     offerId = created.id;
   }
-  const existingItems = await db
+  const existingItems = await tx
     .select({ id: offerItems.id })
     .from(offerItems)
     .where(eq(offerItems.offerId, offerId!));
@@ -111,22 +112,23 @@ export async function upsertOfferRepo(input: {
   if (existingIds.length > 0) {
     const removedIds = existingIds.filter((id) => !keptIds.includes(id));
     if (removedIds.length > 0) {
-      await db.delete(offerItems).where(inArray(offerItems.id, removedIds));
+      await tx.delete(offerItems).where(inArray(offerItems.id, removedIds));
     }
   }
 
   for (const item of mergedItems) {
     if (item.id && existingIds.includes(item.id)) {
-      await db
+      await tx
         .update(offerItems)
         .set({ variantId: item.variantId, qty: item.qty })
         .where(eq(offerItems.id, item.id));
       continue;
     }
 
-    await db.insert(offerItems).values({ offerId: offerId!, variantId: item.variantId, qty: item.qty });
+    await tx.insert(offerItems).values({ offerId: offerId!, variantId: item.variantId, qty: item.qty });
   }
   return { id: offerId! };
+  });
 }
 
 export async function softDeleteOfferRepo(id: number) {

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import {
   createAuthSession,
   findActiveAuthSessionByTokenHash,
+  revokeActiveAuthSession,
   revokeAuthSession
 } from "../repositories/auth-session.repository.js";
 
@@ -57,7 +58,11 @@ export async function rotateRefreshSession(refreshToken: string, accountType: Ac
   const session = await findActiveAuthSessionByTokenHash(hashRefreshToken(refreshToken), accountType);
   if (!session) throw new Error("Invalid refresh token");
 
-  await revokeAuthSession(session.id);
+  // Conditional revoke: only the caller that flips revoked_at may issue a
+  // replacement session, so concurrent/replayed refreshes cannot both win.
+  const won = await revokeActiveAuthSession(session.id);
+  if (!won) throw new Error("Invalid refresh token");
+
   const rotated = await createRefreshSession({
     accountType,
     customerId: session.customerId ?? undefined,

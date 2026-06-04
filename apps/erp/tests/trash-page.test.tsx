@@ -10,7 +10,7 @@ const useAdminAuth = vi.fn(() => ({
   user: {
     name: "Admin User",
     email: "admin@capella.test",
-    role: "admin" as const,
+    role: "admin" as "admin" | "staff",
     permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
   }
 }));

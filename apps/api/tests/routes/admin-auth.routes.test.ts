@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { adminUsers } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
+import { ensureBootstrapAdmin } from "../../src/modules/admin/auth/admin-auth.service.js";
 import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
@@ -23,6 +24,7 @@ beforeEach(async () => {
   process.env.ALLOW_DEV_ADMIN_FALLBACK = "false";
   process.env.ADMIN_EMAIL = "admin@capella.test";
   process.env.ADMIN_PASSWORD = "AdminPass123";
+  await ensureBootstrapAdmin();
 });
 
 afterEach(() => {

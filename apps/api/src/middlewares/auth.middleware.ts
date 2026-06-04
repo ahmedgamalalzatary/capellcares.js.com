@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { resolveSecret } from "../config/secrets.js";
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
+const ACCESS_SECRET = resolveSecret("JWT_ACCESS_SECRET", {
+  value: process.env.JWT_ACCESS_SECRET,
+  devFallback: "dev-access-secret"
+});
 
 export type AuthenticatedRequest = Request & { user?: { id: number; role: string } };
 
@@ -12,6 +16,9 @@ function parseAuthUser(req: Request) {
     const raw = jwt.verify(token, ACCESS_SECRET) as unknown;
     const payload = raw as { sub?: number | string; role?: string };
     if (payload?.sub == null || !payload?.role) return null;
+    // Storefront/customer routes must never accept admin or staff tokens, even
+    // though they are signed with the same access secret.
+    if (payload.role !== "customer") return null;
 
     const id =
       typeof payload.sub === "string"

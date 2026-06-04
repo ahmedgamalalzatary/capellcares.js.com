@@ -142,9 +142,9 @@ Full deploy, migration, seed, and troubleshooting flows are documented in [docs/
 
 | Doc | Purpose |
 | --- | --- |
-| [docs/storefront-erp-spec.md](docs/storefront-erp-spec.md) | Product and architecture source of truth |
-| [docs/folder-structure.md](docs/folder-structure.md) | Canonical folder and boundary rules |
-| [docs/testing-design.md](docs/testing-design.md) | Testing strategy and layout |
+| [docs/specs/storefront-erp-spec.md](docs/specs/storefront-erp-spec.md) | Product and architecture source of truth |
+| [docs/specs/folder-structure.md](docs/specs/folder-structure.md) | Canonical folder and boundary rules |
+| [docs/plans/testing/](docs/plans/testing/) | Testing strategy and layout |
 | [docs/deploy.md](docs/deploy.md) | Docker deploy, migrations, and env setup |
 | [AGENTS.md](AGENTS.md) | Contributor/agent workflow and verification commands |
 

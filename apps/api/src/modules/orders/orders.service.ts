@@ -22,7 +22,14 @@ export async function createOrderFromCheckout(
         })
         .from(productVariants)
         .innerJoin(products, eq(products.id, productVariants.productId))
-        .where(eq(productVariants.id, variantId))
+        .where(
+          and(
+            eq(productVariants.id, variantId),
+            isNull(productVariants.deletedAt),
+            eq(products.status, "active"),
+            isNull(products.deletedAt)
+          )
+        )
         .limit(1);
       if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
       const unitPrice = Number(variant.sellingPrice);
@@ -69,7 +76,18 @@ export async function createOrderFromCheckout(
       continue;
     }
     const offerId = Number(item.offerId);
-    const [offer] = await db.select().from(offers).where(eq(offers.id, offerId)).limit(1);
+    const [offer] = await db
+      .select()
+      .from(offers)
+      .where(
+        and(
+          eq(offers.id, offerId),
+          eq(offers.status, "active"),
+          eq(offers.visibility, "visible"),
+          isNull(offers.deletedAt)
+        )
+      )
+      .limit(1);
     if (!offer) throw new Error(`Offer not found: ${offerId}`);
     pricedItems.push({
       itemType: "offer",

@@ -5,13 +5,51 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";
 import {
+  ensureBootstrapAdmin,
   loginAdmin,
   refreshAdminSession
 } from "../../src/modules/admin/auth/admin-auth.service.js";
+import { findAdminUserByEmail } from "../../src/repositories/admin-user.repository.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
+});
+
+test("ensureBootstrapAdmin creates the admin from env when none exists", async () => {
+  const env: NodeJS.ProcessEnv = {
+    ADMIN_EMAIL: "admin@capella.eg",
+    ADMIN_PASSWORD: "admin1234"
+  };
+
+  await ensureBootstrapAdmin(env);
+
+  const admin = await findAdminUserByEmail("admin@capella.eg");
+  assert.ok(admin, "admin should be created from env");
+  assert.equal(admin?.role, "admin");
+});
+
+test("ensureBootstrapAdmin reconciles an existing admin to env (env is source of truth)", async () => {
+  await ensureBootstrapAdmin({ ADMIN_EMAIL: "old@capella.eg", ADMIN_PASSWORD: "admin1234" });
+  await ensureBootstrapAdmin({ ADMIN_EMAIL: "new@capella.eg", ADMIN_PASSWORD: "admin1234" });
+
+  assert.ok(await findAdminUserByEmail("new@capella.eg"), "admin should follow env email");
+  assert.equal(await findAdminUserByEmail("old@capella.eg"), null);
+});
+
+test("loginAdmin does not mutate the admin account when env differs", async () => {
+  await ensureBootstrapAdmin({ ADMIN_EMAIL: "admin@capella.eg", ADMIN_PASSWORD: "admin1234" });
+
+  // A login carrying a different env email must NOT rewrite the existing admin.
+  await assert.rejects(
+    loginAdmin(
+      { email: "drifted@capella.eg", password: "admin1234" },
+      { env: { JWT_ACCESS_SECRET: "test-access-secret", ADMIN_EMAIL: "drifted@capella.eg", ADMIN_PASSWORD: "admin1234" } }
+    )
+  );
+
+  assert.ok(await findAdminUserByEmail("admin@capella.eg"), "original admin must remain unchanged");
+  assert.equal(await findAdminUserByEmail("drifted@capella.eg"), null);
 });
 
 test("loginAdmin returns admin access token for the server-configured admin", async () => {
@@ -21,6 +59,7 @@ test("loginAdmin returns admin access token for the server-configured admin", as
     ADMIN_PASSWORD: "admin1234"
   };
 
+  await ensureBootstrapAdmin(env);
   const result = await loginAdmin(
     { email: "admin@capella.eg", password: "admin1234" },
     { env }
@@ -48,15 +87,12 @@ test("loginAdmin rejects invalid credentials", async () => {
   );
 });
 
-test("loginAdmin rejects when admin credentials are not configured", async () => {
+test("ensureBootstrapAdmin rejects when admin credentials are not configured", async () => {
   const env: NodeJS.ProcessEnv = {
     JWT_ACCESS_SECRET: "test-access-secret",
   };
 
-  await assert.rejects(
-    () => loginAdmin({ email: "admin@capella.eg", password: "admin1234" }, { env }),
-    /not configured/i
-  );
+  await assert.rejects(() => ensureBootstrapAdmin(env), /not configured/i);
 });
 
 test("refreshAdminSession resolves the ERP user linked to the refresh session", async () => {
@@ -67,6 +103,7 @@ test("refreshAdminSession resolves the ERP user linked to the refresh session", 
     ADMIN_PASSWORD: "admin1234"
   };
 
+  await ensureBootstrapAdmin(env);
   await loginAdmin({ email: env.ADMIN_EMAIL!, password: env.ADMIN_PASSWORD! }, { env });
 
   const staffPassword = "staff1234";
@@ -145,6 +182,7 @@ test("refreshAdminSession returns effective permission keys for staff users", as
     ADMIN_PASSWORD: "admin1234"
   };
 
+  await ensureBootstrapAdmin(env);
   await loginAdmin({ email: env.ADMIN_EMAIL!, password: env.ADMIN_PASSWORD! }, { env });
 
   const staffPassword = "staff1234";

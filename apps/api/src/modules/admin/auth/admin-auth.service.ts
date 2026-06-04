@@ -14,6 +14,7 @@ import {
   revokeRefreshSession
 } from "../../../services/auth-session.service.js";
 import { getEffectiveAdminPermissions } from "../../../services/erp-permissions.service.js";
+import { resolveSecret } from "../../../config/secrets.js";
 import type { AdminLoginInput } from "./admin-auth.schemas.js";
 
 type JwtExpiresIn = NonNullable<SignOptions["expiresIn"]>;
@@ -58,7 +59,6 @@ export async function loginAdmin(
   options?: { env?: NodeJS.ProcessEnv }
 ) {
   const env = options?.env ?? process.env;
-  await bootstrapAdminUser(env);
 
   const email = input.email.trim().toLowerCase();
   const admin = await findAdminUserByEmail(email);
@@ -71,7 +71,11 @@ export async function loginAdmin(
   const ok = await bcrypt.compare(input.password, admin.passwordHash);
   if (!ok) throw new Error("Invalid admin credentials");
 
-  const accessSecret = env.JWT_ACCESS_SECRET ?? "dev-access-secret";
+  const accessSecret = resolveSecret("JWT_ACCESS_SECRET", {
+    value: env.JWT_ACCESS_SECRET,
+    devFallback: "dev-access-secret",
+    env
+  });
   const session = await createRefreshSession({ accountType: "admin", adminUserId: admin.id });
   const accessToken = issueAdminAccessToken(admin, session.sessionId, accessSecret, env.JWT_ACCESS_TTL);
 
@@ -82,7 +86,12 @@ export async function loginAdmin(
   };
 }
 
-async function bootstrapAdminUser(env: NodeJS.ProcessEnv = process.env) {
+/**
+ * Reconcile the single admin account to the environment configuration, which is
+ * the source of truth. Runs at server startup (not during login) so credential
+ * changes apply at a deliberate moment rather than as a side effect of auth.
+ */
+export async function ensureBootstrapAdmin(env: NodeJS.ProcessEnv = process.env) {
   const email = env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = env.ADMIN_PASSWORD;
   const name = env.ADMIN_NAME?.trim() || "Capella Admin";
@@ -113,7 +122,10 @@ export async function refreshAdminSession(refreshToken: string) {
     accessToken: issueAdminAccessToken(
       admin,
       session.sessionId,
-      process.env.JWT_ACCESS_SECRET ?? "dev-access-secret",
+      resolveSecret("JWT_ACCESS_SECRET", {
+        value: process.env.JWT_ACCESS_SECRET,
+        devFallback: "dev-access-secret"
+      }),
       process.env.JWT_ACCESS_TTL
     ),
     refreshToken: session.refreshToken,
