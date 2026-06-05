@@ -49,7 +49,7 @@ export function HeaderMobileDrawer({
         aria-label="Navigation"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-black px-5 py-4">
-          <Image src="/logoblack-removebg-preview.png" alt={dict.brand} width={130} height={42} className="h-8.5 w-auto object-contain" />
+          <Image src="/capella logo3.png" alt={dict.brand} width={130} height={42} className="h-8.5 w-auto object-contain" />
           <button
             className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
             onClick={onClose}
