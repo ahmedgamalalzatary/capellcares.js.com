@@ -47,7 +47,7 @@
   --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
 
   --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans:      "Roboto Mono", "JetBrains Mono", monospace;
+  --font-sans:      "IBM Plex Mono", "Roboto Mono", "JetBrains Mono", monospace;
   --font-signature: "Playwrite GB S Guides", cursive;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
@@ -96,13 +96,13 @@ html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
   color: var(--text);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 15px;
   line-height: 1.55;
 }
-html[lang="ar"] body { font-family: var(--font-ar); }
+.shell[lang="ar"] { font-family: var(--font-ar); }
 
 ::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
 
@@ -119,15 +119,15 @@ input, textarea, select { font: inherit; color: inherit; }
   font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--ink); opacity: 0.65; font-weight: 600;
 }
-html[lang="ar"] .eyebrow { letter-spacing: 0.08em; text-transform: none; font-weight: 700; }
+.shell[lang="ar"] .eyebrow { letter-spacing: 0.08em; text-transform: none; font-weight: 700; }
 @media (max-width: 640px) {
   .eyebrow { letter-spacing: 0.14em; font-size: 10.5px; }
-  html[lang="ar"] .eyebrow { letter-spacing: 0.06em; }
+  .shell[lang="ar"] .eyebrow { letter-spacing: 0.06em; }
 }
 .display {
   font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em;
 }
-html[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
+.shell[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
 .muted { color: var(--ink-2); }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
@@ -236,7 +236,7 @@ html[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter
   padding: 5px 9px; border-radius: 4px; font-weight: 700;
   background: var(--ink); color: var(--canvas);
 }
-html[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
+.shell[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
 @media (max-width: 640px) {
   .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
 }
@@ -309,7 +309,7 @@ html[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size
   color: var(--accent);
   letter-spacing: 0.01em;
 }
-html[lang="ar"] .pcard__price { font-family: var(--font-ar); font-weight: 700; }
+.shell[lang="ar"] .pcard__price { font-family: var(--font-ar); font-weight: 700; }
 .pcard__badges {
   position: absolute; top: 14px; inset-inline-start: 14px;
   display: grid; gap: 6px; z-index: 2;
@@ -345,7 +345,7 @@ html[lang="ar"] .pcard__price { font-family: var(--font-ar); font-weight: 700; }
   color: var(--ink);
   max-width: 22ch;
 }
-html[lang="ar"] .page-head h1 {
+.shell[lang="ar"] .page-head h1 {
   font-family: var(--font-ar); font-weight: 700; font-style: normal;
   letter-spacing: -0.005em; line-height: 1.2;
 }
@@ -380,7 +380,7 @@ html[lang="ar"] .page-head h1 {
   color: var(--ink); font-weight: 600;
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
 }
-html[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
+.shell[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background var(--motion-fast); }
 .table tbody tr:hover { background: oklch(0.96 0.04 80 / 0.6); }

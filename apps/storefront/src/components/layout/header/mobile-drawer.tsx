@@ -47,7 +47,7 @@ export function HeaderMobileDrawer({
         aria-label="Navigation"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-black px-2 py-2">
-          <Image src="/capella logo1.png" alt={dict.brand} width={130} height={42} className="h-16 w-auto object-contain" />
+          <Image src="/capella logo.png" alt={dict.brand} width={130} height={42} className="h-16 w-auto object-contain" />
           <button
             className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
             onClick={onClose}
@@ -125,10 +125,6 @@ export function HeaderMobileDrawer({
               </div>
 
               <div className="mt-8 px-2 pt-6">
-                <p className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-(--ink-3)">
-                  <Icon.Globe />
-                  {dict.nav.language}
-                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {(["ar", "en"] as const).map((code) => {
                     const isActive = lang === code;

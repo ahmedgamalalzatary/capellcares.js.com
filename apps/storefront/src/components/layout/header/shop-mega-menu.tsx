@@ -89,7 +89,7 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-4xl font-extrabold capitalize">{label}</span>
+                  <span className="text-3xl font-extrabold capitalize">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />

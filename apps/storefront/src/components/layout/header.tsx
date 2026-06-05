@@ -113,7 +113,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
           aria-label={dict.brand}
         >
           <Image
-            src="/capella logo2.png"
+            src="/capella logo.png"
             alt={dict.brand}
             width={400}
             height={100}
@@ -121,9 +121,9 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
           />
         </Link>
 
-        <div className="flex items-center justify-end max-[880px]:order-2">
+        <div className="flex items-center justify-end max-[880px]:order-2 -ml-3">
           {/* Mobile cluster */}
-          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden">
+          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden ">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart />
               {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
@@ -131,6 +131,13 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart />
               {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-xs font-semibold leading-none text-canvas">{count}</span>}
+            </Link>
+            <Link
+              href={user ? `/${lang}/orders` : `/${lang}/login`}
+              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              aria-label={user ? dict.nav.orders : dict.nav.account}
+            >
+              <Icon.User />
             </Link>
           </div>
 
