@@ -7,8 +7,10 @@ import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { HeaderDesktopNav } from "./header/desktop-nav";
 import { HeaderMobileDrawer } from "./header/mobile-drawer";
+import { AnnouncementBar } from "./header/announcement-bar";
+import { ShopMegaMenu } from "./header/shop-mega-menu";
+import { SearchOverlay } from "./header/search-overlay";
 import { useHeaderSearch } from "../../hooks/use-search";
 import type { HeaderProps } from "../../types/header.types";
 
@@ -19,8 +21,13 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [drawerView, setDrawerView] = useState<"main" | "categories">("main");
+  const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
-  const { q, switchLang, onSearchInput, onSearch } = useHeaderSearch(lang);
+  const { switchLang } = useHeaderSearch(lang);
+
+  const announcements: string[] = Array.isArray(dict.nav.announcements)
+    ? dict.nav.announcements
+    : [dict.nav.announcement];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);
@@ -58,17 +65,15 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
   return (
     <header
       className={[
-        "sticky top-0 z-30 border-b border-black transition-[background,box-shadow] duration-200",
+        "container sticky top-0 z-30 transition-[background,box-shadow] duration-200",
         scrolled
           ? "bg-white/90 shadow-(--shadow-1) backdrop-blur-md"
           : "bg-white"
       ].join(" ")}
     >
-      <div className={`bg-ink px-4 py-2 text-center text-[11px] text-canvas sm:text-[12px] ${lang === "ar" ? "tracking-[0.04em]" : "tracking-[0.04em] sm:tracking-[0.12em]"}`}>
-        {dict.nav.announcement}
-      </div>
+      <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
-      <div className="container grid items-center gap-3 py-3 sm:gap-4 sm:py-4 max-[880px]:grid-cols-[auto_minmax(0,1fr)_auto] min-[880px]:grid-cols-[1fr_auto_1fr]">
+      <div className="container flex items-center min-[880px]:grid mt-4 bg-canvas rounded-2xl min-[880px]:rounded-b-none min-[880px]:rounded-t-lg gap-3  sm:gap-4 py-3 min-[880px]:grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           <button
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 min-[880px]:hidden"
@@ -77,77 +82,81 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
           >
             <Icon.Menu />
           </button>
-          <form
-            className="hidden min-[880px]:flex h-11 w-full max-w-[380px] items-center gap-2.5 rounded-full border border-black bg-white px-4.5 py-2 text-(--ink-2) transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--accent)_18%,transparent)]"
-            onSubmit={onSearch}
-          >
-            <Icon.Search />
-            <input
-              className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
-              value={q}
-              onChange={(e) => onSearchInput(e.target.value)}
-              placeholder={dict.nav.search}
+
+          {/* Desktop left cluster: lang · search · shop */}
+          <div className="hidden min-[880px]:flex items-center gap-0.5">
+            <button
+              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              onClick={switchLang}
+              aria-label="Language"
+              title="Language"
+            >
+              <Icon.Globe />
+              <span className="absolute bottom-1 right-1 text-xs font-semibold">{dict.langSwitch.short}</span>
+            </button>
+            <button
+              className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              onClick={() => setSearchOpen((s) => !s)}
               aria-label={dict.nav.search}
-            />
-          </form>
+              aria-expanded={searchOpen}
+              title={dict.nav.search}
+            >
+              <Icon.Search />
+            </button>
+            <ShopMegaMenu lang={lang} navGroups={navGroups} isAr={isAr} />
+          </div>
         </div>
 
-        <Link href={`/${lang}`} className="group inline-flex min-w-0 items-center justify-self-center" aria-label={dict.brand}>
+        <Link
+          href={`/${lang}`}
+          className="group flex items-center justify-self-center max-[880px]:order-3 max-[880px]:ms-auto"
+          aria-label={dict.brand}
+        >
           <Image
-            src="/image.jpeg"
-            alt=""
-            width={160}
-            height={52}
-            className="h-[38px] w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-[46px] -mr-2"
-            priority
+            src="/capella logo2.png"
+            alt={dict.brand}
+            width={400}
+            height={100}
+            className=" w-auto object-contain transition-transform duration-200 h-10 sm:h-14 "
           />
-
         </Link>
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end max-[880px]:order-2">
+          {/* Mobile cluster */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden">
-            <button className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" onClick={switchLang} aria-label="Language" title="Language">
-              <Icon.Globe />
-              <span className="absolute bottom-1 right-1 text-[9px] font-semibold">{dict.langSwitch.short}</span>
-            </button>
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-semibold leading-none text-canvas">{ids.length}</span>}
+              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart />
-              {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-canvas">{count}</span>}
+              {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-xs font-semibold leading-none text-canvas">{count}</span>}
             </Link>
           </div>
+
+          {/* Desktop right cluster: cart · wishlist · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
-            <button className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" onClick={switchLang} aria-label="Language" title="Language">
-              <Icon.Globe />
-              <span className="absolute bottom-1 right-1 text-[9px] font-semibold">{dict.langSwitch.short}</span>
-            </button>
-            {user && (
-              <Link href={`/${lang}/orders`} className="relative hidden h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft) sm:grid sm:h-10 sm:w-10" aria-label={dict.nav.orders}>
-                <Icon.User />
-              </Link>
-            )}
-            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.wishlist}>
-              <Icon.Heart />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-semibold leading-none text-canvas">{ids.length}</span>}
-            </Link>
-            {!user && (
-              <Link href={`/${lang}/login`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.account}>
-                <Icon.User />
-              </Link>
-            )}
-            <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft) sm:h-10 sm:w-10" aria-label={dict.nav.cart}>
+            <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart />
-              {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-canvas">{count}</span>}
+              {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-xs font-semibold leading-none text-canvas">{count}</span>}
+            </Link>
+            <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
+              <Icon.Heart />
+              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+            </Link>
+            <Link
+              href={user ? `/${lang}/orders` : `/${lang}/login`}
+              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              aria-label={user ? dict.nav.orders : dict.nav.account}
+            >
+              <Icon.User />
             </Link>
           </div>
         </div>
-
       </div>
 
-      <HeaderDesktopNav lang={lang} dict={dict} navGroups={navGroups} />
+      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
+
       <HeaderMobileDrawer
         lang={lang}
         dict={dict}
@@ -155,13 +164,15 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
         isAr={isAr}
         mobileOpen={mobileOpen}
         drawerView={drawerView}
-        q={q}
         user={user}
         onClose={() => setMobileOpen(false)}
+        onSwitchLang={switchLang}
         onOpenCategories={() => setDrawerView("categories")}
         onBackToMain={() => setDrawerView("main")}
-        onSearchInput={onSearchInput}
-        onSearch={onSearch}
+        onOpenSearch={() => {
+          setMobileOpen(false);
+          setSearchOpen(true);
+        }}
       />
     </header>
   );

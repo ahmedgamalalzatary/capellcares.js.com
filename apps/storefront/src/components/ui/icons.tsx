@@ -75,6 +75,13 @@ export const Icon = {
       <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
     </svg>
   ),
+  Shop: ({ size = 20, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <path d="M4 9h16l-1-4H5L4 9Z" />
+      <path d="M5 9v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" />
+      <path d="M9 19v-5h6v5" />
+    </svg>
+  ),
   Logo: ({ size = 28, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 40 40" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
       <circle cx="20" cy="20" r="18" fill="#a13b4b" />

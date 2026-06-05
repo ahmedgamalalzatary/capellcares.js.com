@@ -10,13 +10,12 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "navGroups"> 
   isAr: boolean;
   mobileOpen: boolean;
   drawerView: "main" | "categories";
-  q: string;
   user: { id: number; name: string; email: string } | null;
   onClose: () => void;
+  onSwitchLang: () => void;
   onOpenCategories: () => void;
   onBackToMain: () => void;
-  onSearchInput: (value: string) => void;
-  onSearch: (e: React.FormEvent) => void;
+  onOpenSearch: () => void;
 };
 
 export function HeaderMobileDrawer({
@@ -26,13 +25,12 @@ export function HeaderMobileDrawer({
   isAr,
   mobileOpen,
   drawerView,
-  q,
   user,
   onClose,
+  onSwitchLang,
   onOpenCategories,
   onBackToMain,
-  onSearchInput,
-  onSearch
+  onOpenSearch
 }: HeaderMobileDrawerProps) {
   return (
     <>
@@ -48,8 +46,8 @@ export function HeaderMobileDrawer({
         aria-modal="true"
         aria-label="Navigation"
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-black px-5 py-4">
-          <Image src="/capella logo3.png" alt={dict.brand} width={130} height={42} className="h-8.5 w-auto object-contain" />
+        <div className="flex shrink-0 items-center justify-between border-b border-black px-2 py-2">
+          <Image src="/capella logo1.png" alt={dict.brand} width={130} height={42} className="h-16 w-auto object-contain" />
           <button
             className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
             onClick={onClose}
@@ -72,16 +70,14 @@ export function HeaderMobileDrawer({
             }}
           >
             <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
-              <form onSubmit={(e) => { onSearch(e); onClose(); }} className="mb-4 flex h-12 items-center gap-2.5 rounded-(--radius-pill) border border-black bg-canvas px-5">
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="mb-4 flex h-12 w-full items-center gap-2.5 rounded-(--radius-pill) border border-black bg-canvas px-5 text-start text-(--ink-3) transition-colors hover:bg-(--warm-soft)"
+              >
                 <Icon.Search />
-                <input
-                  className="min-w-0 flex-1 border-0 bg-transparent text-ink outline-none placeholder:text-(--ink-3)"
-                  value={q}
-                  onChange={(e) => onSearchInput(e.target.value)}
-                  placeholder={dict.nav.search}
-                  aria-label={dict.nav.search}
-                />
-              </form>
+                <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
+              </button>
 
               <Link onClick={onClose} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-black px-2 py-4 text-base text-ink transition-colors hover:bg-(--warm-soft)">
                 <span>{dict.nav.products}</span>
@@ -106,7 +102,7 @@ export function HeaderMobileDrawer({
                 </Link>
               )}
 
-              <div className="mt-8 border-t border-black px-2 pt-6">
+              <div className="mt-8  px-2 pt-6">
                 <p className="mb-4 text-xs uppercase tracking-[0.22em] text-(--ink-3)">
                   {dict.nav.followUs}
                 </p>
@@ -127,6 +123,33 @@ export function HeaderMobileDrawer({
                   ))}
                 </div>
               </div>
+
+              <div className="mt-8 px-2 pt-6">
+                <p className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-(--ink-3)">
+                  <Icon.Globe />
+                  {dict.nav.language}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["ar", "en"] as const).map((code) => {
+                    const isActive = lang === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={isActive ? undefined : onSwitchLang}
+                        aria-pressed={isActive}
+                        className={`h-11 rounded-(--radius-pill) border text-base font-semibold transition-colors ${
+                          isActive
+                            ? "border-accent bg-accent text-canvas"
+                            : "border-black text-ink hover:bg-(--warm-soft)"
+                        }`}
+                      >
+                        {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
@@ -143,7 +166,7 @@ export function HeaderMobileDrawer({
                 {dict.nav.allCategories}
               </div>
 
-              {navGroups.slice(2).map((g) => (
+              {navGroups.map((g) => (
                 <Link
                   key={g.root.id}
                   onClick={onClose}

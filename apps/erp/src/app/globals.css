@@ -32,8 +32,8 @@
   /* sidebar (white) */
   --bg-sidebar:        oklch(1 0 0);            /* white */
   --bg-sidebar-hover:  oklch(0.97 0 0);         /* very light neutral tint on hover */
-  --sidebar-text:      oklch(0.12 0.010 85);   /* near-black ink on light sidebar */
-  --sidebar-text-soft: oklch(0.42 0.010 85);   /* ink-3 for meta text */
+  --sidebar-text:      oklch(0.12 0 0);        /* near-black ink on light sidebar */
+  --sidebar-text-soft: oklch(0.42 0 0);        /* ink-3 for meta text */
 
   /* Legacy aliases kept so existing component code resolves. */
   --bg:           var(--canvas);
@@ -87,7 +87,7 @@
   --sidebar-primary-foreground: var(--canvas);
   --sidebar-accent:     var(--bg-sidebar-hover);
   --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border:     oklch(0.22 0.012 85);
+  --sidebar-border:     oklch(0.22 0 0);
   --sidebar-ring:       var(--warm);
 }
 
@@ -152,13 +152,13 @@ html[lang="ar"] .eyebrow { letter-spacing: 0.06em; text-transform: none; }
 .btn--primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
 
 .btn--ink { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
-.btn--ink:hover { background: oklch(0.22 0.012 85); }
+.btn--ink:hover { background: oklch(0.22 0 0); }
 
 .btn--ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
 .btn--ghost:hover { background: var(--warm-soft); color: var(--ink); }
 
 .btn--soft { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.btn--soft:hover { background: oklch(0.84 0.040 91); }
+.btn--soft:hover { background: oklch(0.86 0 0); }
 
 .btn--danger { background: var(--error); color: var(--canvas); border-color: var(--error); }
 .btn--danger:hover { background: oklch(0.44 0.16 32); }

@@ -35,23 +35,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
   return (
     <main className="container">
-      {/* Hero */}
-      <header className="page-head">
-        <span className="eyebrow text-accent!">
-          {dict.shop.eyebrow}
-        </span>
-        <h1>
-          {dict.shop.heading}
-        </h1>
-        <p>
-          {dict.shop.description}
-        </p>
-      </header>
 
       {/* Offers */}
       {activeOffers.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between border-t border-(--hairline) pt-10">
+          <header className="mb-8 flex items-end justify-between  pt-10">
             <div className="grid gap-1.5">
               <span className="eyebrow text-accent!">
                 {dict.shop.bundlesEyebrow}

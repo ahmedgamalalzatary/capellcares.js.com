@@ -4,7 +4,12 @@ export interface ProductGridProps {
   products: Product[];
   categories: Category[];
   lang: Language;
-  dict: Record<string, string | Record<string, string | Record<string, string>>>;
+  dict: Record<
+    string,
+    | string
+    | readonly string[]
+    | Record<string, string | readonly string[] | Record<string, string>>
+  >;
   initialSearch?: string;
   initialCategory?: number;
   lockCategory?: boolean;

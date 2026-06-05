@@ -6,11 +6,11 @@
 
 /* ============================================================
    Capella Care — Parchment palette, OKLCH everywhere.
-   Canvas #e4d6a9 · Ink black · Surface white
+   Canvas #f1f0ed · Ink black · Surface white
    All tones are degrees between these three anchors.
    ============================================================ */
 :root {
-  /* Source palette: #e4d6a9 (canvas) · black (ink) · white (surface) */
+  /* Source palette: #f1f0ed (canvas) · black (ink) · white (surface) */
   --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
   --ink-2:        oklch(0.28 0.012 85);      /* body copy */
   --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
@@ -19,7 +19,7 @@
   --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
   --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
   --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
-  --canvas:       oklch(0.876 0.061 93);     /* #e4d6a9 — primary background */
+  --canvas:       oklch(0.955 0.004 90);     /* #f1f0ed — primary background */
   --surface:      oklch(1 0 0);              /* white — card background */
   --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
   --text:         oklch(0.12 0.010 85);      /* body copy */
@@ -27,7 +27,7 @@
   --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
   --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
   --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
-  --footer-bg:    oklch(0.10 0.008 85);      /* footer dark ground — deepest ink degree */
+  --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
@@ -51,7 +51,7 @@
   --font-signature: "Playwrite GB S Guides", cursive;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
-  --container: 1700px;
+  --container: 1600px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -80,7 +80,7 @@
   --chart-2: oklch(0.48 0.015 85);
   --chart-3: oklch(0.62 0.020 90);
   --chart-4: oklch(0.75 0.025 90);
-  --chart-5: oklch(0.876 0.061 93);
+  --chart-5: oklch(0.955 0.004 90);
   --sidebar: var(--ink);
   --sidebar-foreground: var(--canvas);
   --sidebar-primary: var(--accent);
@@ -405,6 +405,17 @@ html[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-s
   animation: shimmer 1.2s linear infinite;
 }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Announcement — one sentence rushes in from the right, holds centered,
+   then rushes out to the left. (Reversed for RTL via animation-direction.) */
+@keyframes marquee-cross {
+  0%   { transform: translateX(110%); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { transform: translateX(0); animation-timing-function: linear; }   /* fast in (~0.6s) */
+  93%  { transform: translateX(0); animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0); } /* hold centered (~5s) */
+  100% { transform: translateX(-110%); }                                  /* fast out (~0.4s) */
+}
+.marquee-cross { animation: marquee-cross; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .marquee-cross { animation: none; } }
 
 [dir="rtl"] .arrow-flip { transform: scaleX(-1); }
 

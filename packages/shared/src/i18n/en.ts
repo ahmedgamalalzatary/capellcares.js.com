@@ -18,11 +18,20 @@ export const en = {
     categories: "Categories",
     allCategories: "All categories",
     announcement: "Free Cairo delivery on orders over EGP 600 · Cash on delivery",
+    announcements: [
+      "Free Cairo delivery on orders over EGP 600",
+      "Cash on delivery available nationwide",
+      "New season essentials just landed",
+      "Honest, dermatologist-loved formulas"
+    ],
+    pause: "Pause announcements",
+    play: "Play announcements",
     browseByCategory: "Browse by category",
     viewAll: "View all →",
     exploreCollection: "Explore the full collection →",
     viewAllCategory: "All {name} →",
-    followUs: "Follow us"
+    followUs: "Follow us",
+    language: "Language"
   },
   common: {
     addToCart: "Add to cart",
