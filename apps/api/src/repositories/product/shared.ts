@@ -13,7 +13,7 @@ export function normalizeVariantSizeLabel(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
-export function toNumber(value: unknown): number {
+function toNumber(value: unknown): number {
   return Number(value ?? 0);
 }
 

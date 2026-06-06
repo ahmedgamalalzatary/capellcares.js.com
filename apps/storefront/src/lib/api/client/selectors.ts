@@ -20,7 +20,7 @@ export function getCategoryPath(categories: Category[], id: number): Category[] 
   return path;
 }
 
-export function getDescendantCategoryIds(categories: Category[], rootId: number): number[] {
+function getDescendantCategoryIds(categories: Category[], rootId: number): number[] {
   const ids = new Set<number>([rootId]);
   let changed = true;
   while (changed) {

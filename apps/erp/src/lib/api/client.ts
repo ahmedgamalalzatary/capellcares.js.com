@@ -48,7 +48,7 @@ export function getAdminAuthUser() {
   return adminAuthUser;
 }
 
-export function invalidateAdminSession() {
+function invalidateAdminSession() {
   setAdminAccessToken(null);
   setAdminAuthUser(null);
   adminSessionInvalidationListeners.forEach((listener) => listener());

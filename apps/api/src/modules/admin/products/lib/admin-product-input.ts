@@ -1,4 +1,4 @@
-export type ErpProductInput = {
+type ErpProductInput = {
   sku?: string;
   name?: { ar?: string; en?: string };
   description?: { ar?: string; en?: string };
@@ -23,7 +23,7 @@ export type ErpProductInput = {
  * fields the admin flow actually consumes. Declared explicitly so the
  * normalizer can read every field type-safely instead of casting to `any`.
  */
-export type ApiProductInput = {
+type ApiProductInput = {
   sku?: string;
   arName?: string;
   enName?: string;
