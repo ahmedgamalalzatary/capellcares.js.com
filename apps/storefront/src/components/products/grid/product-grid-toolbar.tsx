@@ -104,17 +104,6 @@ export function ProductGridToolbar({
           gap: 8
         }}
       >
-        <span
-          style={{
-            fontSize: "12px",
-            color: "var(--ink-3)",
-            letterSpacing: "0.04em",
-            fontWeight: 500
-          }}
-          className="hidden sm:inline"
-        >
-          {dict.filters.sortBy}
-        </span>
         <div style={{ position: "relative" }}>
           <select
             className="select"
@@ -123,8 +112,6 @@ export function ProductGridToolbar({
             style={{
               height: 36,
               paddingBlock: 0,
-              paddingInlineStart: "12px",
-              paddingInlineEnd: "32px",
               fontSize: "13px",
               borderRadius: "var(--radius-pill)",
               appearance: "none",

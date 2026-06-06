@@ -20,7 +20,6 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [drawerView, setDrawerView] = useState<"main" | "categories">("main");
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
   const { switchLang } = useHeaderSearch(lang);
@@ -50,7 +49,6 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
       document.body.style.width = "";
       document.body.style.overflowY = "";
       window.scrollTo(0, scrollY);
-      setDrawerView("main");
     }
     return () => {
       const scrollY = Math.abs(parseInt(document.body.style.top || "0", 10));
@@ -73,15 +71,26 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
     >
       <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
-      <div className="container flex items-center min-[880px]:grid mt-4 bg-canvas rounded-2xl min-[880px]:rounded-b-none min-[880px]:rounded-t-lg gap-3  sm:gap-4 py-3 min-[880px]:grid-cols-[1fr_auto_1fr]">
+      <div className="container grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-3  sm:gap-4 py-3 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
-          <button
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 min-[880px]:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Menu"
-          >
-            <Icon.Menu />
-          </button>
+          {/* Mobile left cluster: menu · login */}
+          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden">
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10"
+              onClick={() => setMobileOpen((open) => !open)}
+              aria-label="Menu"
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <Icon.Close /> : <Icon.Menu />}
+            </button>
+            <Link
+              href={user ? `/${lang}/orders` : `/${lang}/login`}
+              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              aria-label={user ? dict.nav.orders : dict.nav.account}
+            >
+              <Icon.User />
+            </Link>
+          </div>
 
           {/* Desktop left cluster: lang · search · shop */}
           <div className="hidden min-[880px]:flex items-center gap-0.5">
@@ -109,7 +118,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
 
         <Link
           href={`/${lang}`}
-          className="group flex items-center justify-self-center max-[880px]:order-3 max-[880px]:ms-auto"
+          className="group flex items-center justify-self-center"
           aria-label={dict.brand}
         >
           <Image
@@ -121,8 +130,8 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
           />
         </Link>
 
-        <div className="flex items-center justify-end max-[880px]:order-2 -ml-3">
-          {/* Mobile cluster */}
+        <div className="flex items-center justify-end">
+          {/* Mobile cluster: wishlist · cart */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden ">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart />
@@ -131,13 +140,6 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart />
               {count > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-xs font-semibold leading-none text-canvas">{count}</span>}
-            </Link>
-            <Link
-              href={user ? `/${lang}/orders` : `/${lang}/login`}
-              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
-              aria-label={user ? dict.nav.orders : dict.nav.account}
-            >
-              <Icon.User />
             </Link>
           </div>
 
@@ -170,12 +172,9 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
         navGroups={navGroups}
         isAr={isAr}
         mobileOpen={mobileOpen}
-        drawerView={drawerView}
         user={user}
         onClose={() => setMobileOpen(false)}
         onSwitchLang={switchLang}
-        onOpenCategories={() => setDrawerView("categories")}
-        onBackToMain={() => setDrawerView("main")}
         onOpenSearch={() => {
           setMobileOpen(false);
           setSearchOpen(true);

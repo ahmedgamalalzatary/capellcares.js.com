@@ -3,6 +3,7 @@ export const en = {
   tagline: "Honest care, head to toe.",
   nav: {
     products: "Shop",
+    allProducts: "Products",
     offers: "Offers",
     collections: "Collections",
     bestsellers: "Bestsellers",
@@ -82,7 +83,7 @@ export const en = {
   },
   filters: {
     title: "Filters",
-    category: "Category",
+    bytype: "by type",
     price: "Price",
     priceMin: "Min",
     priceMax: "Max",
@@ -203,7 +204,7 @@ export const en = {
     sections: { products: "Products", categories: "Categories", offers: "Offers" },
     empty: "No results for \"{q}\"",
     browseAll: "Browse all products →",
-    welcome: "Hi there! I'm Capella 👋 Tell me what you're looking for and I'll help you find it.",
+    welcome: "Hi there! I'm Capella 👋 Search for any product, category, or offer and I'll show you matching results right here.",
     assistantName: "Capella",
     assistant: "Your shopping assistant",
     typeMessage: "Type a message…",
@@ -240,6 +241,24 @@ export const en = {
     currency: "EGP",
     madeIn: "Made in Egypt",
     secureCheckout: "Secure Checkout",
-    creator: "bit Tech"
+    creator: "bit Tech",
+    newsletterTitle: "Join us on the journey to an effortless glow.",
+    newsletterSubtitle: "Glaze your inbox with tips, rituals & exclusive content from Capella.",
+    emailPlaceholder: "Email Address",
+    subscribe: "Subscribe",
+    privacyNote: "By signing up, you agree to our Privacy Policy.",
+    navigate: "Navigate",
+    social: "Social",
+    support: "Support",
+    facebook: "Facebook",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    youtube: "YouTube",
+    whatsapp: "WhatsApp",
+    legal: "Legal",
+    terms: "Terms of Service",
+    privacy: "Privacy ",
+    FAQ: "FAQ",
+    cookies: "Cookies"
   }
 } as const;

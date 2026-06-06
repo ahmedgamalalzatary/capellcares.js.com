@@ -76,10 +76,11 @@ export const Icon = {
     </svg>
   ),
   Shop: ({ size = 20, className, style }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
-      <path d="M4 9h16l-1-4H5L4 9Z" />
-      <path d="M5 9v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" />
-      <path d="M9 19v-5h6v5" />
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={`icon-shop${className ? ` ${className}` : ""}`} style={style}>
+      <style>{`.icon-shop line{transition:transform .25s ease,opacity .2s ease;transform-box:fill-box;transform-origin:center}.icon-shop:hover line:nth-of-type(1){transform:translateY(6px) rotate(45deg)}.icon-shop:hover line:nth-of-type(2){opacity:0}.icon-shop:hover line:nth-of-type(3){transform:translateY(-6px) rotate(-45deg)}`}</style>
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
     </svg>
   ),
   Logo: ({ size = 28, className, style }: IconProps) => (

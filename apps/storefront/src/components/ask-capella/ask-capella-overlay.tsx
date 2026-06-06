@@ -26,7 +26,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         style={{ height: "min(600px, 88vh)", animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-linear-to-r from-accent to-[oklch(0.44_0.14_38)] px-5 py-4">
+        <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-linear-to-r from-[oklch(0.44_0.14_38)] to-[#cea889] px-5 py-4">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2a10 10 0 1 0 10 10" /><path d="M12 8v4l3 3" /><circle cx="19" cy="5" r="3" fill="white" stroke="none" />

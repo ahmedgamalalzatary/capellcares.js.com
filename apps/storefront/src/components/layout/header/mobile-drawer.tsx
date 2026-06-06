@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/ui/icons";
 import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
@@ -9,12 +9,9 @@ import type { HeaderProps } from "../../../types/header.types";
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "navGroups"> & {
   isAr: boolean;
   mobileOpen: boolean;
-  drawerView: "main" | "categories";
   user: { id: number; name: string; email: string } | null;
   onClose: () => void;
   onSwitchLang: () => void;
-  onOpenCategories: () => void;
-  onBackToMain: () => void;
   onOpenSearch: () => void;
 };
 
@@ -24,159 +21,257 @@ export function HeaderMobileDrawer({
   navGroups,
   isAr,
   mobileOpen,
-  drawerView,
   user,
   onClose,
   onSwitchLang,
-  onOpenCategories,
-  onBackToMain,
   onOpenSearch
 }: HeaderMobileDrawerProps) {
+  const [activeTab, setActiveTab] = useState(0);
+  // The tab currently sliding out, kept mounted until its exit animation ends.
+  const [prevTab, setPrevTab] = useState<number | null>(null);
+  const [dir, setDir] = useState<1 | -1>(1);
+  const activeGroup = navGroups[activeTab];
+  const prevGroup = prevTab !== null ? navGroups[prevTab] : null;
+
+  const selectTab = (index: number) => {
+    if (index === activeTab) return;
+    setDir(index > activeTab ? 1 : -1);
+    setPrevTab(activeTab);
+    setActiveTab(index);
+  };
+
+  // Incoming enters from the trailing side; outgoing exits toward the leading side.
+  // Mirror the direction in RTL.
+  const fromRight = dir === 1 ? !isAr : isAr;
+
+  const renderCards = (group: NonNullable<typeof activeGroup>) =>
+    group.children.length > 0 ? (
+      group.children.map((child) => (
+        <CategoryCard
+          key={child.id}
+          href={`/${lang}/category/${child.slug}`}
+          title={child.label}
+          subtitle={
+            child.grandchildren.length
+              ? child.grandchildren.map((g) => g.label).join(" · ")
+              : (isAr ? group.root.name.ar : group.root.name.en)
+          }
+          count={child.grandchildren.length}
+          isAr={isAr}
+          onClick={onClose}
+        />
+      ))
+    ) : (
+      <CategoryCard
+        href={`/${lang}/category/${group.root.slug}`}
+        title={isAr ? group.root.name.ar : group.root.name.en}
+        subtitle={dict.nav.viewAll}
+        count={0}
+        isAr={isAr}
+        onClick={onClose}
+      />
+    );
+
   return (
     <>
+      {/* Backdrop — invisible click-catcher to close; no dimming so the page shows through */}
       <div
-        className={`fixed inset-0 z-90 bg-black/40 transition-opacity duration-300 ${mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 transition-opacity duration-300 ${
+          mobileOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div
-        className={`fixed inset-y-0 z-100 flex w-[min(320px,92vw)] flex-col bg-canvas shadow-2xl transition-transform duration-300 ease-out ${isAr ? "right-0" : "left-0"} ${mobileOpen ? "translate-x-0" : isAr ? "translate-x-full" : "-translate-x-full"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-black px-2 py-2">
-          <Image src="/capella logo.png" alt={dict.brand} width={130} height={42} className="h-16 w-auto object-contain" />
-          <button
-            className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink hover:bg-(--warm-soft)"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <Icon.Close />
-          </button>
-        </div>
+      {/* Drop-down wrapper — anchored to the bottom of the header, clips the panel */}
+      <div className="pointer-events-none absolute inset-x-0 top-full overflow-hidden mx-4">
+        <div
+          dir={isAr ? "rtl" : "ltr"}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+          className={`pointer-events-auto flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto bg-[#f1f0ed] transition-transform duration-300 ease-out ${
+            mobileOpen ? "translate-y-0" : "-translate-y-full"
+          }`}
+        >
+          <div className="px-4 sm:px-6 pb-8 pt-4">
+            {/* Search */}
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              className="flex h-12 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-surface px-5 text-start text-(--ink-3) transition-colors hover:border-warm"
+            >
+              <Icon.Search />
+              <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
+            </button>
 
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            className="flex h-full w-[200%] transition-transform duration-300 ease-out"
-            style={{
-              transform:
-                drawerView === "categories"
-                  ? isAr
-                    ? "translateX(50%)"
-                    : "translateX(-50%)"
-                  : "translateX(0)"
-            }}
-          >
-            <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
-              <button
-                type="button"
-                onClick={onOpenSearch}
-                className="mb-4 flex h-12 w-full items-center gap-2.5 rounded-(--radius-pill) border border-black bg-canvas px-5 text-start text-(--ink-3) transition-colors hover:bg-(--warm-soft)"
-              >
-                <Icon.Search />
-                <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
-              </button>
-
-              <Link onClick={onClose} href={`/${lang}/shop`} className="flex items-center justify-between border-b border-black px-2 py-4 text-base text-ink transition-colors hover:bg-(--warm-soft)">
-                <span>{dict.nav.products}</span>
-                <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-              </Link>
-              <button
-                type="button"
-                onClick={onOpenCategories}
-                className="flex items-center justify-between border-b border-black bg-transparent px-2 py-4 text-base text-ink transition-colors hover:bg-(--warm-soft)"
-              >
-                <span>{dict.nav.allCategories}</span>
-                <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-              </button>
-              <Link onClick={onClose} href={`/${lang}/offers`} className="flex items-center justify-between border-b border-black px-2 py-4 text-base text-accent transition-colors hover:bg-(--accent-soft)">
-                <span>{dict.nav.offers}</span>
-                <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-              </Link>
-              {user && (
-                <Link onClick={onClose} href={`/${lang}/orders`} className="flex items-center justify-between border-b border-black px-2 py-4 text-base text-ink transition-colors hover:bg-(--warm-soft)">
-                  <span>{dict.nav.orders}</span>
-                  <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-                </Link>
-              )}
-
-              <div className="mt-8  px-2 pt-6">
-                <p className="mb-4 text-xs uppercase tracking-[0.22em] text-(--ink-3)">
-                  {dict.nav.followUs}
-                </p>
-                <div className="flex items-center gap-3">
-                  {HEADER_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
-                    <a
-                      key={label}
-                      href={href}
-                      aria-label={label}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-black text-(--ink-3) transition-colors hover:border-accent hover:text-accent"
+            {/* Category tabs */}
+            <div className="-mx-4 mt-5 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+              <div className="flex min-w-max gap-7">
+                {navGroups.map((group, index) => {
+                  const active = index === activeTab;
+                  const name = isAr ? group.root.name.ar : group.root.name.en;
+                  return (
+                    <button
+                      key={group.root.id}
+                      type="button"
+                      onClick={() => selectTab(index)}
+                      className={`relative shrink-0 whitespace-nowrap pb-2 text-sm tracking-[0.04em] transition-colors ${
+                        isAr ? "" : "uppercase"
+                      } ${active ? "font-semibold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
                     >
-                      <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden fill={stroke ? "none" : "currentColor"} stroke={stroke ? "currentColor" : "none"} strokeWidth={stroke ? 2 : 0} strokeLinecap="round" strokeLinejoin="round">
-                        <path d={path} />
-                      </svg>
-                    </a>
-                  ))}
-                </div>
+                      {name}
+                      {active && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-ink" />}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+            <div className="-mx-4 h-px bg-(--hairline)" />
 
-              <div className="mt-8 px-2 pt-6">
-                <div className="grid grid-cols-2 gap-2">
-                  {(["ar", "en"] as const).map((code) => {
-                    const isActive = lang === code;
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={isActive ? undefined : onSwitchLang}
-                        aria-pressed={isActive}
-                        className={`h-11 rounded-(--radius-pill) border text-base font-semibold transition-colors ${
-                          isActive
-                            ? "border-accent bg-accent text-canvas"
-                            : "border-black text-ink hover:bg-(--warm-soft)"
-                        }`}
-                      >
-                        {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}
-                      </button>
-                    );
-                  })}
+            {/* Cards — subcategories of the active tab. The incoming group lives in
+                normal flow (defines height); the outgoing group is overlaid absolutely
+                and slides out so both move together like a carousel. */}
+            {activeGroup && (
+              <div className="relative -mx-4 mt-5 overflow-hidden px-4">
+                <div
+                  key={activeTab}
+                  className={`flex flex-col gap-3 animate-in fade-in duration-300 ${
+                    fromRight ? "slide-in-from-right-16" : "slide-in-from-left-16"
+                  }`}
+                >
+                  {renderCards(activeGroup)}
                 </div>
+                {prevGroup && (
+                  <div
+                    key={`out-${prevTab}`}
+                    onAnimationEnd={() => setPrevTab(null)}
+                    className={`absolute inset-x-4 top-0 flex flex-col gap-3 animate-out fade-out duration-300 ${
+                      fromRight ? "slide-out-to-left-16" : "slide-out-to-right-16"
+                    }`}
+                  >
+                    {renderCards(prevGroup)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quick links */}
+            <div className="mt-6 flex flex-col">
+              <DrawerLink href={`/${lang}/shop`} isAr={isAr} onClick={onClose}>
+                {dict.nav.products}
+              </DrawerLink>
+              <DrawerLink href={`/${lang}/offers`} isAr={isAr} onClick={onClose} accent>
+                {dict.nav.offers}
+              </DrawerLink>
+              {user && (
+                <DrawerLink href={`/${lang}/orders`} isAr={isAr} onClick={onClose}>
+                  {dict.nav.orders}
+                </DrawerLink>
+              )}
+            </div>
+
+            {/* Social */}
+            <div className="mt-8 px-1">
+              <p className={`mb-4 text-xs tracking-[0.22em] text-(--ink-3) ${isAr ? "" : "uppercase"}`}>
+                {dict.nav.followUs}
+              </p>
+              <div className="flex items-center gap-3">
+                {HEADER_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-(--hairline) text-(--ink-3) transition-colors hover:border-accent hover:text-accent"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden fill={stroke ? "none" : "currentColor"} stroke={stroke ? "currentColor" : "none"} strokeWidth={stroke ? 2 : 0} strokeLinecap="round" strokeLinejoin="round">
+                      <path d={path} />
+                    </svg>
+                  </a>
+                ))}
               </div>
             </div>
 
-            <div className="flex h-full w-1/2 shrink-0 flex-col gap-0 overflow-y-auto px-5 pb-8 pt-3">
-              <button
-                type="button"
-                onClick={onBackToMain}
-                className="mb-2 flex items-center gap-2 border-b border-black bg-transparent px-2 py-4 text-base text-ink transition-colors hover:bg-(--warm-soft)"
-              >
-                <Icon.Chevron className={`text-(--ink-3) ${isAr ? "" : "rotate-180"}`} />
-                <span>{dict.common.back}</span>
-              </button>
-
-              <div className="px-2 pb-2 pt-2 text-xs uppercase tracking-[0.22em] text-(--ink-3)">
-                {dict.nav.allCategories}
-              </div>
-
-              {navGroups.map((g) => (
-                <Link
-                  key={g.root.id}
-                  onClick={onClose}
-                  href={`/${lang}/category/${g.root.slug}`}
-                  className="flex items-center justify-between border-b border-black px-2 py-4 text-base text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink"
-                >
-                  <span>{isAr ? g.root.name.ar : g.root.name.en}</span>
-                  <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-                </Link>
-              ))}
+            {/* Language switch */}
+            <div className="mt-8 grid grid-cols-2 gap-2">
+              {(["ar", "en"] as const).map((code) => {
+                const isActive = lang === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={isActive ? undefined : onSwitchLang}
+                    aria-pressed={isActive}
+                    className={`h-11 rounded-(--radius-pill) border text-base font-semibold transition-colors ${
+                      isActive ? "border-accent bg-accent text-canvas" : "border-(--hairline) text-ink hover:bg-(--warm-soft)"
+                    }`}
+                  >
+                    {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+function CategoryCard({
+  href,
+  title,
+  isAr,
+  onClick
+}: {
+  href: string;
+  title: string;
+  subtitle: string;
+  count: number;
+  isAr: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="group relative flex items-center gap-4 rounded-lg bg-surface p-3 shadow-(--shadow-1) transition-transform duration-200 hover:-translate-y-0.5"
+    >
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-base font-semibold text-ink py-2">{title}</span>
+      </span>
+
+      <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
+    </Link>
+  );
+}
+
+function DrawerLink({
+  href,
+  isAr,
+  accent,
+  onClick,
+  children
+}: {
+  href: string;
+  isAr: boolean;
+  accent?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`flex items-center justify-between border-b border-(--hairline) px-1 py-4 text-base transition-colors hover:text-accent ${
+        accent ? "text-accent" : "text-ink"
+      }`}
+    >
+      <span>{children}</span>
+      <Icon.Chevron className={`text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
+    </Link>
   );
 }

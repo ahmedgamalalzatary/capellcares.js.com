@@ -185,7 +185,7 @@ export function MobileFilterDrawer({
             zIndex: 2
           }}
         >
-          <button onClick={onClear} className="btn btn--ghost btn--sm" style={{ flex: 1 }}>
+          <button onClick={onClear} className="btn btn--sm" style={{ flex: 1 }}>
             {dict.common.clear}
           </button>
           <button onClick={onClose} className="btn btn--primary btn--sm" style={{ flex: 2 }}>

@@ -1,12 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
 import { HEADER_SOCIAL_LINKS } from "../../constants/socials";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
   const isAr = lang === "ar";
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const switchTo = (next: Language) => {
+    if (next === lang) return;
+    const rest = pathname.replace(/^\/(ar|en)(?=\/|$)/, "") || "/";
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    router.push(`/${next}${rest === "/" ? "" : rest}${search}`);
+  };
+
+  const brandRef = useRef<HTMLHeadingElement>(null);
+  const [brandInView, setBrandInView] = useState(false);
+
+  useEffect(() => {
+    const el = brandRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setBrandInView(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <footer
@@ -25,21 +50,23 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       />
 
       {/* Hero brand mark */}
-      <div
-        className="relative border-b px-6 py-20 text-center"
-        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
-      >
+      <div className="relative px-6 py-20 text-center">
         <p className={`mb-4 text-xs tracking-[0.35em] text-ink/70 ${isAr ? "" : "uppercase"}`}>
           {dict.footer.luxuryTagline}
         </p>
 
         <h2
+          ref={brandRef}
           className={
             isAr
               ? "font-(family-name:--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-ink"
-              : "font-(family-name:--font-signature) text-[clamp(52px,9vw,120px)] italic font-light leading-none tracking-[-0.01em] text-ink"
+              : "font-(family-name:--font-signature) text-[clamp(52px,9vw,120px)] italic font-bold leading-none tracking-[-0.01em] text-ink"
           }
-          style={{ textShadow: "0 0 80px color-mix(in oklch, var(--ink) 25%, transparent)" }}
+          style={{
+            textShadow: "0 0 80px color-mix(in oklch, var(--ink) 25%, transparent)",
+            transform: brandInView ? "scale(1)" : "scale(1.05)",
+            transition: "transform 700ms var(--ease-out-expo)"
+          }}
         >
           {dict.brand}
         </h2>
@@ -50,56 +77,65 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       </div>
 
       {/* Main content grid */}
-      <div className="container relative py-16">
-        <div className="grid gap-12 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div
+        className="relative border-t"
+        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
+      >
+        <div className="container grid gap-12 py-16 lg:grid-cols-[1.1fr_2fr]">
 
-          {/* Brand philosophy + contact */}
-          <div className="md:col-span-2 xl:col-span-1">
-            <p className={`mb-5 text-xs tracking-[0.3em] text-ink ${isAr ? "" : "uppercase"}`}>
-              {dict.footer.ourPhilosophy}
+          {/* Newsletter / intro */}
+          <div className="lg:max-w-md">
+            <p className="text-xl leading-snug text-ink font-(family-name:--font-display)">
+              {dict.footer.newsletterTitle}
+            </p>
+            <p className="mt-5 text-base leading-[1.75] text-ink/55">
+              {dict.footer.newsletterSubtitle}
             </p>
 
-            <blockquote
-              className="mb-8 max-w-[34ch] ps-4 text-base italic leading-[1.9] text-ink/55 font-(family-name:--font-display)"
-              style={{ borderInlineStart: "1.5px solid color-mix(in oklch, var(--ink) 40%, transparent)" }}
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="mt-7 flex items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface"
             >
-              {dict.footer.philosophy}
-            </blockquote>
-
-
-            <div className="grid gap-3">
-              <p className={`text-xs tracking-[0.25em] text-ink/70 ${isAr ? "" : "uppercase"}`}>
-                {dict.footer.reachUs}
-              </p>
-              <a
-                href="https://wa.me/96555442282"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-ink/50 transition-colors hover:text-ink"
-                dir="ltr"
+              <input
+                type="email"
+                required
+                placeholder={dict.footer.emailPlaceholder}
+                aria-label={dict.footer.emailPlaceholder}
+                className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-sm text-ink outline-none placeholder:text-ink/40"
+              />
+              <button
+                type="submit"
+                className={`shrink-0 border-s border-[color-mix(in_oklch,var(--ink)_18%,transparent)] px-5 py-3.5 text-xs font-semibold tracking-[0.18em] text-ink transition-colors hover:bg-(--warm-soft) ${isAr ? "" : "uppercase"}`}
               >
-                +965 5544 2282
-              </a>
-            </div>
+                {dict.footer.subscribe}
+              </button>
+            </form>
 
-            <div className="mt-7 flex items-center gap-4">
+            <p className="mt-4 text-xs leading-relaxed text-ink/45">
+              {dict.footer.privacyNote}
+            </p>
+          </div>
+
+          {/* Link columns */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-4 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
+            <FooterCol title={dict.footer.navigate} isAr={isAr}>
+              <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
+              <FooterLink href={`/${lang}/offers`}>{dict.nav.offers}</FooterLink>
+              <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
+            </FooterCol>
+
+            <FooterCol title={dict.footer.social} isAr={isAr}>
               {HEADER_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
                 <a
                   key={label}
                   href={href}
-                  aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-9 w-9 items-center justify-center rounded-xl text-ink/40 transition-all hover:text-ink"
-                  style={{
-                    border: "1px solid color-mix(in oklch, var(--ink) 20%, transparent)",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--ink) 60%, transparent)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "color-mix(in oklch, var(--ink) 20%, transparent)")}
+                  className="flex items-center gap-2 text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    className="h-4 w-4"
+                    className="h-4 w-4 shrink-0"
                     aria-hidden
                     fill={stroke ? "none" : "currentColor"}
                     stroke={stroke ? "currentColor" : "none"}
@@ -109,34 +145,22 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   >
                     <path d={path} />
                   </svg>
+                  <span>{dict.footer[label.toLowerCase()]}</span>
                 </a>
               ))}
-            </div>
+            </FooterCol>
+
+            <FooterCol title={dict.footer.support} isAr={isAr}>
+              <FooterLink as="span">{dict.footer.ourStory}</FooterLink>
+              <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.branches}</FooterLink>
+              <FooterLink as="span">{dict.footer.contact}</FooterLink>
+            </FooterCol>
+            <FooterCol title={dict.footer.legal} isAr={isAr}>
+              <FooterLink as="span">{dict.footer.terms}</FooterLink>
+              <FooterLink as="span">{dict.footer.FAQ}</FooterLink>
+              <FooterLink as="span">{dict.footer.cookies}</FooterLink>
+            </FooterCol>
           </div>
-
-          {/* Shop col */}
-          <FooterCol title={dict.footer.shopTitle} isAr={isAr}>
-            <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
-            <FooterLink href={`/${lang}/offers`}>{dict.nav.offers}</FooterLink>
-            <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
-            <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.hairCare}</FooterLink>
-          </FooterCol>
-
-          {/* Capella col */}
-          <FooterCol title={dict.footer.capellaTitle} isAr={isAr}>
-            <FooterLink as="span">{dict.footer.ourStory}</FooterLink>
-            <FooterLink as="span">{dict.product.ingredients}</FooterLink>
-            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.branches}</FooterLink>
-            <FooterLink as="span">{dict.footer.contact}</FooterLink>
-          </FooterCol>
-
-          {/* Account col */}
-          <FooterCol title={dict.nav.account} isAr={isAr}>
-            <FooterLink href={`/${lang}/login`}>{dict.nav.login}</FooterLink>
-            <FooterLink href={`/${lang}/signup`}>{dict.nav.signup}</FooterLink>
-            <FooterLink href={`/${lang}/wishlist`}>{dict.nav.wishlist}</FooterLink>
-            <FooterLink href={`/${lang}/cart`}>{dict.nav.cart}</FooterLink>
-          </FooterCol>
         </div>
       </div>
 
@@ -151,12 +175,36 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             {dict.footer.rights}
           </span>
 
-          <div className="flex items-center gap-5 uppercase">
-            <span>{dict.footer.currency}</span>
-            <Dot />
-            <span>{dict.footer.madeIn}</span>
-            <Dot />
-            <span>{dict.footer.secureCheckout}</span>
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
+            <div
+              className="flex items-center rounded-(--radius-pill) border p-0.5"
+              style={{ borderColor: "color-mix(in oklch, var(--ink) 18%, transparent)" }}
+            >
+              {(["ar", "en"] as const).map((code) => {
+                const active = lang === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => switchTo(code)}
+                    aria-pressed={active}
+                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${
+                      active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
+                    }`}
+                  >
+                    {dict.langSwitch[code]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-5 uppercase">
+              <span>{dict.footer.currency}</span>
+              <Dot />
+              <span>{dict.footer.madeIn}</span>
+              <Dot />
+              <span>{dict.footer.secureCheckout}</span>
+            </div>
           </div>
         </div>
       </div>

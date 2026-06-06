@@ -3,6 +3,7 @@ export const ar = {
   tagline: "عنايةٌ صادقة، من الرأس حتى القدم.",
   nav: {
     products: "المتجر",
+    allProducts: "المنتجات",
     offers: "العروض",
     collections: "المجموعات",
     bestsellers: "الأكثر مبيعًا",
@@ -82,7 +83,7 @@ export const ar = {
   },
   filters: {
     title: "الفلاتر",
-    category: "القسم",
+    beytype: "حسب النوع",
     price: "السعر",
     priceMin: "الأدنى",
     priceMax: "الأعلى",
@@ -203,7 +204,7 @@ export const ar = {
     sections: { products: "المنتجات", categories: "الأقسام", offers: "العروض" },
     empty: "لا نتائج لـ \"{q}\"",
     browseAll: "تصفح كل المنتجات ←",
-    welcome: "أهلاً! أنا كابيلا 👋 أخبريني عن ما تبحثين عنه وسأساعدك.",
+    welcome: "أهلاً! أنا كابيلا 👋 ابحثي عن أي منتج أو فئة أو عرض وسأعرض لكِ النتائج المطابقة هنا مباشرة.",
     assistantName: "كابيلا",
     assistant: "مساعدتك في التسوق",
     typeMessage: "اكتبي رسالتك…",
@@ -240,6 +241,24 @@ export const ar = {
     currency: "العملة: ج.م.",
     madeIn: "صُنع في مصر",
     secureCheckout: "شحن آمن",
-    creator: "بت تيك"
+    creator: "بت تيك",
+    newsletterTitle: "انضمي إلينا في رحلة العناية الطبيعية.",
+    newsletterSubtitle: "أضيفي إلى بريدك نصائح وطقوس ومحتوى حصريًا من كابيلا.",
+    emailPlaceholder: "البريد الإلكتروني",
+    subscribe: "اشتراك",
+    privacyNote: "بالاشتراك، أنتِ توافقين على سياسة الخصوصية.",
+    navigate: "تصفحي",
+    social: "تابعينا",
+    support: "الدعم",
+    facebook: "فيسبوك",
+    instagram: "إنستغرام",
+    tiktok: "تيك توك",
+    youtube: "يوتيوب",
+    whatsapp: "واتساب",
+    legal: "القانونية",
+    terms: "الشروط والأحكام",
+    privacy: "سياسة الخصوصية",
+    FAQ: "الأسئلة الشائعة",
+    cookies: "سياسة الكوكيز"
   }
 } as const;

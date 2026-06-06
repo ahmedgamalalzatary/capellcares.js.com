@@ -89,7 +89,7 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-3xl font-extrabold capitalize">{label}</span>
+                  <span className="text-2xl font-extrabold capitalize">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />
@@ -113,20 +113,6 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
                       >
                         {child.label}
                       </Link>
-                      {child.grandchildren.length > 0 && (
-                        <ul className="mt-3 grid gap-2">
-                          {child.grandchildren.map((gc) => (
-                            <li key={gc.id}>
-                              <Link
-                                href={`/${lang}/category/${gc.slug}`}
-                                className="text-base font-semibold capitalize text-(--ink-2) transition-colors hover:text-ink"
-                              >
-                                {gc.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </div>
                   ))}
                 </div>

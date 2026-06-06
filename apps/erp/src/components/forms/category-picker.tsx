@@ -46,7 +46,7 @@ export function CategoryPicker({ categories, value, onChange, id }: Props) {
 
   return (
     <div style={{ display: "grid", gap: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${levels.length}, minmax(160px, 1fr))`, gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${levels.length}, minmax(0, 1fr))`, gap: 8 }}>
         {levels.map((level, depth) => {
           const selectedAtDepth = path[depth]?.id ?? "";
           return (

@@ -96,7 +96,7 @@ export function ProductFiltersContent({
       </FilterSection>
 
       {!lockCategory && (
-        <FilterSection label={dict.filters.category} defaultOpen dark>
+        <FilterSection label={dict.filters.bytype} defaultOpen dark>
           <ProductFilterCategoryList
             mode={mode}
             lang={lang}
