@@ -11,48 +11,13 @@ import {
 } from "../../../repositories/collection.repository.js";
 import {
   listRelatedLinksForSourceRepo,
-  setRelatedLinksForSourceRepo,
-  type RelatedEntityType,
-  type RelatedRef
+  setRelatedLinksForSourceRepo
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
-import { calculateCollectionInventory, computeCollectionInventoryFromMap } from "../../collections/collection-inventory.js";
+import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../inventory/bundle-inventory.js";
+import { isDuplicateEntryError } from "../shared/db-errors.js";
+import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
-
-const RELATED_ENTITY_TYPES: RelatedEntityType[] = ["product", "offer", "collection"];
-
-function isDuplicateEntryError(error: unknown) {
-  const candidate = error as
-    | { code?: string; message?: string; cause?: { code?: string; message?: string } }
-    | undefined;
-
-  return (
-    candidate?.code === "ER_DUP_ENTRY" ||
-    candidate?.cause?.code === "ER_DUP_ENTRY" ||
-    candidate?.message?.includes("Duplicate entry") ||
-    candidate?.cause?.message?.includes("Duplicate entry")
-  );
-}
-
-function parseRelatedItems(value: unknown): RelatedRef[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const seen = new Set<string>();
-  const refs: RelatedRef[] = [];
-  for (const item of value) {
-    const type = (item as any)?.type;
-    const id = Number((item as any)?.id);
-    if (RELATED_ENTITY_TYPES.includes(type) && Number.isInteger(id) && id > 0) {
-      const key = `${type}:${id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        refs.push({ type, id });
-      }
-    }
-  }
-  return refs;
-}
 
 async function validateCollectionItems(categoryId: number, items: Array<{ variantId: number; qty: number }>) {
   if (items.length < 2) {
@@ -109,7 +74,7 @@ export async function adminListCollections(_req: Request, res: Response) {
         .where(inArray(productVariants.id, variantIds));
   const variantMap = new Map(variantRows.map((row) => [row.id, row] as const));
   const items = collections.map((collection) => {
-    const inventory = computeCollectionInventoryFromMap(collection.items, variantMap);
+    const inventory = computeBundleInventoryFromMap(collection.items, variantMap);
     return toAdminCollection(collection, inventory.originalTotal, inventory.stock);
   });
   res.json({ items });
@@ -122,7 +87,7 @@ export async function adminGetCollection(req: Request, res: Response) {
     return res.status(404).json({ ok: false, reason: "not-found" });
   }
 
-  const inventory = await calculateCollectionInventory(collection.items);
+  const inventory = await calculateBundleInventory(collection.items);
   const relatedItems = await listRelatedLinksForSourceRepo("collection", id);
   return res.json({ ...toAdminCollection(collection, inventory.originalTotal, inventory.stock), relatedItems });
 }

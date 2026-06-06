@@ -10,105 +10,13 @@ import {
 } from "../../../repositories/offer.repository.js";
 import {
   listRelatedLinksForSourceRepo,
-  setRelatedLinksForSourceRepo,
-  type RelatedEntityType,
-  type RelatedRef
+  setRelatedLinksForSourceRepo
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
+import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../inventory/bundle-inventory.js";
+import { isDuplicateEntryError } from "../shared/db-errors.js";
+import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
-
-const RELATED_ENTITY_TYPES: RelatedEntityType[] = ["product", "offer", "collection"];
-
-function isDuplicateEntryError(error: unknown) {
-  const candidate = error as
-    | { code?: string; message?: string; cause?: { code?: string; message?: string } }
-    | undefined;
-
-  return (
-    candidate?.code === "ER_DUP_ENTRY" ||
-    candidate?.cause?.code === "ER_DUP_ENTRY" ||
-    candidate?.message?.includes("Duplicate entry") ||
-    candidate?.cause?.message?.includes("Duplicate entry")
-  );
-}
-
-function parseRelatedItems(value: unknown): RelatedRef[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const seen = new Set<string>();
-  const refs: RelatedRef[] = [];
-  for (const item of value) {
-    const type = (item as any)?.type;
-    const id = Number((item as any)?.id);
-    if (RELATED_ENTITY_TYPES.includes(type) && Number.isInteger(id) && id > 0) {
-      const key = `${type}:${id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        refs.push({ type, id });
-      }
-    }
-  }
-  return refs;
-}
-
-async function calculateOfferInventory(items: Array<{ variantId: number; qty: number }>) {
-  if (items.length === 0) {
-    return { originalTotal: 0, stock: 0 };
-  }
-
-  const variantRows = await db
-    .select({
-      id: productVariants.id,
-      sellingPrice: productVariants.sellingPrice,
-      stockQty: productVariants.stockQty
-    })
-    .from(productVariants)
-    .where(inArray(productVariants.id, items.map((item) => item.variantId)));
-
-  const originalTotal = items.reduce((sum, item) => {
-    const variant = variantRows.find((row) => row.id === item.variantId);
-    return sum + Number(variant?.sellingPrice ?? 0) * item.qty;
-  }, 0);
-
-  const stock = items.reduce((minAvailable, item) => {
-    const variant = variantRows.find((row) => row.id === item.variantId);
-    const availableBundles = Math.floor((variant?.stockQty ?? 0) / item.qty);
-    return Math.min(minAvailable, availableBundles);
-  }, Number.POSITIVE_INFINITY);
-
-  return {
-    originalTotal,
-    stock: Number.isFinite(stock) ? stock : 0
-  };
-}
-
-function computeOfferInventoryFromMap(
-  items: Array<{ variantId: number; qty: number }>,
-  variantMap: Map<number, { sellingPrice: unknown; stockQty: number }>
-) {
-  if (items.length === 0) {
-    return { originalTotal: 0, stock: 0 };
-  }
-
-  const originalTotal = items.reduce((sum, item) => {
-    const variant = variantMap.get(item.variantId);
-    return sum + Number(variant?.sellingPrice ?? 0) * item.qty;
-  }, 0);
-
-  const stock = items.reduce((minAvailable, item) => {
-    const variant = variantMap.get(item.variantId);
-    const availableBundles = item.qty > 0
-      ? Math.floor((variant?.stockQty ?? 0) / item.qty)
-      : 0;
-    return Math.min(minAvailable, availableBundles);
-  }, Number.POSITIVE_INFINITY);
-
-  return {
-    originalTotal,
-    stock: Number.isFinite(stock) ? stock : 0
-  };
-}
 
 export async function adminListOffers(_req: Request, res: Response) {
   const offers = await listOffersRepo(true);
@@ -125,7 +33,7 @@ export async function adminListOffers(_req: Request, res: Response) {
         .where(inArray(productVariants.id, variantIds));
   const variantMap = new Map(variantRows.map((row) => [row.id, row] as const));
   const items = offers.map((offer) => {
-    const inventory = computeOfferInventoryFromMap(offer.items, variantMap);
+    const inventory = computeBundleInventoryFromMap(offer.items, variantMap);
     return toAdminOffer(offer, inventory.originalTotal, inventory.stock);
   });
   res.json({ items });
@@ -138,7 +46,7 @@ export async function adminGetOffer(req: Request, res: Response) {
     return res.status(404).json({ ok: false, reason: "not-found" });
   }
 
-  const inventory = await calculateOfferInventory(offer.items);
+  const inventory = await calculateBundleInventory(offer.items);
   const relatedItems = await listRelatedLinksForSourceRepo("offer", id);
   return res.json({ ...toAdminOffer(offer, inventory.originalTotal, inventory.stock), relatedItems });
 }

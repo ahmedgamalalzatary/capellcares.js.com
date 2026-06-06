@@ -13,6 +13,7 @@
     "./dto": "./src/dto/index.ts",
     "./schemas": "./src/schemas/index.ts",
     "./api/base": "./src/api/base.ts",
+    "./config/workspace-env": "./src/config/workspace-env.ts",
     "./ui": "./src/ui/index.ts",
     "./tests/contracts": "./tests/contracts/index.ts"
   },

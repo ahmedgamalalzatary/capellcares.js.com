@@ -8,19 +8,7 @@ import {
   upsertCategoryRepo
 } from "../../../repositories/category.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
-
-function isDuplicateEntryError(error: unknown) {
-  const candidate = error as
-    | { code?: string; message?: string; cause?: { code?: string; message?: string } }
-    | undefined;
-
-  return (
-    candidate?.code === "ER_DUP_ENTRY" ||
-    candidate?.cause?.code === "ER_DUP_ENTRY" ||
-    candidate?.message?.includes("Duplicate entry") ||
-    candidate?.cause?.message?.includes("Duplicate entry")
-  );
-}
+import { isDuplicateEntryError } from "../shared/db-errors.js";
 
 export async function adminListCategories(_req: Request, res: Response) {
   res.json({ items: await listCategoriesRepo(true) });
