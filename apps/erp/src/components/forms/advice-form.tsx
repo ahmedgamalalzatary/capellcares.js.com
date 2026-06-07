@@ -138,7 +138,7 @@ export function AdviceForm({ mode, initial }: Props) {
             <ImageUpload
               value={form.imagePath || null}
               onChange={(v) => set("imagePath", v ?? "")}
-              uploadContext={mode === "edit" ? "advices.update" : undefined}
+              uploadContext={mode === "edit" ? "advices.update" : "advices.create"}
             />
           </div>
         </div>

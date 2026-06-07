@@ -1,4 +1,4 @@
-import type { Category, Language, Offer, Product } from "@capella/shared";
+import type { Category, Collection, Language, Offer, Product } from "@capella/shared";
 
 export interface AskCapellaOverlayProps {
   lang: Language;
@@ -9,6 +9,7 @@ export interface AskCapellaResults {
   products: Product[];
   categories: Category[];
   offers: Offer[];
+  collections: Collection[];
 }
 
 export type AskCapellaMessage =

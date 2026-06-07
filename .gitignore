@@ -45,7 +45,10 @@ coverage/
 Thumbs.db
 .history/
 .agents/
+# Runtime upload storage (served at /uploads). Keep the source module tracked.
 **/uploads/
+!**/src/modules/uploads/
+!**/src/modules/uploads/**
 
 # Test artifacts
 test-results/

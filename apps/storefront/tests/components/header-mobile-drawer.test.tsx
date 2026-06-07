@@ -46,6 +46,8 @@ describe("HeaderMobileDrawer", () => {
     }));
 
     expect(screen.getByRole("link", { name: "سيروم" })).toHaveAttribute("href", "/ar/category/serums");
-    expect(screen.getByRole("link", { name: "فيتامين سي" })).toHaveAttribute("href", "/ar/category/vitamin-c");
+    // The drawer renders only the second-level category cards; deeper grandchild
+    // levels are no longer surfaced as their own links.
+    expect(screen.queryByRole("link", { name: "فيتامين سي" })).toBeNull();
   });
 });

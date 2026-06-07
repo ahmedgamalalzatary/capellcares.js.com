@@ -22,7 +22,10 @@ function isConnectionFailure(error: unknown): boolean {
   return error instanceof TypeError;
 }
 
-export async function getJSON<T>(path: string, options?: { lang?: string }): Promise<T | null> {
+export async function getJSON<T>(
+  path: string,
+  options?: { lang?: string; throwOnError?: boolean }
+): Promise<T | null> {
   const resolvedLang = resolveFetchLanguage(options?.lang);
   let response: Response;
   try {
@@ -31,7 +34,9 @@ export async function getJSON<T>(path: string, options?: { lang?: string }): Pro
       headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
     });
   } catch (error) {
-    if (isConnectionFailure(error)) {
+    // By default a connection failure is swallowed so SSR pages render empty
+    // gracefully. Callers that must distinguish "down" from "no data" opt in.
+    if (isConnectionFailure(error) && !options?.throwOnError) {
       return null;
     }
     throw error;

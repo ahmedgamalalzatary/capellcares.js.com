@@ -201,10 +201,15 @@ export const ar = {
   ask: {
     button: "اسألي كابيلا",
     placeholder: "عن ماذا تبحثين؟",
-    sections: { products: "المنتجات", categories: "الأقسام", offers: "العروض" },
+    sections: {
+      products: "المنتجات",
+      categories: "الأقسام",
+      offers: "العروض",
+      collections: "المجموعات"
+    },
     empty: "لا نتائج لـ \"{q}\"",
     browseAll: "تصفح كل المنتجات ←",
-    welcome: "أهلاً! أنا كابيلا 👋 ابحثي عن أي منتج أو فئة أو عرض وسأعرض لكِ النتائج المطابقة هنا مباشرة.",
+    welcome: "أهلاً! أنا كابيلا 👋 ابحثي عن أي منتج أو فئة أو مجموعة أو عرض وسأعرض لكِ النتائج المطابقة هنا مباشرة.",
     assistantName: "كابيلا",
     assistant: "مساعدتك في التسوق",
     typeMessage: "اكتبي رسالتك…",

@@ -125,7 +125,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
         <ImageFieldCard
           title="صورة العرض"
           error={errors.image}
-          uploadSlot={<ImageUpload value={image} onChange={setImage} uploadContext={mode === "edit" ? "offers.update" : undefined} />}
+          uploadSlot={<ImageUpload value={image} onChange={setImage} uploadContext={mode === "edit" ? "offers.update" : "offers.create"} />}
         />
 
         <section className="card">

@@ -11,9 +11,13 @@ export type AdminAuthUser = {
 };
 
 export type ErpUploadContext =
+  | "products.create"
   | "products.update"
+  | "offers.create"
   | "offers.update"
+  | "collections.create"
   | "collections.update"
+  | "advices.create"
   | "advices.update";
 
 let adminAccessToken: string | null = null;

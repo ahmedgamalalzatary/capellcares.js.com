@@ -50,7 +50,7 @@ vi.mock("@/lib/api/client", () => ({
   getCategoryPath: vi.fn((categories, id) => {
     const byId = new Map(categories.map((category: any) => [category.id, category]));
     const path = [];
-    let current = byId.get(id);
+    let current: any = byId.get(id);
     while (current) {
       path.unshift(current);
       current = current.parentId != null ? byId.get(current.parentId) : undefined;

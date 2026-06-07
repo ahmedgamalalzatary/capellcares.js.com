@@ -226,10 +226,8 @@ export function HeaderMobileDrawer({
 }
 
 function CategoryCard({
-  lang,
   href,
   title,
-  children,
   isAr,
   onClick
 }: {
@@ -255,21 +253,6 @@ function CategoryCard({
 
         <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
       </Link>
-    </div>
-  );
-}
-
-function ChildLinks({ lang, node, onClick }: { lang: string; node: NavNode; onClick: () => void }) {
-  const href = `/${lang}/category/${node.slug}`;
-
-  return (
-    <div className="flex flex-col gap-2">
-      
-      {node.children.length > 0 && (
-        <div className="ml-3 flex flex-col gap-2 border-l border-(--hairline) pl-3">
-          {node.children.map((child) => <ChildLinks key={child.id} lang={lang} node={child} onClick={onClick} />)}
-        </div>
-      )}
     </div>
   );
 }

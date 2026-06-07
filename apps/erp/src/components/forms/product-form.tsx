@@ -265,14 +265,14 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
             error={errors.image}
             uploadSlot={
               <div id="section-media">
-                <ProductMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "products.update" : undefined} />
+                <ProductMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "products.update" : "products.create"} />
               </div>
             }
           />
 
           <ImageFieldCard
             title="صورة Hover لبطاقة المنتج"
-            uploadSlot={<ProductHoverImageUpload value={hoverImagePath} onChange={setHoverImagePath} uploadContext={mode === "edit" ? "products.update" : undefined} />}
+            uploadSlot={<ProductHoverImageUpload value={hoverImagePath} onChange={setHoverImagePath} uploadContext={mode === "edit" ? "products.update" : "products.create"} />}
           />
         </aside>
       </div>

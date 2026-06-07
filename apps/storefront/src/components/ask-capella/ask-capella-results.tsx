@@ -29,7 +29,11 @@ export function AskCapellaReplyContent({
     );
   }
 
-  const hasResults = results.products.length > 0 || results.categories.length > 0 || results.offers.length > 0;
+  const hasResults =
+    results.products.length > 0 ||
+    results.categories.length > 0 ||
+    results.offers.length > 0 ||
+    results.collections.length > 0;
 
   if (!hasResults) {
     return (
@@ -107,6 +111,30 @@ export function AskCapellaReplyContent({
                 className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
               >
                 <span className="truncate text-ink">{pickLang(offer.name, lang)}</span>
+                {savings > 0 && (
+                  <span className="chip chip--accent shrink-0 text-xs">
+                    {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {results.collections.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.collections}</p>
+          {results.collections.map((collection) => {
+            const savings = collection.originalTotal - collection.price;
+            return (
+              <Link
+                key={collection.id}
+                href={`/${lang}/collections/${collection.slug}`}
+                onClick={onClose}
+                className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
+              >
+                <span className="truncate text-ink">{pickLang(collection.name, lang)}</span>
                 {savings > 0 && (
                   <span className="chip chip--accent shrink-0 text-xs">
                     {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}

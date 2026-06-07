@@ -39,8 +39,9 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     const hasArabic = /[\u0600-\u06FF]/.test(q);
     filters.push(
       or(
-        sql`${hasArabic ? products.arName : products.enName} LIKE ${pattern} ESCAPE '\\'`,
-        sql`${products.keywords} LIKE ${pattern} ESCAPE '\\'`
+        // MySQL's default LIKE escape character is backslash, matching escapeLikeTerm.
+        sql`${hasArabic ? products.arName : products.enName} LIKE ${pattern}`,
+        sql`${products.keywords} LIKE ${pattern}`
       )!
     );
   }

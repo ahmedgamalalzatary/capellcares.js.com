@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { getDict, pickLang } from "@capella/shared";
-import { fetchCategories, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { getDict } from "@capella/shared";
+import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import type {
   AskCapellaMessage,
   AskCapellaOverlayProps,
   AskCapellaResults
 } from "../types/ask-capella.types";
+
+// Categories, offers, and collections are matched by name in BOTH languages
+// (these have no keyword field), so a query in either language finds them
+// regardless of the active store language.
+function matchesBilingual(name: { ar: string; en: string }, queryLower: string) {
+  return name.ar.toLowerCase().includes(queryLower) || name.en.toLowerCase().includes(queryLower);
+}
 
 export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   const dict = getDict(lang);
@@ -49,28 +56,39 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
     void (async () => {
       try {
         const queryLower = query.toLowerCase();
-        const [products, allCategories, allOffers] = await Promise.all([
-          fetchProducts({ q: query, lang }),
-          fetchCategories({ lang }),
-          fetchOffers({ lang })
+        const [products, allCategories, allOffers, allCollections] = await Promise.all([
+          fetchProducts({ q: query, lang, throwOnError: true }),
+          fetchCategories({ lang, throwOnError: true }),
+          fetchOffers({ lang, throwOnError: true }),
+          fetchCollections({ lang, throwOnError: true })
         ]);
         const categories = allCategories
-          .filter((category) => !category.deletedAt && pickLang(category.name, lang).toLowerCase().includes(queryLower))
+          .filter((category) => !category.deletedAt && matchesBilingual(category.name, queryLower))
           .slice(0, 4);
         const offers = allOffers
-          .filter((offer) => !offer.deletedAt && offer.status === "active" && pickLang(offer.name, lang).toLowerCase().includes(queryLower))
+          .filter((offer) => !offer.deletedAt && offer.status === "active" && matchesBilingual(offer.name, queryLower))
+          .slice(0, 3);
+        const collections = allCollections
+          .filter(
+            (collection) =>
+              !collection.deletedAt &&
+              collection.status === "active" &&
+              collection.visibility === "visible" &&
+              matchesBilingual(collection.name, queryLower)
+          )
           .slice(0, 3);
         const results: AskCapellaResults = {
           products: products.slice(0, 5),
           categories,
-          offers
+          offers,
+          collections
         };
 
         startTransition(() => {
           setMessages((previous) => [...previous, { role: "capella", results, query }]);
         });
       } catch {
-        const results: AskCapellaResults = { products: [], categories: [], offers: [] };
+        const results: AskCapellaResults = { products: [], categories: [], offers: [], collections: [] };
         startTransition(() => {
           setMessages((previous) => [...previous, {
             role: "capella",

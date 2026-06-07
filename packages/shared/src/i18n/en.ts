@@ -201,10 +201,15 @@ export const en = {
   ask: {
     button: "Ask Capella",
     placeholder: "What are you looking for?",
-    sections: { products: "Products", categories: "Categories", offers: "Offers" },
+    sections: {
+      products: "Products",
+      categories: "Categories",
+      offers: "Offers",
+      collections: "Collections"
+    },
     empty: "No results for \"{q}\"",
     browseAll: "Browse all products →",
-    welcome: "Hi there! I'm Capella 👋 Search for any product, category, or offer and I'll show you matching results right here.",
+    welcome: "Hi there! I'm Capella 👋 Search for any product, category, collection or offer and I'll show you matching results right here.",
     assistantName: "Capella",
     assistant: "Your shopping assistant",
     typeMessage: "Type a message…",

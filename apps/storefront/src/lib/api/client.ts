@@ -27,13 +27,14 @@ import type {
   ProductDetailApiShape
 } from "./client/types";
 
-export async function fetchProducts(params?: { q?: string; category?: string; lang?: string }): Promise<Product[]> {
+export async function fetchProducts(params?: { q?: string; category?: string; lang?: string; throwOnError?: boolean }): Promise<Product[]> {
   const search = new URLSearchParams();
   if (params?.q) search.set("q", params.q);
   if (params?.category) search.set("category", params.category);
   const qs = search.toString();
   const data = await getJSON<{ items: ProductApiShape[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`, {
-    lang: params?.lang
+    lang: params?.lang,
+    throwOnError: params?.throwOnError
   });
   return (data?.items ?? []).map(normalizeProduct);
 }
@@ -51,17 +52,17 @@ export async function fetchProductDetailBySlug(
   return product ? normalizeProduct(product) : null;
 }
 
-export async function fetchCategories(options?: { lang?: string }): Promise<Category[]> {
+export async function fetchCategories(options?: { lang?: string; throwOnError?: boolean }): Promise<Category[]> {
   const data = await getJSON<{ items: CategoryApiShape[] }>(`/api/v1/categories`, options);
   return (data?.items ?? []).map(normalizeCategory);
 }
 
-export async function fetchOffers(options?: { lang?: string }): Promise<Offer[]> {
+export async function fetchOffers(options?: { lang?: string; throwOnError?: boolean }): Promise<Offer[]> {
   const data = await getJSON<{ items: Offer[] }>(`/api/v1/offers`, options);
   return data?.items ?? [];
 }
 
-export async function fetchCollections(options?: { lang?: string }): Promise<Collection[]> {
+export async function fetchCollections(options?: { lang?: string; throwOnError?: boolean }): Promise<Collection[]> {
   const data = await getJSON<{ items: Collection[] }>(`/api/v1/collections`, options);
   return data?.items ?? [];
 }
