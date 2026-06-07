@@ -71,7 +71,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
     >
       <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
-      <div className="container grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-3  sm:gap-4 py-3 grid-cols-[1fr_auto_1fr]">
+      <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 p-2 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden">

@@ -22,8 +22,8 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
   return (
     <div className="fixed inset-0 z-60 flex items-end justify-end p-4 sm:p-6 pointer-events-none">
       <div
-        className="pointer-events-auto flex w-full max-w-400px flex-col overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-r(--shadow-2)"
-        style={{ height: "min(600px, 88vh)", animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
+        className="pointer-events-auto flex w-72 max-w-[calc(100vw-2rem)] h-112 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-2) sm:w-96 sm:h-144 sm:max-h-[calc(100dvh-3rem)]"
+        style={{ animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-linear-to-r from-[oklch(0.44_0.14_38)] to-[#cea889] px-5 py-4">

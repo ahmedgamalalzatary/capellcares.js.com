@@ -243,23 +243,18 @@ function CategoryCard({
   onClick: () => void;
 }) {
   return (
-    <div className="rounded-lg bg-surface p-3 shadow-(--shadow-1)">
+    <div className="rounded-md bg-surface p-3 shadow-(--shadow-1)">
       <Link
         href={href}
         onClick={onClick}
         className="group relative flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-semibold text-ink py-2">{title}</span>
+          <span className="block truncate text-base font-semibold text-ink">{title}</span>
         </span>
 
         <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
       </Link>
-      {children.length > 0 && (
-        <div className="mt-2 flex flex-col gap-2">
-          {children.map((child) => <ChildLinks key={child.id} lang={lang} node={child} onClick={onClick} />)}
-        </div>
-      )}
     </div>
   );
 }
@@ -269,13 +264,7 @@ function ChildLinks({ lang, node, onClick }: { lang: string; node: NavNode; onCl
 
   return (
     <div className="flex flex-col gap-2">
-      <Link
-        href={href}
-        onClick={onClick}
-        className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
-      >
-        {node.label}
-      </Link>
+      
       {node.children.length > 0 && (
         <div className="ml-3 flex flex-col gap-2 border-l border-(--hairline) pl-3">
           {node.children.map((child) => <ChildLinks key={child.id} lang={lang} node={child} onClick={onClick} />)}
