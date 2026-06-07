@@ -5,7 +5,7 @@ import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
 import { ProductFiltersContent } from "./product-filters-content";
-import type { CategoryTreeItem, PriceRange } from "../../../types/product-grid.types";
+import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 
 interface MobileFilterDrawerProps {
   open: boolean;
@@ -18,7 +18,7 @@ interface MobileFilterDrawerProps {
   setCategory: (value: number | undefined) => void;
   priceRange: PriceRange;
   setPriceRange: React.Dispatch<React.SetStateAction<PriceRange>>;
-  categoryTree: CategoryTreeItem[];
+  categoryTree: CategoryTreeNode[];
   categories: Category[];
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;

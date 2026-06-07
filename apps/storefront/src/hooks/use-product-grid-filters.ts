@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category, Language, Product } from "@capella/shared";
 
-import type { CategoryTreeItem, PriceRange, Sort } from "../types/product-grid.types";
+import type { CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
 import { isDescendantOf, minVariantPrice, safeName } from "../utils/product-grid.utils";
 
 interface UseProductGridFiltersOptions {
@@ -34,20 +34,37 @@ export function useProductGridFilters({
     [categories]
   );
 
-  const categoryTree = useMemo<CategoryTreeItem[]>(() => {
-    const parents = categories.filter((item) => item.parentId === null);
-    if (parents.length === 0) return [];
-    return parents.map((parent) => ({
-      parent,
-      children: categories.filter((item) => item.parentId === parent.id)
-    }));
+  const categoryTree = useMemo<CategoryTreeNode[]>(() => {
+    const active = categories.filter((item) => !item.deletedAt);
+    const byParent = new Map<number | null, Category[]>();
+
+    for (const category of active) {
+      const children = byParent.get(category.parentId) ?? [];
+      children.push(category);
+      byParent.set(category.parentId, children);
+    }
+
+    const buildNodes = (parentId: number | null): CategoryTreeNode[] =>
+      (byParent.get(parentId) ?? []).map((category) => ({
+        category,
+        children: buildNodes(category.id)
+      }));
+
+    return buildNodes(null);
   }, [categories]);
 
   const [openParents, setOpenParents] = useState<Record<number, boolean>>(() => {
     const selectedId = initialCategory;
     if (!selectedId) return {};
-    const directParent = categories.find((item) => item.id === selectedId)?.parentId;
-    return directParent ? { [directParent]: true } : { [selectedId]: true };
+
+    const openState: Record<number, boolean> = {};
+    let current = categories.find((item) => item.id === selectedId);
+    while (current) {
+      openState[current.id] = true;
+      current = current.parentId != null ? categories.find((item) => item.id === current?.parentId) : undefined;
+    }
+
+    return openState;
   });
 
   const filtered = useMemo(() => {

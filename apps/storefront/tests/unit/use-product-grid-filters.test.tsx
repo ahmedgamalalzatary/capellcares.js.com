@@ -50,7 +50,8 @@ const products: Product[] = [
 
 const categories: Category[] = [
   { id: 1, parentId: null, slug: "care", name: { ar: "العناية", en: "Care" }, isLeaf: false },
-  { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: true },
+  { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: false },
+  { id: 4, parentId: 2, slug: "vitamin-c", name: { ar: "فيتامين سي", en: "Vitamin C" }, isLeaf: true },
   { id: 3, parentId: 1, slug: "balms", name: { ar: "بلسم", en: "Balms" }, isLeaf: true }
 ];
 
@@ -71,7 +72,7 @@ function HookProbe() {
     createElement("button", { onClick: () => grid.setPriceRange({ min: "200", max: "230" }) }, "price-range"),
     createElement("button", { onClick: () => grid.handleClear() }, "clear"),
     createElement("div", null, `ids:${grid.filtered.map((product) => product.id).join(",")}`),
-    createElement("div", null, `tree:${grid.categoryTree.map((item) => `${item.parent.id}:${item.children.length}`).join(",")}`),
+    createElement("div", null, `tree:${grid.categoryTree.map((item) => `${item.category.id}:${item.children.length}:${item.children[0]?.children.length ?? 0}`).join(",")}`),
     createElement("div", null, `active:${grid.hasActiveFilters ? "yes" : "no"}`),
     createElement("div", null, `selected:${grid.category ?? "none"}`)
   );
@@ -82,7 +83,7 @@ describe("useProductGridFilters", () => {
     render(createElement(HookProbe));
 
     expect(screen.getByText("ids:2,1")).toBeInTheDocument();
-    expect(screen.getByText("tree:1:2")).toBeInTheDocument();
+    expect(screen.getByText("tree:1:2:1")).toBeInTheDocument();
     expect(screen.getByText("selected:1")).toBeInTheDocument();
   });
 

@@ -7,7 +7,8 @@ import { ProductFilterCategoryList } from "@/components/products/filters/product
 
 const categories: Category[] = [
   { id: 1, parentId: null, slug: "care", name: { ar: "العناية", en: "Care" }, isLeaf: false },
-  { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: true },
+  { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: false },
+  { id: 4, parentId: 2, slug: "vitamin-c", name: { ar: "فيتامين سي", en: "Vitamin C" }, isLeaf: true },
   { id: 3, parentId: null, slug: "body", name: { ar: "الجسم", en: "Body" }, isLeaf: true }
 ];
 
@@ -26,7 +27,7 @@ describe("ProductFilterCategoryList", () => {
       category: 2,
       setCategory,
       categories,
-      categoryTree: [{ parent: categories[0], children: [categories[1]] }],
+      categoryTree: [{ category: categories[0], children: [{ category: categories[1], children: [{ category: categories[2], children: [] }] }] }],
       openParents: { 1: true },
       toggleParent
     }));
@@ -34,8 +35,9 @@ describe("ProductFilterCategoryList", () => {
     expect(screen.getByText("All categories")).toBeInTheDocument();
     expect(screen.getByText("Care")).toBeInTheDocument();
     expect(screen.getByText("Serums")).toBeInTheDocument();
+    expect(screen.getByText("Vitamin C")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Toggle category" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle category" })[0]);
     expect(toggleParent).toHaveBeenCalledWith(1);
 
     fireEvent.click(screen.getByText("All categories"));
@@ -53,14 +55,15 @@ describe("ProductFilterCategoryList", () => {
       category: undefined,
       setCategory: vi.fn(),
       categories,
-      categoryTree: [{ parent: categories[0], children: [categories[1]] }],
-      openParents: { 1: true },
+      categoryTree: [{ category: categories[0], children: [{ category: categories[1], children: [{ category: categories[2], children: [] }] }] }],
+      openParents: { 1: true, 2: true },
       toggleParent: vi.fn()
     }));
 
     expect(screen.getByText("All categories")).toBeInTheDocument();
     expect(screen.getByText("Care")).toBeInTheDocument();
     expect(screen.getByText("Serums")).toBeInTheDocument();
+    expect(screen.getByText("Vitamin C")).toBeInTheDocument();
   });
 
   it("renders fallback categories when no category tree is available", () => {

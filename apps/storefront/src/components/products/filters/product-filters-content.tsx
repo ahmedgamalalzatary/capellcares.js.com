@@ -4,7 +4,7 @@ import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
 import { FilterSection } from "./filter-section";
-import type { CategoryTreeItem, PriceRange } from "../../../types/product-grid.types";
+import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 import { ProductFilterCategoryList } from "./product-filter-category-list";
 import { PriceInput } from "../price-input";
 
@@ -17,7 +17,7 @@ interface ProductFiltersContentProps {
   setCategory: (value: number | undefined) => void;
   priceRange: PriceRange;
   setPriceRange: React.Dispatch<React.SetStateAction<PriceRange>>;
-  categoryTree: CategoryTreeItem[];
+  categoryTree: CategoryTreeNode[];
   categories: Category[];
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;

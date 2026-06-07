@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import type { NavGroup } from "@/lib/nav";
+import type { NavGroup, NavNode } from "@/lib/nav";
 
 type ShopMegaMenuProps = {
   lang: Language;
@@ -98,21 +98,16 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
             })}
           </div>
 
-          {/* Children columns with grandchildren beneath */}
+          {/* Recursive descendants beneath the active root */}
           {active && (
             <div className="max-h-[70vh] overflow-y-auto py-8">
               {active.children.length === 0 ? (
                 <p className="py-6 text-sm text-(--ink-3)">{isAr ? active.root.name.ar : active.root.name.en}</p>
               ) : (
-                  <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
+                <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
                   {active.children.map((child) => (
                     <div key={child.id} className="min-w-0">
-                      <Link
-                        href={`/${lang}/category/${child.slug}`}
-                        className="block text-lg font-bold capitalize text-ink transition-colors hover:text-accent"
-                      >
-                        {child.label}
-                      </Link>
+                      <NavBranch lang={lang} node={child} depth={0} />
                     </div>
                   ))}
                 </div>
@@ -121,6 +116,27 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function NavBranch({ lang, node, depth }: { lang: Language; node: NavNode; depth: number }) {
+  return (
+    <div className="min-w-0">
+      <Link
+        href={`/${lang}/category/${node.slug}`}
+        className={[
+          "block capitalize transition-colors hover:text-accent",
+          depth === 0 ? "text-lg font-bold text-ink" : "text-sm text-(--ink-2)"
+        ].join(" ")}
+      >
+        {node.label}
+      </Link>
+      {node.children.length > 0 && (
+        <div className="mt-3 flex flex-col gap-2 border-l border-(--hairline) pl-4">
+          {node.children.map((child) => <NavBranch key={child.id} lang={lang} node={child} depth={depth + 1} />)}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import { pickLang, type Category, type Language } from "@capella/shared";
 
 import { CategoryPill } from "../category-pill";
-import type { CategoryTreeItem } from "../../../types/product-grid.types";
+import type { CategoryTreeNode } from "../../../types/product-grid.types";
 
 interface ProductFilterCategoryListProps {
   mode: "mobile" | "desktop";
@@ -13,7 +13,7 @@ interface ProductFilterCategoryListProps {
   category: number | undefined;
   setCategory: (value: number | undefined) => void;
   categories: Category[];
-  categoryTree: CategoryTreeItem[];
+  categoryTree: CategoryTreeNode[];
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;
 }
@@ -81,13 +81,13 @@ function ParentToggle({
   );
 }
 
-function getIsOpen(
-  parentId: number,
-  category: number | undefined,
-  children: Category[],
-  openParents: Record<number, boolean>
-) {
-  return openParents[parentId] ?? Boolean(category && (category === parentId || children.some((item) => item.id === category)));
+function branchContains(node: CategoryTreeNode, targetId: number): boolean {
+  if (node.category.id === targetId) return true;
+  return node.children.some((child) => branchContains(child, targetId));
+}
+
+function getIsOpen(node: CategoryTreeNode, category: number | undefined, openParents: Record<number, boolean>) {
+  return openParents[node.category.id] ?? Boolean(category && branchContains(node, category));
 }
 
 function getBranchStyles(isMobile: boolean) {
@@ -125,35 +125,33 @@ export function ProductFilterCategoryList({
     </CategoryPill>
   );
 
-  const renderChildren = (children: Category[]) => {
-    const items = children.map((child) => renderPill(child, true));
-    return styles.children ? <div style={styles.children}>{items}</div> : items;
-  };
-
-  const renderedTree = categoryTree.map(({ parent, children }) => {
-    const isOpen = getIsOpen(parent.id, category, children, openParents);
+  const renderNode = (node: CategoryTreeNode, depth = 0): React.ReactNode => {
+    const isOpen = getIsOpen(node, category, openParents);
+    const childContent = node.children.map((child) => renderNode(child, depth + 1));
 
     return (
-      <div key={parent.id} style={styles.branch}>
+      <div key={node.category.id} style={styles.branch}>
         <div style={styles.row}>
           {styles.parentPillWrapper ? (
-            <div style={styles.parentPillWrapper}>{renderPill(parent)}</div>
+            <div style={styles.parentPillWrapper}>{renderPill(node.category, depth > 0)}</div>
           ) : (
-            renderPill(parent)
+            renderPill(node.category, depth > 0)
           )}
-          {children.length > 0 && (
+          {node.children.length > 0 && (
             <ParentToggle
               isOpen={isOpen}
-              onClick={() => toggleParent(parent.id)}
+              onClick={() => toggleParent(node.category.id)}
               label={dict.filters.toggleCategory}
               compact={isMobile}
             />
           )}
         </div>
-        {children.length > 0 && isOpen && renderChildren(children)}
+        {node.children.length > 0 && isOpen && (styles.children ? <div style={styles.children}>{childContent}</div> : childContent)}
       </div>
     );
-  });
+  };
+
+  const renderedTree = categoryTree.map((node) => renderNode(node));
 
   return (
     <div style={isMobile ? mobileListStyle : desktopListStyle}>

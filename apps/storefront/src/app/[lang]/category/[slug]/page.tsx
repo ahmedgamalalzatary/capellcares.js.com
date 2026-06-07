@@ -43,6 +43,18 @@ export default async function CategoryPage({
   const products = getProductsByCategory(allProducts.filter((p) => p.status === "active"), categories, category.id);
   const path = getCategoryPath(categories, category.id);
   const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
+  const subtreeCategoryIds = new Set<number>([category.id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const candidate of categories) {
+      if (!candidate.deletedAt && candidate.parentId != null && subtreeCategoryIds.has(candidate.parentId) && !subtreeCategoryIds.has(candidate.id)) {
+        subtreeCategoryIds.add(candidate.id);
+        changed = true;
+      }
+    }
+  }
+  const subtreeCategories = categories.filter((candidate) => !candidate.deletedAt && subtreeCategoryIds.has(candidate.id));
 
   return (
     <main className="container">
@@ -81,11 +93,11 @@ export default async function CategoryPage({
       </header>
       <ProductGrid
         products={products}
-        categories={subCats.length > 0 ? subCats : categories.filter((c) => c.parentId === null && !c.deletedAt)}
+        categories={subtreeCategories}
         lang={lang}
         dict={dict}
-        initialCategory={subCats.length > 0 ? undefined : category.id}
-        lockCategory={subCats.length === 0}
+        initialCategory={category.id}
+        lockCategory={false}
       />
     </main>
   );

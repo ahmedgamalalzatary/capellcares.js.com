@@ -22,7 +22,7 @@ export interface PriceRange {
   max: string;
 }
 
-export interface CategoryTreeItem {
-  parent: Category;
-  children: Category[];
+export interface CategoryTreeNode {
+  category: Category;
+  children: CategoryTreeNode[];
 }

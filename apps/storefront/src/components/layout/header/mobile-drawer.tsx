@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
@@ -49,24 +50,28 @@ export function HeaderMobileDrawer({
       group.children.map((child) => (
         <CategoryCard
           key={child.id}
+          lang={lang}
           href={`/${lang}/category/${child.slug}`}
           title={child.label}
           subtitle={
-            child.grandchildren.length
-              ? child.grandchildren.map((g) => g.label).join(" · ")
+            child.children.length
+              ? child.children.map((g) => g.label).join(" · ")
               : (isAr ? group.root.name.ar : group.root.name.en)
           }
-          count={child.grandchildren.length}
+          count={child.children.length}
+          children={child.children}
           isAr={isAr}
           onClick={onClose}
         />
       ))
     ) : (
       <CategoryCard
+        lang={lang}
         href={`/${lang}/category/${group.root.slug}`}
         title={isAr ? group.root.name.ar : group.root.name.en}
         subtitle={dict.nav.viewAll}
         count={0}
+        children={[]}
         isAr={isAr}
         onClick={onClose}
       />
@@ -221,31 +226,62 @@ export function HeaderMobileDrawer({
 }
 
 function CategoryCard({
+  lang,
   href,
   title,
+  children,
   isAr,
   onClick
 }: {
+  lang: string;
   href: string;
   title: string;
   subtitle: string;
   count: number;
+  children: NavNode[];
   isAr: boolean;
   onClick: () => void;
 }) {
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="group relative flex items-center gap-4 rounded-lg bg-surface p-3 shadow-(--shadow-1) transition-transform duration-200 hover:-translate-y-0.5"
-    >
+    <div className="rounded-lg bg-surface p-3 shadow-(--shadow-1)">
+      <Link
+        href={href}
+        onClick={onClick}
+        className="group relative flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-semibold text-ink py-2">{title}</span>
+        </span>
 
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-base font-semibold text-ink py-2">{title}</span>
-      </span>
+        <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
+      </Link>
+      {children.length > 0 && (
+        <div className="mt-2 flex flex-col gap-2">
+          {children.map((child) => <ChildLinks key={child.id} lang={lang} node={child} onClick={onClick} />)}
+        </div>
+      )}
+    </div>
+  );
+}
 
-      <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />
-    </Link>
+function ChildLinks({ lang, node, onClick }: { lang: string; node: NavNode; onClick: () => void }) {
+  const href = `/${lang}/category/${node.slug}`;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Link
+        href={href}
+        onClick={onClick}
+        className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
+      >
+        {node.label}
+      </Link>
+      {node.children.length > 0 && (
+        <div className="ml-3 flex flex-col gap-2 border-l border-(--hairline) pl-3">
+          {node.children.map((child) => <ChildLinks key={child.id} lang={lang} node={child} onClick={onClick} />)}
+        </div>
+      )}
+    </div>
   );
 }
 
