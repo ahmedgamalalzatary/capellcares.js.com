@@ -27,7 +27,7 @@ export async function getJSON<T>(path: string, options?: { lang?: string }): Pro
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 120 },
       headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
     });
   } catch (error) {

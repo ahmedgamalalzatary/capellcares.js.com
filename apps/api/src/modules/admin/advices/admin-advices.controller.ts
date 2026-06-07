@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import { deleteAdviceRepo, listAdvicesRepo, toggleAdviceStatusRepo, upsertAdviceRepo } from "../../repositories/advice.repository.js";
+import { deleteAdviceRepo, listAdvicesRepo, toggleAdviceStatusRepo, upsertAdviceRepo } from "../../../repositories/advice.repository.js";
+import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 
 function isBilingualText(value: unknown): value is { ar: string; en: string } {
   return Boolean(
@@ -28,6 +29,14 @@ function toAdviceDto(item: any) {
     createdAt: item.createdAt?.toISOString?.() ?? String(item.createdAt ?? ""),
     updatedAt: item.updatedAt?.toISOString?.() ?? String(item.updatedAt ?? "")
   };
+}
+
+async function safeTriggerAdviceRevalidation() {
+  try {
+    await triggerStorefrontRevalidation({ entity: "advice" });
+  } catch (error) {
+    console.warn("Failed to trigger storefront revalidation for advice", error);
+  }
 }
 
 export async function listAdminAdvicesController(_req: Request, res: Response) {
@@ -69,6 +78,7 @@ export async function upsertAdviceController(req: Request, res: Response) {
     status: input.status ?? "inactive",
     sortOrder: parsedSortOrder
   });
+  await safeTriggerAdviceRevalidation();
   res.json({ ok: true });
 }
 
@@ -77,7 +87,10 @@ export async function deleteAdviceController(req: Request, res: Response) {
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: "Invalid id" });
   }
-  await deleteAdviceRepo(id);
+  const deleted = await deleteAdviceRepo(id);
+  if (deleted) {
+    await safeTriggerAdviceRevalidation();
+  }
   res.json({ ok: true });
 }
 
@@ -90,6 +103,7 @@ export async function toggleAdviceStatusController(req: Request, res: Response) 
   if (!toggled) {
     return res.status(404).json({ error: "Advice not found" });
   }
+  await safeTriggerAdviceRevalidation();
   res.json({ ok: true });
 }
 

@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
+import { requireErpPermission } from "../../../middlewares/erp-permissions.middleware.js";
 import {
   deleteAdviceController,
   listAdminAdvicesController,
   toggleAdviceStatusController,
   upsertAdviceController
-} from "./advices.controller.js";
+} from "./admin-advices.controller.js";
 
 export const adminAdvicesRoutes = Router();
 adminAdvicesRoutes.get("/", requireErpPermission("advices.read"), listAdminAdvicesController);

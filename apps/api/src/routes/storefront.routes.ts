@@ -4,7 +4,7 @@ import { checkoutRoutes } from "../modules/checkout/checkout.routes.js";
 import { catalogCollectionsRoutes } from "../modules/catalog/collections/collections.routes.js";
 import { catalogProductsRoutes } from "../modules/catalog/products/products.routes.js";
 import { getOfferBySlug, listCategories, listOffers } from "../modules/catalog/catalog.controller.js";
-import { storefrontAdvicesRoutes } from "../modules/advices/storefront-advices.routes.js";
+import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-advices.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";

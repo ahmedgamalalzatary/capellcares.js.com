@@ -35,7 +35,8 @@ export async function upsertAdviceRepo(input: {
 }
 
 export async function deleteAdviceRepo(id: number) {
-  await db.delete(advices).where(eq(advices.id, id));
+  const result = await db.delete(advices).where(eq(advices.id, id));
+  return Number(result[0]?.affectedRows ?? 0) > 0;
 }
 
 export async function toggleAdviceStatusRepo(id: number) {

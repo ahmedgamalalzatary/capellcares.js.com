@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { productVariants } from "@capella/database/drizzle/schema";
+import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import {
   listOffersRepo,
   restoreOfferRepo,
@@ -17,6 +17,44 @@ import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../i
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
+import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+
+async function findOfferRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
+  const [offer] = await db.select({ slug: offers.slug }).from(offers).where(eq(offers.id, id)).limit(1);
+  if (!offer) {
+    return null;
+  }
+
+  const itemRows = await db.select({ variantId: offerItems.variantId }).from(offerItems).where(eq(offerItems.offerId, id));
+  const variantIds = [...new Set(itemRows.map((row) => row.variantId))];
+  const relatedProductSlugs = variantIds.length === 0
+    ? []
+    : [
+        ...new Set(
+          (
+            await db
+              .select({ slug: products.slug })
+              .from(productVariants)
+              .innerJoin(products, eq(products.id, productVariants.productId))
+              .where(inArray(productVariants.id, variantIds))
+          ).map((row) => row.slug)
+        )
+      ];
+
+  return { slug: offer.slug, relatedProductSlugs };
+}
+
+async function safeTriggerOfferRevalidation(payload: { slug: string; relatedProductSlugs?: string[] }) {
+  try {
+    await triggerStorefrontRevalidation({
+      entity: "offer",
+      slug: payload.slug,
+      relatedProductSlugs: payload.relatedProductSlugs
+    });
+  } catch (error) {
+    console.warn("Failed to trigger storefront revalidation for offer", payload.slug, error);
+  }
+}
 
 export async function adminListOffers(_req: Request, res: Response) {
   const offers = await listOffersRepo(true);
@@ -54,9 +92,10 @@ export async function adminGetOffer(req: Request, res: Response) {
 export async function adminUpsertOffer(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
+    const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
     const { id: offerId } = await upsertOfferRepo({
       id: incoming.id,
-      slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
+      slug,
       arName: incoming.name?.ar ?? incoming.arName ?? "",
       enName: incoming.name?.en ?? incoming.enName ?? "",
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
@@ -77,6 +116,8 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       );
       await setRelatedLinksForSourceRepo({ type: "offer", id: offerId }, relatedRefs);
     }
+    const revalidation = await findOfferRevalidationData(offerId);
+    await safeTriggerOfferRevalidation(revalidation ?? { slug });
     res.json({ ok: true });
   } catch (error) {
     if (isDuplicateEntryError(error)) {
@@ -87,17 +128,29 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
 }
 
 export async function adminSoftDeleteOffer(req: Request, res: Response) {
+  const revalidation = await findOfferRevalidationData(Number(req.params.id));
   await softDeleteOfferRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerOfferRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }
 
 export async function adminRestoreOffer(req: Request, res: Response) {
+  const revalidation = await findOfferRevalidationData(Number(req.params.id));
   await restoreOfferRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerOfferRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }
 
 export async function adminToggleOfferStatus(req: Request, res: Response) {
   const { toggleOfferStatusRepo } = await import("../../../repositories/offer.repository.js");
+  const revalidation = await findOfferRevalidationData(Number(req.params.id));
   await toggleOfferStatusRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerOfferRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }

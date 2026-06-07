@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
 import {
   listCollectionsRepo,
   restoreCollectionRepo,
@@ -18,6 +18,47 @@ import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../i
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
+import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+
+async function findCollectionRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
+  const [collection] = await db.select({ slug: collections.slug }).from(collections).where(eq(collections.id, id)).limit(1);
+  if (!collection) {
+    return null;
+  }
+
+  const itemRows = await db
+    .select({ variantId: collectionItems.variantId })
+    .from(collectionItems)
+    .where(eq(collectionItems.collectionId, id));
+  const variantIds = [...new Set(itemRows.map((row) => row.variantId))];
+  const relatedProductSlugs = variantIds.length === 0
+    ? []
+    : [
+        ...new Set(
+          (
+            await db
+              .select({ slug: products.slug })
+              .from(productVariants)
+              .innerJoin(products, eq(products.id, productVariants.productId))
+              .where(inArray(productVariants.id, variantIds))
+          ).map((row) => row.slug)
+        )
+      ];
+
+  return { slug: collection.slug, relatedProductSlugs };
+}
+
+async function safeTriggerCollectionRevalidation(payload: { slug: string; relatedProductSlugs?: string[] }) {
+  try {
+    await triggerStorefrontRevalidation({
+      entity: "collection",
+      slug: payload.slug,
+      relatedProductSlugs: payload.relatedProductSlugs
+    });
+  } catch (error) {
+    console.warn("Failed to trigger storefront revalidation for collection", payload.slug, error);
+  }
+}
 
 async function validateCollectionItems(categoryId: number, items: Array<{ variantId: number; qty: number }>) {
   if (items.length < 2) {
@@ -95,6 +136,7 @@ export async function adminGetCollection(req: Request, res: Response) {
 export async function adminUpsertCollection(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
+    const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
     const items = (incoming.items ?? []).map((item: any) => ({
       id: item.id ? Number(item.id) : undefined,
       variantId: Number(item.variantId),
@@ -108,7 +150,7 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
 
     const { id: collectionId } = await upsertCollectionRepo({
       id: incoming.id,
-      slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
+      slug,
       arName: incoming.name?.ar ?? incoming.arName ?? "",
       enName: incoming.name?.en ?? incoming.enName ?? "",
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
@@ -126,6 +168,8 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       );
       await setRelatedLinksForSourceRepo({ type: "collection", id: collectionId }, relatedRefs);
     }
+    const revalidation = await findCollectionRevalidationData(collectionId);
+    await safeTriggerCollectionRevalidation(revalidation ?? { slug });
     res.json({ ok: true });
   } catch (error) {
     if (isDuplicateEntryError(error)) {
@@ -136,16 +180,28 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
 }
 
 export async function adminSoftDeleteCollection(req: Request, res: Response) {
+  const revalidation = await findCollectionRevalidationData(Number(req.params.id));
   await softDeleteCollectionRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerCollectionRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }
 
 export async function adminRestoreCollection(req: Request, res: Response) {
+  const revalidation = await findCollectionRevalidationData(Number(req.params.id));
   await restoreCollectionRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerCollectionRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }
 
 export async function adminToggleCollectionStatus(req: Request, res: Response) {
+  const revalidation = await findCollectionRevalidationData(Number(req.params.id));
   await toggleCollectionStatusRepo(Number(req.params.id));
+  if (revalidation) {
+    await safeTriggerCollectionRevalidation(revalidation);
+  }
   res.json({ ok: true });
 }

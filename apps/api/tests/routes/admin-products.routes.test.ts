@@ -5,7 +5,15 @@ import { mkdir, writeFile, access } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { and, asc, eq, or } from "drizzle-orm";
-import { offerItems, productMedia, products, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
+import {
+  categories,
+  offerItems,
+  productMedia,
+  products,
+  productVariants,
+  relatedItems,
+  wishlists
+} from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -737,4 +745,131 @@ serialTest("admin hard-delete tolerates a missing image file", async () => {
 
   const remaining = await db.select({ id: products.id }).from(products).where(eq(products.id, ids.productOneId));
   assert.equal(remaining.length, 0);
+});
+
+serialTest("admin product revalidation includes both old and new category paths when a product moves categories", async () => {
+  const ids = await getBaselineIds();
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const calls: Array<{ input: string; init?: RequestInit }> = [];
+
+  const targetRootSlug = `hair-care-${Date.now()}`;
+  const targetLeafSlug = `hair-mask-${Date.now()}`;
+  const [targetRoot] = await db.insert(categories).values({
+    slug: targetRootSlug,
+    arName: "العناية بالشعر",
+    enName: "Hair Care",
+    isLeaf: false
+  }).$returningId();
+  const [targetLeaf] = await db.insert(categories).values({
+    slug: targetLeafSlug,
+    arName: "ماسك الشعر",
+    enName: "Hair Mask",
+    isLeaf: true,
+    parentId: targetRoot.id
+  }).$returningId();
+
+  process.env.NODE_ENV = "development";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("/api/revalidate")) {
+      calls.push({ input: url, init });
+      return new Response(null, { status: 200 });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    await withTestServer(app, async (request) => {
+      const authHeaders = await getAdminAuthHeaders(request);
+      const response = await request("/api/erp/products", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          id: ids.productOneId,
+          sku: "TEST-SKU-001",
+          slug: "test-product-baseline-1",
+          name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+          description: { ar: "وصف", en: "Description" },
+          keywords: ["test", "baseline"],
+          imagePath: "/uploads/test-baseline.png",
+          status: "active",
+          categoryId: targetLeaf.id,
+          variants: [{ id: ids.firstVariantId, size: "100ml", price: 99, stock: 7 }]
+        })
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+
+  assert.equal(calls.length, 1);
+  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+    entity: "product",
+    slug: "test-product-baseline-1",
+    categorySlugs: ["body-care", "body-lotion", targetRootSlug, targetLeafSlug]
+  });
+});
+
+serialTest("admin product revalidation includes the previous slug when a product slug changes", async () => {
+  const ids = await getBaselineIds();
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const calls: Array<{ input: string; init?: RequestInit }> = [];
+
+  process.env.NODE_ENV = "development";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("/api/revalidate")) {
+      calls.push({ input: url, init });
+      return new Response(null, { status: 200 });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    await withTestServer(app, async (request) => {
+      const authHeaders = await getAdminAuthHeaders(request);
+      const response = await request("/api/erp/products", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          id: ids.productOneId,
+          sku: "TEST-SKU-001",
+          slug: "renamed-product",
+          name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+          description: { ar: "وصف", en: "Description" },
+          keywords: ["test", "baseline"],
+          imagePath: "/uploads/test-baseline.png",
+          status: "active",
+          categoryId: ids.leafCategoryId,
+          variants: [{ id: ids.firstVariantId, size: "100ml", price: 99, stock: 7 }]
+        })
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+
+  assert.equal(calls.length, 1);
+  assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
+    entity: "product",
+    slug: "renamed-product",
+    previousSlug: "test-product-baseline-1",
+    categorySlugs: ["body-care", "body-lotion"]
+  });
 });

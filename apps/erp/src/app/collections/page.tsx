@@ -2,14 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { formatPrice } from "@capella/shared";
+import { formatPrice, type Collection } from "@capella/shared";
+import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { canCreateErpModule, canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
-import { useStore } from "@/lib/store";
+import {
+  canCreateErpModule,
+  canReadErpModule,
+  canToggleErpModule,
+  canUpdateErpModule
+} from "@/lib/erp-permissions";
+import { getStore, useStore } from "@/lib/store";
+import { showErrorToast } from "@/lib/errors";
 import { Icon } from "@/components/ui/icons";
 
 export default function CollectionsListPage() {
@@ -17,6 +24,7 @@ export default function CollectionsListPage() {
   const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
   const [search, setSearch] = useState("");
+  const [pendingToggle, setPendingToggle] = useState<Collection | null>(null);
 
   if (!canReadErpModule(user, "collections")) {
     return (
@@ -71,6 +79,7 @@ export default function CollectionsListPage() {
                 <th>السعر</th>
                 <th>السعر الأصلي</th>
                 <th>الحالة</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -101,12 +110,31 @@ export default function CollectionsListPage() {
                         inactiveLabel="غير نشط"
                       />
                     </td>
+                    <td>
+                      <div className="row" style={{ gap: 4 }}>
+                        {canToggleErpModule(user, "collections") && (
+                          <button
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setPendingToggle(collection)}
+                            aria-label={collection.status === "active" ? "إيقاف" : "تفعيل"}
+                            title={collection.status === "active" ? "إيقاف" : "تفعيل"}
+                          >
+                            {collection.status === "active" ? <Icon.X /> : <Icon.Check />}
+                          </button>
+                        )}
+                        {canUpdateErpModule(user, "collections") && (
+                          <Link href={`/collections/${collection.id}/edit`} className="btn btn--ghost btn--sm">
+                            <Icon.Edit />
+                          </Link>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>
+                  <td colSpan={7} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>
                     لا توجد مجموعات بعد.
                   </td>
                 </tr>
@@ -115,6 +143,28 @@ export default function CollectionsListPage() {
           </table>
         </div>
       </div>
+
+      <AdminConfirmModal
+        open={pendingToggle != null}
+        title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
+        onClose={() => setPendingToggle(null)}
+        confirmLabel="تأكيد"
+        onConfirm={async () => {
+          if (!pendingToggle) return;
+          try {
+            await getStore().toggleCollectionStatus(pendingToggle.id);
+            setPendingToggle(null);
+          } catch (error) {
+            showErrorToast(error, "تعذر تحديث حالة المجموعة. حاولي مرة أخرى.");
+          }
+        }}
+      >
+        <p style={{ margin: 0 }}>
+          {pendingToggle?.status === "active"
+            ? "سيتم إيقاف هذه المجموعة ولن تظهر في المتجر. هل تريدين المتابعة؟"
+            : "سيتم تفعيل هذه المجموعة لتظهر في المتجر. هل تريدين المتابعة؟"}
+        </p>
+      </AdminConfirmModal>
     </AdminShell>
   );
 }

@@ -159,6 +159,40 @@ test("erp advice delete removes the advice from subsequent listings", async () =
   });
 });
 
+test("erp advice delete skips storefront revalidation when no advice row was deleted", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const calls: Array<{ input: string; init?: RequestInit }> = [];
+
+  process.env.NODE_ENV = "development";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("/api/revalidate")) {
+      calls.push({ input: url, init });
+      return new Response(null, { status: 200 });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    await withTestServer(app, async (request) => {
+      const authHeaders = await getAdminAuthHeaders(request);
+      const response = await request("/api/erp/advices/999999", {
+        method: "DELETE",
+        headers: { ...authHeaders }
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+
+  assert.equal(calls.length, 0);
+});
+
 test("erp advice toggle-status flips active advice to inactive", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);

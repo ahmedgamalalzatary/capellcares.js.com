@@ -3,7 +3,15 @@ import { resolveSecret } from "../../config/secrets.js";
 const DEFAULT_STOREFRONT_BASE_URL = "http://localhost:3000";
 const DEFAULT_REVALIDATE_SECRET = "dev-revalidate-secret";
 
-type TriggerStorefrontProductRevalidationOptions = {
+export type StorefrontRevalidatePayload = {
+  entity: "product" | "offer" | "collection" | "advice";
+  slug?: string;
+  previousSlug?: string;
+  categorySlugs?: string[];
+  relatedProductSlugs?: string[];
+};
+
+type TriggerStorefrontRevalidationOptions = {
   storefrontBaseUrl?: string;
   secret?: string;
 };
@@ -23,9 +31,9 @@ function shouldSkipStorefrontRevalidation(): boolean {
   return process.env.NODE_ENV === "test";
 }
 
-export async function triggerStorefrontProductRevalidation(
-  slug: string,
-  options: TriggerStorefrontProductRevalidationOptions = {}
+export async function triggerStorefrontRevalidation(
+  payload: StorefrontRevalidatePayload,
+  options: TriggerStorefrontRevalidationOptions = {}
 ) {
   if (shouldSkipStorefrontRevalidation()) {
     return;
@@ -40,9 +48,6 @@ export async function triggerStorefrontProductRevalidation(
       "content-type": "application/json",
       "x-revalidate-secret": secret
     },
-    body: JSON.stringify({
-      entity: "product",
-      slug
-    })
+    body: JSON.stringify(payload)
   });
 }

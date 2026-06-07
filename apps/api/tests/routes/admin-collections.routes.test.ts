@@ -6,6 +6,7 @@ import {
   categories,
   collectionItems,
   collections,
+  products,
   relatedItems
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
@@ -230,4 +231,66 @@ serialTest("admin collection detail returns a related-items array for editing", 
     assert.equal(response.json.id, created.id);
     assert.ok(Array.isArray(response.json.relatedItems));
   });
+});
+
+serialTest("admin collection revalidation includes related product slugs for collection members", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-collection-webhook-${Date.now()}`;
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const calls: Array<{ input: string; init?: RequestInit }> = [];
+
+  process.env.NODE_ENV = "development";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("/api/revalidate")) {
+      calls.push({ input: url, init });
+      return new Response(null, { status: 200 });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    await withTestServer(app, async (request) => {
+      const authHeaders = await getAdminAuthHeaders(request);
+      const createResponse = await request("/api/erp/collections", {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          slug,
+          name: { ar: "مجموعة ويب هوك", en: "Webhook Collection" },
+          description: { ar: "وصف", en: "Description" },
+          imagePath: "/uploads/test-collection.png",
+          price: 149,
+          categoryId: ids.leafCategoryId,
+          status: "active",
+          visibility: "visible",
+          items: [
+            { variantId: ids.firstVariantId, qty: 1 },
+            { variantId: ids.secondVariantId, qty: 1 }
+          ]
+        })
+      });
+
+      assert.equal(createResponse.status, 200);
+      assert.equal(createResponse.json.ok, true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+
+  const productRows = await db
+    .select({ slug: products.slug })
+    .from(products)
+    .where(and(eq(products.categoryId, ids.leafCategoryId), sql`${products.slug} in ('test-product-baseline-1', 'test-product-baseline-2')`));
+
+  assert.equal(calls.length, 1);
+  const payload = JSON.parse(String(calls[0]?.init?.body));
+  assert.equal(payload.entity, "collection");
+  assert.equal(payload.slug, slug);
+  assert.deepEqual([...payload.relatedProductSlugs].sort(), productRows.map((row) => row.slug).sort());
 });

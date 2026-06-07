@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { and, asc, eq, or } from "drizzle-orm";
-import { offerItems, offers, relatedItems } from "@capella/database/drizzle/schema";
+import { offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -452,4 +452,48 @@ serialTest("admin offer toggle-status flips the persisted DB status", async () =
 
   assert.ok(afterSecondToggle, "expected offer after second toggle");
   assert.equal(afterSecondToggle.status, "active");
+});
+
+serialTest("admin offer revalidation includes related product slugs for bundle members", async () => {
+  const ids = await getBaselineIds();
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const calls: Array<{ input: string; init?: RequestInit }> = [];
+
+  const productRows = await db
+    .select({ slug: products.slug })
+    .from(products)
+    .where(or(eq(products.id, ids.productOneId), eq(products.id, ids.productTwoId)));
+
+  process.env.NODE_ENV = "development";
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes("/api/revalidate")) {
+      calls.push({ input: url, init });
+      return new Response(null, { status: 200 });
+    }
+    return originalFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    await withTestServer(app, async (request) => {
+      const authHeaders = await getAdminAuthHeaders(request);
+      const response = await request(`/api/erp/offers/${ids.offerId}/toggle-status`, {
+        method: "POST",
+        headers: { ...authHeaders }
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+
+  assert.equal(calls.length, 1);
+  const payload = JSON.parse(String(calls[0]?.init?.body));
+  assert.equal(payload.entity, "offer");
+  assert.equal(payload.slug, "test-offer-baseline");
+  assert.deepEqual([...payload.relatedProductSlugs].sort(), productRows.map((row) => row.slug).sort());
 });

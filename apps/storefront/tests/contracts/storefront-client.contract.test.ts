@@ -120,7 +120,7 @@ describe("storefront client contracts", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/products"),
       expect.objectContaining({
-        next: { revalidate: 300 },
+        next: { revalidate: 120 },
         headers: { "x-lang": "en" }
       })
     );
