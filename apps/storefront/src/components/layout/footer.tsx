@@ -51,9 +51,6 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
       {/* Hero brand mark */}
       <div className="relative px-6 py-20 text-center">
-        <p className={`mb-4 text-xs tracking-[0.35em] text-ink/70 ${isAr ? "" : "uppercase"}`}>
-          {dict.footer.luxuryTagline}
-        </p>
 
         <h2
           ref={brandRef}
@@ -70,10 +67,6 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         >
           {dict.brand}
         </h2>
-
-        <p className="mx-auto mt-14 max-w-[46ch] text-base leading-[1.85] text-ink/55">
-          {dict.tagline}
-        </p>
       </div>
 
       {/* Main content grid */}

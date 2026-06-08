@@ -4,15 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import type { NavGroup, NavNode } from "@/lib/nav";
+import type { HeaderMenuEntry } from "@/lib/header-menu";
+import type { NavNode } from "@/lib/nav";
 
 type ShopMegaMenuProps = {
   lang: Language;
-  navGroups: NavGroup[];
+  menuEntries: HeaderMenuEntry[];
   isAr: boolean;
 };
 
-export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
+export function ShopMegaMenu({ lang, menuEntries }: ShopMegaMenuProps) {
   const [open, setOpen] = useState(false);
   const [activeRoot, setActiveRoot] = useState(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -27,7 +28,7 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  const roots = navGroups;
+  const roots = menuEntries;
   const active = roots[activeRoot];
 
   if (roots.length === 0) return null;
@@ -49,6 +50,7 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
         type="button"
         aria-expanded={open}
         aria-haspopup="true"
+        aria-label="Shop"
         className={`inline-flex h-10 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-ink transition-colors hover:bg-(--warm-soft) ${open ? "bg-(--warm-soft)" : ""}`}
         onClick={() => setOpen((o) => !o)}
       >
@@ -77,10 +79,10 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
           {/* Father tabs */}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 border-b border-(--hairline) py-4">
             {roots.map((g, i) => {
-              const label = isAr ? g.root.name.ar : g.root.name.en;
+              const label = g.label;
               return (
                 <button
-                  key={g.root.id}
+                  key={g.key}
                   type="button"
                   onMouseEnter={() => setActiveRoot(i)}
                   onFocus={() => setActiveRoot(i)}
@@ -89,7 +91,7 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-2xl font-extrabold capitalize">{label}</span>
+                  <span className="text-2xl capitalize">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />
@@ -101,8 +103,24 @@ export function ShopMegaMenu({ lang, navGroups, isAr }: ShopMegaMenuProps) {
           {/* Recursive descendants beneath the active root */}
           {active && (
             <div className="max-h-[70vh] overflow-y-auto py-8">
-              {active.children.length === 0 ? (
-                <p className="py-6 text-sm text-(--ink-3)">{isAr ? active.root.name.ar : active.root.name.en}</p>
+              {active.type === "products" ? (
+                active.products.length > 0 ? (
+                  <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+                    {active.products.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/${lang}/products/${product.slug}`}
+                        className="block px-4 py-3 text-base font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+                      >
+                        {product.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-6 text-sm text-(--ink-3)">{active.label}</p>
+                )
+              ) : active.children.length === 0 ? (
+                <p className="py-6 text-sm text-(--ink-3)">{active.label}</p>
               ) : (
                 <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
                   {active.children.map((child) => (

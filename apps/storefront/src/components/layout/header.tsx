@@ -14,7 +14,7 @@ import { SearchOverlay } from "./header/search-overlay";
 import { useHeaderSearch } from "../../hooks/use-search";
 import type { HeaderProps } from "../../types/header.types";
 
-export function Header({ lang, dict, navGroups }: HeaderProps) {
+export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
@@ -112,7 +112,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
             >
               <Icon.Search />
             </button>
-            <ShopMegaMenu lang={lang} navGroups={navGroups} isAr={isAr} />
+            <ShopMegaMenu lang={lang} menuEntries={menuEntries} isAr={isAr} />
           </div>
         </div>
 
@@ -169,7 +169,7 @@ export function Header({ lang, dict, navGroups }: HeaderProps) {
       <HeaderMobileDrawer
         lang={lang}
         dict={dict}
-        navGroups={navGroups}
+        menuEntries={menuEntries}
         isAr={isAr}
         mobileOpen={mobileOpen}
         user={user}

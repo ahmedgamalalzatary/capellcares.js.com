@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
 
-type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "navGroups"> & {
+type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"> & {
   isAr: boolean;
   mobileOpen: boolean;
   user: { id: number; name: string; email: string } | null;
@@ -19,7 +19,7 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "navGroups"> 
 export function HeaderMobileDrawer({
   lang,
   dict,
-  navGroups,
+  menuEntries,
   isAr,
   mobileOpen,
   user,
@@ -31,8 +31,12 @@ export function HeaderMobileDrawer({
   // The tab currently sliding out, kept mounted until its exit animation ends.
   const [prevTab, setPrevTab] = useState<number | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
-  const activeGroup = navGroups[activeTab];
-  const prevGroup = prevTab !== null ? navGroups[prevTab] : null;
+  const activeGroup = menuEntries[activeTab];
+  const prevGroup = prevTab !== null ? menuEntries[prevTab] : null;
+
+  useEffect(() => {
+    if (activeTab >= menuEntries.length) setActiveTab(0);
+  }, [activeTab, menuEntries.length]);
 
   const selectTab = (index: number) => {
     if (index === activeTab) return;
@@ -46,17 +50,26 @@ export function HeaderMobileDrawer({
   const fromRight = dir === 1 ? !isAr : isAr;
 
   const renderCards = (group: NonNullable<typeof activeGroup>) =>
-    group.children.length > 0 ? (
+    group.type === "products" ? (
+      group.products.map((product) => (
+        <CategoryCard
+          key={product.id}
+          href={`/${lang}/products/${product.slug}`}
+          title={product.label}
+          isAr={isAr}
+          onClick={onClose}
+        />
+      ))
+    ) : group.children.length > 0 ? (
       group.children.map((child) => (
         <CategoryCard
           key={child.id}
-          lang={lang}
           href={`/${lang}/category/${child.slug}`}
           title={child.label}
           subtitle={
             child.children.length
               ? child.children.map((g) => g.label).join(" · ")
-              : (isAr ? group.root.name.ar : group.root.name.en)
+              : group.label
           }
           count={child.children.length}
           children={child.children}
@@ -66,9 +79,8 @@ export function HeaderMobileDrawer({
       ))
     ) : (
       <CategoryCard
-        lang={lang}
-        href={`/${lang}/category/${group.root.slug}`}
-        title={isAr ? group.root.name.ar : group.root.name.en}
+        href={`/${lang}/category/${group.slug}`}
+        title={group.label}
         subtitle={dict.nav.viewAll}
         count={0}
         children={[]}
@@ -113,12 +125,12 @@ export function HeaderMobileDrawer({
             {/* Category tabs */}
             <div className="-mx-4 mt-5 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
               <div className="flex min-w-max gap-7">
-                {navGroups.map((group, index) => {
+                {menuEntries.map((group, index) => {
                   const active = index === activeTab;
-                  const name = isAr ? group.root.name.ar : group.root.name.en;
+                  const name = group.label;
                   return (
                     <button
-                      key={group.root.id}
+                      key={group.key}
                       type="button"
                       onClick={() => selectTab(index)}
                       className={`relative shrink-0 whitespace-nowrap pb-2 text-sm tracking-[0.04em] transition-colors ${
@@ -231,12 +243,11 @@ function CategoryCard({
   isAr,
   onClick
 }: {
-  lang: string;
   href: string;
   title: string;
-  subtitle: string;
-  count: number;
-  children: NavNode[];
+  subtitle?: string;
+  count?: number;
+  children?: NavNode[];
   isAr: boolean;
   onClick: () => void;
 }) {

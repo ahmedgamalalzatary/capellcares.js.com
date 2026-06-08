@@ -7,7 +7,8 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
-import { fetchCategories } from "@/lib/api/client";
+import { fetchCategories, fetchProducts } from "@/lib/api/client";
+import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
@@ -34,8 +35,12 @@ export default async function LocaleLayout({
 }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const categories = await fetchCategories({ lang }).catch(() => []);
+  const [categories, products] = await Promise.all([
+    fetchCategories({ lang }).catch(() => []),
+    fetchProducts({ lang }).catch(() => [])
+  ]);
   const navGroups = buildNav(categories, lang);
+  const menuEntries = buildHeaderMenu({ navGroups, products, dict, lang });
 
   return (
     <AuthProvider>
@@ -51,7 +56,7 @@ export default async function LocaleLayout({
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
             />
             <Suspense fallback={null}>
-              <Header lang={lang} dict={dict} navGroups={navGroups} />
+              <Header lang={lang} dict={dict} menuEntries={menuEntries} />
             </Suspense>
             <div>{children}</div>
             <Footer lang={lang} dict={dict} />
