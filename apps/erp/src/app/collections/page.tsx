@@ -21,18 +21,23 @@ import { Icon } from "@/components/ui/icons";
 
 export default function CollectionsListPage() {
   const { user } = useAdminAuth();
-  const collections = useStore((s) => s.collections);
-  const categories = useStore((s) => s.categories);
-  const [search, setSearch] = useState("");
-  const [pendingToggle, setPendingToggle] = useState<Collection | null>(null);
 
-  if (!canReadErpModule(user, "collections")) {
+  if (!user || !canReadErpModule(user, "collections")) {
     return (
       <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
       </AdminShell>
     );
   }
+
+  return <CollectionsListPageContent user={user} />;
+}
+
+function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typeof useAdminAuth>["user"]> }) {
+  const collections = useStore((s) => s.collections);
+  const categories = useStore((s) => s.categories);
+  const [search, setSearch] = useState("");
+  const [pendingToggle, setPendingToggle] = useState<Collection | null>(null);
 
   const visibleCollections = useMemo(
     () => collections.filter((collection) => !collection.deletedAt),

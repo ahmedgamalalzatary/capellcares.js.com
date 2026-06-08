@@ -19,8 +19,6 @@ function statusChip(status: string) {
 
 export default function OrdersPage() {
   const { user } = useAdminAuth();
-  const orders = useStore((s) => s.orders);
-  const [search, setSearch] = useState("");
 
   if (!canReadErpModule(user, "orders")) {
     return (
@@ -29,6 +27,13 @@ export default function OrdersPage() {
       </AdminShell>
     );
   }
+
+  return <OrdersPageContent />;
+}
+
+function OrdersPageContent() {
+  const orders = useStore((s) => s.orders);
+  const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     if (!search.trim()) return orders;

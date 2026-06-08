@@ -14,17 +14,6 @@ import { useStore } from "@/lib/store";
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAdminAuth();
-  const { id } = use(params);
-  const products = useStore((s) => s.products);
-  const offers = useStore((s) => s.offers);
-  const categories = useStore((s) => s.categories);
-  const loaded = useStore((s) => s.loaded);
-  const error = useStore((s) => s.error);
-  const product = products.find((p) => p.id === Number(id));
-
-  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
-  const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
-
   if (!canReadErpModule(user, "products")) {
     return (
       <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
@@ -40,6 +29,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       </AdminShell>
     );
   }
+
+  return <EditProductPageContent params={params} />;
+}
+
+function EditProductPageContent({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const products = useStore((s) => s.products);
+  const offers = useStore((s) => s.offers);
+  const categories = useStore((s) => s.categories);
+  const loaded = useStore((s) => s.loaded);
+  const error = useStore((s) => s.error);
+  const product = products.find((p) => p.id === Number(id));
+  const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | null>(null);
+  const [relatedItemsError, setRelatedItemsError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;

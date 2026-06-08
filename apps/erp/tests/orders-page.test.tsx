@@ -1,13 +1,36 @@
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
+
+const mockedUseStore = vi.fn((selector: any) => selector({
+  orders: [{
+    id: 5,
+    orderCode: "YMFI-005",
+    customerType: "registered",
+    customerId: 1,
+    fullName: "Capella User",
+    phone: "01012345678",
+    email: "user@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 4",
+    notes: null,
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    totalAmount: 213,
+    createdAt: "2026-05-19T00:00:00.000Z"
+  }]
+}));
 
 vi.mock("@/components/providers/admin-auth", () => ({
-  useAdminAuth: () => ({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
-    hydrated: true,
-    logout: vi.fn()
-  })
+  useAdminAuth: () => mockedUseAdminAuth()
 }));
 
 vi.mock("@/components/shell/admin-shell", () => ({
@@ -22,30 +45,35 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/store", () => ({
-  useStore: (selector: any) => selector({
-    orders: [{
-      id: 5,
-      orderCode: "YMFI-005",
-      customerType: "registered",
-      customerId: 1,
-      fullName: "Capella User",
-      phone: "01012345678",
-      email: "user@capella.test",
-      governorate: "Cairo",
-      cityArea: "Nasr City",
-      addressLine: "Street 10",
-      buildingApartment: "Building 4",
-      notes: null,
-      paymentMethod: "cod",
-      paymentStatus: "pending",
-      totalAmount: 213,
-      createdAt: "2026-05-19T00:00:00.000Z"
-    }]
-  })
+  useStore: (selector: any) => mockedUseStore(selector)
 }));
 
 import OrdersPage from "@/app/orders/page";
 describe("OrdersPage", () => {
+  beforeEach(() => {
+    mockedUseAdminAuth.mockReset();
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+    mockedUseStore.mockClear();
+  });
+
+  it("shows a 403 state without subscribing to order data for unauthorized staff", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(OrdersPage));
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الطلبات.")).toBeInTheDocument();
+    expect(mockedUseStore).not.toHaveBeenCalled();
+  });
+
   it("renders an explicit details action linking to the ERP order detail page", () => {
     render(createElement(OrdersPage));
 

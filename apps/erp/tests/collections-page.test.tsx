@@ -9,6 +9,24 @@ const mockedUseAdminAuth = vi.fn(() => ({
 }));
 
 const toggleCollectionStatus = vi.fn().mockResolvedValue(undefined);
+const mockedUseStore = vi.fn((selector: any) => selector({
+  collections: [{
+    id: 1,
+    slug: "collection-1",
+    name: { ar: "مجموعة", en: "Collection" },
+    description: { ar: "", en: "" },
+    imagePath: "",
+    price: 100,
+    originalTotal: 150,
+    categoryId: 7,
+    items: [{ variantId: 3, qty: 1 }],
+    stock: 2,
+    status: "active",
+    createdAt: "",
+    updatedAt: ""
+  }],
+  categories: [{ id: 7, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
+}));
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -23,24 +41,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 }));
 
 vi.mock("@/lib/store", () => ({
-  useStore: (selector: any) => selector({
-    collections: [{
-      id: 1,
-      slug: "collection-1",
-      name: { ar: "مجموعة", en: "Collection" },
-      description: { ar: "", en: "" },
-      imagePath: "",
-      price: 100,
-      originalTotal: 150,
-      categoryId: 7,
-      items: [{ variantId: 3, qty: 1 }],
-      stock: 2,
-      status: "active",
-      createdAt: "",
-      updatedAt: ""
-    }],
-    categories: [{ id: 7, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
-  }),
+  useStore: (selector: any) => mockedUseStore(selector),
   getStore: () => ({
     toggleCollectionStatus
   })
@@ -58,6 +59,7 @@ describe("CollectionsListPage", () => {
       logout: vi.fn()
     });
     toggleCollectionStatus.mockClear();
+    mockedUseStore.mockClear();
   });
 
   afterEach(() => {
@@ -75,6 +77,7 @@ describe("CollectionsListPage", () => {
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
+    expect(mockedUseStore).not.toHaveBeenCalled();
   });
 
   it("renders a clickable link to create a new collection", () => {
@@ -117,6 +120,7 @@ describe("CollectionsListPage", () => {
 
 describe("NewCollectionPage", () => {
   it("shows a 403 state for staff without collections.create", () => {
+    mockedUseStore.mockClear();
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
       hydrated: true,
@@ -127,5 +131,6 @@ describe("NewCollectionPage", () => {
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
     expect(screen.getByText("لا تملكين صلاحية إنشاء المجموعات.")).toBeInTheDocument();
+    expect(mockedUseStore).not.toHaveBeenCalled();
   });
 });

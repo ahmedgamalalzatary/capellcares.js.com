@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store";
 
 export default function NewCollectionPage() {
   const { user } = useAdminAuth();
+
   if (!canCreateErpModule(user, "collections")) {
     return (
       <AdminShell title="مجموعة جديدة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
@@ -18,6 +19,10 @@ export default function NewCollectionPage() {
     );
   }
 
+  return <NewCollectionPageContent />;
+}
+
+function NewCollectionPageContent() {
   const products = useStore((s) => s.products);
   const categories = useStore((s) => s.categories);
   const offers = useStore((s) => s.offers);

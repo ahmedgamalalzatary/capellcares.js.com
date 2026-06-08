@@ -2,7 +2,7 @@ import { pickLang, type Language, type Product } from "@capella/shared";
 
 import type { NavGroup, NavNode } from "@/lib/nav";
 
-export interface HeaderMenuProductLink {
+interface HeaderMenuProductLink {
   id: number;
   slug: string;
   label: string;

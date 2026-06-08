@@ -13,6 +13,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
 import { buildRelatedOptions } from "@/components/forms/related-options";
 
 const apiGet = vi.fn();
+const mockedUseStore = vi.fn((selector: any) => selector(storeState));
 
 vi.mock("@/lib/api/client", () => ({
   api: { get: (path: string) => apiGet(path) }
@@ -69,11 +70,11 @@ const storeState = {
   error: null
 };
 
-vi.mock("@/lib/store", () => ({
-  useStore: (selector: any) => selector(storeState)
-}));
-
 import EditProductPage from "@/app/products/[id]/edit/page";
+
+vi.mock("@/lib/store", () => ({
+  useStore: (selector: any) => mockedUseStore(selector)
+}));
 
 describe("buildRelatedOptions", () => {
   it("includes active, non-deleted products and offers and drops the rest", () => {
@@ -94,7 +95,32 @@ describe("buildRelatedOptions", () => {
 });
 
 describe("EditProductPage data plumbing", () => {
+  it("shows a 403 state without subscribing to store data for staff without products.update", async () => {
+    mockedUseStore.mockClear();
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    await act(async () => {
+      render(
+        createElement(
+          Suspense,
+          { fallback: null },
+          createElement(EditProductPage, { params: Promise.resolve({ id: "1" }) })
+        )
+      );
+    });
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
+    expect(mockedUseStore).not.toHaveBeenCalled();
+    expect(apiGet).not.toHaveBeenCalled();
+  });
+
   it("shows a 403 state for staff without products.update", async () => {
+    mockedUseStore.mockClear();
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
       hydrated: true,
