@@ -18,6 +18,13 @@ risky client logic the API layer can't prove.
 - **Audit task:** treat the checklist below as a gap list — mark already-covered boxes and only
   write tests for the genuinely missing edge cases.
 
+## Repo-state note (2026-06-09)
+
+- This phase should still be treated as a gap list, not as “already implemented”.
+- The storefront suite exists, but some areas documented below are only lightly covered today.
+- Example: `tests/unit/cart.test.ts` currently proves basic localStorage persistence, not the full cart-rule
+  matrix listed under `Cart store [T0]`.
+
 ## Cart store [T0]
 - [ ] Add product/offer lines; merge same variant; keep distinct variants and product-vs-offer lines separate.
 - [ ] Quantity cannot be zero/negative/NaN/fractional/above stock; totals update on change.

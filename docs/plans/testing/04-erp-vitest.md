@@ -16,6 +16,12 @@ admin-side logic where validation, payload mapping, and failed-save recovery liv
 - **Audit task:** treat the checklist below as a gap list — mark already-covered boxes and only
   write tests for the genuinely missing cases (likely auth-hydration gating, refetch-on-focus, failed-save recovery).
 
+## Repo-state note (2026-06-09)
+
+- This phase still matches the repo directionally.
+- The ERP suite exists and has meaningful coverage, but the checklist remains primarily a planned expansion
+  and gap-filling list, not a statement that those behaviors are already covered.
+
 ## Auth & hydration [T0]
 - [ ] Store hydration waits for auth restoration before fetching protected data.
 - [ ] Protected pages don't fetch admin data before auth hydration completes.

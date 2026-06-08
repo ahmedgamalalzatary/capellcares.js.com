@@ -33,6 +33,14 @@ Shared contracts: `packages/shared/tests/contracts/` holds `index.ts`, `helpers.
 `assertForbiddenFieldsAbsent`). No standalone shared `.test.ts` runner, but the contract
 definitions are real and exercised.
 
+## Repo-state note (2026-06-09)
+
+- This phase still reflects the repo well.
+- The API suite is real and substantial; current work here should be treated as gap-filling and hardening,
+  not greenfield setup.
+- Small inventory correction: `packages/shared/tests/contracts/` also contains
+  `collection.contract.ts`, so the shared contract set is slightly broader than the summary line above.
+
 > **AUDIT COMPLETED 2026-05-30** — checkboxes below were verified by reading actual test contents
 > (not filenames). `[x]` = a real passing assertion exists; `[ ]` = genuine gap; `[~]` = partial.
 > Coverage is strong; the real remaining work is concentrated in section C (rollback/concurrency/snapshots).

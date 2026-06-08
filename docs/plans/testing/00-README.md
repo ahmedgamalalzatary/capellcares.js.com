@@ -19,6 +19,11 @@ should not be used for planning or status tracking.
 > derived from test *file inventory* + configs + the (fully-read) smoke spec; their per-item checkboxes
 > are not yet content-audited.
 
+> **Repo-state correction (2026-06-09):** API and Vitest coverage remain real, but the Playwright state is
+> currently behind this older audit note. `playwright.config.ts` and the root `test:staging-smoke` script
+> still exist, but the referenced `tests/e2e/staging/critical` suite is missing from the working tree.
+> Treat Phase 05 as planned/incomplete until that suite is restored or replaced.
+
 ## Tier tags
 
 Every task is tagged so we protect money/data-integrity paths first and never
@@ -77,4 +82,5 @@ Verified by reading actual test contents. Most of the money/data-integrity slice
    (create-time snapshot is) (Phase 02-C).
 6. ✅ Public `/api/v1` hides `buyingPrice` (Phase 02-D). ⚠️ product detail 404-on-inactive gap.
 7. ✅ Orders cross-customer rejected (Phase 02-C). ⚠️ wishlist cross-customer not tested (Phase 02-A).
-8. ✅ Playwright guest-COD smoke exists incl. COD-pending API signal (Phase 05).
+8. ❌ Playwright guest-COD smoke is not currently present in the repo tree; only config/script remain
+   (Phase 05).

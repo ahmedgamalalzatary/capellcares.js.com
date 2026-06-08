@@ -28,6 +28,16 @@ later phase has a stable, isolated DB and a single seed source of truth.
 - Env: **verified** — `load-workspace-env.test.ts` covers `.env.test` loading, `TEST_DATABASE_URL` →
   `DATABASE_URL` mapping under `NODE_ENV=test`, and skip-when-already-set.
 
+## Repo-state note (2026-06-09)
+
+- This phase still mostly matches the repo.
+- The biggest confirmed gaps remain:
+  - no targeted root test scripts beyond `test` and `test:staging-smoke`
+  - no staging fixture bootstrap/check script
+  - no expanded fixture matrix in the seed
+- `test:staging-smoke` currently points at a missing Playwright suite, so it should not be treated as a
+  working baseline until Phase 05 is restored.
+
 ## Tasks
 
 ### Test DB safety [T0]

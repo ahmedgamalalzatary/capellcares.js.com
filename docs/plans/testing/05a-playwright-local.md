@@ -25,6 +25,13 @@ and it does **not** turn staging smoke into a large regression suite.
   repo-level local browser suite under `tests/e2e/local`.
 - No root script exists for local Playwright.
 
+## Repo-state note (2026-06-09)
+
+- This phase remains accurate.
+- Additional current-state detail: the staging `tests/e2e/staging/critical` directory referenced by the
+  root Playwright config is also missing, so the repo currently has Playwright configuration but no checked-in
+  executable suite at either the staging or local layer.
+
 ## Suite boundary
 
 ### What belongs here [T0/T1]

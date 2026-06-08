@@ -6,7 +6,7 @@ This file defines the canonical folder and boundary expectations for the Capella
 
 Treat this as the implementation baseline unless a new explicit product decision replaces it. The tree is intentionally pragmatic: required boundaries are strict, but helper folders/files are created when the implementation needs them.
 
-This tree was last reconciled against the actual codebase on 2026-05-31, including the separation-of-concerns sweep that moved per-file internals into adjacent `lib/`, `components/`, `types/`, `shared/`, and repository `read/write` subfolders while keeping the original top-level module paths stable. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories (e.g. `apps/api/src/modules/catalog/categories`) exist on disk but are not listed because they hold no files.
+This tree was last reconciled against the actual codebase on 2026-06-09. Since the prior reconcile it captures: the **collections** feature (storefront pages, ERP CRUD, API catalog + admin modules, shared DTO/schema, DB migration), the ERP **staff-management / roles-and-permissions** feature (API `erp-permissions` middleware/service plus `admin/staff-management` module), the storefront and ERP move to top-level `hooks/`, `types/`, `constants/`, and `utils/` folders (replacing per-page co-location), new API `config/` entries (`cors.ts`, `secrets.ts`), the `inventory` module, and the `admin/shared` helpers. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories exist on disk but are not listed because they hold no files.
 
 ## Locked Project Decisions
 
@@ -19,6 +19,8 @@ This tree was last reconciled against the actual codebase on 2026-05-31, includi
 - Storefront and ERP consume the backend through HTTP APIs only.
 - Public storefront routes and ERP/admin routes stay separated.
 - Orders are persisted in DB. ERP has order-viewing UI (list + detail) but no order mutation in v1.
+- Collections are a first-class catalog grouping: storefront browse pages, ERP CRUD, and API catalog + admin modules.
+- ERP supports staff management with role-based permissions, enforced in the API via `erp-permissions` middleware/service.
 - Storefront static UI translation stays centralized in `packages/shared/src/i18n` for now.
 - Frontend API access may stay centralized in `client.ts`; split API files are optional, not mandatory.
 - Shared UI primitives and the shared HTTP `base` client live in `packages/shared/src/ui` and `packages/shared/src/api`.
@@ -41,10 +43,10 @@ capella/
 ├─ apps/
 │  ├─ storefront/
 │  │  ├─ public/
+│  │  │  ├─ capella logo.png
 │  │  │  ├─ capella logo1.png
 │  │  │  ├─ capella logo2.png
-│  │  │  ├─ capella logo3.png
-│  │  │  └─ image.jpeg
+│  │  │  └─ capella logo3.png
 │  │  ├─ src/
 │  │  │  ├─ app/
 │  │  │  │  ├─ [lang]/
@@ -53,6 +55,9 @@ capella/
 │  │  │  │  │  ├─ category/
 │  │  │  │  │  │  └─ [slug]/page.tsx
 │  │  │  │  │  ├─ checkout/
+│  │  │  │  │  │  └─ page.tsx
+│  │  │  │  │  ├─ collections/
+│  │  │  │  │  │  ├─ [slug]/page.tsx
 │  │  │  │  │  │  └─ page.tsx
 │  │  │  │  │  ├─ login/
 │  │  │  │  │  │  └─ page.tsx
@@ -74,33 +79,32 @@ capella/
 │  │  │  │  │  ├─ layout.tsx
 │  │  │  │  │  ├─ not-found.tsx
 │  │  │  │  │  └─ page.tsx
-│  │  │  │  ├─ api/
-│  │  │  │  │  └─ revalidate/route.ts
 │  │  │  │  ├─ layout.tsx
 │  │  │  │  ├─ page.tsx
 │  │  │  │  ├─ globals.css
 │  │  │  │  ├─ robots.ts
 │  │  │  │  └─ sitemap.ts
 │  │  │  ├─ components/
+│  │  │  │  ├─ ask-capella/
+│  │  │  │  │  ├─ ask-capella-button.tsx
+│  │  │  │  │  ├─ ask-capella-overlay.tsx
+│  │  │  │  │  └─ ask-capella-results.tsx
 │  │  │  │  ├─ auth/
 │  │  │  │  │  └─ auth-forms.tsx
 │  │  │  │  ├─ cart/
 │  │  │  │  │  └─ cart-view.tsx
 │  │  │  │  ├─ checkout/
-│  │  │  │  │  ├─ components/
-│  │  │  │  │  │  ├─ checkout-form.tsx
-│  │  │  │  │  │  └─ checkout-summary.tsx
-│  │  │  │  │  ├─ checkout-view.types.ts
-│  │  │  │  │  ├─ checkout-view.tsx
-│  │  │  │  │  └─ use-checkout.ts
+│  │  │  │  │  ├─ checkout-form.tsx
+│  │  │  │  │  ├─ checkout-summary.tsx
+│  │  │  │  │  └─ checkout-view.tsx
+│  │  │  │  ├─ collections/
+│  │  │  │  │  └─ collection-detail.tsx
 │  │  │  │  ├─ layout/
 │  │  │  │  │  ├─ header/
-│  │  │  │  │  │  ├─ components/
-│  │  │  │  │  │  │  ├─ desktop-nav.tsx
-│  │  │  │  │  │  │  └─ mobile-drawer.tsx
-│  │  │  │  │  │  ├─ header.types.ts
-│  │  │  │  │  │  ├─ search.ts
-│  │  │  │  │  │  └─ socials.ts
+│  │  │  │  │  │  ├─ announcement-bar.tsx
+│  │  │  │  │  │  ├─ mobile-drawer.tsx
+│  │  │  │  │  │  ├─ search-overlay.tsx
+│  │  │  │  │  │  └─ shop-mega-menu.tsx
 │  │  │  │  │  ├─ breadcrumb.tsx
 │  │  │  │  │  ├─ footer.tsx
 │  │  │  │  │  ├─ header.tsx
@@ -111,65 +115,72 @@ capella/
 │  │  │  │  │  ├─ order-detail-view.tsx
 │  │  │  │  │  └─ orders-view.tsx
 │  │  │  │  ├─ products/
+│  │  │  │  │  ├─ filters/
+│  │  │  │  │  │  ├─ filter-section.tsx
+│  │  │  │  │  │  ├─ mobile-filter-drawer.tsx
+│  │  │  │  │  │  ├─ product-filter-category-list.tsx
+│  │  │  │  │  │  └─ product-filters-content.tsx
+│  │  │  │  │  ├─ grid/
+│  │  │  │  │  │  ├─ product-grid-empty-state.tsx
+│  │  │  │  │  │  ├─ product-grid-toolbar.tsx
+│  │  │  │  │  │  └─ product-grid.tsx
 │  │  │  │  │  ├─ advice-section.tsx
 │  │  │  │  │  ├─ category-pill.tsx
-│  │  │  │  │  ├─ filter-section.tsx
-│  │  │  │  │  ├─ mobile-filter-drawer.tsx
 │  │  │  │  │  ├─ price-input.tsx
 │  │  │  │  │  ├─ product-card.tsx
 │  │  │  │  │  ├─ product-detail.tsx
-│  │  │  │  │  ├─ product-filter-category-list.tsx
-│  │  │  │  │  ├─ product-filters-content.tsx
-│  │  │  │  │  ├─ product-grid-empty-state.tsx
-│  │  │  │  │  ├─ product-grid-toolbar.tsx
-│  │  │  │  │  ├─ product-grid.tsx
-│  │  │  │  │  ├─ product-grid.types.ts
-│  │  │  │  │  ├─ product-grid.utils.ts
-│  │  │  │  │  ├─ related-items.tsx
-│  │  │  │  │  └─ use-product-grid-filters.ts
+│  │  │  │  │  └─ related-items.tsx
 │  │  │  │  ├─ providers/
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  ├─ auth-provider.api.ts
-│  │  │  │  │  │  └─ auth-provider.storage.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  └─ auth-provider.types.ts
 │  │  │  │  │  ├─ auth-provider.tsx
 │  │  │  │  │  ├─ cart-provider.tsx
 │  │  │  │  │  └─ wishlist-provider.tsx
-│  │  │  │  ├─ search/
-│  │  │  │  │  ├─ components/
-│  │  │  │  │  │  └─ ask-capella-results.tsx
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  └─ use-ask-capella.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  └─ ask-capella.types.ts
-│  │  │  │  │  ├─ ask-capella-button.tsx
-│  │  │  │  │  └─ ask-capella-overlay.tsx
 │  │  │  │  ├─ ui/
+│  │  │  │  │  ├─ collection-illustration.tsx
 │  │  │  │  │  ├─ icons.tsx
 │  │  │  │  │  ├─ offer-illustration.tsx
 │  │  │  │  │  └─ product-illustration.tsx
 │  │  │  │  └─ wishlist/
 │  │  │  │     └─ wishlist-view.tsx
-│  │  │  └─ lib/
-│  │  │     ├─ api/
-│  │  │     │  ├─ client/
-│  │  │     │  │  ├─ http.ts
-│  │  │     │  │  ├─ normalizers.ts
-│  │  │     │  │  ├─ selectors.ts
-│  │  │     │  │  └─ types.ts
-│  │  │     │  └─ client.ts
-│  │  │     ├─ cart.ts
-│  │  │     ├─ nav.ts
-│  │  │     ├─ seo.ts
-│  │  │     ├─ storefront-detail-page.tsx
-│  │  │     ├─ storefront-page-context.ts
-│  │  │     ├─ storefront-static-data.ts
-│  │  │     └─ utils.ts
+│  │  │  ├─ constants/
+│  │  │  │  └─ socials.ts
+│  │  │  ├─ hooks/
+│  │  │  │  ├─ use-ask-capella.ts
+│  │  │  │  ├─ use-checkout.ts
+│  │  │  │  ├─ use-product-grid-filters.ts
+│  │  │  │  └─ use-search.ts
+│  │  │  ├─ lib/
+│  │  │  │  ├─ api/
+│  │  │  │  │  ├─ client/
+│  │  │  │  │  │  ├─ http.ts
+│  │  │  │  │  │  ├─ normalizers.ts
+│  │  │  │  │  │  ├─ selectors.ts
+│  │  │  │  │  │  └─ types.ts
+│  │  │  │  │  ├─ client.ts
+│  │  │  │  │  ├─ revalidate-secret.ts
+│  │  │  │  │  └─ route.ts
+│  │  │  │  ├─ auth-provider.api.ts
+│  │  │  │  ├─ auth-provider.storage.ts
+│  │  │  │  ├─ cart.ts
+│  │  │  │  ├─ header-menu.ts
+│  │  │  │  ├─ nav.ts
+│  │  │  │  ├─ seo.ts
+│  │  │  │  ├─ storefront-detail-page.tsx
+│  │  │  │  ├─ storefront-page-context.ts
+│  │  │  │  ├─ storefront-static-data.ts
+│  │  │  │  └─ utils.ts
+│  │  │  ├─ types/
+│  │  │  │  ├─ ask-capella.types.ts
+│  │  │  │  ├─ auth-provider.types.ts
+│  │  │  │  ├─ checkout-view.types.ts
+│  │  │  │  ├─ header.types.ts
+│  │  │  │  └─ product-grid.types.ts
+│  │  │  └─ utils/
+│  │  │     └─ product-grid.utils.ts
 │  │  ├─ tests/
 │  │  │  ├─ components/
 │  │  │  │  ├─ advice-section.test.tsx
 │  │  │  │  ├─ auth-provider.test.tsx
+│  │  │  │  ├─ header-mobile-drawer.test.tsx
 │  │  │  │  ├─ mobile-filter-drawer.test.tsx
 │  │  │  │  ├─ offer-detail.test.tsx
 │  │  │  │  ├─ order-page.test.tsx
@@ -179,17 +190,25 @@ capella/
 │  │  │  │  ├─ product-filter-category-list.test.tsx
 │  │  │  │  ├─ product-grid-empty-state.test.tsx
 │  │  │  │  ├─ product-grid-toolbar.test.tsx
+│  │  │  │  ├─ shop-mega-menu.test.tsx
 │  │  │  │  └─ storefront-page-shell.test.tsx
 │  │  │  ├─ contracts/
 │  │  │  │  └─ storefront-client.contract.test.ts
 │  │  │  ├─ unit/
 │  │  │  │  ├─ api-base.test.ts
 │  │  │  │  ├─ api-client.test.ts
+│  │  │  │  ├─ ask-capella-search.test.ts
 │  │  │  │  ├─ cart.test.ts
+│  │  │  │  ├─ category-page.test.tsx
+│  │  │  │  ├─ collection-pages.test.tsx
+│  │  │  │  ├─ header-menu.test.ts
+│  │  │  │  ├─ nav.test.ts
 │  │  │  │  ├─ next-config.test.ts
 │  │  │  │  ├─ revalidate-route.test.ts
+│  │  │  │  ├─ revalidate-secret.test.ts
 │  │  │  │  ├─ seo.test.ts
 │  │  │  │  ├─ shared-ui.test.tsx
+│  │  │  │  ├─ shop-page.test.tsx
 │  │  │  │  ├─ storefront-detail-page.test.tsx
 │  │  │  │  ├─ storefront-page-context.test.ts
 │  │  │  │  ├─ storefront-static-data.test.ts
@@ -217,6 +236,10 @@ capella/
 │  │  │  │  │  ├─ [id]/edit/page.tsx
 │  │  │  │  │  ├─ new/page.tsx
 │  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ collections/
+│  │  │  │  │  ├─ [id]/edit/page.tsx
+│  │  │  │  │  ├─ new/page.tsx
+│  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ dashboard/page.tsx
 │  │  │  │  ├─ login/page.tsx
 │  │  │  │  ├─ offers/
@@ -228,23 +251,14 @@ capella/
 │  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ products/
 │  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ components/
-│  │  │  │  │  │  └─ products-table.tsx
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  └─ use-products-page.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  └─ products-page.types.ts
 │  │  │  │  │  ├─ new/page.tsx
 │  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ sales/page.tsx
-│  │  │  │  ├─ trash/
-│  │  │  │  │  ├─ components/
-│  │  │  │  │  │  └─ deleted-list.tsx
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  └─ use-trash-page.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  └─ trash-page.types.ts
+│  │  │  │  ├─ staff/
+│  │  │  │  │  ├─ [id]/edit/page.tsx
+│  │  │  │  │  ├─ new/page.tsx
 │  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ trash/page.tsx
 │  │  │  │  ├─ layout.tsx
 │  │  │  │  ├─ page.tsx
 │  │  │  │  └─ globals.css
@@ -252,17 +266,14 @@ capella/
 │  │  │  │  ├─ admin/
 │  │  │  │  │  ├─ admin-confirm-modal.tsx
 │  │  │  │  │  ├─ admin-list-toolbar.tsx
-│  │  │  │  │  └─ admin-status-badge.tsx
+│  │  │  │  │  ├─ admin-status-badge.tsx
+│  │  │  │  │  ├─ erp-forbidden-state.tsx
+│  │  │  │  │  └─ staff-editor-form.tsx
 │  │  │  │  ├─ forms/
-│  │  │  │  │  ├─ lib/
-│  │  │  │  │  │  ├─ use-offer-form.ts
-│  │  │  │  │  │  └─ use-product-form.ts
-│  │  │  │  │  ├─ types/
-│  │  │  │  │  │  ├─ offer-form.types.ts
-│  │  │  │  │  │  └─ product-form.types.ts
 │  │  │  │  │  ├─ advice-form.tsx
 │  │  │  │  │  ├─ category-form.tsx
 │  │  │  │  │  ├─ category-picker.tsx
+│  │  │  │  │  ├─ collection-form.tsx
 │  │  │  │  │  ├─ editor-form-parts.tsx
 │  │  │  │  │  ├─ form-slug.ts
 │  │  │  │  │  ├─ image-upload.tsx
@@ -279,27 +290,46 @@ capella/
 │  │  │  │  │  └─ erp-toaster.tsx
 │  │  │  │  ├─ shell/
 │  │  │  │  │  └─ admin-shell.tsx
-│  │  │  │  └─ ui/
-│  │  │  │     ├─ checkbox.tsx
-│  │  │  │     ├─ icons.tsx
-│  │  │  │     └─ modal.tsx
-│  │  │  └─ lib/
-│  │  │     ├─ api/
-│  │  │     │  └─ client.ts
-│  │  │     ├─ store/
-│  │  │     │  ├─ core.ts
-│  │  │     │  ├─ normalizers.ts
-│  │  │     │  └─ types.ts
-│  │  │     ├─ errors.ts
-│  │  │     ├─ store.ts
-│  │  │     └─ utils.ts
+│  │  │  │  ├─ trash/
+│  │  │  │  │  └─ deleted-list.tsx
+│  │  │  │  ├─ ui/
+│  │  │  │  │  ├─ icons.tsx
+│  │  │  │  │  └─ modal.tsx
+│  │  │  │  └─ products-table.tsx
+│  │  │  ├─ hooks/
+│  │  │  │  ├─ forms/
+│  │  │  │  │  ├─ use-collection-form.ts
+│  │  │  │  │  ├─ use-offer-form.ts
+│  │  │  │  │  └─ use-product-form.ts
+│  │  │  │  ├─ use-products-page.ts
+│  │  │  │  └─ use-trash-page.ts
+│  │  │  ├─ lib/
+│  │  │  │  ├─ api/
+│  │  │  │  │  └─ client.ts
+│  │  │  │  ├─ store/
+│  │  │  │  │  ├─ core.ts
+│  │  │  │  │  ├─ normalizers.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  ├─ erp-permissions.ts
+│  │  │  │  ├─ errors.ts
+│  │  │  │  ├─ store.ts
+│  │  │  │  └─ utils.ts
+│  │  │  └─ types/
+│  │  │     ├─ forms/
+│  │  │     │  ├─ collection-form.types.ts
+│  │  │     │  ├─ offer-form.types.ts
+│  │  │     │  └─ product-form.types.ts
+│  │  │     └─ trash-page.types.ts
 │  │  ├─ tests/
 │  │  │  ├─ admin-list-toolbar.test.tsx
 │  │  │  ├─ admin-shell.test.tsx
 │  │  │  ├─ advices-page.test.tsx
 │  │  │  ├─ api-base.test.ts
+│  │  │  ├─ api-client-auth.test.ts
 │  │  │  ├─ category-form-toast.test.tsx
 │  │  │  ├─ category-form.test.tsx
+│  │  │  ├─ collection-edit-page.test.tsx
+│  │  │  ├─ collections-page.test.tsx
 │  │  │  ├─ editor-form-parts.test.tsx
 │  │  │  ├─ error-messages.test.ts
 │  │  │  ├─ form-slug.test.ts
@@ -311,8 +341,12 @@ capella/
 │  │  │  ├─ products-page.test.tsx
 │  │  │  ├─ sales-page.test.tsx
 │  │  │  ├─ shared-ui.test.tsx
+│  │  │  ├─ staff-edit-page.test.tsx
+│  │  │  ├─ staff-management-page.test.tsx
+│  │  │  ├─ staff-new-page.test.tsx
 │  │  │  ├─ store.test.ts
 │  │  │  ├─ trash-page.test.tsx
+│  │  │  ├─ upload-permissions.test.tsx
 │  │  │  └─ setup.ts
 │  │  ├─ next-env.d.ts
 │  │  ├─ next.config.ts
@@ -329,10 +363,13 @@ capella/
 │     │  ├─ server.ts
 │     │  ├─ app.ts
 │     │  ├─ config/
-│     │  │  └─ env.ts
+│     │  │  ├─ cors.ts
+│     │  │  ├─ env.ts
+│     │  │  └─ secrets.ts
 │     │  ├─ middlewares/
 │     │  │  ├─ admin-auth.middleware.ts
 │     │  │  ├─ auth.middleware.ts
+│     │  │  ├─ erp-permissions.middleware.ts
 │     │  │  ├─ error.middleware.ts
 │     │  │  ├─ locale.middleware.ts
 │     │  │  ├─ rate-limit.middleware.ts
@@ -342,6 +379,10 @@ capella/
 │     │  │  │  ├─ admin.controller.ts
 │     │  │  │  ├─ admin.routes.ts
 │     │  │  │  ├─ storefront-revalidation.ts
+│     │  │  │  ├─ advices/
+│     │  │  │  │  ├─ admin-advices.controller.ts
+│     │  │  │  │  ├─ admin-advices.routes.ts
+│     │  │  │  │  └─ storefront-advices.routes.ts
 │     │  │  │  ├─ auth/
 │     │  │  │  │  ├─ admin-auth.controller.ts
 │     │  │  │  │  ├─ admin-auth.routes.ts
@@ -349,19 +390,23 @@ capella/
 │     │  │  │  │  └─ admin-auth.service.ts
 │     │  │  │  ├─ categories/
 │     │  │  │  │  └─ admin-categories.controller.ts
+│     │  │  │  ├─ collections/
+│     │  │  │  │  ├─ admin-collections.controller.ts
+│     │  │  │  │  └─ admin-collections.mapper.ts
 │     │  │  │  ├─ offers/
 │     │  │  │  │  ├─ admin-offers.controller.ts
 │     │  │  │  │  └─ admin-offers.mapper.ts
-│     │  │  │  └─ products/
-│     │  │  │     ├─ lib/
-│     │  │  │     │  └─ admin-product-input.ts
-│     │  │  │     ├─ admin-products.controller.ts
-│     │  │  │     ├─ admin-products.routes.ts
-│     │  │  │     └─ admin-products.service.ts
-│     │  │  ├─ advices/
-│     │  │  │  ├─ admin-advices.routes.ts
-│     │  │  │  ├─ advices.controller.ts
-│     │  │  │  └─ storefront-advices.routes.ts
+│     │  │  │  ├─ products/
+│     │  │  │  │  ├─ lib/
+│     │  │  │  │  │  └─ admin-product-input.ts
+│     │  │  │  │  ├─ admin-products.controller.ts
+│     │  │  │  │  └─ admin-products.service.ts
+│     │  │  │  ├─ shared/
+│     │  │  │  │  ├─ db-errors.ts
+│     │  │  │  │  └─ related-items.ts
+│     │  │  │  └─ staff-management/
+│     │  │  │     ├─ admin-staff-management.controller.ts
+│     │  │  │     └─ admin-staff-management.routes.ts
 │     │  │  ├─ auth/
 │     │  │  │  ├─ auth.controller.ts
 │     │  │  │  ├─ auth.routes.ts
@@ -369,7 +414,11 @@ capella/
 │     │  │  │  └─ cookie-options.ts
 │     │  │  ├─ catalog/
 │     │  │  │  ├─ catalog.controller.ts
-│     │  │  │  ├─ catalog.routes.ts
+│     │  │  │  ├─ collections/
+│     │  │  │  │  ├─ collections.controller.ts
+│     │  │  │  │  ├─ collections.mapper.ts
+│     │  │  │  │  ├─ collections.routes.ts
+│     │  │  │  │  └─ collections.service.ts
 │     │  │  │  ├─ offers/
 │     │  │  │  │  └─ offers.mapper.ts
 │     │  │  │  └─ products/
@@ -382,6 +431,10 @@ capella/
 │     │  │  │  ├─ checkout.routes.ts
 │     │  │  │  ├─ checkout.schemas.ts
 │     │  │  │  └─ checkout.service.ts
+│     │  │  ├─ collections/
+│     │  │  │  └─ collection-mapper.shared.ts
+│     │  │  ├─ inventory/
+│     │  │  │  └─ bundle-inventory.ts
 │     │  │  ├─ offers/
 │     │  │  │  └─ offer-mapper.shared.ts
 │     │  │  ├─ orders/
@@ -391,6 +444,7 @@ capella/
 │     │  │  │  └─ orders.service.ts
 │     │  │  ├─ uploads/
 │     │  │  │  ├─ uploads.controller.ts
+│     │  │  │  ├─ uploads.permissions.ts
 │     │  │  │  ├─ uploads.routes.ts
 │     │  │  │  ├─ uploads.schemas.ts
 │     │  │  │  └─ uploads.service.ts
@@ -415,6 +469,7 @@ capella/
 │     │  │  ├─ advice.repository.ts
 │     │  │  ├─ auth-session.repository.ts
 │     │  │  ├─ category.repository.ts
+│     │  │  ├─ collection.repository.ts
 │     │  │  ├─ customer.repository.ts
 │     │  │  ├─ offer.repository.ts
 │     │  │  ├─ order.repository.ts
@@ -423,14 +478,13 @@ capella/
 │     │  │  └─ wishlist.repository.ts
 │     │  ├─ services/
 │     │  │  ├─ auth-session.service.ts
-│     │  │  ├─ image.service.ts
+│     │  │  ├─ erp-permissions.service.ts
 │     │  │  └─ slug.service.ts
 │     │  ├─ routes/
 │     │  │  ├─ erp.routes.ts
 │     │  │  ├─ index.ts
 │     │  │  └─ storefront.routes.ts
 │     │  └─ types/
-│     │     ├─ domain.contract.ts
 │     │     └─ domain.ts
 │     ├─ tests/
 │     │  ├─ contracts/
@@ -441,15 +495,21 @@ capella/
 │     │  │  └─ request.ts
 │     │  ├─ repositories/
 │     │  │  ├─ admin-products.repository.test.ts
+│     │  │  ├─ offer.repository.test.ts
+│     │  │  ├─ order.repository.test.ts
+│     │  │  ├─ product-search.repository.test.ts
 │     │  │  └─ related-item.repository.test.ts
 │     │  ├─ routes/
 │     │  │  ├─ admin-auth.routes.test.ts
 │     │  │  ├─ admin-categories.routes.test.ts
+│     │  │  ├─ admin-collections.routes.test.ts
 │     │  │  ├─ admin-offers.routes.test.ts
 │     │  │  ├─ admin-products.routes.test.ts
+│     │  │  ├─ admin-staff-management.routes.test.ts
 │     │  │  ├─ advices.routes.test.ts
 │     │  │  ├─ auth.routes.test.ts
 │     │  │  ├─ checkout.routes.test.ts
+│     │  │  ├─ erp-permissions.routes.test.ts
 │     │  │  ├─ orders.routes.test.ts
 │     │  │  ├─ route-truth.routes.test.ts
 │     │  │  ├─ sales.routes.test.ts
@@ -458,14 +518,24 @@ capella/
 │     │  ├─ services/
 │     │  │  ├─ admin-auth.service.test.ts
 │     │  │  ├─ admin-products.service.test.ts
+│     │  │  ├─ auth-session.service.test.ts
 │     │  │  ├─ checkout.service.test.ts
+│     │  │  ├─ erp-permissions.service.test.ts
 │     │  │  └─ uploads.test.ts
 │     │  └─ unit/
+│     │     ├─ admin-auth.middleware.test.ts
+│     │     ├─ admin-product-input.test.ts
 │     │     ├─ auth.middleware.test.ts
+│     │     ├─ bundle-inventory.test.ts
 │     │     ├─ checkout.schemas.test.ts
+│     │     ├─ cors-origins.test.ts
 │     │     ├─ load-workspace-env.test.ts
 │     │     ├─ offer-mapper.test.ts
-│     │     └─ storefront-revalidation.test.ts
+│     │     ├─ rate-limit.test.ts
+│     │     ├─ related-items.test.ts
+│     │     ├─ secrets.test.ts
+│     │     ├─ storefront-revalidation.test.ts
+│     │     └─ uploads-permissions.test.ts
 │     ├─ scripts/
 │     │  └─ run-tests.mjs
 │     ├─ esbuild.config.mjs
@@ -477,6 +547,8 @@ capella/
 │  │  ├─ src/
 │  │  │  ├─ api/
 │  │  │  │  └─ base.ts
+│  │  │  ├─ config/
+│  │  │  │  └─ workspace-env.ts
 │  │  │  ├─ constants/
 │  │  │  │  ├─ currency.ts
 │  │  │  │  ├─ index.ts
@@ -488,9 +560,9 @@ capella/
 │  │  │  │  ├─ auth.dto.ts
 │  │  │  │  ├─ category.dto.ts
 │  │  │  │  ├─ checkout.dto.ts
+│  │  │  │  ├─ collection.dto.ts
 │  │  │  │  ├─ index.ts
 │  │  │  │  ├─ offer.dto.ts
-│  │  │  │  ├─ order.dto.contract.ts
 │  │  │  │  ├─ order.dto.ts
 │  │  │  │  ├─ product.dto.ts
 │  │  │  │  └─ wishlist.dto.ts
@@ -503,6 +575,7 @@ capella/
 │  │  │  │  ├─ auth.schema.ts
 │  │  │  │  ├─ category.schema.ts
 │  │  │  │  ├─ checkout.schema.ts
+│  │  │  │  ├─ collection.schema.ts
 │  │  │  │  ├─ index.ts
 │  │  │  │  ├─ offer.schema.ts
 │  │  │  │  ├─ product.schema.ts
@@ -527,6 +600,7 @@ capella/
 │  │  │  └─ contracts/
 │  │  │     ├─ advice.contract.ts
 │  │  │     ├─ category.contract.ts
+│  │  │     ├─ collection.contract.ts
 │  │  │     ├─ helpers.ts
 │  │  │     ├─ index.ts
 │  │  │     ├─ offer.contract.ts
@@ -541,6 +615,7 @@ capella/
 │     │  │  ├─ meta/
 │     │  │  │  ├─ 0000_snapshot.json
 │     │  │  │  ├─ 0006_snapshot.json
+│     │  │  │  ├─ 0008_snapshot.json
 │     │  │  │  └─ _journal.json
 │     │  │  ├─ 0000_glamorous_proudstar.sql
 │     │  │  ├─ 0001_handy_advices.sql
@@ -548,7 +623,10 @@ capella/
 │     │  │  ├─ 0003_product_media.sql
 │     │  │  ├─ 0004_product_hover_image.sql
 │     │  │  ├─ 0005_related_items.sql
-│     │  │  └─ 0006_db_integrity.sql
+│     │  │  ├─ 0006_db_integrity.sql
+│     │  │  ├─ 0007_collections.sql
+│     │  │  ├─ 0008_lumpy_rhino.sql
+│     │  │  └─ 0009_abundant_gargoyle.sql
 │     │  └─ schema.ts
 │     ├─ drizzle.config.ts
 │     ├─ src/
@@ -574,8 +652,7 @@ capella/
 │  │  └─ storefront-erp-spec.md
 │  ├─ plans/
 │  │  ├─ features/
-│  │  │  ├─ phase-04-feature-4-related-products.md
-│  │  │  └─ product-media-sales-categories-related-products.md
+│  │  │  └─ promo-code-plan.md
 │  │  ├─ fixes/
 │  │  │  └─ state-management-and-server-state-plan.md
 │  │  └─ testing/
@@ -589,11 +666,6 @@ capella/
 │  │     ├─ 06-ci-and-regression.md
 │  │     └─ playwright-vitest-implementation.md
 │  └─ deploy.md
-├─ tests/
-│  └─ e2e/
-│     └─ staging/
-│        └─ critical/
-│           └─ smoke.spec.ts
 ├─ .dockerignore
 ├─ .env.example
 ├─ .gitignore
@@ -602,6 +674,7 @@ capella/
 ├─ Dockerfile.erp
 ├─ Dockerfile.storefront
 ├─ docker-compose.yml
+├─ eslint.config.mjs
 ├─ playwright.config.ts
 ├─ README.md
 ├─ package.json
@@ -615,7 +688,7 @@ capella/
 The following may be added when they create real value, but are not required just to satisfy structure:
 
 - Split frontend API files such as `products.ts`, `categories.ts`, `auth.ts`, `wishlist.ts`, `checkout.ts`.
-- Frontend `hooks/`, `styles/`, `types/`, `validators/`, `formatters/`, and `auth/` folders.
+- Both frontend apps now use top-level `hooks/`, `types/` (and storefront `constants/`/`utils/`) folders instead of co-locating those internals next to each page/component.
 - ERP `middleware.ts`, if frontend route protection is implemented at the Next.js middleware layer.
 - Shared `enums/`, if constants/types are not sufficient.
 
@@ -633,6 +706,7 @@ The following may be added when they create real value, but are not required jus
 - `routes/erp.routes.ts` mounts ERP/admin endpoints under `/api/erp`.
 - `routes/index.ts` only composes those two route groups plus health checks.
 - ERP routes must be protected by `admin-auth.middleware.ts`.
+- ERP routes that mutate or read privileged resources are further gated by `erp-permissions.middleware.ts` (backed by `services/erp-permissions.service.ts`), enforcing per-role staff permissions.
 - Storefront routes use customer auth only where required, such as wishlist.
 
 ### Orders Boundary
@@ -648,10 +722,15 @@ The following may be added when they create real value, but are not required jus
 - Storefront API client sends the active locale as `x-lang` on localized requests.
 - API locale middleware/service normalizes locale and can use it for response shaping.
 
+### Catalog Collections Boundary
+
+- `modules/catalog/collections/` owns public collection browsing endpoints; `modules/admin/collections/` owns ERP collection CRUD.
+- `modules/collections/collection-mapper.shared.ts` holds shared collection mapping used by both sides.
+- `repositories/collection.repository.ts` owns collection persistence.
+
 ### Upload Boundary
 
-- `modules/uploads/` owns upload HTTP endpoints.
-- `services/image.service.ts` owns Hostinger file storage integration details.
+- `modules/uploads/` owns upload HTTP endpoints; `uploads.service.ts` owns the Hostinger file-storage integration details and `uploads.permissions.ts` gates who may upload.
 - Product and offer image replacement must go through this boundary.
 
 ### Revalidation Boundary
@@ -665,4 +744,5 @@ The following may be added when they create real value, but are not required jus
 - Do not expose ERP order-mutation (cancel/modify) UI in v1.
 - Do not move storefront or ERP to direct DB access.
 - Do not reintroduce `cat.txt`; the initial category tree is documented in `docs/specs/storefront-erp-spec.md`.
-- Shared UI primitives now live in `packages/shared/src/ui`; per-app `components/ui` folders only hold app-specific primitives (storefront: icons/illustrations; ERP: checkbox/icons/modal).
+- Shared UI primitives now live in `packages/shared/src/ui`; per-app `components/ui` folders only hold app-specific primitives (storefront: icons/illustrations; ERP: icons/modal).
+- Do not expose ERP staff-management or role/permission editing without going through `erp-permissions` enforcement on the API side.

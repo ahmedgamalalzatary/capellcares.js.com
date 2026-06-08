@@ -27,7 +27,8 @@ Storefront and ERP talk to the API over HTTP only. Database schema, migrations, 
 ### Storefront (`/api/v1/*`)
 
 - Bilingual routing under `/[lang]` (`ar`, `en`)
-- Catalog browsing: products, categories, offers, shop
+- Catalog browsing: products, categories, collections, offers, shop
+- Shop mega-menu, Ask-Capella search overlay, and announcement bar
 - Product detail with variants, media, and related items
 - Cart, checkout (Cash on Delivery), orders, wishlist
 - Customer signup/login
@@ -37,14 +38,15 @@ Storefront and ERP talk to the API over HTTP only. Database schema, migrations, 
 
 - Admin login with DB-backed bootstrap user
 - Dashboard, catalog CRUD, soft delete + trash restore
-- Products (variants, stock, media, related items), categories, offers, advices
+- Products (variants, stock, media, related items), categories, collections, offers, advices
+- Staff management with role-based permissions (enforced at the API layer)
 - Order list/detail (read-only in v1)
 - Sales summary
-- Media uploads (Hostinger SFTP integration)
+- Media uploads (Hostinger SFTP integration), permission-gated
 
 ### Shared Data Model
 
-Categories, products, variants, media, offers, offer items, related items, advices, customers, admin users, auth sessions, wishlists, orders, and order items.
+Categories, products, variants, media, offers, offer items, related items, collections, advices, customers, admin users (with roles/permissions), auth sessions, wishlists, orders, and order items.
 
 ## Architecture Rules
 

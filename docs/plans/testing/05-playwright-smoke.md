@@ -1,6 +1,7 @@
 # Phase 05B — Playwright Staging Smoke
 
-> **Status:** PARTIAL — `smoke.spec.ts` already covers most minimal/core cases; setup & ERP gaps remain.
+> **Status:** NOT CURRENTLY PRESENT — Playwright config/script remain, but the staging smoke suite
+> referenced by them is missing from the current working tree.
 > **Scope:** "Playwright Smoke", "Staging Smoke Data Decision", "What Not To Do".
 > **Depends on:** 01 (staging fixture script).
 
@@ -11,15 +12,15 @@ regression suite — keep it minimal.
 Local browser regression coverage belongs in **Phase 05A**, not here. This phase is
 only for deployed-environment confidence.
 
-## Current state (2026-05-30)
-- Root `playwright.config.ts` (clean): `testDir: tests/e2e/staging/critical`, `baseURL` from
-  `STAGING_BASE_URL`, `trace: retain-on-failure`, serial, no retries.
-- `test:staging-smoke` runs that dir. **`smoke.spec.ts` already exists** and covers:
-  guest wishlist warning, `/en` + `x-lang` sanity, OOS variant/offer blocked, guest checkout with
-  existing email, **COD order starts pending (API signal)**, and **cart persists after refresh**.
-  All gated by `test.skip` on missing `STAGING_*` env vars.
-- **Missing:** projects/fixtures, reusable auth-state (no `storageState` yet), ERP admin smoke,
-  pre-flight health check, screenshot/video config.
+## Current state (2026-06-09)
+- Root `playwright.config.ts` still points at `tests/e2e/staging/critical`, with `baseURL` from
+  `STAGING_BASE_URL` and `trace: retain-on-failure`.
+- Root `package.json` still exposes `test:staging-smoke`.
+- The referenced `tests/e2e/staging/critical` directory is currently missing from the repo.
+- That means the earlier smoke-spec inventory should be treated as stale historical planning context,
+  not as current executable coverage.
+- **Missing:** the smoke suite itself, reusable auth-state, ERP admin smoke, pre-flight health checks,
+  and screenshot/video config.
 
 ## Config / setup tasks [T1]
 - [ ] Define projects/fixtures: anonymous storefront, customer-authenticated storefront, admin-authenticated ERP.
@@ -30,14 +31,14 @@ only for deployed-environment confidence.
 - [ ] Add `screenshot`/`video` on failure to config (currently only `trace`).
 
 ## Minimal smoke [T0]
-- [x] Storefront product page → add to cart → cart persists after refresh. *(exists)*
-- [~] Guest COD checkout succeeds; success state appears. *(guest checkout exists; COD-pending verified via API)*
-- [x] Verify a backend signal for the created order. *(COD-pending API check exists)*
+- [ ] Storefront product page → add to cart → cart persists after refresh.
+- [ ] Guest COD checkout succeeds; success state appears.
+- [ ] Verify a backend signal for the created order.
 
 ## Core smoke [T1]
-- [x] Guest wishlist click shows login warning/link. *(exists)*
-- [x] Out-of-stock product/offer purchase is blocked. *(exists)*
-- [x] `/en` language path and API `x-lang` behavior are sane. *(exists)*
+- [ ] Guest wishlist click shows login warning/link.
+- [ ] Out-of-stock product/offer purchase is blocked.
+- [ ] `/en` language path and API `x-lang` behavior are sane.
 - [ ] ERP login succeeds and one safe admin read path loads (reuse admin `storageState`).
 - [ ] Storefront listing/offer/cart/checkout/login/orders pages load without client-side crashes.
 - [ ] Authenticated customer can view the new order after checkout (smoke account).

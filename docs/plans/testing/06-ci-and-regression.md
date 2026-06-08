@@ -19,6 +19,13 @@ from deployed staging smoke.
 - DB migration runs via **`packages/database` `pretest`** (`run-test-migrations.mjs`).
 - No separate local Playwright config or CI lane exists yet; current Playwright covers staging smoke only.
 
+## Repo-state note (2026-06-09)
+
+- No `.github/` workflow config is present in the repo.
+- The final sentence above is now stale: current Playwright does not actually cover staging smoke in the
+  checked-in tree because the referenced suite directory is missing. CI planning should assume Playwright
+  coverage is presently absent until the suite is restored.
+
 ### PR pipeline [T1]
 - [ ] Workflow: install → lint/typecheck → build → API tests → DB tests → shared tests → storefront Vitest → ERP Vitest → local Playwright E2E.
 - [ ] Test DB migration/setup runs **before** DB-backed API integration tests; DB suites don't race setup.
