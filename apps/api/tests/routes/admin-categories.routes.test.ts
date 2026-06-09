@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
 import { db } from "@capella/database/src/db";
@@ -99,7 +99,7 @@ test("admin category create returns a conflict instead of crashing on duplicate 
   });
 });
 
-test("admin category create allows the same grandchild name under different parents and generates path-based slugs", async () => {
+test("admin category create allows the same slug under different parents", async () => {
   const ids = await getBaselineIds();
 
   const [herSkin] = await db
@@ -168,11 +168,11 @@ test("admin category create allows the same grandchild name under different pare
   const herDry = created.find((row) => row.parentId === herSkin.id);
   const hisDry = created.find((row) => row.parentId === hisSkin.id);
 
-  assert.equal(herDry?.slug, "her-skin-dry");
-  assert.equal(hisDry?.slug, "his-skin-dry");
+  assert.equal(herDry?.slug, "dry");
+  assert.equal(hisDry?.slug, "dry");
 });
 
-test("admin category create rejects the same grandchild name under the same parent", async () => {
+test("admin category create rejects the same slug under the same parent", async () => {
   const ids = await getBaselineIds();
 
   const [herSkin] = await db
@@ -213,6 +213,100 @@ test("admin category create rejects the same grandchild name under the same pare
     });
 
     assert.equal(duplicate.status, 409);
-    assert.equal(duplicate.json.reason, "category-name-conflict");
+    assert.equal(duplicate.json.reason, "slug-conflict");
+  });
+});
+
+test("admin category create rejects duplicate root slugs", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: "body-care",
+        name: { ar: "العناية بالجسم 2", en: "Body Care 2" },
+        parentId: null,
+        isLeaf: false
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "slug-conflict");
+  });
+});
+
+test("admin category reorder-roots persists root ordering by sort order", async () => {
+  const ids = await getBaselineIds();
+  const [skinCare] = await db
+    .insert(categories)
+    .values({
+      slug: `skin-care-${Date.now()}`,
+      arName: "العناية بالبشرة",
+      enName: "Skin Care",
+      isLeaf: false
+    })
+    .$returningId();
+  const [hairCare] = await db
+    .insert(categories)
+    .values({
+      slug: `hair-care-${Date.now()}`,
+      arName: "العناية بالشعر",
+      enName: "Hair Care",
+      isLeaf: false
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories/reorder-roots", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ids: [hairCare.id, skinCare.id, ids.rootCategoryId]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.json, { ok: true });
+  });
+
+  const reorderedRoots = await db
+    .select({
+      id: categories.id,
+      sortOrder: categories.sortOrder
+    })
+    .from(categories)
+    .where(and(isNull(categories.parentId), isNull(categories.deletedAt)));
+
+  const rootSortOrderById = new Map(reorderedRoots.map((row) => [row.id, row.sortOrder]));
+  assert.equal(rootSortOrderById.get(hairCare.id), 1);
+  assert.equal(rootSortOrderById.get(skinCare.id), 2);
+  assert.equal(rootSortOrderById.get(ids.rootCategoryId), 3);
+});
+
+test("admin category reorder-roots rejects duplicate ids", async () => {
+  const [skinCare] = await db
+    .insert(categories)
+    .values({
+      slug: `skin-care-dup-${Date.now()}`,
+      arName: "العناية بالبشرة",
+      enName: "Skin Care",
+      isLeaf: false
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories/reorder-roots", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ids: [skinCare.id, skinCare.id]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-root-order");
   });
 });

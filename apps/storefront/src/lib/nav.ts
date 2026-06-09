@@ -14,7 +14,9 @@ export interface NavGroup {
 
 export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const active = categories.filter((c) => !c.deletedAt);
-  const roots = active.filter((c) => c.parentId === null);
+  const roots = active
+    .filter((c) => c.parentId === null)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id);
   const byParent = new Map<number | null, Category[]>();
 
   for (const category of active) {
@@ -24,12 +26,15 @@ export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   }
 
   const buildNodes = (parentId: number): NavNode[] =>
-    (byParent.get(parentId) ?? []).map((category) => ({
+    (byParent.get(parentId) ?? [])
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+      .map((category) => ({
       id: category.id,
       slug: category.slug,
       label: pickLang(category.name, lang),
       children: buildNodes(category.id)
-    }));
+      }));
 
   return roots.map((root) => ({
     root,

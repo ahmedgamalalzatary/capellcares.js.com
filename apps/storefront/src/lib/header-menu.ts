@@ -21,6 +21,7 @@ interface HeaderMenuCategoryEntry {
   key: string;
   slug: string;
   label: string;
+  sortOrder?: number;
   children: NavNode[];
 }
 
@@ -63,6 +64,7 @@ export function buildHeaderMenu({
       key: `category-${group.root.id}`,
       slug: group.root.slug,
       label: pickLang(group.root.name, lang),
+      sortOrder: group.root.sortOrder ?? 0,
       children: group.children
     }))
   ];

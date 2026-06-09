@@ -51,7 +51,7 @@ describe("buildHeaderMenu", () => {
       dict: {
         nav: {
           new: "New",
-          bestsellers: "Best Sellers"
+          bestsellers: "Best Seller"
         }
       },
       lang: "en"
@@ -59,7 +59,7 @@ describe("buildHeaderMenu", () => {
 
     expect(menu.map((entry) => entry.label)).toEqual([
       "New",
-      "Best Sellers",
+      "Best Seller",
       "Skin Care",
       "Body Care"
     ]);

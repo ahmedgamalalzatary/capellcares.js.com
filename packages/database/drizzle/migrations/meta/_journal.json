@@ -71,6 +71,20 @@
       "when": 1780959600000,
       "tag": "0009_abundant_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1781006400000,
+      "tag": "0010_category_slug_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1781049600000,
+      "tag": "0011_category_sort_order",
+      "breakpoints": true
     }
   ]
 }

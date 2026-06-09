@@ -9,11 +9,12 @@ import type { NavNode } from "@/lib/nav";
 
 type ShopMegaMenuProps = {
   lang: Language;
+  dict: any;
   menuEntries: HeaderMenuEntry[];
   isAr: boolean;
 };
 
-export function ShopMegaMenu({ lang, menuEntries }: ShopMegaMenuProps) {
+export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
   const [open, setOpen] = useState(false);
   const [activeRoot, setActiveRoot] = useState(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,7 +29,13 @@ export function ShopMegaMenu({ lang, menuEntries }: ShopMegaMenuProps) {
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  const roots = menuEntries;
+  const roots = [
+    ...menuEntries.filter((entry) => entry.type === "products"),
+    ...menuEntries
+      .filter((entry) => entry.type === "category")
+      .slice()
+      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
+  ];
   const active = roots[activeRoot];
 
   if (roots.length === 0) return null;
@@ -104,25 +111,41 @@ export function ShopMegaMenu({ lang, menuEntries }: ShopMegaMenuProps) {
           {active && (
             <div className="max-h-[70vh] overflow-y-auto py-8">
               {active.type === "products" ? (
-                active.products.length > 0 ? (
-                  <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
-                    {active.products.map((product) => (
-                      <Link
-                        key={product.id}
-                        href={`/${lang}/products/${product.slug}`}
-                        className="block px-4 py-3 text-base font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
-                      >
-                        {product.label}
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-6 text-sm text-(--ink-3)">{active.label}</p>
-                )
-              ) : active.children.length === 0 ? (
-                <p className="py-6 text-sm text-(--ink-3)">{active.label}</p>
+                <>
+                  {/* "All New / All Bestsellers" links to the dedicated /new and /bestsellers pages */}
+                  <Link
+                    href={`/${lang}/${active.slug}`}
+                    className="mb-6 inline-block text-lg font-bold text-accent transition-colors hover:underline"
+                  >
+                    {dict.nav.viewAllCategory.replace("{name}", active.label)}
+                  </Link>
+                  {active.products.length > 0 ? (
+                    <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+                      {active.products.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/${lang}/products/${product.slug}`}
+                          className="block px-4 py-3 text-base font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+                        >
+                          {product.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-6 text-sm text-(--ink-3)">{active.label}</p>
+                  )}
+                </>
               ) : (
                 <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
+                  {/* "All {category}" sits as its own column beside the sub-categories */}
+                  <div className="min-w-0">
+                    <Link
+                      href={`/${lang}/category/${active.slug}`}
+                      className="block text-lg font-bold text-accent transition-colors hover:underline"
+                    >
+                      {dict.nav.viewAllCategory.replace("{name}", active.label)}
+                    </Link>
+                  </div>
                   {active.children.map((child) => (
                     <div key={child.id} className="min-w-0">
                       <NavBranch lang={lang} node={child} depth={0} />

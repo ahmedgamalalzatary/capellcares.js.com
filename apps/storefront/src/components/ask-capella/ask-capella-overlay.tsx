@@ -1,13 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { AskCapellaReplyContent } from "./ask-capella-results";
 import { useAskCapella } from "../../hooks/use-ask-capella";
 import type { AskCapellaOverlayProps } from "../../types/ask-capella.types";
 
 export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
   const {
-    avatarInitial,
     bottomRef,
     dict,
     input,
@@ -26,23 +26,18 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         style={{ animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-linear-to-r from-[oklch(0.44_0.14_38)] to-[#cea889] px-5 py-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a10 10 0 1 0 10 10" /><path d="M12 8v4l3 3" /><circle cx="19" cy="5" r="3" fill="white" stroke="none" />
-            </svg>
+        <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-canvas px-5 py-4">
+          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
+            <Image src="/capella logo2.png" alt="Capella" fill sizes="32px" className="object-cover" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-(--font-display) italic text-base leading-none text-white">
-              {dict.ask.assistantName}
-            </p>
-            <p className="mt-0.5 text-xs text-white/70">
+            <p className="text-sm font-semibold text-[#67645f]">
               {dict.ask.assistant}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#67645f] transition-colors hover:bg-black/5"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -53,7 +48,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         {/* Messages */}
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {/* Welcome */}
-          <CapellaBubble initial={avatarInitial}>
+          <CapellaBubble>
             <p className="text-sm leading-[1.65] text-(--ink-2)">
               {dict.ask.welcome}
             </p>
@@ -63,14 +58,14 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
             msg.role === "user" ? (
               <UserBubble key={i} text={msg.text} />
             ) : (
-              <CapellaBubble key={i} initial={avatarInitial}>
+              <CapellaBubble key={i}>
                 <AskCapellaReplyContent results={msg.results} query={msg.query} lang={lang} dict={dict} error={msg.error} errorMessage={msg.errorMessage} onClose={onClose} />
               </CapellaBubble>
             )
           )}
 
           {pending && (
-            <CapellaBubble initial={avatarInitial}>
+            <CapellaBubble>
               <div className="flex items-center gap-1.5 py-1">
                 {[0, 1, 2].map((i) => (
                   <span
@@ -141,11 +136,11 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function CapellaBubble({ children, initial }: { children: ReactNode; initial: string }) {
+function CapellaBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-warm text-xs text-white font-bold">
-        {initial}
+      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
+        <Image src="/capella logo2.png" alt="" fill sizes="28px" className="object-cover" />
       </div>
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">
         {children}

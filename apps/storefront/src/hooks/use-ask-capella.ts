@@ -19,7 +19,6 @@ function matchesBilingual(name: { ar: string; en: string }, queryLower: string) 
 export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   const dict = getDict(lang);
   const isAr = lang === "ar";
-  const avatarInitial = dict.ask.assistantName.charAt(0);
   const [messages, setMessages] = useState<AskCapellaMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, startTransition] = useTransition();
@@ -103,7 +102,6 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   }
 
   return {
-    avatarInitial,
     bottomRef,
     dict,
     input,

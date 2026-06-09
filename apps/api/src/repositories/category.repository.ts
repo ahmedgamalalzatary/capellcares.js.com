@@ -1,9 +1,13 @@
-import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { categories, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 export function listCategoriesRepo(includeDeleted = false) {
-  return db.select().from(categories).where(includeDeleted ? undefined : isNull(categories.deletedAt));
+  return db
+    .select()
+    .from(categories)
+    .where(includeDeleted ? undefined : isNull(categories.deletedAt))
+    .orderBy(asc(categories.sortOrder), asc(categories.id));
 }
 
 export async function upsertCategoryRepo(input: {
@@ -26,18 +30,26 @@ export async function upsertCategoryRepo(input: {
     .select({
       id: categories.id,
       parentId: categories.parentId,
-      slug: categories.slug,
       arName: categories.arName,
       enName: categories.enName,
       deletedAt: categories.deletedAt
     })
     .from(categories);
 
+  const slugConflict = await findSiblingSlugConflict({
+    id: input.id,
+    parentId: input.parentId,
+    slug: input.slug
+  });
+
+  if (slugConflict) {
+    const error = new Error("Category slug already exists under this parent");
+    (error as Error & { code?: string }).code = "CATEGORY_SLUG_CONFLICT";
+    throw error;
+  }
+
   const lineage = buildCategoryLineage(input.parentId, allCategories);
   const isGrandchildCategory = lineage.length === 2;
-  const resolvedSlug = isGrandchildCategory
-    ? buildGrandchildSlug(lineage, input.slug)
-    : input.slug;
 
   if (isGrandchildCategory) {
     const conflict = await findSameParentGrandchildNameConflict({
@@ -59,7 +71,7 @@ export async function upsertCategoryRepo(input: {
       .update(categories)
       .set({
         parentId: input.parentId,
-        slug: resolvedSlug,
+        slug: input.slug,
         arName: input.arName,
         enName: input.enName,
         isLeaf: input.isLeaf
@@ -73,7 +85,7 @@ export async function upsertCategoryRepo(input: {
     .insert(categories)
     .values({
       parentId: input.parentId,
-      slug: resolvedSlug,
+      slug: input.slug,
       arName: input.arName,
       enName: input.enName,
       isLeaf: input.isLeaf
@@ -81,6 +93,52 @@ export async function upsertCategoryRepo(input: {
     .$returningId();
   await syncCategoryLeafState(input.parentId);
   return created;
+}
+
+export async function reorderRootCategoriesRepo(ids: number[]) {
+  if (ids.length === 0 || new Set(ids).size !== ids.length) {
+    const error = new Error("Root category order is invalid");
+    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
+    throw error;
+  }
+
+  const roots = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(and(isNull(categories.parentId), isNull(categories.deletedAt)));
+
+  const rootIds = roots.map((row) => row.id);
+  if (rootIds.length !== ids.length) {
+    const error = new Error("Root category order is incomplete");
+    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
+    throw error;
+  }
+
+  const requestedIds = [...ids].sort((a, b) => a - b);
+  const existingIds = [...rootIds].sort((a, b) => a - b);
+  const sameIds = requestedIds.every((id, index) => id === existingIds[index]);
+  if (!sameIds) {
+    const error = new Error("Root category order references invalid ids");
+    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
+    throw error;
+  }
+
+  await db.transaction(async (tx) => {
+    const placeholderOffset = ids.length + 1000;
+    for (let index = 0; index < ids.length; index++) {
+      await tx
+        .update(categories)
+        .set({ sortOrder: placeholderOffset + index })
+        .where(eq(categories.id, ids[index]!));
+    }
+
+    for (let index = 0; index < ids.length; index++) {
+      await tx
+        .update(categories)
+        .set({ sortOrder: index + 1 })
+        .where(eq(categories.id, ids[index]!));
+    }
+  });
 }
 
 export async function softDeleteCategoryRepo(id: number) {
@@ -135,12 +193,30 @@ async function syncCategoryLeafState(parentId: number | null) {
     .where(eq(categories.id, parentId));
 }
 
+async function findSiblingSlugConflict(input: {
+  id?: number;
+  parentId: number | null;
+  slug: string;
+}) {
+  return db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        input.parentId == null ? isNull(categories.parentId) : eq(categories.parentId, input.parentId),
+        eq(categories.slug, input.slug),
+        input.id ? ne(categories.id, input.id) : undefined
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
 function buildCategoryLineage(
   parentId: number | null,
   rows: Array<{
     id: number;
     parentId: number | null;
-    slug: string;
   }>
 ) {
   const byId = new Map(rows.map((row) => [row.id, row]));
@@ -157,16 +233,6 @@ function buildCategoryLineage(
   }
 
   return lineage;
-}
-
-function buildGrandchildSlug(
-  lineage: Array<{
-    slug: string;
-  }>,
-  childSlug: string
-) {
-  const directParent = lineage[lineage.length - 1];
-  return directParent ? `${directParent.slug}-${childSlug}` : childSlug;
 }
 
 async function findSameParentGrandchildNameConflict(input: {

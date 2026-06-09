@@ -12,6 +12,7 @@ export interface Category {
   parentId: number | null;
   slug: string;
   name: Bilingual;
+  sortOrder?: number;
   isLeaf: boolean;
   deletedAt?: string | null;
 }

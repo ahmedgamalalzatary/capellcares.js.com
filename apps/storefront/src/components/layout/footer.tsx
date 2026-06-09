@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
 import { HEADER_SOCIAL_LINKS } from "../../constants/socials";
+import { Icon } from "@/components/ui/icons";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
@@ -19,7 +21,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
     router.push(`/${next}${rest === "/" ? "" : rest}${search}`);
   };
 
-  const brandRef = useRef<HTMLHeadingElement>(null);
+  const brandRef = useRef<HTMLDivElement>(null);
   const [brandInView, setBrandInView] = useState(false);
 
   useEffect(() => {
@@ -51,22 +53,23 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
       {/* Hero brand mark */}
       <div className="relative px-6 py-20 text-center">
-
-        <h2
+        <div
           ref={brandRef}
-          className={
-            isAr
-              ? "font-(family-name:--font-ar) text-[clamp(52px,9vw,120px)] font-bold leading-none tracking-tight text-ink"
-              : "font-(family-name:--font-signature) text-[clamp(52px,9vw,120px)] italic font-bold leading-none tracking-[-0.01em] text-ink"
-          }
+          className="mx-auto w-[min(90%,900px)]"
           style={{
-            textShadow: "0 0 80px color-mix(in oklch, var(--ink) 25%, transparent)",
             transform: brandInView ? "scale(1)" : "scale(1.05)",
             transition: "transform 700ms var(--ease-out-expo)"
           }}
         >
-          {dict.brand}
-        </h2>
+          <Image
+            src="/CapellaCare.png"
+            alt={dict.brand}
+            width={1300}
+            height={220}
+            priority
+            className="h-auto w-full object-contain"
+          />
+        </div>
       </div>
 
       {/* Main content grid */}
@@ -77,7 +80,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         <div className="container grid gap-12 py-16 lg:grid-cols-[1.1fr_2fr]">
 
           {/* Newsletter / intro */}
-          <div className="lg:max-w-md">
+          <div className="border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-12 lg:max-w-md lg:border-b-0 lg:pb-0">
             <p className="text-xl leading-snug text-ink font-(family-name:--font-display)">
               {dict.footer.newsletterTitle}
             </p>
@@ -113,8 +116,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-4 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
             <FooterCol title={dict.footer.navigate} isAr={isAr}>
               <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
-              <FooterLink href={`/${lang}/offers`}>{dict.nav.offers}</FooterLink>
+              <FooterLink href={`/${lang}/bestsellers`}>{dict.nav.bestsellers}</FooterLink>
+              <FooterLink href={`/${lang}/new`}>{dict.nav.new}</FooterLink>
+              <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
               <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
+              <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.hairCare}</FooterLink>
             </FooterCol>
 
             <FooterCol title={dict.footer.social} isAr={isAr}>
@@ -157,6 +163,50 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         </div>
       </div>
 
+      {/* Payment methods + app download */}
+      <div
+        className="relative border-t"
+        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
+      >
+        <div className="container flex flex-col gap-10 py-10 sm:flex-row sm:items-start sm:justify-between">
+          {/* Payment methods */}
+          <div>
+            <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
+              {dict.footer.paymentMethods}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <PayChip label="Visa">
+                <Icon.Visa className="h-3.5 w-auto" />
+              </PayChip>
+              <PayChip label="Paymob">
+                <Icon.Paymob className="h-3 w-auto" />
+              </PayChip>
+            </div>
+          </div>
+
+          {/* App download */}
+          <div>
+            <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
+              {dict.footer.getApp}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <StoreBadge
+                href=""
+                top={dict.footer.downloadOn}
+                bottom={dict.footer.appStore}
+                icon={<Icon.Apple className="h-6 w-6" />}
+              />
+              <StoreBadge
+                href=""
+                top={dict.footer.getItOn}
+                bottom={dict.footer.googlePlay}
+                icon={<Icon.GooglePlay className="h-5 w-5" />}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Bottom bar */}
       <div
         className="relative"
@@ -181,9 +231,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                     type="button"
                     onClick={() => switchTo(code)}
                     aria-pressed={active}
-                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${
-                      active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
-                    }`}
+                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
+                      }`}
                   >
                     {dict.langSwitch[code]}
                   </button>
@@ -244,6 +293,50 @@ function FooterLink({
     <Link className={cls} href={href}>
       {children}
     </Link>
+  );
+}
+
+/* A neutral white card that lets each payment brand keep its own colors. */
+function PayChip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className="flex h-9 w-[3.4rem] items-center justify-center rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
+    >
+      {children}
+    </span>
+  );
+}
+
+/* App-store style dark pill with a two-line label. href is empty for now. */
+function StoreBadge({
+  href,
+  top,
+  bottom,
+  icon,
+}: {
+  href: string;
+  top: string;
+  bottom: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href || "#"}
+      onClick={href ? undefined : (e) => e.preventDefault()}
+      aria-disabled={href ? undefined : true}
+      tabIndex={href ? undefined : -1}
+      style={{ color: "#fff" }}
+      className={`flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 ${href ? "cursor-pointer" : "pointer-events-none"
+        }`}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="flex flex-col leading-none">
+        <span className="text-[0.6rem] tracking-wide opacity-80">{top}</span>
+        <span className="text-sm font-semibold leading-tight">{bottom}</span>
+      </span>
+    </a>
   );
 }
 

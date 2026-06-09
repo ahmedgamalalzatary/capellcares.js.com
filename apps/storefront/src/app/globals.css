@@ -47,8 +47,7 @@
   --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
 
   --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans:      "IBM Plex Mono", "Roboto Mono", "JetBrains Mono", monospace;
-  --font-signature: "Playwrite GB S Guides", cursive;
+  --font-sans: "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
 
   --container: 1600px;

@@ -6,7 +6,7 @@ export const en = {
     allProducts: "Products",
     offers: "Offers",
     collections: "Collections",
-    bestsellers: "Bestsellers",
+    bestsellers: "Bestseller",
     new: "New",
     cart: "Cart",
     orders: "Orders",
@@ -209,9 +209,8 @@ export const en = {
     },
     empty: "No results for \"{q}\"",
     browseAll: "Browse all products →",
-    welcome: "Hi there! I'm Capella 👋 Search for any product, category, collection or offer and I'll show you matching results right here.",
-    assistantName: "Capella",
-    assistant: "Your shopping assistant",
+    welcome: "Hi there, I'm Capella. I'm here to help you find the right product for your problem; for example, write: \"Hair loss treatment\".",
+    assistant: "Your smart assistant",
     typeMessage: "Type a message…",
     noResults: "I couldn't find anything for \"{query}\" 😔",
     found: "Here's what I found for you 🌿"
@@ -234,6 +233,7 @@ export const en = {
     philosophy: "Every drop tells nature's story. Every ritual begins with an honest moment with yourself.",
     reachUs: "Reach Us",
     shopTitle: "Shop",
+    bodyCare: "Body Care",
     skinCare: "Skin Care",
     hairCare: "Hair Care",
     fragrances: "Fragrances",
@@ -264,6 +264,12 @@ export const en = {
     terms: "Terms of Service",
     privacy: "Privacy ",
     FAQ: "FAQ",
-    cookies: "Cookies"
+    cookies: "Cookies",
+    paymentMethods: "Payment Methods",
+    getApp: "Get the App",
+    downloadOn: "Download on the",
+    appStore: "App Store",
+    getItOn: "Get it on",
+    googlePlay: "Google Play"
   }
 } as const;

@@ -112,7 +112,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
             >
               <Icon.Search />
             </button>
-            <ShopMegaMenu lang={lang} menuEntries={menuEntries} isAr={isAr} />
+            <ShopMegaMenu lang={lang} dict={dict} menuEntries={menuEntries} isAr={isAr} />
           </div>
         </div>
 
