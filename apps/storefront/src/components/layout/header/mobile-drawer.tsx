@@ -32,7 +32,14 @@ export function HeaderMobileDrawer({
 }: HeaderMobileDrawerProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
-  const activeGroup = menuEntries[activeTab];
+  const orderedMenuEntries = [
+    ...menuEntries.filter((entry) => entry.type === "products"),
+    ...menuEntries
+      .filter((entry) => entry.type === "category")
+      .slice()
+      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
+  ];
+  const activeGroup = orderedMenuEntries[activeTab];
 
   // The panel is anchored below the (variable-height) header, so its max height
   // must be measured from its real distance to the top of the viewport — a fixed
@@ -52,8 +59,8 @@ export function HeaderMobileDrawer({
   }, [mobileOpen]);
 
   useEffect(() => {
-    if (activeTab >= menuEntries.length) setActiveTab(0);
-  }, [activeTab, menuEntries.length]);
+    if (activeTab >= orderedMenuEntries.length) setActiveTab(0);
+  }, [activeTab, orderedMenuEntries.length]);
 
   // Auto-close once the desktop mega menu takes over (matches its CSS min-[880px]).
   useEffect(() => {
@@ -171,7 +178,7 @@ export function HeaderMobileDrawer({
             {/* Category tabs */}
             <div className="-mx-4 mt-5 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
               <div className="flex min-w-max gap-7">
-                {menuEntries.map((group, index) => {
+                {orderedMenuEntries.map((group, index) => {
                   const active = index === activeTab;
                   const name = group.label;
                   return (

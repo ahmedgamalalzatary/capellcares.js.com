@@ -87,6 +87,7 @@ const categoryBoundaryPayload = {
   id: 7,
   parentId: null,
   slug: "body-care",
+  sortOrder: 3,
   arName: "العناية بالجسم",
   enName: "Body Care",
   isLeaf: false,
@@ -159,6 +160,7 @@ describe("storefront client contracts", () => {
 
     assertConformsTo(result[0], storefrontCategoryContract);
     expect(result[0]).toMatchObject({
+      sortOrder: 3,
       name: {
         ar: "العناية بالجسم",
         en: "Body Care"

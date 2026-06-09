@@ -170,5 +170,6 @@ test("storefront category endpoints conform to the shared category contract", as
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/categories");
     assertConformsTo(response.json.items[0], storefrontCategoryContract);
+    assert.equal(typeof response.json.items[0].sortOrder, "number");
   });
 });

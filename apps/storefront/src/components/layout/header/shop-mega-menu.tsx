@@ -29,7 +29,13 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  const roots = menuEntries;
+  const roots = [
+    ...menuEntries.filter((entry) => entry.type === "products"),
+    ...menuEntries
+      .filter((entry) => entry.type === "category")
+      .slice()
+      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
+  ];
   const active = roots[activeRoot];
 
   if (roots.length === 0) return null;

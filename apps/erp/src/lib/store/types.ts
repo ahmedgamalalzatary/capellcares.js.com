@@ -80,6 +80,7 @@ export type CategoryApiShape = {
   id: number;
   parentId: number | null;
   slug: string;
+  sortOrder?: number;
   name?: { ar?: string; en?: string };
   arName?: string;
   enName?: string;

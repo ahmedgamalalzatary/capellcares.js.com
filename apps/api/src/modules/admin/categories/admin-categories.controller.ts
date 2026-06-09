@@ -3,6 +3,7 @@ import {
   hasActiveChildrenCategoriesRepo,
   hasLinkedProductsInCategoryRepo,
   listCategoriesRepo,
+  reorderRootCategoriesRepo,
   restoreCategoryRepo,
   softDeleteCategoryRepo,
   upsertCategoryRepo
@@ -59,6 +60,26 @@ export async function adminRestoreCategory(req: Request, res: Response, next: Ne
     await restoreCategoryRepo(Number(req.params.id));
     res.json({ ok: true });
   } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminReorderRootCategories(req: Request, res: Response, next: NextFunction) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((value: unknown): number => Number(value))
+      : [];
+
+    if (ids.length === 0 || ids.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+      return res.status(400).json({ ok: false, reason: "invalid-root-order" });
+    }
+
+    await reorderRootCategoriesRepo(ids);
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "INVALID_ROOT_ORDER") {
+      return res.status(400).json({ ok: false, reason: "invalid-root-order" });
+    }
     next(error);
   }
 }

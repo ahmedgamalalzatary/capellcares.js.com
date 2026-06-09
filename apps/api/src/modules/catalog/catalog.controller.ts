@@ -11,6 +11,7 @@ export async function listCategories(_req: Request, res: Response) {
     id: category.id,
     parentId: category.parentId,
     slug: category.slug,
+    sortOrder: category.sortOrder,
     name: {
       ar: category.arName,
       en: category.enName

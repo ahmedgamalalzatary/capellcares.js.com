@@ -65,6 +65,7 @@ export function normalizeCategory(input: CategoryApiShape): Category {
     id: Number(input.id),
     parentId: input.parentId == null ? null : Number(input.parentId),
     slug: input.slug,
+    sortOrder: toNumber(input.sortOrder),
     name: {
       ar: input.name?.ar ?? input.arName ?? "",
       en: input.name?.en ?? input.enName ?? ""

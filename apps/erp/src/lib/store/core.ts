@@ -289,6 +289,11 @@ export class ErpStore {
     await this.refetch();
   }
 
+  async reorderRootCategories(ids: number[]) {
+    await api.post("/api/erp/categories/reorder-roots", { ids });
+    await this.refetch();
+  }
+
   async softDeleteCategory(id: number): Promise<{ ok: true } | { ok: false; reason: "has-products" }> {
     try {
       await api.del(`/api/erp/categories/${id}`);

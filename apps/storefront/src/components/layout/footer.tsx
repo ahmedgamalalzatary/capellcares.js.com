@@ -231,9 +231,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                     type="button"
                     onClick={() => switchTo(code)}
                     aria-pressed={active}
-                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${
-                      active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
-                    }`}
+                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
+                      }`}
                   >
                     {dict.langSwitch[code]}
                   </button>
@@ -327,10 +326,10 @@ function StoreBadge({
       href={href || "#"}
       onClick={href ? undefined : (e) => e.preventDefault()}
       aria-disabled={href ? undefined : true}
+      tabIndex={href ? undefined : -1}
       style={{ color: "#fff" }}
-      className={`flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 ${
-        href ? "cursor-pointer" : "pointer-events-none"
-      }`}
+      className={`flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 ${href ? "cursor-pointer" : "pointer-events-none"
+        }`}
     >
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col leading-none">
