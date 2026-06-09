@@ -48,6 +48,7 @@ describe("HeaderMobileDrawer", () => {
         nav: {
           search: "Search",
           viewAll: "View all",
+          viewAllCategory: "All {name} →",
           products: "Products",
           offers: "Offers",
           orders: "Orders",
@@ -70,6 +71,8 @@ describe("HeaderMobileDrawer", () => {
       "العناية"
     ]);
     expect(screen.getByRole("link", { name: "Fresh Serum" })).toHaveAttribute("href", "/en/products/fresh-serum");
+    // Product tabs lead with an "All" card pointing at the dedicated /new page
+    expect(screen.getByRole("link", { name: "All New →" })).toHaveAttribute("href", "/en/new");
   });
 
   it("uses the provided lang for nested category links", () => {
@@ -79,6 +82,7 @@ describe("HeaderMobileDrawer", () => {
         nav: {
           search: "بحث",
           viewAll: "عرض الكل",
+          viewAllCategory: "كل {name} ←",
           products: "المنتجات",
           offers: "العروض",
           orders: "الطلبات",
@@ -100,5 +104,33 @@ describe("HeaderMobileDrawer", () => {
     // The drawer renders only the second-level category cards; deeper grandchild
     // levels are no longer surfaced as their own links.
     expect(screen.queryByRole("link", { name: "فيتامين سي" })).toBeNull();
+  });
+
+  it("prepends an 'All {category}' card linking to the root category", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "ar",
+      dict: {
+        nav: {
+          search: "بحث",
+          viewAll: "عرض الكل",
+          viewAllCategory: "كل {name} ←",
+          products: "المنتجات",
+          offers: "العروض",
+          orders: "الطلبات",
+          followUs: "تابعنا"
+        },
+        langSwitch: { ar: "العربية", en: "English" }
+      },
+      menuEntries,
+      isAr: true,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
+    expect(screen.getByRole("link", { name: "كل العناية ←" })).toHaveAttribute("href", "/ar/category/care");
   });
 });

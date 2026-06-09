@@ -27,6 +27,9 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
     });
     res.json({ ok: true });
   } catch (error: any) {
+    if (error?.code === "CATEGORY_SLUG_CONFLICT") {
+      return res.status(409).json({ ok: false, reason: "slug-conflict" });
+    }
     if (error?.code === "CATEGORY_NAME_CONFLICT") {
       return res.status(409).json({ ok: false, reason: "category-name-conflict" });
     }

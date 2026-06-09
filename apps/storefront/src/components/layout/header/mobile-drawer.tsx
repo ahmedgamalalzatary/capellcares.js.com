@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
+
+// The desktop mega menu reveals at min-[880px]; keep the drawer's auto-close in sync.
+const DESKTOP_BREAKPOINT = 880;
 
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"> & {
   isAr: boolean;
@@ -28,20 +31,44 @@ export function HeaderMobileDrawer({
   onOpenSearch
 }: HeaderMobileDrawerProps) {
   const [activeTab, setActiveTab] = useState(0);
-  // The tab currently sliding out, kept mounted until its exit animation ends.
-  const [prevTab, setPrevTab] = useState<number | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
   const activeGroup = menuEntries[activeTab];
-  const prevGroup = prevTab !== null ? menuEntries[prevTab] : null;
+
+  // The panel is anchored below the (variable-height) header, so its max height
+  // must be measured from its real distance to the top of the viewport — a fixed
+  // calc() would let the lower content (social + language) fall off-screen.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [maxH, setMaxH] = useState<number>();
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const update = () => {
+      const top = wrapRef.current?.getBoundingClientRect().top ?? 0;
+      setMaxH(window.innerHeight - top - 8);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (activeTab >= menuEntries.length) setActiveTab(0);
   }, [activeTab, menuEntries.length]);
 
+  // Auto-close once the desktop mega menu takes over (matches its CSS min-[880px]).
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onResize = () => {
+      if (window.innerWidth >= DESKTOP_BREAKPOINT) onClose();
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [mobileOpen, onClose]);
+
   const selectTab = (index: number) => {
     if (index === activeTab) return;
     setDir(index > activeTab ? 1 : -1);
-    setPrevTab(activeTab);
     setActiveTab(index);
   };
 
@@ -51,17 +78,34 @@ export function HeaderMobileDrawer({
 
   const renderCards = (group: NonNullable<typeof activeGroup>) =>
     group.type === "products" ? (
-      group.products.map((product) => (
+      [
         <CategoryCard
-          key={product.id}
-          href={`/${lang}/products/${product.slug}`}
-          title={product.label}
+          key="all"
+          href={`/${lang}/${group.slug}`}
+          title={dict.nav.viewAllCategory.replace("{name}", group.label)}
           isAr={isAr}
           onClick={onClose}
-        />
-      ))
+        />,
+        ...group.products.map((product) => (
+          <CategoryCard
+            key={product.id}
+            href={`/${lang}/products/${product.slug}`}
+            title={product.label}
+            isAr={isAr}
+            onClick={onClose}
+          />
+        ))
+      ]
     ) : group.children.length > 0 ? (
-      group.children.map((child) => (
+      [
+        <CategoryCard
+          key="all"
+          href={`/${lang}/category/${group.slug}`}
+          title={dict.nav.viewAllCategory.replace("{name}", group.label)}
+          isAr={isAr}
+          onClick={onClose}
+        />,
+        ...group.children.map((child) => (
         <CategoryCard
           key={child.id}
           href={`/${lang}/category/${child.slug}`}
@@ -76,7 +120,8 @@ export function HeaderMobileDrawer({
           isAr={isAr}
           onClick={onClose}
         />
-      ))
+        ))
+      ]
     ) : (
       <CategoryCard
         href={`/${lang}/category/${group.slug}`}
@@ -101,13 +146,14 @@ export function HeaderMobileDrawer({
       />
 
       {/* Drop-down wrapper — anchored to the bottom of the header, clips the panel */}
-      <div className="pointer-events-none absolute inset-x-0 top-full overflow-hidden mx-4">
+      <div ref={wrapRef} className="pointer-events-none absolute inset-x-0 top-full overflow-hidden mx-4 min-[640px]:max-[877px]:mx-6">
         <div
           dir={isAr ? "rtl" : "ltr"}
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
-          className={`pointer-events-auto flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto bg-[#f1f0ed] transition-transform duration-300 ease-out ${
+          style={{ maxHeight: maxH ? `${maxH}px` : "calc(100dvh - 2rem)" }}
+          className={`pointer-events-auto flex flex-col overflow-y-auto bg-[#f1f0ed] transition-transform duration-300 ease-out ${
             mobileOpen ? "translate-y-0" : "-translate-y-full"
           }`}
         >
@@ -132,7 +178,10 @@ export function HeaderMobileDrawer({
                     <button
                       key={group.key}
                       type="button"
-                      onClick={() => selectTab(index)}
+                      onClick={(e) => {
+                        selectTab(index);
+                        e.currentTarget.scrollIntoView({ inline: "start", block: "nearest", behavior: "smooth" });
+                      }}
                       className={`relative shrink-0 whitespace-nowrap pb-2 text-sm tracking-[0.04em] transition-colors ${
                         isAr ? "" : "uppercase"
                       } ${active ? "font-semibold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
@@ -146,30 +195,18 @@ export function HeaderMobileDrawer({
             </div>
             <div className="-mx-4 h-px bg-(--hairline)" />
 
-            {/* Cards — subcategories of the active tab. The incoming group lives in
-                normal flow (defines height); the outgoing group is overlaid absolutely
-                and slides out so both move together like a carousel. */}
+            {/* Cards — subcategories of the active tab. The incoming group slides in
+                fully opaque so the previous tab's text never ghosts through. */}
             {activeGroup && (
               <div className="relative -mx-4 mt-5 overflow-hidden px-4">
                 <div
                   key={activeTab}
-                  className={`flex flex-col gap-3 animate-in fade-in duration-300 ${
+                  className={`flex flex-col gap-3 animate-in duration-300 ${
                     fromRight ? "slide-in-from-right-16" : "slide-in-from-left-16"
                   }`}
                 >
                   {renderCards(activeGroup)}
                 </div>
-                {prevGroup && (
-                  <div
-                    key={`out-${prevTab}`}
-                    onAnimationEnd={() => setPrevTab(null)}
-                    className={`absolute inset-x-4 top-0 flex flex-col gap-3 animate-out fade-out duration-300 ${
-                      fromRight ? "slide-out-to-left-16" : "slide-out-to-right-16"
-                    }`}
-                  >
-                    {renderCards(prevGroup)}
-                  </div>
-                )}
               </div>
             )}
 
@@ -212,8 +249,8 @@ export function HeaderMobileDrawer({
             </div>
 
             {/* Language switch */}
-            <div className="mt-8 grid grid-cols-2 gap-2">
-              {(["ar", "en"] as const).map((code) => {
+            <div className="mt-8 flex items-center justify-center gap-8">
+              {(["en", "ar"] as const).map((code) => {
                 const isActive = lang === code;
                 return (
                   <button
@@ -221,8 +258,10 @@ export function HeaderMobileDrawer({
                     type="button"
                     onClick={isActive ? undefined : onSwitchLang}
                     aria-pressed={isActive}
-                    className={`h-11 rounded-(--radius-pill) border text-base font-semibold transition-colors ${
-                      isActive ? "border-accent bg-accent text-canvas" : "border-(--hairline) text-ink hover:bg-(--warm-soft)"
+                    className={`text-2xl transition-colors ${
+                      isActive
+                        ? "text-accent"
+                        : "text-ink underline underline-offset-4 hover:text-accent"
                     }`}
                   >
                     {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}

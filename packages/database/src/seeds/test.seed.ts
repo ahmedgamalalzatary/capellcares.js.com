@@ -1,4 +1,4 @@
-import { eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import {
   categories,
   collectionItems,
@@ -135,7 +135,17 @@ async function ensureCategory(input: {
   isLeaf: boolean;
   parentId?: number;
 }) {
-  const [existing] = await db.select().from(categories).where(eq(categories.slug, input.slug)).limit(1);
+  const parentId = input.parentId ?? null;
+  const [existing] = await db
+    .select()
+    .from(categories)
+    .where(
+      and(
+        eq(categories.slug, input.slug),
+        parentId == null ? isNull(categories.parentId) : eq(categories.parentId, parentId)
+      )
+    )
+    .limit(1);
   if (existing) {
     return existing;
   }
@@ -146,7 +156,16 @@ async function ensureCategory(input: {
     .$returningId()
     .catch(async (error: any) => {
       if (error?.code === "ER_DUP_ENTRY") {
-        const [row] = await db.select().from(categories).where(eq(categories.slug, input.slug)).limit(1);
+        const [row] = await db
+          .select()
+          .from(categories)
+          .where(
+            and(
+              eq(categories.slug, input.slug),
+              parentId == null ? isNull(categories.parentId) : eq(categories.parentId, parentId)
+            )
+          )
+          .limit(1);
         if (row) return [{ id: row.id }];
       }
       throw error;

@@ -26,18 +26,26 @@ export async function upsertCategoryRepo(input: {
     .select({
       id: categories.id,
       parentId: categories.parentId,
-      slug: categories.slug,
       arName: categories.arName,
       enName: categories.enName,
       deletedAt: categories.deletedAt
     })
     .from(categories);
 
+  const slugConflict = await findSiblingSlugConflict({
+    id: input.id,
+    parentId: input.parentId,
+    slug: input.slug
+  });
+
+  if (slugConflict) {
+    const error = new Error("Category slug already exists under this parent");
+    (error as Error & { code?: string }).code = "CATEGORY_SLUG_CONFLICT";
+    throw error;
+  }
+
   const lineage = buildCategoryLineage(input.parentId, allCategories);
   const isGrandchildCategory = lineage.length === 2;
-  const resolvedSlug = isGrandchildCategory
-    ? buildGrandchildSlug(lineage, input.slug)
-    : input.slug;
 
   if (isGrandchildCategory) {
     const conflict = await findSameParentGrandchildNameConflict({
@@ -59,7 +67,7 @@ export async function upsertCategoryRepo(input: {
       .update(categories)
       .set({
         parentId: input.parentId,
-        slug: resolvedSlug,
+        slug: input.slug,
         arName: input.arName,
         enName: input.enName,
         isLeaf: input.isLeaf
@@ -73,7 +81,7 @@ export async function upsertCategoryRepo(input: {
     .insert(categories)
     .values({
       parentId: input.parentId,
-      slug: resolvedSlug,
+      slug: input.slug,
       arName: input.arName,
       enName: input.enName,
       isLeaf: input.isLeaf
@@ -135,12 +143,30 @@ async function syncCategoryLeafState(parentId: number | null) {
     .where(eq(categories.id, parentId));
 }
 
+async function findSiblingSlugConflict(input: {
+  id?: number;
+  parentId: number | null;
+  slug: string;
+}) {
+  return db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        input.parentId == null ? isNull(categories.parentId) : eq(categories.parentId, input.parentId),
+        eq(categories.slug, input.slug),
+        input.id ? ne(categories.id, input.id) : undefined
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
 function buildCategoryLineage(
   parentId: number | null,
   rows: Array<{
     id: number;
     parentId: number | null;
-    slug: string;
   }>
 ) {
   const byId = new Map(rows.map((row) => [row.id, row]));
@@ -157,16 +183,6 @@ function buildCategoryLineage(
   }
 
   return lineage;
-}
-
-function buildGrandchildSlug(
-  lineage: Array<{
-    slug: string;
-  }>,
-  childSlug: string
-) {
-  const directParent = lineage[lineage.length - 1];
-  return directParent ? `${directParent.slug}-${childSlug}` : childSlug;
 }
 
 async function findSameParentGrandchildNameConflict(input: {

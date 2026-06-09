@@ -99,7 +99,7 @@ test("admin category create returns a conflict instead of crashing on duplicate 
   });
 });
 
-test("admin category create allows the same grandchild name under different parents and generates path-based slugs", async () => {
+test("admin category create allows the same slug under different parents", async () => {
   const ids = await getBaselineIds();
 
   const [herSkin] = await db
@@ -168,11 +168,11 @@ test("admin category create allows the same grandchild name under different pare
   const herDry = created.find((row) => row.parentId === herSkin.id);
   const hisDry = created.find((row) => row.parentId === hisSkin.id);
 
-  assert.equal(herDry?.slug, "her-skin-dry");
-  assert.equal(hisDry?.slug, "his-skin-dry");
+  assert.equal(herDry?.slug, "dry");
+  assert.equal(hisDry?.slug, "dry");
 });
 
-test("admin category create rejects the same grandchild name under the same parent", async () => {
+test("admin category create rejects the same slug under the same parent", async () => {
   const ids = await getBaselineIds();
 
   const [herSkin] = await db
@@ -213,6 +213,25 @@ test("admin category create rejects the same grandchild name under the same pare
     });
 
     assert.equal(duplicate.status, 409);
-    assert.equal(duplicate.json.reason, "category-name-conflict");
+    assert.equal(duplicate.json.reason, "slug-conflict");
+  });
+});
+
+test("admin category create rejects duplicate root slugs", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: "body-care",
+        name: { ar: "العناية بالجسم 2", en: "Body Care 2" },
+        parentId: null,
+        isLeaf: false
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "slug-conflict");
   });
 });

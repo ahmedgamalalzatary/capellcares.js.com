@@ -19,14 +19,25 @@ export const relatedItemTargetTypes = ["product", "offer", "collection"] as cons
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   parentId: int("parent_id"),
-  slug: varchar("slug", { length: 191 }).notNull().unique(),
+  // MySQL unique indexes treat NULLs as distinct, so root categories need a
+  // generated parent scope key to make sibling-scoped slug uniqueness enforceable.
+  parentScopeId: int("parent_scope_id").generatedAlwaysAs(
+    sql`(coalesce(\`parent_id\`, 0))`,
+    { mode: "stored" }
+  ),
+  slug: varchar("slug", { length: 191 }).notNull(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
   isLeaf: boolean("is_leaf").notNull().default(false),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
-});
+}, (table) => ({
+  categoryParentScopeSlugUnique: unique("categories_parent_scope_slug_unique").on(
+    table.parentScopeId,
+    table.slug
+  )
+}));
 
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
