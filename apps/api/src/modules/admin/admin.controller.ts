@@ -10,7 +10,7 @@ export {
 } from "./products/admin-products.controller.js";
 export {
   adminListCategories,
-  adminReorderRootCategories,
+  adminReorderCategories,
   adminRestoreCategory,
   adminSoftDeleteCategory,
   adminUpsertCategory

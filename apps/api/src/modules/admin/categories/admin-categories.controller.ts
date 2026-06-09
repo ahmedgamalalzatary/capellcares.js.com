@@ -3,7 +3,7 @@ import {
   hasActiveChildrenCategoriesRepo,
   hasLinkedProductsInCategoryRepo,
   listCategoriesRepo,
-  reorderRootCategoriesRepo,
+  reorderCategoriesRepo,
   restoreCategoryRepo,
   softDeleteCategoryRepo,
   upsertCategoryRepo
@@ -64,17 +64,25 @@ export async function adminRestoreCategory(req: Request, res: Response, next: Ne
   }
 }
 
-export async function adminReorderRootCategories(req: Request, res: Response, next: NextFunction) {
+export async function adminReorderCategories(req: Request, res: Response, next: NextFunction) {
   try {
     const ids = Array.isArray(req.body?.ids)
       ? req.body.ids.map((value: unknown): number => Number(value))
       : [];
+    const parentIdRaw = req.body?.parentId;
+    const parentId = parentIdRaw == null || parentIdRaw === ""
+      ? null
+      : Number(parentIdRaw);
 
-    if (ids.length === 0 || ids.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+    if (
+      ids.length === 0 ||
+      ids.some((id: number) => !Number.isInteger(id) || id <= 0) ||
+      (parentId !== null && (!Number.isInteger(parentId) || parentId <= 0))
+    ) {
       return res.status(400).json({ ok: false, reason: "invalid-root-order" });
     }
 
-    await reorderRootCategoriesRepo(ids);
+    await reorderCategoriesRepo({ parentId, ids });
     res.json({ ok: true });
   } catch (error: any) {
     if (error?.code === "INVALID_ROOT_ORDER") {

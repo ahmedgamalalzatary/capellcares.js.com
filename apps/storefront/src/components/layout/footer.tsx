@@ -55,7 +55,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       <div className="relative px-6 py-20 text-center">
         <div
           ref={brandRef}
-          className="mx-auto w-[min(90%,900px)]"
+          className="mx-auto w-[min(70%,600px)]"
           style={{
             transform: brandInView ? "scale(1)" : "scale(1.05)",
             transition: "transform 700ms var(--ease-out-expo)"
@@ -90,7 +90,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
             <form
               onSubmit={(e) => e.preventDefault()}
-              className="mt-7 flex items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface"
+              className="mt-7 mx-auto flex w-[90%] items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
             >
               <input
                 type="email"
@@ -116,8 +116,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-4 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
             <FooterCol title={dict.footer.navigate} isAr={isAr}>
               <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
-              <FooterLink href={`/${lang}/bestsellers`}>{dict.nav.bestsellers}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.nav.new}</FooterLink>
+              <FooterLink href={`/${lang}/bestsellers`}>{dict.nav.bestsellers}</FooterLink>
               <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
               <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
               <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.hairCare}</FooterLink>
@@ -150,14 +150,16 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             </FooterCol>
 
             <FooterCol title={dict.footer.support} isAr={isAr}>
-              <FooterLink as="span">{dict.footer.ourStory}</FooterLink>
-              <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.branches}</FooterLink>
-              <FooterLink as="span">{dict.footer.contact}</FooterLink>
+              <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
+              <FooterLink href="mailto:capella@gmial.com" external>{dict.footer.connectEmail}</FooterLink>
+              <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
             </FooterCol>
             <FooterCol title={dict.footer.legal} isAr={isAr}>
-              <FooterLink as="span">{dict.footer.terms}</FooterLink>
-              <FooterLink as="span">{dict.footer.FAQ}</FooterLink>
-              <FooterLink as="span">{dict.footer.cookies}</FooterLink>
+              <FooterLink href="">{dict.footer.terms}</FooterLink>
+              <FooterLink href="">{dict.footer.promotionTerms}</FooterLink>
+              <FooterLink href="">{dict.footer.privacy}</FooterLink>
+              <FooterLink href="">{dict.footer.returnsRefunds}</FooterLink>
+              <FooterLink href="">{dict.footer.shippingHandling}</FooterLink>
             </FooterCol>
           </div>
         </div>
@@ -177,6 +179,9 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <div className="flex flex-wrap items-center gap-3">
               <PayChip label="Visa">
                 <Icon.Visa className="h-3.5 w-auto" />
+              </PayChip>
+              <PayChip label="Mastercard">
+                <Icon.Mastercard className="h-5 w-auto" />
               </PayChip>
               <PayChip label="Paymob">
                 <Icon.Paymob className="h-3 w-auto" />
@@ -285,10 +290,13 @@ function FooterLink({
   children: React.ReactNode;
 }) {
   const cls = "block text-sm leading-snug tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink cursor-pointer";
-  if (as === "span" || !href)
+  if (as === "span" || href === undefined)
     return <span className={cls}>{children}</span>;
   if (external)
     return <a className={cls} href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+  // Empty href: render an anchor placeholder until the destination is wired up.
+  if (href === "")
+    return <a className={cls} href="" onClick={(e) => e.preventDefault()}>{children}</a>;
   return (
     <Link className={cls} href={href}>
       {children}
@@ -309,7 +317,7 @@ function PayChip({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-/* App-store style dark pill with a two-line label. href is empty for now. */
+/* App-store style dark pill with a two-line label. href is empty until the apps ship. */
 function StoreBadge({
   href,
   top,
@@ -323,13 +331,10 @@ function StoreBadge({
 }) {
   return (
     <a
-      href={href || "#"}
+      href={href}
       onClick={href ? undefined : (e) => e.preventDefault()}
-      aria-disabled={href ? undefined : true}
-      tabIndex={href ? undefined : -1}
       style={{ color: "#fff" }}
-      className={`flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 ${href ? "cursor-pointer" : "pointer-events-none"
-        }`}
+      className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 cursor-pointer"
     >
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col leading-none">

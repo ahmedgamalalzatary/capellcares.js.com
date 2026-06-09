@@ -12,7 +12,7 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "new",
     label: "New",
     products: [
-      { id: 100, slug: "fresh-serum", label: "Fresh Serum" }
+      { id: 100, slug: "fresh-serum", label: "Fresh Serum", name: { en: "Fresh Serum", ar: "سيروم" }, imagePath: "" }
     ]
   },
   {
@@ -21,7 +21,7 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "bestsellers",
     label: "Bestsellers",
     products: [
-      { id: 101, slug: "hero-cream", label: "Hero Cream" }
+      { id: 101, slug: "hero-cream", label: "Hero Cream", name: { en: "Hero Cream", ar: "كريم" }, imagePath: "" }
     ]
   },
   {
@@ -31,12 +31,8 @@ const menuEntries: HeaderMenuEntry[] = [
     label: "العناية",
     sortOrder: 2,
     children: [
-      {
-        id: 2,
-        slug: "serums",
-        label: "سيروم",
-        children: [{ id: 3, slug: "vitamin-c", label: "فيتامين سي", children: [] }]
-      }
+      { id: 5, slug: "cleansers", label: "منظفات", children: [] },
+      { id: 2, slug: "serums", label: "سيروم", children: [{ id: 3, slug: "vitamin-c", label: "فيتامين سي", children: [] }] }
     ]
   },
   {
@@ -183,5 +179,37 @@ describe("HeaderMobileDrawer", () => {
       "الجسم",
       "العناية"
     ]);
+  });
+
+  it("renders child category cards in the provided sibling order", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "ar",
+      dict: {
+        nav: {
+          search: "بحث",
+          viewAll: "عرض الكل",
+          viewAllCategory: "كل {name} ←",
+          products: "المنتجات",
+          offers: "العروض",
+          orders: "الطلبات",
+          followUs: "تابعنا"
+        },
+        langSwitch: { ar: "العربية", en: "English" }
+      },
+      menuEntries,
+      isAr: true,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
+    expect(
+      screen.getAllByRole("link")
+        .map((item) => item.textContent?.trim())
+        .filter((item) => item === "منظفات" || item === "سيروم")
+    ).toEqual(["منظفات", "سيروم"]);
   });
 });

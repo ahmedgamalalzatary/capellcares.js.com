@@ -136,12 +136,12 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                   )}
                 </>
               ) : (
-                <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
+                <div className="grid gap-x-8 gap-y-9 grid-cols-[repeat(auto-fill,minmax(120px,1fr))]">
                   {/* "All {category}" sits as its own column beside the sub-categories */}
                   <div className="min-w-0">
                     <Link
                       href={`/${lang}/category/${active.slug}`}
-                      className="block text-lg font-bold text-accent transition-colors hover:underline"
+                      className="block text-lg text-accent transition-colors hover:underline"
                     >
                       {dict.nav.viewAllCategory.replace("{name}", active.label)}
                     </Link>
@@ -168,7 +168,7 @@ function NavBranch({ lang, node, depth }: { lang: Language; node: NavNode; depth
         href={`/${lang}/category/${node.slug}`}
         className={[
           "block capitalize transition-colors hover:text-accent",
-          depth === 0 ? "text-lg font-bold text-ink" : "text-sm text-(--ink-2)"
+          depth === 0 ? "text-lg text-ink" : "text-sm text-(--ink-2)"
         ].join(" ")}
       >
         {node.label}

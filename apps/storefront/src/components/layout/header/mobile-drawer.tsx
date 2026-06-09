@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import type { HeaderMenuEntry } from "@/lib/header-menu";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
+import { ProductIllustration } from "@/components/ui/product-illustration";
 import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
 
@@ -19,6 +21,16 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
   onOpenSearch: () => void;
 };
 
+function sortMenuEntries(entries: HeaderMenuEntry[]): HeaderMenuEntry[] {
+  return [
+    ...entries.filter((entry) => entry.type === "products"),
+    ...entries
+      .filter((entry) => entry.type === "category")
+      .slice()
+      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
+  ];
+}
+
 export function HeaderMobileDrawer({
   lang,
   dict,
@@ -32,13 +44,7 @@ export function HeaderMobileDrawer({
 }: HeaderMobileDrawerProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
-  const orderedMenuEntries = [
-    ...menuEntries.filter((entry) => entry.type === "products"),
-    ...menuEntries
-      .filter((entry) => entry.type === "category")
-      .slice()
-      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
-  ];
+  const orderedMenuEntries = sortMenuEntries(menuEntries);
   const activeGroup = orderedMenuEntries[activeTab];
 
   // The panel is anchored below the (variable-height) header, so its max height
@@ -98,6 +104,12 @@ export function HeaderMobileDrawer({
             key={product.id}
             href={`/${lang}/products/${product.slug}`}
             title={product.label}
+            image={
+              <ProductIllustration
+                product={{ slug: product.slug, name: product.name, imagePath: product.imagePath }}
+                className="h-full w-full object-cover"
+              />
+            }
             isAr={isAr}
             onClick={onClose}
           />
@@ -267,8 +279,8 @@ export function HeaderMobileDrawer({
                     aria-pressed={isActive}
                     className={`text-2xl transition-colors ${
                       isActive
-                        ? "text-accent"
-                        : "text-ink underline underline-offset-4 hover:text-accent"
+                        ? "text-accent underline underline-offset-4"
+                        : "text-ink hover:text-accent"
                     }`}
                   >
                     {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}
@@ -286,6 +298,7 @@ export function HeaderMobileDrawer({
 function CategoryCard({
   href,
   title,
+  image,
   isAr,
   onClick
 }: {
@@ -294,6 +307,7 @@ function CategoryCard({
   subtitle?: string;
   count?: number;
   children?: NavNode[];
+  image?: React.ReactNode;
   isAr: boolean;
   onClick: () => void;
 }) {
@@ -304,6 +318,12 @@ function CategoryCard({
         onClick={onClick}
         className="group relative flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
+        {image && (
+          <span aria-hidden className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
+            {image}
+          </span>
+        )}
+
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-semibold text-ink">{title}</span>
         </span>

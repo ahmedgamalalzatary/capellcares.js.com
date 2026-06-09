@@ -12,7 +12,7 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "new",
     label: "New",
     products: [
-      { id: 1, slug: "new-product", label: "New Product" }
+      { id: 1, slug: "new-product", label: "New Product", name: { en: "New Product", ar: "منتج جديد" }, imagePath: "" }
     ]
   },
   {
@@ -21,7 +21,7 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "bestsellers",
     label: "Best Seller",
     products: [
-      { id: 2, slug: "best-product", label: "Best Product" }
+      { id: 2, slug: "best-product", label: "Best Product", name: { en: "Best Product", ar: "أفضل منتج" }, imagePath: "" }
     ]
   },
   {
@@ -30,7 +30,10 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "skin-care",
     label: "Skin Care",
     sortOrder: 2,
-    children: []
+    children: [
+      { id: 102, slug: "cleansers", label: "Cleansers", children: [] },
+      { id: 101, slug: "serums", label: "Serums", children: [] }
+    ]
   },
   {
     type: "category",
@@ -110,5 +113,25 @@ describe("ShopMegaMenu", () => {
       "Body Care",
       "Skin Care"
     ]);
+  });
+
+  it("renders child categories in the provided sibling order", () => {
+    render(createElement(ShopMegaMenu, {
+      lang: "en",
+      dict,
+      menuEntries,
+      isAr: false
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
+
+    expect(screen.getAllByRole("link").map((item) => item.textContent?.trim())).toContain("Cleansers");
+    expect(screen.getAllByRole("link").map((item) => item.textContent?.trim())).toContain("Serums");
+    expect(
+      screen.getAllByRole("link")
+        .map((item) => item.textContent?.trim())
+        .filter((item) => item === "Cleansers" || item === "Serums")
+    ).toEqual(["Cleansers", "Serums"]);
   });
 });

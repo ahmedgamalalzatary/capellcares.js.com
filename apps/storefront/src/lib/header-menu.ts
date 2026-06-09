@@ -1,4 +1,4 @@
-import { pickLang, type Language, type Product } from "@capella/shared";
+import { pickLang, type Bilingual, type Language, type Product } from "@capella/shared";
 
 import type { NavGroup, NavNode } from "@/lib/nav";
 
@@ -6,6 +6,8 @@ interface HeaderMenuProductLink {
   id: number;
   slug: string;
   label: string;
+  name: Bilingual;
+  imagePath: string;
 }
 
 interface HeaderMenuProductsEntry {
@@ -48,7 +50,7 @@ export function buildHeaderMenu({
       label: dict.nav.new,
       products: activeProducts
         .filter((product) => product.isNew)
-        .map((product) => ({ id: product.id, slug: product.slug, label: pickLang(product.name, lang) }))
+        .map((product) => ({ id: product.id, slug: product.slug, label: pickLang(product.name, lang), name: product.name, imagePath: product.imagePath }))
     },
     {
       type: "products",
@@ -57,7 +59,7 @@ export function buildHeaderMenu({
       label: dict.nav.bestsellers,
       products: activeProducts
         .filter((product) => product.isBestseller)
-        .map((product) => ({ id: product.id, slug: product.slug, label: pickLang(product.name, lang) }))
+        .map((product) => ({ id: product.id, slug: product.slug, label: pickLang(product.name, lang), name: product.name, imagePath: product.imagePath }))
     },
     ...navGroups.map((group) => ({
       type: "category" as const,

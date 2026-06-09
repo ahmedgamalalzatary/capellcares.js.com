@@ -236,7 +236,7 @@ test("admin category create rejects duplicate root slugs", async () => {
   });
 });
 
-test("admin category reorder-roots persists root ordering by sort order", async () => {
+test("admin category reorder persists root ordering by sort order", async () => {
   const ids = await getBaselineIds();
   const [skinCare] = await db
     .insert(categories)
@@ -259,10 +259,11 @@ test("admin category reorder-roots persists root ordering by sort order", async 
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
-    const response = await request("/api/erp/categories/reorder-roots", {
+    const response = await request("/api/erp/categories/reorder", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
+        parentId: null,
         ids: [hairCare.id, skinCare.id, ids.rootCategoryId]
       })
     });
@@ -285,7 +286,66 @@ test("admin category reorder-roots persists root ordering by sort order", async 
   assert.equal(rootSortOrderById.get(ids.rootCategoryId), 3);
 });
 
-test("admin category reorder-roots rejects duplicate ids", async () => {
+test("admin category reorder persists child ordering within the same parent", async () => {
+  const [parent] = await db
+    .insert(categories)
+    .values({
+      slug: `parent-${Date.now()}`,
+      arName: "قسم الأب",
+      enName: "Parent Category",
+      isLeaf: false
+    })
+    .$returningId();
+  const [firstChild] = await db
+    .insert(categories)
+    .values({
+      slug: `first-child-${Date.now()}`,
+      arName: "الأول",
+      enName: "First Child",
+      parentId: parent.id,
+      isLeaf: true
+    })
+    .$returningId();
+  const [secondChild] = await db
+    .insert(categories)
+    .values({
+      slug: `second-child-${Date.now()}`,
+      arName: "الثاني",
+      enName: "Second Child",
+      parentId: parent.id,
+      isLeaf: true
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories/reorder", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        parentId: parent.id,
+        ids: [secondChild.id, firstChild.id]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.json, { ok: true });
+  });
+
+  const reorderedChildren = await db
+    .select({
+      id: categories.id,
+      sortOrder: categories.sortOrder
+    })
+    .from(categories)
+    .where(eq(categories.parentId, parent.id));
+
+  const childSortOrderById = new Map(reorderedChildren.map((row) => [row.id, row.sortOrder]));
+  assert.equal(childSortOrderById.get(secondChild.id), 1);
+  assert.equal(childSortOrderById.get(firstChild.id), 2);
+});
+
+test("admin category reorder rejects duplicate ids", async () => {
   const [skinCare] = await db
     .insert(categories)
     .values({
@@ -298,11 +358,68 @@ test("admin category reorder-roots rejects duplicate ids", async () => {
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
-    const response = await request("/api/erp/categories/reorder-roots", {
+    const response = await request("/api/erp/categories/reorder", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
+        parentId: null,
         ids: [skinCare.id, skinCare.id]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-root-order");
+  });
+});
+
+test("admin category reorder rejects ids from a different parent", async () => {
+  const [firstParent] = await db
+    .insert(categories)
+    .values({
+      slug: `first-parent-${Date.now()}`,
+      arName: "الأب الأول",
+      enName: "First Parent",
+      isLeaf: false
+    })
+    .$returningId();
+  const [secondParent] = await db
+    .insert(categories)
+    .values({
+      slug: `second-parent-${Date.now()}`,
+      arName: "الأب الثاني",
+      enName: "Second Parent",
+      isLeaf: false
+    })
+    .$returningId();
+  const [childOne] = await db
+    .insert(categories)
+    .values({
+      slug: `child-one-${Date.now()}`,
+      arName: "الأول",
+      enName: "Child One",
+      parentId: firstParent.id,
+      isLeaf: true
+    })
+    .$returningId();
+  const [childTwo] = await db
+    .insert(categories)
+    .values({
+      slug: `child-two-${Date.now()}`,
+      arName: "الثاني",
+      enName: "Child Two",
+      parentId: secondParent.id,
+      isLeaf: true
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories/reorder", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        parentId: firstParent.id,
+        ids: [childOne.id, childTwo.id]
       })
     });
 

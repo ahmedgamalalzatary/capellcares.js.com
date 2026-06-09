@@ -66,7 +66,7 @@ describe("buildHeaderMenu", () => {
     expect(menu[0]).toMatchObject({
       type: "products",
       slug: "new",
-      products: [{ slug: "new-product" }]
+      products: [{ slug: "new-product", name: { ar: "منتج", en: "Product" }, imagePath: "/product.jpg" }]
     });
     expect(menu[1]).toMatchObject({
       type: "products",

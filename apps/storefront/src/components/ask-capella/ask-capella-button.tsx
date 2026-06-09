@@ -30,7 +30,7 @@ export function AskCapellaButton({ lang }: Props) {
             height={100}
             className="h-5 w-auto object-contain"
           />
-          <span className="font-(--font-display) italic text-base leading-none">{dict.ask.button}</span>
+          <span className="font-(--font-display) text-base leading-none">{dict.ask.button}</span>
         </button>
       )}
 

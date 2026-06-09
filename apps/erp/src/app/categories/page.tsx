@@ -13,33 +13,45 @@ import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
 import type { Category } from "@capella/shared";
 
+function categoryParentKey(parentId: number | null) {
+  return parentId == null ? "root" : `parent:${parentId}`;
+}
+
 export default function CategoriesPage() {
   const { user } = useAdminAuth();
   const categories = useStore((s) => s.categories);
   const products = useStore((s) => s.products);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
-  const [draftRootIds, setDraftRootIds] = useState<number[]>([]);
+  const [draftOrders, setDraftOrders] = useState<Record<string, number[]>>({});
   const [savingOrder, setSavingOrder] = useState(false);
 
   const activeCategories = useMemo(
     () => categories.filter((category) => !category.deletedAt),
     [categories]
   );
-  const rootCategories = useMemo(
-    () => activeCategories
-      .filter((category) => category.parentId === null)
-      .slice()
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id),
-    [activeCategories]
-  );
-  const persistedRootIds = useMemo(
-    () => rootCategories.map((category) => category.id),
-    [rootCategories]
-  );
-
+  const persistedOrders = useMemo(() => {
+    const grouped = new Map<string, number[]>();
+    const byParent = new Map<number | null, Category[]>();
+    for (const category of activeCategories) {
+      const siblings = byParent.get(category.parentId) ?? [];
+      siblings.push(category);
+      byParent.set(category.parentId, siblings);
+    }
+    for (const [parentId, siblings] of byParent.entries()) {
+      grouped.set(
+        categoryParentKey(parentId),
+        siblings
+          .slice()
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+          .map((category) => category.id)
+      );
+    }
+    return grouped;
+  }, [activeCategories]);
   useEffect(() => {
-    setDraftRootIds(persistedRootIds);
-  }, [persistedRootIds]);
+    const nextDrafts = Object.fromEntries(persistedOrders.entries());
+    setDraftOrders(nextDrafts);
+  }, [persistedOrders]);
 
   const tree = useMemo(() => {
     const children = new Map<number | null, Category[]>();
@@ -49,18 +61,18 @@ export default function CategoriesPage() {
       children.set(c.parentId, list);
     }
     for (const [parentId, list] of children.entries()) {
-      if (parentId === null) {
-        const orderedRoots = draftRootIds
+      const orderedIds = draftOrders[categoryParentKey(parentId)];
+      if (orderedIds?.length) {
+        const orderedItems = orderedIds
           .map((id) => list.find((item) => item.id === id))
           .filter((item): item is Category => Boolean(item));
-        children.set(parentId, orderedRoots);
+        children.set(parentId, orderedItems);
         continue;
       }
-
       list.sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.id - right.id);
     }
     return children;
-  }, [activeCategories, draftRootIds]);
+  }, [activeCategories, draftOrders]);
 
   const productCount = useMemo(() => {
     const map = new Map<number, number>();
@@ -82,19 +94,27 @@ export default function CategoriesPage() {
     setPendingDelete(null);
   };
 
-  const isDirty = draftRootIds.length > 0 && draftRootIds.some((id, index) => id !== persistedRootIds[index]);
+  const dirtyGroups = useMemo(() => {
+    return Object.entries(draftOrders).filter(([groupKey, ids]) => {
+      const persisted = persistedOrders.get(groupKey) ?? [];
+      return ids.length > 0 && (ids.length !== persisted.length || ids.some((id, index) => id !== persisted[index]));
+    });
+  }, [draftOrders, persistedOrders]);
+  const isDirty = dirtyGroups.length > 0;
 
-  const moveRoot = (id: number, direction: -1 | 1) => {
-    setDraftRootIds((current) => {
-      const index = current.indexOf(id);
+  const moveCategory = (parentId: number | null, id: number, direction: -1 | 1) => {
+    const groupKey = categoryParentKey(parentId);
+    setDraftOrders((current) => {
+      const source = current[groupKey] ?? persistedOrders.get(groupKey) ?? [];
+      const index = source.indexOf(id);
       const nextIndex = index + direction;
-      if (index === -1 || nextIndex < 0 || nextIndex >= current.length) {
+      if (index === -1 || nextIndex < 0 || nextIndex >= source.length) {
         return current;
       }
 
-      const next = current.slice();
+      const next = source.slice();
       [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
-      return next;
+      return { ...current, [groupKey]: next };
     });
   };
 
@@ -105,7 +125,12 @@ export default function CategoriesPage() {
 
     setSavingOrder(true);
     try {
-      await getStore().reorderRootCategories(draftRootIds);
+      for (const [groupKey, ids] of dirtyGroups) {
+        const parentId = groupKey === categoryParentKey(null)
+          ? null
+          : Number(groupKey.replace("parent:", ""));
+        await getStore().reorderCategories({ parentId, ids });
+      }
       toast.success("تم حفظ ترتيب الأقسام.");
     } catch (error) {
       showErrorToast(error, "تعذر حفظ ترتيب الأقسام. حاولي مرة أخرى.");
@@ -158,8 +183,7 @@ export default function CategoriesPage() {
             canEdit={canUpdateErpModule(user, "categories")}
             canDelete={canSoftDeleteErpModule(user, "categories")}
             onDelete={onAskDelete}
-            rootOrder={draftRootIds}
-            onMoveRoot={moveRoot}
+            onMoveCategory={moveCategory}
           />
         </div>
       </div>
@@ -188,7 +212,7 @@ export default function CategoriesPage() {
 }
 
 function Tree({
-  children, depth, tree, productCount, canEdit, canDelete, onDelete, rootOrder, onMoveRoot
+  children, depth, tree, productCount, canEdit, canDelete, onDelete, onMoveCategory
 }: {
   children: Category[];
   depth: number;
@@ -197,8 +221,7 @@ function Tree({
   canEdit: boolean;
   canDelete: boolean;
   onDelete: (id: number) => void;
-  rootOrder: number[];
-  onMoveRoot: (id: number, direction: -1 | 1) => void;
+  onMoveCategory: (parentId: number | null, id: number, direction: -1 | 1) => void;
 }) {
   return (
     <ul className="tree">
@@ -206,7 +229,8 @@ function Tree({
         const kids = tree.get(c.id) ?? [];
         const count = productCount.get(c.id) ?? 0;
         const isRoot = depth === 0;
-        const rootIndex = rootOrder.indexOf(c.id);
+        const siblingIds = children.map((item) => item.id);
+        const siblingIndex = siblingIds.indexOf(c.id);
         return (
           <li key={c.id} className="tree__item">
             <div
@@ -222,23 +246,23 @@ function Tree({
               {count > 0 && <span className="tag">{count} منتج</span>}
               {kids.length > 0 && <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>{kids.length} فرعي</span>}
               <div className="row" style={{ gap: 4 }}>
-                {canEdit && isRoot && (
+                {canEdit && siblingIds.length > 1 && (
                   <>
                     <button
                       type="button"
                       className="btn btn--ghost btn--sm"
-                      onClick={() => onMoveRoot(c.id, -1)}
+                      onClick={() => onMoveCategory(c.parentId, c.id, -1)}
                       aria-label="تحريك لأعلى"
-                      disabled={rootIndex <= 0}
+                      disabled={siblingIndex <= 0}
                     >
                       <Icon.Chevron size={14} className="rotate-180" />
                     </button>
                     <button
                       type="button"
                       className="btn btn--ghost btn--sm"
-                      onClick={() => onMoveRoot(c.id, 1)}
+                      onClick={() => onMoveCategory(c.parentId, c.id, 1)}
                       aria-label="تحريك لأسفل"
-                      disabled={rootIndex === -1 || rootIndex >= rootOrder.length - 1}
+                      disabled={siblingIndex === -1 || siblingIndex >= siblingIds.length - 1}
                     >
                       <Icon.Chevron size={14} />
                     </button>
@@ -257,8 +281,7 @@ function Tree({
                 canEdit={canEdit}
                 canDelete={canDelete}
                 onDelete={onDelete}
-                rootOrder={rootOrder}
-                onMoveRoot={onMoveRoot}
+                onMoveCategory={onMoveCategory}
               />
             )}
           </li>

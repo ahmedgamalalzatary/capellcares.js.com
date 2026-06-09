@@ -110,7 +110,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {activeCollections.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between border-t border-(--hairline) pt-10">
+          <header className="mb-8 flex items-end justify-between pt-10">
             <div className="grid gap-1.5">
               <span className="eyebrow text-accent!">
                 {dict.shop.collectionsEyebrow}
@@ -182,7 +182,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {/* New & Bestsellers */}
       {featuredProducts.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between border-t border-(--hairline) pt-10">
+          <header className="mb-8 flex items-end justify-between pt-10">
             <div className="grid gap-1.5">
               <span className="eyebrow">
                 {dict.shop.newAndBestsellers}

@@ -110,6 +110,16 @@ export const Icon = {
       </text>
     </svg>
   ),
+  Mastercard: ({ className, style }: IconProps) => (
+    <svg viewBox="0 0 40 24" className={className} style={style} role="img" aria-label="Mastercard">
+      <circle cx="15" cy="12" r="10" fill="#EB001B" />
+      <circle cx="25" cy="12" r="10" fill="#F79E1B" />
+      <path
+        d="M20 4.2a10 10 0 0 0 0 15.6 10 10 0 0 0 0-15.6z"
+        fill="#FF5F00"
+      />
+    </svg>
+  ),
   Apple: ({ size = 24, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} style={style} aria-hidden>
       <path d="M16.36 12.7c-.02-2.04 1.67-3.02 1.74-3.07-.95-1.39-2.43-1.58-2.96-1.6-1.26-.13-2.46.74-3.1.74-.64 0-1.62-.72-2.67-.7-1.37.02-2.64.8-3.35 2.03-1.43 2.48-.37 6.15 1.02 8.16.68.99 1.49 2.1 2.55 2.06 1.02-.04 1.41-.66 2.65-.66 1.23 0 1.58.66 2.66.64 1.1-.02 1.79-1 2.46-2 .78-1.15 1.1-2.26 1.12-2.32-.02-.01-2.15-.83-2.17-3.28zM14.6 6.4c.56-.68.94-1.62.83-2.56-.81.03-1.78.54-2.36 1.21-.52.6-.98 1.56-.86 2.48.9.07 1.83-.46 2.39-1.13z" />

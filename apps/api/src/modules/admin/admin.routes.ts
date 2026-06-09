@@ -10,7 +10,7 @@ import {
   adminToggleProductStatus,
   adminSetVariantStock,
   adminListCategories,
-  adminReorderRootCategories,
+  adminReorderCategories,
   adminUpsertCategory,
   adminSoftDeleteCategory,
   adminRestoreCategory,
@@ -45,7 +45,7 @@ adminRoutes.post("/products/:id/variants/:variantId/stock", requireErpPermission
 
 adminRoutes.get("/categories", requireErpPermission("categories.read"), adminListCategories);
 adminRoutes.post("/categories", requireErpPermission((req) => (req.body?.id ? "categories.update" : "categories.create")), adminUpsertCategory);
-adminRoutes.post("/categories/reorder-roots", requireErpPermission("categories.update"), adminReorderRootCategories);
+adminRoutes.post("/categories/reorder", requireErpPermission("categories.update"), adminReorderCategories);
 adminRoutes.delete("/categories/:id", requireErpPermission("categories.soft_delete"), adminSoftDeleteCategory);
 adminRoutes.post("/categories/:id/restore", requireErpPermission("categories.restore"), adminRestoreCategory);
 adminRoutes.get("/sales", requireErpPermission("sales.read"), getAdminSalesController);

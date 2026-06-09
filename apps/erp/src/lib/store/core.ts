@@ -289,8 +289,8 @@ export class ErpStore {
     await this.refetch();
   }
 
-  async reorderRootCategories(ids: number[]) {
-    await api.post("/api/erp/categories/reorder-roots", { ids });
+  async reorderCategories(input: { parentId: number | null; ids: number[] }) {
+    await api.post("/api/erp/categories/reorder", input);
     await this.refetch();
   }
 

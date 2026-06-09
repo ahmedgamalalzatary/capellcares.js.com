@@ -10,6 +10,10 @@ export function listCategoriesRepo(includeDeleted = false) {
     .orderBy(asc(categories.sortOrder), asc(categories.id));
 }
 
+function categoryParentScopeCondition(parentId: number | null) {
+  return parentId == null ? isNull(categories.parentId) : eq(categories.parentId, parentId);
+}
+
 export async function upsertCategoryRepo(input: {
   id?: number;
   parentId: number | null;
@@ -95,7 +99,8 @@ export async function upsertCategoryRepo(input: {
   return created;
 }
 
-export async function reorderRootCategoriesRepo(ids: number[]) {
+export async function reorderCategoriesRepo(input: { parentId: number | null; ids: number[] }) {
+  const { parentId, ids } = input;
   if (ids.length === 0 || new Set(ids).size !== ids.length) {
     const error = new Error("Root category order is invalid");
     (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
@@ -105,7 +110,7 @@ export async function reorderRootCategoriesRepo(ids: number[]) {
   const roots = await db
     .select({ id: categories.id })
     .from(categories)
-    .where(and(isNull(categories.parentId), isNull(categories.deletedAt)));
+    .where(and(categoryParentScopeCondition(parentId), isNull(categories.deletedAt)));
 
   const rootIds = roots.map((row) => row.id);
   if (rootIds.length !== ids.length) {
