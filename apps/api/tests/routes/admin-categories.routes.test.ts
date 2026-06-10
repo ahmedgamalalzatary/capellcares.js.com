@@ -427,3 +427,33 @@ test("admin category reorder rejects ids from a different parent", async () => {
     assert.equal(response.json.reason, "invalid-root-order");
   });
 });
+
+test("admin category update rejects setting a category as its own parent", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: ids.rootCategoryId,
+        slug: "body-care",
+        name: { ar: "العناية بالجسم", en: "Body Care" },
+        parentId: ids.rootCategoryId,
+        isLeaf: false
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-parent");
+  });
+
+  const [rootCategory] = await db
+    .select({ parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.id, ids.rootCategoryId))
+    .limit(1);
+
+  assert.equal(rootCategory?.parentId, null);
+});

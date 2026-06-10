@@ -1,6 +1,7 @@
 import type { NextFunction, Response } from "express";
 import { Router } from "express";
 import type { ErpAuthenticatedRequest } from "../../../middlewares/admin-auth.middleware.js";
+import { wrapAsync } from "../../../lib/async-route.js";
 import {
   createAdminStaffController,
   getAdminStaffController,
@@ -14,14 +15,6 @@ function requireAdminRole(req: ErpAuthenticatedRequest, res: Response, next: Nex
     return res.status(403).json({ message: "Forbidden" });
   }
   return next();
-}
-
-function wrapAsync(
-  handler: (req: ErpAuthenticatedRequest, res: Response, next: NextFunction) => Promise<unknown>
-) {
-  return (req: ErpAuthenticatedRequest, res: Response, next: NextFunction) => {
-    void Promise.resolve(handler(req, res, next)).catch(next);
-  };
 }
 
 export const adminStaffManagementRoutes = Router();

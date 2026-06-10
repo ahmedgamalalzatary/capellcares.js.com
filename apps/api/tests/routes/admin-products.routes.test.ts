@@ -604,6 +604,41 @@ serialTest("admin product toggle-status flips the persisted DB status", async ()
   assert.equal(afterSecondToggle.status, "active");
 });
 
+serialTest("admin variant stock update rejects mismatched product and variant ids", async () => {
+  const ids = await getBaselineIds();
+
+  const [before] = await db
+    .select({ stockQty: productVariants.stockQty })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.secondVariantId))
+    .limit(1);
+
+  assert.ok(before, "expected baseline variant to exist");
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/variants/${ids.secondVariantId}/stock`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ stock: 99 })
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(response.json.message, "Variant not found");
+  });
+
+  const [after] = await db
+    .select({ stockQty: productVariants.stockQty })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.secondVariantId))
+    .limit(1);
+
+  assert.equal(after?.stockQty, before.stockQty);
+});
+
 serialTest("admin products list includes soft-deleted products for ERP trash", async () => {
   const ids = await getBaselineIds();
 

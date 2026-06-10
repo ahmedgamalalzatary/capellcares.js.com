@@ -2,8 +2,12 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { AdminUserRole } from "../repositories/admin-user.repository.js";
 import { findAdminUserById } from "../repositories/admin-user.repository.js";
+import { resolveSecret } from "../config/secrets.js";
 
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
+const ACCESS_SECRET = resolveSecret("JWT_ACCESS_SECRET", {
+  value: process.env.JWT_ACCESS_SECRET,
+  devFallback: "dev-access-secret"
+});
 
 export type ErpAuthenticatedRequest = Request & {
   adminUser?: {

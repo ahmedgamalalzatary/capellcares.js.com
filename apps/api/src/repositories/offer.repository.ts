@@ -52,6 +52,13 @@ export async function findOfferBySlugRepo(slug: string) {
   return { ...row, items };
 }
 
+export async function findOfferByIdRepo(id: number) {
+  const [row] = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
+  if (!row) return null;
+  const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+  return { ...row, items };
+}
+
 export async function upsertOfferRepo(input: {
   id?: number;
   slug: string;

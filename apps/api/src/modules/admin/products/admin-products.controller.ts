@@ -5,39 +5,17 @@ import { products } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../../repositories/category.repository.js";
 import {
   createAdminProductRepo,
+  findAdminProductByIdRepo,
   listAdminProductsRepo,
   replaceVariantsRepo
 } from "../../../repositories/product.repository.js";
 import {
   listRelatedLinksForSourceRepo,
-  setRelatedLinksForSourceRepo,
-  type RelatedEntityType,
-  type RelatedRef
+  setRelatedLinksForSourceRepo
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
-
-const RELATED_ENTITY_TYPES: RelatedEntityType[] = ["product", "offer", "collection"];
-
-function parseRelatedItems(value: unknown): RelatedRef[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  const seen = new Set<string>();
-  const refs: RelatedRef[] = [];
-  for (const item of value) {
-    const type = (item as any)?.type;
-    const id = Number((item as any)?.id);
-    if (RELATED_ENTITY_TYPES.includes(type) && Number.isInteger(id) && id > 0) {
-      const key = `${type}:${id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        refs.push({ type, id });
-      }
-    }
-  }
-  return refs;
-}
+import { parseRelatedItems } from "../shared/related-items.js";
 
 async function buildCategorySlugs(categoryId: number): Promise<string[]> {
   const categories = await listCategoriesRepo(true);
@@ -105,7 +83,7 @@ export async function adminListProducts(_req: Request, res: Response) {
 
 export async function adminGetProduct(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const product = (await listAdminProductsRepo()).find((item) => item.id === id);
+  const product = await findAdminProductByIdRepo(id);
   if (!product) {
     return res.status(404).json({ ok: false, reason: "not-found" });
   }
@@ -292,9 +270,13 @@ export async function adminToggleProductStatus(req: Request, res: Response) {
 }
 
 export async function adminSetVariantStock(req: Request, res: Response) {
+  const productId = Number(req.params.id);
   const variantId = Number(req.params.variantId);
   const stock = Math.max(0, Number(req.body?.stock ?? 0));
   const { setVariantStockRepo } = await import("../../../repositories/product.repository.js");
-  await setVariantStockRepo(variantId, stock);
+  const updated = await setVariantStockRepo(productId, variantId, stock);
+  if (!updated) {
+    return res.status(404).json({ message: "Variant not found" });
+  }
   res.json({ ok: true });
 }

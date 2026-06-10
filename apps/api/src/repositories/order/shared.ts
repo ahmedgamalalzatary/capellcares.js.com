@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 export const allowedPaymentStatuses = new Set(["pending", "accepted", "denied"]);
 
 export function generateOrderCode(orderId: number): string {
@@ -9,6 +11,10 @@ export function generateOrderCode(orderId: number): string {
     seed = Math.floor(seed / alphabet.length);
   }
   return `${letters}-${String(orderId).padStart(3, "0")}`;
+}
+
+export function generatePendingOrderCode(): string {
+  return `PEND-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
 }
 
 export function toNumber(value: unknown) {

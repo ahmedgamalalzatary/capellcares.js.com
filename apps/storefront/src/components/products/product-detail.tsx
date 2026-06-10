@@ -29,7 +29,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
   const { isNew, isBestseller } = getProductBadgeState(product);
 
   const firstInStockVariant = product.variants.find((variant) => variant.stock > 0);
-  const [variantId, setVariantId] = useState<number>(firstInStockVariant?.id ?? product.variants[0].id);
+  const [variantId, setVariantId] = useState<number | null>(firstInStockVariant?.id ?? product.variants[0]?.id ?? null);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
@@ -40,16 +40,21 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const activeMedia = media[activeMediaIndex] ?? media[0] ?? null;
 
-  const variant = useMemo(() => product.variants.find((item) => item.id === variantId)!, [variantId, product.variants]);
-  const isOutOfStock = variant.stock === 0;
+  const variant = useMemo(
+    () => product.variants.find((item) => item.id === variantId) ?? null,
+    [variantId, product.variants]
+  );
+  const isOutOfStock = variant == null || variant.stock === 0;
 
   const addToCart = () => {
+    if (!variant) return;
     cart.add({ type: "product", productId: product.id, variantId: variant.id, qty });
     setAdded(true);
     setTimeout(() => setAdded(false), 1600);
   };
 
   const buyNow = () => {
+    if (!variant) return;
     cart.add({ type: "product", productId: product.id, variantId: variant.id, qty });
     router.push(`/${lang}/checkout`);
   };
@@ -131,7 +136,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
           <span className={lang === "ar"
             ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
             : "text-3xl italic font-(--font-display) leading-none text-accent sm:text-[40px]"}>
-            {formatPrice(variant.price, lang)}
+            {variant ? formatPrice(variant.price, lang) : dict.common.outOfStock}
           </span>
           {isOutOfStock ? (
             <span className="chip chip--accent">{dict.common.outOfStock}</span>
@@ -183,9 +188,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <span className="min-w-10 text-center text-base font-semibold tabular-nums text-ink">{qty}</span>
             <button
               className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-              onClick={() => setQty((value) => Math.min(variant.stock || 1, value + 1))}
+              onClick={() => setQty((value) => Math.min(variant?.stock || 1, value + 1))}
               aria-label="+"
-              disabled={qty >= variant.stock}
+              disabled={variant == null || qty >= (variant?.stock ?? 0)}
             >
               <Icon.Plus />
             </button>

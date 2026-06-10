@@ -3,6 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import {
+  findOfferByIdRepo,
   listOffersRepo,
   restoreOfferRepo,
   softDeleteOfferRepo,
@@ -79,7 +80,7 @@ export async function adminListOffers(_req: Request, res: Response) {
 
 export async function adminGetOffer(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const offer = (await listOffersRepo(true)).find((item) => item.id === id);
+  const offer = await findOfferByIdRepo(id);
   if (!offer) {
     return res.status(404).json({ ok: false, reason: "not-found" });
   }

@@ -79,7 +79,43 @@ test("checkout route returns a pending COD payment status for a created order", 
   });
 });
 
-test("checkout route persists registered customer orders when customerId is provided", async () => {
+test("checkout route persists registered customer orders for authenticated customers", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
+      },
+      body: JSON.stringify({
+        fullName: "Registered Customer",
+        phone: "01012345678",
+        email: "seed-customer@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 201);
+
+    const [order] = await db
+      .select({ customerType: orders.customerType, customerId: orders.customerId })
+      .from(orders)
+      .where(eq(orders.id, response.json.id))
+      .limit(1);
+
+    assert.equal(order?.customerType, "registered");
+    assert.equal(order?.customerId, ids.customerId);
+  });
+});
+
+test("checkout route ignores guest-supplied customerId values", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -87,9 +123,9 @@ test("checkout route persists registered customer orders when customerId is prov
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        fullName: "Registered Customer",
+        fullName: "Guest Spoof Attempt",
         phone: "01012345678",
-        email: "seed-customer@capella.test",
+        email: "guest-spoof@capella.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -108,8 +144,8 @@ test("checkout route persists registered customer orders when customerId is prov
       .where(eq(orders.id, response.json.id))
       .limit(1);
 
-    assert.equal(order?.customerType, "registered");
-    assert.equal(order?.customerId, ids.customerId);
+    assert.equal(order?.customerType, "guest");
+    assert.equal(order?.customerId, null);
   });
 });
 

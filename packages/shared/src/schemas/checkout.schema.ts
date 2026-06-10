@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EG_PHONE_REGEX, GOVERNORATES } from "../constants/index.js";
 
 export const checkoutProductItemSchema = z.object({
   type: z.literal("product"),
@@ -20,9 +21,9 @@ export const checkoutCollectionItemSchema = z.object({
 
 export const checkoutSchema = z.object({
   fullName: z.string().min(1),
-  phone: z.string().min(1),
+  phone: z.string().regex(EG_PHONE_REGEX, "Invalid Egyptian phone number"),
   email: z.string().email(),
-  governorate: z.string().min(1),
+  governorate: z.enum(GOVERNORATES),
   cityArea: z.string().min(1),
   addressLine: z.string().min(1),
   buildingApartment: z.string().min(1),

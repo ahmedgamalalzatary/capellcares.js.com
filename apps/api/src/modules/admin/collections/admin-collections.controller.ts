@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
 import {
+  findCollectionByIdRepo,
   listCollectionsRepo,
   restoreCollectionRepo,
   softDeleteCollectionRepo,
@@ -123,7 +124,7 @@ export async function adminListCollections(_req: Request, res: Response) {
 
 export async function adminGetCollection(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const collection = (await listCollectionsRepo(true)).find((item) => item.id === id);
+  const collection = await findCollectionByIdRepo(id);
   if (!collection) {
     return res.status(404).json({ ok: false, reason: "not-found" });
   }

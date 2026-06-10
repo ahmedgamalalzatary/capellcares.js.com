@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import test, { beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
@@ -60,4 +62,42 @@ test("adminAuthMiddleware rejects staff tokens for inactive ERP users", async ()
   assert.equal(res.statusCode, 401);
   assert.deepEqual(res.jsonBody, { message: "Invalid admin token" });
   assert.equal(nextCalled, false);
+});
+
+test("adminAuthMiddleware fails closed on import when JWT_ACCESS_SECRET is missing in production", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousAccessSecret = process.env.JWT_ACCESS_SECRET;
+
+  process.env.NODE_ENV = "production";
+  delete process.env.JWT_ACCESS_SECRET;
+
+  try {
+    const command = process.platform === "win32" ? "cmd.exe" : "pnpm";
+    const args = process.platform === "win32"
+      ? ["/c", "pnpm", "exec", "tsx", "--eval", "import('./src/middlewares/admin-auth.middleware.ts')"]
+      : ["exec", "tsx", "--eval", "import('./src/middlewares/admin-auth.middleware.ts')"];
+    const result = spawnSync(
+      command,
+      args,
+      {
+        cwd: resolve(import.meta.dirname, "../.."),
+        env: {
+          ...process.env,
+          NODE_ENV: "production",
+          JWT_ACCESS_SECRET: ""
+        },
+        encoding: "utf8"
+      }
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stderr}\n${result.stdout}`, /JWT_ACCESS_SECRET/);
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+    if (previousAccessSecret === undefined) {
+      delete process.env.JWT_ACCESS_SECRET;
+    } else {
+      process.env.JWT_ACCESS_SECRET = previousAccessSecret;
+    }
+  }
 });

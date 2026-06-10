@@ -1,4 +1,5 @@
 export {
+  findAdminProductByIdRepo,
   findVisibleProductBySlug,
   findVisibleProducts,
   listAdminProductsRepo

@@ -1,7 +1,7 @@
 import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { allowedPaymentStatuses, generateOrderCode } from "./shared.js";
+import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -109,7 +109,7 @@ export async function createOrderWithItems(input: {
 
     const [order] = await tx.insert(orders).values({
       ...input.order,
-      orderCode: "",
+      orderCode: generatePendingOrderCode(),
       totalAmount: sql`${input.order.totalAmount}`
     }).$returningId();
 

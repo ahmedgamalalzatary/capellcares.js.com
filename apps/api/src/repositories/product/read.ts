@@ -205,3 +205,33 @@ export async function listAdminProductsRepo() {
     };
   });
 }
+
+export async function findAdminProductByIdRepo(id: number) {
+  const [row] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+  if (!row) {
+    return null;
+  }
+
+  const mediaByProduct = await loadMediaRows([row.id]);
+  const variantsRows = await db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sizeLabel: productVariants.sizeLabel,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty,
+      sortOrder: productVariants.sortOrder
+    })
+    .from(productVariants)
+    .where(and(eq(productVariants.productId, row.id), isNull(productVariants.deletedAt)));
+
+  const media = normalizeMedia(mediaByProduct.get(row.id), row.imagePath);
+  return {
+    ...row,
+    imagePath: resolvePrimaryImagePath(media, row.imagePath),
+    hoverImagePath: resolveHoverImagePath(row.hoverImagePath) ?? "",
+    media,
+    keywords: toKeywords(row.keywords),
+    variants: variantsRows.map(mapVariant).sort((a, b) => a.sortOrder - b.sortOrder)
+  };
+}

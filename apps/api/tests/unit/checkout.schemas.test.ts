@@ -40,3 +40,55 @@ test("parseCheckoutBody rejects storefront-legacy field names and invalid item i
     /cityArea|buildingApartment|variantId/i
   );
 });
+
+test("parseCheckoutBody accepts Egyptian numbers with the 0020 prefix", () => {
+  const parsed = parseCheckoutBody({
+    fullName: "Prefix User",
+    phone: "00201012345678",
+    email: "prefix@example.com",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 2, Apt 5",
+    paymentMethod: "cod",
+    items: [{ type: "product", variantId: 123, qty: 2 }]
+  });
+
+  assert.equal(parsed.phone, "00201012345678");
+});
+
+test("parseCheckoutBody rejects malformed Egyptian phone numbers", () => {
+  assert.throws(
+    () =>
+      parseCheckoutBody({
+        fullName: "Bad Phone User",
+        phone: "01912345678",
+        email: "bad-phone@example.com",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 2, Apt 5",
+        paymentMethod: "cod",
+        items: [{ type: "product", variantId: 123, qty: 2 }]
+      }),
+    /phone/i
+  );
+});
+
+test("parseCheckoutBody rejects governorates outside the canonical list", () => {
+  assert.throws(
+    () =>
+      parseCheckoutBody({
+        fullName: "Bad Governorate User",
+        phone: "01012345678",
+        email: "bad-governorate@example.com",
+        governorate: "NotARealGovernorate",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 2, Apt 5",
+        paymentMethod: "cod",
+        items: [{ type: "product", variantId: 123, qty: 2 }]
+      }),
+    /governorate/i
+  );
+});

@@ -40,6 +40,12 @@ export async function upsertCategoryRepo(input: {
     })
     .from(categories);
 
+  if (input.id && wouldCreateCategoryCycle(input.id, input.parentId, allCategories)) {
+    const error = new Error("Category parent cannot be the category itself or one of its descendants");
+    (error as Error & { code?: string }).code = "CATEGORY_INVALID_PARENT";
+    throw error;
+  }
+
   const slugConflict = await findSiblingSlugConflict({
     id: input.id,
     parentId: input.parentId,
@@ -226,9 +232,11 @@ function buildCategoryLineage(
 ) {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const lineage: typeof rows = [];
+  const seen = new Set<number>();
   let currentParentId = parentId;
 
-  while (currentParentId != null) {
+  while (currentParentId != null && !seen.has(currentParentId)) {
+    seen.add(currentParentId);
     const current = byId.get(currentParentId);
     if (!current) {
       break;
@@ -238,6 +246,47 @@ function buildCategoryLineage(
   }
 
   return lineage;
+}
+
+function wouldCreateCategoryCycle(
+  categoryId: number,
+  nextParentId: number | null,
+  rows: Array<{ id: number; parentId: number | null }>
+) {
+  if (nextParentId == null) {
+    return false;
+  }
+
+  if (nextParentId === categoryId) {
+    return true;
+  }
+
+  const childrenByParentId = new Map<number, number[]>();
+  for (const row of rows) {
+    if (row.parentId == null) {
+      continue;
+    }
+
+    const children = childrenByParentId.get(row.parentId) ?? [];
+    children.push(row.id);
+    childrenByParentId.set(row.parentId, children);
+  }
+
+  const stack = [categoryId];
+  const descendants = new Set<number>();
+  while (stack.length > 0) {
+    const currentId = stack.pop()!;
+    const children = childrenByParentId.get(currentId) ?? [];
+    for (const childId of children) {
+      if (descendants.has(childId)) {
+        continue;
+      }
+      descendants.add(childId);
+      stack.push(childId);
+    }
+  }
+
+  return descendants.has(nextParentId);
 }
 
 async function findSameParentGrandchildNameConflict(input: {

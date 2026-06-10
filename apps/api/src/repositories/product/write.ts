@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
@@ -249,8 +249,13 @@ export async function toggleProductStatusRepo(id: number) {
     .where(eq(products.id, id));
 }
 
-export async function setVariantStockRepo(variantId: number, stockQty: number) {
-  await db.update(productVariants).set({ stockQty }).where(eq(productVariants.id, variantId));
+export async function setVariantStockRepo(productId: number, variantId: number, stockQty: number) {
+  const result = await db
+    .update(productVariants)
+    .set({ stockQty })
+    .where(and(eq(productVariants.id, variantId), eq(productVariants.productId, productId)));
+
+  return result[0].affectedRows === 1;
 }
 
 async function hasOfferLinkedVariantsForProductRepo(productId: number) {

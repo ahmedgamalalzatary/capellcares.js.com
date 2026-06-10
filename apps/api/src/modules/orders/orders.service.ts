@@ -3,6 +3,7 @@ import { db } from "@capella/database/src/db";
 import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
+import { addMoney, multiplyMoney } from "./money.js";
 
 export async function createOrderFromCheckout(
   payload: CheckoutPayload
@@ -39,7 +40,7 @@ export async function createOrderFromCheckout(
         offerId: null,
         qty: item.qty,
         unitPrice,
-        lineTotal: unitPrice * item.qty,
+        lineTotal: multiplyMoney(unitPrice, item.qty),
         snapshotNameAr: variant.arName,
         snapshotNameEn: variant.enName,
         snapshotSizeLabel: variant.sizeLabel
@@ -68,7 +69,7 @@ export async function createOrderFromCheckout(
         collectionId,
         qty: item.qty,
         unitPrice: Number(collection.fixedPrice),
-        lineTotal: Number(collection.fixedPrice) * item.qty,
+        lineTotal: multiplyMoney(Number(collection.fixedPrice), item.qty),
         snapshotNameAr: collection.arName,
         snapshotNameEn: collection.enName,
         snapshotSizeLabel: null
@@ -95,14 +96,14 @@ export async function createOrderFromCheckout(
       offerId,
       qty: item.qty,
       unitPrice: Number(offer.fixedPrice),
-      lineTotal: Number(offer.fixedPrice) * item.qty,
+      lineTotal: multiplyMoney(Number(offer.fixedPrice), item.qty),
       snapshotNameAr: offer.arName,
       snapshotNameEn: offer.enName,
       snapshotSizeLabel: null
     });
   }
 
-  const totalAmount = pricedItems.reduce((sum, row) => sum + row.lineTotal, 0);
+  const totalAmount = pricedItems.reduce((sum, row) => addMoney(sum, row.lineTotal), 0);
   const paymentStatus: PaymentStatus = "pending";
   const createdOrder = await createOrderWithItems({
     order: {

@@ -171,4 +171,61 @@ describe("ProductDetail", () => {
     expect(rows[1]).toHaveTextContent("Offer");
     expect(rows[1]).toHaveTextContent("40");
   });
+
+  it("renders an unavailable state instead of crashing when the product has no variants", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size",
+        related: "You may also like"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [],
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    render(createElement(ProductDetail, {
+      product,
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    expect(screen.getAllByText("Out of stock")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
+  });
 });

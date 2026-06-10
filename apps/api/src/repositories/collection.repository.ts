@@ -54,6 +54,13 @@ export async function findCollectionBySlugRepo(slug: string) {
   return { ...row, items };
 }
 
+export async function findCollectionByIdRepo(id: number) {
+  const [row] = await db.select().from(collections).where(eq(collections.id, id)).limit(1);
+  if (!row) return null;
+  const items = await db.select().from(collectionItems).where(eq(collectionItems.collectionId, row.id));
+  return { ...row, items };
+}
+
 export async function upsertCollectionRepo(input: {
   id?: number;
   slug: string;

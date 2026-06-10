@@ -34,6 +34,9 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
     if (error?.code === "CATEGORY_NAME_CONFLICT") {
       return res.status(409).json({ ok: false, reason: "category-name-conflict" });
     }
+    if (error?.code === "CATEGORY_INVALID_PARENT") {
+      return res.status(400).json({ ok: false, reason: "invalid-parent" });
+    }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
     }

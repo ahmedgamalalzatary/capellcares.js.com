@@ -56,17 +56,39 @@ export async function deleteCustomerByEmail(email: string) {
 }
 
 export async function getBaselineIds() {
-  const [productOne, productTwo, offer, rootCategory, leafCategory, customer] = await Promise.all([
-    db.select({ id: products.id }).from(products).where(eq(products.sku, "TEST-SKU-001")).then((rows) => rows[0]),
-    db.select({ id: products.id }).from(products).where(eq(products.sku, "TEST-SKU-002")).then((rows) => rows[0]),
+  const [productOne, productTwo, offer, customer] = await Promise.all([
+    db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-001")).then((rows) => rows[0]),
+    db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-002")).then((rows) => rows[0]),
     db.select({ id: offers.id }).from(offers).where(eq(offers.slug, "test-offer-baseline")).then((rows) => rows[0]),
-    db.select({ id: categories.id }).from(categories).where(eq(categories.slug, "body-care")).then((rows) => rows[0]),
-    db.select({ id: categories.id }).from(categories).where(eq(categories.slug, "body-lotion")).then((rows) => rows[0]),
     db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
   ]);
 
-  if (!productOne || !productTwo || !offer || !rootCategory || !leafCategory || !customer) {
+  if (!productOne || !productTwo || !offer || !customer) {
     throw new Error("Baseline test seed is incomplete");
+  }
+
+  const [leafCategory] = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.id, productOne.categoryId))
+    .limit(1);
+
+  if (!leafCategory) {
+    throw new Error("Baseline leaf category is missing");
+  }
+
+  let rootCategory: { id: number; parentId: number | null } | undefined = leafCategory;
+
+  while (rootCategory?.parentId != null) {
+    rootCategory = await db
+      .select({ id: categories.id, parentId: categories.parentId })
+      .from(categories)
+      .where(eq(categories.id, rootCategory.parentId))
+      .then((rows) => rows[0]);
+  }
+
+  if (!rootCategory) {
+    throw new Error("Baseline root category is missing");
   }
 
   const variants = await db
