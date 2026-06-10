@@ -6,6 +6,8 @@ import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { EntityAvatar } from "@/components/admin/entity-avatar";
+import { RowMenu } from "@/components/ui/row-menu";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
@@ -80,9 +82,7 @@ export default function OffersListPage() {
               return (
                 <tr key={o.id}>
                   <td>
-                    <div className="avatar-tile avatar-tile--wide">
-                      {o.name.en[0]}
-                    </div>
+                    <EntityAvatar src={o.imagePath} fallback={o.name.en[0] ?? "?"} wide />
                   </td>
                   <td>
                     <Link href={`/offers/${o.id}/edit`} className="table-title">{o.name.ar}</Link>
@@ -94,24 +94,31 @@ export default function OffersListPage() {
                    <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
                    <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                    <td>
-                     <div className="row" style={{ gap: 4 }}>
-                       {canToggleErpModule(user, "offers") && (
-                         <button
-                           className="btn btn--ghost btn--sm"
-                           onClick={() => {
-                             setToggleError(null);
-                             setPendingToggle(o);
-                           }}
-                           title={o.status === "active" ? "إيقاف" : "تفعيل"}
-                         >
-                           {o.status === "active" ? <Icon.X /> : <Icon.Check />}
-                         </button>
-                       )}
-                       {canUpdateErpModule(user, "offers") && <Link href={`/offers/${o.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>}
-                       {canSoftDeleteErpModule(user, "offers") && <button className="btn btn--ghost btn--sm" onClick={() => setPendingDelete(o.id)} style={{ color: "var(--danger)" }}>
-                         <Icon.Trash />
-                       </button>}
-                    </div>
+                     {(canToggleErpModule(user, "offers") || canUpdateErpModule(user, "offers") || canSoftDeleteErpModule(user, "offers")) && (
+                       <RowMenu>
+                         {canToggleErpModule(user, "offers") && (
+                           <button
+                             type="button"
+                             className="row-menu__item"
+                             onClick={() => {
+                               setToggleError(null);
+                               setPendingToggle(o);
+                             }}
+                             title={o.status === "active" ? "إيقاف" : "تفعيل"}
+                           >
+                             {o.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                           </button>
+                         )}
+                         {canUpdateErpModule(user, "offers") && (
+                           <Link href={`/offers/${o.id}/edit`} className="row-menu__item"><Icon.Edit /> تعديل</Link>
+                         )}
+                         {canSoftDeleteErpModule(user, "offers") && (
+                           <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => setPendingDelete(o.id)}>
+                             <Icon.Trash /> حذف
+                           </button>
+                         )}
+                       </RowMenu>
+                     )}
                   </td>
                 </tr>
               );

@@ -104,6 +104,7 @@ describe("CollectionsListPage", () => {
   it("asks for confirmation before toggling collection status", async () => {
     render(createElement(CollectionsListPage));
 
+    fireEvent.click(screen.getByLabelText("إجراءات"));
     fireEvent.click(screen.getByTitle("إيقاف"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
@@ -114,7 +115,15 @@ describe("CollectionsListPage", () => {
   it("sets an explicit aria-label on the toggle-status action", () => {
     render(createElement(CollectionsListPage));
 
+    fireEvent.click(screen.getByLabelText("إجراءات"));
     expect(screen.getByRole("button", { name: "إيقاف" })).toHaveAttribute("aria-label", "إيقاف");
+  });
+
+  it("falls back to the first-letter avatar when the collection has no image", () => {
+    const { container } = render(createElement(CollectionsListPage));
+
+    expect(container.querySelector("img.avatar-tile")).toBeNull();
+    expect(container.querySelector(".avatar-tile")?.textContent).toBe("C");
   });
 });
 

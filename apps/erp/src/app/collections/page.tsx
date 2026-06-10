@@ -6,6 +6,8 @@ import { formatPrice, type Collection } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { EntityAvatar } from "@/components/admin/entity-avatar";
+import { RowMenu } from "@/components/ui/row-menu";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -78,6 +80,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
           <table className="table">
             <thead>
               <tr>
+                <th>الصورة</th>
                 <th>الاسم</th>
                 <th>القسم</th>
                 <th>عدد العناصر</th>
@@ -92,6 +95,12 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                 const category = categories.find((item) => item.id === collection.categoryId);
                 return (
                   <tr key={collection.id}>
+                    <td>
+                      <EntityAvatar
+                        src={collection.imagePath}
+                        fallback={collection.name.en?.trim().charAt(0) || collection.name.ar?.trim().charAt(0) || "?"}
+                      />
+                    </td>
                     <td>
                       {canUpdateErpModule(user, "collections") ? (
                         <Link href={`/collections/${collection.id}/edit`} className="table-title">
@@ -116,30 +125,33 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                       />
                     </td>
                     <td>
-                      <div className="row" style={{ gap: 4 }}>
-                        {canToggleErpModule(user, "collections") && (
-                          <button
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => setPendingToggle(collection)}
-                            aria-label={collection.status === "active" ? "إيقاف" : "تفعيل"}
-                            title={collection.status === "active" ? "إيقاف" : "تفعيل"}
-                          >
-                            {collection.status === "active" ? <Icon.X /> : <Icon.Check />}
-                          </button>
-                        )}
-                        {canUpdateErpModule(user, "collections") && (
-                          <Link href={`/collections/${collection.id}/edit`} className="btn btn--ghost btn--sm">
-                            <Icon.Edit />
-                          </Link>
-                        )}
-                      </div>
+                      {(canToggleErpModule(user, "collections") || canUpdateErpModule(user, "collections")) && (
+                        <RowMenu>
+                          {canToggleErpModule(user, "collections") && (
+                            <button
+                              type="button"
+                              className="row-menu__item"
+                              onClick={() => setPendingToggle(collection)}
+                              aria-label={collection.status === "active" ? "إيقاف" : "تفعيل"}
+                              title={collection.status === "active" ? "إيقاف" : "تفعيل"}
+                            >
+                              {collection.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                            </button>
+                          )}
+                          {canUpdateErpModule(user, "collections") && (
+                            <Link href={`/collections/${collection.id}/edit`} className="row-menu__item">
+                              <Icon.Edit /> تعديل
+                            </Link>
+                          )}
+                        </RowMenu>
+                      )}
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>
+                  <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>
                     لا توجد مجموعات بعد.
                   </td>
                 </tr>

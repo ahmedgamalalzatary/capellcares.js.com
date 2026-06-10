@@ -8,7 +8,9 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore, getStore } from "@/lib/store";
+import { useCollapsedCategories } from "@/hooks/use-collapsed-categories";
 import { Icon } from "@/components/ui/icons";
+import { RowMenu } from "@/components/ui/row-menu";
 import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
 import type { Category } from "@capella/shared";
@@ -24,19 +26,7 @@ export default function CategoriesPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
   const [draftOrders, setDraftOrders] = useState<Record<string, number[]>>({});
   const [savingOrder, setSavingOrder] = useState(false);
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
-
-  const toggleCollapsed = (id: number) => {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const { collapsed, toggle: toggleCollapsed } = useCollapsedCategories();
 
   const activeCategories = useMemo(
     () => categories.filter((category) => !category.deletedAt),
@@ -301,8 +291,20 @@ function Tree({
                     </button>
                   </>
                 )}
-                {canEdit && <Link href={`/categories/${c.id}/edit`} className="btn btn--ghost btn--sm"><Icon.Edit /></Link>}
-                {canDelete && <button className="btn btn--ghost btn--sm" onClick={() => onDelete(c.id)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>}
+                {(canEdit || canDelete) && (
+                  <RowMenu>
+                    {canEdit && (
+                      <Link href={`/categories/${c.id}/edit`} className="row-menu__item">
+                        <Icon.Edit /> تعديل
+                      </Link>
+                    )}
+                    {canDelete && (
+                      <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => onDelete(c.id)}>
+                        <Icon.Trash /> حذف
+                      </button>
+                    )}
+                  </RowMenu>
+                )}
               </div>
             </div>
             {hasKids && (

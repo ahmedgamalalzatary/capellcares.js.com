@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { Icon } from "@/components/ui/icons";
+import { RowMenu } from "@/components/ui/row-menu";
 
 export function ProductsTable({
   products,
@@ -47,9 +49,7 @@ export function ProductsTable({
               return (
                 <tr key={product.id}>
                   <td>
-                    <div className="avatar-tile">
-                      {avatarInitial}
-                    </div>
+                    <EntityAvatar src={product.imagePath} fallback={avatarInitial} />
                   </td>
                   <td>
                     <Link href={`/products/${product.id}/edit`} className="table-title">{product.name.ar}</Link>
@@ -65,23 +65,30 @@ export function ProductsTable({
                   </td>
                   <td><AdminStatusBadge active={product.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
-                    <div className="row" style={{ gap: 4 }}>
-                      {canToggle && (
-                        <button
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => onToggle(product)}
-                          title={product.status === "active" ? "إيقاف" : "تفعيل"}
-                        >
-                          {product.status === "active" ? <Icon.X /> : <Icon.Check />}
-                        </button>
-                      )}
-                      {canEdit && <Link href={`/products/${product.id}/edit`} className="btn btn--ghost btn--sm" aria-label={`تعديل ${product.name.ar}`} title="تعديل"><Icon.Edit /></Link>}
-                      {canDelete && (
-                        <button className="btn btn--ghost btn--sm" onClick={() => onDelete(product.id)} style={{ color: "var(--danger)" }} aria-label={`حذف ${product.name.ar}`} title="حذف">
-                          <Icon.Trash />
-                        </button>
-                      )}
-                    </div>
+                    {(canToggle || canEdit || canDelete) && (
+                      <RowMenu>
+                        {canToggle && (
+                          <button
+                            type="button"
+                            className="row-menu__item"
+                            onClick={() => onToggle(product)}
+                            title={product.status === "active" ? "إيقاف" : "تفعيل"}
+                          >
+                            {product.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                          </button>
+                        )}
+                        {canEdit && (
+                          <Link href={`/products/${product.id}/edit`} className="row-menu__item" aria-label={`تعديل ${product.name.ar}`}>
+                            <Icon.Edit /> تعديل
+                          </Link>
+                        )}
+                        {canDelete && (
+                          <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => onDelete(product.id)} aria-label={`حذف ${product.name.ar}`}>
+                            <Icon.Trash /> حذف
+                          </button>
+                        )}
+                      </RowMenu>
+                    )}
                   </td>
                 </tr>
               );

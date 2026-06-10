@@ -45,6 +45,7 @@ describe("OffersListPage", () => {
   it("keeps the toggle modal open and shows an error when status toggle fails", async () => {
     render(createElement(OffersListPage));
 
+    fireEvent.click(screen.getByLabelText("إجراءات"));
     fireEvent.click(screen.getByTitle("إيقاف"));
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 

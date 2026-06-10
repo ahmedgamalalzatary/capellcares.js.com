@@ -6,11 +6,13 @@ import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
+import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { getStore, useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
+import { RowMenu } from "@/components/ui/row-menu";
 import type { Advice } from "@capella/shared";
 
 export default function AdvicesPage() {
@@ -59,6 +61,7 @@ export default function AdvicesPage() {
           <table className="table">
             <thead>
               <tr>
+                <th>الصورة</th>
                 <th>العنوان</th>
                 <th>الرابط</th>
                 <th>الترتيب</th>
@@ -70,6 +73,12 @@ export default function AdvicesPage() {
               {filtered.map((advice) => (
                 <tr key={advice.id}>
                   <td>
+                    <EntityAvatar
+                      src={advice.imagePath}
+                      fallback={advice.title.en?.trim().charAt(0) || advice.title.ar?.trim().charAt(0) || "?"}
+                    />
+                  </td>
+                  <td>
                     <Link href={`/advices/${advice.id}/edit`} className="table-title">{advice.title.ar}</Link>
                     <div className="table-subtitle">{advice.title.en}</div>
                   </td>
@@ -79,36 +88,35 @@ export default function AdvicesPage() {
                   <td>{advice.sortOrder}</td>
                   <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
-                    <div className="row" style={{ gap: 4 }}>
-                      {canToggleErpModule(user, "advices") && (
-                        <button
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => setPendingToggle(advice)}
-                          title={advice.status === "active" ? "إيقاف" : "تفعيل"}
-                        >
-                          {advice.status === "active" ? <Icon.X /> : <Icon.Check />}
-                        </button>
-                      )}
-                      {canUpdateErpModule(user, "advices") && (
-                        <Link href={`/advices/${advice.id}/edit`} className="btn btn--ghost btn--sm">
-                          <Icon.Edit />
-                        </Link>
-                      )}
-                      {hasErpPermission(user, "advices.delete") && (
-                        <button
-                          className="btn btn--ghost btn--sm"
-                          style={{ color: "var(--danger)" }}
-                          onClick={() => setPendingDelete(advice)}
-                        >
-                          <Icon.Trash />
-                        </button>
-                      )}
-                    </div>
+                    {(canToggleErpModule(user, "advices") || canUpdateErpModule(user, "advices") || hasErpPermission(user, "advices.delete")) && (
+                      <RowMenu>
+                        {canToggleErpModule(user, "advices") && (
+                          <button
+                            type="button"
+                            className="row-menu__item"
+                            onClick={() => setPendingToggle(advice)}
+                            title={advice.status === "active" ? "إيقاف" : "تفعيل"}
+                          >
+                            {advice.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                          </button>
+                        )}
+                        {canUpdateErpModule(user, "advices") && (
+                          <Link href={`/advices/${advice.id}/edit`} className="row-menu__item">
+                            <Icon.Edit /> تعديل
+                          </Link>
+                        )}
+                        {hasErpPermission(user, "advices.delete") && (
+                          <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => setPendingDelete(advice)}>
+                            <Icon.Trash /> حذف
+                          </button>
+                        )}
+                      </RowMenu>
+                    )}
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
               )}
             </tbody>
           </table>

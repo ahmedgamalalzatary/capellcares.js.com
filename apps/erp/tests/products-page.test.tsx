@@ -225,6 +225,7 @@ describe("ProductsListPage", () => {
     });
     render(createElement(ProductsListPage));
 
+    fireEvent.click(screen.getByLabelText("إجراءات"));
     fireEvent.click(screen.getByTitle("إيقاف"));
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 

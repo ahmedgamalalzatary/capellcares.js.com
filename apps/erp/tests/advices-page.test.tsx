@@ -47,11 +47,19 @@ describe("AdvicesPage", () => {
   it("asks for confirmation before toggling advice status", async () => {
     render(createElement(AdvicesPage));
 
+    fireEvent.click(screen.getByLabelText("إجراءات"));
     fireEvent.click(screen.getByTitle("إيقاف"));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     expect(toggleAdviceStatus).toHaveBeenCalledWith(1);
+  });
+
+  it("renders the advice image in the list", () => {
+    const { container } = render(createElement(AdvicesPage));
+
+    const img = container.querySelector("img.avatar-tile");
+    expect(img).toHaveAttribute("src", "/uploads/advice.png");
   });
 });
