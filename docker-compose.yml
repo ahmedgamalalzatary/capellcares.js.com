@@ -86,6 +86,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: ${STOREFRONT_BUILD_API_URL:?set STOREFRONT_BUILD_API_URL in env file}
+        STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
     container_name: capella-storefront
     restart: unless-stopped
     environment:

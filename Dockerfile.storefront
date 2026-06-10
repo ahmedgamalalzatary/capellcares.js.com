@@ -7,6 +7,7 @@ FROM base AS deps
 WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ARG API_INTERNAL_URL
+ARG STOREFRONT_REVALIDATE_SECRET
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/storefront/package.json apps/storefront/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -16,8 +17,10 @@ FROM deps AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ARG API_INTERNAL_URL
+ARG STOREFRONT_REVALIDATE_SECRET
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
+ENV STOREFRONT_REVALIDATE_SECRET=$STOREFRONT_REVALIDATE_SECRET
 COPY . .
 RUN pnpm --filter @capella/storefront build
 
