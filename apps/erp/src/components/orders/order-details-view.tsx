@@ -57,6 +57,7 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
   }, [orderId]);
 
   const canUpdatePaymentStatus = hasErpPermission(user, "orders.update_payment_status");
+  const paymentStatusLocked = order?.paymentStatus === "denied";
 
   return (
     <AdminShell
@@ -98,9 +99,9 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
                 id="order-payment-status"
                 className="select"
                 value={order.paymentStatus}
-                disabled={!canUpdatePaymentStatus}
+                disabled={!canUpdatePaymentStatus || paymentStatusLocked}
                 onChange={async (e) => {
-                  if (!canUpdatePaymentStatus) {
+                  if (!canUpdatePaymentStatus || paymentStatusLocked) {
                     return;
                   }
                   const paymentStatus = e.target.value as PaymentStatus;

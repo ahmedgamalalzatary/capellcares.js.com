@@ -4,7 +4,7 @@ import test, { beforeEach } from "node:test";
 import { db } from "@capella/database/src/db";
 import { productVariants } from "@capella/database/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { createOrderWithItems } from "../../src/repositories/order.repository.js";
+import { createOrderWithItems, updateOrderPaymentStatusRepo } from "../../src/repositories/order.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(async () => {
@@ -112,5 +112,23 @@ test("createOrderWithItems rejects non-offer items with null variantId before de
       items: [{ variantId: null, qty: 1, unitPrice: 35, lineTotal: 35 }]
     }),
     /item\.variantId.*decrementVariantStock/
+  );
+});
+
+test("updateOrderPaymentStatusRepo restocks stock when an order is denied and locks the denied state", async () => {
+  const ids = await getBaselineIds();
+  const startingStock = await getStock(ids.firstVariantId);
+
+  const created = await createOrderWithItems(buildOrderInput(ids.firstVariantId, 2));
+
+  assert.equal(await getStock(ids.firstVariantId), (startingStock ?? 0) - 2);
+
+  await updateOrderPaymentStatusRepo(created.id, "denied");
+
+  assert.equal(await getStock(ids.firstVariantId), startingStock);
+
+  await assert.rejects(
+    updateOrderPaymentStatusRepo(created.id, "accepted"),
+    /denied orders are locked/i
   );
 });

@@ -1,5 +1,12 @@
 import type { Response } from "express";
-import { findOrderByIdRepo, getSalesAnalyticsRepo, listOrdersRepo, updateOrderPaymentStatusRepo } from "../../repositories/order.repository.js";
+import {
+  DeniedOrderLockedError,
+  findOrderByIdRepo,
+  getSalesAnalyticsRepo,
+  listOrdersRepo,
+  OrderNotFoundError,
+  updateOrderPaymentStatusRepo
+} from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
@@ -40,7 +47,17 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
     return res.status(400).json({ message: "Invalid payment status" });
   }
 
-  await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
+  try {
+    await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
+  } catch (error) {
+    if (error instanceof DeniedOrderLockedError) {
+      return res.status(409).json({ message: error.message });
+    }
+    if (error instanceof OrderNotFoundError) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    throw error;
+  }
   return res.json({ ok: true });
 }
 

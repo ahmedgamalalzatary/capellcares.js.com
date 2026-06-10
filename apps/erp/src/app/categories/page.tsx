@@ -24,6 +24,19 @@ export default function CategoriesPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
   const [draftOrders, setDraftOrders] = useState<Record<string, number[]>>({});
   const [savingOrder, setSavingOrder] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+
+  const toggleCollapsed = (id: number) => {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const activeCategories = useMemo(
     () => categories.filter((category) => !category.deletedAt),
@@ -184,6 +197,8 @@ export default function CategoriesPage() {
             canDelete={canSoftDeleteErpModule(user, "categories")}
             onDelete={onAskDelete}
             onMoveCategory={moveCategory}
+            collapsed={collapsed}
+            onToggleCollapsed={toggleCollapsed}
           />
         </div>
       </div>
@@ -212,7 +227,7 @@ export default function CategoriesPage() {
 }
 
 function Tree({
-  children, depth, tree, productCount, canEdit, canDelete, onDelete, onMoveCategory
+  children, depth, tree, productCount, canEdit, canDelete, onDelete, onMoveCategory, collapsed, onToggleCollapsed
 }: {
   children: Category[];
   depth: number;
@@ -222,6 +237,8 @@ function Tree({
   canDelete: boolean;
   onDelete: (id: number) => void;
   onMoveCategory: (parentId: number | null, id: number, direction: -1 | 1) => void;
+  collapsed: Set<number>;
+  onToggleCollapsed: (id: number) => void;
 }) {
   return (
     <ul className="tree">
@@ -231,6 +248,8 @@ function Tree({
         const isRoot = depth === 0;
         const siblingIds = children.map((item) => item.id);
         const siblingIndex = siblingIds.indexOf(c.id);
+        const hasKids = kids.length > 0;
+        const isCollapsed = collapsed.has(c.id);
         return (
           <li key={c.id} className="tree__item">
             <div
@@ -239,6 +258,20 @@ function Tree({
               data-testid={`category-row-${c.id}`}
               style={{ paddingInlineStart: 12 + depth * 20 }}
             >
+              {hasKids ? (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm tree__fold"
+                  onClick={() => onToggleCollapsed(c.id)}
+                  aria-label={isCollapsed ? "توسيع" : "طي"}
+                  aria-expanded={!isCollapsed}
+                  data-testid={`category-toggle-${c.id}`}
+                >
+                  <Icon.Chevron size={14} className={isCollapsed ? "rotate-180" : undefined} />
+                </button>
+              ) : (
+                <span style={{ display: "inline-block", width: 28 }} />
+              )}
               <Icon.Folder size={16} />
               <Link href={`/categories/${c.id}/edit`} className="tree__title">
                 {c.name.ar} <span className="tree__meta">· {c.name.en}</span>
@@ -272,17 +305,28 @@ function Tree({
                 {canDelete && <button className="btn btn--ghost btn--sm" onClick={() => onDelete(c.id)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>}
               </div>
             </div>
-            {kids.length > 0 && (
-              <Tree
-                children={kids}
-                depth={depth + 1}
-                tree={tree}
-                productCount={productCount}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                onDelete={onDelete}
-                onMoveCategory={onMoveCategory}
-              />
+            {hasKids && (
+              <div
+                className="tree__subtree"
+                data-collapsed={isCollapsed ? "true" : "false"}
+                data-testid={`category-subtree-${c.id}`}
+                aria-hidden={isCollapsed ? "true" : undefined}
+              >
+                <div className="tree__subtree-inner" inert={isCollapsed || undefined}>
+                  <Tree
+                    children={kids}
+                    depth={depth + 1}
+                    tree={tree}
+                    productCount={productCount}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    onDelete={onDelete}
+                    onMoveCategory={onMoveCategory}
+                    collapsed={collapsed}
+                    onToggleCollapsed={onToggleCollapsed}
+                  />
+                </div>
+              </div>
             )}
           </li>
         );

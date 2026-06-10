@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
-import { resolveRevalidateSecret } from "./revalidate-secret";
+import { resolveRevalidateSecret } from "@/lib/api/revalidate-secret";
 
 const REVALIDATE_SECRET = resolveRevalidateSecret();
 const LOCALES = ["ar", "en"] as const;

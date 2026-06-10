@@ -74,6 +74,26 @@ describe("CategoriesPage", () => {
     });
   });
 
+  it("collapses and expands a parent's children when its fold arrow is clicked", () => {
+    const { container } = render(createElement(CategoriesPage));
+    const view = within(container);
+
+    // Skin Care (id 2) has children Serums (3) and Cleansers (4); the subtree
+    // stays mounted (animated via CSS) and its collapsed state is tracked on the
+    // wrapper's data-collapsed attribute.
+    const subtree = view.getByTestId("category-subtree-2");
+    const toggle = view.getByTestId("category-toggle-2");
+    expect(subtree.getAttribute("data-collapsed")).toBe("false");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(toggle);
+    expect(subtree.getAttribute("data-collapsed")).toBe("true");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle);
+    expect(subtree.getAttribute("data-collapsed")).toBe("false");
+  });
+
   it("reorders child categories within the same parent and saves that sibling id order", async () => {
     render(createElement(CategoriesPage));
 

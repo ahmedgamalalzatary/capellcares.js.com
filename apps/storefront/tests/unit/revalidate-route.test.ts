@@ -13,7 +13,7 @@ describe("storefront revalidate route", () => {
   });
 
   it("revalidates localized product and listing paths for a valid ERP request", async () => {
-    const { POST } = await import("@/lib/api/route");
+    const { POST } = await import("@/app/api/revalidate/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",
@@ -40,7 +40,7 @@ describe("storefront revalidate route", () => {
   });
 
   it("revalidates all affected offer pages from a universal revalidation request", async () => {
-    const { POST } = await import("@/lib/api/route");
+    const { POST } = await import("@/app/api/revalidate/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",
@@ -71,8 +71,8 @@ describe("storefront revalidate route", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
   });
 
-  it("revalidates collection pages and category pages from a universal request", async () => {
-    const { POST } = await import("@/lib/api/route");
+  it("revalidates product and category pages when categorySlugs are provided", async () => {
+    const { POST } = await import("@/app/api/revalidate/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",
@@ -97,7 +97,7 @@ describe("storefront revalidate route", () => {
   });
 
   it("revalidates the previous product slug when the webhook payload provides it", async () => {
-    const { POST } = await import("@/lib/api/route");
+    const { POST } = await import("@/app/api/revalidate/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",
@@ -120,7 +120,7 @@ describe("storefront revalidate route", () => {
   });
 
   it("revalidates advice-backed pages without requiring a slug", async () => {
-    const { POST } = await import("@/lib/api/route");
+    const { POST } = await import("@/app/api/revalidate/route");
 
     const response = await POST(new Request("http://localhost:3000/api/revalidate", {
       method: "POST",

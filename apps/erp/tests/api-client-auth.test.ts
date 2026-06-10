@@ -41,4 +41,54 @@ describe("ERP API client auth invalidation", () => {
     expect(client.getAdminAuthUser()).toBeNull();
     expect(updates.at(-1)).toBeNull();
   });
+
+  it("refreshes and retries ERP requests before invalidating a valid session", async () => {
+    const fetchMock = vi.fn(async (input: string) => {
+      if (input.endsWith("/api/erp/orders")) {
+        const attempt = fetchMock.mock.calls.filter(([url]) => url === input).length;
+        if (attempt === 1) {
+          return {
+            ok: false,
+            status: 401,
+            json: async () => ({ message: "Invalid admin token" })
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({ items: [] })
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          accessToken: "fresh-admin-token",
+          user: {
+            name: "Staff User",
+            email: "staff@capella.test",
+            role: "staff",
+            permissionKeys: ["orders.read"]
+          }
+        })
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+
+    client.setAdminAccessToken("expired-admin-token");
+    client.setAdminAuthUser({
+      name: "Staff User",
+      email: "staff@capella.test",
+      role: "staff",
+      permissionKeys: ["orders.read"]
+    });
+
+    await expect(client.api.get("/api/erp/orders")).resolves.toEqual({ items: [] });
+    expect(client.getAdminAuthUser()).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/erp/auth/refresh"),
+      expect.objectContaining({ method: "POST", credentials: "include" })
+    );
+  });
 });

@@ -929,6 +929,46 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   color: var(--ink-4);
 }
 
+/* ── Fold / unfold ── */
+.tree__fold {
+  width: 28px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.tree__fold svg {
+  transition: transform var(--motion) var(--ease-out-expo);
+  transform-origin: 50% 50%;
+}
+
+/* Collapsible subtree: animate height via grid-template-rows 1fr ↔ 0fr,
+   with a slight slide + fade for a polished open/close. */
+.tree__subtree {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--motion) var(--ease-out-expo),
+              opacity var(--motion) var(--ease-out-expo);
+  opacity: 1;
+}
+.tree__subtree[data-collapsed="true"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+.tree__subtree-inner {
+  overflow: hidden;
+  min-height: 0;
+  transform: translateY(0);
+  transition: transform var(--motion) var(--ease-out-expo);
+}
+.tree__subtree[data-collapsed="true"] .tree__subtree-inner {
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree__fold svg,
+  .tree__subtree,
+  .tree__subtree-inner { transition: none; }
+}
+
 .form-stack {
   display: grid;
   gap: 12px;

@@ -5,6 +5,18 @@ import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } f
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export class DeniedOrderLockedError extends Error {
+  constructor() {
+    super("Denied orders are locked");
+  }
+}
+
+export class OrderNotFoundError extends Error {
+  constructor(orderId: number) {
+    super(`Order not found: ${orderId}`);
+  }
+}
+
 interface OrderItem {
   variantId: number | null;
   qty: number;
@@ -31,6 +43,81 @@ async function decrementVariantStock(tx: DbTransaction, variantId: number, requi
     .where(and(eq(productVariants.id, variantId), gte(productVariants.stockQty, requiredQty)));
   if (result[0].affectedRows !== 1) {
     throw new Error("Insufficient stock");
+  }
+}
+
+async function incrementVariantStock(tx: DbTransaction, variantId: number, qty: number) {
+  await tx
+    .update(productVariants)
+    .set({ stockQty: sql`${productVariants.stockQty} + ${qty}` })
+    .where(eq(productVariants.id, variantId));
+}
+
+function buildMissingOrderItemIdError(orderId: number, item: {
+  itemType: "product_variant" | "offer" | "collection";
+  variantId: number | null;
+  offerId: number | null;
+  collectionId: number | null;
+  qty: number;
+}, missingField: "variantId" | "offerId" | "collectionId") {
+  return new Error(
+    `Cannot restock orderId=${orderId}: ${item.itemType} order item is missing ${missingField} (${JSON.stringify(item)})`
+  );
+}
+
+async function restockOrderItems(tx: DbTransaction, orderId: number) {
+  const items = await tx
+    .select({
+      itemType: orderItems.itemType,
+      variantId: orderItems.variantId,
+      offerId: orderItems.offerId,
+      collectionId: orderItems.collectionId,
+      qty: orderItems.qty
+    })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId));
+
+  for (const item of items) {
+    if (item.itemType === "offer") {
+      if (item.offerId == null) {
+        throw buildMissingOrderItemIdError(orderId, item, "offerId");
+      }
+      const underlyingItems = await tx
+        .select({
+          variantId: offerItems.variantId,
+          bundleQty: offerItems.qty
+        })
+        .from(offerItems)
+        .where(eq(offerItems.offerId, item.offerId));
+
+      for (const underlyingItem of underlyingItems) {
+        await incrementVariantStock(tx, underlyingItem.variantId, underlyingItem.bundleQty * item.qty);
+      }
+      continue;
+    }
+
+    if (item.itemType === "collection") {
+      if (item.collectionId == null) {
+        throw buildMissingOrderItemIdError(orderId, item, "collectionId");
+      }
+      const underlyingItems = await tx
+        .select({
+          variantId: collectionItems.variantId,
+          bundleQty: collectionItems.qty
+        })
+        .from(collectionItems)
+        .where(eq(collectionItems.collectionId, item.collectionId));
+
+      for (const underlyingItem of underlyingItems) {
+        await incrementVariantStock(tx, underlyingItem.variantId, underlyingItem.bundleQty * item.qty);
+      }
+      continue;
+    }
+
+    if (item.variantId == null) {
+      throw buildMissingOrderItemIdError(orderId, item, "variantId");
+    }
+    await incrementVariantStock(tx, item.variantId, item.qty);
   }
 }
 
@@ -147,5 +234,26 @@ export async function updateOrderPaymentStatusRepo(
   if (!allowedPaymentStatuses.has(paymentStatus)) {
     throw new Error(`updateOrderPaymentStatusRepo received invalid paymentStatus: ${String(paymentStatus)}`);
   }
-  await db.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ paymentStatus: orders.paymentStatus })
+      .from(orders)
+      .where(eq(orders.id, id))
+      .limit(1)
+      .for("update");
+
+    if (!existing) {
+      throw new OrderNotFoundError(id);
+    }
+
+    if (existing.paymentStatus === "denied") {
+      throw new DeniedOrderLockedError();
+    }
+
+    if (paymentStatus === "denied") {
+      await restockOrderItems(tx, id);
+    }
+
+    await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
+  });
 }

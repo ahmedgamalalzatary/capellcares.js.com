@@ -27,9 +27,12 @@ const adminAuthHydrationListeners = new Set<(hydrated: boolean) => void>();
 let adminAuthUser: AdminAuthUser | null = null;
 const adminAuthUserListeners = new Set<(user: AdminAuthUser | null) => void>();
 const adminSessionInvalidationListeners = new Set<() => void>();
+let adminRefreshPromise: Promise<string | null> | null = null;
+let adminRefreshTimer: number | null = null;
 
 export function setAdminAccessToken(token: string | null) {
   adminAccessToken = token;
+  scheduleAdminRefresh(token);
   adminAccessTokenListeners.forEach((listener) => listener(token));
 }
 
@@ -53,9 +56,78 @@ export function getAdminAuthUser() {
 }
 
 function invalidateAdminSession() {
+  if (adminRefreshTimer) {
+    clearTimeout(adminRefreshTimer);
+    adminRefreshTimer = null;
+  }
   setAdminAccessToken(null);
   setAdminAuthUser(null);
   adminSessionInvalidationListeners.forEach((listener) => listener());
+}
+
+function decodeTokenExpiryMs(token: string): number | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const parsed = JSON.parse(atob(normalized)) as { exp?: unknown };
+    return typeof parsed.exp === "number" ? parsed.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function scheduleAdminRefresh(token: string | null) {
+  if (adminRefreshTimer) {
+    clearTimeout(adminRefreshTimer);
+    adminRefreshTimer = null;
+  }
+  if (!token || typeof window === "undefined") {
+    return;
+  }
+
+  const expiryMs = decodeTokenExpiryMs(token);
+  if (!expiryMs) {
+    return;
+  }
+
+  const refreshInMs = Math.max(expiryMs - Date.now() - 60_000, 5_000);
+  adminRefreshTimer = window.setTimeout(() => {
+    void refreshAdminSession();
+  }, refreshInMs);
+}
+
+async function refreshAdminSession(): Promise<string | null> {
+  if (adminRefreshPromise) {
+    return adminRefreshPromise;
+  }
+
+  adminRefreshPromise = (async () => {
+    const response = await fetch(`${API_BASE}/api/erp/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      invalidateAdminSession();
+      return null;
+    }
+
+    const data = await response.json() as { accessToken?: string | null; user?: AdminAuthUser | null };
+    setAdminAccessToken(data.accessToken ?? null);
+    setAdminAuthUser(data.user ?? null);
+    return data.accessToken ?? null;
+  })();
+
+  try {
+    return await adminRefreshPromise;
+  } catch {
+    invalidateAdminSession();
+    return null;
+  } finally {
+    adminRefreshPromise = null;
+  }
 }
 
 export function isAdminAuthHydrated() {
@@ -86,7 +158,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, allowRefresh = true): Promise<T> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (adminAccessToken) headers.set("authorization", `Bearer ${adminAccessToken}`);
@@ -101,7 +173,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try { body = await res.json(); } catch {}
     const message = body && typeof body === "object" && "message" in body ? (body as { message?: unknown }).message : undefined;
     if (res.status === 401 && message === "Invalid admin token") {
-      invalidateAdminSession();
+      if (allowRefresh) {
+        const refreshedToken = await refreshAdminSession();
+        if (refreshedToken) {
+          return request<T>(path, init, false);
+        }
+      } else {
+        invalidateAdminSession();
+      }
     }
     const err = new Error(`API ${res.status} ${path}`) as Error & { status?: number; body?: unknown };
     err.status = res.status;

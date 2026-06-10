@@ -1,11 +1,31 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { loginRequest, logoutRequest, refreshAccessToken, signupRequest } from "../../lib/auth-provider.api";
+import {
+  loginRequest,
+  logoutRequest,
+  refreshAccessToken,
+  refreshAccessTokenOrNull,
+  setCurrentAccessToken,
+  subscribeCurrentAccessToken,
+  signupRequest
+} from "../../lib/auth-provider.api";
 import { readStoredAuthUser, writeStoredAuthUser } from "../../lib/auth-provider.storage";
 import type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/auth-provider.types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function decodeTokenExpiryMs(token: string): number | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const parsed = JSON.parse(atob(normalized)) as { exp?: unknown };
+    return typeof parsed.exp === "number" ? parsed.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -38,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         const data = await res.json();
         if (!cancelled) {
-          setAccessToken(data.accessToken ?? null);
+          setCurrentAccessToken(data.accessToken ?? null);
         }
       })
       .catch((err) => {
@@ -51,6 +71,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [hydrated, user, accessToken]);
 
   useEffect(() => {
+    const unsubscribe = subscribeCurrentAccessToken(setAccessToken);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentAccessToken(accessToken);
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
+    const expiryMs = decodeTokenExpiryMs(accessToken);
+    if (!expiryMs) {
+      return;
+    }
+
+    const refreshInMs = Math.max(expiryMs - Date.now() - 60_000, 5_000);
+    const timer = window.setTimeout(() => {
+      void refreshAccessTokenOrNull();
+    }, refreshInMs);
+
+    return () => window.clearTimeout(timer);
+  }, [accessToken]);
+
+  useEffect(() => {
     if (!hydrated) return;
     writeStoredAuthUser(user);
   }, [user, accessToken, hydrated]);
@@ -58,7 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
     const data = await loginRequest(email, password);
     setUser(data.user);
-    setAccessToken(data.accessToken);
+    setCurrentAccessToken(data.accessToken);
     return data.user;
   }, []);
 
@@ -72,7 +121,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await logoutRequest();
     } finally {
       setUser(null);
-      setAccessToken(null);
+      setCurrentAccessToken(null);
     }
   }, []);
 

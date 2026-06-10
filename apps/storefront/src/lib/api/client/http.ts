@@ -1,4 +1,5 @@
 import { resolveApiBase } from "@capella/shared/api/base";
+import { getCurrentAccessToken, refreshAccessTokenOrNull } from "../../auth-provider.api";
 import type { FetchLanguage } from "./types";
 
 export const API_BASE = resolveApiBase();
@@ -50,7 +51,7 @@ export async function getJSON<T>(
   return response.json() as Promise<T>;
 }
 
-export async function authedGetJSON<T>(path: string, accessToken: string): Promise<T | null> {
+export async function authedGetJSON<T>(path: string, accessToken: string, allowRefresh = true): Promise<T | null> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
@@ -68,6 +69,13 @@ export async function authedGetJSON<T>(path: string, accessToken: string): Promi
   if (!response.ok) {
     if (response.status === 404) {
       return null;
+    }
+    if (response.status === 401 && allowRefresh) {
+      const refreshedToken = await refreshAccessTokenOrNull();
+      const retryToken = refreshedToken ?? getCurrentAccessToken();
+      if (retryToken) {
+        return authedGetJSON<T>(path, retryToken, false);
+      }
     }
     throw new Error(`API ${response.status} ${path}`);
   }

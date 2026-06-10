@@ -8,7 +8,7 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { db } from "@capella/database/src/db";
-import { orders } from "@capella/database/drizzle/schema";
+import { orders, productVariants } from "@capella/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
@@ -131,6 +131,77 @@ test("erp orders can update payment status", async () => {
     .limit(1);
 
   assert.equal(updated?.paymentStatus, "accepted");
+});
+
+test("erp denied orders restore stock and reject further payment-status changes", async () => {
+  const ids = await getBaselineIds();
+  const [before] = await db
+    .select({ stockQty: productVariants.stockQty })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId))
+    .limit(1);
+
+  let createdOrderId = 0;
+
+  await withTestServer(app, async (request) => {
+    const checkout = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Denied Order",
+        phone: "01012345678",
+        email: "denied-order@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        customerId: ids.customerId,
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
+      })
+    });
+
+    assert.equal(checkout.status, 201);
+    createdOrderId = checkout.json.id;
+
+    const authHeaders = await getAdminAuthHeaders(request);
+    const denyResponse = await request(`/api/erp/orders/${createdOrderId}/payment-status`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ paymentStatus: "denied" })
+    });
+
+    assert.equal(denyResponse.status, 200);
+
+    const lockedResponse = await request(`/api/erp/orders/${createdOrderId}/payment-status`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ paymentStatus: "accepted" })
+    });
+
+    assert.equal(lockedResponse.status, 409);
+    assert.equal(lockedResponse.json.message, "Denied orders are locked");
+  });
+
+  const [after] = await db
+    .select({ paymentStatus: orders.paymentStatus })
+    .from(orders)
+    .where(eq(orders.id, createdOrderId))
+    .limit(1);
+  assert.equal(after?.paymentStatus, "denied");
+
+  const [restocked] = await db
+    .select({ stockQty: productVariants.stockQty })
+    .from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId))
+    .limit(1);
+  assert.equal(restocked?.stockQty, before?.stockQty);
 });
 
 test("storefront orders list only returns the authenticated customer's orders", async () => {

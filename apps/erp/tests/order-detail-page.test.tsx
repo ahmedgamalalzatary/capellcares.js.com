@@ -116,6 +116,27 @@ describe("OrderDetailsPage", () => {
     await waitFor(() => expect(screen.getByRole("combobox")).toHaveValue("accepted"));
   });
 
+  it("locks payment-status changes when the order is already denied", async () => {
+    fetchOrder.mockResolvedValueOnce({
+      id: 5,
+      orderCode: "YMFI-005",
+      fullName: "Capella User",
+      phone: "01012345678",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street 10",
+      paymentStatus: "denied",
+      items: []
+    });
+
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
+    expect(await screen.findByRole("combobox")).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+  });
+
   it("shows an error state instead of hanging when order fetch fails", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },

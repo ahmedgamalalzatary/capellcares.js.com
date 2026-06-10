@@ -151,7 +151,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
             <FooterCol title={dict.footer.support} isAr={isAr}>
               <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
-              <FooterLink href="mailto:capella@gmial.com" external>{dict.footer.connectEmail}</FooterLink>
+              <FooterLink href="mailto:capella@gmail.com" external>{dict.footer.connectEmail}</FooterLink>
               <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
             </FooterCol>
             <FooterCol title={dict.footer.legal} isAr={isAr}>
