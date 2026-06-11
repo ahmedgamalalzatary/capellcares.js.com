@@ -38,7 +38,9 @@ describe("storefront root layout", () => {
     }));
     vi.doMock("@/lib/api/client", () => ({
       fetchCategories: vi.fn().mockResolvedValue([]),
-      fetchProducts: vi.fn().mockResolvedValue([])
+      fetchProducts: vi.fn().mockResolvedValue([]),
+      fetchOffers: vi.fn().mockResolvedValue([]),
+      fetchCollections: vi.fn().mockResolvedValue([])
     }));
     vi.doMock("@/lib/nav", () => ({
       buildNav: vi.fn().mockReturnValue([])

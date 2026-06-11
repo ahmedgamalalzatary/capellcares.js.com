@@ -115,7 +115,7 @@ export function HeaderMobileDrawer({
           />
         ))
       ]
-    ) : group.children.length > 0 ? (
+    ) : group.type !== "category" ? null : group.children.length > 0 ? (
       [
         <CategoryCard
           key="all"
@@ -201,9 +201,9 @@ export function HeaderMobileDrawer({
                         selectTab(index);
                         e.currentTarget.scrollIntoView({ inline: "start", block: "nearest", behavior: "smooth" });
                       }}
-                      className={`relative shrink-0 whitespace-nowrap pb-2 text-sm tracking-[0.04em] transition-colors ${
+                      className={`relative shrink-0 whitespace-nowrap pb-2 tracking-[0.04em] transition-colors ${
                         isAr ? "" : "uppercase"
-                      } ${active ? "font-semibold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
+                      } ${active ? "font-extrabold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
                     >
                       {name}
                       {active && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-ink" />}
@@ -236,6 +236,9 @@ export function HeaderMobileDrawer({
               </DrawerLink>
               <DrawerLink href={`/${lang}/offers`} isAr={isAr} onClick={onClose} accent>
                 {dict.nav.offers}
+              </DrawerLink>
+              <DrawerLink href={`/${lang}/collections`} isAr={isAr} onClick={onClose}>
+                {dict.nav.collections}
               </DrawerLink>
               {user && (
                 <DrawerLink href={`/${lang}/orders`} isAr={isAr} onClick={onClose}>
@@ -277,7 +280,7 @@ export function HeaderMobileDrawer({
                     type="button"
                     onClick={isActive ? undefined : onSwitchLang}
                     aria-pressed={isActive}
-                    className={`text-2xl transition-colors ${
+                    className={`text-xl transition-colors ${
                       isActive
                         ? "text-accent underline underline-offset-4"
                         : "text-ink hover:text-accent"

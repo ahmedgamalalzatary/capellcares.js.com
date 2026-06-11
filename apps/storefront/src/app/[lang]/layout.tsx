@@ -7,7 +7,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
-import { fetchCategories, fetchProducts } from "@/lib/api/client";
+import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -35,12 +35,14 @@ export default async function LocaleLayout({
 }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const [categories, products] = await Promise.all([
+  const [categories, products, offers, collections] = await Promise.all([
     fetchCategories({ lang }).catch(() => []),
-    fetchProducts({ lang }).catch(() => [])
+    fetchProducts({ lang }).catch(() => []),
+    fetchOffers({ lang }).catch(() => []),
+    fetchCollections({ lang }).catch(() => [])
   ]);
   const navGroups = buildNav(categories, lang);
-  const menuEntries = buildHeaderMenu({ navGroups, products, dict, lang });
+  const menuEntries = buildHeaderMenu({ navGroups, products, offers, collections, dict, lang });
 
   return (
     <AuthProvider>

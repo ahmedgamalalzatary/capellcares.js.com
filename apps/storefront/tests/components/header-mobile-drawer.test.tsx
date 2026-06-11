@@ -90,6 +90,34 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("link", { name: "All New →" })).toHaveAttribute("href", "/en/new");
   });
 
+  it("shows a Collections quick link beside Products and Offers", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "en",
+      dict: {
+        nav: {
+          search: "Search",
+          viewAll: "View all",
+          viewAllCategory: "All {name} →",
+          products: "Products",
+          offers: "Offers",
+          collections: "Collections",
+          orders: "Orders",
+          followUs: "Follow us"
+        },
+        langSwitch: { ar: "Arabic", en: "English" }
+      },
+      menuEntries,
+      isAr: false,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    expect(screen.getByRole("link", { name: "Collections" })).toHaveAttribute("href", "/en/collections");
+  });
+
   it("uses the provided lang for nested category links", () => {
     render(createElement(HeaderMobileDrawer, {
       lang: "ar",

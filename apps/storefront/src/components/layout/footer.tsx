@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -36,10 +35,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   }, []);
 
   return (
-    <footer
+    <footer className="container">
+      <div
       dir={isAr ? "rtl" : "ltr"}
       style={{ background: "var(--footer-bg)" }}
-      className="relative mt-24 overflow-hidden pb-0 text-ink"
+      className="relative rounded-2xl my-24 overflow-hidden pb-0 text-ink"
     >
       {/* Noise grain overlay */}
       <div
@@ -51,24 +51,18 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         }}
       />
 
-      {/* Hero brand mark */}
-      <div className="relative px-6 py-20 text-center">
+      {/* Hero brand mark — oversized rounded lowercase wordmark */}
+      <div className="relative px-2 py-10 text-center sm:py-20">
         <div
           ref={brandRef}
-          className="mx-auto w-[min(70%,600px)]"
           style={{
-            transform: brandInView ? "scale(1)" : "scale(1.05)",
+            transform: brandInView ? "scale(1)" : "scale(1.04)",
             transition: "transform 700ms var(--ease-out-expo)"
           }}
         >
-          <Image
-            src="/CapellaCare.png"
-            alt={dict.brand}
-            width={1300}
-            height={220}
-            priority
-            className="h-auto w-full object-contain"
-          />
+          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full select-none text-center">
+            capella care
+          </span>
         </div>
       </div>
 
@@ -97,11 +91,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                 required
                 placeholder={dict.footer.emailPlaceholder}
                 aria-label={dict.footer.emailPlaceholder}
-                className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-sm text-ink outline-none placeholder:text-ink/40"
+                className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-md font-bold text-ink outline-none placeholder:text-ink/40"
               />
               <button
                 type="submit"
-                className={`shrink-0 border-s border-[color-mix(in_oklch,var(--ink)_18%,transparent)] px-5 py-3.5 text-xs font-semibold tracking-[0.18em] text-ink transition-colors hover:bg-(--warm-soft) ${isAr ? "" : "uppercase"}`}
+                className={`shrink-0 border-s border-[color-mix(in_oklch,var(--ink)_18%,transparent)] px-5 py-3.5 text-xs font-semibold tracking-[0.18em] text-ink transition-colors ${isAr ? "" : "uppercase"}`}
               >
                 {dict.footer.subscribe}
               </button>
@@ -130,7 +124,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
+                  className="flex items-center hover:underline gap-2 font-bold text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -255,6 +249,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           </div>
         </div>
       </div>
+      </div>
     </footer>
   );
 }
@@ -270,7 +265,7 @@ function FooterCol({
 }) {
   return (
     <div>
-      <div className={`mb-6 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
+      <div className={`mb-6 text-md tracking-[0.3em] text-ink/80 font-extrabold ${isAr ? "" : "uppercase"}`}>
         {title}
       </div>
       <div className="grid gap-3">{children}</div>
@@ -289,7 +284,7 @@ function FooterLink({
   external?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = "block text-sm leading-snug tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink cursor-pointer";
+  const cls = "block text-sm leading-snug tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink hover:underline cursor-pointer font-bold";
   if (as === "span" || href === undefined)
     return <span className={cls}>{children}</span>;
   if (external)

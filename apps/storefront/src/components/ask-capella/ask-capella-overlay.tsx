@@ -26,7 +26,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         style={{ animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-(--hairline) bg-canvas px-5 py-4">
+        <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
           <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
             <Image src="/capella logo2.png" alt="Capella" fill sizes="32px" className="object-cover" />
           </div>
@@ -82,7 +82,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         </div>
 
         {/* Input */}
-        <div className="shrink-0 border-t border-(--hairline) bg-canvas p-3">
+        <div className="shrink-0 bg-canvas p-3">
           <form
             onSubmit={(e) => { e.preventDefault(); send(); }}
             className="flex items-center gap-2 rounded-(--radius-pill) border border-(--hairline) bg-surface px-4 py-2 transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--accent)_16%,transparent)]"

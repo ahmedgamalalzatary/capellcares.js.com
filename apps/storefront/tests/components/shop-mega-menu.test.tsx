@@ -42,13 +42,31 @@ const menuEntries: HeaderMenuEntry[] = [
     label: "Body Care",
     sortOrder: 1,
     children: []
+  },
+  {
+    type: "offers",
+    key: "offers",
+    slug: "offers",
+    label: "Offers",
+    offers: [
+      { id: 5, slug: "summer-bundle", label: "Summer Bundle", name: { en: "Summer Bundle", ar: "حزمة" }, imagePath: "" }
+    ]
+  },
+  {
+    type: "collections",
+    key: "collections",
+    slug: "collections",
+    label: "Collections",
+    collections: [
+      { id: 6, slug: "starter-kit", label: "Starter Kit", name: { en: "Starter Kit", ar: "مجموعة" }, imagePath: "" }
+    ]
   }
 ];
 
 const dict = { nav: { viewAllCategory: "All {name} →" } };
 
 describe("ShopMegaMenu", () => {
-  it("renders New and Best Seller tabs before categories and links to products", () => {
+  it("orders tabs as New, Best Seller, Offers, categories, Collections (last)", () => {
     render(createElement(ShopMegaMenu, {
       lang: "en",
       dict,
@@ -58,15 +76,99 @@ describe("ShopMegaMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
 
-    expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
+    expect(screen.getAllByRole("button").slice(1, 7).map((item) => item.textContent?.trim())).toEqual([
       "New",
       "Best Seller",
+      "Offers",
       "Body Care",
-      "Skin Care"
+      "Skin Care",
+      "Collections"
     ]);
 
     fireEvent.mouseEnter(screen.getByRole("button", { name: "New" }));
     expect(screen.getByRole("link", { name: "New Product" })).toHaveAttribute("href", "/en/products/new-product");
+  });
+
+  it("shows real offers under the Offers tab with an 'All Offers' link", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Offers" }));
+
+    expect(screen.getByRole("link", { name: "All Offers →" })).toHaveAttribute("href", "/en/offers");
+    expect(screen.getByRole("link", { name: /Summer Bundle/ })).toHaveAttribute("href", "/en/offers/summer-bundle");
+  });
+
+  it("shows real collections under the Collections tab with an 'All Collections' link", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Collections" }));
+
+    expect(screen.getByRole("link", { name: "All Collections →" })).toHaveAttribute("href", "/en/collections");
+    expect(screen.getByRole("link", { name: /Starter Kit/ })).toHaveAttribute("href", "/en/collections/starter-kit");
+  });
+
+  it("applies an underline + bold hover to leaf (non-parent) sub-category links", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
+
+    const subLink = screen.getByRole("link", { name: "Cleansers" });
+    expect(subLink.className).toContain("hover:underline");
+    expect(subLink.className).toContain("hover:font-bold");
+    expect(subLink.className).not.toContain("hover:text-accent");
+  });
+
+  it("uses the same underline + bold hover for New/Bestseller product links", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "New" }));
+
+    const productLink = screen.getByRole("link", { name: "New Product" });
+    expect(productLink.className).toContain("hover:underline");
+    expect(productLink.className).toContain("hover:font-bold");
+    expect(productLink.className).not.toContain("hover:text-accent");
+  });
+
+  it("closes the panel instantly when any child link is clicked", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    const panel = screen.getByRole("menu");
+    expect(panel.className).toContain("pointer-events-auto");
+
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
+    fireEvent.click(screen.getByRole("link", { name: "Cleansers" }));
+
+    expect(panel.className).toContain("pointer-events-none");
+  });
+
+  it("gives every panel link the same size, spacing and hover regardless of type", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+
+    const sample = (tab: string, link: RegExp | string) => {
+      fireEvent.mouseEnter(screen.getByRole("button", { name: tab }));
+      return screen.getByRole("link", { name: link }).className;
+    };
+
+    const classes = [
+      sample("New", "New Product"),
+      sample("Skin Care", "Cleansers"),
+      sample("Offers", /Summer Bundle/),
+      sample("Collections", /Starter Kit/)
+    ];
+
+    for (const className of classes) {
+      expect(className).toContain("text-base");
+      expect(className).toContain("px-4");
+      expect(className).toContain("py-3");
+      expect(className).toContain("hover:underline");
+      expect(className).toContain("hover:font-bold");
+    }
   });
 
   it("shows an 'All {category}' link to the root category for category tabs", () => {
@@ -107,11 +209,13 @@ describe("ShopMegaMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
 
-    expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
+    expect(screen.getAllByRole("button").slice(1, 7).map((item) => item.textContent?.trim())).toEqual([
       "New",
       "Best Seller",
+      "Offers",
       "Body Care",
-      "Skin Care"
+      "Skin Care",
+      "Collections"
     ]);
   });
 
