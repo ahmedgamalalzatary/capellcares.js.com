@@ -3,6 +3,9 @@ import test, { afterEach, beforeEach } from "node:test";
 
 import { and, eq } from "drizzle-orm";
 import {
+  adminUsers,
+  authSessions,
+  customers,
   offerItems,
   offers,
   orderItems,
@@ -20,6 +23,8 @@ function serialTest(name: string, fn: () => Promise<void>) {
 }
 
 type Baseline = {
+  customerId: number;
+  adminUserId: number;
   productId: number;
   variantId: number;
   secondVariantId: number;
@@ -42,8 +47,29 @@ async function loadBaseline(): Promise<Baseline> {
     .from(offers)
     .where(eq(offers.slug, "test-offer-baseline"))
     .limit(1);
+  const [customer] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(eq(customers.email, "seed-customer@capella.test"))
+    .limit(1);
+  let [adminUser] = await db
+    .select({ id: adminUsers.id })
+    .from(adminUsers)
+    .where(eq(adminUsers.email, "integrity-admin@capella.test"))
+    .limit(1);
 
-  assert.ok(firstProduct && secondProduct && offer, "baseline seed incomplete");
+  if (!adminUser) {
+    const [createdAdmin] = await db.insert(adminUsers).values({
+      name: "Integrity Admin",
+      email: "integrity-admin@capella.test",
+      passwordHash: "hash",
+      role: "admin",
+      isActive: true
+    }).$returningId();
+    adminUser = { id: createdAdmin.id };
+  }
+
+  assert.ok(firstProduct && secondProduct && offer && customer && adminUser, "baseline seed incomplete");
 
   const [firstVariant] = await db
     .select({ id: productVariants.id })
@@ -59,6 +85,8 @@ async function loadBaseline(): Promise<Baseline> {
   assert.ok(firstVariant && secondVariant, "baseline variants missing");
 
   return {
+    customerId: customer.id,
+    adminUserId: adminUser.id,
     productId: firstProduct.id,
     variantId: firstVariant.id,
     secondVariantId: secondVariant.id,
@@ -131,11 +159,64 @@ serialTest("rejects order_items with a non-existent variant_id", async () => {
 });
 
 serialTest("rejects a duplicate wishlists (customer_id, product_id)", async () => {
-  // customer_id has no FK in scope; use a fixed synthetic id.
-  const customerId = 4242;
+  const customerId = base.customerId;
   await db.insert(wishlists).values({ customerId, productId: base.productId });
   await assert.rejects(
     db.insert(wishlists).values({ customerId, productId: base.productId })
+  );
+});
+
+serialTest("rejects wishlists with a non-existent customer_id", async () => {
+  await assert.rejects(
+    db.insert(wishlists).values({ customerId: MISSING_ID, productId: base.productId })
+  );
+});
+
+serialTest("rejects wishlists with a non-existent product_id", async () => {
+  await assert.rejects(
+    db.insert(wishlists).values({ customerId: base.customerId, productId: MISSING_ID })
+  );
+});
+
+serialTest("rejects auth_sessions with a non-existent customer_id", async () => {
+  await assert.rejects(
+    db.insert(authSessions).values({
+      accountType: "customer",
+      customerId: MISSING_ID,
+      tokenHash: `missing-customer-${Date.now()}`,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+  );
+});
+
+serialTest("rejects auth_sessions with a non-existent admin_user_id", async () => {
+  await assert.rejects(
+    db.insert(authSessions).values({
+      accountType: "admin",
+      adminUserId: MISSING_ID,
+      tokenHash: `missing-admin-${Date.now()}`,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+  );
+});
+
+serialTest("rejects orders with a non-existent customer_id", async () => {
+  await assert.rejects(
+    db.insert(orders).values({
+      orderCode: `INTEG-BAD-CUSTOMER-${Date.now()}`,
+      customerType: "registered",
+      customerId: MISSING_ID,
+      fullName: "Integrity Test",
+      phone: "0100000000",
+      email: "integrity@test.local",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "1 Test St",
+      buildingApartment: "1",
+      paymentMethod: "cod",
+      paymentStatus: "pending",
+      totalAmount: "10.00"
+    })
   );
 });
 

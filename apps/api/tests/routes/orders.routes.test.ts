@@ -8,7 +8,7 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { db } from "@capella/database/src/db";
-import { orders, productVariants } from "@capella/database/drizzle/schema";
+import { customers, orders, productVariants } from "@capella/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
@@ -206,7 +206,11 @@ test("erp denied orders restore stock and reject further payment-status changes"
 
 test("storefront orders list only returns the authenticated customer's orders", async () => {
   const ids = await getBaselineIds();
-  const otherCustomerId = ids.customerId + 999;
+  const [otherCustomer] = await db.insert(customers).values({
+    name: "Other Customer",
+    email: "other@capella.test",
+    passwordHash: "$2a$10$0V6QY0bL5Qn5hEw5N1iXROXGdPvxI6Bjq5lHppZArYrusS4x2QVFG"
+  }).$returningId();
 
   await db.insert(orders).values([
     {
@@ -228,7 +232,7 @@ test("storefront orders list only returns the authenticated customer's orders", 
     {
       orderCode: "CUST-002",
       customerType: "registered",
-      customerId: otherCustomerId,
+      customerId: otherCustomer.id,
       fullName: "Other Customer",
       phone: "01000000000",
       email: "other@capella.test",
@@ -258,6 +262,11 @@ test("storefront orders list only returns the authenticated customer's orders", 
 
 test("storefront order detail rejects access to another customer's order", async () => {
   const ids = await getBaselineIds();
+  const [otherCustomer] = await db.insert(customers).values({
+    name: "Other Customer",
+    email: "other-order@capella.test",
+    passwordHash: "$2a$10$0V6QY0bL5Qn5hEw5N1iXROXGdPvxI6Bjq5lHppZArYrusS4x2QVFG"
+  }).$returningId();
 
   const [created] = await db.insert(orders).values({
     orderCode: "LOCK-001",
@@ -279,7 +288,7 @@ test("storefront order detail rejects access to another customer's order", async
   await withTestServer(app, async (request) => {
     const response = await request(`/api/v1/orders/${created.id}`, {
       headers: {
-        authorization: `Bearer ${issueCustomerToken(ids.customerId + 999)}`
+        authorization: `Bearer ${issueCustomerToken(otherCustomer.id)}`
       }
     });
 

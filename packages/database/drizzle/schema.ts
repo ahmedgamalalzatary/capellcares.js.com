@@ -267,8 +267,8 @@ export const adminUserPermissions = mysqlTable(
 export const authSessions = mysqlTable("auth_sessions", {
   id: int("id").autoincrement().primaryKey(),
   accountType: mysqlEnum("account_type", ["customer", "admin"]).notNull(),
-  customerId: int("customer_id"),
-  adminUserId: int("admin_user_id"),
+  customerId: int("customer_id").references(() => customers.id, { onDelete: "cascade" }),
+  adminUserId: int("admin_user_id").references(() => adminUsers.id, { onDelete: "cascade" }),
   tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
   expiresAt: datetime("expires_at").notNull(),
   revokedAt: datetime("revoked_at"),
@@ -280,8 +280,8 @@ export const wishlists = mysqlTable(
   "wishlists",
   {
     id: int("id").autoincrement().primaryKey(),
-    customerId: int("customer_id").notNull(),
-    productId: int("product_id").notNull(),
+    customerId: int("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull()
   },
   (table) => ({
@@ -296,7 +296,7 @@ export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
   orderCode: varchar("order_code", { length: 32 }).notNull().unique(),
   customerType: mysqlEnum("customer_type", ["guest", "registered"]).notNull(),
-  customerId: int("customer_id"),
+  customerId: int("customer_id").references(() => customers.id, { onDelete: "set null" }),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 32 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),

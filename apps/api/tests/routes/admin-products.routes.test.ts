@@ -672,7 +672,7 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
   await writeFile(absolutePath, "fake-image-bytes");
 
   await db.update(products).set({ deletedAt: new Date(), imagePath: `/uploads/${fileName}` }).where(eq(products.id, ids.productOneId));
-  await db.insert(wishlists).values({ customerId: 999999, productId: ids.productOneId });
+  await db.insert(wishlists).values({ customerId: ids.customerId, productId: ids.productOneId });
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
