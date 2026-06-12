@@ -367,7 +367,10 @@ body {
 /* ============================================================
    Shell
    ============================================================ */
-.shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+/* minmax(0, 1fr) lets the column shrink below its children's min-content; without
+   it the single auto column blows out to the widest unbreakable child (e.g. an EN
+   nowrap string) and pins header/main/footer to that floor on narrow phones. */
+.shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
 
 /* ============================================================
    Table

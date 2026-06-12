@@ -81,7 +81,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               aria-label="Menu"
               aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <Icon.Close /> : <Icon.Menu />}
+              <MenuToggle open={mobileOpen} />
             </button>
             <Link
               href={user ? `/${lang}/orders` : `/${lang}/login`}
@@ -181,5 +181,31 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
         }}
       />
     </header>
+  );
+}
+
+// Hamburger ⇄ minus morph, mirroring Rhode: the whole icon spins 180° while the
+// top and bottom bars fade out, leaving the middle bar as a single "-". Same
+// cubic-bezier(0.76, 0, 0.24, 1) used by the drawer reveal so they feel like one
+// gesture. Reverses on close.
+function MenuToggle({ open }: { open: boolean }) {
+  const bar = "transition-opacity duration-500 ease-[cubic-bezier(0.76,0,0.24,1)]";
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden="true"
+      className="transition-transform duration-700 ease-[cubic-bezier(0.76,0,0.24,1)]"
+      style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+    >
+      <line x1="4" y1="7" x2="20" y2="7" className={bar} style={{ opacity: open ? 0 : 1 }} />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" className={bar} style={{ opacity: open ? 0 : 1 }} />
+    </svg>
   );
 }

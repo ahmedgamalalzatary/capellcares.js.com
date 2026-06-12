@@ -47,14 +47,15 @@ export function HeaderMobileDrawer({
   const orderedMenuEntries = sortMenuEntries(menuEntries);
   const activeGroup = orderedMenuEntries[activeTab];
 
-  // The panel is anchored below the (variable-height) header, so its max height
+  // The panel is anchored below the (variable-height) header, so its open height
   // must be measured from its real distance to the top of the viewport — a fixed
-  // calc() would let the lower content (social + language) fall off-screen.
+  // calc() would let the lower content (social + language) fall off-screen. This
+  // value is also the max-height the reveal animates to, so it must be ready
+  // before the first open (measure on mount + resize, not gated by mobileOpen).
   const wrapRef = useRef<HTMLDivElement>(null);
   const [maxH, setMaxH] = useState<number>();
 
   useEffect(() => {
-    if (!mobileOpen) return;
     const update = () => {
       const top = wrapRef.current?.getBoundingClientRect().top ?? 0;
       setMaxH(window.innerHeight - top - 8);
@@ -62,7 +63,7 @@ export function HeaderMobileDrawer({
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [mobileOpen]);
+  }, []);
 
   useEffect(() => {
     if (activeTab >= orderedMenuEntries.length) setActiveTab(0);
@@ -164,17 +165,25 @@ export function HeaderMobileDrawer({
         aria-hidden="true"
       />
 
-      {/* Drop-down wrapper — anchored to the bottom of the header, clips the panel */}
-      <div ref={wrapRef} className="pointer-events-none absolute inset-x-0 top-full overflow-hidden mx-4 min-[640px]:max-[877px]:mx-6">
+      {/* Drop-down wrapper — anchored to the bottom of the header. Mirrors Rhode's
+          mobile menu exactly: a clipped max-height reveal (not a slide) that grows
+          the panel open from under the bar over 1s with their cubic-bezier(0.76, 0,
+          0.24, 1). overflow-hidden does the clipping; the inner panel keeps its own
+          height + scroll so it never reflows mid-animation. */}
+      <div
+        ref={wrapRef}
+        style={{ maxHeight: mobileOpen ? (maxH ? `${maxH}px` : "100vh") : 0 }}
+        className={`absolute inset-x-0 top-full overflow-hidden rounded-b-lg mx-4 min-[640px]:max-[877px]:mx-6 transition-[max-height] duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${
+          mobileOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
         <div
           dir={isAr ? "rtl" : "ltr"}
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
           style={{ maxHeight: maxH ? `${maxH}px` : "calc(100dvh - 2rem)" }}
-          className={`pointer-events-auto flex flex-col overflow-y-auto bg-[#f1f0ed] transition-transform duration-300 ease-out ${
-            mobileOpen ? "translate-y-0" : "-translate-y-full"
-          }`}
+          className="flex flex-col overflow-y-auto bg-canvas"
         >
           <div className="px-4 sm:px-6 pb-8 pt-4">
             {/* Search */}
@@ -201,7 +210,7 @@ export function HeaderMobileDrawer({
                         selectTab(index);
                         e.currentTarget.scrollIntoView({ inline: "start", block: "nearest", behavior: "smooth" });
                       }}
-                      className={`relative shrink-0 whitespace-nowrap pb-2 tracking-[0.04em] transition-colors ${
+                      className={`relative shrink-0 scroll-ms-5 whitespace-nowrap pb-2 tracking-[0.04em] transition-colors ${
                         isAr ? "" : "uppercase"
                       } ${active ? "font-extrabold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
                     >
@@ -280,7 +289,7 @@ export function HeaderMobileDrawer({
                     type="button"
                     onClick={isActive ? undefined : onSwitchLang}
                     aria-pressed={isActive}
-                    className={`text-xl transition-colors ${
+                    className={`text-lg transition-colors ${
                       isActive
                         ? "text-accent underline underline-offset-4"
                         : "text-ink hover:text-accent"

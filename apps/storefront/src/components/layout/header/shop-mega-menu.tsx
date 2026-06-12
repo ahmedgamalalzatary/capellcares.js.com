@@ -217,11 +217,6 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
       >
         {node.label}
       </Link>
-      {node.children.length > 0 && (
-        <div className="flex flex-col gap-2 border-l border-(--hairline) pl-2">
-          {node.children.map((child) => <NavBranch key={child.id} lang={lang} node={child} onNavigate={onNavigate} />)}
-        </div>
-      )}
     </div>
   );
 }

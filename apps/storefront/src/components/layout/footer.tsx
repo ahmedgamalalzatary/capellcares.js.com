@@ -39,7 +39,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       <div
       dir={isAr ? "rtl" : "ltr"}
       style={{ background: "var(--footer-bg)" }}
-      className="relative rounded-2xl my-24 overflow-hidden pb-0 text-ink"
+      className="relative rounded-xl mt-24 mb-10 overflow-hidden pb-0 text-ink"
     >
       {/* Noise grain overlay */}
       <div
@@ -61,7 +61,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           }}
         >
           <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full select-none text-center">
-            capella care
+            Capella Care
           </span>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         className="relative border-t"
         style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <div className="container grid gap-12 py-16 lg:grid-cols-[1.1fr_2fr]">
+        <div className="container grid grid-cols-1 gap-12 py-16 lg:grid-cols-[1.1fr_2fr]">
 
           {/* Newsletter / intro */}
           <div className="border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-12 lg:max-w-md lg:border-b-0 lg:pb-0">
@@ -84,7 +84,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
             <form
               onSubmit={(e) => e.preventDefault()}
-              className="mt-7 mx-auto flex w-[90%] items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
+              className="mt-7 mx-auto flex  items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
             >
               <input
                 type="email"
@@ -107,14 +107,14 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           </div>
 
           {/* Link columns */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-4 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
+          <div className="grid grid-cols-1 justify-items-center text-center gap-y-8 min-[380px]:grid-cols-2 min-[380px]:justify-items-start min-[380px]:text-start min-[380px]:gap-x-4 min-[380px]:gap-y-10 sm:grid-cols-4 sm:gap-x-8 sm:gap-y-12 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
             <FooterCol title={dict.footer.navigate} isAr={isAr}>
               <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.nav.new}</FooterLink>
               <FooterLink href={`/${lang}/bestsellers`}>{dict.nav.bestsellers}</FooterLink>
-              <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
-              <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skinCare}</FooterLink>
-              <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.hairCare}</FooterLink>
+              <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
+              <FooterLink href={`/${lang}/collections`}>{dict.footer.collections}</FooterLink>
+                <FooterLink href={`/${lang}/about`}>{dict.footer.about}</FooterLink> {/* not working yet */}
             </FooterCol>
 
             <FooterCol title={dict.footer.social} isAr={isAr}>
@@ -124,7 +124,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center hover:underline gap-2 font-bold text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
+                  className="flex items-center justify-center min-[380px]:justify-start hover:underline gap-2 font-bold text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -144,8 +144,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             </FooterCol>
 
             <FooterCol title={dict.footer.support} isAr={isAr}>
+                <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink> {/* not working yet */}
               <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
-              <FooterLink href="mailto:capella@gmail.com" external>{dict.footer.connectEmail}</FooterLink>
               <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
             </FooterCol>
             <FooterCol title={dict.footer.legal} isAr={isAr}>
@@ -264,8 +264,8 @@ function FooterCol({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <div className={`mb-6 text-md tracking-[0.3em] text-ink/80 font-extrabold ${isAr ? "" : "uppercase"}`}>
+    <div className="w-full border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-8 last:border-b-0 last:pb-0 min-[380px]:w-auto min-[380px]:border-b-0 min-[380px]:pb-0">
+      <div className={`mb-6 text-md tracking-[0.12em] sm:text-md sm:tracking-[0.3em] text-ink/80 font-extrabold ${isAr ? "" : "uppercase"}`}>
         {title}
       </div>
       <div className="grid gap-3">{children}</div>
