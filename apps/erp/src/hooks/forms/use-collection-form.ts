@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import type { Collection, CollectionItem, RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
+import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
 import type { CollectionFormProps, CollectionFormRow, UseCollectionFormResult } from "../../types/forms/collection-form.types";
 
 export function useCollectionForm({
   initial,
   products,
+  categories,
   relatedOptions = []
 }: CollectionFormProps): UseCollectionFormResult {
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
@@ -76,9 +78,9 @@ export function useCollectionForm({
       nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
     } else if (rows.some((row) => {
       const product = products.find((candidate) => candidate.id === row.productId);
-      return product?.categoryId !== categoryId;
+      return !product || !getDescendantCategoryIds(categories, categoryId as number).has(product.categoryId);
     })) {
-      nextErrors.rows = "كل العناصر يجب أن تنتمي إلى نفس القسم المختار";
+      nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
     }
 
     setErrors(nextErrors);
@@ -133,9 +135,10 @@ export function useCollectionForm({
     categoryId,
     setCategoryId: (value) => {
       setCategoryId(value);
+      const allowedCategoryIds = value != null ? getDescendantCategoryIds(categories, value) : null;
       setRows((state) => state.map((row) => {
         const product = products.find((candidate) => candidate.id === row.productId);
-        if (!value || product?.categoryId === value) return row;
+        if (!value || !product || allowedCategoryIds?.has(product.categoryId)) return row;
         return { ...row, id: undefined, productId: 0, variantId: 0 };
       }));
     },

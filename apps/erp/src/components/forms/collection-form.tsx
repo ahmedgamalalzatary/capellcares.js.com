@@ -9,6 +9,7 @@ import { useCollectionForm } from "../../hooks/forms/use-collection-form";
 import { RelatedItemsField } from "./related-items-field";
 import type { CollectionFormProps } from "../../types/forms/collection-form.types";
 import { Icon } from "@/components/ui/icons";
+import { getDescendantCategoryIds } from "@/lib/category-tree";
 
 export function CollectionForm({
   mode,
@@ -47,7 +48,10 @@ export function CollectionForm({
   } = useCollectionForm({ mode, initial, products, categories, relatedOptions, relatedItemsAvailable });
 
   const savings = originalTotal - Number(price || 0);
-  const categoryProducts = products.filter((product) => !product.deletedAt && product.categoryId === categoryId);
+  const allowedCategoryIds = categoryId != null ? getDescendantCategoryIds(categories, categoryId) : null;
+  const categoryProducts = products.filter(
+    (product) => !product.deletedAt && allowedCategoryIds?.has(product.categoryId)
+  );
 
   return (
     <div className="editor-grid">

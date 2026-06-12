@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
+import { listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
 import {
   findCollectionByIdRepo,
   listCollectionsRepo,
@@ -94,7 +95,8 @@ async function validateCollectionItems(categoryId: number, items: Array<{ varian
     return "collection-item-not-found";
   }
 
-  if (rows.some((row) => row.categoryId !== categoryId)) {
+  const allowedCategoryIds = new Set(await listDescendantCategoryIdsRepo(categoryId));
+  if (rows.some((row) => !allowedCategoryIds.has(row.categoryId))) {
     return "collection-item-category-mismatch";
   }
 

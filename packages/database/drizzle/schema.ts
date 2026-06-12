@@ -40,6 +40,25 @@ export const categories = mysqlTable("categories", {
   )
 }));
 
+export const categoryPaths = mysqlTable(
+  "category_paths",
+  {
+    ancestorId: int("ancestor_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    descendantId: int("descendant_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    depth: int("depth").notNull()
+  },
+  (table) => ({
+    categoryPathUnique: unique("category_paths_ancestor_descendant_unique").on(
+      table.ancestorId,
+      table.descendantId
+    )
+  })
+);
+
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   sku: varchar("sku", { length: 128 }).notNull().unique(),

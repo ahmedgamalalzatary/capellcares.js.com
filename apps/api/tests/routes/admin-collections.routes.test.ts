@@ -200,6 +200,38 @@ serialTest("admin collection upsert rejects variants outside the selected catego
   });
 });
 
+serialTest("admin collection upsert accepts variants from descendant categories when the selected category is a parent", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug: `route-collection-parent-${Date.now()}`,
+        name: { ar: "مجموعة قسم أب", en: "Parent Category Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        price: 149,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+});
+
 serialTest("admin collection detail returns a related-items array for editing", async () => {
   const ids = await getBaselineIds();
 

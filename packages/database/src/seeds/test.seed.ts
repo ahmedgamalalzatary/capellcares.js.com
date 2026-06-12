@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import {
   categories,
+  categoryPaths,
   collectionItems,
   collections,
   customers,
@@ -30,6 +31,7 @@ export async function clearTestSeed() {
   await db.delete(orders);
   await db.delete(offerItems);
   await db.delete(collections);
+  await db.delete(categoryPaths);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);
@@ -76,6 +78,7 @@ export async function seedTestData() {
     isLeaf: true,
     parentId: rootCategory.id
   });
+  await rebuildCategoryPaths();
 
   const firstProductId = await ensureProduct({
     sku: seedSkus[0],
@@ -173,6 +176,34 @@ async function ensureCategory(input: {
 
   const [category] = await db.select().from(categories).where(eq(categories.id, created.id)).limit(1);
   return category!;
+}
+
+async function rebuildCategoryPaths() {
+  const rows = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories);
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const pathRows: Array<{ ancestorId: number; descendantId: number; depth: number }> = [];
+
+  for (const row of rows) {
+    const seen = new Set<number>();
+    let currentId: number | null = row.id;
+    let depth = 0;
+
+    while (currentId != null && !seen.has(currentId)) {
+      seen.add(currentId);
+      pathRows.push({ ancestorId: currentId, descendantId: row.id, depth });
+      currentId = byId.get(currentId)?.parentId ?? null;
+      depth += 1;
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(categoryPaths);
+    if (pathRows.length > 0) {
+      await tx.insert(categoryPaths).values(pathRows);
+    }
+  });
 }
 
 async function ensureProduct(input: {

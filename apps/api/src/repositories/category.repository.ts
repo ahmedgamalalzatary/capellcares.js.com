@@ -1,5 +1,5 @@
 import { and, asc, eq, isNull, ne, or, sql } from "drizzle-orm";
-import { categories, products } from "@capella/database/drizzle/schema";
+import { categories, categoryPaths, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 export function listCategoriesRepo(includeDeleted = false) {
@@ -87,6 +87,7 @@ export async function upsertCategoryRepo(input: {
         isLeaf: input.isLeaf
       })
       .where(eq(categories.id, input.id));
+    await rebuildCategoryPathsRepo();
     await syncCategoryLeafState(previous?.parentId ?? null);
     await syncCategoryLeafState(input.parentId);
     return { id: input.id };
@@ -101,6 +102,7 @@ export async function upsertCategoryRepo(input: {
       isLeaf: input.isLeaf
     })
     .$returningId();
+  await rebuildCategoryPathsRepo();
   await syncCategoryLeafState(input.parentId);
   return created;
 }
@@ -155,13 +157,46 @@ export async function reorderCategoriesRepo(input: { parentId: number | null; id
 export async function softDeleteCategoryRepo(id: number) {
   const [existing] = await db.select({ parentId: categories.parentId }).from(categories).where(eq(categories.id, id)).limit(1);
   await db.update(categories).set({ deletedAt: sql`NOW()` }).where(eq(categories.id, id));
+  await rebuildCategoryPathsRepo();
   await syncCategoryLeafState(existing?.parentId ?? null);
 }
 
 export async function restoreCategoryRepo(id: number) {
   const [existing] = await db.select({ parentId: categories.parentId }).from(categories).where(eq(categories.id, id)).limit(1);
   await db.update(categories).set({ deletedAt: null }).where(eq(categories.id, id));
+  await rebuildCategoryPathsRepo();
   await syncCategoryLeafState(existing?.parentId ?? null);
+}
+
+export async function listDescendantCategoryIdsRepo(ancestorId: number) {
+  const rows = await db
+    .select({ id: categoryPaths.descendantId })
+    .from(categoryPaths)
+    .where(eq(categoryPaths.ancestorId, ancestorId));
+  if (rows.length === 0) {
+    const allCategories = await db
+      .select({ id: categories.id, parentId: categories.parentId })
+      .from(categories);
+    const descendantIds = new Set<number>([ancestorId]);
+    let changed = true;
+
+    while (changed) {
+      changed = false;
+      for (const category of allCategories) {
+        if (
+          category.parentId != null &&
+          descendantIds.has(category.parentId) &&
+          !descendantIds.has(category.id)
+        ) {
+          descendantIds.add(category.id);
+          changed = true;
+        }
+      }
+    }
+
+    return [...descendantIds];
+  }
+  return rows.map((row) => row.id);
 }
 
 export async function hasLinkedProductsInCategoryRepo(id: number) {
@@ -221,6 +256,38 @@ async function findSiblingSlugConflict(input: {
     )
     .limit(1)
     .then((rows) => rows[0] ?? null);
+}
+
+export async function rebuildCategoryPathsRepo() {
+  const rows = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories);
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const pathRows: Array<{ ancestorId: number; descendantId: number; depth: number }> = [];
+
+  for (const row of rows) {
+    const seen = new Set<number>();
+    let currentId: number | null = row.id;
+    let depth = 0;
+
+    while (currentId != null && !seen.has(currentId)) {
+      seen.add(currentId);
+      pathRows.push({
+        ancestorId: currentId,
+        descendantId: row.id,
+        depth
+      });
+      currentId = byId.get(currentId)?.parentId ?? null;
+      depth += 1;
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(categoryPaths);
+    if (pathRows.length > 0) {
+      await tx.insert(categoryPaths).values(pathRows);
+    }
+  });
 }
 
 function buildCategoryLineage(
