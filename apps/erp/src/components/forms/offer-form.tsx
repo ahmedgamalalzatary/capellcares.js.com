@@ -32,6 +32,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
     computed,
     addRow,
     removeRow,
+    moveRow,
     updateRow,
     save
   } = useOfferForm({ mode, initial, products, relatedOptions, relatedItemsAvailable });
@@ -89,7 +90,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                   const variants = product?.variants ?? [];
                   const variant = variants.find((v) => v.id === r.variantId);
                   return (
-                    <tr key={i}>
+                    <tr key={i} data-testid="bundle-item-row">
                       <td style={{ minWidth: 220 }}>
                         <select className="select" value={r.productId} onChange={(e) => updateRow(i, { productId: Number(e.target.value) })}>
                           <option value="0">— اختاري منتجًا —</option>
@@ -110,7 +111,31 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                       <td>{variant ? formatPrice(variant.price, "ar") : "—"}</td>
                       <td style={{ fontWeight: 600 }}>{variant ? formatPrice(variant.price * r.qty, "ar") : "—"}</td>
                       <td>
-                        <button className="btn btn--ghost btn--sm" onClick={() => removeRow(i)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>
+                        <div className="row" style={{ gap: 4 }}>
+                          {rows.length > 1 && (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => moveRow(i, -1)}
+                                aria-label="تحريك لأعلى"
+                                disabled={i === 0}
+                              >
+                                <Icon.Chevron size={14} className="rotate-180" />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => moveRow(i, 1)}
+                                aria-label="تحريك لأسفل"
+                                disabled={i === rows.length - 1}
+                              >
+                                <Icon.Chevron size={14} />
+                              </button>
+                            </>
+                          )}
+                          <button className="btn btn--ghost btn--sm" onClick={() => removeRow(i)} style={{ color: "var(--danger)" }}><Icon.Trash /></button>
+                        </div>
                       </td>
                     </tr>
                   );

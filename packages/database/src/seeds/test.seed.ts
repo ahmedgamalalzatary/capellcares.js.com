@@ -5,6 +5,7 @@ import {
   collectionItems,
   collections,
   customers,
+  entityOrderings,
   offerItems,
   offers,
   orderItems,
@@ -32,6 +33,7 @@ export async function clearTestSeed() {
   await db.delete(offerItems);
   await db.delete(collections);
   await db.delete(categoryPaths);
+  await db.delete(entityOrderings);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);

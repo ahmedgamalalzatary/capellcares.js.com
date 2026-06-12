@@ -15,7 +15,7 @@ export interface ProductGridProps {
   lockCategory?: boolean;
 }
 
-export type Sort = "newest" | "price-asc" | "price-desc" | "name";
+export type Sort = "default" | "newest" | "price-asc" | "price-desc" | "name";
 
 export interface PriceRange {
   min: string;

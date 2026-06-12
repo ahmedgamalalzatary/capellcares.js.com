@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
-import type { HeaderMenuEntry } from "@/lib/header-menu";
+import { compareHeaderCategoryEntries, type HeaderMenuEntry } from "@/lib/header-menu";
 import type { NavNode } from "@/lib/nav";
 
 type ShopMegaMenuProps = {
@@ -41,7 +41,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
     ...menuEntries
       .filter((entry) => entry.type === "category")
       .slice()
-      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label)),
+      .sort(compareHeaderCategoryEntries),
     ...menuEntries.filter((entry) => entry.type === "collections")
   ];
   const active = roots[activeRoot];

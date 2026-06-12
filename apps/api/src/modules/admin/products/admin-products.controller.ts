@@ -7,6 +7,7 @@ import {
   createAdminProductRepo,
   findAdminProductByIdRepo,
   listAdminProductsRepo,
+  reorderProductsRepo,
   replaceVariantsRepo
 } from "../../../repositories/product.repository.js";
 import {
@@ -184,6 +185,34 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
   } catch (error: any) {
     if (error?.code === "PRODUCT_VARIANT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    next(error);
+  }
+}
+
+export async function adminReorderProducts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((value: unknown): number => Number(value))
+      : [];
+    const categoryIdRaw = req.body?.categoryId;
+    const categoryId = categoryIdRaw == null || categoryIdRaw === ""
+      ? null
+      : Number(categoryIdRaw);
+
+    if (
+      ids.length === 0 ||
+      ids.some((id: number) => !Number.isInteger(id) || id <= 0) ||
+      (categoryId !== null && (!Number.isInteger(categoryId) || categoryId <= 0))
+    ) {
+      return res.status(400).json({ ok: false, reason: "invalid-product-order" });
+    }
+
+    await reorderProductsRepo({ categoryId, ids });
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "INVALID_PRODUCT_ORDER") {
+      return res.status(400).json({ ok: false, reason: "invalid-product-order" });
     }
     next(error);
   }

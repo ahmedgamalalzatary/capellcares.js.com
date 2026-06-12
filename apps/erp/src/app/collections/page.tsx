@@ -20,6 +20,7 @@ import {
 import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { Icon } from "@/components/ui/icons";
+import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 
 export default function CollectionsListPage() {
   const { user } = useAdminAuth();
@@ -45,27 +46,50 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
     () => collections.filter((collection) => !collection.deletedAt),
     [collections]
   );
+  const reorder = useListReorder({
+    persistedIds: useMemo(() => visibleCollections.map((collection) => collection.id), [visibleCollections]),
+    save: (ids) => getStore().reorderCollections({ ids }),
+    successMessage: "تم حفظ ترتيب المجموعات.",
+    errorMessage: "تعذر حفظ ترتيب المجموعات. حاولي مرة أخرى."
+  });
+  // Reordering needs the complete list, so it is hidden while searching.
+  const canReorder = !search.trim() && canUpdateErpModule(user, "collections");
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return visibleCollections;
+    const ordered = sortByIdOrder(visibleCollections, reorder.orderedIds);
+    if (!search.trim()) return ordered;
     const q = search.trim().toLowerCase();
-    return visibleCollections.filter((collection) =>
+    return ordered.filter((collection) =>
       collection.name.ar.toLowerCase().includes(q) ||
       collection.name.en.toLowerCase().includes(q) ||
       collection.slug.toLowerCase().includes(q)
     );
-  }, [search, visibleCollections]);
+  }, [search, visibleCollections, reorder.orderedIds]);
 
   return (
     <AdminShell
       title="المجموعات"
       crumbs={[{ label: "المجموعات" }]}
       actions={
-        canCreateErpModule(user, "collections") ? (
-          <Link href="/collections/new" className="btn btn--primary btn--sm">
-            <Icon.Plus /> مجموعة جديدة
-          </Link>
-        ) : undefined
+        <>
+          {reorder.isDirty && canUpdateErpModule(user, "collections") && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                void reorder.saveOrder();
+              }}
+              disabled={reorder.saving}
+            >
+              <Icon.Check /> حفظ ترتيب المجموعات
+            </button>
+          )}
+          {canCreateErpModule(user, "collections") ? (
+            <Link href="/collections/new" className="btn btn--primary btn--sm">
+              <Icon.Plus /> مجموعة جديدة
+            </Link>
+          ) : undefined}
+        </>
       }
     >
       <AdminListToolbar
@@ -91,10 +115,10 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
               </tr>
             </thead>
             <tbody>
-              {filtered.map((collection) => {
+              {filtered.map((collection, index) => {
                 const category = categories.find((item) => item.id === collection.categoryId);
                 return (
-                  <tr key={collection.id}>
+                  <tr key={collection.id} data-testid={`collection-row-${collection.id}`}>
                     <td>
                       <EntityAvatar
                         src={collection.imagePath}
@@ -125,6 +149,29 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                       />
                     </td>
                     <td>
+                      <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      {canReorder && filtered.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => reorder.moveItem(collection.id, -1)}
+                            aria-label="تحريك لأعلى"
+                            disabled={index === 0}
+                          >
+                            <Icon.Chevron size={14} className="rotate-180" />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => reorder.moveItem(collection.id, 1)}
+                            aria-label="تحريك لأسفل"
+                            disabled={index === filtered.length - 1}
+                          >
+                            <Icon.Chevron size={14} />
+                          </button>
+                        </>
+                      )}
                       {(canToggleErpModule(user, "collections") || canUpdateErpModule(user, "collections")) && (
                         <RowMenu>
                           {canToggleErpModule(user, "collections") && (
@@ -145,6 +192,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                           )}
                         </RowMenu>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );

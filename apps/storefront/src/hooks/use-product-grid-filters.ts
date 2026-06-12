@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Category, Language, Product } from "@capella/shared";
 
@@ -21,9 +22,13 @@ export function useProductGridFilters({
   initialSearch = "",
   initialCategory
 }: UseProductGridFiltersOptions) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [q, setQ] = useState(initialSearch);
   const [category, setCategory] = useState<number | undefined>(initialCategory);
-  const [sort, setSort] = useState<Sort>("newest");
+  // Preserve API ordering by default; merchandising/search rules may change this later.
+  const [sort, setSort] = useState<Sort>("default");
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
 
   useEffect(() => { setQ(initialSearch); }, [initialSearch]);
@@ -33,6 +38,30 @@ export function useProductGridFilters({
     () => new Map(categories.map((item) => [item.id, item])),
     [categories]
   );
+  useEffect(() => {
+    if (!/^\/(ar|en)\/products$/.test(pathname)) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    const nextCategoryId = category != null ? String(category) : undefined;
+    const currentCategoryId = searchParams.get("categoryId") ?? undefined;
+
+    if (nextCategoryId === currentCategoryId || (!nextCategoryId && !currentCategoryId)) {
+      return;
+    }
+
+    params.delete("category");
+
+    if (nextCategoryId) {
+      params.set("categoryId", nextCategoryId);
+    } else {
+      params.delete("categoryId");
+    }
+
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [category, pathname, router, searchParams]);
 
   const categoryTree = useMemo<CategoryTreeNode[]>(() => {
     const active = categories.filter((item) => !item.deletedAt);
@@ -94,7 +123,8 @@ export function useProductGridFilters({
         if (sort === "price-asc") return ap - bp;
         if (sort === "price-desc") return bp - ap;
         if (sort === "name") return safeName(a, lang).localeCompare(safeName(b, lang));
-        return b.id - a.id;
+        if (sort === "newest") return b.id - a.id;
+        return 0;
       });
   }, [products, q, category, sort, priceRange, lang, categoryById]);
 
@@ -105,7 +135,7 @@ export function useProductGridFilters({
   const handleClear = () => {
     setQ("");
     setCategory(initialCategory);
-    setSort("newest");
+    setSort("default");
     setPriceRange({ min: "", max: "" });
   };
 

@@ -70,6 +70,8 @@ export type ProductApiShape = {
     stockQty?: number | string;
     sortOrder?: number | string;
   }>;
+  sortOrder?: number;
+  orderings?: Array<{ scopeType?: string; scopeId?: number | null; rank?: number }>;
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
@@ -81,6 +83,7 @@ export type CategoryApiShape = {
   parentId: number | null;
   slug: string;
   sortOrder?: number;
+  createdAt?: string;
   name?: { ar?: string; en?: string };
   arName?: string;
   enName?: string;

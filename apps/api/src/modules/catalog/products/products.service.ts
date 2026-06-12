@@ -3,7 +3,7 @@ import { getStorefrontRelatedCardsRepo } from "../../../repositories/related-ite
 import type { Language } from "../../../types/domain.js";
 import { toStorefrontProduct } from "./products.mapper.js";
 
-export async function listStorefrontProducts(args: { lang: Language; q?: string; category?: string }) {
+export async function listStorefrontProducts(args: { lang: Language; q?: string; category?: string; categoryId?: string }) {
   const products = await findVisibleProducts(args);
   return products.map(toStorefrontProduct);
 }

@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import {
   adminUsers,
   authSessions,
+  entityOrderings,
   customers,
   offerItems,
   offers,
@@ -129,6 +130,21 @@ afterEach(async () => {
   await db.delete(orderItems).where(eq(orderItems.snapshotNameEn, "integrity-marker")).catch(() => {});
   await db.delete(orders).where(eq(orders.email, "integrity@test.local")).catch(() => {});
   await db.delete(wishlists).where(eq(wishlists.productId, base?.productId ?? MISSING_ID)).catch(() => {});
+});
+
+serialTest("clearTestSeed removes unified ordering rows", async () => {
+  await db.insert(entityOrderings).values({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "product",
+    entityId: MISSING_ID,
+    rank: MISSING_ID
+  });
+
+  await clearTestSeed();
+
+  const rows = await db.select({ id: entityOrderings.id }).from(entityOrderings);
+  assert.equal(rows.length, 0);
 });
 
 serialTest("rejects offer_items with a non-existent variant_id", async () => {

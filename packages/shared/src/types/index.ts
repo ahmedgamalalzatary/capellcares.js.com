@@ -14,7 +14,15 @@ export interface Category {
   name: Bilingual;
   sortOrder?: number;
   isLeaf: boolean;
+  createdAt?: string;
   deletedAt?: string | null;
+}
+
+/** One rank of an entity inside one ordering scope (see entity_orderings). */
+export interface EntityOrderingRef {
+  scopeType: "root" | "category" | "offer" | "collection";
+  scopeId: number | null;
+  rank: number;
 }
 
 export interface ProductVariant {
@@ -53,6 +61,8 @@ export interface Product {
   variants: ProductVariant[];
   offerIds?: number[];
   relatedItems?: RelatedItemRef[];
+  sortOrder?: number;
+  orderings?: EntityOrderingRef[];
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -94,6 +104,7 @@ export interface Collection {
   status: "active" | "inactive";
   visibility: "visible" | "hidden";
   relatedItems?: RelatedItemRef[];
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -129,6 +140,7 @@ export interface Offer {
   stock: number;
   status: "active" | "inactive";
   relatedItems?: RelatedItemRef[];
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;

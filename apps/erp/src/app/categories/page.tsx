@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { compareByScopedOrdering } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -19,12 +20,34 @@ function categoryParentKey(parentId: number | null) {
   return parentId == null ? "root" : `parent:${parentId}`;
 }
 
+function buildPersistedCategoryOrders(categories: Category[]) {
+  const grouped = new Map<string, number[]>();
+  const byParent = new Map<number | null, Category[]>();
+  for (const category of categories) {
+    const siblings = byParent.get(category.parentId) ?? [];
+    siblings.push(category);
+    byParent.set(category.parentId, siblings);
+  }
+  for (const [parentId, siblings] of byParent.entries()) {
+    grouped.set(
+      categoryParentKey(parentId),
+      siblings
+        .slice()
+        .sort(compareByScopedOrdering.bind(null, "erp"))
+        .map((category) => category.id)
+    );
+  }
+  return grouped;
+}
+
 export default function CategoriesPage() {
   const { user } = useAdminAuth();
   const categories = useStore((s) => s.categories);
   const products = useStore((s) => s.products);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; blocked: boolean } | null>(null);
-  const [draftOrders, setDraftOrders] = useState<Record<string, number[]>>({});
+  const [draftOrders, setDraftOrders] = useState<Record<string, number[]>>(() =>
+    Object.fromEntries(buildPersistedCategoryOrders(categories.filter((category) => !category.deletedAt)).entries())
+  );
   const [savingOrder, setSavingOrder] = useState(false);
   const { collapsed, toggle: toggleCollapsed } = useCollapsedCategories();
 
@@ -33,28 +56,12 @@ export default function CategoriesPage() {
     [categories]
   );
   const persistedOrders = useMemo(() => {
-    const grouped = new Map<string, number[]>();
-    const byParent = new Map<number | null, Category[]>();
-    for (const category of activeCategories) {
-      const siblings = byParent.get(category.parentId) ?? [];
-      siblings.push(category);
-      byParent.set(category.parentId, siblings);
-    }
-    for (const [parentId, siblings] of byParent.entries()) {
-      grouped.set(
-        categoryParentKey(parentId),
-        siblings
-          .slice()
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
-          .map((category) => category.id)
-      );
-    }
-    return grouped;
+    return buildPersistedCategoryOrders(activeCategories);
   }, [activeCategories]);
   useEffect(() => {
-    const nextDrafts = Object.fromEntries(persistedOrders.entries());
+    const nextDrafts = Object.fromEntries(buildPersistedCategoryOrders(categories.filter((category) => !category.deletedAt)).entries());
     setDraftOrders(nextDrafts);
-  }, [persistedOrders]);
+  }, [categories]);
 
   const tree = useMemo(() => {
     const children = new Map<number | null, Category[]>();
@@ -72,7 +79,7 @@ export default function CategoriesPage() {
         children.set(parentId, orderedItems);
         continue;
       }
-      list.sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.id - right.id);
+      list.sort(compareByScopedOrdering.bind(null, "erp"));
     }
     return children;
   }, [activeCategories, draftOrders]);

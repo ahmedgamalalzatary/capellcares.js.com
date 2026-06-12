@@ -5,6 +5,7 @@ import { offerItems, offers, productVariants, products } from "@capella/database
 import {
   findOfferByIdRepo,
   listOffersRepo,
+  reorderOffersRepo,
   restoreOfferRepo,
   softDeleteOfferRepo,
   upsertOfferRepo
@@ -54,6 +55,26 @@ async function safeTriggerOfferRevalidation(payload: { slug: string; relatedProd
     });
   } catch (error) {
     console.warn("Failed to trigger storefront revalidation for offer", payload.slug, error);
+  }
+}
+
+export async function adminReorderOffers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((value: unknown): number => Number(value))
+      : [];
+
+    if (ids.length === 0 || ids.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+      return res.status(400).json({ ok: false, reason: "invalid-offer-order" });
+    }
+
+    await reorderOffersRepo({ ids });
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "INVALID_OFFER_ORDER") {
+      return res.status(400).json({ ok: false, reason: "invalid-offer-order" });
+    }
+    next(error);
   }
 }
 

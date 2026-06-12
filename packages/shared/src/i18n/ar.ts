@@ -88,6 +88,7 @@ export const ar = {
     priceMin: "الأدنى",
     priceMax: "الأعلى",
     sortBy: "ترتيب حسب",
+    sortFeatured: "الأبرز",
     sortNewest: "الأحدث",
     sortPriceAsc: "السعر: من الأقل للأعلى",
     sortPriceDesc: "السعر: من الأعلى للأقل",

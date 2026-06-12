@@ -284,6 +284,21 @@ export class ErpStore {
     await this.refetch();
   }
 
+  async reorderProducts(input: { categoryId: number | null; ids: number[] }) {
+    await api.post("/api/erp/products/reorder", input);
+    await this.refetch();
+  }
+
+  async reorderOffers(input: { ids: number[] }) {
+    await api.post("/api/erp/offers/reorder", input);
+    await this.refetch();
+  }
+
+  async reorderCollections(input: { ids: number[] }) {
+    await api.post("/api/erp/collections/reorder", input);
+    await this.refetch();
+  }
+
   async upsertCategory(c: CategoryUpsertInput) {
     await api.post("/api/erp/categories", c);
     await this.refetch();

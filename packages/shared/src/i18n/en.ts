@@ -88,6 +88,7 @@ export const en = {
     priceMin: "Min",
     priceMax: "Max",
     sortBy: "Sort by",
+    sortFeatured: "Featured",
     sortNewest: "Newest",
     sortPriceAsc: "Price: low to high",
     sortPriceDesc: "Price: high to low",

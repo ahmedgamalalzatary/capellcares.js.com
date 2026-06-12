@@ -34,7 +34,8 @@ vi.mock("@/components/forms/related-items-field", () => ({
 vi.mock("@/components/ui/icons", () => ({
   Icon: {
     Plus: () => createElement("span", null, "+"),
-    Trash: () => createElement("span", null, "x")
+    Trash: () => createElement("span", null, "x"),
+    Chevron: () => createElement("span", null, "^")
   }
 }));
 

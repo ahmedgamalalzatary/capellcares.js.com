@@ -1,4 +1,5 @@
 import {
+  compareByScopedOrdering,
   pickLang,
   type Bilingual,
   type Collection,
@@ -33,6 +34,8 @@ interface HeaderMenuCategoryEntry {
   slug: string;
   label: string;
   sortOrder?: number;
+  createdAt?: string;
+  id?: number;
   children: NavNode[];
 }
 
@@ -106,9 +109,11 @@ export function buildHeaderMenu({
     ...navGroups.map((group) => ({
       type: "category" as const,
       key: `category-${group.root.id}`,
+      id: group.root.id,
       slug: group.root.slug,
       label: pickLang(group.root.name, lang),
-      sortOrder: group.root.sortOrder ?? 0,
+      sortOrder: group.root.sortOrder,
+      createdAt: group.root.createdAt,
       children: group.children
     })),
     {
@@ -121,4 +126,12 @@ export function buildHeaderMenu({
         .map((collection) => toMediaLink(collection, lang))
     }
   ];
+}
+
+export function compareHeaderCategoryEntries(left: HeaderMenuCategoryEntry, right: HeaderMenuCategoryEntry) {
+  return compareByScopedOrdering(
+    "storefront",
+    { ...left, id: left.id ?? 0 },
+    { ...right, id: right.id ?? 0 }
+  );
 }

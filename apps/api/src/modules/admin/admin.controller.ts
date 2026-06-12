@@ -2,6 +2,7 @@ export {
   adminGetProduct,
   adminHardDeleteProduct,
   adminListProducts,
+  adminReorderProducts,
   adminRestoreProduct,
   adminSetVariantStock,
   adminSoftDeleteProduct,
@@ -18,6 +19,7 @@ export {
 export {
   adminGetCollection,
   adminListCollections,
+  adminReorderCollections,
   adminRestoreCollection,
   adminSoftDeleteCollection,
   adminToggleCollectionStatus,
@@ -26,6 +28,7 @@ export {
 export {
   adminGetOffer,
   adminListOffers,
+  adminReorderOffers,
   adminRestoreOffer,
   adminSoftDeleteOffer,
   adminToggleOfferStatus,

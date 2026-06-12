@@ -21,8 +21,13 @@ export default function ProductsListPage() {
     setStatusFilter,
     categoryFilter,
     setCategoryFilter,
-    rootCategories,
+    categoryOptions,
     filteredProducts,
+    reorderEnabled,
+    isOrderDirty,
+    savingOrder,
+    moveProduct,
+    saveOrder,
     pendingDelete,
     setPendingDelete,
     pendingToggle,
@@ -47,11 +52,25 @@ export default function ProductsListPage() {
       title="المنتجات"
       crumbs={[{ label: "المنتجات" }]}
       actions={
-        canCreateErpModule(user, "products") ? (
-          <Link href="/products/new" className="btn btn--primary btn--sm">
-            <Icon.Plus /> منتج جديد
-          </Link>
-        ) : undefined
+        <>
+          {isOrderDirty && canUpdateErpModule(user, "products") && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                void saveOrder();
+              }}
+              disabled={savingOrder}
+            >
+              <Icon.Check /> حفظ ترتيب المنتجات
+            </button>
+          )}
+          {canCreateErpModule(user, "products") ? (
+            <Link href="/products/new" className="btn btn--primary btn--sm">
+              <Icon.Plus /> منتج جديد
+            </Link>
+          ) : undefined}
+        </>
       }
     >
       <AdminListToolbar
@@ -70,9 +89,18 @@ export default function ProductsListPage() {
               </select>
             </div>
             <div className="toolbar__filter2">
-              <select className="select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}>
+              <select
+                className="select"
+                data-testid="products-category-filter"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}
+              >
                 <option value="">كل الأقسام</option>
-                {rootCategories.map((category) => <option key={category.id} value={category.id}>{category.name.ar}</option>)}
+                {categoryOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {`${"— ".repeat(option.depth)}${option.label}`}
+                  </option>
+                ))}
               </select>
             </div>
           </>
@@ -85,6 +113,8 @@ export default function ProductsListPage() {
         canToggle={canToggleErpModule(user, "products")}
         canEdit={canUpdateErpModule(user, "products")}
         canDelete={canSoftDeleteErpModule(user, "products")}
+        canReorder={reorderEnabled && canUpdateErpModule(user, "products")}
+        onMove={moveProduct}
         onToggle={(product) => {
           setPendingToggle(product);
         }}

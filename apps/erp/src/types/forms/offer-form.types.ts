@@ -45,6 +45,7 @@ export interface UseOfferFormResult {
   };
   addRow: () => void;
   removeRow: (index: number) => void;
+  moveRow: (index: number, direction: -1 | 1) => void;
   updateRow: (index: number, patch: Partial<OfferFormRow>) => void;
   save: () => Promise<boolean>;
 }

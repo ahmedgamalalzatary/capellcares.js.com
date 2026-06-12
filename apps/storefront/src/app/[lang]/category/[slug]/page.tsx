@@ -5,42 +5,63 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import {
   fetchCategories,
   fetchProducts,
+  getCategoryById,
   getCategoryBySlug,
-  getCategoryPath,
-  getProductsByCategory
+  getCategoryPath
 } from "@/lib/api/client";
 import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { buildCategoryMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
+function parseCategoryId(value: string | undefined): number | undefined {
+  if (!value || !/^\d+$/.test(value)) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export async function generateMetadata({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ lang: string; slug: string }>;
+  searchParams: Promise<{ id?: string; categoryId?: string }>;
 }): Promise<Metadata> {
   const { lang, slug } = await resolveStorefrontSlugPageContext(params);
-  const [categories, allProducts] = await Promise.all([
+  const sp = await searchParams;
+  const categoryId = sp.categoryId ?? sp.id;
+  const parsedCategoryId = parseCategoryId(categoryId);
+  const [categories, products] = await Promise.all([
     fetchCategories({ lang }),
-    fetchProducts({ lang })
+    fetchProducts({ lang, category: slug, categoryId })
   ]);
-  const category = requireStorefrontValue(getCategoryBySlug(categories, slug));
-  const products = getProductsByCategory(allProducts.filter((p) => p.status === "active"), categories, category.id);
+  const resolvedCategory = parsedCategoryId != null
+    ? getCategoryById(categories, parsedCategoryId)
+    : getCategoryBySlug(categories, slug);
+  const category = requireStorefrontValue(resolvedCategory);
   const path = getCategoryPath(categories, category.id);
-  return buildCategoryMetadata(lang, category, path, products.length);
+  return buildCategoryMetadata(lang, category, path, products.filter((p) => p.status === "active").length);
 }
 
 export default async function CategoryPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ lang: string; slug: string }>;
+  searchParams: Promise<{ id?: string; categoryId?: string }>;
 }) {
   const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
-  const [categories, allProducts] = await Promise.all([
+  const sp = await searchParams;
+  const categoryId = sp.categoryId ?? sp.id;
+  const parsedCategoryId = parseCategoryId(categoryId);
+  const [categories, products] = await Promise.all([
     fetchCategories({ lang }),
-    fetchProducts({ lang })
+    fetchProducts({ lang, category: slug, categoryId })
   ]);
-  const category = requireStorefrontValue(getCategoryBySlug(categories, slug));
-
-  const products = getProductsByCategory(allProducts.filter((p) => p.status === "active"), categories, category.id);
+  const resolvedCategory = parsedCategoryId != null
+    ? getCategoryById(categories, parsedCategoryId)
+    : getCategoryBySlug(categories, slug);
+  const category = requireStorefrontValue(resolvedCategory);
   const path = getCategoryPath(categories, category.id);
   const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
   const subtreeCategoryIds = new Set<number>([category.id]);
@@ -64,7 +85,7 @@ export default async function CategoryPage({
           { name: dict.nav.products, url: `/${lang}/products` },
           ...path.map((c, i) => ({
             name: pickLang(c.name, lang),
-            url: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}`
+            url: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}?categoryId=${c.id}`
           }))
         ])
       ]} />
@@ -74,7 +95,7 @@ export default async function CategoryPage({
           { label: dict.nav.products, href: `/${lang}/products` },
           ...path.map((c, i) => ({
             label: pickLang(c.name, lang),
-            href: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}`
+            href: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}?categoryId=${c.id}`
           }))
         ]}
       />
@@ -84,7 +105,7 @@ export default async function CategoryPage({
         {subCats.length > 0 && (
           <div className="pill-group" style={{ marginTop: 12 }}>
             {subCats.map((c) => (
-              <a key={c.id} href={`/${lang}/category/${c.slug}`} className="chip">
+              <a key={c.id} href={`/${lang}/category/${c.slug}?categoryId=${c.id}`} className="chip">
                 {pickLang(c.name, lang)}
               </a>
             ))}

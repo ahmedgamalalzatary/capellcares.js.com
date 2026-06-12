@@ -13,16 +13,20 @@ export function ProductsTable({
   canToggle,
   canEdit,
   canDelete,
+  canReorder = false,
   onToggle,
-  onDelete
+  onDelete,
+  onMove
 }: {
   products: Product[];
   categories: Array<{ id: number; name: { ar: string; en: string } }>;
   canToggle: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canReorder?: boolean;
   onToggle: (product: Product) => void;
   onDelete: (id: number) => void;
+  onMove?: (id: number, direction: -1 | 1) => void;
 }) {
   return (
     <div className="card">
@@ -41,13 +45,13 @@ export function ProductsTable({
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => {
+            {products.map((product, index) => {
               const category = categories.find((candidate) => candidate.id === product.categoryId);
               const prices = product.variants.map((variant) => variant.price);
               const stockSum = product.variants.reduce((accumulator, variant) => accumulator + variant.stock, 0);
               const avatarInitial = product.name.en?.trim().charAt(0) || product.name.ar?.trim().charAt(0) || "?";
               return (
-                <tr key={product.id}>
+                <tr key={product.id} data-testid={`product-row-${product.id}`}>
                   <td>
                     <EntityAvatar src={product.imagePath} fallback={avatarInitial} />
                   </td>
@@ -65,6 +69,29 @@ export function ProductsTable({
                   </td>
                   <td><AdminStatusBadge active={product.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
+                    <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                    {canReorder && onMove && products.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => onMove(product.id, -1)}
+                          aria-label="تحريك لأعلى"
+                          disabled={index === 0}
+                        >
+                          <Icon.Chevron size={14} className="rotate-180" />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => onMove(product.id, 1)}
+                          aria-label="تحريك لأسفل"
+                          disabled={index === products.length - 1}
+                        >
+                          <Icon.Chevron size={14} />
+                        </button>
+                      </>
+                    )}
                     {(canToggle || canEdit || canDelete) && (
                       <RowMenu>
                         {canToggle && (
@@ -89,6 +116,7 @@ export function ProductsTable({
                         )}
                       </RowMenu>
                     )}
+                    </div>
                   </td>
                 </tr>
               );

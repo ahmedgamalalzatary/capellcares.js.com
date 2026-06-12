@@ -16,6 +16,10 @@ export const relatedItemEntityTypes = ["product", "offer", "collection"] as cons
 
 export const relatedItemTargetTypes = ["product", "offer", "collection"] as const;
 
+export const orderingScopeTypes = ["root", "category", "offer", "collection"] as const;
+
+export const orderingEntityTypes = ["category", "product", "offer", "collection"] as const;
+
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   parentId: int("parent_id"),
@@ -58,6 +62,34 @@ export const categoryPaths = mysqlTable(
     )
   })
 );
+
+export const entityOrderings = mysqlTable("entity_orderings", {
+  id: int("id").autoincrement().primaryKey(),
+  scopeType: mysqlEnum("scope_type", orderingScopeTypes).notNull(),
+  scopeId: int("scope_id"),
+  scopeScopeId: int("scope_scope_id").generatedAlwaysAs(
+    sql`(coalesce(\`scope_id\`, 0))`,
+    { mode: "stored" }
+  ),
+  entityType: mysqlEnum("entity_type", orderingEntityTypes).notNull(),
+  entityId: int("entity_id").notNull(),
+  rank: int("rank").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  entityOrderingScopeEntityUnique: unique("entity_orderings_scope_entity_unique").on(
+    table.scopeType,
+    table.scopeScopeId,
+    table.entityType,
+    table.entityId
+  ),
+  entityOrderingScopeRankUnique: unique("entity_orderings_scope_rank_unique").on(
+    table.scopeType,
+    table.scopeScopeId,
+    table.entityType,
+    table.rank
+  )
+}));
 
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),

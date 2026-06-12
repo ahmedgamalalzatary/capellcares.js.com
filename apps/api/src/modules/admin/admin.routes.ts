@@ -4,6 +4,7 @@ import { requireErpPermission } from "../../middlewares/erp-permissions.middlewa
 import {
   adminListProducts,
   adminGetProduct,
+  adminReorderProducts,
   adminUpsertProduct,
   adminSoftDeleteProduct,
   adminRestoreProduct,
@@ -17,6 +18,8 @@ import {
   adminRestoreCategory,
   adminListOffers,
   adminListCollections,
+  adminReorderOffers,
+  adminReorderCollections,
   adminGetOffer,
   adminGetCollection,
   adminUpsertOffer,
@@ -38,6 +41,7 @@ export const adminRoutes = Router();
 adminRoutes.get("/products", requireErpPermission("products.read"), wrapAsync(adminListProducts));
 adminRoutes.get("/products/:id", requireErpPermission("products.read"), wrapAsync(adminGetProduct));
 adminRoutes.post("/products", requireErpPermission((req) => (req.body?.id ? "products.update" : "products.create")), wrapAsync(adminUpsertProduct));
+adminRoutes.post("/products/reorder", requireErpPermission("products.update"), wrapAsync(adminReorderProducts));
 adminRoutes.delete("/products/:id", requireErpPermission("products.soft_delete"), wrapAsync(adminSoftDeleteProduct));
 adminRoutes.post("/products/:id/restore", requireErpPermission("products.restore"), wrapAsync(adminRestoreProduct));
 adminRoutes.delete("/products/:id/permanent", requireErpPermission("products.permanent_delete"), wrapAsync(adminHardDeleteProduct));
@@ -54,6 +58,7 @@ adminRoutes.get("/sales", requireErpPermission("sales.read"), wrapAsync(getAdmin
 adminRoutes.get("/offers", requireErpPermission("offers.read"), wrapAsync(adminListOffers));
 adminRoutes.get("/offers/:id", requireErpPermission("offers.read"), wrapAsync(adminGetOffer));
 adminRoutes.post("/offers", requireErpPermission((req) => (req.body?.id ? "offers.update" : "offers.create")), wrapAsync(adminUpsertOffer));
+adminRoutes.post("/offers/reorder", requireErpPermission("offers.update"), wrapAsync(adminReorderOffers));
 adminRoutes.delete("/offers/:id", requireErpPermission("offers.soft_delete"), wrapAsync(adminSoftDeleteOffer));
 adminRoutes.post("/offers/:id/restore", requireErpPermission("offers.restore"), wrapAsync(adminRestoreOffer));
 adminRoutes.post("/offers/:id/toggle-status", requireErpPermission("offers.toggle_status"), wrapAsync(adminToggleOfferStatus));
@@ -61,6 +66,7 @@ adminRoutes.post("/offers/:id/toggle-status", requireErpPermission("offers.toggl
 adminRoutes.get("/collections", requireErpPermission("collections.read"), wrapAsync(adminListCollections));
 adminRoutes.get("/collections/:id", requireErpPermission("collections.read"), wrapAsync(adminGetCollection));
 adminRoutes.post("/collections", requireErpPermission((req) => (req.body?.id ? "collections.update" : "collections.create")), wrapAsync(adminUpsertCollection));
+adminRoutes.post("/collections/reorder", requireErpPermission("collections.update"), wrapAsync(adminReorderCollections));
 adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_delete"), wrapAsync(adminSoftDeleteCollection));
 adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), wrapAsync(adminRestoreCollection));
 adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), wrapAsync(adminToggleCollectionStatus));

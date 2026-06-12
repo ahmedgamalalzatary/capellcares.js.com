@@ -60,6 +60,12 @@ import CategoriesPage from "@/app/categories/page";
 describe("CategoriesPage", () => {
   beforeEach(() => {
     reorderCategories.mockClear();
+    storeState.categories = [
+      { id: 1, parentId: null, slug: "body-care", sortOrder: 2, name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false, deletedAt: null },
+      { id: 2, parentId: null, slug: "skin-care", sortOrder: 1, name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null },
+      { id: 3, parentId: 2, slug: "serums", sortOrder: 1, name: { ar: "سيروم", en: "Serums" }, isLeaf: true, deletedAt: null },
+      { id: 4, parentId: 2, slug: "cleansers", sortOrder: 2, name: { ar: "منظفات", en: "Cleansers" }, isLeaf: true, deletedAt: null }
+    ];
   });
 
   it("reorders root categories and saves the full sibling id order", async () => {
@@ -95,14 +101,35 @@ describe("CategoriesPage", () => {
   });
 
   it("reorders child categories within the same parent and saves that sibling id order", async () => {
-    render(createElement(CategoriesPage));
+    const { container } = render(createElement(CategoriesPage));
+    const view = within(container);
 
-    const serumsRow = screen.getAllByTestId("category-row-3")[0]!;
+    const serumsRow = view.getAllByTestId("category-row-3").filter((row) => row.getAttribute("data-root") === "false").at(-1);
+    if (!serumsRow) {
+      throw new Error("Expected to find the nested Serums row");
+    }
     fireEvent.click(within(serumsRow).getByRole("button", { name: "تحريك لأسفل" }));
-    fireEvent.click(screen.getByRole("button", { name: "حفظ ترتيب الأقسام" }));
+    fireEvent.click((await view.findAllByRole("button", { name: "حفظ ترتيب الأقسام" }))[0]!);
 
     await waitFor(() => {
       expect(reorderCategories).toHaveBeenCalledWith({ parentId: 2, ids: [4, 3] });
     });
+  });
+
+  it("renders ranked roots before unranked roots and keeps older unranked roots first in ERP", () => {
+    storeState.categories = [
+      { id: 1, parentId: null, slug: "body-care", sortOrder: 2, name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false, deletedAt: null, createdAt: "2026-06-10T09:00:00.000Z" },
+      { id: 2, parentId: null, slug: "skin-care", sortOrder: 1, name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null, createdAt: "2026-06-09T09:00:00.000Z" },
+      { id: 3, parentId: 2, slug: "serums", sortOrder: 1, name: { ar: "سيروم", en: "Serums" }, isLeaf: true, deletedAt: null, createdAt: "2026-06-08T09:00:00.000Z" },
+      { id: 4, parentId: 2, slug: "cleansers", sortOrder: 2, name: { ar: "منظفات", en: "Cleansers" }, isLeaf: true, deletedAt: null, createdAt: "2026-06-11T09:00:00.000Z" },
+      { id: 5, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false, deletedAt: null, createdAt: "2026-06-07T09:00:00.000Z" },
+      { id: 6, parentId: null, slug: "bath-care", name: { ar: "الاستحمام", en: "Bath Care" }, isLeaf: false, deletedAt: null, createdAt: "2026-06-12T09:00:00.000Z" }
+    ] as any;
+
+    const { container } = render(createElement(CategoriesPage));
+    const rootRows = Array.from(container.querySelectorAll('[data-root="true"][data-testid^="category-row-"]'));
+    const rootIds = rootRows.map((row) => Number(row.getAttribute("data-testid")?.replace("category-row-", "")));
+
+    expect(rootIds.slice(0, 4)).toEqual([2, 1, 5, 6]);
   });
 });

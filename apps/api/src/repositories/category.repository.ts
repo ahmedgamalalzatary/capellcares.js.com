@@ -1,13 +1,52 @@
-import { and, asc, eq, isNull, ne, or, sql } from "drizzle-orm";
-import { categories, categoryPaths, products } from "@capella/database/drizzle/schema";
+import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
+import {
+  categories,
+  categoryPaths,
+  entityOrderings,
+  orderingEntityTypes,
+  orderingScopeTypes,
+  products
+} from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
-export function listCategoriesRepo(includeDeleted = false) {
-  return db
+export async function listCategoriesRepo(includeDeleted = false, surface: OrderingSurface = "erp") {
+  const rows = await db
     .select()
     .from(categories)
-    .where(includeDeleted ? undefined : isNull(categories.deletedAt))
-    .orderBy(asc(categories.sortOrder), asc(categories.id));
+    .where(includeDeleted ? undefined : isNull(categories.deletedAt));
+  const scopeIds = [...new Set(rows.map((row) => row.parentId).filter((parentId): parentId is number => parentId != null))];
+  const orderingRows = await db
+    .select({
+      scopeType: entityOrderings.scopeType,
+      scopeId: entityOrderings.scopeId,
+      entityId: entityOrderings.entityId,
+      rank: entityOrderings.rank
+    })
+    .from(entityOrderings)
+    .where(
+      and(
+        eq(entityOrderings.entityType, "category"),
+        or(
+          and(eq(entityOrderings.scopeType, "root"), isNull(entityOrderings.scopeId)),
+          scopeIds.length > 0
+            ? and(eq(entityOrderings.scopeType, "category"), inArray(entityOrderings.scopeId, scopeIds))
+            : undefined
+        )
+      )
+    );
+
+  const rankByCategoryId = new Map<number, number>();
+  for (const row of orderingRows) {
+    rankByCategoryId.set(row.entityId, row.rank);
+  }
+
+  return rows
+    .map((row) => ({
+      ...row,
+      sortOrder: rankByCategoryId.get(row.id)
+    }))
+    .sort(compareByScopedOrdering.bind(null, surface));
 }
 
 function categoryParentScopeCondition(parentId: number | null) {
@@ -137,20 +176,27 @@ export async function reorderCategoriesRepo(input: { parentId: number | null; id
   }
 
   await db.transaction(async (tx) => {
-    const placeholderOffset = ids.length + 1000;
-    for (let index = 0; index < ids.length; index++) {
-      await tx
-        .update(categories)
-        .set({ sortOrder: placeholderOffset + index })
-        .where(eq(categories.id, ids[index]!));
-    }
+    const scopeType: (typeof orderingScopeTypes)[number] = parentId == null ? "root" : "category";
+    const entityType: (typeof orderingEntityTypes)[number] = "category";
+    await tx
+      .delete(entityOrderings)
+      .where(
+        and(
+          eq(entityOrderings.scopeType, scopeType),
+          parentId == null ? isNull(entityOrderings.scopeId) : eq(entityOrderings.scopeId, parentId),
+          eq(entityOrderings.entityType, entityType)
+        )
+      );
 
-    for (let index = 0; index < ids.length; index++) {
-      await tx
-        .update(categories)
-        .set({ sortOrder: index + 1 })
-        .where(eq(categories.id, ids[index]!));
-    }
+    await tx.insert(entityOrderings).values(
+      ids.map((id, index) => ({
+        scopeType,
+        scopeId: parentId,
+        entityType,
+        entityId: id,
+        rank: index + 1
+      }))
+    );
   });
 }
 
@@ -258,7 +304,7 @@ async function findSiblingSlugConflict(input: {
     .then((rows) => rows[0] ?? null);
 }
 
-export async function rebuildCategoryPathsRepo() {
+async function rebuildCategoryPathsRepo() {
   const rows = await db
     .select({ id: categories.id, parentId: categories.parentId })
     .from(categories);

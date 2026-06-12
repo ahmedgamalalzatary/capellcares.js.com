@@ -1,5 +1,20 @@
-import type { Category, Product } from "@capella/shared";
+import type { Category, EntityOrderingRef, Product } from "@capella/shared";
 import type { CategoryApiShape, ProductApiShape } from "./types";
+
+const orderingScopeTypes = ["root", "category", "offer", "collection"] as const;
+
+function normalizeOrderings(input: ProductApiShape["orderings"]): EntityOrderingRef[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((entry): entry is { scopeType: EntityOrderingRef["scopeType"]; scopeId?: number | null; rank?: number } =>
+      orderingScopeTypes.includes(entry?.scopeType as EntityOrderingRef["scopeType"])
+    )
+    .map((entry) => ({
+      scopeType: entry.scopeType,
+      scopeId: entry.scopeId == null ? null : toNumber(entry.scopeId),
+      rank: toNumber(entry.rank)
+    }));
+}
 
 function toNumber(value: unknown, fallback = 0): number {
   const n = Number(value);
@@ -54,6 +69,8 @@ export function normalizeProduct(input: ProductApiShape): Product {
       sortOrder: toNumber(v.sortOrder, index + 1)
     })),
     offerIds: [],
+    sortOrder: input.sortOrder == null ? undefined : toNumber(input.sortOrder),
+    orderings: normalizeOrderings(input.orderings),
     createdAt: input.createdAt ?? "",
     updatedAt: input.updatedAt ?? "",
     deletedAt: input.deletedAt ?? null
@@ -65,12 +82,13 @@ export function normalizeCategory(input: CategoryApiShape): Category {
     id: Number(input.id),
     parentId: input.parentId == null ? null : Number(input.parentId),
     slug: input.slug,
-    sortOrder: toNumber(input.sortOrder),
+    sortOrder: input.sortOrder == null ? undefined : toNumber(input.sortOrder),
     name: {
       ar: input.name?.ar ?? input.arName ?? "",
       en: input.name?.en ?? input.enName ?? ""
     },
     isLeaf: Boolean(input.isLeaf ?? true),
+    createdAt: input.createdAt ?? "",
     deletedAt: input.deletedAt ?? null
   };
 }

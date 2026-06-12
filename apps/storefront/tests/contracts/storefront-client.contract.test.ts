@@ -225,4 +225,64 @@ describe("storefront client contracts", () => {
       { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" }
     ]);
   });
+
+  it("normalizes numeric product ids so category-scoped filtering does not empty out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [{
+            ...productBoundaryPayload,
+            id: "101",
+            categoryId: "9",
+            variants: [
+              {
+                ...productBoundaryPayload.variants[0],
+                id: "501",
+                productId: "101"
+              }
+            ]
+          }]
+        })
+      })
+    );
+
+    const [product] = await fetchProducts({ lang: "en", category: "serums" });
+
+    expect(product).toMatchObject({
+      id: 101,
+      categoryId: 9,
+      variants: [{ id: 501, productId: 101 }]
+    });
+  });
+
+  it("filters product payloads with missing numeric ids instead of returning NaN", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [{
+            ...productBoundaryPayload,
+            id: undefined,
+            categoryId: null
+          }]
+        })
+      })
+    );
+
+    await expect(fetchProducts({ lang: "en", throwOnError: true })).resolves.toEqual([]);
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to normalize product payload"),
+      expect.objectContaining({
+        error: expect.any(Error),
+        product: expect.objectContaining({
+          id: undefined,
+          categoryId: null
+        })
+      })
+    );
+  });
 });

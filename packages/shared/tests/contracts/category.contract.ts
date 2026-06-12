@@ -6,6 +6,7 @@ export const storefrontCategoryContract = z.object({
   parentId: z.number().nullable(),
   slug: z.string(),
   sortOrder: z.number().optional(),
+  createdAt: z.string().optional(),
   name: z.object({
     ar: z.string(),
     en: z.string()

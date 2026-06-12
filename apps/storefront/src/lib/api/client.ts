@@ -16,8 +16,7 @@ import {
   getCategoryById,
   getCategoryBySlug,
   getCategoryPath,
-  getOffersForProduct,
-  getProductsByCategory
+  getOffersForProduct
 } from "./client/selectors";
 import type {
   CategoryApiShape,
@@ -27,16 +26,26 @@ import type {
   ProductDetailApiShape
 } from "./client/types";
 
-export async function fetchProducts(params?: { q?: string; category?: string; lang?: string; throwOnError?: boolean }): Promise<Product[]> {
+export async function fetchProducts(params?: { q?: string; category?: string; categoryId?: string; lang?: string; throwOnError?: boolean }): Promise<Product[]> {
   const search = new URLSearchParams();
   if (params?.q) search.set("q", params.q);
   if (params?.category) search.set("category", params.category);
+  if (params?.categoryId) search.set("categoryId", params.categoryId);
   const qs = search.toString();
   const data = await getJSON<{ items: ProductApiShape[] }>(`/api/v1/products${qs ? `?${qs}` : ""}`, {
     lang: params?.lang,
     throwOnError: params?.throwOnError
   });
-  return (data?.items ?? []).map(normalizeProduct);
+  return (data?.items ?? [])
+    .map((product) => {
+      try {
+        return normalizeProduct(product);
+      } catch (error) {
+        console.error("Failed to normalize product payload", { error, product });
+        return null;
+      }
+    })
+    .filter((product): product is Product => product != null);
 }
 
 export async function fetchProductBySlug(slug: string, options?: { lang?: string }): Promise<Product | null> {
@@ -107,6 +116,5 @@ export {
   getCategoryById,
   getCategoryBySlug,
   getCategoryPath,
-  getProductsByCategory,
   getOffersForProduct
 };

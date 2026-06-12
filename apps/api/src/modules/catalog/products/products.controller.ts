@@ -6,7 +6,8 @@ export async function listProductsController(req: Request, res: Response) {
   const lang = (req as LocalizedRequest).locale ?? "ar";
   const q = typeof req.query.q === "string" ? req.query.q : undefined;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
-  const items = await listStorefrontProducts({ lang, q, category });
+  const categoryId = typeof req.query.categoryId === "string" ? req.query.categoryId : undefined;
+  const items = await listStorefrontProducts({ lang, q, category, categoryId });
   res.json({ items });
 }
 

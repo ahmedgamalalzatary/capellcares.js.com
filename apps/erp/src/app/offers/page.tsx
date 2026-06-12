@@ -15,6 +15,7 @@ import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggle
 import { formatPrice, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
+import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 
 export default function OffersListPage() {
   const { user } = useAdminAuth();
@@ -25,15 +26,24 @@ export default function OffersListPage() {
   const [toggleError, setToggleError] = useState<string | null>(null);
 
   const visibleOffers = useMemo(() => offers.filter((o) => !o.deletedAt), [offers]);
+  const reorder = useListReorder({
+    persistedIds: useMemo(() => visibleOffers.map((o) => o.id), [visibleOffers]),
+    save: (ids) => getStore().reorderOffers({ ids }),
+    successMessage: "تم حفظ ترتيب العروض.",
+    errorMessage: "تعذر حفظ ترتيب العروض. حاولي مرة أخرى."
+  });
+  // Reordering needs the complete list, so it is hidden while searching.
+  const canReorder = !search.trim() && canUpdateErpModule(user, "offers");
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return visibleOffers;
+    const ordered = sortByIdOrder(visibleOffers, reorder.orderedIds);
+    if (!search.trim()) return ordered;
     const s = search.trim().toLowerCase();
-    return visibleOffers.filter((o) =>
+    return ordered.filter((o) =>
       o.name.ar.toLowerCase().includes(s) ||
       o.name.en.toLowerCase().includes(s)
     );
-  }, [visibleOffers, search]);
+  }, [visibleOffers, search, reorder.orderedIds]);
 
   const onDelete = () => {
     if (pendingDelete == null) return;
@@ -53,7 +63,23 @@ export default function OffersListPage() {
     <AdminShell
       title="العروض"
       crumbs={[{ label: "العروض" }]}
-      actions={canCreateErpModule(user, "offers") ? <Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link> : undefined}
+      actions={
+        <>
+          {reorder.isDirty && canUpdateErpModule(user, "offers") && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                void reorder.saveOrder();
+              }}
+              disabled={reorder.saving}
+            >
+              <Icon.Check /> حفظ ترتيب العروض
+            </button>
+          )}
+          {canCreateErpModule(user, "offers") ? <Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link> : undefined}
+        </>
+      }
     >
       <AdminListToolbar
         searchPlaceholder="ابحثي عن عرض…"
@@ -77,10 +103,10 @@ export default function OffersListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((o) => {
+            {filtered.map((o, index) => {
               const savings = o.originalTotal - o.price;
               return (
-                <tr key={o.id}>
+                <tr key={o.id} data-testid={`offer-row-${o.id}`}>
                   <td>
                     <EntityAvatar src={o.imagePath} fallback={o.name.en[0] ?? "?"} wide />
                   </td>
@@ -94,6 +120,29 @@ export default function OffersListPage() {
                    <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
                    <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                    <td>
+                     <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                     {canReorder && filtered.length > 1 && (
+                       <>
+                         <button
+                           type="button"
+                           className="btn btn--ghost btn--sm"
+                           onClick={() => reorder.moveItem(o.id, -1)}
+                           aria-label="تحريك لأعلى"
+                           disabled={index === 0}
+                         >
+                           <Icon.Chevron size={14} className="rotate-180" />
+                         </button>
+                         <button
+                           type="button"
+                           className="btn btn--ghost btn--sm"
+                           onClick={() => reorder.moveItem(o.id, 1)}
+                           aria-label="تحريك لأسفل"
+                           disabled={index === filtered.length - 1}
+                         >
+                           <Icon.Chevron size={14} />
+                         </button>
+                       </>
+                     )}
                      {(canToggleErpModule(user, "offers") || canUpdateErpModule(user, "offers") || canSoftDeleteErpModule(user, "offers")) && (
                        <RowMenu>
                          {canToggleErpModule(user, "offers") && (
@@ -119,6 +168,7 @@ export default function OffersListPage() {
                          )}
                        </RowMenu>
                      )}
+                     </div>
                   </td>
                 </tr>
               );

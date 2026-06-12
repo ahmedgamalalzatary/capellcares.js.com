@@ -1,9 +1,19 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useProductGridFilters } from "@/hooks/use-product-grid-filters";
 import type { Category, Product } from "@capella/shared";
+
+const replace = vi.fn();
+let pathname = "/en/products";
+let currentSearchParams = new URLSearchParams("categoryId=1");
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+  usePathname: () => pathname,
+  useSearchParams: () => currentSearchParams
+}));
 
 const products: Product[] = [
   {
@@ -69,6 +79,9 @@ function HookProbe() {
     null,
     createElement("button", { onClick: () => grid.setQ("rose") }, "search"),
     createElement("button", { onClick: () => grid.setSort("price-desc") }, "sort-desc"),
+    createElement("button", { onClick: () => grid.setSort("newest") }, "sort-newest"),
+    createElement("button", { onClick: () => grid.setCategory(2) }, "category-serums"),
+    createElement("button", { onClick: () => grid.setCategory(undefined) }, "category-all"),
     createElement("button", { onClick: () => grid.setPriceRange({ min: "200", max: "230" }) }, "price-range"),
     createElement("button", { onClick: () => grid.handleClear() }, "clear"),
     createElement("div", null, `ids:${grid.filtered.map((product) => product.id).join(",")}`),
@@ -79,10 +92,22 @@ function HookProbe() {
 }
 
 describe("useProductGridFilters", () => {
+  beforeEach(() => {
+    replace.mockReset();
+    pathname = "/en/products";
+    currentSearchParams = new URLSearchParams("categoryId=1");
+  });
+
+  it("preserves the incoming API order by default", () => {
+    render(createElement(HookProbe));
+
+    expect(screen.getByText("ids:1,2")).toBeInTheDocument();
+  });
+
   it("builds the category tree and filters descendants from the initial category", () => {
     render(createElement(HookProbe));
 
-    expect(screen.getByText("ids:2,1")).toBeInTheDocument();
+    expect(screen.getByText("ids:1,2")).toBeInTheDocument();
     expect(screen.getByText("tree:1:2:1")).toBeInTheDocument();
     expect(screen.getByText("selected:1")).toBeInTheDocument();
   });
@@ -108,8 +133,36 @@ describe("useProductGridFilters", () => {
     expect(await screen.findByText("active:yes")).toBeInTheDocument();
 
     screen.getByText("clear").click();
-    expect(await screen.findByText("ids:2,1")).toBeInTheDocument();
+    expect(await screen.findByText("ids:1,2")).toBeInTheDocument();
     expect(screen.getByText("selected:1")).toBeInTheDocument();
     expect(screen.getByText("active:no")).toBeInTheDocument();
   });
+
+  it("still lets the shopper switch to newest-first explicitly", async () => {
+    render(createElement(HookProbe));
+
+    screen.getByText("sort-newest").click();
+    expect(await screen.findByText("ids:2,1")).toBeInTheDocument();
+  });
+
+  it("updates the products page URL when the shopper changes category", async () => {
+    render(createElement(HookProbe));
+
+    screen.getByText("category-serums").click();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/en/products?categoryId=2", { scroll: false });
+    });
+  });
+
+  it("removes the category query when the shopper clears category filtering", async () => {
+    render(createElement(HookProbe));
+
+    screen.getByText("category-all").click();
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/en/products", { scroll: false });
+    });
+  });
+
 });

@@ -14,3 +14,4 @@ export {
   toggleProductStatusRepo
 } from "./product/write.js";
 export { addVariantRepo } from "./product/shared.js";
+export { reorderProductsRepo } from "./product/ordering.js";

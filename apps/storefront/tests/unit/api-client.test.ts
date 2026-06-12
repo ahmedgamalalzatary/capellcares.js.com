@@ -38,6 +38,49 @@ describe("storefront api client", () => {
     await expect(fetchProducts({ q: "oil", lang: "en" })).resolves.toEqual([]);
   });
 
+  it("filters malformed products instead of throwing when normalizeProduct hits ensureNumericId", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 9,
+              categoryId: 3,
+              imagePath: null,
+              hoverImagePath: null,
+              media: [],
+              variants: [],
+              status: "active"
+            },
+            {
+              id: undefined,
+              categoryId: null,
+              imagePath: null,
+              hoverImagePath: null,
+              media: [],
+              variants: [],
+              status: "active"
+            }
+          ]
+        })
+      })
+    );
+
+    const { fetchProducts } = await import("@/lib/api/client");
+
+    await expect(fetchProducts({ lang: "en", throwOnError: true })).resolves.toMatchObject([{ id: 9, categoryId: 3 }]);
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to normalize product payload"),
+      expect.objectContaining({
+        error: expect.any(Error),
+        product: expect.objectContaining({ categoryId: null })
+      })
+    );
+  });
+
   it("refreshes and retries customer order requests when the access token expires", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({

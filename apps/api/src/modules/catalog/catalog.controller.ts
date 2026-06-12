@@ -6,17 +6,18 @@ import { calculateBundleInventory } from "../inventory/bundle-inventory.js";
 import { toStorefrontOffer } from "./offers/offers.mapper.js";
 
 export async function listCategories(_req: Request, res: Response) {
-  const rows = await listCategoriesRepo(false);
+  const rows = await listCategoriesRepo(false, "storefront");
   const items = rows.map((category) => ({
     id: category.id,
     parentId: category.parentId,
     slug: category.slug,
-    sortOrder: category.sortOrder,
+    sortOrder: category.sortOrder ?? 0,
     name: {
       ar: category.arName,
       en: category.enName
     },
     isLeaf: category.isLeaf,
+    createdAt: category.createdAt,
     deletedAt: category.deletedAt
   }));
   res.json({ items });

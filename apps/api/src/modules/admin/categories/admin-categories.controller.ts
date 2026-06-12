@@ -12,7 +12,7 @@ import { toSlug } from "../../../services/slug.service.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 
 export async function adminListCategories(_req: Request, res: Response) {
-  res.json({ items: await listCategoriesRepo(true) });
+  res.json({ items: await listCategoriesRepo(true, "erp") });
 }
 
 export async function adminUpsertCategory(req: Request, res: Response, next: NextFunction) {

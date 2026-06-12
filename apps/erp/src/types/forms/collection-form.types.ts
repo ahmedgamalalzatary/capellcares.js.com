@@ -40,6 +40,7 @@ export interface UseCollectionFormResult {
   originalTotal: number;
   addRow: () => void;
   removeRow: (index: number) => void;
+  moveRow: (index: number, direction: -1 | 1) => void;
   updateRow: (index: number, patch: Partial<CollectionFormRow>) => void;
   save: () => Promise<boolean>;
 }

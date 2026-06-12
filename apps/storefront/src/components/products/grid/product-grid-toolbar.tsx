@@ -119,6 +119,7 @@ export function ProductGridToolbar({
               cursor: "pointer"
             }}
           >
+            <option value="default">{dict.filters.sortFeatured}</option>
             <option value="newest">{dict.filters.sortNewest}</option>
             <option value="price-asc">{dict.filters.sortPriceAsc}</option>
             <option value="price-desc">{dict.filters.sortPriceDesc}</option>

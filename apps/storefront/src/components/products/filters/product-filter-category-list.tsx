@@ -18,7 +18,7 @@ interface ProductFilterCategoryListProps {
   toggleParent: (id: number) => void;
 }
 
-const mobileListStyle = { display: "flex", flexWrap: "wrap", gap: 6 } as const;
+const mobileListStyle = { display: "flex", flexDirection: "column", gap: 6 } as const;
 const desktopListStyle = {
   display: "flex",
   flexDirection: "column",
@@ -92,14 +92,12 @@ function getIsOpen(node: CategoryTreeNode, category: number | undefined, openPar
 
 function getBranchStyles(isMobile: boolean) {
   return {
-    branch: isMobile
-      ? ({ display: "contents" } satisfies CSSProperties)
-      : ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties),
+    branch: ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties),
     row: isMobile
       ? ({ display: "inline-flex", alignItems: "center", gap: 3 } satisfies CSSProperties)
       : ({ display: "flex", alignItems: "center", gap: 4 } satisfies CSSProperties),
     parentPillWrapper: isMobile ? undefined : ({ flex: 1, minWidth: 0 } satisfies CSSProperties),
-    children: isMobile ? undefined : ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties)
+    children: ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties)
   } as const;
 }
 

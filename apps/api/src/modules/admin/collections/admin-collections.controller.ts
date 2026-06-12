@@ -6,6 +6,7 @@ import { listDescendantCategoryIdsRepo } from "../../../repositories/category.re
 import {
   findCollectionByIdRepo,
   listCollectionsRepo,
+  reorderCollectionsRepo,
   restoreCollectionRepo,
   softDeleteCollectionRepo,
   toggleCollectionStatusRepo,
@@ -101,6 +102,26 @@ async function validateCollectionItems(categoryId: number, items: Array<{ varian
   }
 
   return null;
+}
+
+export async function adminReorderCollections(req: Request, res: Response, next: NextFunction) {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((value: unknown): number => Number(value))
+      : [];
+
+    if (ids.length === 0 || ids.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+      return res.status(400).json({ ok: false, reason: "invalid-collection-order" });
+    }
+
+    await reorderCollectionsRepo({ ids });
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "INVALID_COLLECTION_ORDER") {
+      return res.status(400).json({ ok: false, reason: "invalid-collection-order" });
+    }
+    next(error);
+  }
 }
 
 export async function adminListCollections(_req: Request, res: Response) {

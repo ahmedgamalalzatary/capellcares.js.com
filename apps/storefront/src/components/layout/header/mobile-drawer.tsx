@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
+import { compareHeaderCategoryEntries } from "@/lib/header-menu";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
@@ -27,7 +28,7 @@ function sortMenuEntries(entries: HeaderMenuEntry[]): HeaderMenuEntry[] {
     ...entries
       .filter((entry) => entry.type === "category")
       .slice()
-      .sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label))
+      .sort(compareHeaderCategoryEntries)
   ];
 }
 

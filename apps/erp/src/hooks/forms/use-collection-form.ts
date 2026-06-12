@@ -45,6 +45,19 @@ export function useCollectionForm({
 
   const removeRow = (index: number) => setRows((state) => state.filter((_, rowIndex) => rowIndex !== index));
 
+  // Row order is the collection's product order on the storefront.
+  const moveRow = (index: number, direction: -1 | 1) => {
+    setRows((state) => {
+      const nextIndex = index + direction;
+      if (index < 0 || index >= state.length || nextIndex < 0 || nextIndex >= state.length) {
+        return state;
+      }
+      const next = [...state];
+      [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
+      return next;
+    });
+  };
+
   const updateRow = (index: number, patch: Partial<CollectionFormRow>) => {
     setRows((state) => {
       const next = [...state];
@@ -150,6 +163,7 @@ export function useCollectionForm({
     originalTotal,
     addRow,
     removeRow,
+    moveRow,
     updateRow,
     save
   };

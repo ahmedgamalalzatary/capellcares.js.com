@@ -1,6 +1,8 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { compareByScopedOrdering } from "@capella/shared";
 import { categories, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
   mapVariant,
@@ -14,12 +16,17 @@ function escapeLikeTerm(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
+export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string; categoryId?: string }) {
   const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
-  if (params.category) {
+  let scopeCategoryId: number | null = null;
+  if (params.categoryId || params.category) {
     const allCategories = await db.select({ id: categories.id, parentId: categories.parentId, slug: categories.slug }).from(categories).where(isNull(categories.deletedAt));
-    const root = allCategories.find((c) => c.slug === params.category);
+    const requestedCategoryId = Number(params.categoryId);
+    const root = Number.isInteger(requestedCategoryId) && requestedCategoryId > 0
+      ? allCategories.find((c) => c.id === requestedCategoryId)
+      : allCategories.find((c) => c.slug === params.category);
     if (!root) return [];
+    scopeCategoryId = root.id;
     const descendantIds = new Set<number>([root.id]);
     let changed = true;
     while (changed) {
@@ -61,7 +68,8 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       deletedAt: products.deletedAt,
       categorySlug: categories.slug,
       isNew: products.isNew,
-      isBestseller: products.isBestseller
+      isBestseller: products.isBestseller,
+      createdAt: products.createdAt
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
@@ -69,6 +77,8 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
 
   if (rows.length === 0) return [];
   const productIds = rows.map((r) => r.id);
+  const orderingRows = await loadProductOrderingRowsRepo(productIds);
+  const rankByProductId = rankForProductScope(orderingRows, scopeCategoryId);
   const mediaByProduct = await loadMediaRows(productIds);
   const variantsRows = await db
     .select({
@@ -89,22 +99,25 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     variantsByProduct.set(v.productId, list);
   }
 
-  return rows.map((r) => {
-    const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
-    return {
-      ...r,
-      imagePath: resolvePrimaryImagePath(media, r.imagePath),
-      hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
-      media,
-      keywords: toKeywords(r.keywords),
-      variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
-      name: { ar: r.arName, en: r.enName },
-      description: { ar: "", en: "" },
-      ingredients: { ar: "", en: "" },
-      howToUse: { ar: "", en: "" },
-      warnings: { ar: "", en: "" }
-    };
-  });
+  return rows
+    .map((r) => {
+      const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+      return {
+        ...r,
+        sortOrder: rankByProductId.get(r.id),
+        imagePath: resolvePrimaryImagePath(media, r.imagePath),
+        hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
+        media,
+        keywords: toKeywords(r.keywords),
+        variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
+        name: { ar: r.arName, en: r.enName },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" }
+      };
+    })
+    .sort(compareByScopedOrdering.bind(null, "storefront"));
 }
 
 export async function findVisibleProductBySlug(slug: string) {
@@ -173,6 +186,14 @@ export async function findVisibleProductBySlug(slug: string) {
 export async function listAdminProductsRepo() {
   const rows = await db.select().from(products);
   if (rows.length === 0) return [];
+  const orderingRows = await loadProductOrderingRowsRepo(rows.map((r) => r.id));
+  const rootRankByProductId = rankForProductScope(orderingRows, null);
+  const orderingsByProductId = new Map<number, Array<{ scopeType: string; scopeId: number | null; rank: number }>>();
+  for (const row of orderingRows) {
+    const list = orderingsByProductId.get(row.entityId) ?? [];
+    list.push({ scopeType: row.scopeType, scopeId: row.scopeId, rank: row.rank });
+    orderingsByProductId.set(row.entityId, list);
+  }
   const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
 
   const variantsRows = await db
@@ -194,16 +215,20 @@ export async function listAdminProductsRepo() {
     variantsByProduct.set(v.productId, list);
   }
 
-  return rows.map((r) => {
-    const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
-    return {
-      ...r,
-      imagePath: resolvePrimaryImagePath(media, r.imagePath),
-      hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
-      media,
-      variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
-    };
-  });
+  return rows
+    .map((r) => {
+      const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+      return {
+        ...r,
+        sortOrder: rootRankByProductId.get(r.id),
+        orderings: orderingsByProductId.get(r.id) ?? [],
+        imagePath: resolvePrimaryImagePath(media, r.imagePath),
+        hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
+        media,
+        variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
+      };
+    })
+    .sort(compareByScopedOrdering.bind(null, "erp"));
 }
 
 export async function findAdminProductByIdRepo(id: number) {

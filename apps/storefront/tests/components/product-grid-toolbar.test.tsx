@@ -17,6 +17,7 @@ describe("ProductGridToolbar", () => {
         },
         filters: {
           sortBy: "Sort by",
+          sortFeatured: "Featured",
           sortNewest: "Newest",
           sortPriceAsc: "Price low to high",
           sortPriceDesc: "Price high to low",
@@ -25,7 +26,7 @@ describe("ProductGridToolbar", () => {
       },
       filteredCount: 7,
       hasActiveFilters: true,
-      sort: "newest",
+      sort: "default",
       onOpenFilters,
       onSortChange
     }));

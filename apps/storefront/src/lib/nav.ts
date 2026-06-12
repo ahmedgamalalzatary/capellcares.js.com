@@ -1,4 +1,4 @@
-import { type Category, type Language, pickLang } from "@capella/shared";
+import { compareByScopedOrdering, type Category, type Language, pickLang } from "@capella/shared";
 
 export interface NavNode {
   id: number;
@@ -16,7 +16,7 @@ export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const active = categories.filter((c) => !c.deletedAt);
   const roots = active
     .filter((c) => c.parentId === null)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id);
+    .sort(compareByScopedOrdering.bind(null, "storefront"));
   const byParent = new Map<number | null, Category[]>();
 
   for (const category of active) {
@@ -28,7 +28,7 @@ export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const buildNodes = (parentId: number): NavNode[] =>
     (byParent.get(parentId) ?? [])
       .slice()
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+      .sort(compareByScopedOrdering.bind(null, "storefront"))
       .map((category) => ({
       id: category.id,
       slug: category.slug,

@@ -1,6 +1,70 @@
 import { eq, inArray, isNull, sql } from "drizzle-orm";
+import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { offerItems, offers } from "@capella/database/drizzle/schema";
+import { offerItems, offers, productVariants } from "@capella/database/drizzle/schema";
+import {
+  assertCompleteOrderedIds,
+  loadScopedRanksRepo,
+  orderedProductIdsForVariants,
+  replaceScopedOrderingRepo
+} from "./entity-ordering.repository.js";
+
+async function withOfferRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
+  const rankByOfferId = await loadScopedRanksRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "offer",
+    entityIds: rows.map((row) => row.id)
+  });
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByOfferId.get(row.id) }))
+    .sort(compareByScopedOrdering.bind(null, surface));
+}
+
+// Items inside one offer must read identically on both surfaces, so the
+// erp fallback (older first) is used to keep legacy insertion order for
+// items created before in-offer product ordering existed.
+async function listOrderedOfferItemsRepo(offerId: number) {
+  const rows = await db
+    .select({
+      id: offerItems.id,
+      offerId: offerItems.offerId,
+      variantId: offerItems.variantId,
+      qty: offerItems.qty,
+      createdAt: offerItems.createdAt,
+      productId: productVariants.productId
+    })
+    .from(offerItems)
+    .innerJoin(productVariants, eq(offerItems.variantId, productVariants.id))
+    .where(eq(offerItems.offerId, offerId));
+  const rankByProductId = await loadScopedRanksRepo({
+    scopeType: "offer",
+    scopeId: offerId,
+    entityType: "product"
+  });
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
+    .sort(compareByScopedOrdering.bind(null, "erp"));
+}
+
+export async function reorderOffersRepo(input: { ids: number[] }) {
+  const scopeRows = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(isNull(offers.deletedAt));
+  assertCompleteOrderedIds({
+    requestedIds: input.ids,
+    scopeEntityIds: scopeRows.map((row) => row.id),
+    errorCode: "INVALID_OFFER_ORDER",
+    errorMessage: "Offer order is invalid"
+  });
+  await replaceScopedOrderingRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "offer",
+    ids: input.ids
+  });
+}
 
 function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: number }>) {
   const merged = new Map<number, { id?: number; variantId: number; qty: number }>();
@@ -23,9 +87,10 @@ function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: num
 
 export async function listOffersRepo(includeDeleted = false) {
   const rows = await db.select().from(offers).where(includeDeleted ? undefined : isNull(offers.deletedAt));
+  const ranked = await withOfferRanks(rows, "erp");
   return Promise.all(
-    rows.map(async (row) => {
-      const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+    ranked.map(async (row) => {
+      const items = await listOrderedOfferItemsRepo(row.id);
       return { ...row, items };
     })
   );
@@ -36,9 +101,10 @@ export async function listVisibleOffersRepo() {
     .select()
     .from(offers)
     .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
+  const ranked = await withOfferRanks(rows, "storefront");
   return Promise.all(
-    rows.map(async (row) => {
-      const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+    ranked.map(async (row) => {
+      const items = await listOrderedOfferItemsRepo(row.id);
       return { ...row, items };
     })
   );
@@ -48,14 +114,14 @@ export async function findOfferBySlugRepo(slug: string) {
   const [row] = await db.select().from(offers).where(eq(offers.slug, slug)).limit(1);
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
-  const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+  const items = await listOrderedOfferItemsRepo(row.id);
   return { ...row, items };
 }
 
 export async function findOfferByIdRepo(id: number) {
   const [row] = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
   if (!row) return null;
-  const items = await db.select().from(offerItems).where(eq(offerItems.offerId, row.id));
+  const items = await listOrderedOfferItemsRepo(row.id);
   return { ...row, items };
 }
 
@@ -134,6 +200,15 @@ export async function upsertOfferRepo(input: {
 
     await tx.insert(offerItems).values({ offerId: offerId!, variantId: item.variantId, qty: item.qty });
   }
+  await replaceScopedOrderingRepo(
+    {
+      scopeType: "offer",
+      scopeId: offerId!,
+      entityType: "product",
+      ids: await orderedProductIdsForVariants(tx, mergedItems.map((item) => item.variantId))
+    },
+    tx
+  );
   return { id: offerId! };
   });
 }

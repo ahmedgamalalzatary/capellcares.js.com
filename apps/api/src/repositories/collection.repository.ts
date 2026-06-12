@@ -1,6 +1,70 @@
 import { eq, inArray, isNull, sql } from "drizzle-orm";
+import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
+import {
+  assertCompleteOrderedIds,
+  loadScopedRanksRepo,
+  orderedProductIdsForVariants,
+  replaceScopedOrderingRepo
+} from "./entity-ordering.repository.js";
+
+async function withCollectionRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
+  const rankByCollectionId = await loadScopedRanksRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "collection",
+    entityIds: rows.map((row) => row.id)
+  });
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByCollectionId.get(row.id) }))
+    .sort(compareByScopedOrdering.bind(null, surface));
+}
+
+// Items inside one collection must read identically on both surfaces, so the
+// erp fallback (older first) is used to keep legacy insertion order for
+// items created before in-collection product ordering existed.
+async function listOrderedCollectionItemsRepo(collectionId: number) {
+  const rows = await db
+    .select({
+      id: collectionItems.id,
+      collectionId: collectionItems.collectionId,
+      variantId: collectionItems.variantId,
+      qty: collectionItems.qty,
+      createdAt: collectionItems.createdAt,
+      productId: productVariants.productId
+    })
+    .from(collectionItems)
+    .innerJoin(productVariants, eq(collectionItems.variantId, productVariants.id))
+    .where(eq(collectionItems.collectionId, collectionId));
+  const rankByProductId = await loadScopedRanksRepo({
+    scopeType: "collection",
+    scopeId: collectionId,
+    entityType: "product"
+  });
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
+    .sort(compareByScopedOrdering.bind(null, "erp"));
+}
+
+export async function reorderCollectionsRepo(input: { ids: number[] }) {
+  const scopeRows = await db
+    .select({ id: collections.id })
+    .from(collections)
+    .where(isNull(collections.deletedAt));
+  assertCompleteOrderedIds({
+    requestedIds: input.ids,
+    scopeEntityIds: scopeRows.map((row) => row.id),
+    errorCode: "INVALID_COLLECTION_ORDER",
+    errorMessage: "Collection order is invalid"
+  });
+  await replaceScopedOrderingRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "collection",
+    ids: input.ids
+  });
+}
 
 function mergeCollectionItems(items: Array<{ id?: number; variantId: number; qty: number }>) {
   const merged = new Map<number, { id?: number; variantId: number; qty: number }>();
@@ -23,9 +87,10 @@ function mergeCollectionItems(items: Array<{ id?: number; variantId: number; qty
 
 export async function listCollectionsRepo(includeDeleted = false) {
   const rows = await db.select().from(collections).where(includeDeleted ? undefined : isNull(collections.deletedAt));
+  const ranked = await withCollectionRanks(rows, "erp");
   return Promise.all(
-    rows.map(async (row) => {
-      const items = await db.select().from(collectionItems).where(eq(collectionItems.collectionId, row.id));
+    ranked.map(async (row) => {
+      const items = await listOrderedCollectionItemsRepo(row.id);
       return { ...row, items };
     })
   );
@@ -38,9 +103,10 @@ export async function listVisibleCollectionsRepo() {
     .where(
       sql`${collections.visibility} = 'visible' and ${collections.status} = 'active' and ${collections.deletedAt} is null`
     );
+  const ranked = await withCollectionRanks(rows, "storefront");
   return Promise.all(
-    rows.map(async (row) => {
-      const items = await db.select().from(collectionItems).where(eq(collectionItems.collectionId, row.id));
+    ranked.map(async (row) => {
+      const items = await listOrderedCollectionItemsRepo(row.id);
       return { ...row, items };
     })
   );
@@ -50,14 +116,14 @@ export async function findCollectionBySlugRepo(slug: string) {
   const [row] = await db.select().from(collections).where(eq(collections.slug, slug)).limit(1);
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
-  const items = await db.select().from(collectionItems).where(eq(collectionItems.collectionId, row.id));
+  const items = await listOrderedCollectionItemsRepo(row.id);
   return { ...row, items };
 }
 
 export async function findCollectionByIdRepo(id: number) {
   const [row] = await db.select().from(collections).where(eq(collections.id, id)).limit(1);
   if (!row) return null;
-  const items = await db.select().from(collectionItems).where(eq(collectionItems.collectionId, row.id));
+  const items = await listOrderedCollectionItemsRepo(row.id);
   return { ...row, items };
 }
 
@@ -140,6 +206,16 @@ export async function upsertCollectionRepo(input: {
 
     await tx.insert(collectionItems).values({ collectionId: collectionId!, variantId: item.variantId, qty: item.qty });
   }
+
+  await replaceScopedOrderingRepo(
+    {
+      scopeType: "collection",
+      scopeId: collectionId!,
+      entityType: "product",
+      ids: await orderedProductIdsForVariants(tx, mergedItems.map((item) => item.variantId))
+    },
+    tx
+  );
 
   return { id: collectionId! };
   });

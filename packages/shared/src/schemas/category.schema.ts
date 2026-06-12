@@ -5,6 +5,7 @@ export const categorySchema = z.object({
   parentId: z.number().int().positive().nullable(),
   slug: z.string().min(1),
   sortOrder: z.number().int().nonnegative().optional(),
+  createdAt: z.string().optional(),
   arName: z.string().min(1),
   enName: z.string().min(1),
   isLeaf: z.boolean(),

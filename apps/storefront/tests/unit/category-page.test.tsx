@@ -22,7 +22,7 @@ vi.mock("@/components/products/grid/product-grid", () => ({
 vi.mock("@/lib/storefront-detail-page", () => ({
   resolveStorefrontSlugPageContext: async () => ({
     lang: "en",
-    slug: "skin-care",
+    slug: "curly-hair",
     dict: {
       common: { breadcrumbHome: "Home" },
       nav: { products: "Products" }
@@ -39,13 +39,14 @@ vi.mock("@/lib/seo", () => ({
 
 vi.mock("@/lib/api/client", () => ({
   fetchCategories: vi.fn(async () => ([
-    { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false },
-    { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: false },
-    { id: 3, parentId: 2, slug: "vitamin-c", name: { ar: "فيتامين سي", en: "Vitamin C" }, isLeaf: true },
-    { id: 4, parentId: 1, slug: "cleansers", name: { ar: "منظفات", en: "Cleansers" }, isLeaf: true },
-    { id: 5, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true }
+    { id: 8, parentId: null, slug: "hair-care", name: { ar: "الشعر", en: "Hair Care" }, isLeaf: false },
+    { id: 59, parentId: 8, slug: "hair-tonic", name: { ar: "تونك الشعر", en: "Hair Tonic" }, isLeaf: false },
+    { id: 62, parentId: 59, slug: "curly-hair", name: { ar: "الشعر المجعد", en: "Curly Hair" }, isLeaf: true },
+    { id: 69, parentId: 8, slug: "conditioner", name: { ar: "بلسم", en: "Conditioner" }, isLeaf: false },
+    { id: 72, parentId: 69, slug: "curly-hair", name: { ar: "الشعر المجعد", en: "Curly Hair" }, isLeaf: true }
   ])),
   fetchProducts: vi.fn(async () => ([])),
+  getCategoryById: vi.fn((categories, id) => categories.find((category: any) => category.id === id)),
   getCategoryBySlug: vi.fn((categories, slug) => categories.find((category: any) => category.slug === slug)),
   getCategoryPath: vi.fn((categories, id) => {
     const byId = new Map(categories.map((category: any) => [category.id, category]));
@@ -56,18 +57,34 @@ vi.mock("@/lib/api/client", () => ({
       current = current.parentId != null ? byId.get(current.parentId) : undefined;
     }
     return path;
-  }),
-  getProductsByCategory: vi.fn(() => [])
+  })
 }));
 
 import CategoryPage from "@/app/[lang]/category/[slug]/page";
+import { fetchProducts } from "@/lib/api/client";
 
 describe("category page", () => {
-  it("passes the full active subtree into the product grid for deep category browsing", async () => {
-    render(await CategoryPage({ params: Promise.resolve({ lang: "en", slug: "skin-care" }) }));
+  it("resolves duplicate slugs by categoryId and keeps links scoped to that branch", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
+      searchParams: Promise.resolve({ categoryId: "62" })
+    }));
 
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:1,2,3,4");
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:1");
+    expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "62" });
+    expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:62");
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
     expect(screen.getByTestId("product-grid")).toHaveTextContent("locked:no");
+  });
+
+  it("falls back to slug lookup when categoryId is invalid", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
+      searchParams: Promise.resolve({ categoryId: "abc" })
+    }));
+
+    expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "abc" });
+    expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
   });
 });

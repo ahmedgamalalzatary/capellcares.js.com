@@ -4,7 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
 import { db } from "@capella/database/src/db";
-import { categories } from "@capella/database/drizzle/schema";
+import { categories, entityOrderings } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
@@ -274,13 +274,13 @@ test("admin category reorder persists root ordering by sort order", async () => 
 
   const reorderedRoots = await db
     .select({
-      id: categories.id,
-      sortOrder: categories.sortOrder
+      entityId: entityOrderings.entityId,
+      rank: entityOrderings.rank
     })
-    .from(categories)
-    .where(and(isNull(categories.parentId), isNull(categories.deletedAt)));
+    .from(entityOrderings)
+    .where(and(eq(entityOrderings.scopeType, "root"), isNull(entityOrderings.scopeId), eq(entityOrderings.entityType, "category")));
 
-  const rootSortOrderById = new Map(reorderedRoots.map((row) => [row.id, row.sortOrder]));
+  const rootSortOrderById = new Map(reorderedRoots.map((row) => [row.entityId, row.rank]));
   assert.equal(rootSortOrderById.get(hairCare.id), 1);
   assert.equal(rootSortOrderById.get(skinCare.id), 2);
   assert.equal(rootSortOrderById.get(ids.rootCategoryId), 3);
@@ -334,15 +334,85 @@ test("admin category reorder persists child ordering within the same parent", as
 
   const reorderedChildren = await db
     .select({
-      id: categories.id,
-      sortOrder: categories.sortOrder
+      entityId: entityOrderings.entityId,
+      rank: entityOrderings.rank
     })
-    .from(categories)
-    .where(eq(categories.parentId, parent.id));
+    .from(entityOrderings)
+    .where(and(eq(entityOrderings.scopeType, "category"), eq(entityOrderings.scopeId, parent.id), eq(entityOrderings.entityType, "category")));
 
-  const childSortOrderById = new Map(reorderedChildren.map((row) => [row.id, row.sortOrder]));
+  const childSortOrderById = new Map(reorderedChildren.map((row) => [row.entityId, row.rank]));
   assert.equal(childSortOrderById.get(secondChild.id), 1);
   assert.equal(childSortOrderById.get(firstChild.id), 2);
+});
+
+test("admin category list keeps ranked roots before newly created unranked roots", async () => {
+  const ids = await getBaselineIds();
+  const [rankedOne] = await db
+    .insert(categories)
+    .values({
+      slug: `ranked-one-${Date.now()}`,
+      arName: "مرتب أول",
+      enName: "Ranked One",
+      isLeaf: false
+    })
+    .$returningId();
+  const [rankedTwo] = await db
+    .insert(categories)
+    .values({
+      slug: `ranked-two-${Date.now()}`,
+      arName: "مرتب ثان",
+      enName: "Ranked Two",
+      isLeaf: false
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    const reorderResponse = await request("/api/erp/categories/reorder", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        parentId: null,
+        ids: [rankedTwo.id, rankedOne.id, ids.rootCategoryId]
+      })
+    });
+
+    assert.equal(reorderResponse.status, 200);
+  });
+
+  const [unranked] = await db
+    .insert(categories)
+    .values({
+      slug: `unranked-root-${Date.now()}`,
+      arName: "غير مرتب",
+      enName: "Unranked Root",
+      isLeaf: false
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 200);
+
+    const rootIds = response.json.items
+      .filter((item: { parentId: number | null }) => item.parentId === null)
+      .map((item: { id: number }) => item.id);
+
+    const rankedTwoIndex = rootIds.indexOf(rankedTwo.id);
+    const rankedOneIndex = rootIds.indexOf(rankedOne.id);
+    const unrankedIndex = rootIds.indexOf(unranked.id);
+
+    assert.notEqual(rankedTwoIndex, -1);
+    assert.notEqual(rankedOneIndex, -1);
+    assert.notEqual(unrankedIndex, -1);
+    assert.ok(rankedTwoIndex < rankedOneIndex, "rank 1 root should stay before rank 2 root");
+    assert.ok(unrankedIndex > rankedOneIndex, "unranked root should appear after ranked roots");
+  });
 });
 
 test("admin category reorder rejects duplicate ids", async () => {

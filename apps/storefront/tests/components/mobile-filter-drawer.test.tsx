@@ -85,4 +85,46 @@ describe("MobileFilterDrawer", () => {
 
     expect(document.body.style.overflow).toBe("");
   });
+
+  it("keeps mobile category branches grouped instead of flattening children across parents", () => {
+    const { container } = render(createElement(MobileFilterDrawer, {
+      open: true,
+      onClose: vi.fn(),
+      lang: "en",
+      dict: {
+        brand: "Capella",
+        nav: { search: "Search", allCategories: "All categories" },
+        filters: {
+          title: "Filters",
+          category: "Category",
+          price: "Price",
+          priceMin: "Min",
+          priceMax: "Max",
+          closeFilters: "Close filters",
+          showResults: "Show results",
+          toggleCategory: "Toggle category",
+          bytype: "By type",
+          to: "to"
+        },
+        common: { clear: "Clear" }
+      },
+      q: "",
+      setQ: vi.fn(),
+      category: undefined,
+      setCategory: vi.fn(),
+      priceRange: { min: "", max: "" },
+      setPriceRange: vi.fn(),
+      categoryTree: [{
+        category: categories[0],
+        children: [{ category: categories[1], children: [] }]
+      }],
+      categories,
+      openParents: { 1: true },
+      toggleParent: vi.fn(),
+      lockCategory: false,
+      onClear: vi.fn()
+    }));
+
+    expect(container.querySelector('div[style*="display: contents"]')).toBeNull();
+  });
 });
