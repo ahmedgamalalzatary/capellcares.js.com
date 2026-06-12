@@ -1,6 +1,6 @@
 export const en = {
-  brand: "Capella Care",
-  tagline: "Honest care, head to toe.",
+  brand: "Horus Silver",
+  tagline: "Wear the gold of the watchful eye.",
   nav: {
     products: "Shop",
     allProducts: "Products",
@@ -18,12 +18,12 @@ export const en = {
     search: "Search products",
     categories: "Categories",
     allCategories: "All categories",
-    announcement: "Free Cairo delivery on orders over EGP 600 · Cash on delivery",
+    announcement: "Free shipping on orders over EGP 2,000 · Sterling 925 · Hallmarked",
     announcements: [
-      "Free Cairo delivery on orders over EGP 600",
-      "Cash on delivery available nationwide",
-      "New season essentials just landed",
-      "Honest, dermatologist-loved formulas"
+      "Free shipping on orders over EGP 2,000",
+      "Sterling 925 · Hallmarked silver",
+      "Handcrafted in Cairo · Numbered editions",
+      "30-day returns · Lifetime polish & care"
     ],
     pause: "Pause announcements",
     play: "Play announcements",
@@ -62,7 +62,7 @@ export const en = {
     results: "{n} results",
     placeOrder: "Place order",
     orderPlaced: "Order placed",
-    orderPlacedDesc: "We sent a confirmation to your phone. Thanks for shopping with Capella.",
+    orderPlacedDesc: "We sent a confirmation to your phone. Thank you for shopping with Horus Silver.",
     edit: "Edit",
     delete: "Delete",
     cancel: "Cancel",
@@ -133,10 +133,10 @@ export const en = {
     startShopping: "Start shopping and your orders will appear here."
   },
   advices: {
-    title: "Capella Advices",
-    description: "Helpful guidance, shopping tips, and routine ideas from Capella.",
-    eyebrow: "Capella Journal",
-    tipBadge: "Tip",
+    title: "The Atelier Journal",
+    description: "Care notes, styling ideas, and the craft behind each Horus Silver piece.",
+    eyebrow: "Horus Journal",
+    tipBadge: "Note",
     readMore: "Read more →"
   },
   checkout: {
@@ -166,7 +166,7 @@ export const en = {
     includes: "Includes",
     addBundleToCart: "Add bundle to cart",
     listEmpty: "No offers available right now.",
-    bundleEyebrow: "Capella bundle",
+    bundleEyebrow: "Horus bundle",
     added: "Added ✓",
     unavailable: "One of the products in this bundle is currently unavailable.",
     related: "You may also like"
@@ -181,7 +181,7 @@ export const en = {
     addCollectionToCart: "Add collection to cart",
     added: "Added ✓",
     unavailable: "One of the products in this collection is currently unavailable.",
-    collectionEyebrow: "Capella collection"
+    collectionEyebrow: "Horus collection"
   },
   auth: {
     loginTitle: "Welcome back",
@@ -191,7 +191,7 @@ export const en = {
     name: "Full name",
     email: "Email",
     password: "Password",
-    noAccount: "New to Capella?",
+    noAccount: "New to Horus Silver?",
     haveAccount: "Already have an account?",
     signupHere: "Sign up",
     loginHere: "Log in"
@@ -199,7 +199,7 @@ export const en = {
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
   badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
   ask: {
-    button: "Ask Capella",
+    button: "Ask Horus",
     placeholder: "What are you looking for?",
     sections: {
       products: "Products",
@@ -209,28 +209,48 @@ export const en = {
     },
     empty: "No results for \"{q}\"",
     browseAll: "Browse all products →",
-    welcome: "Hi there, I'm Capella. I'm here to help you find the right product for your problem; for example, write: \"Hair loss treatment\".",
-    assistant: "Your smart assistant",
+    welcome: "Welcome — I'm Horus. Tell me what you're after and I'll find the piece; for example, write: \"signet ring\".",
+    assistant: "Your atelier guide",
     typeMessage: "Type a message…",
     noResults: "I couldn't find anything for \"{query}\" 😔",
-    found: "Here's what I found for you 🌿"
+    found: "Here's what I found for you 𓂀"
   },
   shop: {
-    eyebrow: "The Capella Shop",
-    heading: "Everything you need, in one place.",
-    description: "Curated offers, new arrivals, bestsellers, and care advice — all from Capella.",
-    bundlesEyebrow: "Capella bundles",
+    eyebrow: "The Horus Silver Atelier",
+    heading: "Sterling silver, finished in gold.",
+    description: "Numbered drops, new arrivals, bestsellers, and atelier notes — all from Horus Silver.",
+    bundlesEyebrow: "Horus bundles",
     viewAllOffers: "View all →",
-    collectionsEyebrow: "Capella collections",
+    collectionsEyebrow: "Horus collections",
     viewAllCollections: "View all →",
     newAndBestsellers: "New & Bestsellers",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"
   },
+  home: {
+    heroEyebrow: "Sterling Silver · Gilded in Cairo",
+    heroTitleBefore: "Wear the ",
+    heroTitleEm: "gold",
+    heroTitleAfter: " of the watchful eye.",
+    heroLede: "Hand-struck sterling jewelry finished in warm gilt, drawn from the geometry of the Eye of Horus. Numbered runs, never restocked.",
+    heroCtaShop: "Shop the collection",
+    heroCtaNew: "New arrivals",
+    trust: {
+      "925 Sterling": "Hallmarked silver",
+      "Gilt Finish": "Warm 18k plating",
+      "Free Shipping": "Orders over 2,000",
+      "Lifetime Care": "Polish & repair"
+    },
+    bannerIdx: "The Atelier",
+    bannerTitleBefore: "Struck in silver, ",
+    bannerTitleEm: "finished in gold.",
+    bannerText: "Every Horus piece begins as raw sterling, then takes a warm gilt bath by hand — numbered editions, sealed under the eye.",
+    bannerCta: "Our story"
+  },
   footer: {
-    luxuryTagline: "Luxury Care — Est. Egypt",
-    ourPhilosophy: "Our Philosophy",
-    philosophy: "Every drop tells nature's story. Every ritual begins with an honest moment with yourself.",
+    luxuryTagline: "Hallmarked Silver — Gilded in Cairo",
+    ourPhilosophy: "The Atelier",
+    philosophy: "Every Horus piece begins as raw sterling, then takes a warm gilt bath by hand — numbered editions, sealed under the eye.",
     reachUs: "Reach Us",
     shopTitle: "Shop",
     bodyCare: "Body Care",
@@ -238,7 +258,7 @@ export const en = {
     hairCare: "Hair Care",
     fragrances: "Fragrances",
     organicOils: "Organic Oils",
-    capellaTitle: "Capella",
+    capellaTitle: "Horus Silver",
     ourStory: "Our Story",
     branches: "Branches",
     contact: "Contact",
@@ -250,8 +270,8 @@ export const en = {
     madeIn: "Made in Egypt",
     secureCheckout: "Secure Checkout",
     creator: "bit Tech",
-    newsletterTitle: "Join us on a journey to radiant, natural beauty.",
-    newsletterSubtitle: "Subscribe now to receive the latest products and exclusive offers.",
+    newsletterTitle: "Join the inner circle.",
+    newsletterSubtitle: "Early access to numbered drops, atelier notes, and members-only pieces. No noise — just gold.",
     emailPlaceholder: "Email Address",
     subscribe: "Subscribe",
     privacyNote: "By signing up, you agree to our Privacy Policy.",

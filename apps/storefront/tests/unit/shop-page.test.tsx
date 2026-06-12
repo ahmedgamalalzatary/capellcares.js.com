@@ -23,6 +23,24 @@ vi.mock("@capella/shared", async () => {
         collectionsEyebrow: "Collections",
         viewAllCollections: "All collections"
       },
+      home: {
+        heroEyebrow: "Sterling Silver",
+        heroTitleBefore: "Wear the ",
+        heroTitleEm: "gold",
+        heroTitleAfter: " of the eye.",
+        heroLede: "Lede",
+        heroCtaShop: "Shop the collection",
+        heroCtaNew: "New arrivals",
+        trust: {
+          "925 Sterling": "Hallmarked silver",
+          "Gilt Finish": "Warm 18k plating"
+        },
+        bannerIdx: "The Atelier",
+        bannerTitleBefore: "Struck in silver, ",
+        bannerTitleEm: "finished in gold.",
+        bannerText: "Banner text",
+        bannerCta: "Our story"
+      },
       common: { save: "Save" },
       offers: { title: "Offers", badge: "Offer", save: "Save {amount}" },
       collections: { title: "Collections", badge: "Collection" }

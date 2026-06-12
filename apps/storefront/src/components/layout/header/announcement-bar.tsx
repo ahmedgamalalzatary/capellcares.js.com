@@ -34,7 +34,7 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
   const advance = () => setIndex((i) => (i + 1) % slides.length);
 
   return (
-    <div className="mt-4 flex items-center gap-2 rounded-lg bg-canvas px-3 py-1.5 sm:px-4 sm:py-2">
+    <div className="mt-4 flex items-center gap-2 rounded-lg bg-canvas px-3 py-1.5 sm:px-4 sm:py-2 border">
       {/* Fixed-height clip box; the text is absolutely positioned so its
           (whitespace-nowrap) width can never widen the header on small screens. */}
       <div className="relative h-4 min-w-0 flex-1 overflow-hidden sm:h-5">

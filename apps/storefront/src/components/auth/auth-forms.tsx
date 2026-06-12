@@ -48,7 +48,7 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
 
   return (
     <div className="mx-auto my-16 max-w-120 rounded-lg border border-(--hairline) bg-surface p-10 shadow-(--shadow-1) max-[640px]:my-10 max-[640px]:p-6">
-      <span className="eyebrow text-accent!">{lang === "ar" ? "كابيلا كير" : "Capella Care"}</span>
+      <span className="eyebrow text-accent!">{lang === "ar" ? "حورس للفضة" : "Horus Silver"}</span>
       <h1 className={`mt-3 m-0 leading-[1.1] ${lang === "ar"
         ? "text-3xl font-bold font-(family-name:--font-ar) text-ink"
         : "text-[34px] italic font-(--font-display) text-ink"}`}>
@@ -57,11 +57,11 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       <p className="mt-3 text-sm leading-[1.7] text-(--ink-2)">
         {mode === "login"
           ? lang === "ar"
-            ? "أهلاً بعودتك. سجّلي الدخول لمتابعة رحلتك مع كابيلا."
+            ? "أهلاً بعودتك. سجّل الدخول لمتابعة رحلتك مع حورس للفضة."
             : "Welcome back. Sign in to pick up where you left off."
           : lang === "ar"
-            ? "خطوة واحدة ويبدأ روتينك مع كابيلا."
-            : "One quick step before your Capella routine begins."}
+            ? "خطوة واحدة ويبدأ روتينك مع حورس للفضة."
+            : "One quick step before your Horus Silver journey begins."}
       </p>
 
       <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>

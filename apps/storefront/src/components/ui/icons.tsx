@@ -133,10 +133,21 @@ export const Icon = {
       <path d="M16.32 8.79 5.19 2.25c-.66-.37-1.24-.32-1.59.05L13.1 12l3.22-3.21z" fill="#00F076" />
     </svg>
   ),
+  /* Eye of Horus — the house mark. Fills with currentColor. */
+  Eye: ({ size = 46, className, style }: IconProps) => (
+    <svg width={size} height={(size * 60) / 100} viewBox="0 0 100 60" fill="currentColor" className={className} style={style} xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M4 30 C20 14 40 10 60 12 C75 13 88 18 96 26 C88 22 74 21 62 23 C44 26 28 33 14 40 C20 33 30 27 42 24 C30 24 16 28 4 30 Z" />
+      <ellipse cx="48" cy="26" rx="9" ry="8" />
+      <path d="M40 36 C40 44 46 48 52 47 L52 43 C48 43 44 41 44 36 Z" />
+      <path d="M58 34 C70 34 80 40 84 50 C88 46 90 40 86 36 C80 30 68 30 58 34 Z" />
+    </svg>
+  ),
   Logo: ({ size = 28, className, style }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 40 40" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="18" fill="#a13b4b" />
-      <text x="20" y="26" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="22" fill="#faf6f1" fontStyle="italic">c</text>
+    <svg width={size} height={size} viewBox="0 0 100 60" className={className} style={style} fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M4 30 C20 14 40 10 60 12 C75 13 88 18 96 26 C88 22 74 21 62 23 C44 26 28 33 14 40 C20 33 30 27 42 24 C30 24 16 28 4 30 Z" />
+      <ellipse cx="48" cy="26" rx="9" ry="8" />
+      <path d="M40 36 C40 44 46 48 52 47 L52 43 C48 43 44 41 44 36 Z" />
+      <path d="M58 34 C70 34 80 40 84 50 C88 46 90 40 86 36 C80 30 68 30 58 34 Z" />
     </svg>
   )
 };

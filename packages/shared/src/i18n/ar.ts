@@ -1,6 +1,6 @@
 export const ar = {
-  brand: "كابيلا كير",
-  tagline: "عنايةٌ صادقة، من الرأس حتى القدم.",
+  brand: "حورس للفضة",
+  tagline: "ارتدِ ذهب العين الحارسة.",
   nav: {
     products: "المتجر",
     allProducts: "المنتجات",
@@ -18,12 +18,12 @@ export const ar = {
     search: "ابحث عن منتج",
     categories: "الأقسام",
     allCategories: "كل الأقسام",
-    announcement: "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه · ادفع عند الاستلام",
+    announcement: "شحن مجاني للطلبات فوق ٢٠٠٠ جنيه · فضة عيار ٩٢٥ · مدموغة",
     announcements: [
-      "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه",
-      "الدفع عند الاستلام متاح في كل المحافظات",
-      "وصل حديثًا: أساسيات الموسم الجديد",
-      "تركيبات صادقة يوصي بها أطباء الجلدية"
+      "شحن مجاني للطلبات فوق ٢٠٠٠ جنيه",
+      "فضة إسترليني عيار ٩٢٥ · مدموغة",
+      "صناعة يدوية في القاهرة · إصدارات مرقّمة",
+      "إرجاع خلال ٣٠ يومًا · تلميع وعناية مدى الحياة"
     ],
     pause: "إيقاف الإعلانات",
     play: "تشغيل الإعلانات",
@@ -62,7 +62,7 @@ export const ar = {
     results: "{n} نتيجة",
     placeOrder: "تأكيد الطلب",
     orderPlaced: "تم استلام طلبك",
-    orderPlacedDesc: "أرسلنا تأكيدًا على هاتفك. شكرًا لتسوقك مع كابيلا.",
+    orderPlacedDesc: "أرسلنا تأكيدًا على هاتفك. شكرًا لتسوقك مع حورس للفضة.",
     edit: "تعديل",
     delete: "حذف",
     cancel: "إلغاء",
@@ -133,11 +133,11 @@ export const ar = {
     startShopping: "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات."
   },
   advices: {
-    title: "نصائح كابيلا",
-    description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا.",
-    eyebrow: "نصائح كابيلا",
-    tipBadge: "نصيحة",
-    readMore: "اقرئي المزيد ←"
+    title: "مدوّنة الورشة",
+    description: "نصائح للعناية وأفكار للتنسيق وحكاية الحرفة خلف كل قطعة من حورس للفضة.",
+    eyebrow: "مدوّنة حورس",
+    tipBadge: "ملاحظة",
+    readMore: "اقرأ المزيد ←"
   },
   checkout: {
     title: "إتمام الطلب",
@@ -166,7 +166,7 @@ export const ar = {
     includes: "تتضمن",
     addBundleToCart: "أضف الباقة إلى السلة",
     listEmpty: "لا توجد عروض حاليًا.",
-    bundleEyebrow: "باقة كابيلا",
+    bundleEyebrow: "باقة حورس",
     added: "أُضيف ✓",
     unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا.",
     related: "قد يعجبك أيضًا"
@@ -181,7 +181,7 @@ export const ar = {
     addCollectionToCart: "أضف المجموعة إلى السلة",
     added: "أُضيف ✓",
     unavailable: "أحد المنتجات داخل هذه المجموعة غير متوفر حاليًا.",
-    collectionEyebrow: "مجموعة كابيلا"
+    collectionEyebrow: "مجموعة حورس"
   },
   auth: {
     loginTitle: "أهلًا بعودتك",
@@ -191,7 +191,7 @@ export const ar = {
     name: "الاسم الكامل",
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
-    noAccount: "جديد على كابيلا؟",
+    noAccount: "جديد على حورس للفضة؟",
     haveAccount: "لديك حساب بالفعل؟",
     signupHere: "إنشاء حساب",
     loginHere: "تسجيل الدخول"
@@ -199,8 +199,8 @@ export const ar = {
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
   badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
   ask: {
-    button: "اسألي كابيلا",
-    placeholder: "عن ماذا تبحثين؟",
+    button: "اسأل حورس",
+    placeholder: "عن ماذا تبحث؟",
     sections: {
       products: "المنتجات",
       categories: "الأقسام",
@@ -209,28 +209,48 @@ export const ar = {
     },
     empty: "لا نتائج لـ \"{q}\"",
     browseAll: "تصفح كل المنتجات ←",
-    welcome: " اهلا انا كابيلا انا هنا لمساعدتك لايجاد المنتج المناسب لمشكلتك كمثال اكتبى علاج تساقط الشعر",
-    assistant: "مساعدك الذكي",
-    typeMessage: "اكتبي رسالتك…",
+    welcome: "أهلًا، أنا حورس. أخبرني بما تبحث عنه وسأجد لك القطعة المناسبة؛ مثال: اكتب \"خاتم منقوش\".",
+    assistant: "دليلك في الورشة",
+    typeMessage: "اكتب رسالتك…",
     noResults: "لم أجد نتائج لـ \"{query}\" 😔",
-    found: "وجدت هذا لكِ 🌿"
+    found: "وجدت هذا لك 𓂀"
   },
   shop: {
-    eyebrow: "متجر كابيلا",
-    heading: "كل ما تحتاجينه، في مكان واحد.",
-    description: "عروض مختارة، منتجات جديدة وأكثر مبيعًا، ونصائح عناية من كابيلا.",
-    bundlesEyebrow: "باقات كابيلا",
+    eyebrow: "ورشة حورس للفضة",
+    heading: "فضة إسترليني، بلمسة من الذهب.",
+    description: "إصدارات مرقّمة، وصل حديثًا، الأكثر مبيعًا، وملاحظات الورشة — من حورس للفضة.",
+    bundlesEyebrow: "باقات حورس",
     viewAllOffers: "كل العروض ←",
-    collectionsEyebrow: "مجموعات كابيلا",
+    collectionsEyebrow: "مجموعات حورس",
     viewAllCollections: "كل المجموعات ←",
     newAndBestsellers: "الأحدث والأكثر مبيعًا",
     featuredHeading: "منتجات مميزة",
     viewAllProducts: "كل المنتجات ←"
   },
+  home: {
+    heroEyebrow: "فضة إسترليني · مُذهّبة في القاهرة",
+    heroTitleBefore: "ارتدِ ",
+    heroTitleEm: "ذهب",
+    heroTitleAfter: " العين الحارسة.",
+    heroLede: "مجوهرات فضية مطروقة يدويًا بلمسة ذهبية دافئة، مستوحاة من هندسة عين حورس. إصدارات مرقّمة لا تُعاد.",
+    heroCtaShop: "تسوّق المجموعة",
+    heroCtaNew: "وصل حديثًا",
+    trust: {
+      "فضة ٩٢٥": "فضة مدموغة",
+      "تشطيب ذهبي": "طلاء ذهب دافئ",
+      "شحن مجاني": "للطلبات فوق ٢٠٠٠",
+      "عناية مدى الحياة": "تلميع وإصلاح"
+    },
+    bannerIdx: "الورشة",
+    bannerTitleBefore: "تُطرَق فضةً، ",
+    bannerTitleEm: "وتُختَم ذهبًا.",
+    bannerText: "كل قطعة من حورس تبدأ كفضة خام، ثم تأخذ حمّامًا ذهبيًا دافئًا يدويًا — إصدارات مرقّمة، مختومة تحت العين.",
+    bannerCta: "قصّتنا"
+  },
   footer: {
-    luxuryTagline: "عناية فاخرة — صُنع في مصر",
-    ourPhilosophy: "فلسفتنا",
-    philosophy: "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ.",
+    luxuryTagline: "فضة مدموغة — مُذهّبة في القاهرة",
+    ourPhilosophy: "الورشة",
+    philosophy: "كل قطعة من حورس تبدأ كفضة خام، ثم تأخذ حمّامًا ذهبيًا دافئًا يدويًا — إصدارات مرقّمة، مختومة تحت العين.",
     reachUs: "تواصلي معنا",
     shopTitle: "تسوّقي",
     bodyCare: "العناية بالجسم",
@@ -238,7 +258,7 @@ export const ar = {
     hairCare: "العناية بالشعر",
     fragrances: "العطور",
     organicOils: "الزيوت العضوية",
-    capellaTitle: "كابيلا",
+    capellaTitle: "حورس للفضة",
     ourStory: "قصّتنا",
     branches: "الفروع",
     contact: "تواصلي معنا",
@@ -250,8 +270,8 @@ export const ar = {
     madeIn: "صُنع في مصر",
     secureCheckout: "شحن آمن",
     creator: "بت تيك",
-    newsletterTitle: "انضمي إلينا في رحلة نحو جمال طبيعي مشرق.",
-    newsletterSubtitle: "اشتركي الآن لتصلك أحدث المنتجات والعروض الحصرية.",
+    newsletterTitle: "انضم إلى الدائرة الخاصة.",
+    newsletterSubtitle: "وصول مبكر للإصدارات المرقّمة، وملاحظات الورشة، وقطع حصرية للأعضاء. بلا ضجيج — ذهب فقط.",
     emailPlaceholder: "البريد الإلكتروني",
     subscribe: "اشتراك",
     privacyNote: "بالاشتراك، أنتِ توافقين على سياسة الخصوصية.",

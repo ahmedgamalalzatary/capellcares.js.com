@@ -172,7 +172,7 @@ export function HeaderMobileDrawer({
           aria-modal="true"
           aria-label="Navigation"
           style={{ maxHeight: maxH ? `${maxH}px` : "calc(100dvh - 2rem)" }}
-          className={`pointer-events-auto flex flex-col overflow-y-auto bg-[#f1f0ed] transition-transform duration-300 ease-out ${
+          className={`pointer-events-auto flex flex-col overflow-y-auto border-x border-b border-(--gold-line) bg-canvas transition-transform duration-300 ease-out ${
             mobileOpen ? "translate-y-0" : "-translate-y-full"
           }`}
         >

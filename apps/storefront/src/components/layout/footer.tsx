@@ -60,8 +60,9 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             transition: "transform 700ms var(--ease-out-expo)"
           }}
         >
-          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full select-none text-center">
-            capella care
+          <Icon.Eye size={84} className="mx-auto mb-4 text-(--gold-deep)" />
+          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark gilt-text block w-full select-none text-center">
+            HORUS SILVER
           </span>
         </div>
       </div>

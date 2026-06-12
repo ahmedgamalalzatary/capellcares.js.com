@@ -2,7 +2,7 @@ import type { Metadata, MetadataRoute } from "next";
 import { defaultLanguage, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
 
 const FALLBACK_SITE_URL = "https://capellacares.com";
-const BRAND_NAME = "Capella Care";
+const BRAND_NAME = "Horus Silver";
 
 function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim() || FALLBACK_SITE_URL;
@@ -47,31 +47,31 @@ export function buildRootMetadata(): Metadata {
     metadataBase: getMetadataBase(),
     applicationName: BRAND_NAME,
     title: {
-      default: `${BRAND_NAME} | Egyptian beauty and self-care`,
+      default: `${BRAND_NAME} | Sterling silver, gilded in Cairo`,
       template: `%s | ${BRAND_NAME}`
     },
-    description: "Bilingual Egyptian beauty storefront for skincare, body care, hair care, makeup, fragrances, and curated bundles.",
+    description: "Bilingual Egyptian silver jewelry storefront — hallmarked sterling 925 pieces finished in warm gilt, in numbered editions.",
     openGraph: {
       type: "website",
       siteName: BRAND_NAME,
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers.",
+      title: `${BRAND_NAME} | Sterling silver, gilded in Cairo`,
+      description: "Shop hand-struck sterling 925 jewelry finished in gold — rings, pendants, cuffs, and chains in numbered editions.",
       url: absoluteUrl("/")
     },
     twitter: {
       card: "summary_large_image",
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers."
+      title: `${BRAND_NAME} | Sterling silver, gilded in Cairo`,
+      description: "Shop hand-struck sterling 925 jewelry finished in gold — rings, pendants, cuffs, and chains in numbered editions."
     }
   };
 }
 
 export function buildLocaleMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "كابيلا كير | منتجات العناية والجمال" : `${BRAND_NAME} | Beauty and self-care products`;
+  const title = isAr ? "حورس للفضة | منتجات العناية والجمال" : `${BRAND_NAME} | Beauty and self-care products`;
   const description = isAr
-    ? "متجر كابيلا كير للعناية بالبشرة والجسم والشعر والمكياج والعطور، مع صفحات عربية وإنجليزية قابلة للفهرسة."
-    : "Capella Care storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
+    ? "متجر حورس للفضة للعناية بالبشرة والجسم والشعر والمكياج والعطور، مع صفحات عربية وإنجليزية قابلة للفهرسة."
+    : "Horus Silver storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
 
   return {
     title,
@@ -96,8 +96,8 @@ export function buildProductsMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   const title = isAr ? "تسوقي منتجات العناية والجمال" : "Shop beauty and self-care products";
   const description = isAr
-    ? "اكتشفي منتجات العناية بالبشرة والجسم والشعر والمكياج من كابيلا كير مع تصفح عربي وإنجليزي منظم."
-    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Capella Care.";
+    ? "اكتشفي منتجات العناية بالبشرة والجسم والشعر والمكياج من حورس للفضة مع تصفح عربي وإنجليزي منظم."
+    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Horus Silver.";
 
   return {
     title,
@@ -121,10 +121,10 @@ export function buildCategoryMetadata(lang: Language, category: Category, path: 
   const trail = path.map((item) => pickLang(item.name, lang)).join(" / ");
   const description = trimText(
     lang === "ar"
-      ? `تسوقي ${label} من كابيلا كير. تصفحي منتجات ${trail || label} مع صفحات فئات واضحة وسهلة الفهرسة.`
-      : `Shop ${label} at Capella Care. Browse ${trail || label} products on a category page built for clear search discovery.`
+      ? `تسوقي ${label} من حورس للفضة. تصفحي منتجات ${trail || label} مع صفحات فئات واضحة وسهلة الفهرسة.`
+      : `Shop ${label} at Horus Silver. Browse ${trail || label} products on a category page built for clear search discovery.`
   );
-  const title = lang === "ar" ? `${label} | منتجات كابيلا كير` : `${label} | ${count} products`;
+  const title = lang === "ar" ? `${label} | منتجات حورس للفضة` : `${label} | ${count} products`;
 
   return {
     title,
@@ -175,10 +175,10 @@ export function buildProductMetadata(lang: Language, product: Product, category?
 
 export function buildShopMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "متجر كابيلا | العروض والمنتجات المميزة" : "Capella Shop | Offers & featured products";
+  const title = isAr ? "متجر حورس | العروض والقطع المميزة" : "Horus Silver Shop | Offers & featured pieces";
   const description = isAr
-    ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
-    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Care.";
+    ? "اكتشف أحدث العروض والقطع الجديدة والأكثر مبيعًا من حورس للفضة، مع ملاحظات الورشة."
+    : "Discover active offers, new arrivals, bestsellers, and atelier notes from Horus Silver.";
 
   return {
     title,
@@ -198,10 +198,10 @@ export function buildShopMetadata(lang: Language): Metadata {
 }
 
 export function buildOffersMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Care offers and bundles";
+  const title = lang === "ar" ? "عروض وباقات حورس للفضة" : "Horus Silver offers and bundles";
   const description = lang === "ar"
-    ? "اكتشفي باقات كابيلا كير المختارة بعناية لتسوق أوفر وروتين متكامل."
-    : "Discover curated Capella Care bundles for better-value routines and gifting.";
+    ? "اكتشفي باقات حورس للفضة المختارة بعناية لتسوق أوفر وروتين متكامل."
+    : "Discover curated Horus Silver bundles for better-value routines and gifting.";
 
   return {
     title,
@@ -221,10 +221,10 @@ export function buildOffersMetadata(lang: Language): Metadata {
 }
 
 export function buildCollectionsMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "مجموعات كابيلا كير" : "Capella Care collections";
+  const title = lang === "ar" ? "مجموعات حورس للفضة" : "Horus Silver collections";
   const description = lang === "ar"
-    ? "اكتشفي مجموعات كابيلا كير المجمعة حسب القسم لروتين متكامل وسعر أوفر."
-    : "Discover Capella Care collections grouped by category for complete routines at a better price.";
+    ? "اكتشفي مجموعات حورس للفضة المجمعة حسب القسم لروتين متكامل وسعر أوفر."
+    : "Discover Horus Silver collections grouped by category for complete routines at a better price.";
 
   return {
     title,

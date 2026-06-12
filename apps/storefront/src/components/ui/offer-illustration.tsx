@@ -46,8 +46,8 @@ export function OfferIllustration({ offer, className }: Props) {
         <rect width="40" height="100" rx="8" fill="#fff" stroke={p.ink} strokeWidth="1" />
         <rect x="10" y="-12" width="20" height="14" rx="3" fill={p.ink} />
       </g>
-      <text x="160" y="190" textAnchor="middle" fill={p.ink} fontFamily="Cormorant Garamond, serif" fontSize="14" fontStyle="italic">
-        Capella
+      <text x="160" y="190" textAnchor="middle" fill={p.ink} fontFamily="Fraunces, serif" fontSize="13" letterSpacing="1" fontStyle="italic">
+        HORUS
       </text>
     </svg>
   );

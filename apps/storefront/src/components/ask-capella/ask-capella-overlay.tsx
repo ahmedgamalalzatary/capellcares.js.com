@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Image from "next/image";
+import { Icon } from "@/components/ui/icons";
 import { AskCapellaReplyContent } from "./ask-capella-results";
 import { useAskCapella } from "../../hooks/use-ask-capella";
 import type { AskCapellaOverlayProps } from "../../types/ask-capella.types";
@@ -27,8 +27,8 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
       >
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
-          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
-            <Image src="/capella logo2.png" alt="Capella" fill sizes="32px" className="object-cover" />
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-(--gold-tint) text-(--gold-deep)">
+            <Icon.Eye size={22} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[#67645f]">
@@ -139,8 +139,8 @@ function UserBubble({ text }: { text: string }) {
 function CapellaBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
-        <Image src="/capella logo2.png" alt="" fill sizes="28px" className="object-cover" />
+      <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-(--gold-tint) text-(--gold-deep)">
+        <Icon.Eye size={18} />
       </div>
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">
         {children}

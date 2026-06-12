@@ -41,7 +41,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow text-accent!">{lang === "ar" ? "باقات كابيلا" : "Capella bundles"}</span>
+        <span className="eyebrow text-accent!">{lang === "ar" ? "باقات حورس" : "Horus bundles"}</span>
         <h1>{dict.offers.title}</h1>
         <p className="max-w-[62ch] text-(--ink-2)">
           {lang === "ar"
@@ -61,11 +61,11 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
               <Link
                 key={offer.id}
                 href={`/${lang}/offers/${offer.slug}`}
-                className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
+                className="group promo-card"
               >
-                <div className="relative aspect-16/10 bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
+                <div className="promo-card__media aspect-16/10">
                   <OfferIllustration offer={offer} className="h-full w-full" />
-                  <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4">
+                  <span className="promo-badge absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) px-3 py-1.5 text-xs tracking-[0.16em] uppercase inset-s-4">
                     ★ {dict.offers.badge}
                   </span>
                 </div>

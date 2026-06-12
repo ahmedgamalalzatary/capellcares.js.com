@@ -5,36 +5,48 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Care — Parchment palette, OKLCH everywhere.
-   Canvas #f1f0ed · Ink black · Surface white
-   All tones are degrees between these three anchors.
+   Horus Silver — Gilded champagne palette.
+   Canvas champagne · warm near-black ink · gilt gold accents.
+   Semantic tokens map onto a gold-forward light theme; recoloring
+   here cascades the whole storefront (every component reads these).
    ============================================================ */
 :root {
-  /* Source palette: #f1f0ed (canvas) · black (ink) · white (surface) */
-  --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
-  --ink-2:        oklch(0.28 0.012 85);      /* body copy */
-  --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
-  --accent:       oklch(0.32 0.018 85);      /* dark interactive — buttons, links */
-  --accent-deep:  oklch(0.18 0.012 85);      /* pressed state */
-  --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
-  --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
-  --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
-  --canvas:       oklch(0.955 0.004 90);     /* #f1f0ed — primary background */
-  --surface:      oklch(1 0 0);              /* white — card background */
-  --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
-  --text:         oklch(0.12 0.010 85);      /* body copy */
-  --hairline:     oklch(0.78 0.028 90);      /* border */
-  --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
+  /* Source palette: #fbf3dc (canvas champagne) · #1a1505 (warm ink) · gilt golds */
+  --ink:          #1a1505;   /* warm near-black — headings, strong text */
+  --ink-2:        #4a3d18;   /* body copy */
+  --ink-3:        #6e5a26;   /* meta / secondary labels */
+  --accent:       #9c7611;   /* deep gold — interactive, links, prices */
+  --accent-deep:  #7a5c0d;   /* pressed / hover-deep gold */
+  --accent-soft:  #f1dba0;   /* soft gold hover tint */
+  --warm:         #d8b545;   /* gold line / mid metallic */
+  --warm-soft:    #f7e7b6;   /* gold tint — chip & soft surfaces */
+  --canvas:       #fbf3dc;   /* champagne — primary background */
+  --canvas-2:     #f6e9c4;   /* deeper champagne */
+  --surface:      #fffdf6;   /* warm near-white — card background */
+  --surface-2:    #fffaf0;   /* nested card / inset */
+  --text:         #1a1505;   /* body copy */
+  --hairline:     #e3cd8e;   /* gold hairline border */
+  --hairline-strong: #d8b545;/* strong gold border */
   --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
   --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
-  --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
+  --footer-bg:    #f6e9c4;   /* deeper champagne — footer ground */
+
+  /* Gold system (metallic accents & ornaments). */
+  --gold:         #c79a23;   /* core gold */
+  --gold-deep:    #9c7611;   /* deep gold (text/accents) */
+  --gold-bright:  #e9c24a;   /* highlight gold */
+  --gold-soft:    #f1dba0;
+  --gold-tint:    #f7e7b6;
+  --gold-line:    #d8b545;
+  /* metallic gilt gradient used on buttons, banners, wordmark */
+  --gilt: linear-gradient(135deg, #b8841a 0%, #e9c24a 25%, #f6e08a 45%, #c79a23 65%, #e9c24a 85%, #9c7611 100%);
+  --shadow-gold: 0 16px 40px -16px rgba(160,120,10,.45);
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
   --bg-elev:      var(--surface);
   --bg-tint:      var(--warm-soft);
   --accent-2:     var(--success);
-  --gold:         var(--warm);
   --danger:       var(--error);
 
   --radius-sm: 6px;
@@ -46,10 +58,10 @@
   --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
   --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
 
-  --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans: "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
+  --font-display:   "Fraunces", "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-rounded:   "Lobster", "Pacifico", "Brush Script MT", cursive;
+  --font-rounded:   "Fraunces", "Cormorant Garamond", serif;
 
   --container: 1600px;
 
@@ -97,6 +109,9 @@ html { scroll-behavior: smooth; }
 body {
   color: var(--text);
   font-family: var(--font-sans);
+  background:
+    radial-gradient(120% 80% at 50% -20%, var(--canvas) 0%, var(--canvas-2) 70%),
+    var(--canvas);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 15px;
@@ -104,7 +119,19 @@ body {
 }
 .shell[lang="ar"] { font-family: var(--font-ar); }
 
-::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
+::selection { background: var(--gold); color: #fff; }
+
+/* Gilded text — metallic gradient clipped to glyphs. */
+.gilt-text {
+  background: var(--gilt);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+@keyframes gilt-shimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Gold divider ornament — used between sections. */
+.ornament { display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--gold-deep); margin: 0 auto; }
+.ornament::before, .ornament::after { content: ""; height: 1px; width: 80px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.ornament::after { background: linear-gradient(90deg, var(--gold), transparent); }
 
 /* Element resets live in @layer base so Tailwind utilities (e.g. hover:underline)
    can override them — unlayered rules otherwise win over layered utilities in v4. */
@@ -130,13 +157,12 @@ body {
 
 /* Oversized cursive footer wordmark (Lobster). */
 .brand-wordmark {
-  font-family: var(--font-rounded);
-  font-weight: 400;
-  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.32em;
   line-height: 0.9;
-  text-transform: lowercase;
-  color: #6e390b;
-  font-size: clamp(3.5rem, 17vw, 15rem);
+  text-transform: uppercase;
+  font-size: clamp(3rem, 14vw, 12rem);
 }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
@@ -148,38 +174,43 @@ body {
    ============================================================ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 44px; padding: 0 22px; border-radius: var(--radius);
-  border: 1px solid transparent; background: var(--ink); color: var(--canvas);
-  font-weight: 600; letter-spacing: 0.01em;
+  height: 44px; padding: 0 22px; border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  background: var(--gilt); background-size: 200% 200%; color: var(--ink);
+  box-shadow: var(--shadow-gold);
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 13px;
+  animation: gilt-shimmer 6s ease infinite;
   transition: transform var(--motion-fast) var(--ease-out-quart),
-              background var(--motion-fast) var(--ease-out-quart),
+              filter var(--motion-fast) var(--ease-out-quart),
               color var(--motion-fast) var(--ease-out-quart),
               border-color var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart);
 }
-.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
-.btn:active { transform: translateY(0); box-shadow: none; }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shell[lang="ar"] .btn { text-transform: none; letter-spacing: 0.01em; font-size: 14px; }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn:active { transform: translateY(0); }
+.btn:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 2px; }
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
 
-.btn--primary { background: var(--accent); color: var(--canvas); }
-.btn--primary:hover { background: var(--accent-deep); }
+/* Ink button — dark with gold-bright text (guide's secondary). */
+.btn--primary { background: var(--ink); color: var(--gold-bright); box-shadow: none; animation: none; }
+.btn--primary:hover { filter: none; background: var(--accent-deep); color: var(--gold-bright); }
 
 .btn--ghost {
   background: transparent; color: var(--ink);
-  border-color: var(--hairline-strong);
+  border-color: var(--hairline-strong); box-shadow: none; animation: none;
 }
-.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); }
+.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); filter: none; }
 
 .btn--soft {
-  background: var(--warm-soft); color: var(--ink);
+  background: var(--warm-soft); color: var(--ink); box-shadow: none; animation: none;
 }
-.btn--soft:hover { background: var(--warm); color: var(--canvas); }
+.btn--soft:hover { background: var(--warm); color: var(--ink); filter: none; }
 
 .btn--outline-accent {
-  background: transparent; color: var(--accent); border-color: var(--accent);
+  background: transparent; color: var(--gold-deep); border-color: var(--gold); box-shadow: none; animation: none;
 }
-.btn--outline-accent:hover { background: var(--accent); color: var(--canvas); }
+.btn--outline-accent:hover { background: var(--warm-soft); color: var(--gold-deep); filter: none; }
 
 .btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
 .btn--lg { height: 52px; padding: 0 26px; font-size: 15px; }
@@ -249,9 +280,9 @@ body {
 @media (max-width: 640px) {
   .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
 }
-.badge--offer { background: var(--accent); }
-.badge--new   { background: var(--warm); color: var(--ink); }
-.badge--gold  { background: var(--ink); color: var(--warm); }
+.badge--offer { background: #a8341f; color: #fff; }
+.badge--new   { background: #3a6b2f; color: #fff; }
+.badge--gold  { background: var(--gilt); color: var(--ink); }
 
 /* ============================================================
    Divider
@@ -289,14 +320,14 @@ body {
 .pcard__img {
   aspect-ratio: 4/5;
   background:
-    radial-gradient(140% 100% at 50% 0%, oklch(0.96 0.05 80), oklch(0.92 0.05 75));
+    radial-gradient(circle at 50% 40%, var(--surface), var(--gold-tint));
   display: grid; place-items: center; overflow: hidden;
   position: relative;
 }
 .pcard__img::after {
   content: "";
   position: absolute; inset: auto 0 0 0; height: 40%;
-  background: linear-gradient(to top, oklch(0.422 0.149 41 / 0.05), transparent);
+  background: linear-gradient(to top, rgba(160,120,10,.06), transparent);
   pointer-events: none;
 }
 .pcard__img img, .pcard__img svg { width: 72%; height: 72%; object-fit: contain; }
@@ -437,6 +468,28 @@ html, body { overflow-x: hidden; }
   .hr { margin: 16px 0; }
   .row { gap: 8px; }
 }
+
+/* ============================================================
+   Promo cards (offers & collections) — gilt gradient hairline,
+   warm media well, lifts on hover. Single source of truth for the
+   card chrome reused across home, listing and related sections.
+   ============================================================ */
+.promo-card {
+  position: relative; display: grid; overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(160deg, var(--gold-line) 0%, transparent 45%, var(--gold-line) 100%) border-box;
+  transition: transform var(--motion) var(--ease-out-expo),
+              box-shadow var(--motion) var(--ease-out-expo);
+}
+.promo-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-gold); }
+.promo-card__media {
+  position: relative; overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 0%, var(--gold-tint), var(--surface));
+}
+.promo-badge { background: var(--gilt); color: var(--ink); box-shadow: var(--shadow-1); }
 
 /* ============================================================
    Tailwind v4 @theme inline (so the shadcn primitives resolve)

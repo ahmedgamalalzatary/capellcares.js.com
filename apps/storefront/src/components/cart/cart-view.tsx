@@ -105,7 +105,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           {dict.cart.empty}
         </h1>
         <p className="max-w-[34ch] text-sm leading-[1.7] text-(--ink-2)">
-          {lang === "ar" ? "ابدئي رحلتك مع كابيلا اليوم. اختاري قطعةً واحدة وستفعل عجائب." : "Pick one calm, considered piece. Let it do the work."}
+          {lang === "ar" ? "ابدأ مع قطعة واحدة من حورس للفضة — ودع العين الحارسة تكمل الباقي." : "Pick one considered piece. Let the watchful eye do the rest."}
         </p>
         <Link href={`/${lang}/products`} className="btn btn--primary btn--lg mt-2">
           {dict.cart.keepShopping}

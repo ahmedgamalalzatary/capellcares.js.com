@@ -103,10 +103,10 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                   onFocus={() => setActiveRoot(i)}
                   className={[
                     "relative whitespace-nowrap pb-1 tracking-[0.02em] transition-colors",
-                    i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
+                    i === activeRoot ? "text-(--gold-deep)" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-lg font-semibold uppercase">{label}</span>
+                  <span className="font-(--font-display) text-lg font-semibold uppercase tracking-[0.08em]">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />

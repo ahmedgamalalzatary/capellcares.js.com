@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getDict, formatPrice, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
+import { Icon } from "@/components/ui/icons";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
@@ -36,6 +37,47 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   return (
     <main className="container">
 
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="grid items-center gap-10 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
+          <div>
+            <p className="eyebrow text-(--gold-deep)!">{dict.home.heroEyebrow}</p>
+            <h1 className={isAr
+              ? "mt-5 m-0 text-[clamp(2.2rem,6vw,4.4rem)] font-bold font-(family-name:--font-ar) leading-[1.1] text-ink"
+              : "mt-5 m-0 font-(--font-display) text-[clamp(2.4rem,6vw,4.8rem)] font-medium leading-[1.02] tracking-[-0.02em] text-ink"}>
+              {dict.home.heroTitleBefore}
+              <em className="gilt-text not-italic font-(--font-display) italic">{dict.home.heroTitleEm}</em>
+              {dict.home.heroTitleAfter}
+            </h1>
+            <p className="mt-6 max-w-[44ch] text-lg leading-[1.6] text-(--ink-3)">{dict.home.heroLede}</p>
+            <div className="mt-8 flex flex-wrap gap-3.5">
+              <Link href={`/${lang}/products`} className="btn">{dict.home.heroCtaShop}</Link>
+              <Link href={`/${lang}/new`} className="btn btn--outline-accent">{dict.home.heroCtaNew}</Link>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <div
+              className="relative mx-auto aspect-4/5 w-full max-w-sm overflow-hidden rounded-lg p-1 shadow-(--shadow-gold)"
+              style={{ background: "var(--gilt)" }}
+            >
+              <div className="grid h-full place-items-center rounded-[6px] bg-[radial-gradient(circle_at_50%_38%,var(--surface),var(--gold-tint))]">
+                <Icon.Eye size={220} className="text-ink" style={{ filter: "drop-shadow(0 10px 24px rgba(120,90,10,.3))" }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust strip */}
+      <div className="mb-14 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-(--gold-line) bg-(--gold-line) sm:grid-cols-4">
+        {Object.entries(dict.home.trust).map(([title, sub]) => (
+          <div key={title} className="bg-canvas px-4 py-6 text-center">
+            <strong className="block font-(--font-display) text-lg font-medium text-(--gold-deep)">{title}</strong>
+            <span className={`mt-1 block text-xs text-(--ink-3) ${isAr ? "" : "uppercase tracking-[0.12em]"}`}>{sub}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Offers */}
       {activeOffers.length > 0 && (
         <section className="mb-16">
@@ -65,11 +107,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                 <Link
                   key={offer.id}
                   href={`/${lang}/offers/${offer.slug}`}
-                  className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
+                  className="group promo-card"
                 >
-                  <div className="relative aspect-16/10 bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
+                  <div className="promo-card__media aspect-16/10">
                     <OfferIllustration offer={offer} className="h-full w-full" />
-                    <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4">
+                    <span className="promo-badge absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) px-3 py-1.5 text-xs tracking-[0.16em] uppercase inset-s-4">
                       ★ {dict.offers.badge}
                     </span>
                   </div>
@@ -136,11 +178,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                 <Link
                   key={collection.id}
                   href={`/${lang}/collections/${collection.slug}`}
-                  className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
+                  className="group promo-card"
                 >
-                  <div className="relative aspect-16/10 bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
+                  <div className="promo-card__media aspect-16/10">
                     <CollectionIllustration collection={collection} lang={lang} className="h-full w-full" />
-                    <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4">
+                    <span className="promo-badge absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) px-3 py-1.5 text-xs tracking-[0.16em] uppercase inset-s-4">
                       ★ {dict.collections.badge}
                     </span>
                   </div>
@@ -209,7 +251,29 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         </section>
       )}
 
-      {/* Capella Advices */}
+      {/* Gold banner — the atelier */}
+      <section className="mb-16">
+        <div className="relative overflow-hidden rounded-lg shadow-(--shadow-gold)" style={{ background: "var(--gilt)" }}>
+          <div className="grid min-h-[320px] items-center md:grid-cols-2">
+            <div className="p-10 sm:p-14">
+              <div className={`text-xs text-ink/70 ${isAr ? "" : "uppercase tracking-[0.4em]"}`}>{dict.home.bannerIdx}</div>
+              <h2 className={isAr
+                ? "mt-4 m-0 text-[clamp(1.7rem,3.8vw,2.8rem)] font-bold font-(family-name:--font-ar) leading-[1.15] text-ink"
+                : "mt-4 m-0 font-(--font-display) text-[clamp(1.8rem,3.8vw,3rem)] font-medium leading-[1.08] text-ink"}>
+                {dict.home.bannerTitleBefore}
+                <em className={isAr ? "" : "italic"}>{dict.home.bannerTitleEm}</em>
+              </h2>
+              <p className="mt-5 max-w-[42ch] leading-[1.7] text-ink/75">{dict.home.bannerText}</p>
+              <Link href={`/${lang}/products`} className="btn btn--primary mt-7">{dict.home.bannerCta}</Link>
+            </div>
+            <div className="hidden place-items-center p-10 md:grid">
+              <Icon.Eye size={190} className="text-ink/90" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Atelier journal */}
       <AdviceSection advices={advices} lang={lang} dict={dict} />
     </main>
   );
