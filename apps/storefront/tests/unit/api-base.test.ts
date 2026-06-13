@@ -38,4 +38,10 @@ describe("resolveApiBase", () => {
 
     expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("https://api.capellacares.com");
   });
+
+  it("hard-pins the production API host for www storefront domains when no public env is present", () => {
+    vi.stubGlobal("window", { location: { protocol: "https:", hostname: "www.capellacares.com", port: "" } } as Window & typeof globalThis);
+
+    expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("https://api.capellacares.com");
+  });
 });

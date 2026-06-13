@@ -1,28 +1,17 @@
 const DEFAULT_LOCAL_API_BASE = "http://localhost:4000";
+const DEFAULT_PRODUCTION_API_BASE = "https://api.capellacares.com";
 
 function deriveBrowserApiBase(): string {
   if (typeof window === "undefined") {
     return DEFAULT_LOCAL_API_BASE;
   }
 
-  const { protocol, hostname, port } = window.location;
+  const { protocol, hostname } = window.location;
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return `${protocol}//${hostname}:4000`;
   }
 
-  if (hostname.startsWith("api.")) {
-    return `${protocol}//${hostname}`;
-  }
-
-  if (hostname.includes(".")) {
-    const parts = hostname.split(".");
-    if (parts.length >= 2) {
-      const rootDomain = hostname.startsWith("erp.") ? parts.slice(1).join(".") : hostname;
-      return `${protocol}//api.${rootDomain}`;
-    }
-  }
-
-  return DEFAULT_LOCAL_API_BASE;
+  return DEFAULT_PRODUCTION_API_BASE;
 }
 
 type ResolveApiBaseOptions = {
