@@ -90,7 +90,6 @@ export function MobileFilterDrawer({
           zIndex: 51,
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 20px 60px oklch(0.22 0.08 41 / 0.5)",
           transform: open ? "translateX(0)" : isAr ? "translateX(100%)" : "translateX(-100%)",
           transition: "transform 320ms cubic-bezier(0.16,1,0.3,1)",
           overflowY: "auto"

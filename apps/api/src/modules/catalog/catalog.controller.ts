@@ -6,7 +6,9 @@ import { calculateBundleInventory } from "../inventory/bundle-inventory.js";
 import { toStorefrontOffer } from "./offers/offers.mapper.js";
 
 export async function listCategories(_req: Request, res: Response) {
-  const rows = await listCategoriesRepo(false, "storefront");
+  // Categories mirror the ERP tree (oldest unranked first); the storefront
+  // client re-sorts, but keep the API response consistent with that ordering.
+  const rows = await listCategoriesRepo(false, "erp");
   const items = rows.map((category) => ({
     id: category.id,
     parentId: category.parentId,

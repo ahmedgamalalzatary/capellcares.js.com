@@ -129,8 +129,9 @@ export function buildHeaderMenu({
 }
 
 export function compareHeaderCategoryEntries(left: HeaderMenuCategoryEntry, right: HeaderMenuCategoryEntry) {
+  // Categories mirror the ERP tree (oldest unranked first), so use the "erp" surface.
   return compareByScopedOrdering(
-    "storefront",
+    "erp",
     { ...left, id: left.id ?? 0 },
     { ...right, id: right.id ?? 0 }
   );

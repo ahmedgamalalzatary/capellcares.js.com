@@ -259,7 +259,7 @@ export function HeaderMobileDrawer({
 
             {/* Social */}
             <div className="mt-8 px-1">
-              <p className={`mb-4 text-xs tracking-[0.22em] text-(--ink-3) ${isAr ? "" : "uppercase"}`}>
+              <p className={`mb-4 text-md font-bold tracking-[0.22em] text-ink ${isAr ? "" : "uppercase"}`}>
                 {dict.nav.followUs}
               </p>
               <div className="flex items-center gap-3">
@@ -292,8 +292,8 @@ export function HeaderMobileDrawer({
                     aria-pressed={isActive}
                     className={`text-lg transition-colors ${
                       isActive
-                        ? "text-accent underline underline-offset-4"
-                        : "text-ink hover:text-accent"
+                        ? "font-bold  underline underline-offset-4"
+                      : "font-light no-underline text-ink/45"
                     }`}
                   >
                     {code === "ar" ? dict.langSwitch.ar : dict.langSwitch.en}
@@ -329,7 +329,7 @@ function CategoryCard({
       <Link
         href={href}
         onClick={onClick}
-        className="group relative flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
+        className="group relative flex uppercase items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
         {image && (
           <span aria-hidden className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
@@ -364,7 +364,7 @@ function DrawerLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center justify-between border-b border-(--hairline) px-1 py-4 text-base transition-colors hover:text-accent ${
+      className={`flex items-center justify-between font-bold border-b border-(--hairline) px-1 py-4 uppercase text-base transition-colors hover:text-accent ${
         accent ? "text-accent" : "text-ink"
       }`}
     >

@@ -92,7 +92,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
       >
         <div className="container">
           {/* Father tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-b border-(--hairline) py-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-b border-(--hairline) py-4">
             {roots.map((g, i) => {
               const label = g.label;
               return (
@@ -119,7 +119,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
           {active && (
             <div className="max-h-[70vh] overflow-y-auto py-8">
               {active.type === "products" ? (
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
                   {/* "All New / All Bestsellers" sits beside the products, like the categories' "All {category}" */}
                   <Link
                     href={`/${lang}/${active.slug}`}
@@ -148,7 +148,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                   onNavigate={closeNow}
                 />
               ) : (
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
                   {/* "All {category}" sits beside the sub-categories */}
                   <Link
                     href={`/${lang}/category/${active.slug}`}
@@ -184,7 +184,7 @@ function MediaGrid({
   onNavigate: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
       {/* "All Offers / All Collections" sits beside the items, like the categories' "All {category}" */}
       <Link
         href={`/${lang}/${basePath}`}

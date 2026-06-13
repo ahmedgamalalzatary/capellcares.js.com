@@ -134,7 +134,6 @@ body {
   font-weight: 400;
   letter-spacing: 0;
   line-height: 0.9;
-  text-transform: lowercase;
   color: #6e390b;
   font-size: clamp(3.5rem, 17vw, 15rem);
 }

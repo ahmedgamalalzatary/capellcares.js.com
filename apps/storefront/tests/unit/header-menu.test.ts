@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Collection, Offer, Product } from "@capella/shared";
 
-import { buildHeaderMenu } from "@/lib/header-menu";
+import { buildHeaderMenu, compareHeaderCategoryEntries } from "@/lib/header-menu";
 import type { NavGroup } from "@/lib/nav";
 
 const navGroups: NavGroup[] = [
@@ -155,5 +155,18 @@ describe("buildHeaderMenu", () => {
     expect(
       collectionsEntry?.type === "collections" && collectionsEntry.collections.map((c) => c.slug)
     ).toEqual(["live-col"]);
+  });
+});
+
+describe("compareHeaderCategoryEntries", () => {
+  it("orders unranked category roots oldest-first, mirroring the ERP tree", () => {
+    const entries = [
+      { type: "category" as const, key: "c-7", id: 7, slug: "hair", label: "Hair", createdAt: "2026-06-12T09:00:00.000Z", children: [] },
+      { type: "category" as const, key: "c-8", id: 8, slug: "fragrance", label: "Fragrance", createdAt: "2026-06-10T09:00:00.000Z", children: [] }
+    ];
+
+    const ordered = entries.slice().sort(compareHeaderCategoryEntries);
+
+    expect(ordered.map((entry) => entry.id)).toEqual([8, 7]);
   });
 });

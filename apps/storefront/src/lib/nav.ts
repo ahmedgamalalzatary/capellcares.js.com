@@ -14,9 +14,11 @@ export interface NavGroup {
 
 export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const active = categories.filter((c) => !c.deletedAt);
+  // Categories display the same as the ERP tree (oldest unranked first), unlike
+  // other storefront entities — so order them with the "erp" surface.
   const roots = active
     .filter((c) => c.parentId === null)
-    .sort(compareByScopedOrdering.bind(null, "storefront"));
+    .sort(compareByScopedOrdering.bind(null, "erp"));
   const byParent = new Map<number | null, Category[]>();
 
   for (const category of active) {
@@ -28,7 +30,7 @@ export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const buildNodes = (parentId: number): NavNode[] =>
     (byParent.get(parentId) ?? [])
       .slice()
-      .sort(compareByScopedOrdering.bind(null, "storefront"))
+      .sort(compareByScopedOrdering.bind(null, "erp"))
       .map((category) => ({
       id: category.id,
       slug: category.slug,

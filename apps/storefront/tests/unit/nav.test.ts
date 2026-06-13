@@ -38,9 +38,9 @@ describe("buildNav", () => {
     expect(nav[1].children.map((child) => child.id)).toEqual([2, 5]);
   });
 
-  it("keeps ranked roots first and then newer unranked roots first in storefront navigation", () => {
+  it("keeps ranked roots first and then older unranked roots first, mirroring the ERP tree", () => {
     const nav = buildNav(storefrontOrderingCategories, "en");
 
-    expect(nav.map((group) => group.root.id)).toEqual([6, 1, 7, 8]);
+    expect(nav.map((group) => group.root.id)).toEqual([6, 1, 8, 7]);
   });
 });

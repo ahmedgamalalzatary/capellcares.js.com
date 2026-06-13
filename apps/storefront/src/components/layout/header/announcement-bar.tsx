@@ -34,19 +34,19 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
   const advance = () => setIndex((i) => (i + 1) % slides.length);
 
   return (
-    <div className="mt-4 flex items-center gap-2 rounded-lg bg-canvas px-3 py-1.5 sm:px-4 sm:py-2">
+    <div className="mt-4 flex items-center gap-2 rounded-lg bg-canvas px-3 py-3 sm:px-4 sm:py-2">
       {/* Fixed-height clip box; the text is absolutely positioned so its
           (whitespace-nowrap) width can never widen the header on small screens. */}
       <div className="relative h-4 min-w-0 flex-1 overflow-hidden sm:h-5">
         {reduced ? (
-          <p className="absolute inset-0 truncate text-center text-xs font-semibold leading-4 tracking-[0.04em] sm:text-sm sm:leading-5">
+          <p className="absolute inset-0 truncate font-bold text-center text-md leading-4 tracking-[0.04em] sm:text-sm sm:leading-5">
             {slides[index]}
           </p>
         ) : (
           <p
             key={index}
             onAnimationEnd={advance}
-            className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-xs font-semibold tracking-[0.04em] sm:text-sm"
+              className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold tracking-[0.04em] sm:text-sm"
             style={{
               animationDuration: `${CROSS_S}s`,
               animationDirection: isAr ? "reverse" : "normal",

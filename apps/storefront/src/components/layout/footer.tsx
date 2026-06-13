@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -60,7 +61,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             transition: "transform 700ms var(--ease-out-expo)"
           }}
         >
-          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full select-none text-center">
+          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full text-center">
             Capella Care
           </span>
         </div>
@@ -101,7 +102,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               </button>
             </form>
 
-            <p className="mt-4 text-xs leading-relaxed text-ink/45">
+            <p className="mt-4 text-md leading-relaxed text-ink">
               {dict.footer.privacyNote}
             </p>
           </div>
@@ -124,7 +125,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center min-[380px]:justify-start hover:underline gap-2 font-bold text-sm tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink"
+                  className="flex items-center justify-center min-[380px]:justify-start hover:underline gap-2 font-bold text-sm tracking-wide text-ink/80 transition-colors duration-200 hover:text-ink"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -180,6 +181,9 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               <PayChip label="Paymob">
                 <Icon.Paymob className="h-3 w-auto" />
               </PayChip>
+              <PayChip label="Cash on Delivery">
+                <Image src="/cash.svg" alt="Cash on Delivery" width={48} height={48} className="h-7 w-auto" />
+              </PayChip>
             </div>
           </div>
 
@@ -222,7 +226,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               className="flex items-center rounded-(--radius-pill) border p-0.5"
               style={{ borderColor: "color-mix(in oklch, var(--ink) 18%, transparent)" }}
             >
-              {(["ar", "en"] as const).map((code) => {
+              {(["en", "ar"] as const).map((code) => {
                 const active = lang === code;
                 return (
                   <button
@@ -284,7 +288,7 @@ function FooterLink({
   external?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = "block text-sm leading-snug tracking-wide text-ink/50 transition-colors duration-200 hover:text-ink hover:underline cursor-pointer font-bold";
+  const cls = "block text-sm leading-snug tracking-wide text-ink/80 transition-colors duration-200 hover:text-ink hover:underline cursor-pointer font-bold";
   if (as === "span" || href === undefined)
     return <span className={cls}>{children}</span>;
   if (external)
