@@ -64,7 +64,9 @@ export function HeaderMobileDrawer({
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, []);
+    // Remeasure on every open too: the mobile URL bar can change innerHeight
+    // between mount and open, which would otherwise leave a stale max-height.
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (activeTab >= orderedMenuEntries.length) setActiveTab(0);

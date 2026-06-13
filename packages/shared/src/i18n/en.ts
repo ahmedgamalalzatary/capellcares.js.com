@@ -245,7 +245,7 @@ export const en = {
     contact: "Contact",
     connectWhatsapp: "Help via WhatsApp",
     helpcenter: "Help Center",
-    storeLocator: "Store Locator",
+    storeLocator: "Stores Locator",
     rights: "All rights reserved.",
     currency: "EGP",
     madeIn: "Made in Egypt",

@@ -18,7 +18,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
@@ -28,45 +27,30 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
     ? dict.nav.announcements
     : [dict.nav.announcement];
 
+  // Non-shifting scroll lock: freeze <html> with overflow:hidden and pad for the
+  // removed scrollbar. The page never moves, so the sticky header and the drawer's
+  // measured open-height stay valid no matter the scroll offset at open time.
+  // (A position:fixed/top:-scrollY lock fights globals' `overflow-x:hidden` body +
+  // the sticky header — it shifts the drawer on a scrolled reopen and breaks its
+  // inner scroll.)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 6);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    if (mobileOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflowY = "scroll";
-    } else {
-      const scrollY = Math.abs(parseInt(document.body.style.top || "0", 10));
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflowY = "";
-      window.scrollTo(0, scrollY);
-    }
+    if (!mobileOpen) return;
+    const html = document.documentElement;
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
+    const prevOverflow = html.style.overflow;
+    const prevPaddingRight = html.style.paddingRight;
+    html.style.overflow = "hidden";
+    if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
     return () => {
-      const scrollY = Math.abs(parseInt(document.body.style.top || "0", 10));
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflowY = "";
-      if (scrollY) window.scrollTo(0, scrollY);
+      html.style.overflow = prevOverflow;
+      html.style.paddingRight = prevPaddingRight;
     };
   }, [mobileOpen]);
 
   return (
     <header
       className={[
-        "container sticky top-0 z-30 transition-[background,box-shadow] duration-200",
-        scrolled
-          ? "bg-white/90 shadow-(--shadow-1) backdrop-blur-md"
-          : "bg-white"
+        "container sticky top-0 z-30 transition-[background,box-shadow] duration-200"
       ].join(" ")}
     >
       <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
@@ -74,9 +58,9 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
       <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 p-3 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
-          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden scale-110">
+          <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
               onClick={() => setMobileOpen((open) => !open)}
               aria-label="Menu"
               aria-expanded={mobileOpen}

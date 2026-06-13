@@ -29,7 +29,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setLines(loadCartLines(localStorage));
+    const stored = loadCartLines(localStorage);
+    // Merge rather than overwrite: on a slow device the buttons become tappable
+    // (handlers attached at hydration) before this passive effect runs, so a quick
+    // "add to cart"/"buy now" tap can land first. Overwriting here would silently
+    // drop that just-added line; merging preserves it (summing qty on collision).
+    setLines((pending) => {
+      if (pending.length === 0) return stored;
+      const merged = [...stored];
+      for (const line of pending) {
+        const key = lineKey(line);
+        const idx = merged.findIndex((l) => lineKey(l) === key);
+        if (idx === -1) merged.push(line);
+        else merged[idx] = { ...merged[idx], qty: merged[idx].qty + line.qty };
+      }
+      return merged;
+    });
     setHydrated(true);
   }, []);
 
