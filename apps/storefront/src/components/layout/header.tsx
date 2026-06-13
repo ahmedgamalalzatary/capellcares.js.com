@@ -106,7 +106,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           aria-label={dict.brand}
         >
           <Image
-            src="/capella logo.png"
+            src="/logoblack.jpg"
             alt={dict.brand}
             width={400}
             height={100}

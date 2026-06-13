@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -182,7 +181,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                 <Icon.Paymob className="h-3 w-auto" />
               </PayChip>
               <PayChip label="Cash on Delivery">
-                <Image src="/cash.svg" alt="Cash on Delivery" width={48} height={48} className="h-7 w-auto" />
+                <Icon.CashOnDelivery className="h-16 w-auto" />
               </PayChip>
             </div>
           </div>
