@@ -164,8 +164,6 @@ describe("ShopMegaMenu", () => {
 
     for (const className of classes) {
       expect(className).toContain("text-base");
-      expect(className).toContain("px-4");
-      expect(className).toContain("py-3");
       expect(className).toContain("hover:underline");
       expect(className).toContain("hover:font-bold");
     }

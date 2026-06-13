@@ -5,9 +5,9 @@ import {
   listCategoriesRepo,
   reorderCategoriesRepo,
   restoreCategoryRepo,
-  softDeleteCategoryRepo,
-  upsertCategoryRepo
+  softDeleteCategoryRepo
 } from "../../../repositories/category.repository.js";
+import { upsertCategory } from "../../../services/category.service.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 
@@ -18,7 +18,7 @@ export async function adminListCategories(_req: Request, res: Response) {
 export async function adminUpsertCategory(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
-    await upsertCategoryRepo({
+    await upsertCategory({
       id: incoming.id,
       parentId: incoming.parentId,
       slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),

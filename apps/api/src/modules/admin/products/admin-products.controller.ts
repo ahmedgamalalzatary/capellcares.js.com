@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { products } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../../repositories/category.repository.js";
+import { buildLineage } from "../../../repositories/category-tree.js";
 import {
   createAdminProductRepo,
   findAdminProductByIdRepo,
@@ -27,17 +28,7 @@ function buildCategorySlugsFromMap(
   categoryId: number,
   byId: Map<number, { id: number; slug: string; parentId: number | null }>
 ): string[] {
-  const slugs: string[] = [];
-  const seen = new Set<number>();
-  let current = byId.get(categoryId);
-
-  while (current && !seen.has(current.id)) {
-    seen.add(current.id);
-    slugs.unshift(current.slug);
-    current = current.parentId != null ? byId.get(current.parentId) : undefined;
-  }
-
-  return slugs;
+  return buildLineage(categoryId, [...byId.values()]).map((category) => category.slug);
 }
 
 async function findProductRevalidationData(

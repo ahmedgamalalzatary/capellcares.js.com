@@ -4,11 +4,11 @@ import {
   categories,
   categoryPaths,
   entityOrderings,
-  orderingEntityTypes,
-  orderingScopeTypes,
   products
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import { collectDescendantIds } from "./category-tree.js";
+import { assertCompleteOrderedIds, replaceScopedOrderingRepo } from "./entity-ordering.repository.js";
 
 export async function listCategoriesRepo(includeDeleted = false, surface: OrderingSurface = "erp") {
   const rows = await db
@@ -53,23 +53,34 @@ function categoryParentScopeCondition(parentId: number | null) {
   return parentId == null ? isNull(categories.parentId) : eq(categories.parentId, parentId);
 }
 
-export async function upsertCategoryRepo(input: {
+export type CategoryWriteInput = {
   id?: number;
   parentId: number | null;
   slug: string;
   arName: string;
   enName: string;
   isLeaf: boolean;
-}) {
-  const previous = input.id
-    ? await db
-        .select({ id: categories.id, parentId: categories.parentId })
-        .from(categories)
-        .where(eq(categories.id, input.id))
-        .limit(1)
-        .then((rows) => rows[0] ?? null)
-    : null;
-  const allCategories = await db
+};
+
+export type CategoryNode = {
+  id: number;
+  parentId: number | null;
+  arName: string;
+  enName: string;
+  deletedAt: Date | null;
+};
+
+export async function getCategoryByIdRepo(id: number) {
+  return db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.id, id))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
+export async function loadCategoryNodesRepo(): Promise<CategoryNode[]> {
+  return db
     .select({
       id: categories.id,
       parentId: categories.parentId,
@@ -78,43 +89,15 @@ export async function upsertCategoryRepo(input: {
       deletedAt: categories.deletedAt
     })
     .from(categories);
+}
 
-  if (input.id && wouldCreateCategoryCycle(input.id, input.parentId, allCategories)) {
-    const error = new Error("Category parent cannot be the category itself or one of its descendants");
-    (error as Error & { code?: string }).code = "CATEGORY_INVALID_PARENT";
-    throw error;
-  }
-
-  const slugConflict = await findSiblingSlugConflict({
-    id: input.id,
-    parentId: input.parentId,
-    slug: input.slug
-  });
-
-  if (slugConflict) {
-    const error = new Error("Category slug already exists under this parent");
-    (error as Error & { code?: string }).code = "CATEGORY_SLUG_CONFLICT";
-    throw error;
-  }
-
-  const lineage = buildCategoryLineage(input.parentId, allCategories);
-  const isGrandchildCategory = lineage.length === 2;
-
-  if (isGrandchildCategory) {
-    const conflict = await findSameParentGrandchildNameConflict({
-      id: input.id,
-      parentId: input.parentId,
-      arName: input.arName,
-      enName: input.enName
-    });
-
-    if (conflict) {
-      const error = new Error("Category name already exists under this parent");
-      (error as Error & { code?: string }).code = "CATEGORY_NAME_CONFLICT";
-      throw error;
-    }
-  }
-
+// Persists a category (insert or update) and keeps the closure table and
+// parents' leaf flags in sync. Assumes the caller (the service) has already
+// enforced the business rules.
+export async function writeCategoryRepo(
+  input: CategoryWriteInput,
+  previousParentId: number | null
+): Promise<{ id: number }> {
   if (input.id) {
     await db
       .update(categories)
@@ -127,7 +110,7 @@ export async function upsertCategoryRepo(input: {
       })
       .where(eq(categories.id, input.id));
     await rebuildCategoryPathsRepo();
-    await syncCategoryLeafState(previous?.parentId ?? null);
+    await syncCategoryLeafState(previousParentId);
     await syncCategoryLeafState(input.parentId);
     return { id: input.id };
   }
@@ -148,55 +131,23 @@ export async function upsertCategoryRepo(input: {
 
 export async function reorderCategoriesRepo(input: { parentId: number | null; ids: number[] }) {
   const { parentId, ids } = input;
-  if (ids.length === 0 || new Set(ids).size !== ids.length) {
-    const error = new Error("Root category order is invalid");
-    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
-    throw error;
-  }
-
   const roots = await db
     .select({ id: categories.id })
     .from(categories)
     .where(and(categoryParentScopeCondition(parentId), isNull(categories.deletedAt)));
 
-  const rootIds = roots.map((row) => row.id);
-  if (rootIds.length !== ids.length) {
-    const error = new Error("Root category order is incomplete");
-    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
-    throw error;
-  }
+  assertCompleteOrderedIds({
+    requestedIds: ids,
+    scopeEntityIds: roots.map((row) => row.id),
+    errorCode: "INVALID_ROOT_ORDER",
+    errorMessage: "Root category order is invalid"
+  });
 
-  const requestedIds = [...ids].sort((a, b) => a - b);
-  const existingIds = [...rootIds].sort((a, b) => a - b);
-  const sameIds = requestedIds.every((id, index) => id === existingIds[index]);
-  if (!sameIds) {
-    const error = new Error("Root category order references invalid ids");
-    (error as Error & { code?: string }).code = "INVALID_ROOT_ORDER";
-    throw error;
-  }
-
-  await db.transaction(async (tx) => {
-    const scopeType: (typeof orderingScopeTypes)[number] = parentId == null ? "root" : "category";
-    const entityType: (typeof orderingEntityTypes)[number] = "category";
-    await tx
-      .delete(entityOrderings)
-      .where(
-        and(
-          eq(entityOrderings.scopeType, scopeType),
-          parentId == null ? isNull(entityOrderings.scopeId) : eq(entityOrderings.scopeId, parentId),
-          eq(entityOrderings.entityType, entityType)
-        )
-      );
-
-    await tx.insert(entityOrderings).values(
-      ids.map((id, index) => ({
-        scopeType,
-        scopeId: parentId,
-        entityType,
-        entityId: id,
-        rank: index + 1
-      }))
-    );
+  await replaceScopedOrderingRepo({
+    scopeType: parentId == null ? "root" : "category",
+    scopeId: parentId,
+    entityType: "category",
+    ids
   });
 }
 
@@ -214,54 +165,33 @@ export async function restoreCategoryRepo(id: number) {
   await syncCategoryLeafState(existing?.parentId ?? null);
 }
 
-export async function listDescendantCategoryIdsRepo(ancestorId: number) {
+// Descendant lookup with a single source of truth: the categoryPaths closure
+// table (rebuilt on every write, and self-inclusive). The in-memory fallback
+// covers states where paths haven't been materialised yet (e.g. fresh seeds).
+async function descendantCategoryIds(ancestorId: number): Promise<number[]> {
   const rows = await db
     .select({ id: categoryPaths.descendantId })
     .from(categoryPaths)
     .where(eq(categoryPaths.ancestorId, ancestorId));
-  if (rows.length === 0) {
-    const allCategories = await db
-      .select({ id: categories.id, parentId: categories.parentId })
-      .from(categories);
-    const descendantIds = new Set<number>([ancestorId]);
-    let changed = true;
-
-    while (changed) {
-      changed = false;
-      for (const category of allCategories) {
-        if (
-          category.parentId != null &&
-          descendantIds.has(category.parentId) &&
-          !descendantIds.has(category.id)
-        ) {
-          descendantIds.add(category.id);
-          changed = true;
-        }
-      }
-    }
-
-    return [...descendantIds];
+  if (rows.length > 0) {
+    return rows.map((row) => row.id);
   }
-  return rows.map((row) => row.id);
+  const allCategories = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories);
+  return collectDescendantIds(ancestorId, allCategories);
+}
+
+export async function listDescendantCategoryIdsRepo(ancestorId: number) {
+  return descendantCategoryIds(ancestorId);
 }
 
 export async function hasLinkedProductsInCategoryRepo(id: number) {
-  const allCategories = await db.select({ id: categories.id, parentId: categories.parentId }).from(categories);
-  const descendantIds = new Set<number>([id]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const c of allCategories) {
-      if (c.parentId != null && descendantIds.has(c.parentId) && !descendantIds.has(c.id)) {
-        descendantIds.add(c.id);
-        changed = true;
-      }
-    }
-  }
+  const descendantIds = await descendantCategoryIds(id);
   const rows = await db
     .select({ id: products.id })
     .from(products)
-    .where(and(sql`${products.categoryId} in (${sql.join([...descendantIds].map((x) => sql`${x}`), sql`,`)})`, isNull(products.deletedAt)))
+    .where(and(inArray(products.categoryId, descendantIds), isNull(products.deletedAt)))
     .limit(1);
   return rows.length > 0;
 }
@@ -285,7 +215,7 @@ async function syncCategoryLeafState(parentId: number | null) {
     .where(eq(categories.id, parentId));
 }
 
-async function findSiblingSlugConflict(input: {
+export async function findSiblingSlugConflictRepo(input: {
   id?: number;
   parentId: number | null;
   slug: string;
@@ -304,6 +234,10 @@ async function findSiblingSlugConflict(input: {
     .then((rows) => rows[0] ?? null);
 }
 
+// Deliberately rebuilds the entire closure table on every write. The category
+// tree is small (tens of rows), so a full truncate-and-reinsert is simpler and
+// safer than computing incremental path deltas. Revisit only if the tree grows
+// large enough for this to matter.
 async function rebuildCategoryPathsRepo() {
   const rows = await db
     .select({ id: categories.id, parentId: categories.parentId })
@@ -336,73 +270,7 @@ async function rebuildCategoryPathsRepo() {
   });
 }
 
-function buildCategoryLineage(
-  parentId: number | null,
-  rows: Array<{
-    id: number;
-    parentId: number | null;
-  }>
-) {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const lineage: typeof rows = [];
-  const seen = new Set<number>();
-  let currentParentId = parentId;
-
-  while (currentParentId != null && !seen.has(currentParentId)) {
-    seen.add(currentParentId);
-    const current = byId.get(currentParentId);
-    if (!current) {
-      break;
-    }
-    lineage.unshift(current);
-    currentParentId = current.parentId;
-  }
-
-  return lineage;
-}
-
-function wouldCreateCategoryCycle(
-  categoryId: number,
-  nextParentId: number | null,
-  rows: Array<{ id: number; parentId: number | null }>
-) {
-  if (nextParentId == null) {
-    return false;
-  }
-
-  if (nextParentId === categoryId) {
-    return true;
-  }
-
-  const childrenByParentId = new Map<number, number[]>();
-  for (const row of rows) {
-    if (row.parentId == null) {
-      continue;
-    }
-
-    const children = childrenByParentId.get(row.parentId) ?? [];
-    children.push(row.id);
-    childrenByParentId.set(row.parentId, children);
-  }
-
-  const stack = [categoryId];
-  const descendants = new Set<number>();
-  while (stack.length > 0) {
-    const currentId = stack.pop()!;
-    const children = childrenByParentId.get(currentId) ?? [];
-    for (const childId of children) {
-      if (descendants.has(childId)) {
-        continue;
-      }
-      descendants.add(childId);
-      stack.push(childId);
-    }
-  }
-
-  return descendants.has(nextParentId);
-}
-
-async function findSameParentGrandchildNameConflict(input: {
+export async function findSameParentGrandchildNameConflictRepo(input: {
   id?: number;
   parentId: number | null;
   arName: string;
