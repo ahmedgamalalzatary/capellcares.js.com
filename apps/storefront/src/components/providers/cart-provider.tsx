@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CartLine } from "@capella/shared";
 import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { clearCartLines, loadCartLines, normalizeCartLine, saveCartLines } from "@/lib/cart";
@@ -27,6 +27,20 @@ function lineKey(line: CartLine) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const linesRef = useRef<CartLine[]>([]);
+
+  const persistLines = useCallback((next: CartLine[]) => {
+    try {
+      if (next.length === 0) clearCartLines(localStorage);
+      else saveCartLines(localStorage, next);
+    } catch {}
+  }, []);
+
+  const commitLines = useCallback((next: CartLine[]) => {
+    linesRef.current = next;
+    setLines(next);
+    persistLines(next);
+  }, [persistLines]);
 
   useEffect(() => {
     const stored = loadCartLines(localStorage);
@@ -34,7 +48,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // (handlers attached at hydration) before this passive effect runs, so a quick
     // "add to cart"/"buy now" tap can land first. Overwriting here would silently
     // drop that just-added line; merging preserves it (summing qty on collision).
-    setLines((pending) => {
+    const pending = linesRef.current;
+    const next = (() => {
       if (pending.length === 0) return stored;
       const merged = [...stored];
       for (const line of pending) {
@@ -44,9 +59,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         else merged[idx] = { ...merged[idx], qty: merged[idx].qty + line.qty };
       }
       return merged;
-    });
+    })();
+    linesRef.current = next;
+    setLines(next);
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    linesRef.current = lines;
+  }, [lines]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -101,31 +122,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const normalized = normalizeCartLine(line);
     if (!normalized) return;
 
-    setLines((prev) => {
-      const key = lineKey(normalized);
-      const idx = prev.findIndex((l) => lineKey(l) === key);
-      if (idx === -1) return [...prev, normalized];
-      const next = [...prev];
-      next[idx] = { ...next[idx], qty: next[idx].qty + normalized.qty };
-      return next;
-    });
-  }, []);
+    const prev = linesRef.current;
+    const key = lineKey(normalized);
+    const idx = prev.findIndex((l) => lineKey(l) === key);
+    const next = idx === -1 ? [...prev, normalized] : [...prev];
+    if (idx !== -1) next[idx] = { ...next[idx], qty: next[idx].qty + normalized.qty };
+    commitLines(next);
+  }, [commitLines]);
 
   const setQty = useCallback((key: string, qty: number) => {
-    setLines((prev) =>
-      prev
-        .map((l) => (lineKey(l) === key ? { ...l, qty: Math.max(1, qty) } : l))
-    );
-  }, []);
+    const next = linesRef.current.map((l) => (lineKey(l) === key ? { ...l, qty: Math.max(1, qty) } : l));
+    commitLines(next);
+  }, [commitLines]);
 
   const remove = useCallback((key: string) => {
-    setLines((prev) => prev.filter((l) => lineKey(l) !== key));
-  }, []);
+    const next = linesRef.current.filter((l) => lineKey(l) !== key);
+    commitLines(next);
+  }, [commitLines]);
 
   const clear = useCallback(() => {
-    setLines([]);
-    clearCartLines(localStorage);
-  }, []);
+    commitLines([]);
+  }, [commitLines]);
 
   const value = useMemo<CartContextValue>(() => ({
     lines,
