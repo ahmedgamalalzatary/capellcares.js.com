@@ -119,12 +119,12 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
           {active && (
             <div className="max-h-[70vh] overflow-y-auto py-8">
               {active.type === "products" ? (
-                <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
                   {/* "All New / All Bestsellers" sits beside the products, like the categories' "All {category}" */}
                   <Link
                     href={`/${lang}/${active.slug}`}
                     onClick={closeNow}
-                    className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+                    className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
                   >
                     {dict.nav.viewAllCategory.replace("{name}", active.label)}
                   </Link>
@@ -133,7 +133,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                       key={product.id}
                       href={`/${lang}/products/${product.slug}`}
                       onClick={closeNow}
-                      className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+                      className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
                     >
                       {product.label}
                     </Link>
@@ -148,12 +148,12 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                   onNavigate={closeNow}
                 />
               ) : (
-                <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
                   {/* "All {category}" sits beside the sub-categories */}
                   <Link
                     href={`/${lang}/category/${active.slug}`}
                     onClick={closeNow}
-                    className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+                    className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
                   >
                     {dict.nav.viewAllCategory.replace("{name}", active.label)}
                   </Link>
@@ -184,12 +184,12 @@ function MediaGrid({
   onNavigate: () => void;
 }) {
   return (
-    <div className="grid gap-x-8 gap-y-4 grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
       {/* "All Offers / All Collections" sits beside the items, like the categories' "All {category}" */}
       <Link
         href={`/${lang}/${basePath}`}
         onClick={onNavigate}
-        className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+        className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
       >
         {allLabel}
       </Link>
@@ -198,7 +198,7 @@ function MediaGrid({
           key={item.id}
           href={`/${lang}/${basePath}/${item.slug}`}
           onClick={onNavigate}
-          className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+          className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
         >
           {item.label}
         </Link>
@@ -213,7 +213,7 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
       <Link
         href={`/${lang}/category/${node.slug}`}
         onClick={onNavigate}
-        className="block truncate px-4 py-3 text-base text-ink capitalize transition-colors hover:font-bold hover:underline"
+        className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
       >
         {node.label}
       </Link>

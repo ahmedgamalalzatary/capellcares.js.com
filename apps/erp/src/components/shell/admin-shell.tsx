@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { Icon } from "@/components/ui/icons";
+import "./admin-shell.css";
 
 interface Crumb { label: string; href?: string }
 

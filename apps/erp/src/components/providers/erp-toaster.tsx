@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster } from "sonner";
+import "./erp-toaster.css";
 
 export function ErpToaster() {
   return (

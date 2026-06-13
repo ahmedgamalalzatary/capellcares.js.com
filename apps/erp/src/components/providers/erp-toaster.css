@@ -1,0 +1,145 @@
+/* ============================================================
+   Toasts — styles for <ErpToaster /> (sonner).
+   Co-located with erp-toaster.tsx; relies on tokens from globals.css.
+   ============================================================ */
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.erp-toaster {
+  --normal-bg: var(--surface);
+  --normal-border: var(--hairline);
+  --normal-text: var(--ink-2);
+  --success-bg: color-mix(in oklch, var(--success) 10%, var(--surface));
+  --success-border: color-mix(in oklch, var(--success) 26%, var(--hairline));
+  --success-text: var(--ink);
+  --error-bg: color-mix(in oklch, var(--error) 10%, var(--surface));
+  --error-border: color-mix(in oklch, var(--error) 28%, var(--hairline));
+  --error-text: var(--ink);
+  --warning-bg: color-mix(in oklch, var(--warm) 14%, var(--surface));
+  --warning-border: color-mix(in oklch, var(--warm) 30%, var(--hairline));
+  --warning-text: var(--ink);
+  --info-bg: color-mix(in oklch, var(--accent) 10%, var(--surface));
+  --info-border: color-mix(in oklch, var(--accent) 24%, var(--hairline));
+  --info-text: var(--ink);
+  width: 380px !important;
+}
+
+.erp-toast {
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--hairline) !important;
+  background: linear-gradient(160deg, var(--surface) 60%, color-mix(in oklch, var(--warm-soft) 32%, var(--surface))) !important;
+  color: var(--ink-2) !important;
+  box-shadow: var(--shadow-2), 0 0 0 1px color-mix(in oklch, var(--warm) 10%, transparent) !important;
+  padding: 14px 16px 14px 20px !important;
+  gap: 10px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  animation: toast-slide-in 220ms var(--ease-out-expo) both !important;
+}
+
+/* Left accent bar */
+.erp-toast::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: var(--warm);
+}
+
+.erp-toast[data-type="error"] {
+  background: linear-gradient(160deg, color-mix(in oklch, var(--error) 9%, var(--surface)) 60%, var(--surface)) !important;
+  border-color: color-mix(in oklch, var(--error) 24%, var(--hairline)) !important;
+}
+.erp-toast[data-type="error"]::before { background: var(--error); }
+
+.erp-toast[data-type="success"] {
+  background: linear-gradient(160deg, color-mix(in oklch, var(--success) 9%, var(--surface)) 60%, var(--surface)) !important;
+  border-color: color-mix(in oklch, var(--success) 24%, var(--hairline)) !important;
+}
+.erp-toast[data-type="success"]::before { background: var(--success); }
+
+.erp-toast[data-type="warning"] {
+  background: linear-gradient(160deg, color-mix(in oklch, var(--warm) 12%, var(--surface)) 60%, var(--surface)) !important;
+  border-color: color-mix(in oklch, var(--warm) 28%, var(--hairline)) !important;
+}
+.erp-toast[data-type="warning"]::before { background: var(--warm); }
+
+.erp-toast[data-type="info"] {
+  background: linear-gradient(160deg, color-mix(in oklch, var(--info) 9%, var(--surface)) 60%, var(--surface)) !important;
+  border-color: color-mix(in oklch, var(--info) 24%, var(--hairline)) !important;
+}
+.erp-toast[data-type="info"]::before { background: var(--info); }
+
+.erp-toast__title {
+  color: var(--ink) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.erp-toast__description {
+  color: var(--ink-3) !important;
+  font-size: 12.5px !important;
+  line-height: 1.6 !important;
+  margin-top: 2px !important;
+}
+
+.erp-toast [data-icon] {
+  color: var(--warm) !important;
+  flex-shrink: 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+.erp-toast[data-type="error"]   [data-icon] { color: var(--error)   !important; }
+.erp-toast[data-type="success"] [data-icon] { color: var(--success) !important; }
+.erp-toast[data-type="warning"] [data-icon] { color: var(--warm)    !important; }
+.erp-toast[data-type="info"]    [data-icon] { color: var(--info)    !important; }
+
+.erp-toast__close {
+  position: absolute !important;
+  top: 8px !important;
+  right: unset !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--ink-4) !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  transition: color var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast) !important;
+}
+
+.erp-toast__close:hover {
+  background: var(--warm-soft) !important;
+  border-color: var(--hairline) !important;
+  color: var(--ink) !important;
+}
+
+.erp-toast__action,
+.erp-toast__cancel {
+  height: 30px !important;
+  border-radius: var(--radius) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  padding: 0 12px !important;
+  transition: background var(--motion-fast), border-color var(--motion-fast) !important;
+}
+
+.erp-toast__action {
+  background: var(--accent) !important;
+  color: var(--canvas) !important;
+  border: 1px solid var(--accent) !important;
+}
+.erp-toast__action:hover { background: var(--accent-deep) !important; border-color: var(--accent-deep) !important; }
+
+.erp-toast__cancel {
+  background: transparent !important;
+  border: 1px solid var(--hairline) !important;
+  color: var(--ink-2) !important;
+}
+.erp-toast__cancel:hover { background: var(--warm-soft) !important; border-color: var(--hairline-strong) !important; }

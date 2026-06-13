@@ -8,6 +8,7 @@ import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./edi
 import { ProductHoverImageUpload } from "./product-hover-image-upload";
 import { ProductMediaUpload } from "./product-media-upload";
 import { RelatedItemsField } from "./related-items-field";
+import "./product-form.css";
 import type { ProductFormProps } from "../../types/forms/product-form.types";
 
 export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
