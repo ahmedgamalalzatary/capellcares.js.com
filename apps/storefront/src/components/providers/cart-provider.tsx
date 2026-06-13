@@ -72,14 +72,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const collectionIds = new Set(collections.map((collection) => collection.id));
 
         setLines((current) => current.filter((line) => {
+          // Only ever prune a line against a catalog we actually received. An empty
+          // result means the fetch came back without data (transient/flaky), not
+          // that every item is invalid — pruning then would silently wipe a real
+          // cart. Keep the line in that case and let a later good fetch validate it.
           if (line.type === "product") {
+            if (products.length === 0) return true;
             return productVariants.get(line.productId)?.has(line.variantId) ?? false;
           }
 
           if (line.type === "offer") {
+            if (offers.length === 0) return true;
             return offerIds.has(line.offerId);
           }
 
+          if (collections.length === 0) return true;
           return collectionIds.has(line.collectionId);
         }));
       })

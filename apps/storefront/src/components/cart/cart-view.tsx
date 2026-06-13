@@ -25,15 +25,28 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  // Track whether the catalog fetch has resolved successfully. The cart's source
+  // of truth is `lines` (in memory / localStorage); the fetch only enriches each
+  // line with name/price/image. Until it lands — or if it fails — we must NOT
+  // treat an unresolved cart as an empty one, otherwise a slow or flaky fetch
+  // renders "empty cart" over a cart that actually has items (the intermittent
+  // empty-cart bug seen on some Safari/WebKit runs).
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
       .then(([p, o, c]) => {
+        if (cancelled) return;
         setProducts(p);
         setOffers(o);
         setCollections(c);
+        setCatalogLoaded(true);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const resolved: Resolved[] = useMemo(() => {
@@ -92,6 +105,20 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   }, [lines, lang, dict, keyOf, products, offers, collections]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
+
+  // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch
+  // failed): show a loading state, never the "empty" screen. Collapsing this into
+  // the empty case is what let a slow/failed fetch blank a real cart.
+  if (resolved.length === 0 && lines.length > 0 && !catalogLoaded) {
+    return (
+      <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 px-6 py-12 text-center sm:my-16">
+        <div className="grid h-16 w-16 animate-pulse place-items-center rounded-full bg-(--warm-soft) text-ink">
+          <Icon.Cart size={26} />
+        </div>
+        <p className="text-sm text-(--ink-2)">{dict.common?.loading ?? "…"}</p>
+      </div>
+    );
+  }
 
   if (resolved.length === 0) {
     return (
