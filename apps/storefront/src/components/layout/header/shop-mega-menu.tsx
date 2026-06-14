@@ -14,10 +14,31 @@ type ShopMegaMenuProps = {
   isAr: boolean;
 };
 
-export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
+export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProps) {
   const [open, setOpen] = useState(false);
   const [activeRoot, setActiveRoot] = useState(0);
+  const [dir, setDir] = useState<1 | -1>(1);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mirror the mobile drawer: switching tabs slides the new group in from the
+  // trailing side (mirrored in RTL) instead of swapping instantly.
+  const selectRoot = useCallback((index: number) => {
+    setActiveRoot((current) => {
+      if (index !== current) setDir(index > current ? 1 : -1);
+      return index;
+    });
+  }, []);
+  const fromRight = dir === 1 ? !isAr : isAr;
+
+  // Clipped max-height reveal, like the mobile drawer: the panel grows down from
+  // under the bar on open and collapses up on close. Measure the content's real
+  // height so the reveal animates to an exact value (remeasure when the active
+  // tab changes its height).
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelH, setPanelH] = useState<number>();
+  useEffect(() => {
+    if (open) setPanelH(panelRef.current?.scrollHeight);
+  }, [open, activeRoot]);
 
   const cancelClose = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -75,22 +96,18 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
       {/* Full-width panel — anchored to the header so it reads as one piece. */}
       <div
         className={[
-          "mr-6 ml-6 absolute inset-x-0 top-full z-40 rounded-b-2xl bg-canvas shadow-(--shadow-2)",
+          "mr-6 ml-6 absolute inset-x-0 top-full z-40 overflow-hidden rounded-b-2xl bg-canvas shadow-(--shadow-2)",
           open ? "pointer-events-auto" : "pointer-events-none"
         ].join(" ")}
         role="menu"
         style={{
-          transformOrigin: "top",
-          transition:
-            "clip-path 340ms var(--ease-out-expo), opacity 220ms ease, transform 340ms var(--ease-out-expo)",
-          clipPath: open
-            ? "inset(0 0 0 0 round 0 0 16px 16px)"
-            : "inset(0 0 100% 0 round 0 0 16px 16px)",
+          maxHeight: open ? (panelH ? `${panelH}px` : "80vh") : 0,
           opacity: open ? 1 : 0,
-          transform: open ? "translateY(0)" : "translateY(-6px)"
+          transition:
+            "max-height 1000ms cubic-bezier(0.76,0,0.24,1), opacity 220ms ease"
         }}
       >
-        <div className="container">
+        <div ref={panelRef} className="container">
           {/* Father tabs */}
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-b border-(--hairline) py-4">
             {roots.map((g, i) => {
@@ -99,8 +116,8 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                 <button
                   key={g.key}
                   type="button"
-                  onMouseEnter={() => setActiveRoot(i)}
-                  onFocus={() => setActiveRoot(i)}
+                  onMouseEnter={() => selectRoot(i)}
+                  onFocus={() => selectRoot(i)}
                   className={[
                     "relative whitespace-nowrap pb-1 tracking-[0.02em] transition-colors",
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
@@ -115,9 +132,14 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
             })}
           </div>
 
-          {/* Recursive descendants beneath the active root */}
+          {/* Recursive descendants beneath the active root. The incoming group
+              slides in from the trailing side, matching the mobile drawer. */}
           {active && (
-            <div className="max-h-[70vh] overflow-y-auto py-8">
+            <div className="max-h-[70vh] overflow-x-hidden overflow-y-auto py-8">
+              <div
+                key={activeRoot}
+                className={`animate-in duration-300 ${fromRight ? "slide-in-from-right-16" : "slide-in-from-left-16"}`}
+              >
               {active.type === "products" ? (
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
                   {/* "All New / All Bestsellers" sits beside the products, like the categories' "All {category}" */}
@@ -162,6 +184,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries }: ShopMegaMenuProps) {
                   ))}
                 </div>
               )}
+              </div>
             </div>
           )}
         </div>

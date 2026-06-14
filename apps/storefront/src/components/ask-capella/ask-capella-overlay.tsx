@@ -93,7 +93,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
               onChange={(e) => setInput(e.target.value)}
               placeholder={dict.ask.typeMessage}
               disabled={pending}
-              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-ink outline-none placeholder:text-(--ink-3) disabled:opacity-50"
+              className="min-w-0 flex-1 border-0 bg-transparent text-base text-ink outline-none placeholder:text-(--ink-3) disabled:opacity-50 sm:text-sm"
             />
             <button
               type="submit"

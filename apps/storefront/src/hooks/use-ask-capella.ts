@@ -25,8 +25,13 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Autofocus only on devices with a fine pointer (mouse/trackpad). On touch
+  // devices, focusing on open would instantly raise the on-screen keyboard
+  // before the user has read anything — let them tap the field themselves.
   useEffect(() => {
-    inputRef.current?.focus();
+    if (window.matchMedia("(pointer: fine)").matches) {
+      inputRef.current?.focus();
+    }
   }, []);
 
   useEffect(() => {
