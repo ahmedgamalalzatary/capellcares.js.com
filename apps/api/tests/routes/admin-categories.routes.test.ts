@@ -527,3 +527,66 @@ test("admin category update rejects setting a category as its own parent", async
 
   assert.equal(rootCategory?.parentId, null);
 });
+
+test("admin category create stores an image for direct children of roots only", async () => {
+  const ids = await getBaselineIds();
+  const slug = `depth-one-image-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "صورة فرعية", en: "Subcategory Image" },
+        parentId: ids.rootCategoryId,
+        isLeaf: true,
+        imagePath: "/uploads/subcategory.jpg"
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const [createdCategory] = await db
+    .select({ imagePath: categories.imagePath, parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.slug, slug))
+    .limit(1);
+
+  assert.equal(createdCategory?.parentId, ids.rootCategoryId);
+  assert.equal(createdCategory?.imagePath, "/uploads/subcategory.jpg");
+});
+
+test("admin category create rejects images for categories deeper than one level below root", async () => {
+  const ids = await getBaselineIds();
+  const [depthOneParent] = await db
+    .insert(categories)
+    .values({
+      slug: `depth-one-parent-${Date.now()}`,
+      arName: "أب فرعي",
+      enName: "Depth One Parent",
+      parentId: ids.rootCategoryId,
+      isLeaf: false
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `depth-two-image-${Date.now()}`,
+        name: { ar: "صورة مرفوضة", en: "Rejected Image" },
+        parentId: depthOneParent.id,
+        isLeaf: true,
+        imagePath: "/uploads/not-allowed.jpg"
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-image-depth");
+  });
+});

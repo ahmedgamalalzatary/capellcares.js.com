@@ -6,6 +6,8 @@ import type { ErpPermissionKey } from "../../services/erp-permissions.service.js
 const UPLOAD_CONTEXT_PERMISSIONS = new Set<ErpPermissionKey>([
   "products.create",
   "products.update",
+  "categories.create",
+  "categories.update",
   "offers.create",
   "offers.update",
   "collections.create",

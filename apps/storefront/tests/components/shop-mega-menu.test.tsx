@@ -31,8 +31,8 @@ const menuEntries: HeaderMenuEntry[] = [
     label: "Skin Care",
     sortOrder: 2,
     children: [
-      { id: 102, slug: "cleansers", label: "Cleansers", children: [] },
-      { id: 101, slug: "serums", label: "Serums", children: [] }
+      { id: 102, slug: "cleansers", label: "Cleansers", imagePath: "/uploads/cleansers.jpg", children: [] },
+      { id: 101, slug: "serums", label: "Serums", imagePath: null, children: [] }
     ]
   },
   {
@@ -235,5 +235,21 @@ describe("ShopMegaMenu", () => {
         .map((item) => item.textContent?.trim())
         .filter((item) => item === "Cleansers" || item === "Serums")
     ).toEqual(["Cleansers", "Serums"]);
+  });
+
+  it("renders category images beside the child category text when available", () => {
+    render(createElement(ShopMegaMenu, {
+      lang: "en",
+      dict,
+      menuEntries,
+      isAr: false
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
+
+    expect(screen.getByAltText("Cleansers")).toHaveAttribute("src", "/uploads/cleansers.jpg");
+    expect(screen.getByRole("link", { name: "Cleansers" })).toBeInTheDocument();
+    expect(screen.queryByAltText("Serums")).toBeNull();
   });
 });

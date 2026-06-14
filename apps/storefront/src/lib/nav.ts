@@ -4,6 +4,7 @@ export interface NavNode {
   id: number;
   slug: string;
   label: string;
+  imagePath?: string | null;
   children: NavNode[];
 }
 
@@ -35,6 +36,7 @@ export function buildNav(categories: Category[], lang: Language): NavGroup[] {
       id: category.id,
       slug: category.slug,
       label: pickLang(category.name, lang),
+      imagePath: category.imagePath ?? null,
       children: buildNodes(category.id)
       }));
 

@@ -31,8 +31,8 @@ const menuEntries: HeaderMenuEntry[] = [
     label: "العناية",
     sortOrder: 2,
     children: [
-      { id: 5, slug: "cleansers", label: "منظفات", children: [] },
-      { id: 2, slug: "serums", label: "سيروم", children: [{ id: 3, slug: "vitamin-c", label: "فيتامين سي", children: [] }] }
+      { id: 5, slug: "cleansers", label: "منظفات", imagePath: "/uploads/cleansers.jpg", children: [] },
+      { id: 2, slug: "serums", label: "سيروم", imagePath: null, children: [{ id: 3, slug: "vitamin-c", label: "فيتامين سي", imagePath: null, children: [] }] }
     ]
   },
   {
@@ -42,7 +42,7 @@ const menuEntries: HeaderMenuEntry[] = [
     label: "الجسم",
     sortOrder: 1,
     children: [
-      { id: 4, slug: "lotions", label: "لوشن", children: [] }
+      { id: 4, slug: "lotions", label: "لوشن", imagePath: null, children: [] }
     ]
   }
 ];
@@ -239,5 +239,34 @@ describe("HeaderMobileDrawer", () => {
         .map((item) => item.textContent?.trim())
         .filter((item) => item === "منظفات" || item === "سيروم")
     ).toEqual(["منظفات", "سيروم"]);
+  });
+
+  it("renders category images beside child category names when available", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "ar",
+      dict: {
+        nav: {
+          search: "بحث",
+          viewAll: "عرض الكل",
+          viewAllCategory: "كل {name} ←",
+          products: "المنتجات",
+          offers: "العروض",
+          orders: "الطلبات",
+          followUs: "تابعنا"
+        },
+        langSwitch: { ar: "العربية", en: "English" }
+      },
+      menuEntries,
+      isAr: true,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
+    expect(screen.getByAltText("منظفات")).toHaveAttribute("src", "/uploads/cleansers.jpg");
+    expect(screen.queryByAltText("سيروم")).toBeNull();
   });
 });

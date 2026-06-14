@@ -13,6 +13,7 @@ export async function listCategories(_req: Request, res: Response) {
     id: category.id,
     parentId: category.parentId,
     slug: category.slug,
+    imagePath: category.imagePath ?? null,
     sortOrder: category.sortOrder ?? 0,
     name: {
       ar: category.arName,

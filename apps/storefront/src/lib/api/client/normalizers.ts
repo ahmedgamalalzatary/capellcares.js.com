@@ -24,6 +24,7 @@ export function normalizeCategory(input: CategoryApiShape): Category {
     id: Number(input.id),
     parentId: input.parentId == null ? null : Number(input.parentId),
     slug: input.slug,
+    imagePath: resolveMediaUrl(input.imagePath ?? "") || null,
     sortOrder: typeof input.sortOrder === "number" ? input.sortOrder : (input.sortOrder != null && input.sortOrder !== "" && Number.isFinite(Number(input.sortOrder))) ? Number(input.sortOrder) : undefined,
     name: {
       ar: input.name?.ar ?? input.arName ?? "",

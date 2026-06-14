@@ -87,6 +87,7 @@ const categoryBoundaryPayload = {
   id: 7,
   parentId: null,
   slug: "body-care",
+  imagePath: "/uploads/body-care.jpg",
   sortOrder: 3,
   arName: "العناية بالجسم",
   enName: "Body Care",
@@ -121,7 +122,7 @@ describe("storefront client contracts", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/products"),
       expect.objectContaining({
-        next: { revalidate: 120 },
+        next: { revalidate: 10 },
         headers: { "x-lang": "en" }
       })
     );
@@ -160,6 +161,7 @@ describe("storefront client contracts", () => {
 
     assertConformsTo(result[0], storefrontCategoryContract);
     expect(result[0]).toMatchObject({
+      imagePath: "http://localhost:4000/uploads/body-care.jpg",
       sortOrder: 3,
       name: {
         ar: "العناية بالجسم",

@@ -1,6 +1,6 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
 
@@ -17,6 +17,10 @@ vi.mock("@/lib/store", () => ({
 }));
 
 import { CategoryForm } from "@/components/forms/category-form";
+
+afterEach(() => {
+  cleanup();
+});
 
 const categories = [
   { id: 1, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false, deletedAt: null },
@@ -35,5 +39,17 @@ describe("CategoryForm", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "3" } });
 
     expect(screen.getByText("المسار: العناية بالشعر › زيوت الشعر › شعر جاف")).toBeInTheDocument();
+  });
+
+  it("keeps image upload unavailable until the category is a direct child of a root", () => {
+    render(createElement(CategoryForm, { mode: "new", categories }));
+
+    expect(screen.getByText("صورة القسم غير متاحة إلا للأقسام الفرعية المباشرة تحت القسم الرئيسي.")).toBeInTheDocument();
+    expect(screen.getByText("رفع الصور غير متاح لهذا المستوى من الأقسام.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
+
+    expect(screen.queryByText("رفع الصور غير متاح لهذا المستوى من الأقسام.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "اختيار صورة" })).toBeInTheDocument();
   });
 });

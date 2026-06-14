@@ -29,7 +29,7 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   // devices, focusing on open would instantly raise the on-screen keyboard
   // before the user has read anything — let them tap the field themselves.
   useEffect(() => {
-    if (window.matchMedia("(pointer: fine)").matches) {
+    if (typeof window.matchMedia === "function" && window.matchMedia("(pointer: fine)").matches) {
       inputRef.current?.focus();
     }
   }, []);

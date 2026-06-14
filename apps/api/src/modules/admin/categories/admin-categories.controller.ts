@@ -24,6 +24,7 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
       slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
       arName: incoming.name?.ar ?? incoming.arName ?? "",
       enName: incoming.name?.en ?? incoming.enName ?? "",
+      imagePath: typeof incoming.imagePath === "string" && incoming.imagePath.trim() ? incoming.imagePath.trim() : null,
       isLeaf: Boolean(incoming.isLeaf)
     });
     res.json({ ok: true });
@@ -36,6 +37,9 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
     }
     if (error?.code === "CATEGORY_INVALID_PARENT") {
       return res.status(400).json({ ok: false, reason: "invalid-parent" });
+    }
+    if (error?.code === "CATEGORY_INVALID_IMAGE_DEPTH") {
+      return res.status(400).json({ ok: false, reason: "invalid-image-depth" });
     }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });

@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import type { Category } from "@capella/shared";
-import { BilingualNameFields, EditorActions } from "./editor-form-parts";
+import { BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
+import { ImageUpload } from "./image-upload";
 import { slugifyFormName } from "./form-slug";
 
 interface Props {
@@ -19,6 +20,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
   const [parentId, setParentId] = useState<number | null>(initial?.parentId ?? null);
+  const [imagePath, setImagePath] = useState(initial?.imagePath ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const availableCategories = useMemo(
@@ -62,6 +64,29 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     () => parentOptions.find((option) => option.id === parentId)?.pathLabel ?? null,
     [parentId, parentOptions]
   );
+  const availableCategoryMap = useMemo(
+    () => new Map(availableCategories.map((category) => [category.id, category])),
+    [availableCategories]
+  );
+  const selectedDepth = useMemo(() => {
+    let depth = 0;
+    let currentId = parentId;
+    const seen = new Set<number>();
+
+    while (currentId != null && !seen.has(currentId)) {
+      seen.add(currentId);
+      const current = availableCategoryMap.get(currentId);
+      if (!current) {
+        break;
+      }
+      depth += 1;
+      currentId = current.parentId;
+    }
+
+    return depth;
+  }, [availableCategoryMap, parentId]);
+  const canEditImage = selectedDepth === 1;
+  const uploadContext = mode === "edit" ? "categories.update" : "categories.create";
 
   const save = async () => {
     const e: Record<string, string> = {};
@@ -76,6 +101,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       parentId,
+      imagePath: canEditImage ? imagePath : null,
       isLeaf: true,
       deletedAt: initial?.deletedAt ?? null
     };
@@ -109,6 +135,22 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           </select>
           {selectedParentPath && <div className="muted selected-parent-path">المسار: {selectedParentPath}</div>}
         </div>
+        <ImageFieldCard
+          title="صورة القسم"
+          uploadSlot={canEditImage ? (
+            <ImageUpload
+              value={imagePath}
+              onChange={setImagePath}
+              hint="تظهر هذه الصورة في قوائم المتجر للأقسام الفرعية المباشرة."
+              uploadContext={uploadContext}
+            />
+          ) : (
+            <div className="stack">
+              <div>صورة القسم غير متاحة إلا للأقسام الفرعية المباشرة تحت القسم الرئيسي.</div>
+              <div className="faint" style={{ fontSize: 12 }}>رفع الصور غير متاح لهذا المستوى من الأقسام.</div>
+            </div>
+          )}
+        />
         <EditorActions
           cancelLabel="إلغاء"
           saveLabel={mode === "new" ? "إنشاء القسم" : "حفظ التعديلات"}

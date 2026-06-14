@@ -59,6 +59,7 @@ export type CategoryWriteInput = {
   slug: string;
   arName: string;
   enName: string;
+  imagePath: string | null;
   isLeaf: boolean;
 };
 
@@ -67,6 +68,7 @@ export type CategoryNode = {
   parentId: number | null;
   arName: string;
   enName: string;
+  imagePath?: string | null;
   deletedAt: Date | null;
 };
 
@@ -86,6 +88,7 @@ export async function loadCategoryNodesRepo(): Promise<CategoryNode[]> {
       parentId: categories.parentId,
       arName: categories.arName,
       enName: categories.enName,
+      imagePath: categories.imagePath,
       deletedAt: categories.deletedAt
     })
     .from(categories);
@@ -106,6 +109,7 @@ export async function writeCategoryRepo(
         slug: input.slug,
         arName: input.arName,
         enName: input.enName,
+        imagePath: input.imagePath,
         isLeaf: input.isLeaf
       })
       .where(eq(categories.id, input.id));
@@ -121,6 +125,7 @@ export async function writeCategoryRepo(
       slug: input.slug,
       arName: input.arName,
       enName: input.enName,
+      imagePath: input.imagePath,
       isLeaf: input.isLeaf
     })
     .$returningId();

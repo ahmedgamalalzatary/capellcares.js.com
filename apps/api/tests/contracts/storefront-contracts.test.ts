@@ -2,7 +2,7 @@ import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { eq } from "drizzle-orm";
-import { products } from "@capella/database/drizzle/schema";
+import { categories, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -167,9 +167,17 @@ test("storefront collection detail returns its related items", async () => {
 });
 
 test("storefront category endpoints conform to the shared category contract", async () => {
+  const ids = await getBaselineIds();
+  await db
+    .update(categories)
+    .set({ imagePath: "/uploads/storefront-category.jpg" })
+    .where(eq(categories.id, ids.leafCategoryId));
+
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/categories");
     assertConformsTo(response.json.items[0], storefrontCategoryContract);
     assert.equal(typeof response.json.items[0].sortOrder, "number");
+    const updatedLeaf = response.json.items.find((item: any) => item.id === ids.leafCategoryId);
+    assert.equal(updatedLeaf?.imagePath, "/uploads/storefront-category.jpg");
   });
 });

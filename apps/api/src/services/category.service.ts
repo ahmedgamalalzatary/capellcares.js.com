@@ -34,6 +34,7 @@ function wouldCreateCategoryCycle(
 export async function upsertCategory(input: CategoryWriteInput) {
   const previous = input.id ? await getCategoryByIdRepo(input.id) : null;
   const allCategories = await loadCategoryNodesRepo();
+  const nextDepth = buildLineage(input.parentId, allCategories).length;
 
   if (input.id && wouldCreateCategoryCycle(input.id, input.parentId, allCategories)) {
     throwCoded(
@@ -51,7 +52,14 @@ export async function upsertCategory(input: CategoryWriteInput) {
     throwCoded("CATEGORY_SLUG_CONFLICT", "Category slug already exists under this parent");
   }
 
-  const isGrandchildCategory = buildLineage(input.parentId, allCategories).length === 2;
+  if (input.imagePath && nextDepth !== 1) {
+    throwCoded(
+      "CATEGORY_INVALID_IMAGE_DEPTH",
+      "Category image is only allowed for direct children of root categories"
+    );
+  }
+
+  const isGrandchildCategory = nextDepth === 2;
   if (isGrandchildCategory) {
     const nameConflict = await findSameParentGrandchildNameConflictRepo({
       id: input.id,
@@ -64,5 +72,11 @@ export async function upsertCategory(input: CategoryWriteInput) {
     }
   }
 
-  return writeCategoryRepo(input, previous?.parentId ?? null);
+  return writeCategoryRepo(
+    {
+      ...input,
+      imagePath: input.imagePath ?? null
+    },
+    previous?.parentId ?? null
+  );
 }

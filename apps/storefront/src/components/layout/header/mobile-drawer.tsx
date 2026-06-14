@@ -133,6 +133,7 @@ export function HeaderMobileDrawer({
           key={child.id}
           href={`/${lang}/category/${child.slug}`}
           title={child.label}
+          imagePath={child.imagePath ?? null}
           subtitle={
             child.children.length
               ? child.children.map((g) => g.label).join(" · ")
@@ -313,6 +314,7 @@ export function HeaderMobileDrawer({
 function CategoryCard({
   href,
   title,
+  imagePath,
   image,
   isAr,
   onClick
@@ -322,20 +324,26 @@ function CategoryCard({
   subtitle?: string;
   count?: number;
   children?: NavNode[];
+  imagePath?: string | null;
   image?: React.ReactNode;
   isAr: boolean;
   onClick: () => void;
 }) {
+  const visual = image ?? (imagePath ? (
+    <img src={imagePath} alt={title} className="h-full w-full object-cover" />
+  ) : null);
+
   return (
     <div className="rounded-md bg-surface p-3 shadow-(--shadow-1)">
       <Link
         href={href}
+        aria-label={title}
         onClick={onClick}
         className="group relative flex uppercase items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
-        {image && (
-          <span aria-hidden className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
-            {image}
+        {visual && (
+          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
+            {visual}
           </span>
         )}
 
