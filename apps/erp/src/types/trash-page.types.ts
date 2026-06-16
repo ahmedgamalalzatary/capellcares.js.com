@@ -14,6 +14,7 @@ export interface TrashTabConfig {
 }
 
 export interface HardDeleteTarget {
+  kind: TrashTab;
   id: number;
   title: string;
 }

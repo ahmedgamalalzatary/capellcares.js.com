@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { and, asc, eq, or } from "drizzle-orm";
-import { offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
+import { entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -452,6 +452,71 @@ serialTest("admin offer toggle-status flips the persisted DB status", async () =
 
   assert.ok(afterSecondToggle, "expected offer after second toggle");
   assert.equal(afterSecondToggle.status, "active");
+});
+
+serialTest("admin offer permanent delete removes a soft-deleted offer and its items", async () => {
+  const ids = await getBaselineIds();
+
+  await db.update(offers).set({ deletedAt: new Date() }).where(eq(offers.id, ids.offerId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${ids.offerId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 204);
+  });
+
+  const remainingOffers = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(eq(offers.id, ids.offerId));
+  assert.equal(remainingOffers.length, 0);
+
+  const remainingItems = await db
+    .select({ id: offerItems.id })
+    .from(offerItems)
+    .where(eq(offerItems.offerId, ids.offerId));
+  assert.equal(remainingItems.length, 0);
+
+  const remainingRelatedItems = await db
+    .select({ id: relatedItems.id })
+    .from(relatedItems)
+    .where(
+      or(
+        and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, ids.offerId)),
+        and(eq(relatedItems.targetType, "offer"), eq(relatedItems.targetId, ids.offerId))
+      )
+    );
+  assert.equal(remainingRelatedItems.length, 0);
+
+  const remainingEntityOrderings = await db
+    .select({ id: entityOrderings.id })
+    .from(entityOrderings)
+    .where(
+      or(
+        and(eq(entityOrderings.entityType, "offer"), eq(entityOrderings.entityId, ids.offerId)),
+        and(eq(entityOrderings.scopeType, "offer"), eq(entityOrderings.scopeId, ids.offerId))
+      )
+    );
+  assert.equal(remainingEntityOrderings.length, 0);
+});
+
+serialTest("admin offer permanent delete returns not-in-trash for active offers", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${ids.offerId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(response.json.reason, "not-in-trash");
+  });
 });
 
 serialTest("admin offer revalidation includes related product slugs for bundle members", async () => {

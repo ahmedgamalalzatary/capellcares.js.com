@@ -4,7 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
 import { db } from "@capella/database/src/db";
-import { categories, entityOrderings } from "@capella/database/drizzle/schema";
+import { categories, categoryPaths, entityOrderings } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
@@ -46,6 +46,51 @@ test("admin category delete rejects categories that still have active children",
 
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "has-active-children");
+  });
+});
+
+test("admin category permanent delete removes a soft-deleted category and its closure rows", async () => {
+  const slug = `permanent-category-${Date.now()}`;
+  const [category] = await db
+    .insert(categories)
+    .values({ slug, arName: "محذوف نهائي", enName: "Permanent Category", isLeaf: true, deletedAt: new Date() })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/categories/${category.id}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 204);
+  });
+
+  const remainingCategories = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(eq(categories.id, category.id));
+  assert.equal(remainingCategories.length, 0);
+
+  const remainingPaths = await db
+    .select({ descendantId: categoryPaths.descendantId })
+    .from(categoryPaths)
+    .where(eq(categoryPaths.descendantId, category.id));
+  assert.equal(remainingPaths.length, 0);
+});
+
+test("admin category permanent delete returns not-in-trash for active categories", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/categories/${ids.leafCategoryId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(response.json.reason, "not-in-trash");
   });
 });
 

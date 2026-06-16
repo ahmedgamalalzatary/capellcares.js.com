@@ -1,7 +1,7 @@
-import { eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { offerItems, offers, productVariants } from "@capella/database/drizzle/schema";
+import { entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksRepo,
@@ -219,6 +219,40 @@ export async function softDeleteOfferRepo(id: number) {
 
 export async function restoreOfferRepo(id: number) {
   await db.update(offers).set({ deletedAt: null }).where(eq(offers.id, id));
+}
+
+export async function hardDeleteOfferRepo(id: number): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ deletedAt: offers.deletedAt })
+      .from(offers)
+      .where(eq(offers.id, id))
+      .limit(1);
+
+    if (!existing || existing.deletedAt == null) {
+      return false;
+    }
+
+    await tx
+      .delete(relatedItems)
+      .where(
+        or(
+          and(eq(relatedItems.sourceType, "offer"), eq(relatedItems.sourceId, id)),
+          and(eq(relatedItems.targetType, "offer"), eq(relatedItems.targetId, id))
+        )
+      );
+    await tx.delete(offerItems).where(eq(offerItems.offerId, id));
+    await tx
+      .delete(entityOrderings)
+      .where(
+        or(
+          and(eq(entityOrderings.entityType, "offer"), eq(entityOrderings.entityId, id)),
+          and(eq(entityOrderings.scopeType, "offer"), eq(entityOrderings.scopeId, id))
+        )
+      );
+    await tx.delete(offers).where(eq(offers.id, id));
+    return true;
+  });
 }
 
 export async function toggleOfferStatusRepo(id: number) {

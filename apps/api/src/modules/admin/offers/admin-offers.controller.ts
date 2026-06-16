@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import {
   findOfferByIdRepo,
+  hardDeleteOfferRepo,
   listOffersRepo,
   reorderOffersRepo,
   restoreOfferRepo,
@@ -165,6 +166,18 @@ export async function adminRestoreOffer(req: Request, res: Response) {
     await safeTriggerOfferRevalidation(revalidation);
   }
   res.json({ ok: true });
+}
+
+export async function adminHardDeleteOffer(req: Request, res: Response) {
+  const revalidation = await findOfferRevalidationData(Number(req.params.id));
+  const deleted = await hardDeleteOfferRepo(Number(req.params.id));
+  if (!deleted) {
+    return res.status(404).json({ ok: false, reason: "not-in-trash" });
+  }
+  if (revalidation) {
+    await safeTriggerOfferRevalidation(revalidation);
+  }
+  res.status(204).end();
 }
 
 export async function adminToggleOfferStatus(req: Request, res: Response) {

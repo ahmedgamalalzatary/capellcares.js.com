@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import {
+  hardDeleteCategoryRepo,
   hasActiveChildrenCategoriesRepo,
   hasLinkedProductsInCategoryRepo,
   listCategoriesRepo,
@@ -66,6 +67,18 @@ export async function adminRestoreCategory(req: Request, res: Response, next: Ne
   try {
     await restoreCategoryRepo(Number(req.params.id));
     res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminHardDeleteCategory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const deleted = await hardDeleteCategoryRepo(Number(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ ok: false, reason: "not-in-trash" });
+    }
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const hardDeleteProduct = vi.fn();
+const hardDeleteCategory = vi.fn();
+const hardDeleteOffer = vi.fn();
 const restoreProduct = vi.fn();
 const restoreCategory = vi.fn();
 const restoreOffer = vi.fn();
@@ -11,7 +13,15 @@ const useAdminAuth = vi.fn(() => ({
     name: "Admin User",
     email: "admin@capella.test",
     role: "admin" as "admin" | "staff",
-    permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
+    permissionKeys: [
+      "trash.read",
+      "products.restore",
+      "products.permanent_delete",
+      "categories.restore",
+      "categories.permanent_delete",
+      "offers.restore",
+      "offers.permanent_delete"
+    ]
   }
 }));
 
@@ -62,6 +72,8 @@ vi.mock("@/lib/store", () => ({
   }),
   getStore: () => ({
     hardDeleteProduct,
+    hardDeleteCategory,
+    hardDeleteOffer,
     restoreProduct,
     restoreCategory,
     restoreOffer
@@ -73,6 +85,8 @@ import TrashPage from "@/app/trash/page";
 describe("TrashPage hard delete", () => {
   beforeEach(() => {
     hardDeleteProduct.mockReset();
+    hardDeleteCategory.mockReset();
+    hardDeleteOffer.mockReset();
     restoreProduct.mockReset();
     restoreCategory.mockReset();
     restoreOffer.mockReset();
@@ -81,7 +95,15 @@ describe("TrashPage hard delete", () => {
         name: "Admin User",
         email: "admin@capella.test",
         role: "admin",
-        permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
+        permissionKeys: [
+          "trash.read",
+          "products.restore",
+          "products.permanent_delete",
+          "categories.restore",
+          "categories.permanent_delete",
+          "offers.restore",
+          "offers.permanent_delete"
+        ]
       }
     });
   });
@@ -118,16 +140,38 @@ describe("TrashPage hard delete", () => {
     expect(hardDeleteProduct).toHaveBeenCalledWith(7);
   });
 
-  it("does not show the hard-delete button on the categories tab", () => {
+  it("shows the hard-delete button on the categories tab when permission is present", () => {
     render(createElement(TrashPage));
     fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
-    expect(screen.queryByRole("button", { name: /حذف نهائي/ })).not.toBeInTheDocument();
+    expect(screen.getByText("حذف نهائي")).toBeInTheDocument();
   });
 
-  it("does not show the hard-delete button on the offers tab", () => {
+  it("calls hardDeleteCategory when the categories modal confirm button is clicked", () => {
+    hardDeleteCategory.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
+    fireEvent.click(screen.getByText("حذف نهائي"));
+    const confirmButtons = screen.getAllByText("حذف نهائي");
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    expect(hardDeleteCategory).toHaveBeenCalledWith(3);
+  });
+
+  it("shows the hard-delete button on the offers tab when permission is present", () => {
     render(createElement(TrashPage));
     fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
-    expect(screen.queryByRole("button", { name: /حذف نهائي/ })).not.toBeInTheDocument();
+    expect(screen.getByText("حذف نهائي")).toBeInTheDocument();
+  });
+
+  it("calls hardDeleteOffer when the offers modal confirm button is clicked", () => {
+    hardDeleteOffer.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
+    fireEvent.click(screen.getByText("حذف نهائي"));
+    const confirmButtons = screen.getAllByText("حذف نهائي");
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    expect(hardDeleteOffer).toHaveBeenCalledWith(5);
   });
 
   it("hides restore and permanent-delete actions when trash access lacks the underlying module permission", () => {

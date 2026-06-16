@@ -10,6 +10,8 @@ import { db } from "@capella/database/src/db";
 import { collectDescendantIds } from "./category-tree.js";
 import { assertCompleteOrderedIds, replaceScopedOrderingRepo } from "./entity-ordering.repository.js";
 
+type CategoryDbExecutor = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
+
 export async function listCategoriesRepo(includeDeleted = false, surface: OrderingSurface = "erp") {
   const rows = await db
     .select()
@@ -170,6 +172,33 @@ export async function restoreCategoryRepo(id: number) {
   await syncCategoryLeafState(existing?.parentId ?? null);
 }
 
+export async function hardDeleteCategoryRepo(id: number): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ parentId: categories.parentId, deletedAt: categories.deletedAt })
+      .from(categories)
+      .where(eq(categories.id, id))
+      .limit(1);
+
+    if (!existing || existing.deletedAt == null) {
+      return false;
+    }
+
+    await tx
+      .delete(entityOrderings)
+      .where(
+        or(
+          and(eq(entityOrderings.entityType, "category"), eq(entityOrderings.entityId, id)),
+          and(eq(entityOrderings.scopeType, "category"), eq(entityOrderings.scopeId, id))
+        )
+      );
+    await tx.delete(categories).where(eq(categories.id, id));
+    await rebuildCategoryPathsRepo(tx);
+    await syncCategoryLeafState(existing.parentId, tx);
+    return true;
+  });
+}
+
 // Descendant lookup with a single source of truth: the categoryPaths closure
 // table (rebuilt on every write, and self-inclusive). The in-memory fallback
 // covers states where paths haven't been materialised yet (e.g. fresh seeds).
@@ -210,11 +239,16 @@ export async function hasActiveChildrenCategoriesRepo(id: number) {
   return rows.length > 0;
 }
 
-async function syncCategoryLeafState(parentId: number | null) {
+async function syncCategoryLeafState(parentId: number | null, executor: CategoryDbExecutor = db) {
   if (parentId == null) return;
 
-  const hasActiveChildren = await hasActiveChildrenCategoriesRepo(parentId);
-  await db
+  const hasActiveChildren = await executor
+    .select({ id: categories.id })
+    .from(categories)
+    .where(and(eq(categories.parentId, parentId), isNull(categories.deletedAt)))
+    .limit(1)
+    .then((rows) => rows.length > 0);
+  await executor
     .update(categories)
     .set({ isLeaf: !hasActiveChildren })
     .where(eq(categories.id, parentId));
@@ -243,8 +277,8 @@ export async function findSiblingSlugConflictRepo(input: {
 // tree is small (tens of rows), so a full truncate-and-reinsert is simpler and
 // safer than computing incremental path deltas. Revisit only if the tree grows
 // large enough for this to matter.
-async function rebuildCategoryPathsRepo() {
-  const rows = await db
+async function rebuildCategoryPathsRepo(executor: CategoryDbExecutor = db) {
+  const rows = await executor
     .select({ id: categories.id, parentId: categories.parentId })
     .from(categories);
   const byId = new Map(rows.map((row) => [row.id, row]));
@@ -267,12 +301,20 @@ async function rebuildCategoryPathsRepo() {
     }
   }
 
-  await db.transaction(async (tx) => {
-    await tx.delete(categoryPaths);
-    if (pathRows.length > 0) {
-      await tx.insert(categoryPaths).values(pathRows);
-    }
-  });
+  if (executor === db) {
+    await db.transaction(async (tx) => {
+      await tx.delete(categoryPaths);
+      if (pathRows.length > 0) {
+        await tx.insert(categoryPaths).values(pathRows);
+      }
+    });
+    return;
+  }
+
+  await executor.delete(categoryPaths);
+  if (pathRows.length > 0) {
+    await executor.insert(categoryPaths).values(pathRows);
+  }
 }
 
 export async function findSameParentGrandchildNameConflictRepo(input: {

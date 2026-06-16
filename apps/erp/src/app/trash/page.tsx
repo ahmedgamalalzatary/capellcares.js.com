@@ -74,7 +74,7 @@ export default function TrashPage() {
             empty="لا توجد منتجات محذوفة."
             rows={deletedProducts}
             onRestore={canRestoreErpModule(user, "products") ? restoreProduct : undefined}
-            onHardDelete={hasErpPermission(user, "products.permanent_delete") ? (id, title) => setPendingHardDelete({ id, title }) : undefined}
+            onHardDelete={hasErpPermission(user, "products.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "products", id, title }) : undefined}
           />
         )}
         {tab === "categories" && (
@@ -82,6 +82,7 @@ export default function TrashPage() {
             empty="لا توجد أقسام محذوفة."
             rows={deletedCategories}
             onRestore={canRestoreErpModule(user, "categories") ? restoreCategory : undefined}
+            onHardDelete={hasErpPermission(user, "categories.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "categories", id, title }) : undefined}
           />
         )}
         {tab === "offers" && (
@@ -89,6 +90,7 @@ export default function TrashPage() {
             empty="لا توجد عروض محذوفة."
             rows={deletedOffers}
             onRestore={canRestoreErpModule(user, "offers") ? restoreOffer : undefined}
+            onHardDelete={hasErpPermission(user, "offers.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "offers", id, title }) : undefined}
           />
         )}
       </div>

@@ -10,6 +10,7 @@ export {
   adminUpsertProduct
 } from "./products/admin-products.controller.js";
 export {
+  adminHardDeleteCategory,
   adminListCategories,
   adminReorderCategories,
   adminRestoreCategory,
@@ -27,6 +28,7 @@ export {
 } from "./collections/admin-collections.controller.js";
 export {
   adminGetOffer,
+  adminHardDeleteOffer,
   adminListOffers,
   adminReorderOffers,
   adminRestoreOffer,

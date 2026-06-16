@@ -72,11 +72,16 @@ export function useTrashPage() {
     if (!pendingHardDelete) {
       return;
     }
-    // This hook currently exposes hard delete only for products; other trash tabs use restore-only actions.
     try {
       setIsDeleting(true);
       setDeleteError(null);
-      await getStore().hardDeleteProduct(pendingHardDelete.id);
+      if (pendingHardDelete.kind === "products") {
+        await getStore().hardDeleteProduct(pendingHardDelete.id);
+      } else if (pendingHardDelete.kind === "categories") {
+        await getStore().hardDeleteCategory(pendingHardDelete.id);
+      } else {
+        await getStore().hardDeleteOffer(pendingHardDelete.id);
+      }
       setPendingHardDelete(null);
     } catch (error) {
       console.error(error);

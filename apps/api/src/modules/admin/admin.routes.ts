@@ -16,6 +16,7 @@ import {
   adminUpsertCategory,
   adminSoftDeleteCategory,
   adminRestoreCategory,
+  adminHardDeleteCategory,
   adminListOffers,
   adminListCollections,
   adminReorderOffers,
@@ -27,6 +28,7 @@ import {
   adminSoftDeleteOffer,
   adminSoftDeleteCollection,
   adminRestoreOffer,
+  adminHardDeleteOffer,
   adminRestoreCollection,
   adminToggleOfferStatus,
   adminToggleCollectionStatus
@@ -53,6 +55,7 @@ adminRoutes.post("/categories", requireErpPermission((req) => (req.body?.id ? "c
 adminRoutes.post("/categories/reorder", requireErpPermission("categories.update"), wrapAsync(adminReorderCategories));
 adminRoutes.delete("/categories/:id", requireErpPermission("categories.soft_delete"), wrapAsync(adminSoftDeleteCategory));
 adminRoutes.post("/categories/:id/restore", requireErpPermission("categories.restore"), wrapAsync(adminRestoreCategory));
+adminRoutes.delete("/categories/:id/permanent", requireErpPermission("categories.permanent_delete"), wrapAsync(adminHardDeleteCategory));
 adminRoutes.get("/sales", requireErpPermission("sales.read"), wrapAsync(getAdminSalesController));
 
 adminRoutes.get("/offers", requireErpPermission("offers.read"), wrapAsync(adminListOffers));
@@ -61,6 +64,7 @@ adminRoutes.post("/offers", requireErpPermission((req) => (req.body?.id ? "offer
 adminRoutes.post("/offers/reorder", requireErpPermission("offers.update"), wrapAsync(adminReorderOffers));
 adminRoutes.delete("/offers/:id", requireErpPermission("offers.soft_delete"), wrapAsync(adminSoftDeleteOffer));
 adminRoutes.post("/offers/:id/restore", requireErpPermission("offers.restore"), wrapAsync(adminRestoreOffer));
+adminRoutes.delete("/offers/:id/permanent", requireErpPermission("offers.permanent_delete"), wrapAsync(adminHardDeleteOffer));
 adminRoutes.post("/offers/:id/toggle-status", requireErpPermission("offers.toggle_status"), wrapAsync(adminToggleOfferStatus));
 
 adminRoutes.get("/collections", requireErpPermission("collections.read"), wrapAsync(adminListCollections));

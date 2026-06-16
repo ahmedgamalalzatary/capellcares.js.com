@@ -328,6 +328,13 @@ export class ErpStore {
     await this.refetch();
   }
 
+  async hardDeleteCategory(id: number) {
+    await api.del(`/api/erp/categories/${id}/permanent`);
+    this.categories = this.categories.filter((category) => category.id !== id);
+    this.emit();
+    void this.refetch();
+  }
+
   async upsertOffer(o: Omit<Offer, "id"> & { id?: number }) {
     await api.post("/api/erp/offers", o);
     await this.refetch();
@@ -351,6 +358,13 @@ export class ErpStore {
   async restoreOffer(id: number) {
     await api.post(`/api/erp/offers/${id}/restore`);
     await this.refetch();
+  }
+
+  async hardDeleteOffer(id: number) {
+    await api.del(`/api/erp/offers/${id}/permanent`);
+    this.offers = this.offers.filter((offer) => offer.id !== id);
+    this.emit();
+    void this.refetch();
   }
 
   async restoreCollection(id: number) {

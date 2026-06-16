@@ -31,6 +31,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "advices.toggle_status",
     "advices.update",
     "categories.create",
+    "categories.permanent_delete",
     "categories.read",
     "categories.restore",
     "categories.soft_delete",
@@ -43,6 +44,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "collections.update",
     "dashboard.read",
     "offers.create",
+    "offers.permanent_delete",
     "offers.read",
     "offers.restore",
     "offers.soft_delete",
@@ -117,6 +119,8 @@ test("getEffectiveAdminPermissions returns all permissions for admin and assigne
   const staffPermissionKeys = await getEffectiveAdminPermissions(staffId);
 
   assert.ok(adminPermissionKeys.includes("dashboard.read"));
+  assert.ok(adminPermissionKeys.includes("categories.permanent_delete"));
+  assert.ok(adminPermissionKeys.includes("offers.permanent_delete"));
   assert.ok(adminPermissionKeys.includes("products.permanent_delete"));
   assert.deepEqual(staffPermissionKeys, [
     "orders.read",
