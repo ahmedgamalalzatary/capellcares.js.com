@@ -5,4 +5,5 @@ export * from "./collection.schema.js";
 export * from "./checkout.schema.js";
 export * from "./offer.schema.js";
 export * from "./product.schema.js";
+export * from "./shop-media.schema.js";
 export * from "./wishlist.schema.js";

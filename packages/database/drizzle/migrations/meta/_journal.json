@@ -113,6 +113,13 @@
       "when": 1781827200000,
       "tag": "0015_category_images",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1782064800000,
+      "tag": "0016_shop_media_sections",
+      "breakpoints": true
     }
   ]
 }

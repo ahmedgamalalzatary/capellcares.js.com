@@ -13,7 +13,8 @@ const UPLOAD_CONTEXT_PERMISSIONS = new Set<ErpPermissionKey>([
   "collections.create",
   "collections.update",
   "advices.create",
-  "advices.update"
+  "advices.update",
+  "shop_media.update"
 ]);
 
 export function resolveUploadPermission(context: unknown): ErpPermissionKey | null {

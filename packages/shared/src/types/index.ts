@@ -165,6 +165,38 @@ export interface Advice {
   updatedAt: string;
 }
 
+export type ShopMediaTargetType =
+  | "shop"
+  | "new"
+  | "bestsellers"
+  | "products"
+  | "product"
+  | "offers"
+  | "offer"
+  | "collections"
+  | "collection"
+  | "category";
+
+export interface ShopMediaSectionItem {
+  id: number;
+  imagePath: string;
+  targetType: ShopMediaTargetType;
+  targetId: number | null;
+  targetSlug?: string | null;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ShopMediaSection {
+  id: number;
+  slot: 1 | 2 | 3;
+  status: "active" | "inactive";
+  items: ShopMediaSectionItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface OrderItem {
   id: number;
   orderId: number;

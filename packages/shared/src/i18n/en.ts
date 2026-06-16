@@ -228,6 +228,9 @@ export const en = {
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"
   },
+  shopMedia: {
+    sectionLabel: "Featured media"
+  },
   footer: {
     luxuryTagline: "Luxury Care — Est. Egypt",
     ourPhilosophy: "Our Philosophy",

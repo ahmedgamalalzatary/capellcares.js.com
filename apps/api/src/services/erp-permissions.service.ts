@@ -40,6 +40,8 @@ const ERP_PERMISSION_KEYS = [
   "advices.update",
   "advices.delete",
   "advices.toggle_status",
+  "shop_media.read",
+  "shop_media.update",
   "orders.read",
   "orders.update_payment_status",
   "sales.read",
@@ -79,6 +81,7 @@ const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissio
   "advices.update": ["advices.read"],
   "advices.delete": ["advices.read"],
   "advices.toggle_status": ["advices.read"],
+  "shop_media.update": ["shop_media.read"],
   "orders.update_payment_status": ["orders.read"]
 };
 

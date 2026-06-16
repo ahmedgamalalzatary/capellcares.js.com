@@ -17,6 +17,7 @@ test("resolveUploadPermission still allows update contexts", () => {
   assert.equal(resolveUploadPermission("offers.update"), "offers.update");
   assert.equal(resolveUploadPermission("collections.update"), "collections.update");
   assert.equal(resolveUploadPermission("advices.update"), "advices.update");
+  assert.equal(resolveUploadPermission("shop_media.update"), "shop_media.update");
 });
 
 test("resolveUploadPermission rejects unknown, unrelated, or missing contexts", () => {

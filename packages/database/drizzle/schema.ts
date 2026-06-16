@@ -20,6 +20,19 @@ export const orderingScopeTypes = ["root", "category", "offer", "collection"] as
 
 export const orderingEntityTypes = ["category", "product", "offer", "collection"] as const;
 
+export const shopMediaSectionTargetTypes = [
+  "shop",
+  "new",
+  "bestsellers",
+  "products",
+  "product",
+  "offers",
+  "offer",
+  "collections",
+  "collection",
+  "category"
+] as const;
+
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   parentId: int("parent_id"),
@@ -205,6 +218,25 @@ export const advices = mysqlTable("advices", {
   imagePath: varchar("image_path", { length: 1024 }),
   videoUrl: varchar("video_url", { length: 1024 }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const shopMediaSections = mysqlTable("shop_media_sections", {
+  id: int("id").autoincrement().primaryKey(),
+  slot: int("slot").notNull().unique(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const shopMediaSectionItems = mysqlTable("shop_media_section_items", {
+  id: int("id").autoincrement().primaryKey(),
+  sectionId: int("section_id").notNull().references(() => shopMediaSections.id, { onDelete: "cascade" }),
+  imagePath: varchar("image_path", { length: 1024 }).notNull(),
+  targetType: mysqlEnum("target_type", shopMediaSectionTargetTypes).notNull(),
+  targetId: int("target_id"),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()

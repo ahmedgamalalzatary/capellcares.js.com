@@ -228,6 +228,9 @@ export const ar = {
     featuredHeading: "منتجات مميزة",
     viewAllProducts: "كل المنتجات ←"
   },
+  shopMedia: {
+    sectionLabel: "وسائط مميزة"
+  },
   footer: {
     luxuryTagline: "عناية فاخرة — صُنع في مصر",
     ourPhilosophy: "فلسفتنا",

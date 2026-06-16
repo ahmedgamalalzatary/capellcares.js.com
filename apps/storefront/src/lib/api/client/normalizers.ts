@@ -2,7 +2,7 @@ import type { Category } from "@capella/shared";
 import { API_BASE } from "./http";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 
-function resolveMediaUrl(url: string | null | undefined): string {
+export function resolveMediaUrl(url: string | null | undefined): string {
   const value = url?.trim() ?? "";
   if (!value) {
     return "";

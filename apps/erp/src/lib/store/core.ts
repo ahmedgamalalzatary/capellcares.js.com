@@ -1,6 +1,6 @@
 "use client";
 
-import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -26,6 +26,7 @@ export class ErpStore {
   collections: Collection[] = [];
   offers: Offer[] = [];
   advices: Advice[] = [];
+  shopMediaSections: ShopMediaSection[] = [];
   orders: OrderSummary[] = [];
   sales: SalesAnalytics = {
     summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
@@ -55,6 +56,7 @@ export class ErpStore {
       collections: this.collections,
       offers: this.offers,
       advices: this.advices,
+      shopMediaSections: this.shopMediaSections,
       orders: this.orders,
       sales: this.sales,
       loaded: this.loaded,
@@ -93,6 +95,7 @@ export class ErpStore {
       this.collections = [];
       this.offers = [];
       this.advices = [];
+      this.shopMediaSections = [];
       this.orders = [];
       this.sales = this.createEmptySales();
       let firstError: unknown = null;
@@ -226,6 +229,12 @@ export class ErpStore {
         load: () => api.get<{ items: Advice[] }>("/api/erp/advices"),
         assign: (result: { items: Advice[] }, store: ErpStore) => {
           store.advices = result.items;
+        }
+      },
+      canRead("shop_media.read") && {
+        load: () => api.get<{ items: ShopMediaSection[] }>("/api/erp/shop-media-sections"),
+        assign: (result: { items: ShopMediaSection[] }, store: ErpStore) => {
+          store.shopMediaSections = result.items;
         }
       },
       canRead("orders.read") && {
@@ -394,6 +403,14 @@ export class ErpStore {
 
   async deleteAdvice(id: number) {
     await api.del(`/api/erp/advices/${id}`);
+    await this.refetch();
+  }
+
+  async updateShopMediaSection(
+    slot: 1 | 2 | 3,
+    input: { status: "active" | "inactive"; items: Array<{ imagePath: string; targetType: string; targetId: number | null; sortOrder: number }> }
+  ) {
+    await api.post(`/api/erp/shop-media-sections/${slot}`, input);
     await this.refetch();
   }
 

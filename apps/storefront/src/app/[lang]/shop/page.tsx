@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getDict, formatPrice, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
+import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
@@ -23,7 +24,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const dict = getDict(lang);
   const isAr = lang === "ar";
 
-  const { products, offers, collections, advices } = await loadShopPageData(lang);
+  const { products, offers, collections, advices, shopMediaSections } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
   const activeCollections = collections.filter(
@@ -32,9 +33,16 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const featuredProducts = products.filter(
     (p) => p.status === "active" && !p.deletedAt && (p.isNew || p.isBestseller)
   );
+  const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
   return (
     <main className="container">
+
+      <ShopMediaStrip
+        lang={lang}
+        section={shopMediaBySlot.get(1) ?? { id: -1, slot: 1, status: "inactive", items: [] }}
+        label={dict.shopMedia.sectionLabel}
+      />
 
       {/* Offers */}
       {activeOffers.length > 0 && (
@@ -108,6 +116,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         </section>
       )}
 
+      <ShopMediaStrip
+        lang={lang}
+        section={shopMediaBySlot.get(2) ?? { id: -2, slot: 2, status: "inactive", items: [] }}
+        label={dict.shopMedia.sectionLabel}
+      />
+
       {activeCollections.length > 0 && (
         <section className="mb-16">
           <header className="mb-8 flex items-end justify-between pt-10">
@@ -178,6 +192,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
           </div>
         </section>
       )}
+
+      <ShopMediaStrip
+        lang={lang}
+        section={shopMediaBySlot.get(3) ?? { id: -3, slot: 3, status: "inactive", items: [] }}
+        label={dict.shopMedia.sectionLabel}
+      />
 
       {/* New & Bestsellers */}
       {featuredProducts.length > 0 && (

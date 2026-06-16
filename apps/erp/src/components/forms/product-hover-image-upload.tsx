@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
-import { api, type ErpUploadContext } from "@/lib/api/client";
+import { API_BASE, api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
   value: string;
@@ -10,10 +10,27 @@ interface Props {
   uploadContext?: ErpUploadContext;
 }
 
+function resolvePreviewSrc(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (value.startsWith("/uploads/")) {
+    return `${API_BASE}${value}`;
+  }
+
+  return value;
+}
+
 export function ProductHoverImageUpload({ value, onChange, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewSrc = resolvePreviewSrc(value);
 
   const handleFiles = async (files: FileList | null) => {
     const file = files?.[0];
@@ -69,7 +86,7 @@ export function ProductHoverImageUpload({ value, onChange, uploadContext }: Prop
           style={{ justifyContent: "space-between", gap: 12, padding: 10, border: "1px solid var(--hairline)", borderRadius: 8 }}
         >
           <div className="row" style={{ gap: 12, alignItems: "center" }}>
-            <img src={value} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
+            <img src={previewSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
             <div className="stack" style={{ gap: 4 }}>
               <strong style={{ fontSize: 13 }}>صورة hover</strong>
             </div>

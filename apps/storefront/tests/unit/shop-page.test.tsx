@@ -25,7 +25,10 @@ vi.mock("@capella/shared", async () => {
       },
       common: { save: "Save" },
       offers: { title: "Offers", badge: "Offer", save: "Save {amount}" },
-      collections: { title: "Collections", badge: "Collection" }
+      collections: { title: "Collections", badge: "Collection" },
+      shopMedia: {
+        sectionLabel: "Featured media"
+      }
     })
   };
 });
@@ -55,6 +58,23 @@ vi.mock("@/lib/storefront-static-data", () => ({
     products: [],
     offers: [],
     advices: [],
+    shopMediaSections: [
+      {
+        id: 11,
+        slot: 2,
+        status: "active",
+        items: [
+          {
+            id: 21,
+            imagePath: "http://localhost:4000/uploads/section-2.jpg",
+            targetType: "collections",
+            targetId: null,
+            href: "/en/collections",
+            sortOrder: 1
+          }
+        ]
+      }
+    ],
     collections: [
       {
         id: 1,
@@ -84,5 +104,19 @@ describe("shop page", () => {
 
     expect(screen.getByRole("link", { name: /Skin Care Set/i })).toHaveAttribute("href", "/en/collections/skin-care-set");
     expect(screen.getByRole("link", { name: "All collections" })).toHaveAttribute("href", "/en/collections");
+  });
+
+  it("renders active shop media sections above their matching catalog sections", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    const collectionsHeading = screen.getByRole("heading", { name: "Collections" });
+    const mediaLink = screen.getByRole("link", { name: "Featured media 1" });
+
+    expect(mediaLink).toHaveAttribute("href", "/en/collections");
+    expect(mediaLink.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-2.jpg");
+    expect(
+      collectionsHeading.compareDocumentPosition(mediaLink) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(container.textContent).toContain("Advice");
   });
 });

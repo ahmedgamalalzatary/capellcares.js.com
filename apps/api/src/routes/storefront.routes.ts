@@ -7,6 +7,7 @@ import { getOfferBySlug, listCategories, listOffers } from "../modules/catalog/c
 import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-advices.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
+import { storefrontShopMediaRoutes } from "../modules/shop-media/storefront-shop-media.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";
 
 export const storefrontRoutes = Router();
@@ -19,6 +20,7 @@ storefrontRoutes.use("/advices", storefrontAdvicesRoutes);
 storefrontRoutes.use("/auth", authRoutes);
 storefrontRoutes.use("/orders", storefrontOrdersRoutes);
 storefrontRoutes.use("/wishlist", wishlistRoutes);
+storefrontRoutes.use("/shop-media-sections", storefrontShopMediaRoutes);
 storefrontRoutes.get("/categories", listCategories);
 storefrontRoutes.get("/offers", listOffers);
 storefrontRoutes.get("/offers/:slug", getOfferBySlug);

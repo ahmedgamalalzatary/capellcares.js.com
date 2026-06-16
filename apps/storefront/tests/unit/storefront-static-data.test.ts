@@ -5,13 +5,15 @@ const fetchOffers = vi.fn();
 const fetchCollections = vi.fn();
 const fetchAdvices = vi.fn();
 const fetchCategories = vi.fn();
+const fetchShopMediaSections = vi.fn();
 
 vi.mock("@/lib/api/client", () => ({
   fetchProducts: (...args: unknown[]) => fetchProducts(...args),
   fetchOffers: (...args: unknown[]) => fetchOffers(...args),
   fetchCollections: (...args: unknown[]) => fetchCollections(...args),
   fetchAdvices: (...args: unknown[]) => fetchAdvices(...args),
-  fetchCategories: (...args: unknown[]) => fetchCategories(...args)
+  fetchCategories: (...args: unknown[]) => fetchCategories(...args),
+  fetchShopMediaSections: (...args: unknown[]) => fetchShopMediaSections(...args)
 }));
 
 describe("storefront static data", () => {
@@ -22,6 +24,7 @@ describe("storefront static data", () => {
     fetchCollections.mockReset();
     fetchAdvices.mockReset();
     fetchCategories.mockReset();
+    fetchShopMediaSections.mockReset();
   });
 
   it("returns empty shop data when the API is unavailable", async () => {
@@ -29,6 +32,7 @@ describe("storefront static data", () => {
     fetchOffers.mockRejectedValue(new Error("offline"));
     fetchCollections.mockRejectedValue(new Error("offline"));
     fetchAdvices.mockRejectedValue(new Error("offline"));
+    fetchShopMediaSections.mockRejectedValue(new Error("offline"));
 
     const { loadShopPageData } = await import("@/lib/storefront-static-data");
 
@@ -36,7 +40,8 @@ describe("storefront static data", () => {
       products: [],
       offers: [],
       collections: [],
-      advices: []
+      advices: [],
+      shopMediaSections: []
     });
   });
 

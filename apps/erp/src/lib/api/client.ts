@@ -20,7 +20,8 @@ export type ErpUploadContext =
   | "collections.create"
   | "collections.update"
   | "advices.create"
-  | "advices.update";
+  | "advices.update"
+  | "shop_media.update";
 
 let adminAccessToken: string | null = null;
 const adminAccessTokenListeners = new Set<(token: string | null) => void>();

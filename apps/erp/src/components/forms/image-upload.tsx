@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
-import { api, type ErpUploadContext } from "@/lib/api/client";
+import { API_BASE, api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
   value: string | null;
@@ -11,11 +11,28 @@ interface Props {
   uploadContext?: ErpUploadContext;
 }
 
+function resolvePreviewSrc(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (value.startsWith("/uploads/")) {
+    return `${API_BASE}${value}`;
+  }
+
+  return value;
+}
+
 export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewSrc = resolvePreviewSrc(value);
 
   const handleFile = async (file?: File | null) => {
     if (!file) return;
@@ -66,9 +83,9 @@ export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
         transition: "border-color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo)"
       }}
     >
-      {value ? (
+      {previewSrc ? (
         <>
-          <img src={value} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
+          <img src={previewSrc} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
           <div className="row" style={{ gap: 8 }}>
             <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
               <Icon.Upload size={14} /> استبدال الصورة

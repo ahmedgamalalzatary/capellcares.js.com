@@ -19,6 +19,7 @@ const { uploadImage, uploadMedia } = vi.hoisted(() => ({
 const upsertProduct = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/api/client", () => ({
+  API_BASE: "http://localhost:4000",
   api: {
     uploadImage,
     uploadMedia
@@ -65,6 +66,12 @@ describe("ERP upload permissions", () => {
     expect(uploadImage).not.toHaveBeenCalled();
     expect(onChange).not.toHaveBeenCalled();
     expect(await screen.findByText("رفع الصور متاح فقط داخل مسارات التعديل المصرح بها.")).toBeInTheDocument();
+  });
+
+  it("renders saved relative upload paths against the API uploads host", () => {
+    const { container } = render(createElement(ImageUpload, { value: "/uploads/saved.jpg", onChange: vi.fn(), uploadContext: "shop_media.update" }));
+
+    expect(container.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/saved.jpg");
   });
 
   it("sends products.update upload context from the product edit form", async () => {

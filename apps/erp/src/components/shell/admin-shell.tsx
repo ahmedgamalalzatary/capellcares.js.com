@@ -23,6 +23,7 @@ const NAV = [
   { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
   { href: "/collections", label: "المجموعات", icon: <Icon.Tag />      },
   { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
+  { href: "/shop-media", label: "وسائط المتجر", icon: <Icon.Sparkle />  },
   { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
   { href: "/sales",      label: "المبيعات",  icon: <Icon.Tag />       },
   { href: "/staff",      label: "فريق العمل", icon: <Icon.Eye />      },
@@ -45,6 +46,7 @@ function canAccessNavItem(user: { role: "admin" | "staff"; permissionKeys?: stri
     "/offers": "offers.read",
     "/collections": "collections.read",
     "/advices": "advices.read",
+    "/shop-media": "shop_media.read",
     "/orders": "orders.read",
     "/sales": "sales.read",
     "/trash": "trash.read"

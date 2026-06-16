@@ -4,7 +4,7 @@ const DEFAULT_STOREFRONT_BASE_URL = "http://localhost:3000";
 const DEFAULT_REVALIDATE_SECRET = "dev-revalidate-secret";
 
 export type StorefrontRevalidatePayload = {
-  entity: "product" | "offer" | "collection" | "advice";
+  entity: "product" | "offer" | "collection" | "advice" | "shop-media";
   slug?: string;
   previousSlug?: string;
   categorySlugs?: string[];

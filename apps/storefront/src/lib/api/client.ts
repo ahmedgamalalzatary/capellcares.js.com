@@ -6,6 +6,7 @@ import type {
   Order,
   OrderSummary,
   Product,
+  ShopMediaSection,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
   StorefrontProductDetail
@@ -100,6 +101,11 @@ export async function fetchCollectionDetailBySlug(
 
 export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[]> {
   const data = await getJSON<{ items: Advice[] }>(`/api/v1/advices`, options);
+  return data?.items ?? [];
+}
+
+export async function fetchShopMediaSections(options?: { lang?: string }): Promise<ShopMediaSection[]> {
+  const data = await getJSON<{ items: ShopMediaSection[] }>(`/api/v1/shop-media-sections`, options);
   return data?.items ?? [];
 }
 

@@ -18,6 +18,7 @@ let adminAuthUser: unknown = {
     "collections.read",
     "offers.read",
     "advices.read",
+    "shop_media.read",
     "orders.read",
     "sales.read",
     "trash.read"
@@ -77,6 +78,7 @@ afterEach(() => {
       "collections.read",
       "offers.read",
       "advices.read",
+      "shop_media.read",
       "orders.read",
       "sales.read",
       "trash.read"
@@ -104,6 +106,7 @@ describe("ERP store", () => {
           updatedAt: ""
         }]
       })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({
         items: [{
           id: 7,
@@ -123,6 +126,12 @@ describe("ERP store", () => {
           totalAmount: 150,
           createdAt: new Date().toISOString()
         }]
+      })
+      .mockResolvedValueOnce({
+        summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
+        productTotals: [],
+        variantTotals: [],
+        orders: []
       });
 
     const { getStore } = await import("@/lib/store");
@@ -134,34 +143,68 @@ describe("ERP store", () => {
     expect(store.orders).toHaveLength(1);
   });
 
+  it("hydrates shop media sections during refetch", async () => {
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/shop-media-sections") {
+        return {
+          items: [{
+            id: 1,
+            slot: 1,
+            status: "active",
+            items: [{
+              id: 10,
+              imagePath: "/uploads/shop-media.jpg",
+              targetType: "offers",
+              targetId: null,
+              sortOrder: 1
+            }]
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    await store.refetch();
+
+    expect((store as any).shopMediaSections).toHaveLength(1);
+  });
+
   it("hydrates collections during refetch", async () => {
-    apiGet
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({
-        items: [{
-          id: 9,
-          slug: "skin-care-set",
-          name: { ar: "مجموعة عناية", en: "Care Collection" },
-          description: { ar: "وصف", en: "Description" },
-          imagePath: "/uploads/collection.png",
-          price: 120,
-          originalTotal: 150,
-          categoryId: 5,
-          items: [
-            { variantId: 11, qty: 1 },
-            { variantId: 12, qty: 1 }
-          ],
-          stock: 3,
-          status: "active",
-          visibility: "visible",
-          createdAt: "",
-          updatedAt: ""
-        }]
-      })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/collections") {
+        return {
+          items: [{
+            id: 9,
+            slug: "skin-care-set",
+            name: { ar: "مجموعة عناية", en: "Care Collection" },
+            description: { ar: "وصف", en: "Description" },
+            imagePath: "/uploads/collection.png",
+            price: 120,
+            originalTotal: 150,
+            categoryId: 5,
+            items: [
+              { variantId: 11, qty: 1 },
+              { variantId: 12, qty: 1 }
+            ],
+            stock: 3,
+            status: "active",
+            visibility: "visible",
+            createdAt: "",
+            updatedAt: ""
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -172,41 +215,27 @@ describe("ERP store", () => {
   });
 
   it("refetches when the window regains focus so stock stays current after storefront orders", async () => {
-    apiGet
-      .mockResolvedValueOnce({
-        items: [{
-          id: 1,
-          sku: "SKU-1",
-          slug: "product-1",
-          name: { ar: "منتج", en: "Product" },
-          status: "active",
-          categoryId: 5,
-          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
-        }]
-      })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({
-        items: [{
-          id: 1,
-          sku: "SKU-1",
-          slug: "product-1",
-          name: { ar: "منتج", en: "Product" },
-          status: "active",
-          categoryId: 5,
-          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 0 }]
-        }]
-      })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+    let productFetchCount = 0;
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/products") {
+        productFetchCount += 1;
+        return {
+          items: [{
+            id: 1,
+            sku: "SKU-1",
+            slug: "product-1",
+            name: { ar: "منتج", en: "Product" },
+            status: "active",
+            categoryId: 5,
+            variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: productFetchCount === 1 ? 2 : 0 }]
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -220,35 +249,33 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    expect(apiGet).toHaveBeenCalledTimes(14);
+    expect(apiGet).toHaveBeenCalledTimes(16);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {
-    apiGet
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/products"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/categories"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/collections"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/offers"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/advices"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/orders"))
-      .mockRejectedValueOnce(new Error("API 401 /api/erp/sales"))
-      .mockResolvedValueOnce({
-        items: [{
-          id: 1,
-          sku: "SKU-1",
-          slug: "product-1",
-          name: { ar: "منتج", en: "Product" },
-          status: "active",
-          categoryId: 5,
-          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
-        }]
-      })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+    let restored = false;
+    apiGet.mockImplementation(async (path: string) => {
+      if (!restored) {
+        throw new Error(`API 401 ${path}`);
+      }
+      if (path === "/api/erp/products") {
+        return {
+          items: [{
+            id: 1,
+            sku: "SKU-1",
+            slug: "product-1",
+            name: { ar: "منتج", en: "Product" },
+            status: "active",
+            categoryId: 5,
+            variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -259,35 +286,37 @@ describe("ERP store", () => {
     expect(store.products).toHaveLength(0);
     expect(store.error).toBe("API 401 /api/erp/products");
 
+    restored = true;
     authTokenListeners.forEach((listener) => listener("restored-access-token"));
     await flush();
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(14);
+    expect(apiGet).toHaveBeenCalledTimes(16);
   });
 
   it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {
     adminAuthHydrated = false;
 
-    apiGet
-      .mockResolvedValueOnce({
-        items: [{
-          id: 1,
-          sku: "SKU-1",
-          slug: "product-1",
-          name: { ar: "منتج", en: "Product" },
-          status: "active",
-          categoryId: 5,
-          variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
-        }]
-      })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/products") {
+        return {
+          items: [{
+            id: 1,
+            sku: "SKU-1",
+            slug: "product-1",
+            name: { ar: "منتج", en: "Product" },
+            status: "active",
+            categoryId: 5,
+            variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -309,7 +338,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(7);
+    expect(apiGet).toHaveBeenCalledTimes(8);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {
@@ -320,9 +349,11 @@ describe("ERP store", () => {
       permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
     };
 
-    apiGet
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/orders") return { items: [] };
+      if (path === "/api/erp/sales") return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      throw new Error(`Unexpected path ${path}`);
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -384,28 +415,34 @@ describe("ERP store", () => {
       permissionKeys: ["orders.read", "sales.read"]
     };
 
-    apiGet
-      .mockResolvedValueOnce({
-        items: [{
-          id: 7,
-          orderCode: "ABCD-007",
-          customerType: "registered",
-          customerId: 1,
-          fullName: "Seed Customer",
-          phone: "01012345678",
-          email: "seed-customer@capella.test",
-          governorate: "Cairo",
-          cityArea: "Nasr City",
-          addressLine: "Street 10",
-          buildingApartment: "Building 4",
-          notes: null,
-          paymentMethod: "cod",
-          paymentStatus: "pending",
-          totalAmount: 150,
-          createdAt: new Date().toISOString()
-        }]
-      })
-      .mockRejectedValueOnce(new Error("API 403 /api/erp/sales"));
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/orders") {
+        return {
+          items: [{
+            id: 7,
+            orderCode: "ABCD-007",
+            customerType: "registered",
+            customerId: 1,
+            fullName: "Seed Customer",
+            phone: "01012345678",
+            email: "seed-customer@capella.test",
+            governorate: "Cairo",
+            cityArea: "Nasr City",
+            addressLine: "Street 10",
+            buildingApartment: "Building 4",
+            notes: null,
+            paymentMethod: "cod",
+            paymentStatus: "pending",
+            totalAmount: 150,
+            createdAt: new Date().toISOString()
+          }]
+        };
+      }
+      if (path === "/api/erp/sales") {
+        throw new Error("API 403 /api/erp/sales");
+      }
+      throw new Error(`Unexpected path ${path}`);
+    });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
