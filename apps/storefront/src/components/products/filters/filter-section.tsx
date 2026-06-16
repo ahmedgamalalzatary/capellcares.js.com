@@ -5,13 +5,11 @@ import { useEffect, useRef, useState } from "react";
 export function FilterSection({
   label,
   children,
-  defaultOpen = true,
-  dark = false
+  defaultOpen = true
 }: {
   label: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
-  dark?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -51,9 +49,9 @@ export function FilterSection({
     };
   }, [open]);
 
-  const lineColor = dark ? "oklch(1 0 0 / 0.1)" : "var(--hairline)";
-  const labelColor = dark ? "oklch(0.94 0.06 85 / 0.5)" : "var(--ink-3)";
-  const chevronColor = dark ? "oklch(0.94 0.06 85 / 0.6)" : "var(--ink-3)";
+  const lineColor = "var(--hairline)";
+  const labelColor = "var(--ink-3)";
+  const chevronColor = "var(--ink-3)";
 
   return (
     <div style={{ borderBottom: `1px solid ${lineColor}` }}>

@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/api/client", () => ({
+  API_BASE: "",
   api: {
     uploadImage: vi.fn(),
     uploadMedia: vi.fn()

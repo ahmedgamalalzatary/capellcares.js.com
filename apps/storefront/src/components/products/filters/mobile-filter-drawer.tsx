@@ -86,7 +86,7 @@ export function MobileFilterDrawer({
           insetBlockEnd: 0,
           insetInlineStart: 0,
           width: "min(340px, 90vw)",
-          background: "var(--ink)",
+          background: "var(--canvas)",
           zIndex: 51,
           display: "flex",
           flexDirection: "column",
@@ -98,8 +98,8 @@ export function MobileFilterDrawer({
         <div
           style={{
             padding: "20px 20px 16px",
-            borderBottom: "1px solid oklch(1 0 0 / 0.08)",
-            background: "var(--ink)",
+            borderBottom: "1px solid var(--hairline)",
+            background: "var(--canvas)",
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
@@ -111,7 +111,7 @@ export function MobileFilterDrawer({
           }}
         >
           <div>
-            <p style={{ margin: "0 0 1px", fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--warm)", fontWeight: 700, opacity: 0.8 }}>
+            <p style={{ margin: "0 0 1px", fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 700, opacity: 0.8 }}>
               {dict.brand}
             </p>
             <span
@@ -120,7 +120,7 @@ export function MobileFilterDrawer({
                 fontStyle: isAr ? "normal" : "italic",
                 fontWeight: isAr ? 700 : 400,
                 fontSize: isAr ? "20px" : "24px",
-                color: "var(--canvas)",
+                color: "var(--ink)",
                 letterSpacing: isAr ? "-0.01em" : "-0.02em",
                 lineHeight: 1.05,
                 display: "block"
@@ -138,9 +138,9 @@ export function MobileFilterDrawer({
               width: 34,
               height: 34,
               borderRadius: "50%",
-              border: "1px solid oklch(1 0 0 / 0.15)",
-              background: "oklch(1 0 0 / 0.07)",
-              color: "oklch(0.94 0.06 85 / 0.7)",
+              border: "1px solid var(--hairline)",
+              background: "var(--surface)",
+              color: "var(--ink-3)",
               cursor: "pointer",
               transition: "background 160ms",
               flexShrink: 0,
@@ -152,7 +152,7 @@ export function MobileFilterDrawer({
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px", background: "var(--ink)" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px", background: "var(--canvas)" }}>
           <ProductFiltersContent
             lang={lang}
             dict={dict}
@@ -174,13 +174,13 @@ export function MobileFilterDrawer({
         <div
           style={{
             padding: "16px 20px",
-            borderTop: "1px solid oklch(1 0 0 / 0.1)",
+            borderTop: "1px solid var(--hairline)",
             display: "flex",
             gap: 10,
             flexShrink: 0,
             position: "sticky",
             bottom: 0,
-            background: "var(--ink)",
+            background: "var(--canvas)",
             zIndex: 2
           }}
         >

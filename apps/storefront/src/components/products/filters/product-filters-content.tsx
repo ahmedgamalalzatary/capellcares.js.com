@@ -45,19 +45,19 @@ export function ProductFiltersContent({
 
   return (
     <>
-      <FilterSection label={dict.nav.search} defaultOpen dark>
+      <FilterSection label={dict.nav.search} defaultOpen>
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
-            background: "oklch(1 0 0 / 0.06)",
-            border: "1px solid oklch(1 0 0 / 0.12)",
+            background: "var(--surface)",
+            border: "1px solid var(--hairline)",
             borderRadius: "var(--radius)",
             padding: "9px 14px"
           }}
         >
-          <Icon.Search size={14} style={{ flexShrink: 0, color: "oklch(0.94 0.06 85 / 0.4)" }} />
+          <Icon.Search size={14} style={{ flexShrink: 0, color: "var(--ink-3)" }} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -69,7 +69,7 @@ export function ProductFiltersContent({
               background: "transparent",
               outline: "none",
               fontSize: isMobile ? "14px" : "13.5px",
-              color: "oklch(0.97 0.03 85)"
+              color: "var(--text)"
             }}
           />
           {q && (
@@ -82,9 +82,9 @@ export function ProductFiltersContent({
                 width: 18,
                 height: 18,
                 borderRadius: "50%",
-                background: "oklch(1 0 0 / 0.1)",
+                background: "oklch(0 0 0 / 0.08)",
                 border: 0,
-                color: "oklch(0.94 0.06 85 / 0.7)",
+                color: "var(--ink-3)",
                 cursor: "pointer",
                 flexShrink: 0
               }}
@@ -96,7 +96,7 @@ export function ProductFiltersContent({
       </FilterSection>
 
       {!lockCategory && (
-        <FilterSection label={dict.filters.bytype} defaultOpen dark>
+        <FilterSection label={dict.filters.bytype} defaultOpen>
           <ProductFilterCategoryList
             mode={mode}
             lang={lang}
@@ -111,17 +111,17 @@ export function ProductFiltersContent({
         </FilterSection>
       )}
 
-      <FilterSection label={dict.filters.price} defaultOpen={false} dark>
+      <FilterSection label={dict.filters.price} defaultOpen={false}>
         <div style={{ display: "grid", gap: 8 }}>
-          <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} dark />
+          <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: "1px", background: "oklch(1 0 0 / 0.1)" }} />
-            <span style={{ fontSize: "10px", color: "oklch(0.94 0.06 85 / 0.35)", letterSpacing: "0.1em", fontWeight: 600 }}>
+            <div style={{ flex: 1, height: "1px", background: "var(--hairline)" }} />
+            <span style={{ fontSize: "10px", color: "var(--ink-3)", letterSpacing: "0.1em", fontWeight: 600 }}>
               {dict.filters.to}
             </span>
-            <div style={{ flex: 1, height: "1px", background: "oklch(1 0 0 / 0.1)" }} />
+            <div style={{ flex: 1, height: "1px", background: "var(--hairline)" }} />
           </div>
-          <PriceInput value={priceRange.max} onChange={(value) => setPriceRange((state) => ({ ...state, max: value }))} placeholder={dict.filters.priceMax} lang={lang} dark />
+          <PriceInput value={priceRange.max} onChange={(value) => setPriceRange((state) => ({ ...state, max: value }))} placeholder={dict.filters.priceMax} lang={lang} />
         </div>
       </FilterSection>
     </>

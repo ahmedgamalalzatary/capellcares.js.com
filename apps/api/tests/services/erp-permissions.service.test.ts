@@ -61,6 +61,8 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "products.toggle_status",
     "products.update",
     "sales.read",
+    "shop_media.read",
+    "shop_media.update",
     "trash.read"
   ]);
 });

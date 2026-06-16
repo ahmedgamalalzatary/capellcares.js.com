@@ -6,22 +6,20 @@ export function PriceInput({
   value,
   onChange,
   placeholder,
-  lang,
-  dark = false
+  lang
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   lang: Language;
-  dark?: boolean;
 }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        background: dark ? "oklch(1 0 0 / 0.06)" : "var(--surface)",
-        border: dark ? "1px solid oklch(1 0 0 / 0.14)" : "1px solid var(--hairline)",
+        background: "var(--surface)",
+        border: "1px solid var(--hairline)",
         borderRadius: "var(--radius)",
         overflow: "hidden",
         transition: "border-color 180ms, box-shadow 180ms"
@@ -32,7 +30,7 @@ export function PriceInput({
           paddingInlineStart: "12px",
           fontSize: "10.5px",
           letterSpacing: "0.06em",
-          color: dark ? "oklch(0.94 0.06 85 / 0.45)" : "var(--ink-3)",
+          color: "var(--ink-3)",
           fontWeight: 600,
           flexShrink: 0,
           userSelect: "none"
@@ -54,7 +52,7 @@ export function PriceInput({
           outline: "none",
           padding: "9px 12px",
           fontSize: "13px",
-          color: dark ? "oklch(0.97 0.03 85)" : "var(--text)"
+          color: "var(--text)"
         }}
       />
     </div>

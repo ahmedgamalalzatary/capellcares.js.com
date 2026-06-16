@@ -50,6 +50,15 @@ describe("ShopMediaStrip carousel", () => {
     expect(screen.getAllByRole("button", { name: /go to slide/i })).toHaveLength(3);
   });
 
+  it("clones the edge slides so autoplay loops seamlessly (infinite)", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    // 3 real slides + a clone of the first and last = 5 rendered slides,
+    // while the dot indicators still reflect only the 3 real slides.
+    expect(container.querySelectorAll("[data-slide]")).toHaveLength(5);
+    expect(screen.getAllByRole("button", { name: /go to slide/i })).toHaveLength(3);
+  });
+
   it("auto-advances to the next slide every 5 seconds", () => {
     render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
 

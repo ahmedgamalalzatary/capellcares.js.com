@@ -32,9 +32,9 @@ export function CategoryPill({
           borderRadius: "var(--radius)",
           fontSize: indent ? "12px" : "13px",
           fontWeight: checked ? 600 : 400,
-          border: checked ? "1px solid var(--warm)" : "1px solid transparent",
-          background: checked ? "oklch(0.748 0.106 70 / 0.15)" : "transparent",
-          color: checked ? "var(--warm)" : "oklch(0.94 0.06 85 / 0.7)",
+          border: checked ? "1px solid var(--accent)" : "1px solid transparent",
+          background: checked ? "oklch(0.32 0.018 85 / 0.08)" : "transparent",
+          color: checked ? "var(--accent)" : "var(--ink-3)",
           transition: "background 180ms, border-color 180ms, color 180ms"
         }}
       >
@@ -44,7 +44,7 @@ export function CategoryPill({
               width: 5,
               height: 5,
               borderRadius: "50%",
-              background: "var(--warm)",
+              background: "var(--accent)",
               marginInlineEnd: 10,
               flexShrink: 0
             }}

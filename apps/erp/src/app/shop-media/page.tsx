@@ -41,6 +41,12 @@ const detailTargetOptions: Array<{ value: ShopMediaTargetType; label: string }> 
   { value: "category", label: "قسم" }
 ];
 
+const slotPositionLabel: Record<1 | 2 | 3, string> = {
+  1: "يظهر أعلى صفحة المتجر",
+  2: "يظهر فوق قسم المجموعات",
+  3: "يظهر فوق المنتجات المميزة"
+};
+
 function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3): EditableSection {
   return {
     slot,
@@ -69,10 +75,11 @@ export default function ShopMediaPage() {
   const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dirtySlotsRef = useRef<Set<1 | 2 | 3>>(new Set());
+  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3>>(new Set());
 
   useEffect(() => {
     const bySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
-    setSections((current) => [1, 2, 3].map((slot) => {
+    setSections((current) => ([1, 2, 3] as const).map((slot) => {
       const currentSection = current.find((section) => section.slot === slot);
       if (currentSection && dirtySlotsRef.current.has(slot)) {
         return currentSection;
@@ -100,12 +107,12 @@ export default function ShopMediaPage() {
 
   const setSection = (slot: 1 | 2 | 3, updater: (current: EditableSection) => EditableSection) => {
     dirtySlotsRef.current.add(slot);
+    setDirtySlots(new Set(dirtySlotsRef.current));
     setSections((current) => current.map((section) => section.slot === slot ? updater(section) : section));
   };
 
   const saveSection = async (section: EditableSection) => {
     if (section.items.some((item) => !item.imagePath || (isDetailTargetType(item.targetType) && item.targetId === null))) {
-      const validationError = new Error("أكملي الصورة والوجهة لكل عنصر قبل الحفظ.");
       const validationError = new Error("أكملي الصورة والوجهة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
@@ -125,6 +132,7 @@ export default function ShopMediaPage() {
         }))
       });
       dirtySlotsRef.current.delete(section.slot);
+      setDirtySlots(new Set(dirtySlotsRef.current));
       toast.success("تم حفظ القسم بنجاح.");
     } catch {
       const saveError = new Error("تعذر حفظ القسم. حاولي مرة أخرى.");
@@ -135,158 +143,205 @@ export default function ShopMediaPage() {
     }
   };
 
+  const addItem = (slot: 1 | 2 | 3) => setSection(slot, (current) => ({
+    ...current,
+    items: [
+      ...current.items,
+      {
+        id: `new-${slot}-${current.items.length + 1}`,
+        imagePath: "",
+        targetType: "offers",
+        targetId: null
+      }
+    ]
+  }));
+
   return (
     <AdminShell title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]}>
       <div className="form-stack">
-        {sections.map((section) => (
-          <div key={section.slot} className="card">
-            <div className="card__head">
-              <h3 className="card__title">القسم {section.slot}</h3>
-            </div>
-            <div className="card__body form-stack">
-              <div className="field">
-                <label htmlFor={`section-status-${section.slot}`}>الحالة</label>
-                <select
-                  id={`section-status-${section.slot}`}
-                  className="select"
-                  value={section.status}
-                  onChange={(event) => setSection(section.slot, (current) => ({ ...current, status: event.target.value as "active" | "inactive" }))}
-                  disabled={!canEdit}
-                >
-                  <option value="inactive">غير نشط</option>
-                  <option value="active">نشط</option>
-                </select>
-              </div>
-
-              <div className="form-stack">
-                {section.items.map((item, index) => {
-                  const detailOptions = isDetailTargetType(item.targetType)
-                    ? targetOptionsByType[item.targetType]
-                    : [];
-
-                  return (
-                    <div key={item.id} className="card" style={{ background: "var(--surface)" }}>
-                      <div className="card__body form-stack">
-                        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                          <strong>صورة {index + 1}</strong>
-                          {canEdit ? (
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--sm"
-                              onClick={() => setSection(section.slot, (current) => ({
-                                ...current,
-                                items: current.items.filter((entry) => entry.id !== item.id)
-                              }))}
-                            >
-                              <Icon.Trash /> إزالة
-                            </button>
-                          ) : null}
-                        </div>
-
-                        <ImageUpload
-                          value={item.imagePath || null}
-                          onChange={(value) => setSection(section.slot, (current) => ({
-                            ...current,
-                            items: current.items.map((entry) => entry.id === item.id ? { ...entry, imagePath: value ?? "" } : entry)
-                          }))}
-                          uploadContext="shop_media.update"
-                        />
-
-                        <div className="editor-fields-2">
-                          <div className="field">
-                            <label htmlFor={`target-type-${section.slot}-${item.id}`}>نوع الوجهة</label>
-                            <select
-                              id={`target-type-${section.slot}-${item.id}`}
-                              className="select"
-                              value={item.targetType}
-                              onChange={(event) => {
-                                const nextType = event.target.value as ShopMediaTargetType;
-                                setSection(section.slot, (current) => ({
-                                  ...current,
-                                  items: current.items.map((entry) => entry.id === item.id ? {
-                                    ...entry,
-                                    targetType: nextType,
-                                    targetId: isDetailTargetType(nextType) ? entry.targetId : null
-                                  } : entry)
-                                }));
-                              }}
-                              disabled={!canEdit}
-                            >
-                              {listingTargetOptions.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                              ))}
-                              {detailTargetOptions.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {isDetailTargetType(item.targetType) ? (
-                            <div className="field">
-                              <label htmlFor={`target-id-${section.slot}-${item.id}`}>العنصر</label>
-                              <select
-                                id={`target-id-${section.slot}-${item.id}`}
-                                className="select"
-                                value={item.targetId ?? ""}
-                                onChange={(event) => setSection(section.slot, (current) => ({
-                                  ...current,
-                                  items: current.items.map((entry) => entry.id === item.id ? {
-                                    ...entry,
-                                    targetId: event.target.value ? Number(event.target.value) : null
-                                  } : entry)
-                                }))}
-                                disabled={!canEdit}
-                              >
-                                <option value="">اختاري عنصرًا</option>
-                                {detailOptions.map((option) => (
-                                  <option key={option.id} value={option.id}>{option.label}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {canEdit ? (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => setSection(section.slot, (current) => ({
-                      ...current,
-                      items: [
-                        ...current.items,
-                        {
-                          id: `new-${section.slot}-${current.items.length + 1}`,
-                          imagePath: "",
-                          targetType: "offers",
-                          targetId: null
-                        }
-                      ]
-                    }))}
-                  >
-                    <Icon.Plus /> إضافة صورة
-                  </button>
-                ) : null}
-              </div>
-
-              {canEdit ? (
-                <div className="editor-actions">
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={() => { void saveSection(section); }}
-                    disabled={savingSlot === section.slot}
-                  >
-                    {savingSlot === section.slot ? "جارٍ الحفظ…" : "حفظ القسم"}
-                  </button>
+        {sections.map((section) => {
+          const isActive = section.status === "active";
+          const isDirty = dirtySlots.has(section.slot);
+          const isSaving = savingSlot === section.slot;
+          return (
+            <div key={section.slot} className="card">
+              <div className="shop-media-head">
+                <div className="shop-media-head__main">
+                  <h3 className="card__title">القسم {section.slot}</h3>
+                  <span className="shop-media-head__sub">{slotPositionLabel[section.slot]}</span>
                 </div>
-              ) : null}
+                <div className="shop-media-head__tools">
+                  <span className="tag">{section.items.length} صورة</span>
+                  {canEdit ? (
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        aria-label="تفعيل القسم"
+                        checked={isActive}
+                        onChange={() => setSection(section.slot, (current) => ({
+                          ...current,
+                          status: current.status === "active" ? "inactive" : "active"
+                        }))}
+                      />
+                      <span className="switch__track" />
+                      <span className="switch__text">
+                        <span className="switch__title">{isActive ? "نشط" : "غير نشط"}</span>
+                      </span>
+                    </label>
+                  ) : (
+                    <span className={`status ${isActive ? "status--active" : "status--inactive"}`}>
+                      {isActive ? "نشط" : "غير نشط"}
+                    </span>
+                  )}
+                  {canEdit ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        disabled={!isDirty || isSaving}
+                        onClick={() => { void saveSection(section); }}
+                      >
+                        {isSaving ? "جارٍ الحفظ…" : "حفظ القسم"}
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="card__body form-stack">
+                {section.items.length === 0 ? (
+                  <div className="shop-media-empty">
+                    <div className="shop-media-empty__icon"><Icon.Plus /></div>
+                    <div>لا توجد صور في هذا القسم بعد.</div>
+                    {canEdit ? (
+                      <button type="button" className="btn btn--soft btn--sm" onClick={() => addItem(section.slot)}>
+                        <Icon.Plus /> أضيفي أول صورة
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <>
+                    <div className="table-outer">
+                      <table className="table shop-media-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: 56 }}>#</th>
+                            <th style={{ width: 240 }}>الصورة</th>
+                            <th>نوع الوجهة</th>
+                            <th>العنصر / الرابط</th>
+                            {canEdit ? <th style={{ width: 80 }} aria-label="إجراءات" /> : null}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {section.items.map((item, index) => {
+                            const detailOptions = isDetailTargetType(item.targetType)
+                              ? targetOptionsByType[item.targetType]
+                              : [];
+                            const isDetail = isDetailTargetType(item.targetType);
+
+                            return (
+                              <tr key={item.id}>
+                                <td><span className="shop-media-tile__index">{index + 1}</span></td>
+                                <td>
+                                  <ImageUpload
+                                    value={item.imagePath || null}
+                                    onChange={(value) => setSection(section.slot, (current) => ({
+                                      ...current,
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, imagePath: value ?? "" } : entry)
+                                    }))}
+                                    uploadContext="shop_media.update"
+                                  />
+                                </td>
+                                <td>
+                                  <div className="field">
+                                    <label htmlFor={`target-type-${section.slot}-${item.id}`}>نوع الوجهة</label>
+                                    <select
+                                      id={`target-type-${section.slot}-${item.id}`}
+                                      className="select"
+                                      value={item.targetType}
+                                      onChange={(event) => {
+                                        const nextType = event.target.value as ShopMediaTargetType;
+                                        setSection(section.slot, (current) => ({
+                                          ...current,
+                                          items: current.items.map((entry) => entry.id === item.id ? {
+                                            ...entry,
+                                            targetType: nextType,
+                                            targetId: isDetailTargetType(nextType) ? entry.targetId : null
+                                          } : entry)
+                                        }));
+                                      }}
+                                      disabled={!canEdit}
+                                    >
+                                      {listingTargetOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                      ))}
+                                      {detailTargetOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </td>
+                                <td>
+                                  {isDetail ? (
+                                    <div className="field">
+                                      <label htmlFor={`target-id-${section.slot}-${item.id}`}>العنصر</label>
+                                      <select
+                                        id={`target-id-${section.slot}-${item.id}`}
+                                        className="select"
+                                        value={item.targetId ?? ""}
+                                        onChange={(event) => setSection(section.slot, (current) => ({
+                                          ...current,
+                                          items: current.items.map((entry) => entry.id === item.id ? {
+                                            ...entry,
+                                            targetId: event.target.value ? Number(event.target.value) : null
+                                          } : entry)
+                                        }))}
+                                        disabled={!canEdit}
+                                      >
+                                        <option value="">اختاري عنصرًا</option>
+                                        {detailOptions.map((option) => (
+                                          <option key={option.id} value={option.id}>{option.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  ) : (
+                                    <span className="faint">صفحة قائمة — بدون عنصر محدد</span>
+                                  )}
+                                </td>
+                                {canEdit ? (
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="btn btn--ghost btn--sm"
+                                      onClick={() => setSection(section.slot, (current) => ({
+                                        ...current,
+                                        items: current.items.filter((entry) => entry.id !== item.id)
+                                      }))}
+                                    >
+                                      <Icon.Trash size={14} /> إزالة
+                                    </button>
+                                  </td>
+                                ) : null}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {canEdit ? (
+                      <div>
+                        <button type="button" className="btn btn--ghost btn--sm" onClick={() => addItem(section.slot)}>
+                          <Icon.Plus /> إضافة صورة
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {error ? <p style={{ margin: 0, color: "var(--error)" }}>{error}</p> : null}
       </div>

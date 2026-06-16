@@ -743,6 +743,54 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 }
 
 /* ============================================================
+   Shop media — slot editor (gallery tiles per storefront slot)
+   ============================================================ */
+.shop-media-head {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--hairline);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.shop-media-head__main { display: grid; gap: 2px; min-width: 0; }
+.shop-media-head__sub { font-size: 12px; color: var(--ink-3); }
+.shop-media-head__tools {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.shop-media-dirty {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+}
+.shop-media-dirty::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--warm); box-shadow: 0 0 0 3px color-mix(in oklch, var(--warm) 30%, transparent);
+}
+
+/* One row per image: image + its destination/link. */
+.shop-media-table { min-width: 720px; }
+.shop-media-table td { vertical-align: middle; }
+.shop-media-table .field { gap: 6px; }
+.shop-media-tile__index {
+  display: inline-grid; place-items: center;
+  width: 26px; height: 26px; border-radius: var(--radius-sm);
+  background: var(--warm-soft);
+  font-family: var(--font-mono);
+  font-weight: 700; font-size: 12.5px; color: var(--ink);
+}
+
+.shop-media-empty {
+  border: 1.5px dashed var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 30px 22px;
+  display: grid; gap: 10px; place-items: center; text-align: center;
+  color: var(--ink-3);
+}
+.shop-media-empty__icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: var(--warm-soft); color: var(--accent);
+  display: grid; place-items: center;
+}
+
+/* ============================================================
    Table wrapper for horizontal scroll (shared)
    ============================================================ */
 .table-outer { overflow-x: auto; -webkit-overflow-scrolling: touch; }

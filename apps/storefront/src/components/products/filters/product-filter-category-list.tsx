@@ -27,7 +27,7 @@ const desktopListStyle = {
   overflowY: "auto",
   paddingInlineEnd: "2px",
   scrollbarWidth: "thin",
-  scrollbarColor: "oklch(1 0 0 / 0.1) transparent"
+  scrollbarColor: "var(--hairline) transparent"
 } as const;
 
 function ParentToggle({
@@ -54,9 +54,9 @@ function ParentToggle({
         width: compact ? 20 : 24,
         height: compact ? 20 : 24,
         borderRadius: "50%",
-        border: "1px solid oklch(1 0 0 / 0.14)",
-        background: isOpen ? "oklch(1 0 0 / 0.1)" : "transparent",
-        color: "oklch(0.94 0.06 85 / 0.5)",
+        border: "1px solid var(--hairline)",
+        background: isOpen ? "oklch(0 0 0 / 0.06)" : "transparent",
+        color: "var(--ink-3)",
         cursor: "pointer",
         flexShrink: 0,
         transition: "background 160ms"

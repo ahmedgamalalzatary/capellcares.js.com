@@ -144,4 +144,28 @@ describe("ShopMediaPage", () => {
       expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "تعذر حفظ القسم. حاولي مرة أخرى.");
     });
   });
+
+  it("toggles section status with the switch", () => {
+    render(createElement(ShopMediaPage));
+
+    const toggle = screen.getAllByRole("checkbox", { name: "تفعيل القسم" })[0]!;
+    expect(toggle).toBeChecked();
+
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+
+    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+      status: "inactive"
+    }));
+  });
+
+  it("disables save until there are unsaved changes", () => {
+    render(createElement(ShopMediaPage));
+
+    expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeDisabled();
+
+    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+
+    expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeEnabled();
+  });
 });

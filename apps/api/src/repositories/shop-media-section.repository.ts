@@ -19,7 +19,9 @@ type ShopMediaSectionItemInput = {
   sortOrder: number;
 };
 
-async function ensureShopMediaSections(tx: typeof db = db) {
+type DbExecutor = Pick<typeof db, "select" | "insert">;
+
+async function ensureShopMediaSections(tx: DbExecutor = db) {
   const existing = await tx
     .select({ slot: shopMediaSections.slot })
     .from(shopMediaSections)
