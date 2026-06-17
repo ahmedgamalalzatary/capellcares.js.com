@@ -67,7 +67,7 @@ function Slide({
       tabIndex={active ? undefined : -1}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      <div className="relative h-140 sm:h-180 overflow-hidden">
+      <div className="relative h-150 sm:h-180 overflow-hidden">
         <picture className="block h-full w-full">
           <source media="(max-width: 639px)" srcSet={mobileImagePath} />
           <img
@@ -208,7 +208,7 @@ export function ShopMediaStrip({
           aria-label="Previous slide"
           className="absolute top-1/2 inset-s-2 grid size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120"
         >
-          <Icon.Chevron size={40} className={` stroke-[3.5] ${isRtl ? "" : "rotate-180"}`} />
+          <Icon.Chevron size={40} className={` stroke-1 ${isRtl ? "" : "rotate-180"}`} />
         </button>
         <button
           type="button"
@@ -216,7 +216,7 @@ export function ShopMediaStrip({
           aria-label="Next slide"
           className="absolute top-1/2 inset-e-2 grid size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120"
         >
-          <Icon.Chevron size={40} className={`stroke-[3.5] ${isRtl ? "rotate-180" : ""}`} />
+          <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "rotate-180" : ""}`} />
         </button>
 
         <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">

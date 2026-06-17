@@ -228,6 +228,35 @@ describe("storefront client contracts", () => {
     ]);
   });
 
+  it("uses the public API origin for media URLs when SSR fetches through the internal Docker host", async () => {
+    vi.stubEnv("API_INTERNAL_URL", "http://api:4000");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.capellacares.com");
+    vi.stubGlobal("window", undefined);
+    vi.resetModules();
+
+    const { fetchProducts: fetchProductsWithEnv } = await import("@/lib/api/client");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [{
+          ...productBoundaryPayload,
+          imagePath: "/uploads/body-lotion-primary.jpg",
+          media: [{ type: "image", url: "/uploads/body-lotion-primary.jpg" }]
+        }]
+      })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchProductsWithEnv({ lang: "en" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("http://api:4000/api/v1/products"),
+      expect.any(Object)
+    );
+    expect(result[0]?.imagePath).toBe("https://api.capellacares.com/uploads/body-lotion-primary.jpg");
+    expect(result[0]?.media?.[0]?.url).toBe("https://api.capellacares.com/uploads/body-lotion-primary.jpg");
+  });
+
   it("normalizes numeric product ids so category-scoped filtering does not empty out", async () => {
     vi.stubGlobal(
       "fetch",

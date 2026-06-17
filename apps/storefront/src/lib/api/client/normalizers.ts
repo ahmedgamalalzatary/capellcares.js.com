@@ -2,6 +2,10 @@ import type { Category } from "@capella/shared";
 import { API_BASE } from "./http";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 
+function resolvePublicMediaBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL?.trim() || API_BASE;
+}
+
 export function resolveMediaUrl(url: string | null | undefined): string {
   const value = url?.trim() ?? "";
   if (!value) {
@@ -13,7 +17,7 @@ export function resolveMediaUrl(url: string | null | undefined): string {
   }
 
   if (value.startsWith("/uploads/")) {
-    return `${API_BASE}${value}`;
+    return `${resolvePublicMediaBase()}${value}`;
   }
 
   return value;
