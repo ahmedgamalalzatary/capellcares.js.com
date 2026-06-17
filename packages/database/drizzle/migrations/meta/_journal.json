@@ -120,6 +120,13 @@
       "when": 1782064800000,
       "tag": "0016_shop_media_sections",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1782147600000,
+      "tag": "0017_shop_media_mobile_images",
+      "breakpoints": true
     }
   ]
 }

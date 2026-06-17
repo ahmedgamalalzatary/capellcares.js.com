@@ -14,6 +14,7 @@ type ShopMediaTargetType = (typeof shopMediaSectionTargetTypes)[number];
 
 type ShopMediaSectionItemInput = {
   imagePath: string;
+  mobileImagePath: string;
   targetType: ShopMediaTargetType;
   targetId: number | null;
   sortOrder: number;
@@ -82,6 +83,7 @@ async function listSectionsBase() {
       .map((item) => ({
         id: item.id,
         imagePath: item.imagePath,
+        mobileImagePath: item.mobileImagePath,
         targetType: item.targetType,
         targetId: item.targetId,
         targetSlug:
@@ -133,6 +135,7 @@ export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3, status: "acti
         items.map((item) => ({
           sectionId: section.id,
           imagePath: item.imagePath,
+          mobileImagePath: item.mobileImagePath,
           targetType: item.targetType,
           targetId: item.targetId,
           sortOrder: item.sortOrder

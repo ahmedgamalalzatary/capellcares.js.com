@@ -16,6 +16,7 @@ const makeMockState = () => ({
     items: [{
       id: 11,
       imagePath: "/uploads/original.jpg",
+      mobileImagePath: "/uploads/original-mobile.jpg",
       targetType: "offers",
       targetId: null,
       sortOrder: 1
@@ -47,7 +48,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 }));
 
 vi.mock("@/components/forms/image-upload", () => ({
-  ImageUpload: ({ onChange }: any) => createElement("button", { type: "button", onClick: () => onChange("/uploads/changed.jpg") }, "image-upload")
+  ImageUpload: ({ onChange, label }: any) => createElement("button", { type: "button", onClick: () => onChange(`/uploads/changed-${label}.jpg`) }, label ?? "image-upload")
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -79,7 +80,7 @@ describe("ShopMediaPage", () => {
   it("keeps unsaved image edits when store data refreshes", async () => {
     const view = render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
 
     mockState = makeMockState();
     view.rerender(createElement(ShopMediaPage));
@@ -88,7 +89,8 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       items: [expect.objectContaining({
-        imagePath: "/uploads/changed.jpg"
+        imagePath: "/uploads/changed-صورة سطح المكتب.jpg",
+        mobileImagePath: "/uploads/original-mobile.jpg"
       })]
     }));
   });
@@ -96,13 +98,15 @@ describe("ShopMediaPage", () => {
   it("saves edited section items", async () => {
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
+    fireEvent.click(screen.getAllByText("صورة الموبايل")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       status: "active",
       items: [expect.objectContaining({
-        imagePath: "/uploads/changed.jpg",
+        imagePath: "/uploads/changed-صورة سطح المكتب.jpg",
+        mobileImagePath: "/uploads/changed-صورة الموبايل.jpg",
         targetType: "offers"
       })]
     }));
@@ -111,7 +115,7 @@ describe("ShopMediaPage", () => {
   it("shows a success toast after saving", async () => {
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     await waitFor(() => {
@@ -129,7 +133,7 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).not.toHaveBeenCalled();
     await waitFor(() => {
-      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "أكملي الصورة والوجهة لكل عنصر قبل الحفظ.");
+      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "أكملي صور سطح المكتب والموبايل والوجهة لكل عنصر قبل الحفظ.");
     });
   });
 
@@ -137,7 +141,7 @@ describe("ShopMediaPage", () => {
     updateShopMediaSection.mockRejectedValueOnce(new Error("save failed"));
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     await waitFor(() => {
@@ -164,7 +168,7 @@ describe("ShopMediaPage", () => {
 
     expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeDisabled();
 
-    fireEvent.click(screen.getAllByText("image-upload")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
 
     expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeEnabled();
   });

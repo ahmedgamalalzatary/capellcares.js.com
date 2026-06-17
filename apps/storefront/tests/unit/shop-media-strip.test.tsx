@@ -17,6 +17,7 @@ function makeSection(itemCount: number): ShopMediaSection {
     items: Array.from({ length: itemCount }, (_, i) => ({
       id: i + 1,
       imagePath: `http://localhost:4000/uploads/img-${i + 1}.jpg`,
+      mobileImagePath: `http://localhost:4000/uploads/mobile-img-${i + 1}.jpg`,
       targetType: "collections" as const,
       targetId: null,
       targetSlug: null,
@@ -40,6 +41,17 @@ describe("ShopMediaStrip carousel", () => {
     expect(screen.getByRole("link", { name: "Media 1" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /next/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /go to slide/i })).not.toBeInTheDocument();
+  });
+
+  it("renders mobile and desktop sources at the sm breakpoint", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+
+    const source = container.querySelector("picture source");
+    const image = container.querySelector("picture img");
+
+    expect(source).toHaveAttribute("media", "(max-width: 639px)");
+    expect(source).toHaveAttribute("srcSet", "http://localhost:4000/uploads/mobile-img-1.jpg");
+    expect(image).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
   });
 
   it("renders dots and arrows when there are multiple images", () => {

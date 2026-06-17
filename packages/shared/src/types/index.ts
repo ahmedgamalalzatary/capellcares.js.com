@@ -180,6 +180,7 @@ export type ShopMediaTargetType =
 export interface ShopMediaSectionItem {
   id: number;
   imagePath: string;
+  mobileImagePath: string;
   targetType: ShopMediaTargetType;
   targetId: number | null;
   targetSlug?: string | null;

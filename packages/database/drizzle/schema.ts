@@ -235,6 +235,7 @@ export const shopMediaSectionItems = mysqlTable("shop_media_section_items", {
   id: int("id").autoincrement().primaryKey(),
   sectionId: int("section_id").notNull().references(() => shopMediaSections.id, { onDelete: "cascade" }),
   imagePath: varchar("image_path", { length: 1024 }).notNull(),
+  mobileImagePath: varchar("mobile_image_path", { length: 1024 }).notNull(),
   targetType: mysqlEnum("target_type", shopMediaSectionTargetTypes).notNull(),
   targetId: int("target_id"),
   sortOrder: int("sort_order").notNull().default(0),

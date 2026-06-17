@@ -16,6 +16,7 @@ export const shopMediaTargetTypeSchema = z.enum([
 export const shopMediaSectionItemSchema = z.object({
   id: z.number().int().positive(),
   imagePath: z.string().min(1),
+  mobileImagePath: z.string().min(1),
   targetType: shopMediaTargetTypeSchema,
   targetId: z.number().int().positive().nullable(),
   targetSlug: z.string().nullable().optional(),

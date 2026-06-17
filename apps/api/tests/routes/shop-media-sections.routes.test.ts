@@ -13,6 +13,7 @@ beforeEach(async () => {
 function makeItem(input: Partial<Record<string, unknown>> = {}) {
   return {
     imagePath: "/uploads/shop-media.jpg",
+    mobileImagePath: "/uploads/shop-media-mobile.jpg",
     targetType: "collections",
     targetId: null,
     sortOrder: 1,
@@ -43,8 +44,12 @@ test("erp shop media sections can be listed and updated, and storefront returns 
       body: JSON.stringify({
         status: "active",
         items: [
-          makeItem({ imagePath: "http://localhost:4000/uploads/shop-media.jpg", targetType: "collections" }),
-          makeItem({ imagePath: "/uploads/shop-media-2.jpg", targetType: "products", sortOrder: 2 })
+          makeItem({
+            imagePath: "http://localhost:4000/uploads/shop-media.jpg",
+            mobileImagePath: "http://localhost:4000/uploads/shop-media-mobile.jpg",
+            targetType: "collections"
+          }),
+          makeItem({ imagePath: "/uploads/shop-media-2.jpg", mobileImagePath: "/uploads/shop-media-2-mobile.jpg", targetType: "products", sortOrder: 2 })
         ]
       })
     });
@@ -60,6 +65,7 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     assert.equal(updatedSection.status, "active");
     assert.equal(updatedSection.items.length, 2);
     assert.equal(updatedSection.items[0].imagePath, "/uploads/shop-media.jpg");
+    assert.equal(updatedSection.items[0].mobileImagePath, "/uploads/shop-media-mobile.jpg");
     assert.equal(updatedSection.items[1].targetType, "products");
 
     const storefrontResponse = await request("/api/v1/shop-media-sections");
@@ -86,6 +92,29 @@ test("erp shop media sections reject invalid payloads", async () => {
         status: "active",
         items: [
           makeItem({ imagePath: "", targetType: "collection", targetId: null })
+        ]
+      })
+    });
+
+    assert.equal(badResponse.status, 400);
+    assert.equal(badResponse.json.error, "Invalid shop media section payload");
+  });
+});
+
+test("erp shop media sections require mobile images", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    const badResponse = await request("/api/erp/shop-media-sections/1", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        status: "active",
+        items: [
+          makeItem({ mobileImagePath: "" })
         ]
       })
     });

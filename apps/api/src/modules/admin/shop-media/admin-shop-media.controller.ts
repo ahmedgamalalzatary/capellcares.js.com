@@ -49,7 +49,7 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
 
   const input = req.body as {
     status?: unknown;
-    items?: Array<{ imagePath?: unknown; targetType?: unknown; targetId?: unknown; sortOrder?: unknown }>;
+    items?: Array<{ imagePath?: unknown; mobileImagePath?: unknown; targetType?: unknown; targetId?: unknown; sortOrder?: unknown }>;
   };
 
   if (input.status !== "active" && input.status !== "inactive") {
@@ -63,11 +63,12 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
   const normalizedItems = [];
   for (const rawItem of input.items) {
     const imagePath = normalizeUploadPath(sanitizeString(rawItem?.imagePath));
+    const mobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.mobileImagePath));
     const targetType = sanitizeString(rawItem?.targetType);
     const targetIdValue = rawItem?.targetId;
     const sortOrder = Number.parseInt(String(rawItem?.sortOrder ?? 0), 10);
 
-    if (!imagePath || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number]) || !Number.isFinite(sortOrder)) {
+    if (!imagePath || !mobileImagePath || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number]) || !Number.isFinite(sortOrder)) {
       return res.status(400).json({ error: "Invalid shop media section payload" });
     }
 
@@ -75,7 +76,7 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
       if (targetIdValue != null && targetIdValue !== "") {
         return res.status(400).json({ error: "Invalid shop media section payload" });
       }
-      normalizedItems.push({ imagePath, targetType, targetId: null, sortOrder });
+      normalizedItems.push({ imagePath, mobileImagePath, targetType, targetId: null, sortOrder });
       continue;
     }
 
@@ -88,7 +89,7 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
       return res.status(400).json({ error: "Invalid shop media section payload" });
     }
 
-    normalizedItems.push({ imagePath, targetType, targetId, sortOrder });
+    normalizedItems.push({ imagePath, mobileImagePath, targetType, targetId, sortOrder });
   }
 
   await replaceShopMediaSectionRepo(slot, input.status, normalizedItems);

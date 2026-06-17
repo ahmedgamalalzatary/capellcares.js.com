@@ -15,6 +15,7 @@ import type { ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 type EditableItem = {
   id: string;
   imagePath: string;
+  mobileImagePath: string;
   targetType: ShopMediaTargetType;
   targetId: number | null;
 };
@@ -54,6 +55,7 @@ function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 
     items: (section?.items ?? []).map((item) => ({
       id: String(item.id),
       imagePath: item.imagePath,
+      mobileImagePath: item.mobileImagePath ?? item.imagePath,
       targetType: item.targetType,
       targetId: item.targetId
     }))
@@ -112,8 +114,8 @@ export default function ShopMediaPage() {
   };
 
   const saveSection = async (section: EditableSection) => {
-    if (section.items.some((item) => !item.imagePath || (isDetailTargetType(item.targetType) && item.targetId === null))) {
-      const validationError = new Error("أكملي الصورة والوجهة لكل عنصر قبل الحفظ.");
+    if (section.items.some((item) => !item.imagePath || !item.mobileImagePath || (isDetailTargetType(item.targetType) && item.targetId === null))) {
+      const validationError = new Error("أكملي صور سطح المكتب والموبايل والوجهة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
       return;
@@ -126,6 +128,7 @@ export default function ShopMediaPage() {
         status: section.status,
         items: section.items.map((item, index) => ({
           imagePath: item.imagePath,
+          mobileImagePath: item.mobileImagePath,
           targetType: item.targetType,
           targetId: isDetailTargetType(item.targetType) ? item.targetId : null,
           sortOrder: index + 1
@@ -150,6 +153,7 @@ export default function ShopMediaPage() {
       {
         id: `new-${slot}-${current.items.length + 1}`,
         imagePath: "",
+        mobileImagePath: "",
         targetType: "offers",
         targetId: null
       }
@@ -226,7 +230,7 @@ export default function ShopMediaPage() {
                         <thead>
                           <tr>
                             <th style={{ width: 56 }}>#</th>
-                            <th style={{ width: 240 }}>الصورة</th>
+                            <th style={{ width: 320 }}>الصور</th>
                             <th>نوع الوجهة</th>
                             <th>العنصر / الرابط</th>
                             {canEdit ? <th style={{ width: 80 }} aria-label="إجراءات" /> : null}
@@ -244,10 +248,21 @@ export default function ShopMediaPage() {
                                 <td><span className="shop-media-tile__index">{index + 1}</span></td>
                                 <td>
                                   <ImageUpload
+                                    label="صورة سطح المكتب"
                                     value={item.imagePath || null}
                                     onChange={(value) => setSection(section.slot, (current) => ({
                                       ...current,
                                       items: current.items.map((entry) => entry.id === item.id ? { ...entry, imagePath: value ?? "" } : entry)
+                                    }))}
+                                    uploadContext="shop_media.update"
+                                  />
+                                  <div style={{ height: 10 }} />
+                                  <ImageUpload
+                                    label="صورة الموبايل"
+                                    value={item.mobileImagePath || null}
+                                    onChange={(value) => setSection(section.slot, (current) => ({
+                                      ...current,
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, mobileImagePath: value ?? "" } : entry)
                                     }))}
                                     uploadContext="shop_media.update"
                                   />

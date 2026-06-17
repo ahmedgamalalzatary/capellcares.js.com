@@ -7,6 +7,7 @@ import { API_BASE, api, type ErpUploadContext } from "@/lib/api/client";
 interface Props {
   value: string | null;
   onChange: (imageUrl: string | null) => void;
+  label?: string;
   hint?: string;
   uploadContext?: ErpUploadContext;
 }
@@ -27,7 +28,7 @@ function resolvePreviewSrc(value: string | null) {
   return value;
 }
 
-export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
+export function ImageUpload({ value, onChange, label, hint, uploadContext }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -83,6 +84,7 @@ export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
         transition: "border-color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo)"
       }}
     >
+      {label ? <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div> : null}
       {previewSrc ? (
         <>
           <img src={previewSrc} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
