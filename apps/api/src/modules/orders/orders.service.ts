@@ -138,7 +138,8 @@ export async function createOrderFromErpSale(
   payload: CreateErpSaleDto
 ): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
   if (!payload.fullName?.trim()) throw new Error("Field is required: fullName");
-  if (payload.phone?.trim() && !EG_PHONE_REGEX.test(payload.phone)) throw new Error("Invalid Egyptian phone number");
+  const trimmedPhone = payload.phone?.trim();
+  if (trimmedPhone && !EG_PHONE_REGEX.test(trimmedPhone)) throw new Error("Invalid Egyptian phone number");
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
   if (!Number.isFinite(payload.soldTotalAmount)) throw new Error("Field is required: soldTotalAmount");
 
