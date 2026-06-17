@@ -79,7 +79,7 @@ function Slide({
       draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      <div className="relative h-150 sm:h-180 overflow-hidden">
+      <div className="relative overflow-hidden">
         <picture className="block h-full w-full">
           <source media="(max-width: 639px)" srcSet={mobileImagePath} />
           <img
