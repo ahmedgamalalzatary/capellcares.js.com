@@ -8,4 +8,13 @@ export interface CreateOrderDto {
   checkout: CheckoutRequestDto["items"];
 }
 
+export interface CreateErpSaleDto {
+  fullName: string;
+  phone: string;
+  addressLine: string;
+  notes?: string;
+  soldTotalAmount: number;
+  items: CheckoutRequestDto["items"];
+}
+
 export type OrderSummaryDto = OrderSummary;

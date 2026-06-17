@@ -8,6 +8,7 @@ import {
   updateOrderPaymentStatusRepo
 } from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
+import { createOrderFromErpSale } from "./orders.service.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
 
@@ -22,6 +23,15 @@ export async function listAdminOrdersController(_req: AuthenticatedRequest, res:
 
 export async function getAdminSalesController(_req: AuthenticatedRequest, res: Response) {
   res.json(await getSalesAnalyticsRepo());
+}
+
+export async function createAdminSaleController(req: AuthenticatedRequest, res: Response) {
+  try {
+    const order = await createOrderFromErpSale(req.body);
+    return res.status(201).json(order);
+  } catch (error) {
+    return res.status(400).json({ message: error instanceof Error ? error.message : "Invalid sale" });
+  }
 }
 
 export async function getAdminOrderController(req: AuthenticatedRequest, res: Response) {

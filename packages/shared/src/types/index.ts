@@ -185,6 +185,7 @@ export interface OrderSummary {
   paymentMethod: "cod";
   paymentStatus: PaymentStatus;
   totalAmount: number;
+  erpManualTotalAmount?: number | null;
   createdAt: string;
 }
 

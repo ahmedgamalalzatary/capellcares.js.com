@@ -1,16 +1,22 @@
 import { randomUUID } from "node:crypto";
 
 export const allowedPaymentStatuses = new Set(["pending", "accepted", "denied"]);
+export type OrderCodeChannel = "WEB" | "ERP";
 
-export function generateOrderCode(orderId: number): string {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let seed = orderId * 7919 + 104729;
-  let letters = "";
-  for (let index = 0; index < 4; index += 1) {
-    letters += alphabet[seed % alphabet.length];
-    seed = Math.floor(seed / alphabet.length);
-  }
-  return `${letters}-${String(orderId).padStart(3, "0")}`;
+function padDatePart(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+export function formatDailyOrderCode(channel: OrderCodeChannel, createdAt: Date, dailyCounter: number): string {
+  return [
+    channel,
+    createdAt.getFullYear(),
+    padDatePart(createdAt.getMonth() + 1),
+    padDatePart(createdAt.getDate()),
+    padDatePart(createdAt.getHours()),
+    padDatePart(createdAt.getMinutes()),
+    dailyCounter
+  ].join("-");
 }
 
 export function generatePendingOrderCode(): string {

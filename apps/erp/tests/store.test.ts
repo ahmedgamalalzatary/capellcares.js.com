@@ -416,4 +416,46 @@ describe("ERP store", () => {
     expect(store.loaded).toBe(true);
     expect(store.error).toBe("API 403 /api/erp/sales");
   });
+
+  it("creates an ERP sale through the orders endpoint and refreshes store data", async () => {
+    apiPost.mockResolvedValueOnce({ id: 77, orderCode: "SALE-077" });
+    apiGet
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    await store.createSale({
+      fullName: "ERP Sale",
+      phone: "01012345678",
+      addressLine: "Street 10",
+      notes: "Created from ERP",
+      soldTotalAmount: 65,
+      items: [
+        { type: "product", variantId: 11, qty: 1 },
+        { type: "offer", offerId: 5, qty: 2 },
+        { type: "collection", collectionId: 9, qty: 1 }
+      ]
+    });
+
+    expect(apiPost).toHaveBeenCalledWith("/api/erp/orders", {
+      fullName: "ERP Sale",
+      phone: "01012345678",
+      addressLine: "Street 10",
+      notes: "Created from ERP",
+      soldTotalAmount: 65,
+      items: [
+        { type: "product", variantId: 11, qty: 1 },
+        { type: "offer", offerId: 5, qty: 2 },
+        { type: "collection", collectionId: 9, qty: 1 }
+      ]
+    });
+    expect(apiGet).toHaveBeenCalled();
+  });
 });

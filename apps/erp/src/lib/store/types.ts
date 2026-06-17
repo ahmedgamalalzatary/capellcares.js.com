@@ -1,7 +1,9 @@
 import type { Advice, Category, Collection, Offer, OrderSummary, Product, ProductMedia } from "@capella/shared";
+import type { CreateErpSaleDto } from "@capella/shared/dto";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
+export type SaleCreateInput = CreateErpSaleDto;
 export type SalesAnalytics = {
   summary: {
     totalOrders: number;

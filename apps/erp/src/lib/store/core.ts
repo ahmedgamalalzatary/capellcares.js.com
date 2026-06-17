@@ -17,6 +17,7 @@ import type {
   ErpStoreSnapshot,
   Listener,
   ProductApiShape,
+  SaleCreateInput,
   SalesAnalytics
 } from "./types";
 
@@ -370,6 +371,12 @@ export class ErpStore {
 
   async fetchOrder(id: number): Promise<Order> {
     return api.get(`/api/erp/orders/${id}`);
+  }
+
+  async createSale(input: SaleCreateInput): Promise<OrderSummary> {
+    const created = await api.post<OrderSummary>("/api/erp/orders", input);
+    await this.refetch();
+    return created;
   }
 
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {

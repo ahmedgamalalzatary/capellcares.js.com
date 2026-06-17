@@ -13,6 +13,7 @@ beforeEach(async () => {
 
 function buildOrderInput(variantId: number, qty: number) {
   return {
+    orderCodeChannel: "WEB" as const,
     order: {
       customerType: "guest" as const,
       customerId: null,
@@ -70,6 +71,7 @@ test("createOrderWithItems does not oversell when two orders race for the last u
 test("createOrderWithItems rejects offer items with null offerId before querying offerItems", async () => {
   await assert.rejects(
     createOrderWithItems({
+      orderCodeChannel: "WEB",
       order: {
         customerType: "guest",
         customerId: null,
@@ -94,6 +96,7 @@ test("createOrderWithItems rejects offer items with null offerId before querying
 test("createOrderWithItems rejects non-offer items with null variantId before decrementVariantStock", async () => {
   await assert.rejects(
     createOrderWithItems({
+      orderCodeChannel: "WEB",
       order: {
         customerType: "guest",
         customerId: null,

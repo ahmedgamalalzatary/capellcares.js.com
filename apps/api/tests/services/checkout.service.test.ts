@@ -57,7 +57,7 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
 
   assert.equal(variant?.stockQty, 8);
   assert.equal(order?.paymentStatus, "pending");
-  assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
+  assert.match(order?.orderCode ?? "", /^WEB-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-1$/);
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
 });
 

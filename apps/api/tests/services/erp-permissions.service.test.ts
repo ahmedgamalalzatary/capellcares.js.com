@@ -58,6 +58,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "products.stock_update",
     "products.toggle_status",
     "products.update",
+    "sales.create",
     "sales.read",
     "trash.read"
   ]);
@@ -66,6 +67,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
 test("normalizePermissionKeys adds required read dependencies", () => {
   const normalized = normalizePermissionKeys([
     "products.update",
+    "sales.create",
     "orders.update_payment_status",
     "trash.read",
     "products.update"
@@ -76,6 +78,8 @@ test("normalizePermissionKeys adds required read dependencies", () => {
     "orders.update_payment_status",
     "products.read",
     "products.update",
+    "sales.create",
+    "sales.read",
     "trash.read"
   ]);
 });

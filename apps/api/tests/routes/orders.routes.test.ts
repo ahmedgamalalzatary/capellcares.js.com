@@ -8,7 +8,7 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { db } from "@capella/database/src/db";
-import { customers, orders, productVariants } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, customers, orders, productVariants } from "@capella/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
@@ -86,6 +86,74 @@ test("erp order detail returns line items for admins", async () => {
     assert.equal(response.json.id, checkout.json.id);
     assert.equal(response.json.items.length, 1);
     assert.equal(response.json.items[0].qty, 2);
+  });
+});
+
+test("erp orders can create a sale with product, offer, and collection items", async () => {
+  const ids = await getBaselineIds();
+  const [createdCollection] = await db
+    .insert(collections)
+    .values({
+      slug: `erp-sale-collection-${Date.now()}`,
+      arName: "مجموعة مبيعات",
+      enName: "ERP Sale Collection",
+      fixedPrice: "90.00",
+      categoryId: ids.leafCategoryId,
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+
+  await db.insert(collectionItems).values([
+    { collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: createdCollection.id, variantId: ids.secondVariantId, qty: 1 }
+  ]);
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/orders", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        fullName: "ERP Sale",
+        soldTotalAmount: 65,
+        items: [
+          { type: "product", variantId: ids.firstVariantId, qty: 1 },
+          { type: "offer", offerId: ids.offerId, qty: 1 },
+          { type: "collection", collectionId: createdCollection.id, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 201);
+    assert.match(response.json.orderCode, /^ERP-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-1$/);
+    assert.equal(response.json.paymentStatus, "accepted");
+
+    const detail = await request(`/api/erp/orders/${response.json.id}`, {
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(detail.status, 200);
+    assert.equal(detail.json.fullName, "ERP Sale");
+    assert.equal(detail.json.customerType, "guest");
+    assert.equal(detail.json.email, "");
+    assert.equal(detail.json.governorate, "");
+    assert.equal(detail.json.cityArea, "");
+    assert.equal(detail.json.phone, "");
+    assert.equal(detail.json.addressLine, "");
+    assert.equal(detail.json.notes, "");
+    assert.equal(detail.json.buildingApartment, "-");
+    assert.equal(detail.json.paymentStatus, "accepted");
+    assert.equal(detail.json.totalAmount, 65);
+    assert.equal(detail.json.erpManualTotalAmount, 65);
+    assert.equal(detail.json.items.length, 3);
+    assert.deepEqual(
+      detail.json.items.map((item: any) => item.itemType).sort(),
+      ["collection", "offer", "product_variant"]
+    );
   });
 });
 

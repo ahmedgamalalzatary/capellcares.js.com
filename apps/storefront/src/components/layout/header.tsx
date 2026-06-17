@@ -17,7 +17,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
@@ -26,13 +25,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const announcements: string[] = Array.isArray(dict.nav.announcements)
     ? dict.nav.announcements
     : [dict.nav.announcement];
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 6);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     if (mobileOpen) {

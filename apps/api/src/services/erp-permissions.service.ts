@@ -41,6 +41,7 @@ const ERP_PERMISSION_KEYS = [
   "orders.read",
   "orders.update_payment_status",
   "sales.read",
+  "sales.create",
   "trash.read"
 ] as const;
 
@@ -75,7 +76,8 @@ const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissio
   "advices.update": ["advices.read"],
   "advices.delete": ["advices.read"],
   "advices.toggle_status": ["advices.read"],
-  "orders.update_payment_status": ["orders.read"]
+  "orders.update_payment_status": ["orders.read"],
+  "sales.create": ["sales.read"]
 };
 
 export function normalizePermissionKeys(keys: string[]) {

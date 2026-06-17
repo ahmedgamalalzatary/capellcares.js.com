@@ -1010,6 +1010,55 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   gap: 12px;
 }
 
+.sales-entry-layout {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-width: 0;
+}
+.sales-entry-layout__items {
+  flex: 999 1 620px;
+  min-width: 0;
+}
+.sales-entry-layout__total {
+  flex: 1 1 320px;
+  min-width: min(100%, 280px);
+}
+.sales-line {
+  display: grid;
+  grid-template-columns: minmax(120px, 150px) minmax(180px, 1fr) minmax(156px, auto);
+  gap: 12px;
+  align-items: end;
+  min-width: 0;
+}
+.sales-line > *,
+.sales-line .field,
+.sales-line .input,
+.sales-line .select {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .sales-entry-layout__items,
+  .sales-entry-layout__total {
+    flex-basis: 100%;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .sales-line {
+    grid-template-columns: 1fr;
+  }
+  .sales-line [data-testid="sale-line-qty-actions"] {
+    width: 100%;
+  }
+  .sales-line [data-testid="sale-line-qty-actions"] .field {
+    min-width: 0;
+  }
+}
+
 /* ============================================================
    Editor — Atelier sheet (product new/edit)
    ============================================================ */

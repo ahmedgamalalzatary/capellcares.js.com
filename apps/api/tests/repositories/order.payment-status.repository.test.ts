@@ -33,6 +33,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   const ids = await getBaselineIds();
 
   const offerOrder = await createOrderWithItems({
+    orderCodeChannel: "WEB",
     order: buildBaseOrder(35, "offer-restock@capella.test"),
     items: [{ variantId: null, offerId: ids.offerId, itemType: "offer", qty: 1, unitPrice: 35, lineTotal: 35 }]
   });
@@ -57,6 +58,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   await db.insert(collectionItems).values({ collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 });
 
   const collectionOrder = await createOrderWithItems({
+    orderCodeChannel: "WEB",
     order: buildBaseOrder(90, "collection-restock@capella.test"),
     items: [{ variantId: null, collectionId: createdCollection.id, itemType: "collection", qty: 1, unitPrice: 90, lineTotal: 90 }]
   });
@@ -67,6 +69,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   );
 
   const variantOrder = await createOrderWithItems({
+    orderCodeChannel: "WEB",
     order: buildBaseOrder(35, "variant-restock@capella.test"),
     items: [{ variantId: ids.firstVariantId, qty: 1, unitPrice: 35, lineTotal: 35 }]
   });

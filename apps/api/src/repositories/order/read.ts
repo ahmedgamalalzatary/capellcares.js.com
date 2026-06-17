@@ -16,7 +16,8 @@ export async function listOrdersRepo(filters?: { customerId?: number }) {
 
   return rows.map((row) => ({
     ...row,
-    totalAmount: toNumber(row.totalAmount)
+    totalAmount: toNumber(row.totalAmount),
+    erpManualTotalAmount: row.erpManualTotalAmount == null ? null : toNumber(row.erpManualTotalAmount)
   }));
 }
 
@@ -43,6 +44,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
   return {
     ...order,
     totalAmount: toNumber(order.totalAmount),
+    erpManualTotalAmount: order.erpManualTotalAmount == null ? null : toNumber(order.erpManualTotalAmount),
     items: items.map((item) => ({
       ...item,
       unitPrice: toNumber(item.unitPrice),

@@ -1,13 +1,13 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { EG_PHONE_REGEX } from "@capella/shared/constants";
+import type { CreateErpSaleDto } from "@capella/shared/dto";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
 
-export async function createOrderFromCheckout(
-  payload: CheckoutPayload
-): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+async function priceCheckoutItems(payload: Pick<CheckoutPayload, "items">) {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
@@ -103,9 +103,17 @@ export async function createOrderFromCheckout(
     });
   }
 
+  return pricedItems;
+}
+
+export async function createOrderFromCheckout(
+  payload: CheckoutPayload
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+  const pricedItems = await priceCheckoutItems(payload);
   const totalAmount = pricedItems.reduce((sum, row) => addMoney(sum, row.lineTotal), 0);
   const paymentStatus: PaymentStatus = "pending";
   const createdOrder = await createOrderWithItems({
+    orderCodeChannel: "WEB",
     order: {
       customerType: payload.customerId ? "registered" : "guest",
       customerId: payload.customerId ?? null,
@@ -120,6 +128,42 @@ export async function createOrderFromCheckout(
       paymentMethod: payload.paymentMethod,
       paymentStatus,
       totalAmount
+    },
+    items: pricedItems
+  });
+  return { id: createdOrder.id, orderCode: createdOrder.orderCode, paymentStatus };
+}
+
+export async function createOrderFromErpSale(
+  payload: CreateErpSaleDto
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+  if (!payload.fullName?.trim()) throw new Error("Field is required: fullName");
+  if (payload.phone?.trim() && !EG_PHONE_REGEX.test(payload.phone)) throw new Error("Invalid Egyptian phone number");
+  if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
+  if (!Number.isFinite(payload.soldTotalAmount)) throw new Error("Field is required: soldTotalAmount");
+
+  const pricedItems = await priceCheckoutItems(payload);
+  const paymentStatus: PaymentStatus = "accepted";
+  const phone = payload.phone?.trim() ?? "";
+  const addressLine = payload.addressLine?.trim() ?? "";
+  const notes = payload.notes?.trim() ?? "";
+  const createdOrder = await createOrderWithItems({
+    orderCodeChannel: "ERP",
+    order: {
+      customerType: "guest",
+      customerId: null,
+      fullName: payload.fullName,
+      phone,
+      email: "",
+      governorate: "",
+      cityArea: "",
+      addressLine,
+      buildingApartment: "-",
+      notes,
+      paymentMethod: "cod",
+      paymentStatus,
+      totalAmount: payload.soldTotalAmount,
+      erpManualTotalAmount: payload.soldTotalAmount
     },
     items: pricedItems
   });

@@ -1,7 +1,7 @@
 import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
+import { allowedPaymentStatuses, formatDailyOrderCode, generatePendingOrderCode, type OrderCodeChannel } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -122,6 +122,7 @@ async function restockOrderItems(tx: DbTransaction, orderId: number) {
 }
 
 export async function createOrderWithItems(input: {
+  orderCodeChannel: OrderCodeChannel;
   order: {
     customerType: "guest" | "registered";
     customerId: number | null;
@@ -136,6 +137,7 @@ export async function createOrderWithItems(input: {
     paymentMethod: "cod";
     paymentStatus: "pending" | "accepted" | "denied";
     totalAmount: number;
+    erpManualTotalAmount?: number | null;
   };
   items: OrderItem[];
 }) {
@@ -197,10 +199,22 @@ export async function createOrderWithItems(input: {
     const [order] = await tx.insert(orders).values({
       ...input.order,
       orderCode: generatePendingOrderCode(),
-      totalAmount: sql`${input.order.totalAmount}`
+      totalAmount: sql`${input.order.totalAmount}`,
+      erpManualTotalAmount: input.order.erpManualTotalAmount == null ? null : sql`${input.order.erpManualTotalAmount}`
     }).$returningId();
 
-    const orderCode = generateOrderCode(order.id);
+    const now = new Date();
+    const dayPrefix = [
+      input.orderCodeChannel,
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0")
+    ].join("-");
+    const [counterRow] = await tx
+      .select({ value: sql<number>`count(*)` })
+      .from(orders)
+      .where(sql`${orders.orderCode} like ${`${dayPrefix}-%`}`);
+    const orderCode = formatDailyOrderCode(input.orderCodeChannel, now, Number(counterRow?.value ?? 0) + 1);
 
     await tx
       .update(orders)

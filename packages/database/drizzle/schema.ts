@@ -308,6 +308,7 @@ export const orders = mysqlTable("orders", {
   paymentMethod: mysqlEnum("payment_method", ["cod"]).notNull(),
   paymentStatus: mysqlEnum("payment_status", ["pending", "accepted", "denied"]).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  erpManualTotalAmount: decimal("erp_manual_total_amount", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
