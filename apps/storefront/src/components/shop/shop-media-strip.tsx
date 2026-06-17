@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState, type TransitionEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent,
+  type TransitionEvent
+} from "react";
 import Link from "next/link";
 import type { Language, ShopMediaSection } from "@capella/shared";
 import { resolveMediaUrl } from "@/lib/api/client/normalizers";
 import { Icon } from "@/components/ui/icons";
 
 const AUTOPLAY_MS = 5000;
+const SWIPE_THRESHOLD_PX = 50;
 
 function normalizeShopMediaImageSrc(imagePath: string) {
   return resolveMediaUrl(imagePath);
@@ -49,7 +57,8 @@ function Slide({
   mobileImagePath,
   label,
   index,
-  active
+  active,
+  onClickCapture
 }: {
   href: string;
   imagePath: string;
@@ -57,6 +66,7 @@ function Slide({
   label: string;
   index: number;
   active: boolean;
+  onClickCapture?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
 }) {
   return (
     <Link
@@ -65,6 +75,8 @@ function Slide({
       aria-label={`${label} ${index + 1}`}
       aria-hidden={!active}
       tabIndex={active ? undefined : -1}
+      onClickCapture={onClickCapture}
+      draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
       <div className="relative h-150 sm:h-180 overflow-hidden">
@@ -107,6 +119,14 @@ export function ShopMediaStrip({
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragDeltaX = useRef(0);
+  const activePointerId = useRef<number | null>(null);
+  // True between a drag that crossed the threshold and the click it would
+  // otherwise trigger, so we can swallow that click on the underlying link.
+  const suppressClick = useRef(false);
 
   const count = items.length;
   const isRtl = lang === "ar";
@@ -147,12 +167,64 @@ export function ShopMediaStrip({
   const goTo = (index: number) => setPos(index);
   const prev = () => setPos((current) => current - 1);
   const next = () => setPos((current) => current + 1);
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    // Ignore secondary mouse buttons; allow touch/pen/primary mouse drag.
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    activePointerId.current = event.pointerId;
+    dragStartX.current = event.clientX;
+    dragDeltaX.current = 0;
+    suppressClick.current = false;
+    setDragOffsetX(0);
+    setDragging(true);
+    setPaused(true);
+  };
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!dragging || event.pointerId !== activePointerId.current) return;
+    dragDeltaX.current = event.clientX - dragStartX.current;
+    if (Math.abs(dragDeltaX.current) > SWIPE_THRESHOLD_PX) {
+      suppressClick.current = true;
+      // Capture the pointer so a drag continuing outside the track keeps tracking.
+      // Guarded because some environments (e.g. jsdom) don't implement it.
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+    setDragOffsetX(dragDeltaX.current);
+  };
+  const endDrag = (commit: boolean) => {
+    const deltaX = dragDeltaX.current;
+    dragStartX.current = 0;
+    dragDeltaX.current = 0;
+    activePointerId.current = null;
+    setDragOffsetX(0);
+    setDragging(false);
+    setPaused(false);
+
+    if (!commit || Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
+    const direction = deltaX < 0 ? 1 : -1;
+    setPos((current) => current + (isRtl ? -direction : direction));
+  };
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerId !== activePointerId.current) return;
+    endDrag(true);
+  };
+  const handlePointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerId !== activePointerId.current) return;
+    endDrag(false);
+  };
+  const handleSlideClickCapture = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
 
   // Render order: [clone(last), ...items, clone(first)]. The real first slide is
   // at rendered index 1, so the track offset is based on (pos + 1).
   const slides = [items[count - 1], ...items, items[0]];
   const renderedActive = pos + 1;
   const offset = (isRtl ? 1 : -1) * (pos + 1) * 100;
+  const trackTransform =
+    dragging && dragOffsetX !== 0 ? `translateX(calc(${offset}% + ${dragOffsetX}px))` : `translateX(${offset}%)`;
 
   const handleTrackTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return; // ignore bubbled image transitions
@@ -172,17 +244,20 @@ export function ShopMediaStrip({
         aria-roledescription="carousel"
         aria-label={label}
         data-active-index={activeIndex}
-        className="relative overflow-hidden"
+        className={`relative touch-pan-y select-none overflow-hidden ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
-        onTouchStart={() => setPaused(true)}
-        onTouchEnd={() => setPaused(false)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
       >
         <div
-          className={`flex ${animate ? "transition-transform duration-500 ease-out" : ""}`}
-          style={{ transform: `translateX(${offset}%)` }}
+          data-slide-track
+          className={`flex ${animate && !dragging ? "transition-transform duration-500 ease-out" : ""}`}
+          style={{ transform: trackTransform }}
           onTransitionEnd={handleTrackTransitionEnd}
         >
           {slides.map((item, renderedIndex) => {
@@ -197,6 +272,7 @@ export function ShopMediaStrip({
                 label={label}
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
+                onClickCapture={handleSlideClickCapture}
               />
             );
           })}
@@ -227,8 +303,8 @@ export function ShopMediaStrip({
               onClick={() => goTo(index)}
               aria-label={`Go to slide ${index + 1}`}
               aria-current={index === activeIndex}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === activeIndex ? "w-6 bg-accent" : "w-2 bg-surface/70 hover:bg-surface"
+              className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
+                index === activeIndex ? "bg-accent" : "bg-transparent"
               }`}
             />
           ))}

@@ -135,4 +135,99 @@ describe("ShopMediaStrip carousel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to slide 3" }));
     expect(carousel).toHaveAttribute("data-active-index", "2");
   });
+
+  it("advances to the next slide when dragged left by touch", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "touch", button: 0, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "touch", clientX: 180 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "touch", clientX: 180 });
+
+    expect(carousel).toHaveAttribute("data-active-index", "1");
+  });
+
+  it("advances to the next slide when dragged left by mouse", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+
+    expect(carousel).toHaveAttribute("data-active-index", "1");
+  });
+
+  it("goes to the previous slide when dragged right", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 180 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 300 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 300 });
+
+    expect(carousel).toHaveAttribute("data-active-index", "2");
+  });
+
+  it("ignores non-primary mouse buttons", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 2, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+
+    expect(carousel).toHaveAttribute("data-active-index", "0");
+  });
+
+  it("does not advance when the drag is below the swipe threshold", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 280 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 280 });
+
+    expect(carousel).toHaveAttribute("data-active-index", "0");
+  });
+
+  it("moves the slide track with the pointer while dragging", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    const track = container.querySelector("[data-slide-track]");
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 220 });
+
+    expect(track).toHaveStyle({ transform: "translateX(calc(-100% + -80px))" });
+  });
+
+  it("suppresses the link click that follows a real drag", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    // The active real slide is the link labelled "Media 1".
+    const link = screen.getByRole("link", { name: "Media 1" });
+
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
+    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
+
+    const clickEvent = fireEvent.click(link);
+    // The drag swallows the click so navigation never fires.
+    expect(clickEvent).toBe(false);
+  });
+
+  it("allows a plain click (no drag) to navigate", () => {
+    render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
+
+    const carousel = screen.getByRole("group");
+    const link = screen.getByRole("link", { name: "Media 1" });
+
+    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
+    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 300 });
+
+    const clickEvent = fireEvent.click(link);
+    expect(clickEvent).toBe(true);
+  });
 });
