@@ -225,6 +225,8 @@ export const ar = {
     collectionsEyebrow: "مجموعات كابيلا",
     viewAllCollections: "كل المجموعات ←",
     newAndBestsellers: "الأحدث والأكثر مبيعًا",
+    newProducts: "الأحدث",
+    bestsellers: "الأكثر مبيعًا",
     featuredHeading: "منتجات مميزة",
     viewAllProducts: "كل المنتجات ←"
   },

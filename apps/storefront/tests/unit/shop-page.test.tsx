@@ -11,12 +11,17 @@ vi.mock("@capella/shared", async () => {
   return {
     ...actual,
     getDict: () => ({
+      nav: {
+        bestsellers: "Bestseller"
+      },
       shop: {
         eyebrow: "Shop",
         heading: "Capella Shop",
         description: "Description",
         bundlesEyebrow: "Offers",
         newAndBestsellers: "Featured",
+        newProducts: "New",
+        bestsellers: "Best Seller",
         featuredHeading: "Products",
         viewAllOffers: "All offers",
         viewAllProducts: "All products",
@@ -55,10 +60,74 @@ vi.mock("@/lib/storefront-page-context", () => ({
 
 vi.mock("@/lib/storefront-static-data", () => ({
   loadShopPageData: async () => ({
-    products: [],
-    offers: [],
+    products: [
+      {
+        id: 1,
+        slug: "new-product",
+        name: { ar: "جديد", en: "New Product" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/new.jpg",
+        price: 100,
+        categoryId: 1,
+        variants: [],
+        stock: 5,
+        isNew: true,
+        isBestseller: false,
+        status: "active",
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 2,
+        slug: "best-product",
+        name: { ar: "الأفضل", en: "Best Product" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/best.jpg",
+        price: 120,
+        categoryId: 1,
+        variants: [],
+        stock: 4,
+        isNew: false,
+        isBestseller: true,
+        status: "active",
+        createdAt: "",
+        updatedAt: ""
+      }
+    ],
+    offers: [
+      {
+        id: 1,
+        slug: "summer-offer",
+        name: { ar: "عرض", en: "Summer Offer" },
+        description: { ar: "وصف", en: "Offer description" },
+        imagePath: "/uploads/offer.jpg",
+        price: 180,
+        originalTotal: 240,
+        items: [],
+        stock: 5,
+        status: "active",
+        createdAt: "",
+        updatedAt: ""
+      }
+    ],
     advices: [],
     shopMediaSections: [
+      {
+        id: 10,
+        slot: 1,
+        status: "active",
+        items: [
+          {
+            id: 20,
+            imagePath: "http://localhost:4000/uploads/section-1.jpg",
+            mobileImagePath: "http://localhost:4000/uploads/section-1-mobile.jpg",
+            targetType: "offers",
+            targetId: null,
+            href: "/en/offers",
+            sortOrder: 1
+          }
+        ]
+      },
       {
         id: 11,
         slot: 2,
@@ -67,9 +136,26 @@ vi.mock("@/lib/storefront-static-data", () => ({
           {
             id: 21,
             imagePath: "http://localhost:4000/uploads/section-2.jpg",
-            targetType: "collections",
+            mobileImagePath: "http://localhost:4000/uploads/section-2-mobile.jpg",
+            targetType: "new",
             targetId: null,
-            href: "/en/collections",
+            href: "/en/new",
+            sortOrder: 1
+          }
+        ]
+      },
+      {
+        id: 12,
+        slot: 3,
+        status: "active",
+        items: [
+          {
+            id: 22,
+            imagePath: "http://localhost:4000/uploads/section-3.jpg",
+            mobileImagePath: "http://localhost:4000/uploads/section-3-mobile.jpg",
+            targetType: "bestsellers",
+            targetId: null,
+            href: "/en/bestsellers",
             sortOrder: 1
           }
         ]
@@ -99,23 +185,53 @@ vi.mock("@/lib/storefront-static-data", () => ({
 import ShopPage from "@/app/[lang]/shop/page";
 
 describe("shop page", () => {
-  it("renders a dedicated collections section when collections are available", async () => {
+  it("does not render the collections section on the shop landing page", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    expect(screen.getByRole("link", { name: /Skin Care Set/i })).toHaveAttribute("href", "/en/collections/skin-care-set");
-    expect(screen.getByRole("link", { name: "All collections" })).toHaveAttribute("href", "/en/collections");
+    expect(screen.queryByRole("heading", { name: "Collections" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Skin Care Set/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "All collections" })).not.toBeInTheDocument();
   });
 
-  it("renders active shop media sections above their matching catalog sections", async () => {
+  it("renders shop sections in the requested media, offers, new, bestseller, advice order", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    const collectionsHeading = screen.getByRole("heading", { name: "Collections" });
-    const mediaLink = screen.getByRole("link", { name: "Featured media 1" });
+    const mediaLinks = screen.getAllByRole("link", { name: "Featured media 1" });
+    const sectionOne = mediaLinks.find((link) => link.getAttribute("href") === "/en/offers");
+    const sectionTwo = mediaLinks.find((link) => link.getAttribute("href") === "/en/new");
+    const sectionThree = mediaLinks.find((link) => link.getAttribute("href") === "/en/bestsellers");
+    const offersHeading = screen.getByRole("heading", { name: "Offers" });
+    const newHeading = screen.getByRole("heading", { name: "New" });
+    const bestSellerHeading = screen.getByRole("heading", { name: "Best Seller" });
 
-    expect(mediaLink).toHaveAttribute("href", "/en/collections");
-    expect(mediaLink.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-2.jpg");
+    expect(sectionOne).toBeDefined();
+    expect(sectionTwo).toBeDefined();
+    expect(sectionThree).toBeDefined();
+    if (!sectionOne || !sectionTwo || !sectionThree) {
+      throw new Error("Expected all three shop media sections to render");
+    }
+
+    expect(sectionOne).toHaveAttribute("href", "/en/offers");
+    expect(sectionTwo).toHaveAttribute("href", "/en/new");
+    expect(sectionThree).toHaveAttribute("href", "/en/bestsellers");
+    expect(sectionOne.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-1.jpg");
     expect(
-      collectionsHeading.compareDocumentPosition(mediaLink) & Node.DOCUMENT_POSITION_PRECEDING
+      offersHeading.compareDocumentPosition(sectionOne) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      sectionTwo.compareDocumentPosition(offersHeading) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      newHeading.compareDocumentPosition(sectionTwo) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      sectionThree.compareDocumentPosition(newHeading) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      bestSellerHeading.compareDocumentPosition(sectionThree) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Advice").compareDocumentPosition(bestSellerHeading) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(container.textContent).toContain("Advice");
   });

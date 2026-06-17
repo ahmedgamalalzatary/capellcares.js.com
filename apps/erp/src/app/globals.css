@@ -211,7 +211,13 @@ html[lang="ar"] .eyebrow { letter-spacing: 0.06em; text-transform: none; }
   margin: 0; font-size: 15px; font-weight: 700; color: var(--ink);
   letter-spacing: -0.005em;
 }
-.card__body { padding: 22px; }
+.card__body { padding: 22px; min-width: 0; }
+.card__body:has(> .table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+}
+.card__body > .table { min-width: 720px; }
 
 /* ============================================================
    Table

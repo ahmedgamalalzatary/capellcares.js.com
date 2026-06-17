@@ -225,6 +225,8 @@ export const en = {
     collectionsEyebrow: "Capella Sets",
     viewAllCollections: "View all →",
     newAndBestsellers: "New & Bestsellers",
+    newProducts: "New",
+    bestsellers: "Best Seller",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"
   },

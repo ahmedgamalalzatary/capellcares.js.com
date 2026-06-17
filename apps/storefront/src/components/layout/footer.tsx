@@ -71,7 +71,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         className="relative border-t"
         style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
       >
-        <div className="container grid grid-cols-1 gap-12 py-16 lg:grid-cols-[1.1fr_2fr]">
+        <div className="container grid grid-cols-1 gap-12 py-10 lg:grid-cols-[1.1fr_2fr]">
 
           {/* Newsletter / intro */}
           <div className="border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-12 lg:max-w-md lg:border-b-0 lg:pb-0">
