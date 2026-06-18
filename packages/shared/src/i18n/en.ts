@@ -270,7 +270,7 @@ export const en = {
     youtube: "YouTube",
     whatsapp: "WhatsApp",
     legal: "Legal",
-    terms: "Terms & Conditions of sale",
+    terms: "Terms & Conditions of Sale",
     promotionTerms: " Terms & Conditions",
     privacy: "Privacy Policy",
     returnsRefunds: "Returns & Refunds",

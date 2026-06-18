@@ -45,7 +45,7 @@ export function ProductCard({ product, lang, dict }: Props) {
       onMouseEnter={() => setPreviewImage(hoverImage)}
       onMouseLeave={() => setPreviewImage(primaryImage)}
     >
-      <div className="relative aspect-4/5 overflow-hidden">
+      <div className="relative overflow-hidden">
         <ProductIllustration
           product={{ ...product, imagePath: previewImage }}
           className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"

@@ -78,7 +78,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
     <>
     <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
       <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-        <div className="relative grid aspect-4/5 place-items-center overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
+        <div className="relative grid  place-items-center overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
           {activeMedia?.type === "video" ? (
             <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
               <track kind="captions" />

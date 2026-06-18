@@ -534,7 +534,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   display: flex;
   gap: 12px;
   padding: 14px;
-  border: 1px solid var(--hairline);
   border-radius: var(--radius);
   background: linear-gradient(180deg, var(--surface), color-mix(in oklch, var(--warm-soft) 36%, var(--surface)));
   transition: border-color var(--motion-fast), transform var(--motion-fast), box-shadow var(--motion-fast);

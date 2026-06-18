@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDict, formatPrice, pickLang } from "@capella/shared";
+import { getDict } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
-import { OfferIllustration } from "@/components/ui/offer-illustration";
+import { SectionCard } from "@/components/shop/section-card";
+import { ShopCardRow } from "@/components/shop/shop-card-row";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -63,53 +64,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] lg:gap-7">
-            {activeOffers.map((offer) => {
-              const savings = offer.originalTotal - offer.price;
-              return (
-                <Link
-                  key={offer.id}
-                  href={`/${lang}/offers/${offer.slug}`}
-                  className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
-                >
-                  <div className="relative aspect-16/10 bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
-                    <OfferIllustration offer={offer} className="h-full w-full" />
-                    <span className="absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4">
-                      ★ {dict.offers.badge}
-                    </span>
-                  </div>
-
-                  <div className="grid gap-3 p-5 sm:p-6">
-                    <h3 className={`m-0 leading-[1.15] ${isAr
-                      ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-                      : "text-2xl italic font-(--font-display) text-ink"}`}>
-                    {pickLang(offer.name, lang)}
-                    </h3>
-                    <p className="line-clamp-2 text-sm leading-[1.65] text-(--ink-2)">
-                      {pickLang(offer.description, lang)}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
-                      <span className={`leading-none text-accent ${isAr
-                        ? "text-2xl font-bold font-(family-name:--font-ar)"
-                        : "text-2xl italic font-(--font-display)"}`}>
-                        {formatPrice(offer.price, lang)}
-                      </span>
-                      {savings > 0 && (
-                        <>
-                          <span className="text-sm text-(--ink-3) line-through">
-                            {formatPrice(offer.originalTotal, lang)}
-                          </span>
-                          <span className="chip chip--accent">
-                            {dict.offers.save.replace("{amount}", formatPrice(savings, lang))}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <ShopCardRow>
+            {activeOffers.map((offer) => (
+              <SectionCard key={offer.id} kind="offer" data={offer} lang={lang} dict={dict} />
+            ))}
+          </ShopCardRow>
         </section>
       )}
 
@@ -140,11 +99,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <div className="grid gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          <ShopCardRow>
             {newProducts.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
             ))}
-          </div>
+          </ShopCardRow>
         </section>
       )}
 
@@ -176,11 +135,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <div className="grid gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          <ShopCardRow>
             {bestsellerProducts.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
             ))}
-          </div>
+          </ShopCardRow>
         </section>
       )}
 
@@ -191,7 +150,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       />
 
       {/* Capella Advices */}
-      <AdviceSection advices={advices} lang={lang} dict={dict} />
+      <AdviceSection advices={advices} lang={lang} dict={dict} scrollRow />
     </main>
   );
 }

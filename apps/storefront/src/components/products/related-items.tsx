@@ -46,7 +46,7 @@ export function RelatedItems({ items, lang, title }: Props) {
               href={hrefFor(item, lang)}
               className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
             >
-              <div className="relative aspect-4/5 overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
+              <div className="relative  overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
                 {item.type === "offer" ? (
                   <OfferIllustration
                     offer={{ slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" }}

@@ -46,7 +46,7 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
           <p
             key={index}
             onAnimationEnd={advance}
-              className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold tracking-[0.04em] sm:text-sm"
+              className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold tracking-[0.04em] sm:text-md"
             style={{
               animationDuration: `${CROSS_S}s`,
               animationDirection: isAr ? "reverse" : "normal",
