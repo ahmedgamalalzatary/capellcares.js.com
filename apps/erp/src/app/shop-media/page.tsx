@@ -10,6 +10,8 @@ import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
+import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
+import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
 import type { ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 
 type EditableItem = {
@@ -21,7 +23,7 @@ type EditableItem = {
 };
 
 type EditableSection = {
-  slot: 1 | 2 | 3;
+  slot: 1 | 2 | 3 | 4;
   status: "active" | "inactive";
   items: EditableItem[];
 };
@@ -42,20 +44,21 @@ const detailTargetOptions: Array<{ value: ShopMediaTargetType; label: string }> 
   { value: "category", label: "قسم" }
 ];
 
-const slotPositionLabel: Record<1 | 2 | 3, string> = {
+const slotPositionLabel: Record<1 | 2 | 3 | 4, string> = {
   1: "يظهر أعلى صفحة المتجر",
   2: "يظهر فوق قسم المجموعات",
-  3: "يظهر فوق المنتجات المميزة"
+  3: "يظهر فوق المنتجات المميزة",
+  4: "يظهر أسفل قسم الأكثر مبيعًا"
 };
 
-function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3): EditableSection {
+function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3 | 4): EditableSection {
   return {
     slot,
     status: section?.status ?? "inactive",
     items: (section?.items ?? []).map((item) => ({
       id: String(item.id),
-      imagePath: item.imagePath,
-      mobileImagePath: item.mobileImagePath ?? item.imagePath,
+      imagePath: item.imagePath ?? "",
+      mobileImagePath: item.mobileImagePath ?? "",
       targetType: item.targetType,
       targetId: item.targetId
     }))
@@ -74,14 +77,16 @@ export default function ShopMediaPage() {
   const offers = useStore((store) => store.offers);
   const collections = useStore((store) => store.collections);
   const [sections, setSections] = useState<EditableSection[]>([]);
-  const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | null>(null);
+  const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | 4 | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dirtySlotsRef = useRef<Set<1 | 2 | 3>>(new Set());
-  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3>>(new Set());
+  const dirtySlotsRef = useRef<Set<1 | 2 | 3 | 4>>(new Set());
+  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3 | 4>>(new Set());
+  const { collapsed: collapsedSlots, toggle: toggleCollapsed } = useCollapsedShopMedia();
+  const { collapsed: collapsedItems, toggle: toggleCollapsedItem } = useCollapsedShopMediaItems();
 
   useEffect(() => {
     const bySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
-    setSections((current) => ([1, 2, 3] as const).map((slot) => {
+    setSections((current) => ([1, 2, 3, 4] as const).map((slot) => {
       const currentSection = current.find((section) => section.slot === slot);
       if (currentSection && dirtySlotsRef.current.has(slot)) {
         return currentSection;
@@ -107,15 +112,15 @@ export default function ShopMediaPage() {
 
   const canEdit = canUpdateErpModule(user, "shop_media");
 
-  const setSection = (slot: 1 | 2 | 3, updater: (current: EditableSection) => EditableSection) => {
+  const setSection = (slot: 1 | 2 | 3 | 4, updater: (current: EditableSection) => EditableSection) => {
     dirtySlotsRef.current.add(slot);
     setDirtySlots(new Set(dirtySlotsRef.current));
     setSections((current) => current.map((section) => section.slot === slot ? updater(section) : section));
   };
 
   const saveSection = async (section: EditableSection) => {
-    if (section.items.some((item) => !item.imagePath || !item.mobileImagePath || (isDetailTargetType(item.targetType) && item.targetId === null))) {
-      const validationError = new Error("أكملي صور سطح المكتب والموبايل والوجهة لكل عنصر قبل الحفظ.");
+    if (section.items.some((item) => (!item.imagePath && !item.mobileImagePath) || (isDetailTargetType(item.targetType) && item.targetId === null))) {
+      const validationError = new Error("أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
       return;
@@ -127,8 +132,8 @@ export default function ShopMediaPage() {
       await getStore().updateShopMediaSection(section.slot, {
         status: section.status,
         items: section.items.map((item, index) => ({
-          imagePath: item.imagePath,
-          mobileImagePath: item.mobileImagePath,
+          imagePath: item.imagePath || null,
+          mobileImagePath: item.mobileImagePath || null,
           targetType: item.targetType,
           targetId: isDetailTargetType(item.targetType) ? item.targetId : null,
           sortOrder: index + 1
@@ -146,7 +151,7 @@ export default function ShopMediaPage() {
     }
   };
 
-  const addItem = (slot: 1 | 2 | 3) => setSection(slot, (current) => ({
+  const addItem = (slot: 1 | 2 | 3 | 4) => setSection(slot, (current) => ({
     ...current,
     items: [
       ...current.items,
@@ -167,10 +172,20 @@ export default function ShopMediaPage() {
           const isActive = section.status === "active";
           const isDirty = dirtySlots.has(section.slot);
           const isSaving = savingSlot === section.slot;
+          const isCollapsed = collapsedSlots.has(section.slot);
           return (
             <div key={section.slot} className="card">
               <div className="shop-media-head">
-                <div className="shop-media-head__main">
+                <div className="shop-media-head__main-flex">
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => toggleCollapsed(section.slot)}
+                    aria-label={isCollapsed ? "توسيع القسم" : "طي القسم"}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <Icon.Chevron size={14} className={isCollapsed ? "rotate-180" : undefined} />
+                  </button>
                   <h3 className="card__title">القسم {section.slot}</h3>
                   <span className="shop-media-head__sub">{slotPositionLabel[section.slot]}</span>
                 </div>
@@ -212,7 +227,7 @@ export default function ShopMediaPage() {
                 </div>
               </div>
 
-              <div className="card__body form-stack">
+              <div className="card__body form-stack" hidden={isCollapsed}>
                 {section.items.length === 0 ? (
                   <div className="shop-media-empty">
                     <div className="shop-media-empty__icon"><Icon.Plus /></div>
@@ -242,10 +257,64 @@ export default function ShopMediaPage() {
                               ? targetOptionsByType[item.targetType]
                               : [];
                             const isDetail = isDetailTargetType(item.targetType);
+                            const itemKey = `${section.slot}:${item.id}`;
+                            const isItemCollapsed = collapsedItems.has(itemKey);
+                            const typeLabel = [...listingTargetOptions, ...detailTargetOptions]
+                              .find((option) => option.value === item.targetType)?.label ?? item.targetType;
+                            const targetSummary = isDetail
+                              ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? "— بدون عنصر")
+                              : typeLabel;
+
+                            const foldButton = (
+                              <button
+                                type="button"
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => toggleCollapsedItem(itemKey)}
+                                aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
+                                aria-expanded={!isItemCollapsed}
+                              >
+                                <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
+                              </button>
+                            );
+
+                            if (isItemCollapsed) {
+                              return (
+                                <tr key={item.id}>
+                                  <td>
+                                    <span className="row" style={{ gap: 6, alignItems: "center" }}>
+                                      {foldButton}
+                                      <span className="shop-media-tile__index">{index + 1}</span>
+                                    </span>
+                                  </td>
+                                  <td colSpan={3}>
+                                    <span className="faint">{typeLabel} · {targetSummary}</span>
+                                  </td>
+                                  {canEdit ? (
+                                    <td>
+                                      <button
+                                        type="button"
+                                        className="btn btn--ghost btn--sm"
+                                        onClick={() => setSection(section.slot, (current) => ({
+                                          ...current,
+                                          items: current.items.filter((entry) => entry.id !== item.id)
+                                        }))}
+                                      >
+                                        <Icon.Trash size={14} /> إزالة
+                                      </button>
+                                    </td>
+                                  ) : null}
+                                </tr>
+                              );
+                            }
 
                             return (
                               <tr key={item.id}>
-                                <td><span className="shop-media-tile__index">{index + 1}</span></td>
+                                <td>
+                                  <span className="row" style={{ gap: 6, alignItems: "center" }}>
+                                    {foldButton}
+                                    <span className="shop-media-tile__index">{index + 1}</span>
+                                  </span>
+                                </td>
                                 <td>
                                   <ImageUpload
                                     label="صورة سطح المكتب"
@@ -346,7 +415,7 @@ export default function ShopMediaPage() {
 
                     {canEdit ? (
                       <div>
-                        <button type="button" className="btn btn--ghost btn--sm" onClick={() => addItem(section.slot)}>
+                        <button type="button" className="btn btn--ghost btn--sm" style={{ margin: " 40px 20px" }} onClick={() => addItem(section.slot)}>
                           <Icon.Plus /> إضافة صورة
                         </button>
                       </div>

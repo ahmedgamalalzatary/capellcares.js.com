@@ -12,6 +12,10 @@ function sanitizeString(value: unknown) {
 }
 
 function normalizeUploadPath(value: string) {
+  if (!value) {
+    return null;
+  }
+
   try {
     const parsed = new URL(value);
     if (parsed.pathname.startsWith("/uploads/")) {
@@ -21,12 +25,12 @@ function normalizeUploadPath(value: string) {
     // Non-URL strings are handled below.
   }
 
-  return value;
+  return value || null;
 }
 
-function parseSlot(value: unknown): 1 | 2 | 3 | null {
+function parseSlot(value: unknown): 1 | 2 | 3 | 4 | null {
   const slot = Number.parseInt(String(value), 10);
-  return slot === 1 || slot === 2 || slot === 3 ? slot : null;
+  return slot === 1 || slot === 2 || slot === 3 || slot === 4 ? slot : null;
 }
 
 async function safeTriggerShopMediaRevalidation() {
@@ -68,7 +72,11 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
     const targetIdValue = rawItem?.targetId;
     const sortOrder = Number.parseInt(String(rawItem?.sortOrder ?? 0), 10);
 
-    if (!imagePath || !mobileImagePath || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number]) || !Number.isFinite(sortOrder)) {
+    if (
+      (!imagePath && !mobileImagePath)
+      || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number])
+      || !Number.isFinite(sortOrder)
+    ) {
       return res.status(400).json({ error: "Invalid shop media section payload" });
     }
 

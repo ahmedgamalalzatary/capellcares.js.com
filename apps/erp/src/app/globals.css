@@ -211,12 +211,7 @@ html[lang="ar"] .eyebrow { letter-spacing: 0.06em; text-transform: none; }
   margin: 0; font-size: 15px; font-weight: 700; color: var(--ink);
   letter-spacing: -0.005em;
 }
-.card__body { padding: 22px; min-width: 0; }
-.card__body:has(> .table) {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0;
-}
+.card__body { min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;}
 .card__body > .table { min-width: 720px; }
 
 /* ============================================================
@@ -756,6 +751,9 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   border-bottom: 1px solid var(--hairline);
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; flex-wrap: wrap;
+}
+.shop-media-head__main-flex{
+  display: flex; align-items: center; gap: 16px;
 }
 .shop-media-head__main { display: grid; gap: 2px; min-width: 0; }
 .shop-media-head__sub { font-size: 12px; color: var(--ink-3); }

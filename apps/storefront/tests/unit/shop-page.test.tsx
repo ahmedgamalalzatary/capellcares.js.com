@@ -159,6 +159,22 @@ vi.mock("@/lib/storefront-static-data", () => ({
             sortOrder: 1
           }
         ]
+      },
+      {
+        id: 13,
+        slot: 4,
+        status: "active",
+        items: [
+          {
+            id: 23,
+            imagePath: "http://localhost:4000/uploads/section-4.jpg",
+            mobileImagePath: "http://localhost:4000/uploads/section-4-mobile.jpg",
+            targetType: "products",
+            targetId: null,
+            href: "/en/products",
+            sortOrder: 1
+          }
+        ]
       }
     ],
     collections: [
@@ -193,13 +209,14 @@ describe("shop page", () => {
     expect(screen.queryByRole("link", { name: "All collections" })).not.toBeInTheDocument();
   });
 
-  it("renders shop sections in the requested media, offers, new, bestseller, advice order", async () => {
+  it("renders shop sections in the requested media, offers, new, bestseller, media, advice order", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     const mediaLinks = screen.getAllByRole("link", { name: "Featured media 1" });
     const sectionOne = mediaLinks.find((link) => link.getAttribute("href") === "/en/offers");
     const sectionTwo = mediaLinks.find((link) => link.getAttribute("href") === "/en/new");
     const sectionThree = mediaLinks.find((link) => link.getAttribute("href") === "/en/bestsellers");
+    const sectionFour = mediaLinks.find((link) => link.getAttribute("href") === "/en/products");
     const offersHeading = screen.getByRole("heading", { name: "Offers" });
     const newHeading = screen.getByRole("heading", { name: "New" });
     const bestSellerHeading = screen.getByRole("heading", { name: "Best Seller" });
@@ -207,13 +224,15 @@ describe("shop page", () => {
     expect(sectionOne).toBeDefined();
     expect(sectionTwo).toBeDefined();
     expect(sectionThree).toBeDefined();
-    if (!sectionOne || !sectionTwo || !sectionThree) {
-      throw new Error("Expected all three shop media sections to render");
+    expect(sectionFour).toBeDefined();
+    if (!sectionOne || !sectionTwo || !sectionThree || !sectionFour) {
+      throw new Error("Expected all four shop media sections to render");
     }
 
     expect(sectionOne).toHaveAttribute("href", "/en/offers");
     expect(sectionTwo).toHaveAttribute("href", "/en/new");
     expect(sectionThree).toHaveAttribute("href", "/en/bestsellers");
+    expect(sectionFour).toHaveAttribute("href", "/en/products");
     expect(sectionOne.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-1.jpg");
     expect(
       offersHeading.compareDocumentPosition(sectionOne) & Node.DOCUMENT_POSITION_PRECEDING
@@ -231,7 +250,10 @@ describe("shop page", () => {
       bestSellerHeading.compareDocumentPosition(sectionThree) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
-      screen.getByText("Advice").compareDocumentPosition(bestSellerHeading) & Node.DOCUMENT_POSITION_PRECEDING
+      sectionFour.compareDocumentPosition(bestSellerHeading) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Advice").compareDocumentPosition(sectionFour) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(container.textContent).toContain("Advice");
   });

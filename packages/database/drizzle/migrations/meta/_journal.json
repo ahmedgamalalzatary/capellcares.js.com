@@ -127,6 +127,13 @@
       "when": 1782147600000,
       "tag": "0017_shop_media_mobile_images",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1782147600001,
+      "tag": "0018_shop_media_optional_images",
+      "breakpoints": true
     }
   ]
 }

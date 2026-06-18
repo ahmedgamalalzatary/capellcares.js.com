@@ -38,6 +38,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         lang={lang}
         section={shopMediaBySlot.get(1) ?? { id: -1, slot: 1, status: "inactive", items: [] }}
         label={dict.shopMedia.sectionLabel}
+        flatTop
       />
 
       {/* Offers */}
@@ -182,6 +183,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
           </div>
         </section>
       )}
+
+      <ShopMediaStrip
+        lang={lang}
+        section={shopMediaBySlot.get(4) ?? { id: -4, slot: 4, status: "inactive", items: [] }}
+        label={dict.shopMedia.sectionLabel}
+      />
 
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} />

@@ -32,7 +32,7 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     assert.equal(initialResponse.status, 200);
     assert.deepEqual(
       initialResponse.json.items.map((section: any) => section.slot),
-      [1, 2, 3]
+      [1, 2, 3, 4]
     );
 
     const updateResponse = await request("/api/erp/shop-media-sections/2", {
@@ -101,7 +101,36 @@ test("erp shop media sections reject invalid payloads", async () => {
   });
 });
 
-test("erp shop media sections require mobile images", async () => {
+test("erp shop media sections accept items with only a desktop image", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    const response = await request("/api/erp/shop-media-sections/4", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        status: "active",
+        items: [
+          makeItem({ mobileImagePath: "" })
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+
+    const afterUpdate = await request("/api/erp/shop-media-sections", {
+      headers: { ...authHeaders }
+    });
+    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 4);
+    assert.equal(updatedSection.items[0].imagePath, "/uploads/shop-media.jpg");
+    assert.equal(updatedSection.items[0].mobileImagePath, null);
+  });
+});
+
+test("erp shop media sections reject items with no desktop or mobile image", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
 
@@ -114,7 +143,7 @@ test("erp shop media sections require mobile images", async () => {
       body: JSON.stringify({
         status: "active",
         items: [
-          makeItem({ mobileImagePath: "" })
+          makeItem({ imagePath: "", mobileImagePath: null })
         ]
       })
     });

@@ -7,7 +7,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
 
   return (
     <section className="mt-16 mb-24">
-      <header className="mb-10 grid gap-2 border-t border-(--hairline) pt-12">
+      <header className="mb-10 grid gap-2 pt-12">
         <span className="eyebrow text-accent!">{dict.advices.eyebrow}</span>
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
@@ -23,7 +23,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
             key={advice.id}
             className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
           >
-            <div className="relative aspect-[4/3] overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
+            <div className="relative aspect-4/3 overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]">
               {advice.imagePath ? (
                 <img
                   src={advice.imagePath}

@@ -51,10 +51,35 @@ function buildShopMediaHref(
   }
 }
 
+function pickSlidesForViewport(
+  section: ShopMediaSection,
+  lang: Language,
+  viewport: "desktop" | "mobile"
+) {
+  return section.items
+    .map((item) => {
+      const imagePath = viewport === "desktop" ? item.imagePath : item.mobileImagePath;
+      if (!imagePath) {
+        return null;
+      }
+
+      const href = buildShopMediaHref(lang, item.targetType, item.targetSlug);
+      if (!href) {
+        return null;
+      }
+
+      return {
+        id: item.id,
+        href,
+        imagePath: normalizeShopMediaImageSrc(imagePath)
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item != null);
+}
+
 function Slide({
   href,
   imagePath,
-  mobileImagePath,
   label,
   index,
   active,
@@ -62,7 +87,6 @@ function Slide({
 }: {
   href: string;
   imagePath: string;
-  mobileImagePath: string;
   label: string;
   index: number;
   active: boolean;
@@ -80,42 +104,34 @@ function Slide({
       className="group relative block w-full shrink-0 overflow-hidden"
     >
       <div className="relative overflow-hidden">
-        <picture className="block h-full w-full">
-          <source media="(max-width: 639px)" srcSet={mobileImagePath} />
-          <img
-            src={imagePath}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-        </picture>
+        <img
+          src={imagePath}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
+        />
       </div>
     </Link>
   );
 }
 
-export function ShopMediaStrip({
+function ShopMediaViewportStrip({
   lang,
   section,
-  label
+  label,
+  viewport,
+  className,
+  flatTop = false
 }: {
   lang: Language;
   section: ShopMediaSection;
   label: string;
+  viewport: "desktop" | "mobile";
+  className: string;
+  flatTop?: boolean;
 }) {
-  const items = section.items
-    .map((item) => ({
-      ...item,
-      imagePath: normalizeShopMediaImageSrc(item.imagePath),
-      mobileImagePath: normalizeShopMediaImageSrc(item.mobileImagePath),
-      href: buildShopMediaHref(lang, item.targetType, item.targetSlug)
-    }))
-    .filter((item): item is typeof item & { href: string } => Boolean(item.href));
-
-  // `pos` is the logical slide position. For seamless looping it may transiently
-  // overshoot into a cloned edge slide (pos === count or pos === -1); when the
-  // glide finishes we silently snap back with `animate` off. `activeIndex` is the
-  // real 0..count-1 slide the dots/aria reflect.
+  const items = pickSlidesForViewport(section, lang, viewport);
+  const roundedClass = flatTop ? "rounded-b-lg" : "rounded-lg";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -124,8 +140,6 @@ export function ShopMediaStrip({
   const dragStartX = useRef(0);
   const dragDeltaX = useRef(0);
   const activePointerId = useRef<number | null>(null);
-  // True between a drag that crossed the threshold and the click it would
-  // otherwise trigger, so we can swallow that click on the underlying link.
   const suppressClick = useRef(false);
 
   const count = items.length;
@@ -140,25 +154,22 @@ export function ShopMediaStrip({
     return () => clearTimeout(timer);
   }, [pos, paused, count]);
 
-  // After a snap (animate=false) re-enable the transition on the next frame so
-  // the clone-to-real jump is invisible and subsequent moves glide again.
   useEffect(() => {
     if (animate) return;
     const id = requestAnimationFrame(() => setAnimate(true));
     return () => cancelAnimationFrame(id);
   }, [animate]);
 
-  if (section.status !== "active" || count === 0) {
+  if (count === 0) {
     return null;
   }
 
-  // Single image: render statically, no carousel chrome.
   if (count === 1) {
     const item = items[0];
     return (
-      <section className="mb-16">
-        <div className="grid grid-cols-1">
-          <Slide href={item.href} imagePath={item.imagePath} mobileImagePath={item.mobileImagePath} label={label} index={0} active />
+      <section className={className} data-viewport={viewport}>
+        <div className={`grid grid-cols-1 overflow-hidden ${roundedClass}`}>
+          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active />
         </div>
       </section>
     );
@@ -168,7 +179,6 @@ export function ShopMediaStrip({
   const prev = () => setPos((current) => current - 1);
   const next = () => setPos((current) => current + 1);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    // Ignore secondary mouse buttons; allow touch/pen/primary mouse drag.
     if (event.pointerType === "mouse" && event.button !== 0) return;
     activePointerId.current = event.pointerId;
     dragStartX.current = event.clientX;
@@ -183,8 +193,6 @@ export function ShopMediaStrip({
     dragDeltaX.current = event.clientX - dragStartX.current;
     if (Math.abs(dragDeltaX.current) > SWIPE_THRESHOLD_PX) {
       suppressClick.current = true;
-      // Capture the pointer so a drag continuing outside the track keeps tracking.
-      // Guarded because some environments (e.g. jsdom) don't implement it.
       event.currentTarget.setPointerCapture?.(event.pointerId);
     }
     setDragOffsetX(dragDeltaX.current);
@@ -218,8 +226,6 @@ export function ShopMediaStrip({
     }
   };
 
-  // Render order: [clone(last), ...items, clone(first)]. The real first slide is
-  // at rendered index 1, so the track offset is based on (pos + 1).
   const slides = [items[count - 1], ...items, items[0]];
   const renderedActive = pos + 1;
   const offset = (isRtl ? 1 : -1) * (pos + 1) * 100;
@@ -227,7 +233,7 @@ export function ShopMediaStrip({
     dragging && dragOffsetX !== 0 ? `translateX(calc(${offset}% + ${dragOffsetX}px))` : `translateX(${offset}%)`;
 
   const handleTrackTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return; // ignore bubbled image transitions
+    if (event.target !== event.currentTarget) return;
     if (pos >= count) {
       setAnimate(false);
       setPos(0);
@@ -238,13 +244,13 @@ export function ShopMediaStrip({
   };
 
   return (
-    <section className="mb-16">
+    <section className={className} data-viewport={viewport}>
       <div
         role="group"
         aria-roledescription="carousel"
         aria-label={label}
         data-active-index={activeIndex}
-        className={`relative touch-pan-y select-none overflow-hidden ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`relative touch-pan-y select-none overflow-hidden ${roundedClass} ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
@@ -261,14 +267,12 @@ export function ShopMediaStrip({
           onTransitionEnd={handleTrackTransitionEnd}
         >
           {slides.map((item, renderedIndex) => {
-            // Map rendered position back to the real slide index for aria labels.
             const logicalIndex = ((renderedIndex - 1) % count + count) % count;
             return (
               <Slide
                 key={`${item.id}-${renderedIndex}`}
                 href={item.href}
                 imagePath={item.imagePath}
-                mobileImagePath={item.mobileImagePath}
                 label={label}
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
@@ -311,5 +315,42 @@ export function ShopMediaStrip({
         </div>
       </div>
     </section>
+  );
+}
+
+export function ShopMediaStrip({
+  lang,
+  section,
+  label,
+  flatTop = false
+}: {
+  lang: Language;
+  section: ShopMediaSection;
+  label: string;
+  flatTop?: boolean;
+}) {
+  if (section.status !== "active") {
+    return null;
+  }
+
+  return (
+    <>
+      <ShopMediaViewportStrip
+        lang={lang}
+        section={section}
+        label={label}
+        viewport="desktop"
+        className="mb-16 hidden sm:block"
+        flatTop={flatTop}
+      />
+      <ShopMediaViewportStrip
+        lang={lang}
+        section={section}
+        label={label}
+        viewport="mobile"
+        className="mb-16 sm:hidden"
+        flatTop={flatTop}
+      />
+    </>
   );
 }

@@ -133,8 +133,28 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).not.toHaveBeenCalled();
     await waitFor(() => {
-      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "أكملي صور سطح المكتب والموبايل والوجهة لكل عنصر قبل الحفظ.");
+      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
     });
+  });
+
+  it("allows saving with only one image provided", () => {
+    render(createElement(ShopMediaPage));
+
+    fireEvent.click(screen.getAllByText("صورة الموبايل")[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+
+    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+      items: [expect.objectContaining({
+        imagePath: "/uploads/original.jpg",
+        mobileImagePath: "/uploads/changed-صورة الموبايل.jpg"
+      })]
+    }));
+  });
+
+  it("renders a fourth section", () => {
+    render(createElement(ShopMediaPage));
+
+    expect(screen.getByText("القسم 4")).toBeInTheDocument();
   });
 
   it("shows an error toast when saving fails", async () => {

@@ -179,8 +179,8 @@ export type ShopMediaTargetType =
 
 export interface ShopMediaSectionItem {
   id: number;
-  imagePath: string;
-  mobileImagePath: string;
+  imagePath: string | null;
+  mobileImagePath: string | null;
   targetType: ShopMediaTargetType;
   targetId: number | null;
   targetSlug?: string | null;
@@ -191,7 +191,7 @@ export interface ShopMediaSectionItem {
 
 export interface ShopMediaSection {
   id: number;
-  slot: 1 | 2 | 3;
+  slot: 1 | 2 | 3 | 4;
   status: "active" | "inactive";
   items: ShopMediaSectionItem[];
   createdAt?: string;
