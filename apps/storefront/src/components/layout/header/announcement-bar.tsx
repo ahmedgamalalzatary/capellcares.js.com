@@ -34,7 +34,7 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
   const advance = () => setIndex((i) => (i + 1) % slides.length);
 
   return (
-    <div className="mt-4 flex items-center gap-2 bg-canvas px-3 py-3 sm:px-4 sm:py-2">
+    <div className="mt-4 flex items-center gap-2 rounded-lg bg-canvas px-3 py-3 sm:px-4 sm:py-2">
       {/* Fixed-height clip box; the text is absolutely positioned so its
           (whitespace-nowrap) width can never widen the header on small screens. */}
       <div className="relative h-4 min-w-0 flex-1 overflow-hidden sm:h-5">
@@ -63,7 +63,7 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
         onClick={() => setPaused((p) => !p)}
         aria-label={paused ? playLabel : pauseLabel}
         title={paused ? playLabel : pauseLabel}
-        className="grid h-6 w-6 shrink-0 place-items-center border-0 bg-transparent text-(--ink-3) transition-colors hover:bg-(--warm-soft) hover:text-ink sm:h-7 sm:w-7"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-0 bg-transparent text-(--ink-3) transition-colors hover:bg-(--warm-soft) hover:text-ink sm:h-7 sm:w-7"
       >
         {paused ? (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>

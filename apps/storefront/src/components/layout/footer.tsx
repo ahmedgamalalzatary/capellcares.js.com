@@ -39,7 +39,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       <div
       dir={isAr ? "rtl" : "ltr"}
       style={{ background: "var(--footer-bg)" }}
-      className="relative mt-24 mb-10 overflow-hidden pb-0 text-ink"
+      className="relative rounded-xl mt-24 mb-10 overflow-hidden pb-0 text-ink"
     >
       {/* Noise grain overlay */}
       <div
@@ -84,7 +84,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
             <form
               onSubmit={(e) => e.preventDefault()}
-              className="mt-7 mx-auto flex  items-center overflow-hidden border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
+              className="mt-7 mx-auto flex  items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
             >
               <input
                 type="email"
@@ -222,7 +222,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
             <div
-              className="flex items-center border"
+              className="flex items-center rounded-(--radius-pill) border p-0.5"
               style={{ borderColor: "color-mix(in oklch, var(--ink) 18%, transparent)" }}
             >
               {(["en", "ar"] as const).map((code) => {
@@ -233,7 +233,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                     type="button"
                     onClick={() => switchTo(code)}
                     aria-pressed={active}
-                    className={` px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
+                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
                       }`}
                   >
                     {dict.langSwitch[code]}
@@ -308,7 +308,7 @@ function PayChip({ label, children }: { label: string; children: React.ReactNode
     <span
       aria-label={label}
       title={label}
-      className="flex h-9 w-[3.4rem] items-center justify-center bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
+      className="flex h-9 w-[3.4rem] items-center justify-center rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
     >
       {children}
     </span>
@@ -332,7 +332,7 @@ function StoreBadge({
       href={href}
       onClick={href ? undefined : (e) => e.preventDefault()}
       style={{ color: "#fff" }}
-      className="flex h-12 items-center gap-2.5 bg-black px-4 transition-opacity duration-200 hover:opacity-85 cursor-pointer"
+      className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 cursor-pointer"
     >
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col leading-none">

@@ -77,8 +77,8 @@ export function ProductCard({ product, lang, dict }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden">
-      {/* The whole card is the image; everything else floats on top of it. */}
+      <div className="relative aspect-8/9 overflow-hidden bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+        {/* The whole card is the image; everything else floats on top of it. */}
       <Link
         href={href}
         aria-label={pickLang(product.name, lang)}
@@ -92,84 +92,77 @@ export function ProductCard({ product, lang, dict }: Props) {
         />
       </Link>
 
-      {/* Floating label — like the reference pill ("highlight" / "bronze") */}
-      {tag ? (
-        <span
-          className={`pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5  px-3 py-1.5 text-xs uppercase tracking-[0.16em] ${
-            isNew ? "bg-[#c5bda8] text-ink" : "bg-accent text-canvas"
-          }`}
-        >
-          {tag}
-        </span>
-      ) : null}
-      {isOutOfStock ? (
-          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 bg-ink px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
-          {dict.common.outOfStock}
-        </span>
-      ) : null}
-
-      {/* Wishlist */}
-      <button
-        className={`absolute rounded-full top-3 inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
-          has(product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
-        }`}
-        aria-label={dict.common.addToWishlist}
-        onClick={onWish}
-      >
-        {has(product.id) ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
-      </button>
-
-      {/* Bottom overlay: name/price and the buy/add bar share the same cell —
-          they cross-fade as the card is hovered. */}
-      <div className="absolute inset-x-0 bottom-0 z-10 grid px-4 pb-6 pt-12">
-        {/* Name + price — visible at rest, lifts away on hover */}
-        <Link
-          href={href}
-          className="pcard-caption pointer-events-auto col-start-1 row-start-1 flex items-end justify-end gap-3 sm:justify-between"
-        >
-          <h3
-            className={`m-0 hidden leading-tight sm:block ${
-              isAr
-                ? "text-sm font-bold font-(family-name:--font-ar)"
-                : "text-sm font-bold uppercase tracking-[0.06em]"
-            }`}
-          >
-            {pickLang(product.name, lang)}
-          </h3>
+        {tag ? (
           <span
-            className={`shrink-0 font-bold leading-none font-sans ${
-              isAr ? "text-lg" : "text-xl "
+            className={`pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-[0.16em] ${
+              isNew ? "bg-[#c5bda8] text-ink" : "bg-accent text-canvas"
             }`}
           >
-            {prices.length > 1
-              ? formatPriceRange(minPrice, maxPrice, lang)
-              : formatPrice(minPrice, lang)}
+            {tag}
           </span>
-        </Link>
-
-        {/* Buy / add bar — hidden at rest, rises into the same spot on hover */}
-        {!isOutOfStock ? (
-          <div className="pcard-actions col-start-1 row-start-1 hidden gap-2 sm:flex">
-            <button
-              onClick={onBuy}
-              className="flex h-11 flex-1 items-center justify-center bg-canvas px-4 text-sm font-semibold text-ink shadow-(--shadow-1) transition-[background,transform] duration-150 hover:bg-(--warm-soft) active:translate-y-px"
-            >
-              {dict.common.buyNow}
-            </button>
-            <button
-              onClick={onAdd}
-              className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-ink px-4 text-sm font-semibold text-canvas backdrop-blur-sm transition-[background,transform] duration-150 hover:bg-ink/70 active:translate-y-px"
-            >
-              {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
-              <span className="sm:hidden">{dict.nav.cart}</span>
-              <span className="hidden sm:inline">{dict.common.addToCart}</span>
-            </button>
-          </div>
         ) : null}
-      </div>
+        {isOutOfStock ? (
+          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 bg-ink px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
+            {dict.common.outOfStock}
+          </span>
+        ) : null}
+
+        <button
+          className={`absolute top-3 rounded-full inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
+            has(product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
+          }`}
+          aria-label={dict.common.addToWishlist}
+          onClick={onWish}
+        >
+          {has(product.id) ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
+        </button>
+
+        <div className="absolute inset-x-0 bottom-0 z-10 grid px-4 pb-6 pt-12">
+          <Link
+            href={href}
+            className="pcard-caption pointer-events-auto col-start-1 row-start-1 flex items-end justify-end gap-3 sm:justify-between"
+          >
+            <h3
+              className={`m-0 hidden leading-tight sm:block ${
+                isAr
+                  ? "text-sm font-bold font-(family-name:--font-ar)"
+                  : "text-sm font-bold uppercase tracking-[0.06em]"
+              }`}
+            >
+              {pickLang(product.name, lang)}
+            </h3>
+            <span
+              className={`shrink-0 font-bold leading-none font-sans ${
+                isAr ? "text-lg" : "text-xl "
+              }`}
+            >
+              {prices.length > 1
+                ? formatPriceRange(minPrice, maxPrice, lang)
+                : formatPrice(minPrice, lang)}
+            </span>
+          </Link>
+
+          {!isOutOfStock ? (
+            <div className="pcard-actions col-start-1 row-start-1 hidden gap-2 sm:flex">
+              <button
+                onClick={onBuy}
+                className="flex h-11 flex-1 items-center justify-center bg-canvas px-4 text-sm font-semibold text-ink shadow-(--shadow-1) transition-[background,transform] duration-150 hover:bg-(--warm-soft) active:translate-y-px"
+              >
+                {dict.common.buyNow}
+              </button>
+              <button
+                onClick={onAdd}
+                className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-ink px-4 text-sm font-semibold text-canvas backdrop-blur-sm transition-[background,transform] duration-150 hover:bg-ink/70 active:translate-y-px"
+              >
+                {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
+                <span className="sm:hidden">{dict.nav.cart}</span>
+                <span className="hidden sm:inline">{dict.common.addToCart}</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      {/* Mobile-only action row — always visible beneath the card */}
       {!isOutOfStock ? (
         <div className="mt-2 flex gap-2 sm:hidden">
           <Link

@@ -55,12 +55,12 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
     >
       <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
-      <div className="grid items-center mt-4 bg-canvas min-[880px]: gap-2 sm:gap-4 px-3 py-4! grid-cols-[1fr_auto_1fr]">
+      <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 p-3 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
           <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
             <button
-              className="inline-flex h-9 w-9 items-center justify-center border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
               onClick={() => setMobileOpen((open) => !open)}
               aria-label="Menu"
               aria-expanded={mobileOpen}
@@ -69,7 +69,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
             </button>
             <Link
               href={user ? `/${lang}/orders` : `/${lang}/login`}
-              className="relative grid h-9 w-9 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
               <Icon.User />
@@ -79,7 +79,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           {/* Desktop left cluster: lang · search · shop */}
           <div className="hidden min-[880px]:flex items-center gap-0.5">
             <button
-              className="relative grid h-10 w-10 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               onClick={switchLang}
               aria-label="Language"
               title="Language"
@@ -88,7 +88,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               <span className="absolute bottom-1 right-1 text-xs font-semibold">{dict.langSwitch.short}</span>
             </button>
             <button
-              className="grid h-10 w-10 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               onClick={() => setSearchOpen((s) => !s)}
               aria-label={dict.nav.search}
               aria-expanded={searchOpen}
@@ -117,27 +117,27 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
         <div className="flex items-center justify-end">
           {/* Mobile cluster: wishlist · cart */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
-            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
+            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
-            <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
+            <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart count={count} />
             </Link>
           </div>
 
           {/* Desktop right cluster: cart · wishlist · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
-            <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
+            <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart count={count} />
             </Link>
-            <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
+            <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
             <Link
               href={user ? `/${lang}/orders` : `/${lang}/login`}
-              className="relative grid h-10 w-10 place-items-center border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
               <Icon.User />

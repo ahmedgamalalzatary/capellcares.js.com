@@ -87,7 +87,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
         aria-expanded={open}
         aria-haspopup="true"
         aria-label="Shop"
-        className={`inline-flex h-10 items-center gap-2 border-0 bg-transparent px-3 text-ink transition-colors hover:bg-(--warm-soft) ${open ? "bg-(--warm-soft)" : ""}`}
+        className={`inline-flex h-10 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-ink transition-colors hover:bg-(--warm-soft) ${open ? "bg-(--warm-soft)" : ""}`}
         onClick={() => setOpen((o) => !o)}
       >
         <Icon.Shop />
@@ -96,7 +96,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
       {/* Full-width panel — anchored to the header so it reads as one piece. */}
       <div
         className={[
-          "mr-6 ml-6 absolute inset-x-0 top-full z-40 overflow-hidden bg-canvas shadow-(--shadow-2)",
+          "mr-6 ml-6 absolute inset-x-0 top-full z-40 overflow-hidden rounded-b-2xl bg-canvas shadow-(--shadow-2)",
           open ? "pointer-events-auto" : "pointer-events-none"
         ].join(" ")}
         role="menu"
@@ -243,7 +243,7 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
           <img
             src={node.imagePath}
             alt={node.label}
-            className="h-12 w-12 shrink-0 object-cover"
+            className="h-12 w-12 shrink-0 rounded-md object-cover"
           />
         ) : null}
         <span>{node.label}</span>

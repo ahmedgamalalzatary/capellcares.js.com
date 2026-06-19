@@ -22,12 +22,12 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
   return (
     <div className="fixed inset-0 z-60 flex items-end justify-end p-4 sm:p-6 pointer-events-none">
       <div
-        className="pointer-events-auto flex w-72 max-w-[calc(100vw-2rem)] h-112 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden border border-(--hairline) bg-surface shadow-(--shadow-2) sm:w-96 sm:h-144 sm:max-h-[calc(100dvh-3rem)]"
+        className="pointer-events-auto flex w-72 max-w-[calc(100vw-2rem)] h-112 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-2) sm:w-96 sm:h-144 sm:max-h-[calc(100dvh-3rem)]"
         style={{ animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
-          <div className="relative h-8 w-8 shrink-0 overflow-hidden">
+          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
             <Image src="/capella logo2.png" alt="Capella" fill sizes="32px" className="object-cover" />
           </div>
           <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center text-[#67645f] transition-colors hover:bg-black/5"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#67645f] transition-colors hover:bg-black/5"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -70,7 +70,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="h-2 w-2 bg-(--ink-3)"
+                    className="h-2 w-2 rounded-full bg-(--ink-3)"
                     style={{ animation: `ask-dot 1.2s ${i * 0.2}s ease-in-out infinite` }}
                   />
                 ))}
@@ -85,7 +85,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         <div className="shrink-0 bg-canvas p-3">
           <form
             onSubmit={(e) => { e.preventDefault(); send(); }}
-            className="flex items-center gap-2 border border-(--hairline) bg-surface px-4 py-2 transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--accent)_16%,transparent)]"
+            className="flex items-center gap-2 rounded-(--radius-pill) border border-(--hairline) bg-surface px-4 py-2 transition-[border-color,box-shadow] focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--accent)_16%,transparent)]"
           >
             <input
               ref={inputRef}
@@ -98,7 +98,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
             <button
               type="submit"
               disabled={!input.trim() || pending}
-              className="flex h-7 w-7 shrink-0 items-center justify-center bg-accent text-white transition-opacity disabled:opacity-30"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-opacity disabled:opacity-30"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 {isAr ? <path d="M5 12h14M5 12l7-7M5 12l7 7" /> : <path d="M19 12H5M19 12l-7-7M19 12l-7 7" />}
@@ -129,7 +129,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="max-w-[75%] bg-accent px-4 py-2.5 text-sm leading-[1.6] text-white">
+      <div className="max-w-[75%] rounded-[18px_18px_4px_18px] bg-accent px-4 py-2.5 text-sm leading-[1.6] text-white">
         {text}
       </div>
     </div>
@@ -139,10 +139,10 @@ function UserBubble({ text }: { text: string }) {
 function CapellaBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
-      <div className="relative h-7 w-7 shrink-0 overflow-hidden">
+      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
         <Image src="/capella logo2.png" alt="" fill sizes="28px" className="object-cover" />
       </div>
-      <div className="max-w-[85%] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">
+      <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">
         {children}
       </div>
     </div>
