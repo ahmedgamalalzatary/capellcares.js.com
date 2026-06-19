@@ -18,6 +18,6 @@ export const Icon = {
   X: ({ size = 16, className }: P) => (<svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}><path d="M6 6l12 12M18 6 6 18"/></svg>),
   Chevron: ({ size = 14, className }: P) => (<svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}><path d="m6 9 6 6 6-6"/></svg>),
   More: ({ size = 16, className }: P) => (<svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>),
-  Logo: ({ size = 28, className }: P) => (<svg width={size} height={size} viewBox="0 0 40 40" className={className}><circle cx="20" cy="20" r="18" fill="#a13b4b"/><text x="20" y="26" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="22" fill="#faf6f1" fontStyle="italic">c</text></svg>),
+  Logo: ({ size = 28, className }: P) => (<svg width={size} height={size} viewBox="0 0 40 40" className={className}><circle cx="20" cy="20" r="18" fill="#a13b4b"/><text x="20" y="26" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="22" fill="#faf6f1">c</text></svg>),
   Sparkle: ({ size = 16, className }: P) => (<svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}><path d="M12 3v6M12 15v6M3 12h6M15 12h6M6 6l3 3M15 15l3 3M6 18l3-3M15 9l3-3"/></svg>)
 };

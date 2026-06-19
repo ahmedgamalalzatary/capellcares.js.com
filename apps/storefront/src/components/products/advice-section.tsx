@@ -24,17 +24,16 @@ export function AdviceSection({
   return (
     <section className="mt-16 mb-24">
       <header className="mb-10 grid gap-2 pt-12">
-        <span className="eyebrow text-accent!">{dict.advices.eyebrow}</span>
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-          : "m-0 text-[clamp(28px,2.8vw,40px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+          : "m-0 text-[clamp(28px,2.8vw,40px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
           {dict.advices.title}
         </h2>
         <p className="max-w-[58ch] text-base leading-[1.7] text-(--ink-2)">{dict.advices.description}</p>
       </header>
 
       {scrollRow ? (
-        <ShopCardRow>{cards}</ShopCardRow>
+        <ShopCardRow lang={lang}>{cards}</ShopCardRow>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7">{cards}</div>
       )}

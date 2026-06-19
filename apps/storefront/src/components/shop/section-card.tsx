@@ -9,7 +9,7 @@ type SectionCardProps =
   | { kind: "advice"; data: Advice; lang: Language; dict: any };
 
 const CARD_CLASS =
-  "group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)";
+  "group grid overflow-hidden rounded-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)";
 const IMAGE_WRAP_CLASS =
   "relative overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]";
 const BADGE_CLASS =
@@ -21,10 +21,10 @@ export function SectionCard(props: SectionCardProps) {
 
   const titleClass = `m-0 leading-[1.2] ${isAr
     ? "text-xl font-bold font-(family-name:--font-ar) text-ink"
-    : "text-2xl italic font-(--font-display) text-ink"}`;
+    : "text-2xl font-(--font-display) text-ink"}`;
   const priceClass = `leading-none text-accent ${isAr
     ? "text-2xl font-bold font-(family-name:--font-ar)"
-    : "text-2xl italic font-(--font-display)"}`;
+    : "text-2xl font-(--font-display)"}`;
 
   // Per-kind derivations — the card knows which one it is rendering.
   let href: string | null = null;

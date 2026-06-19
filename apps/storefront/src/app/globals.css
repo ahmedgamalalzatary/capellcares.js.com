@@ -345,7 +345,6 @@ body {
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-style: italic;
   font-weight: 500;
   font-size: clamp(30px, 5.2vw, 64px);
   letter-spacing: -0.018em;

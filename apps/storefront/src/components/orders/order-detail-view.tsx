@@ -41,7 +41,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
           <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
           <div className={`leading-none text-ink ${isAr
             ? "text-2xl font-bold font-(family-name:--font-ar)"
-            : "text-3xl italic font-(--font-display)"}`}>
+            : "text-3xl font-(--font-display)"}`}>
             {order.orderCode}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-(--ink-2)">
@@ -57,28 +57,28 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
       </div>
 
       <div className="overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1)">
-       <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{dict.cart.item}</th>
-              <th className="w-20 text-center">{dict.cart.qty}</th>
-              <th className="w-32 text-end">{dict.cart.price}</th>
-              <th className="w-32 text-end">{dict.common.total}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.items.map((item) => (
-              <tr key={item.id}>
-                <td className="text-ink">{isAr ? item.snapshotNameAr ?? item.snapshotNameEn : item.snapshotNameEn ?? item.snapshotNameAr}</td>
-                <td className="text-center text-(--ink-2)">×{item.qty}</td>
-                <td className="text-end text-(--ink-2)">{item.unitPrice}</td>
-                <td className="text-end font-semibold text-ink">{item.lineTotal}</td>
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{dict.cart.item}</th>
+                <th className="w-20 text-center">{dict.cart.qty}</th>
+                <th className="w-32 text-end">{dict.cart.price}</th>
+                <th className="w-32 text-end">{dict.common.total}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-       </div>
+            </thead>
+            <tbody>
+              {order.items.map((item) => (
+                <tr key={item.id}>
+                  <td className="text-ink">{isAr ? item.snapshotNameAr ?? item.snapshotNameEn : item.snapshotNameEn ?? item.snapshotNameAr}</td>
+                  <td className="text-center text-(--ink-2)">×{item.qty}</td>
+                  <td className="text-end text-(--ink-2)">{item.unitPrice}</td>
+                  <td className="text-end font-semibold text-ink">{item.lineTotal}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

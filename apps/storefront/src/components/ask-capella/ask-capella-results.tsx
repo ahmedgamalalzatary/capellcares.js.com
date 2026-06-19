@@ -44,7 +44,7 @@ export function AskCapellaReplyContent({
         <Link
           href={`/${lang}/products`}
           onClick={onClose}
-          className="mt-2 inline-block font-(--font-display) italic text-sm text-accent underline-offset-4 hover:underline"
+          className="mt-2 inline-block font-(--font-display) text-sm text-accent underline-offset-4 hover:underline"
         >
           {dict.ask.browseAll}
         </Link>

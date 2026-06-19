@@ -43,7 +43,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         setCollections(c);
         setCatalogLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -128,7 +128,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         </div>
         <h1 className={`m-0 leading-[1.1] ${lang === "ar"
           ? "text-3xl font-bold font-(family-name:--font-ar) text-ink"
-          : "text-3xl italic font-(--font-display) text-ink"}`}>
+          : "text-3xl font-(--font-display) text-ink"}`}>
           {dict.cart.empty}
         </h1>
         <p className="max-w-[34ch] text-sm leading-[1.7] text-(--ink-2)">
@@ -206,7 +206,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "الفاتورة" : "Summary"}</span>
         <div className={`mt-1 ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-          : "text-2xl italic font-(--font-display) text-ink"}`}>
+          : "text-2xl font-(--font-display) text-ink"}`}>
           {lang === "ar" ? "ملخّص الطلب" : "Your order"}
         </div>
         <div className="my-5 h-px bg-(--hairline)" />
@@ -223,7 +223,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
           <span className={`text-accent leading-none ${lang === "ar"
             ? "text-2xl font-bold font-(family-name:--font-ar)"
-            : "text-3xl italic font-(--font-display)"}`}>
+            : "text-3xl font-(--font-display)"}`}>
             {formatPrice(subtotal, lang)}
           </span>
         </div>

@@ -45,14 +45,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {/* Offers */}
       {activeOffers.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between  pt-10">
+          <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
-              <span className="eyebrow text-accent!">
-                {dict.shop.bundlesEyebrow}
-              </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.offers.title}
               </h2>
             </div>
@@ -64,7 +61,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <ShopCardRow>
+          <ShopCardRow lang={lang}>
             {activeOffers.map((offer) => (
               <SectionCard key={offer.id} kind="offer" data={offer} lang={lang} dict={dict} />
             ))}
@@ -80,14 +77,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {newProducts.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between pt-10">
+          <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
-              <span className="eyebrow text-accent!">
-                {dict.shop.newAndBestsellers}
-              </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.shop.newProducts}
               </h2>
             </div>
@@ -99,7 +93,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <ShopCardRow>
+          <ShopCardRow lang={lang}>
             {newProducts.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
             ))}
@@ -116,14 +110,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {/* Bestsellers */}
       {bestsellerProducts.length > 0 && (
         <section className="mb-16">
-          <header className="mb-8 flex items-end justify-between pt-10">
+          <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
-              <span className="eyebrow">
-                {dict.nav.bestsellers}
-              </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.shop.bestsellers}
               </h2>
             </div>
@@ -135,7 +126,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
             </Link>
           </header>
 
-          <ShopCardRow>
+          <ShopCardRow lang={lang}>
             {bestsellerProducts.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
             ))}

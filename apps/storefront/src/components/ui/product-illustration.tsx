@@ -64,7 +64,7 @@ export function ProductIllustration({ product, className }: Props) {
       <text
         x="100" y="138" textAnchor="middle"
         fontFamily="Cormorant Garamond, serif"
-        fontSize="14" fill={p.accent} fontStyle="italic"
+        fontSize="14" fill={p.accent}
       >Capella</text>
       <text
         x="100" y="156" textAnchor="middle"

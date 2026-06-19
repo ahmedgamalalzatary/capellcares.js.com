@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
-import { languages, dir, getDict } from "@capella/shared";
+import { dir, getDict } from "@capella/shared";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
@@ -13,9 +13,12 @@ import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 
-export async function generateStaticParams() {
-  return languages.map((lang) => ({ lang }));
-}
+// The root <html dir> is derived from the x-capella-locale request header set
+// by middleware. Static prerendering has no request, so at build time that
+// header is absent and dir wrongly defaults to "ar"/rtl on the EN page. Render
+// the locale subtree per-request so middleware's header drives <html dir>
+// (and every CSS rtl:/[dir=rtl] consumer) correctly.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params

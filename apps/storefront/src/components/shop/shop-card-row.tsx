@@ -14,7 +14,14 @@ import { Icon } from "@/components/ui/icons";
  * Shop-page only — other pages keep their multi-row grids, so this leaves
  * ProductCard / SectionCard untouched.
  */
-export function ShopCardRow({ children }: { children: React.ReactNode }) {
+export function ShopCardRow({
+  children,
+  lang
+}: {
+  children: React.ReactNode;
+  lang: string;
+}) {
+  const isRtl = lang === "ar";
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -80,7 +87,7 @@ export function ShopCardRow({ children }: { children: React.ReactNode }) {
         disabled={!canPrev}
         className={`${buttonClass} inset-s-1`}
       >
-        <Icon.Chevron size={40} className="stroke-1 rtl:rotate-180" />
+        <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "" : "rotate-180"}`} />
       </button>
       <button
         type="button"
@@ -89,7 +96,7 @@ export function ShopCardRow({ children }: { children: React.ReactNode }) {
         disabled={!canNext}
         className={`${buttonClass} inset-e-1`}
       >
-        <Icon.Chevron size={40} className="stroke-1 rotate-180 rtl:rotate-0" />
+        <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "rotate-180" : ""}`} />
       </button>
     </div>
   );

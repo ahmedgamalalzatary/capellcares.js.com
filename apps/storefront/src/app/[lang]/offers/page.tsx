@@ -40,7 +40,6 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow text-accent!">{lang === "ar" ? "باقات كابيلا" : "Capella bundles"}</span>
         <h1>{dict.offers.title}</h1>
         <p className="max-w-[62ch] text-(--ink-2)">
           {lang === "ar"

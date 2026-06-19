@@ -18,8 +18,6 @@ vi.mock("@capella/shared", async () => {
         eyebrow: "Shop",
         heading: "Capella Shop",
         description: "Description",
-        bundlesEyebrow: "Offers",
-        newAndBestsellers: "Featured",
         newProducts: "New",
         bestsellers: "Best Seller",
         featuredHeading: "Products",

@@ -61,7 +61,6 @@ export function MobileFilterDrawer({
     <>
       <button
         type="button"
-        aria-label={isAr ? "إغلاق" : "Close"}
         onClick={onClose}
         style={{
           position: "fixed",
@@ -117,7 +116,6 @@ export function MobileFilterDrawer({
             <span
               style={{
                 fontFamily: isAr ? "var(--font-ar)" : "var(--font-display)",
-                fontStyle: isAr ? "normal" : "italic",
                 fontWeight: isAr ? 700 : 400,
                 fontSize: isAr ? "20px" : "24px",
                 color: "var(--ink)",

@@ -110,7 +110,6 @@ export const Icon = {
         y="13"
         textAnchor="middle"
         fontFamily="Georgia, 'Times New Roman', serif"
-        fontStyle="italic"
         fontWeight="700"
         fontSize="15"
         letterSpacing="0.5"
@@ -156,7 +155,7 @@ export const Icon = {
   Logo: ({ size = 28, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 40 40" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
       <circle cx="20" cy="20" r="18" fill="#a13b4b" />
-      <text x="20" y="26" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="22" fill="#faf6f1" fontStyle="italic">c</text>
+      <text x="20" y="26" textAnchor="middle" fontFamily="Cormorant Garamond, serif" fontSize="22" fill="#faf6f1">c</text>
     </svg>
   ),
   CashOnDelivery: ({ className, style }: IconProps) => (

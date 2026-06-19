@@ -49,7 +49,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-          : "text-3xl italic font-(--font-display) text-ink"}`}>
+          : "text-3xl font-(--font-display) text-ink"}`}>
           {dict.orders.loginRequired}
         </h2>
         <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
@@ -70,7 +70,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-          : "text-3xl italic font-(--font-display) text-ink"}`}>
+          : "text-3xl font-(--font-display) text-ink"}`}>
           {dict.orders.empty}
         </h2>
         <p className="text-sm text-(--ink-2)">{dict.orders.startShopping}</p>
@@ -91,34 +91,34 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   return (
     <div className="mb-16 overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1) sm:mb-20">
-     <div className="overflow-x-auto">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>{dict.orders.orderCode}</th>
-            <th>{dict.orders.paymentStatus}</th>
-            <th>{dict.common.total}</th>
-            <th>{dict.orders.orderDate}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id}>
-              <td className="font-mono text-sm text-ink">{order.orderCode}</td>
-              <td><span className={`chip ${statusChip(order.paymentStatus)}`}>{order.paymentStatus}</span></td>
-              <td className="text-ink">{order.totalAmount}</td>
-              <td className="text-(--ink-2)">{new Date(order.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
-              <td className="text-end">
-                <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost btn--sm">
-                  {dict.orders.viewDetails}
-                </Link>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>{dict.orders.orderCode}</th>
+              <th>{dict.orders.paymentStatus}</th>
+              <th>{dict.common.total}</th>
+              <th>{dict.orders.orderDate}</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-     </div>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id}>
+                <td className="font-mono text-sm text-ink">{order.orderCode}</td>
+                <td><span className={`chip ${statusChip(order.paymentStatus)}`}>{order.paymentStatus}</span></td>
+                <td className="text-ink">{order.totalAmount}</td>
+                <td className="text-(--ink-2)">{new Date(order.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
+                <td className="text-end">
+                  <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost btn--sm">
+                    {dict.orders.viewDetails}
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

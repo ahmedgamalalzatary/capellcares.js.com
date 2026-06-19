@@ -44,7 +44,7 @@ html[lang="ar"] .editor-hero__eyebrow { letter-spacing: 0.08em; text-transform: 
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
-.editor-hero__title--placeholder { color: var(--ink-4); font-style: italic; }
+.editor-hero__title--placeholder { color: var(--ink-4); }
 .editor-hero__sub {
   font-family: var(--font-sans);
   font-size: 13px;

@@ -42,7 +42,6 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow text-accent!">{lang === "ar" ? "مجموعات كابيلا" : "Capella collections"}</span>
         <h1>{dict.collections.title}</h1>
         <p className="max-w-[62ch] text-(--ink-2)">
           {lang === "ar"

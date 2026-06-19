@@ -128,7 +128,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
           {/* Desktop right cluster: cart · wishlist · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
-            <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
+            <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart count={count} />
             </Link>
             <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
