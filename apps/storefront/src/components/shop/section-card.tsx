@@ -9,11 +9,11 @@ type SectionCardProps =
   | { kind: "advice"; data: Advice; lang: Language; dict: any };
 
 const CARD_CLASS =
-  "group grid overflow-hidden rounded-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)";
+  "group grid overflow-hidden bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)";
 const IMAGE_WRAP_CLASS =
   "relative overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--warm-soft),var(--surface))]";
 const BADGE_CLASS =
-  "absolute top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4";
+  "absolute top-4 inline-flex items-center gap-1.5 bg-accent px-3 py-1.5 text-xs tracking-[0.16em] uppercase text-canvas inset-s-4";
 
 export function SectionCard(props: SectionCardProps) {
   const { lang, dict } = props;

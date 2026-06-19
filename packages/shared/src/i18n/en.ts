@@ -210,7 +210,7 @@ export const en = {
     },
     empty: "No results for \"{q}\"",
     browseAll: "Browse all products →",
-    welcome: "Hi there, I'm Capella. what is your problem; e.g. write: \"Hair loss treatment\".",
+    welcome: "Hi there, I'm Capella. what is your problem? e.g. write: \"Hair loss treatment\".",
     assistant: "Your smart assistant",
     typeMessage: "Type a message…",
     noResults: "I couldn't find anything for \"{query}\" 😔",

@@ -5,7 +5,7 @@ import type { CheckoutSummaryProps } from "../../types/checkout-view.types";
 
 export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSummaryProps) {
   return (
-    <aside className="rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
+    <aside className=" border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
       <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "المراجعة" : "Review"}</span>
       <div className={`mt-1 ${lang === "ar"
         ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"

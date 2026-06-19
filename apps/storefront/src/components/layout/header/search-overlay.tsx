@@ -89,7 +89,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
           open ? "translate-y-0" : "-translate-y-4"
         ].join(" ")}
       >
-        <div className="overflow-hidden rounded-2xl border border-black bg-canvas shadow-(--shadow-2)">
+        <div className="overflow-hidden border border-black bg-canvas shadow-(--shadow-2)">
           <form onSubmit={submit} className="flex items-center gap-3 border-b border-black px-5 py-4">
             <Icon.Search />
             <input
@@ -104,7 +104,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
               type="button"
               onClick={onClose}
               aria-label={dict.common.back}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-(--ink-3) hover:bg-(--warm-soft) hover:text-ink"
+              className="grid h-8 w-8 shrink-0 place-items-center text-(--ink-3) hover:bg-(--warm-soft) hover:text-ink"
             >
               <Icon.Close />
             </button>
@@ -128,7 +128,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
                           onClick={onClose}
                           className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-(--warm-soft)"
                         >
-                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-(--hairline) bg-surface">
+                          <div className="h-12 w-12 shrink-0 overflow-hidden border border-(--hairline) bg-surface">
                             <ProductIllustration product={p} className="h-full w-full object-contain" />
                           </div>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">

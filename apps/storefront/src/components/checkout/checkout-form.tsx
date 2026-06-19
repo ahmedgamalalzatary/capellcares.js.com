@@ -65,7 +65,7 @@ export function CheckoutForm({
       <Section title={dict.checkout.payment}>
         <div className="grid gap-2.5">
           <label
-            className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-surface px-4 py-3.5"
+            className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 border border-(--hairline) bg-surface px-4 py-3.5"
             data-active={form.paymentMethod === "cod"}
           >
             <input type="radio" name="pay" value="cod" aria-label={dict.checkout.cod} checked={form.paymentMethod === "cod"} onChange={() => setField("paymentMethod", "cod")} />
@@ -88,7 +88,7 @@ export function CheckoutForm({
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="grid gap-4 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
+    <section className="grid gap-4 border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
       <h2 className="m-0 text-lg font-medium tracking-[-0.005em] text-ink sm:text-xl">{title}</h2>
       {children}
     </section>

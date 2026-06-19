@@ -44,7 +44,7 @@ export function RelatedItems({ items, lang, title }: Props) {
           <div className="related-item" data-testid="related-item" key={`${item.type}-${item.id}`}>
             <Link
               href={hrefFor(item, lang)}
-              className="group grid overflow-hidden rounded-lg border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
+              className="group grid overflow-hidden border border-(--hairline) bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)"
             >
               <div className="relative  overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
                 {item.type === "offer" ? (
@@ -64,7 +64,7 @@ export function RelatedItems({ items, lang, title }: Props) {
                     className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
-                <span className="absolute top-3 inset-s-3 rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                <span className="absolute top-3 inset-s-3 bg-surface px-2.5 py-1 text-xs font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
                   {itemTypeLabel(item, lang)}
                 </span>
               </div>

@@ -131,7 +131,7 @@ function ShopMediaViewportStrip({
   flatTop?: boolean;
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
-  const roundedClass = flatTop ? "rounded-b-lg" : "rounded-lg";
+  const roundedClass = flatTop ? "" : "";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -298,21 +298,6 @@ function ShopMediaViewportStrip({
         >
           <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "rotate-180" : ""}`} />
         </button>
-
-        <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
-          {items.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => goTo(index)}
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={index === activeIndex}
-              className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
-                index === activeIndex ? "bg-accent" : "bg-transparent"
-              }`}
-            />
-          ))}
-        </div>
       </div>
     </section>
   );

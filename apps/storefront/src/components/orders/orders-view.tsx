@@ -43,8 +43,8 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (!user || authRequired) {
     return (
-      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-        <div className="grid h-19 w-19 place-items-center rounded-full bg-(--accent-soft) text-accent">
+      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-19 w-19 place-items-center bg-(--accent-soft) text-accent">
           <Icon.User size={32} />
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
@@ -64,8 +64,8 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (orders.length === 0) {
     return (
-      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-        <div className="grid h-19 w-19 place-items-center rounded-full bg-(--warm-soft) text-ink">
+      <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+        <div className="grid h-19 w-19 place-items-center bg-(--warm-soft) text-ink">
           <Icon.Cart size={32} />
         </div>
         <h2 className={`m-0 leading-[1.1] ${isAr
@@ -90,7 +90,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   };
 
   return (
-    <div className="mb-16 overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1) sm:mb-20">
+    <div className="mb-16 overflow-hidden border border-(--hairline) bg-surface shadow-(--shadow-1) sm:mb-20">
       <div className="overflow-x-auto">
         <table className="table">
           <thead>

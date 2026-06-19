@@ -13,8 +13,8 @@ function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
   isAr: boolean; icon: React.ReactNode; title: string; desc: string; ctaHref: string; ctaLabel: string;
 }) {
   return (
-    <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
-      <div className="grid h-19 w-19 place-items-center rounded-full bg-(--accent-soft) text-accent">
+    <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
+      <div className="grid h-19 w-19 place-items-center bg-(--accent-soft) text-accent">
         {icon}
       </div>
       <h2 className={`m-0 leading-[1.1] ${isAr

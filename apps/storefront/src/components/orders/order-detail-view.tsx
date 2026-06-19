@@ -36,7 +36,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
 
   return (
     <div className="grid gap-5 pb-20">
-      <div className="grid gap-3 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 md:grid-cols-[1fr_auto] md:items-start">
+      <div className="grid gap-3 border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 md:grid-cols-[1fr_auto] md:items-start">
         <div className="grid gap-2">
           <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
           <div className={`leading-none text-ink ${isAr
@@ -56,7 +56,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1)">
+      <div className="overflow-hidden border border-(--hairline) bg-surface shadow-(--shadow-1)">
         <div className="overflow-x-auto">
           <table className="table">
             <thead>

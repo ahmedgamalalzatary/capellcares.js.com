@@ -177,7 +177,7 @@ export function HeaderMobileDrawer({
       <div
         ref={wrapRef}
         style={{ maxHeight: mobileOpen ? (maxH ? `${maxH}px` : "100vh") : 0 }}
-        className={`absolute inset-x-0 top-full overflow-hidden rounded-b-lg mx-4 min-[640px]:max-[877px]:mx-6 transition-[max-height] duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${
+        className={`absolute inset-x-0 top-full overflow-hidden mx-4 min-[640px]:max-[877px]:mx-6 transition-[max-height] duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${
           mobileOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
@@ -194,7 +194,7 @@ export function HeaderMobileDrawer({
             <button
               type="button"
               onClick={onOpenSearch}
-              className="flex h-12 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-surface px-5 text-start text-(--ink-3) transition-colors hover:border-warm"
+              className="flex h-12 w-full items-center gap-2.5 border border-(--hairline) bg-surface px-5 text-start text-(--ink-3) transition-colors hover:border-warm"
             >
               <Icon.Search />
               <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
@@ -219,7 +219,7 @@ export function HeaderMobileDrawer({
                       } ${active ? "font-extrabold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
                     >
                       {name}
-                      {active && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-ink" />}
+                      {active && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-ink" />}
                     </button>
                   );
                 })}
@@ -273,7 +273,7 @@ export function HeaderMobileDrawer({
                     aria-label={label}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-(--hairline) text-(--ink-3) transition-colors hover:border-accent hover:text-accent"
+                    className="flex h-10 w-10 items-center justify-center border border-(--hairline) text-(--ink-3) transition-colors hover:border-accent hover:text-accent"
                   >
                     <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden fill={stroke ? "none" : "currentColor"} stroke={stroke ? "currentColor" : "none"} strokeWidth={stroke ? 2 : 0} strokeLinecap="round" strokeLinejoin="round">
                       <path d={path} />
@@ -334,7 +334,7 @@ function CategoryCard({
   ) : null);
 
   return (
-    <div className="rounded-md bg-surface p-3 shadow-(--shadow-1)">
+    <div className=" bg-surface p-3 shadow-(--shadow-1)">
       <Link
         href={href}
         aria-label={title}
@@ -342,7 +342,7 @@ function CategoryCard({
         className="group relative flex uppercase items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
         {visual && (
-          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
+          <span className="h-12 w-12 shrink-0 overflow-hidden bg-(--warm-soft)">
             {visual}
           </span>
         )}

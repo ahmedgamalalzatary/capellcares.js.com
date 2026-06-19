@@ -112,7 +112,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   if (resolved.length === 0 && lines.length > 0 && !catalogLoaded) {
     return (
       <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 px-6 py-12 text-center sm:my-16">
-        <div className="grid h-16 w-16 animate-pulse place-items-center rounded-full bg-(--warm-soft) text-ink">
+        <div className="grid h-16 w-16 animate-pulse place-items-center bg-(--warm-soft) text-ink">
           <Icon.Cart size={26} />
         </div>
         <p className="text-sm text-(--ink-2)">{dict.common?.loading ?? "…"}</p>
@@ -122,8 +122,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (resolved.length === 0) {
     return (
-      <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-16">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-(--warm-soft) text-ink">
+      <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-16">
+        <div className="grid h-16 w-16 place-items-center bg-(--warm-soft) text-ink">
           <Icon.Cart size={26} />
         </div>
         <h1 className={`m-0 leading-[1.1] ${lang === "ar"
@@ -158,7 +158,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
               <tr key={r.key}>
                 <td>
                   <Link href={r.slug} className="flex items-center gap-3 sm:gap-3.5">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft) sm:h-16 sm:w-16">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden bg-(--warm-soft) sm:h-16 sm:w-16">
                       {r.illustration}
                     </div>
                     <div className="min-w-0">
@@ -168,9 +168,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                   </Link>
                 </td>
                 <td>
-                  <div className="inline-grid grid-cols-[32px_40px_32px] items-center rounded-full border border-(--hairline) bg-surface">
+                  <div className="inline-grid grid-cols-[32px_40px_32px] items-center border border-(--hairline) bg-surface">
                     <button
-                      className="grid h-8 place-items-center rounded-full border-0 bg-transparent"
+                      className="grid h-8 place-items-center border-0 bg-transparent"
                       onClick={() => setQty(r.key, r.qty - 1)}
                       aria-label="−"
                     >
@@ -178,7 +178,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                     </button>
                     <span className="text-center text-sm font-semibold">{r.qty}</span>
                     <button
-                      className="grid h-8 place-items-center rounded-full border-0 bg-transparent"
+                      className="grid h-8 place-items-center border-0 bg-transparent"
                       onClick={() => setQty(r.key, r.qty + 1)}
                       aria-label="+"
                     >
@@ -189,7 +189,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                 <td className="text-end font-semibold">{formatPrice(r.unitPrice * r.qty, lang)}</td>
                 <td>
                   <button
-                    className="rounded-(--radius) border-0 bg-transparent p-2 text-(--ink-3) transition-colors hover:bg-[color-mix(in_oklch,var(--error)_10%,transparent)] hover:text-(--error)"
+                    className=" border-0 bg-transparent p-2 text-(--ink-3) transition-colors hover:bg-[color-mix(in_oklch,var(--error)_10%,transparent)] hover:text-(--error)"
                     onClick={() => remove(r.key)}
                     aria-label={dict.cart.remove}
                   >
@@ -202,7 +202,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         </table>
       </div>
 
-      <aside className="self-start rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
+      <aside className="self-start border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
         <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "الفاتورة" : "Summary"}</span>
         <div className={`mt-1 ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"

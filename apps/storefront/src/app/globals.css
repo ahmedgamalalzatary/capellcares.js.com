@@ -430,6 +430,51 @@ body {
 [dir="rtl"] .arrow-flip { transform: scaleX(-1); }
 
 /* ============================================================
+   Product card — caption ⇄ actions cross-fade on hover.
+   The name/price and the buy/add bar share one cell; hovering the
+   card lifts the caption away and rises the actions up from below.
+   ============================================================ */
+@keyframes pcard-caption-out {
+  from { transform: translateY(0);     opacity: 1; }
+  to   { transform: translateY(-8px);  opacity: 0; }
+}
+@keyframes pcard-caption-in {
+  from { transform: translateY(-8px);  opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes pcard-actions-in {
+  from { transform: translateY(28px);  opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes pcard-actions-out {
+  from { transform: translateY(0);     opacity: 1; }
+  to   { transform: translateY(28px);  opacity: 0; }
+}
+
+.pcard-caption,
+.pcard-actions {
+  animation-duration: 480ms;
+  animation-fill-mode: both;
+  animation-timing-function: var(--ease-out-expo);
+}
+/* Rest state */
+.pcard-caption { animation-name: pcard-caption-in; }
+.pcard-actions { animation-name: pcard-actions-out; pointer-events: none; }
+/* Hover state — only on devices that truly hover, so a tap on touch
+   screens (which emulates a sticky :hover) never hides the price. */
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .pcard-caption { animation-name: pcard-caption-out; pointer-events: none; }
+  .group:hover .pcard-actions { animation-name: pcard-actions-in;  pointer-events: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard-caption, .pcard-actions { animation: none; }
+  .pcard-actions { opacity: 0; }
+  .group:hover .pcard-caption { opacity: 0; }
+  .group:hover .pcard-actions { opacity: 1; pointer-events: auto; }
+}
+
+/* ============================================================
    Mobile niceties — prevent layout overflow & soften horizontal
    scroll on tablet/phone breakpoints.
    ============================================================ */

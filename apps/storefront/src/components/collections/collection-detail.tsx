@@ -55,8 +55,8 @@ export function CollectionDetail({
   return (
     <>
       <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-16">
-        <div className="relative overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
-          <div className="absolute inset-e-4 top-4 inline-flex items-center gap-1.5 rounded-(--radius-pill) bg-accent px-3 py-1.5 text-xs tracking-[0.16em] text-canvas uppercase sm:inset-e-5 sm:top-5">
+        <div className="relative overflow-hidden border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
+          <div className="absolute inset-e-4 top-4 inline-flex items-center gap-1.5 bg-accent px-3 py-1.5 text-xs tracking-[0.16em] text-canvas uppercase sm:inset-e-5 sm:top-5">
             ★ {dict.collections.badge}
           </div>
           <CollectionIllustration collection={collection} lang={lang} className="min-h-65 w-full sm:min-h-90 lg:min-h-105" />
@@ -95,9 +95,9 @@ export function CollectionDetail({
                 <Link
                   key={`${item.product.id}-${item.variantId}`}
                   href={`/${lang}/products/${item.product.slug}`}
-                  className="grid grid-cols-[68px_1fr_auto] items-center gap-4 rounded-(--radius) border border-(--hairline) bg-surface p-3 transition-colors hover:border-warm hover:bg-(--warm-soft)"
+                  className="grid grid-cols-[68px_1fr_auto] items-center gap-4 border border-(--hairline) bg-surface p-3 transition-colors hover:border-warm hover:bg-(--warm-soft)"
                 >
-                  <div className="h-17 w-17 overflow-hidden rounded-md bg-(--warm-soft)">
+                  <div className="h-17 w-17 overflow-hidden bg-(--warm-soft)">
                     <ProductIllustration product={item.product} className="h-full w-full" />
                   </div>
                   <div className="min-w-0">
@@ -120,7 +120,7 @@ export function CollectionDetail({
           </div>
 
           {!inStock && (
-            <p className="rounded-(--radius) bg-[color-mix(in_oklch,var(--error)_10%,transparent)] px-4 py-3 text-sm text-(--error)">
+            <p className=" bg-[color-mix(in_oklch,var(--error)_10%,transparent)] px-4 py-3 text-sm text-(--error)">
               {dict.collections.unavailable}
             </p>
           )}

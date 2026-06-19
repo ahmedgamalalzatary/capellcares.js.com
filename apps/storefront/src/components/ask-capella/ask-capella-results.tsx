@@ -66,9 +66,9 @@ export function AskCapellaReplyContent({
               key={product.id}
               href={`/${lang}/products/${product.slug}`}
               onClick={onClose}
-              className="flex items-center gap-2.5 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
+              className="flex items-center gap-2.5 p-1.5 transition-colors hover:bg-(--warm-soft)"
             >
-              <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
+              <div className="h-9 w-9 shrink-0 border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{pickLang(product.name, lang)}</p>
                 {product.variants?.[0]?.price != null && (
@@ -89,7 +89,7 @@ export function AskCapellaReplyContent({
                 key={category.id}
                 href={`/${lang}/category/${category.slug}`}
                 onClick={onClose}
-                className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
+                className=" border border-(--hairline) bg-canvas px-3 py-1 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
               >
                 {pickLang(category.name, lang)}
               </Link>
@@ -108,7 +108,7 @@ export function AskCapellaReplyContent({
                 key={offer.id}
                 href={`/${lang}/offers/${offer.slug}`}
                 onClick={onClose}
-                className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
+                className="flex items-center justify-between gap-2 p-1.5 transition-colors hover:bg-(--warm-soft)"
               >
                 <span className="truncate text-ink">{pickLang(offer.name, lang)}</span>
                 {savings > 0 && (
@@ -132,7 +132,7 @@ export function AskCapellaReplyContent({
                 key={collection.id}
                 href={`/${lang}/collections/${collection.slug}`}
                 onClick={onClose}
-                className="flex items-center justify-between gap-2 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
+                className="flex items-center justify-between gap-2 p-1.5 transition-colors hover:bg-(--warm-soft)"
               >
                 <span className="truncate text-ink">{pickLang(collection.name, lang)}</span>
                 {savings > 0 && (

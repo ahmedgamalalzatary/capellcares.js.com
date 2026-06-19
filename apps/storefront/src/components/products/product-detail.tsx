@@ -78,7 +78,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-          <div className="relative grid  place-items-center overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
+          <div className="relative grid  place-items-center overflow-hidden border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))]">
             {activeMedia?.type === "video" ? (
               <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
                 <track kind="captions" />
@@ -93,7 +93,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
               <button
                 key={`${item.type}-${item.url}-${index}`}
                 type="button"
-                className="aspect-square rounded-(--radius) border border-(--hairline) bg-surface p-2 transition-colors hover:border-warm data-[active=true]:border-accent"
+                className="aspect-square border border-(--hairline) bg-surface p-2 transition-colors hover:border-warm data-[active=true]:border-accent"
                 data-active={activeMediaIndex === index}
                 aria-label={`view ${index + 1}`}
                 onClick={() => setActiveMediaIndex(index)}
@@ -156,7 +156,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
                 <button
                   key={item.id}
                   className={[
-                    "grid min-w-28 gap-0.5 rounded-(--radius) border px-4 py-3 text-start transition-colors",
+                    "grid min-w-28 gap-0.5 border px-4 py-3 text-start transition-colors",
                     item.stock > 0 ? "hover:border-warm hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
                     variantId === item.id ? "border-accent bg-(--accent-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                   ].join(" ")}
@@ -176,9 +176,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <div className="eyebrow text-(--ink-3)! opacity-100!">
               {dict.common.quantity}
             </div>
-            <div className="inline-flex items-center justify-self-start gap-1 rounded-(--radius-pill) border border-(--hairline) bg-surface p-1">
+            <div className="inline-flex items-center justify-self-start gap-1 border border-(--hairline) bg-surface p-1">
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}
                 aria-label="−"
                 disabled={qty <= 1}
@@ -187,7 +187,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
               </button>
               <span className="min-w-10 text-center text-base font-semibold tabular-nums text-ink">{qty}</span>
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.min(variant?.stock || 1, value + 1))}
                 aria-label="+"
                 disabled={variant == null || qty >= (variant?.stock ?? 0)}
