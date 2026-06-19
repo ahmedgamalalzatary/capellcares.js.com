@@ -18,13 +18,28 @@ vi.mock("@/components/providers/auth-provider", () => ({
   useAuth: () => ({ user: { id: 1 } })
 }));
 
+vi.mock("@/components/providers/cart-provider", () => ({
+  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
+
 import { ProductCard } from "@/components/products/product-card";
+
+const dict = {
+  badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
+  common: {
+    outOfStock: "Out",
+    addToWishlist: "Wishlist",
+    addToCart: "Add to cart",
+    buyNow: "Buy now"
+  },
+  nav: { cart: "Cart" }
+};
 
 describe("ProductCard", () => {
   it("switches to the dedicated hover image on hover when one exists", () => {
     render(createElement(ProductCard, {
       lang: "en",
-      dict: { badges: { new: "New", bestseller: "Bestseller", offer: "Offer" }, common: { outOfStock: "Out", addToWishlist: "Wishlist" } },
+      dict,
       product: {
         id: 1,
         sku: "SKU-1",
@@ -52,7 +67,7 @@ describe("ProductCard", () => {
       }
     }));
 
-    const card = screen.getByRole("link");
+    const card = screen.getByLabelText("Product");
     const image = screen.getByRole("img", { name: "Product" });
 
     expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
@@ -65,7 +80,7 @@ describe("ProductCard", () => {
   it("does not fall back to the second gallery image when no dedicated hover image exists", () => {
     render(createElement(ProductCard, {
       lang: "en",
-      dict: { badges: { new: "New", bestseller: "Bestseller", offer: "Offer" }, common: { outOfStock: "Out", addToWishlist: "Wishlist" } },
+      dict,
       product: {
         id: 1,
         sku: "SKU-1",
@@ -93,7 +108,7 @@ describe("ProductCard", () => {
       }
     }));
 
-    const card = screen.getByRole("link");
+    const card = screen.getByLabelText("Product");
     const image = screen.getByRole("img", { name: "Product" });
 
     expect(image).toHaveAttribute("src", "/uploads/primary.jpg");

@@ -175,7 +175,6 @@ function ShopMediaViewportStrip({
     );
   }
 
-  const goTo = (index: number) => setPos(index);
   const prev = () => setPos((current) => current - 1);
   const next = () => setPos((current) => current + 1);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {

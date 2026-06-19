@@ -100,7 +100,7 @@ describe("ShopMediaStrip carousel", () => {
 
     expect(desktopStrip.querySelector('[aria-label="Previous slide"]')).not.toBeNull();
     expect(desktopStrip.querySelector('[aria-label="Next slide"]')).not.toBeNull();
-    expect(desktopStrip.querySelectorAll('[aria-label^="Go to slide"]')).toHaveLength(3);
+    expect(desktopStrip.querySelector('[aria-label^="Go to slide"]')).toBeNull();
   });
 
   it("clones the edge slides so autoplay loops seamlessly (infinite)", () => {
@@ -108,7 +108,6 @@ describe("ShopMediaStrip carousel", () => {
     const desktopStrip = getDesktopStrip(container);
 
     expect(desktopStrip.querySelectorAll("[data-slide]")).toHaveLength(5);
-    expect(desktopStrip.querySelectorAll('[aria-label^="Go to slide"]')).toHaveLength(3);
   });
 
   it("auto-advances to the next slide every 5 seconds", () => {
@@ -170,12 +169,12 @@ describe("ShopMediaStrip carousel", () => {
     expect(carousel).toHaveAttribute("data-active-index", "1");
   });
 
-  it("jumps to a slide when its dot is clicked", () => {
+  it("steps to the previous slide when the previous arrow is clicked", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
     const desktopStrip = getDesktopStrip(container);
     const carousel = getDesktopCarousel(container);
 
-    fireEvent.click(desktopStrip.querySelector('[aria-label="Go to slide 3"]')!);
+    fireEvent.click(desktopStrip.querySelector('[aria-label="Previous slide"]')!);
     expect(carousel).toHaveAttribute("data-active-index", "2");
   });
 
