@@ -14,9 +14,11 @@ interface Props {
   product: Product;
   lang: Language;
   dict: any;
+  /** Resolved category name shown as the classification line beneath the product name. */
+  categoryName?: string;
 }
 
-export function ProductCard({ product, lang, dict }: Props) {
+export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
@@ -68,13 +70,6 @@ export function ProductCard({ product, lang, dict }: Props) {
     setTimeout(() => setAdded(false), 1400);
   };
 
-  const onBuy = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isOutOfStock || !buyVariant) return;
-    cart.add({ type: "product", productId: product.id, variantId: buyVariant.id, qty: 1 });
-    router.push(`/${lang}/checkout`);
-  };
-
   return (
     <article className="group">
       <div className="relative aspect-8/9 overflow-hidden bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
@@ -117,66 +112,55 @@ export function ProductCard({ product, lang, dict }: Props) {
           {has(product.id) ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
         </button>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 grid px-4 pb-6 pt-12">
-          <Link
-            href={href}
-            className="pcard-caption pointer-events-auto col-start-1 row-start-1 flex items-end justify-end gap-3 sm:justify-between"
-          >
-            <h3
-              className={`m-0 hidden leading-tight sm:block ${
-                isAr
-                  ? "text-sm font-bold font-(family-name:--font-ar)"
-                  : "text-sm font-bold uppercase tracking-[0.06em]"
-              }`}
-            >
-              {pickLang(product.name, lang)}
-            </h3>
-            <span
-              className={`shrink-0 font-bold leading-none font-sans ${
-                isAr ? "text-lg" : "text-xl "
-              }`}
-            >
-              {prices.length > 1
-                ? formatPriceRange(minPrice, maxPrice, lang)
-                : formatPrice(minPrice, lang)}
-            </span>
-          </Link>
+      </div>
 
-          {!isOutOfStock ? (
-            <div className="pcard-actions col-start-1 row-start-1 hidden gap-2 sm:flex">
-              <button
-                onClick={onBuy}
-                className="flex h-11 flex-1 items-center justify-center bg-canvas px-4 text-sm font-semibold text-ink shadow-(--shadow-1) transition-[background,transform] duration-150 hover:bg-(--warm-soft) active:translate-y-px"
-              >
-                {dict.common.buyNow}
-              </button>
-              <button
-                onClick={onAdd}
-                className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-ink px-4 text-sm font-semibold text-canvas backdrop-blur-sm transition-[background,transform] duration-150 hover:bg-ink/70 active:translate-y-px"
-              >
-                {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
-                <span className="sm:hidden">{dict.nav.cart}</span>
-                <span className="hidden sm:inline">{dict.common.addToCart}</span>
-              </button>
-            </div>
-          ) : null}
-        </div>
+      {/* Details: image → name → category → price, stacked beneath the image. */}
+      <div className="mt-3 grid gap-1 text-start">
+        <Link href={href} className="block">
+          <h3
+            className={`m-0 leading-tight text-ink ${
+              isAr
+                ? "text-sm font-bold font-(family-name:--font-ar)"
+                : "text-sm font-bold uppercase tracking-[0.06em]"
+            }`}
+          >
+            {pickLang(product.name, lang)}
+          </h3>
+        </Link>
+
+        {categoryName ? (
+          <p
+            className={`m-0 text-(--ink-3) ${
+              isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
+            }`}
+          >
+            {categoryName}
+          </p>
+        ) : null}
+
+        <span
+          className={`font-bold leading-none text-accent font-(family-name:--font-ar) ${isAr ? "text-base" : "text-lg"}`}
+        >
+          {prices.length > 1
+            ? formatPriceRange(minPrice, maxPrice, lang)
+            : formatPrice(minPrice, lang)}
+        </span>
       </div>
 
       {!isOutOfStock ? (
-        <div className="mt-2 flex gap-2 sm:hidden">
+        <div className="mt-3 flex gap-2">
           <Link
             href={href}
-            className="flex h-10 flex-1 items-center justify-center border border-(--hairline) bg-surface px-3 text-sm font-semibold text-ink active:translate-y-px"
+            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
-            {isAr ? "عرض" : "View"}
+            {dict.common.view}
           </Link>
           <button
             onClick={onAdd}
-            className="flex h-10 flex-1 items-center justify-center border border-(--hairline) bg-surface px-3 text-sm font-semibold text-ink active:translate-y-px"
+            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
             {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
-            {dict.nav.cart}
+            <span>{dict.common.addToCart}</span>
           </button>
         </div>
       ) : null}

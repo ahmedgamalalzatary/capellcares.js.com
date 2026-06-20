@@ -13,18 +13,20 @@ export async function loadShopPageData(lang: string): Promise<{
   products: Product[];
   offers: Offer[];
   collections: Collection[];
+  categories: Category[];
   advices: Advice[];
   shopMediaSections: ShopMediaSection[];
 }> {
-  const [products, offers, collections, advices, shopMediaSections] = await Promise.all([
+  const [products, offers, collections, categories, advices, shopMediaSections] = await Promise.all([
     safeList(() => fetchProducts({ lang })),
     safeList(() => fetchOffers({ lang })),
     safeList(() => fetchCollections({ lang })),
+    safeList(() => fetchCategories({ lang })),
     safeList(() => fetchAdvices({ lang })),
     safeList(() => fetchShopMediaSections({ lang }))
   ]);
 
-  return { products, offers, collections, advices, shopMediaSections };
+  return { products, offers, collections, categories, advices, shopMediaSections };
 }
 
 export async function loadSitemapData(): Promise<{

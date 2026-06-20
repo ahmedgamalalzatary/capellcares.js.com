@@ -105,7 +105,7 @@ export default async function CategoryPage({
         {subCats.length > 0 && (
           <div className="pill-group" style={{ marginTop: 12 }}>
             {subCats.map((c) => (
-              <a key={c.id} href={`/${lang}/category/${c.slug}?categoryId=${c.id}`} className="chip">
+              <a key={c.id} href={`/${lang}/category/${c.slug}?categoryId=${c.id}`} className="filter-pill">
                 {pickLang(c.name, lang)}
               </a>
             ))}

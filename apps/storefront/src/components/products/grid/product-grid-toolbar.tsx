@@ -20,135 +20,63 @@ export function ProductGridToolbar({
   onSortChange
 }: ProductGridToolbarProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "12px 16px",
-        borderBottom: "1px solid var(--hairline)",
-        paddingBottom: "14px",
-        marginBottom: "24px"
-      }}
-    >
-      <button
-        onClick={onOpenFilters}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          height: 38,
-          paddingInline: 16,
-          borderRadius: "var(--radius-pill)",
-          background: hasActiveFilters ? "var(--accent)" : "var(--surface)",
-          border: hasActiveFilters ? "1px solid var(--accent)" : "1px solid var(--hairline)",
-          color: hasActiveFilters ? "var(--canvas)" : "var(--ink)",
-          fontSize: "13px",
-          fontWeight: 500,
-          cursor: "pointer",
-          transition: "background 160ms, border-color 160ms, color 160ms",
-          boxShadow: hasActiveFilters ? "var(--shadow-1)" : "none"
-        }}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+    <div className="px-1 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
+      {/* Left: All Filters (bordered) + borderless Sort dropdown — Bath & Body Works layout. */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <button
+          onClick={onOpenFilters}
+          className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors ${
+            hasActiveFilters
+              ? "border-ink bg-ink text-canvas"
+              : "border-(--hairline-strong) bg-surface text-ink hover:border-ink"
+          }`}
         >
-          <path d="M4 6h16M7 12h10M10 18h4" />
-        </svg>
-        {dict.common.filters}
-        {hasActiveFilters && (
-          <span
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              background: "oklch(1 0 0 / 0.25)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "10px",
-              fontWeight: 700,
-              lineHeight: 1
-            }}
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            •
-          </span>
-        )}
-      </button>
+            <path d="M4 6h16M7 12h10M10 18h4" />
+          </svg>
+          {dict.common.filters}
+          {hasActiveFilters && <span className="inline-block size-1.5 rounded-full bg-canvas/80" />}
+        </button>
 
-      <span
-        style={{
-          fontSize: "13px",
-          color: "var(--ink-3)",
-          letterSpacing: "0.01em",
-          order: 3,
-          flex: "0 0 100%"
-        }}
-        className="sm:order-0 sm:flex-[0_0_auto]"
-      >
-        {dict.common.results.replace("{n}", String(filteredCount))}
-      </span>
-
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8
-        }}
-      >
-        <div style={{ position: "relative" }}>
-          <select
-            className="select"
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value as Sort)}
-            style={{
-              height: 36,
-              paddingBlock: 0,
-              fontSize: "13px",
-              borderRadius: "var(--radius-pill)",
-              appearance: "none",
-              WebkitAppearance: "none",
-              cursor: "pointer"
-            }}
-          >
-            <option value="default">{dict.filters.sortFeatured}</option>
-            <option value="newest">{dict.filters.sortNewest}</option>
-            <option value="price-asc">{dict.filters.sortPriceAsc}</option>
-            <option value="price-desc">{dict.filters.sortPriceDesc}</option>
-            <option value="name">{dict.filters.sortName}</option>
-          </select>
-          <span
-            style={{
-              position: "absolute",
-              insetInlineEnd: "10px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-              color: "var(--ink-3)"
-            }}
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 10 10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
+        {/* Sort by: <value> ⌄ — borderless inline dropdown */}
+        <div className="relative inline-flex items-center text-sm text-ink border border-(--hairline-strong) px-2 py-1 rounded-md">
+          <span className="pointer-events-none text-(--ink-3)">{dict.filters.sortBy}:&nbsp;</span>
+          <div className="relative inline-flex items-center">
+            <select
+              value={sort}
+              onChange={(e) => onSortChange(e.target.value as Sort)}
+              aria-label={dict.filters.sortBy}
+              className="cursor-pointer appearance-none border-0 bg-transparent py-1 pe-5 ps-0 font-medium text-ink outline-none focus-visible:underline"
             >
-              <path d="M2 3.5l3 3 3-3" />
-            </svg>
-          </span>
+              <option value="default">{dict.filters.sortFeatured}</option>
+              <option value="newest">{dict.filters.sortNewest}</option>
+              <option value="price-asc">{dict.filters.sortPriceAsc}</option>
+              <option value="price-desc">{dict.filters.sortPriceDesc}</option>
+              <option value="name">{dict.filters.sortName}</option>
+            </select>
+            <span className="pointer-events-none absolute inset-e-0 text-(--ink-3)">
+              <svg width="11" height="11" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <path d="M2 3.5l3 3 3-3" />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Right: muted item count */}
+      <span className="text-lg font-bold text-(--ink-3)">
+        {dict.common.results.replace("{n}", String(filteredCount))}
+      </span>
     </div>
   );
 }

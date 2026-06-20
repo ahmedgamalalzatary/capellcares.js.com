@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDict } from "@capella/shared";
+import { getDict, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
+import { BackToTop } from "@/components/shop/back-to-top";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -24,12 +25,16 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const dict = getDict(lang);
   const isAr = lang === "ar";
 
-  const { products, offers, advices, shopMediaSections } = await loadShopPageData(lang);
+  const { products, offers, collections, categories, advices, shopMediaSections } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
+  const activeCollections = collections.filter(
+    (c) => c.status === "active" && c.visibility === "visible" && !c.deletedAt
+  );
   const activeProducts = products.filter((p) => p.status === "active" && !p.deletedAt);
   const newProducts = activeProducts.filter((p) => p.isNew);
   const bestsellerProducts = activeProducts.filter((p) => p.isBestseller);
+  const categoryNameById = new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const));
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
   return (
@@ -44,7 +49,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Offers */}
       {activeOffers.length > 0 && (
-        <section className="mb-16">
+        <section className="mb-8">
           <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
               <h2 className={isAr
@@ -75,27 +80,28 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         label={dict.shopMedia.sectionLabel}
       />
 
-      {newProducts.length > 0 && (
-        <section className="mb-16">
+      {/* Collections */}
+      {activeCollections.length > 0 && (
+        <section className="mb-8">
           <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-                {dict.shop.newProducts}
+                {dict.collections.title}
               </h2>
             </div>
             <Link
-              href={`/${lang}/new`}
+              href={`/${lang}/collections`}
               className={`shrink-0 text-sm text-accent underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
             >
-              {dict.shop.viewAllProducts}
+              {dict.shop.viewAllCollections}
             </Link>
           </header>
 
           <ShopCardRow lang={lang}>
-            {newProducts.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
+            {activeCollections.map((collection) => (
+              <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
             ))}
           </ShopCardRow>
         </section>
@@ -109,7 +115,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Bestsellers */}
       {bestsellerProducts.length > 0 && (
-        <section className="mb-16">
+        <section className="mb-8">
           <header className="mb-8 flex items-end justify-between">
             <div className="grid gap-1.5">
               <h2 className={isAr
@@ -128,7 +134,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
           <ShopCardRow lang={lang}>
             {bestsellerProducts.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
+              <ProductCard key={product.id} product={product} lang={lang} dict={dict} categoryName={categoryNameById.get(product.categoryId)} />
             ))}
           </ShopCardRow>
         </section>
@@ -140,8 +146,37 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         label={dict.shopMedia.sectionLabel}
       />
 
+      {/* New */}
+      {newProducts.length > 0 && (
+        <section className="mb-8">
+          <header className="mb-8 flex items-end justify-between">
+            <div className="grid gap-1.5">
+              <h2 className={isAr
+                ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                {dict.shop.newProducts}
+              </h2>
+            </div>
+            <Link
+              href={`/${lang}/new`}
+              className={`shrink-0 text-sm text-accent underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
+            >
+              {dict.shop.viewAllProducts}
+            </Link>
+          </header>
+
+          <ShopCardRow lang={lang}>
+            {newProducts.map((product) => (
+              <ProductCard key={product.id} product={product} lang={lang} dict={dict} categoryName={categoryNameById.get(product.categoryId)} />
+            ))}
+          </ShopCardRow>
+        </section>
+      )}
+
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} scrollRow />
+
+      <BackToTop label={dict.common.backToTop} />
     </main>
   );
 }

@@ -175,6 +175,7 @@ function ShopMediaViewportStrip({
     );
   }
 
+  const goTo = (index: number) => setPos(index);
   const prev = () => setPos((current) => current - 1);
   const next = () => setPos((current) => current + 1);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -285,7 +286,7 @@ function ShopMediaViewportStrip({
           type="button"
           onClick={prev}
           aria-label="Previous slide"
-          className="absolute top-1/2 inset-s-2 grid size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120"
+          className="absolute top-1/2 inset-s-2 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 lg:grid"
         >
           <Icon.Chevron size={40} className={` stroke-1 ${isRtl ? "" : "rotate-180"}`} />
         </button>
@@ -293,10 +294,25 @@ function ShopMediaViewportStrip({
           type="button"
           onClick={next}
           aria-label="Next slide"
-          className="absolute top-1/2 inset-e-2 grid size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120"
+          className="absolute top-1/2 inset-e-2 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 lg:grid"
         >
           <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "rotate-180" : ""}`} />
         </button>
+
+        <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
+          {items.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => goTo(index)}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === activeIndex}
+              className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
+                index === activeIndex ? "bg-accent" : "bg-transparent"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

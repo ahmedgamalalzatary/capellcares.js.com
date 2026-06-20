@@ -100,7 +100,7 @@ describe("ShopMediaStrip carousel", () => {
 
     expect(desktopStrip.querySelector('[aria-label="Previous slide"]')).not.toBeNull();
     expect(desktopStrip.querySelector('[aria-label="Next slide"]')).not.toBeNull();
-    expect(desktopStrip.querySelector('[aria-label^="Go to slide"]')).toBeNull();
+    expect(desktopStrip.querySelector('[aria-label^="Go to slide"]')).not.toBeNull();
   });
 
   it("clones the edge slides so autoplay loops seamlessly (infinite)", () => {

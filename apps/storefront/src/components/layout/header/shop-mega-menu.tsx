@@ -55,10 +55,8 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  // Offers sit 3rd (after the product tabs); Collections always come last.
+  // Categories come first; Collections always come last.
   const roots = [
-    ...menuEntries.filter((entry) => entry.type === "products"),
-    ...menuEntries.filter((entry) => entry.type === "offers"),
     ...menuEntries
       .filter((entry) => entry.type === "category")
       .slice()
@@ -90,7 +88,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
         className={`inline-flex h-10 items-center gap-2 rounded-full border-0 bg-transparent px-3 text-ink transition-colors hover:bg-(--warm-soft) ${open ? "bg-(--warm-soft)" : ""}`}
         onClick={() => setOpen((o) => !o)}
       >
-        <Icon.Shop />
+        <Icon.Shop size={24} />
       </button>
 
       {/* Full-width panel — anchored to the header so it reads as one piece. */}
@@ -140,33 +138,12 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                 key={activeRoot}
                 className={`animate-in duration-300 ${fromRight ? "slide-in-from-right-16" : "slide-in-from-left-16"}`}
               >
-              {active.type === "products" ? (
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
-                  {/* "All New / All Bestsellers" sits beside the products, like the categories' "All {category}" */}
-                  <Link
-                    href={`/${lang}/${active.slug}`}
-                    onClick={closeNow}
-                    className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
-                  >
-                    {dict.nav.viewAllCategory.replace("{name}", active.label)}
-                  </Link>
-                  {active.products.map((product) => (
-                    <Link
-                      key={product.id}
-                      href={`/${lang}/products/${product.slug}`}
-                      onClick={closeNow}
-                      className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
-                    >
-                      {product.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : active.type === "offers" || active.type === "collections" ? (
+              {active.type === "collections" ? (
                 <MediaGrid
                   lang={lang}
-                  basePath={active.type === "offers" ? "offers" : "collections"}
+                  basePath="collections"
                   allLabel={dict.nav.viewAllCategory.replace("{name}", active.label)}
-                  items={active.type === "offers" ? active.offers : active.collections}
+                  items={active.collections}
                   onNavigate={closeNow}
                 />
               ) : (
@@ -201,7 +178,7 @@ function MediaGrid({
   onNavigate
 }: {
   lang: Language;
-  basePath: "offers" | "collections";
+  basePath: "collections";
   allLabel: string;
   items: { id: number; slug: string; label: string }[];
   onNavigate: () => void;

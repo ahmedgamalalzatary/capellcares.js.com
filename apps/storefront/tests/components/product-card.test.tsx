@@ -30,7 +30,8 @@ const dict = {
     outOfStock: "Out",
     addToWishlist: "Wishlist",
     addToCart: "Add to cart",
-    buyNow: "Buy now"
+    buyNow: "Buy now",
+    view: "View"
   },
   nav: { cart: "Cart" }
 };
@@ -116,5 +117,67 @@ describe("ProductCard", () => {
     expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
     fireEvent.mouseLeave(card);
     expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
+  });
+
+  it("stacks the name, category and price as text below the image", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      categoryName: "Fine Fragrance Mist",
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      }
+    }));
+
+    // Name, category and price all render as plain text (not overlaid on the image).
+    expect(screen.getByRole("heading", { name: "Product" })).toBeInTheDocument();
+    expect(screen.getByText("Fine Fragrance Mist")).toBeInTheDocument();
+    expect(screen.getByText(/50/)).toBeInTheDocument();
+  });
+
+  it("omits the category line when no category name is provided", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      }
+    }));
+
+    expect(screen.queryByText("Fine Fragrance Mist")).toBeNull();
   });
 });

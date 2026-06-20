@@ -55,7 +55,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
     >
       <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
-      <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 p-3 grid-cols-[1fr_auto_1fr]">
+      <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
           <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
@@ -72,7 +72,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
-              <Icon.User />
+              <Icon.User size={24} />
             </Link>
           </div>
 
@@ -84,7 +84,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               aria-label="Language"
               title="Language"
             >
-              <Icon.Globe />
+              <Icon.Globe size={24} />
               <span className="absolute bottom-1 right-1 text-xs font-semibold">{dict.langSwitch.short}</span>
             </button>
             <button
@@ -94,7 +94,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               aria-expanded={searchOpen}
               title={dict.nav.search}
             >
-              <Icon.Search />
+              <Icon.Search size={24} />
             </button>
             <ShopMegaMenu lang={lang} dict={dict} menuEntries={menuEntries} isAr={isAr} />
           </div>
@@ -102,7 +102,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
         <Link
           href={`/${lang}`}
-          className="group flex items-center justify-self-center scale-120"
+          className="group flex items-center justify-self-center scale-130"
           aria-label={dict.brand}
         >
           <Image
@@ -118,21 +118,21 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           {/* Mobile cluster: wishlist · cart */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
-              <Icon.Heart />
+              <Icon.Heart size={24} />
               {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
-              <Icon.Cart count={count} />
+              <Icon.Cart size={24} count={count} />
             </Link>
           </div>
 
           {/* Desktop right cluster: cart · wishlist · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
             <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
-              <Icon.Cart count={count} />
+              <Icon.Cart size={24} count={count} />
             </Link>
             <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
-              <Icon.Heart />
+              <Icon.Heart size={24} />
               {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
             <Link
@@ -140,7 +140,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
-              <Icon.User />
+              <Icon.User size={24} />
             </Link>
           </div>
         </div>

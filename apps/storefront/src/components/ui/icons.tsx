@@ -70,6 +70,11 @@ export const Icon = {
       <path d="m9 6 6 6-6 6" />
     </svg>
   ),
+  ArrowUp: ({ size = 22, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  ),
   Close: ({ size = 18, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
       <path d="M6 6l12 12M18 6 6 18" />
