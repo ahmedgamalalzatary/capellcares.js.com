@@ -200,7 +200,7 @@ export const en = {
     loginHere: "Log in"
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
-  badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
+  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },
   ask: {
     button: "Ask Capella",
     placeholder: "What are you looking for?",
@@ -225,7 +225,7 @@ export const en = {
     viewAllOffers: "View all →",
     collectionsEyebrow: "Capella Sets",
     viewAllCollections: "View all →",
-    newProducts: "New",
+    newProducts: "New arrival",
     bestsellers: "Best Seller",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"

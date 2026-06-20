@@ -72,7 +72,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
       <Link
         href={href}
@@ -89,7 +89,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         {tag ? (
           <span
-            className={`pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-[0.16em] ${
+            className={`pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg px-3 py-1.5 text-xs uppercase tracking-[0.16em] ${
               isNew ? "bg-[#c5bda8] text-ink" : "bg-accent text-canvas"
             }`}
           >
@@ -97,7 +97,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           </span>
         ) : null}
         {isOutOfStock ? (
-          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 bg-ink px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
+          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-ink px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
             {dict.common.outOfStock}
           </span>
         ) : null}
