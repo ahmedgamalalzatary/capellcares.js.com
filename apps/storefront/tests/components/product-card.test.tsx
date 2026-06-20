@@ -180,4 +180,34 @@ describe("ProductCard", () => {
 
     expect(screen.queryByText("Fine Fragrance Mist")).toBeNull();
   });
+
+  it("shows the offer badge when the product carries offerIds", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        offerIds: [3],
+        createdAt: "",
+        updatedAt: ""
+      }
+    }));
+
+    expect(screen.getByText("Offer")).toBeInTheDocument();
+  });
 });

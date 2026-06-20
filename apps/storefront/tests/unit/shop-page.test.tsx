@@ -108,6 +108,24 @@ vi.mock("@/lib/storefront-static-data", () => ({
         updatedAt: ""
       }
     ],
+    categories: [
+      {
+        id: 1,
+        slug: "skin-care",
+        name: { ar: "العناية", en: "Skin Care" },
+        imagePath: "/uploads/category.jpg",
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 11,
+        slug: "sets",
+        name: { ar: "مجموعات", en: "Sets" },
+        imagePath: "/uploads/sets.jpg",
+        createdAt: "",
+        updatedAt: ""
+      }
+    ],
     advices: [],
     shopMediaSections: [
       {
@@ -199,15 +217,15 @@ vi.mock("@/lib/storefront-static-data", () => ({
 import ShopPage from "@/app/[lang]/shop/page";
 
 describe("shop page", () => {
-  it("does not render the collections section on the shop landing page", async () => {
+  it("renders the collections section on the shop landing page", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    expect(screen.queryByRole("heading", { name: "Collections" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Skin Care Set/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "All collections" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Collections" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Skin Care Set/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "All collections" })).toBeInTheDocument();
   });
 
-  it("renders shop sections in the requested media, offers, new, bestseller, media, advice order", async () => {
+  it("renders shop sections in the requested media, offers, collections, bestseller, new, advice order", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     const mediaLinks = screen.getAllByRole("link", { name: "Featured media 1" });
@@ -216,8 +234,9 @@ describe("shop page", () => {
     const sectionThree = mediaLinks.find((link) => link.getAttribute("href") === "/en/bestsellers");
     const sectionFour = mediaLinks.find((link) => link.getAttribute("href") === "/en/products");
     const offersHeading = screen.getByRole("heading", { name: "Offers" });
-    const newHeading = screen.getByRole("heading", { name: "New" });
+    const collectionsHeading = screen.getByRole("heading", { name: "Collections" });
     const bestSellerHeading = screen.getByRole("heading", { name: "Best Seller" });
+    const newHeading = screen.getByRole("heading", { name: "New" });
 
     expect(sectionOne).toBeDefined();
     expect(sectionTwo).toBeDefined();
@@ -239,10 +258,10 @@ describe("shop page", () => {
       sectionTwo.compareDocumentPosition(offersHeading) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
-      newHeading.compareDocumentPosition(sectionTwo) & Node.DOCUMENT_POSITION_PRECEDING
+      collectionsHeading.compareDocumentPosition(sectionTwo) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
-      sectionThree.compareDocumentPosition(newHeading) & Node.DOCUMENT_POSITION_PRECEDING
+      sectionThree.compareDocumentPosition(collectionsHeading) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
       bestSellerHeading.compareDocumentPosition(sectionThree) & Node.DOCUMENT_POSITION_PRECEDING
@@ -251,7 +270,10 @@ describe("shop page", () => {
       sectionFour.compareDocumentPosition(bestSellerHeading) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
-      screen.getByText("Advice").compareDocumentPosition(sectionFour) & Node.DOCUMENT_POSITION_PRECEDING
+      newHeading.compareDocumentPosition(sectionFour) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Advice").compareDocumentPosition(newHeading) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(container.textContent).toContain("Advice");
   });

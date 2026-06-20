@@ -68,7 +68,9 @@ export function normalizeProduct(input: ProductApiShape): Product {
       stock: toNumber(v.stock ?? v.stockQty),
       sortOrder: toNumber(v.sortOrder, index + 1)
     })),
-    offerIds: [],
+    offerIds: Array.isArray((input as { offerIds?: unknown[] }).offerIds)
+      ? (input as { offerIds?: unknown[] }).offerIds!.map((value) => toNumber(value)).filter((value) => value > 0)
+      : [],
     sortOrder: input.sortOrder == null ? undefined : toNumber(input.sortOrder),
     orderings: normalizeOrderings(input.orderings),
     createdAt: input.createdAt ?? "",

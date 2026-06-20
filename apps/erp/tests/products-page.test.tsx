@@ -61,6 +61,7 @@ vi.mock("@/lib/store", () => ({
       isBestseller: false,
       categoryId: 5,
       variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      offerIds: [4],
       createdAt: "",
       updatedAt: ""
     }],
@@ -233,6 +234,12 @@ describe("ProductsListPage", () => {
     expect(await screen.findByText("تعذر تحديث حالة المنتج. حاولي مرة أخرى.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "تأكيد" })).not.toBeDisabled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("shows an automatic offer badge for products linked to offers", () => {
+    render(createElement(ProductsListPage));
+
+    expect(screen.getByText("ضمن عرض")).toBeInTheDocument();
   });
 
   it("submits gallery media separately from the dedicated hover image", async () => {

@@ -1,6 +1,6 @@
 import { useCollapsedSet } from "./use-collapsed-set";
 
-export const SHOP_MEDIA_COLLAPSED_STORAGE_KEY = "erp:shop-media:collapsed";
+const SHOP_MEDIA_COLLAPSED_STORAGE_KEY = "erp:shop-media:collapsed";
 
 type Slot = 1 | 2 | 3 | 4;
 

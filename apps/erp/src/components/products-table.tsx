@@ -58,6 +58,11 @@ export function ProductsTable({
                   <td>
                     <Link href={`/products/${product.id}/edit`} className="table-title">{product.name.ar}</Link>
                     <div className="table-subtitle">{product.name.en}</div>
+                    {(product.offerIds?.length ?? 0) > 0 ? (
+                      <div style={{ marginTop: 6 }}>
+                        <span className="status status--active">ضمن عرض</span>
+                      </div>
+                    ) : null}
                   </td>
                   <td><code className="mono">{product.sku}</code></td>
                   <td>{category?.name.ar ?? "—"}</td>

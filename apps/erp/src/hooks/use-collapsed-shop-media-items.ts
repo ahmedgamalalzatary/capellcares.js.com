@@ -1,6 +1,6 @@
 import { useCollapsedSet } from "./use-collapsed-set";
 
-export const SHOP_MEDIA_ITEMS_COLLAPSED_STORAGE_KEY = "erp:shop-media:items:collapsed";
+const SHOP_MEDIA_ITEMS_COLLAPSED_STORAGE_KEY = "erp:shop-media:items:collapsed";
 
 const isItemKey = (value: unknown): value is string => typeof value === "string";
 
