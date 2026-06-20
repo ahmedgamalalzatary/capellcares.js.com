@@ -191,7 +191,7 @@ export interface ShopMediaSectionItem {
 
 export interface ShopMediaSection {
   id: number;
-  slot: 1 | 2 | 3 | 4;
+  slot: 1 | 2 | 3 | 4 | 5;
   status: "active" | "inactive";
   items: ShopMediaSectionItem[];
   createdAt?: string;

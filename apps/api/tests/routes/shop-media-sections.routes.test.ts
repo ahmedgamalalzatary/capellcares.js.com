@@ -32,7 +32,7 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     assert.equal(initialResponse.status, 200);
     assert.deepEqual(
       initialResponse.json.items.map((section: any) => section.slot),
-      [1, 2, 3, 4]
+      [1, 2, 3, 4, 5]
     );
 
     const updateResponse = await request("/api/erp/shop-media-sections/2", {
@@ -127,6 +127,37 @@ test("erp shop media sections accept items with only a desktop image", async () 
     const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 4);
     assert.equal(updatedSection.items[0].imagePath, "/uploads/shop-media.jpg");
     assert.equal(updatedSection.items[0].mobileImagePath, null);
+  });
+});
+
+test("erp shop media sections accept updating slot 5", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    const response = await request("/api/erp/shop-media-sections/5", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        status: "active",
+        items: [
+          makeItem({ targetType: "offers" })
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+
+    const afterUpdate = await request("/api/erp/shop-media-sections", {
+      headers: { ...authHeaders }
+    });
+    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 5);
+    assert.equal(updatedSection.status, "active");
+    assert.equal(updatedSection.items.length, 1);
+    assert.equal(updatedSection.items[0].targetType, "offers");
   });
 });
 

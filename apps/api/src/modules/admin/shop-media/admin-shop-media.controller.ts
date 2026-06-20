@@ -28,9 +28,9 @@ function normalizeUploadPath(value: string) {
   return value || null;
 }
 
-function parseSlot(value: unknown): 1 | 2 | 3 | 4 | null {
+function parseSlot(value: unknown): 1 | 2 | 3 | 4 | 5 | null {
   const slot = Number.parseInt(String(value), 10);
-  return slot === 1 || slot === 2 || slot === 3 || slot === 4 ? slot : null;
+  return slot === 1 || slot === 2 || slot === 3 || slot === 4 || slot === 5 ? slot : null;
 }
 
 async function safeTriggerShopMediaRevalidation() {

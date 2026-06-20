@@ -21,14 +21,15 @@ type ShopMediaSectionItemInput = {
 };
 
 type DbExecutor = Pick<typeof db, "select" | "insert">;
+const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
 
 async function ensureShopMediaSections(tx: DbExecutor = db) {
   const existing = await tx
     .select({ slot: shopMediaSections.slot })
     .from(shopMediaSections)
-    .where(inArray(shopMediaSections.slot, [1, 2, 3, 4]));
+    .where(inArray(shopMediaSections.slot, [...SHOP_MEDIA_SLOTS]));
   const existingSlots = new Set(existing.map((row) => row.slot));
-  const missingSlots = [1, 2, 3, 4].filter((slot) => !existingSlots.has(slot));
+  const missingSlots = SHOP_MEDIA_SLOTS.filter((slot) => !existingSlots.has(slot));
   if (missingSlots.length > 0) {
     await tx.insert(shopMediaSections).values(
       missingSlots.map((slot) => ({ slot, status: "inactive" as const }))
@@ -76,7 +77,7 @@ async function listSectionsBase() {
 
   return sectionRows.map((section) => ({
     id: section.id,
-    slot: section.slot as 1 | 2 | 3 | 4,
+    slot: section.slot as 1 | 2 | 3 | 4 | 5,
     status: section.status,
     items: itemRows
       .filter((item) => item.sectionId === section.id)
@@ -110,7 +111,7 @@ export async function listActiveShopMediaSectionsRepo() {
   return sections.filter((section) => section.status === "active" && section.items.length > 0);
 }
 
-export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3 | 4, status: "active" | "inactive", items: ShopMediaSectionItemInput[]) {
+export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3 | 4 | 5, status: "active" | "inactive", items: ShopMediaSectionItemInput[]) {
   await db.transaction(async (tx) => {
     await ensureShopMediaSections(tx);
     const [section] = await tx

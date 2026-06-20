@@ -151,10 +151,11 @@ describe("ShopMediaPage", () => {
     }));
   });
 
-  it("renders a fourth section", () => {
+  it("renders five sections including section 5", () => {
     render(createElement(ShopMediaPage));
 
     expect(screen.getByText("القسم 4")).toBeInTheDocument();
+    expect(screen.getByText("القسم 5")).toBeInTheDocument();
   });
 
   it("shows an error toast when saving fails", async () => {

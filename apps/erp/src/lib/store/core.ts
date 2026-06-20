@@ -407,7 +407,7 @@ export class ErpStore {
   }
 
   async updateShopMediaSection(
-    slot: 1 | 2 | 3 | 4,
+    slot: 1 | 2 | 3 | 4 | 5,
     input: { status: "active" | "inactive"; items: Array<{ imagePath: string | null; mobileImagePath: string | null; targetType: string; targetId: number | null; sortOrder: number }> }
   ) {
     await api.post(`/api/erp/shop-media-sections/${slot}`, input);

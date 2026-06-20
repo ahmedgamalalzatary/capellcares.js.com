@@ -23,10 +23,12 @@ type EditableItem = {
 };
 
 type EditableSection = {
-  slot: 1 | 2 | 3 | 4;
+  slot: 1 | 2 | 3 | 4 | 5;
   status: "active" | "inactive";
   items: EditableItem[];
 };
+
+const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
 
 const listingTargetOptions: Array<{ value: ShopMediaTargetType; label: string }> = [
   { value: "shop", label: "صفحة المتجر" },
@@ -44,14 +46,15 @@ const detailTargetOptions: Array<{ value: ShopMediaTargetType; label: string }> 
   { value: "category", label: "قسم" }
 ];
 
-const slotPositionLabel: Record<1 | 2 | 3 | 4, string> = {
+const slotPositionLabel: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: "يظهر أعلى صفحة المتجر",
   2: "يظهر فوق قسم المجموعات",
   3: "يظهر فوق المنتجات المميزة",
-  4: "يظهر أسفل قسم الأكثر مبيعًا"
+  4: "يظهر أسفل قسم الأكثر مبيعًا",
+  5: "يظهر أسفل قسم وصل حديثًا"
 };
 
-function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3 | 4): EditableSection {
+function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3 | 4 | 5): EditableSection {
   return {
     slot,
     status: section?.status ?? "inactive",
@@ -77,16 +80,16 @@ export default function ShopMediaPage() {
   const offers = useStore((store) => store.offers);
   const collections = useStore((store) => store.collections);
   const [sections, setSections] = useState<EditableSection[]>([]);
-  const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | 4 | null>(null);
+  const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dirtySlotsRef = useRef<Set<1 | 2 | 3 | 4>>(new Set());
-  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3 | 4>>(new Set());
+  const dirtySlotsRef = useRef<Set<1 | 2 | 3 | 4 | 5>>(new Set());
+  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3 | 4 | 5>>(new Set());
   const { collapsed: collapsedSlots, toggle: toggleCollapsed } = useCollapsedShopMedia();
   const { collapsed: collapsedItems, toggle: toggleCollapsedItem } = useCollapsedShopMediaItems();
 
   useEffect(() => {
     const bySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
-    setSections((current) => ([1, 2, 3, 4] as const).map((slot) => {
+    setSections((current) => SHOP_MEDIA_SLOTS.map((slot) => {
       const currentSection = current.find((section) => section.slot === slot);
       if (currentSection && dirtySlotsRef.current.has(slot)) {
         return currentSection;
@@ -112,7 +115,7 @@ export default function ShopMediaPage() {
 
   const canEdit = canUpdateErpModule(user, "shop_media");
 
-  const setSection = (slot: 1 | 2 | 3 | 4, updater: (current: EditableSection) => EditableSection) => {
+  const setSection = (slot: 1 | 2 | 3 | 4 | 5, updater: (current: EditableSection) => EditableSection) => {
     dirtySlotsRef.current.add(slot);
     setDirtySlots(new Set(dirtySlotsRef.current));
     setSections((current) => current.map((section) => section.slot === slot ? updater(section) : section));
@@ -151,7 +154,7 @@ export default function ShopMediaPage() {
     }
   };
 
-  const addItem = (slot: 1 | 2 | 3 | 4) => setSection(slot, (current) => ({
+  const addItem = (slot: 1 | 2 | 3 | 4 | 5) => setSection(slot, (current) => ({
     ...current,
     items: [
       ...current.items,

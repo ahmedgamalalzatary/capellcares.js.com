@@ -173,6 +173,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         </section>
       )}
 
+      <ShopMediaStrip
+        lang={lang}
+        section={shopMediaBySlot.get(5) ?? { id: -5, slot: 5, status: "inactive", items: [] }}
+        label={dict.shopMedia.sectionLabel}
+      />
+
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} scrollRow />
 

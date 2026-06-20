@@ -191,6 +191,22 @@ vi.mock("@/lib/storefront-static-data", () => ({
             sortOrder: 1
           }
         ]
+      },
+      {
+        id: 14,
+        slot: 5,
+        status: "active",
+        items: [
+          {
+            id: 24,
+            imagePath: "http://localhost:4000/uploads/section-5.jpg",
+            mobileImagePath: "http://localhost:4000/uploads/section-5-mobile.jpg",
+            targetType: "collections",
+            targetId: null,
+            href: "/en/collections",
+            sortOrder: 1
+          }
+        ]
       }
     ],
     collections: [
@@ -225,7 +241,7 @@ describe("shop page", () => {
     expect(screen.getByRole("link", { name: "All collections" })).toBeInTheDocument();
   });
 
-  it("renders shop sections in the requested media, offers, collections, bestseller, new, advice order", async () => {
+  it("renders shop sections in the requested media, offers, collections, bestseller, new, media, advice order", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     const mediaLinks = screen.getAllByRole("link", { name: "Featured media 1" });
@@ -233,6 +249,7 @@ describe("shop page", () => {
     const sectionTwo = mediaLinks.find((link) => link.getAttribute("href") === "/en/new");
     const sectionThree = mediaLinks.find((link) => link.getAttribute("href") === "/en/bestsellers");
     const sectionFour = mediaLinks.find((link) => link.getAttribute("href") === "/en/products");
+    const sectionFive = mediaLinks.find((link) => link.getAttribute("href") === "/en/collections");
     const offersHeading = screen.getByRole("heading", { name: "Offers" });
     const collectionsHeading = screen.getByRole("heading", { name: "Collections" });
     const bestSellerHeading = screen.getByRole("heading", { name: "Best Seller" });
@@ -242,14 +259,16 @@ describe("shop page", () => {
     expect(sectionTwo).toBeDefined();
     expect(sectionThree).toBeDefined();
     expect(sectionFour).toBeDefined();
-    if (!sectionOne || !sectionTwo || !sectionThree || !sectionFour) {
-      throw new Error("Expected all four shop media sections to render");
+    expect(sectionFive).toBeDefined();
+    if (!sectionOne || !sectionTwo || !sectionThree || !sectionFour || !sectionFive) {
+      throw new Error("Expected all five shop media sections to render");
     }
 
     expect(sectionOne).toHaveAttribute("href", "/en/offers");
     expect(sectionTwo).toHaveAttribute("href", "/en/new");
     expect(sectionThree).toHaveAttribute("href", "/en/bestsellers");
     expect(sectionFour).toHaveAttribute("href", "/en/products");
+    expect(sectionFive).toHaveAttribute("href", "/en/collections");
     expect(sectionOne.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-1.jpg");
     expect(
       offersHeading.compareDocumentPosition(sectionOne) & Node.DOCUMENT_POSITION_PRECEDING
@@ -273,7 +292,10 @@ describe("shop page", () => {
       newHeading.compareDocumentPosition(sectionFour) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(
-      screen.getByText("Advice").compareDocumentPosition(newHeading) & Node.DOCUMENT_POSITION_PRECEDING
+      sectionFive.compareDocumentPosition(newHeading) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Advice").compareDocumentPosition(sectionFive) & Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
     expect(container.textContent).toContain("Advice");
   });
