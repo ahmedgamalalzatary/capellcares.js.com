@@ -20,7 +20,7 @@ export function ProductGridToolbar({
   onSortChange
 }: ProductGridToolbarProps) {
   return (
-    <div className="px-1 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
       {/* Left: All Filters (bordered) + borderless Sort dropdown — Bath & Body Works layout. */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <button

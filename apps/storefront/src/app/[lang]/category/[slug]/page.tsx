@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
-import { ProductGrid } from "@/components/products/grid/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { CategoryPageContent } from "@/components/products/category-page-content";
 import {
   fetchCategories,
   fetchProducts,
@@ -102,23 +102,14 @@ export default async function CategoryPage({
       <header className="page-head">
         <span className="eyebrow">{path.map((c) => pickLang(c.name, lang)).join(" · ")}</span>
         <h1>{pickLang(category.name, lang)}</h1>
-        {subCats.length > 0 && (
-          <div className="pill-group" style={{ marginTop: 12 }}>
-            {subCats.map((c) => (
-              <a key={c.id} href={`/${lang}/category/${c.slug}?categoryId=${c.id}`} className="filter-pill">
-                {pickLang(c.name, lang)}
-              </a>
-            ))}
-          </div>
-        )}
       </header>
-      <ProductGrid
+      <CategoryPageContent
+        category={category}
+        subCats={subCats}
         products={products}
-        categories={subtreeCategories}
         lang={lang}
         dict={dict}
-        initialCategory={category.id}
-        lockCategory={false}
+        categories={subtreeCategories}
       />
     </main>
   );

@@ -427,6 +427,7 @@ body {
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
   -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
 }
 .pill-group::-webkit-scrollbar { display: none; } /* WebKit */
 .pill-group > * { flex: 0 0 auto; } /* keep chips on one row, never shrink */

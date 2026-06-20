@@ -13,6 +13,8 @@ interface UseProductGridFiltersOptions {
   lang: Language;
   initialSearch?: string;
   initialCategory?: number;
+  headerCategoryIds?: number[];
+  onHeaderCategoryIdsChange?: (value: number[]) => void;
 }
 
 export function useProductGridFilters({
@@ -20,7 +22,9 @@ export function useProductGridFilters({
   categories,
   lang,
   initialSearch = "",
-  initialCategory
+  initialCategory,
+  headerCategoryIds = [],
+  onHeaderCategoryIdsChange
 }: UseProductGridFiltersOptions) {
   const router = useRouter();
   const pathname = usePathname();
@@ -33,6 +37,16 @@ export function useProductGridFilters({
 
   useEffect(() => { setQ(initialSearch); }, [initialSearch]);
   useEffect(() => { setCategory(initialCategory); }, [initialCategory]);
+  useEffect(() => {
+    if (headerCategoryIds.length === 0) {
+      return;
+    }
+
+    setQ("");
+    setCategory(initialCategory);
+    setSort("default");
+    setPriceRange({ min: "", max: "" });
+  }, [headerCategoryIds, initialCategory]);
 
   const categoryById = useMemo(
     () => new Map(categories.map((item) => [item.id, item])),
@@ -96,6 +110,36 @@ export function useProductGridFilters({
     return openState;
   });
 
+  const clearHeaderCategories = () => {
+    if (headerCategoryIds.length > 0) {
+      onHeaderCategoryIdsChange?.([]);
+    }
+  };
+
+  const updateSearch = (value: string) => {
+    clearHeaderCategories();
+    setQ(value);
+  };
+
+  const updateCategory = (value: number | undefined) => {
+    clearHeaderCategories();
+    setCategory(value);
+  };
+
+  const updateSort = (value: Sort) => {
+    clearHeaderCategories();
+    setSort(value);
+  };
+
+  const updatePriceRange: React.Dispatch<React.SetStateAction<PriceRange>> = (value) => {
+    clearHeaderCategories();
+    setPriceRange(value);
+  };
+
+  const updateHeaderCategoryIds = (value: number[]) => {
+    onHeaderCategoryIdsChange?.(value);
+  };
+
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     const min = Number(priceRange.min) || 0;
@@ -103,6 +147,13 @@ export function useProductGridFilters({
 
     return products
       .filter((product) => {
+        if (headerCategoryIds.length > 0) {
+          const matchesHeaderCategory = headerCategoryIds.some((selectedCategoryId) =>
+            product.categoryId === selectedCategoryId ||
+            isDescendantOf(product.categoryId, selectedCategoryId, categoryById)
+          );
+          if (!matchesHeaderCategory) return false;
+        }
         if (ql) {
           const name = safeName(product, lang).toLowerCase();
           if (!name.includes(ql)) return false;
@@ -126,7 +177,7 @@ export function useProductGridFilters({
         if (sort === "newest") return b.id - a.id;
         return 0;
       });
-  }, [products, q, category, sort, priceRange, lang, categoryById]);
+  }, [products, q, category, sort, priceRange, lang, categoryById, headerCategoryIds]);
 
   const toggleParent = (parentId: number) => {
     setOpenParents((current) => ({ ...current, [parentId]: !current[parentId] }));
@@ -137,6 +188,7 @@ export function useProductGridFilters({
     setCategory(initialCategory);
     setSort("default");
     setPriceRange({ min: "", max: "" });
+    onHeaderCategoryIdsChange?.([]);
   };
 
   const hasActiveFilters = Boolean(
@@ -145,18 +197,20 @@ export function useProductGridFilters({
 
   return {
     q,
-    setQ,
+    setQ: updateSearch,
     category,
-    setCategory,
+    setCategory: updateCategory,
     sort,
-    setSort,
+    setSort: updateSort,
     priceRange,
-    setPriceRange,
+    setPriceRange: updatePriceRange,
     categoryTree,
     openParents,
     toggleParent,
     filtered,
     handleClear,
-    hasActiveFilters
+    hasActiveFilters,
+    headerCategoryIds,
+    setHeaderCategoryIds: updateHeaderCategoryIds
   };
 }

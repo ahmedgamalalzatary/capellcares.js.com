@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 
 import { useProductGridFilters } from "@/hooks/use-product-grid-filters";
 import type { Category, Product } from "@capella/shared";
@@ -66,12 +67,15 @@ const categories: Category[] = [
 ];
 
 function HookProbe() {
+  const [headerCategoryIds, setHeaderCategoryIds] = useState<number[]>([]);
   const grid = useProductGridFilters({
     products,
     categories,
     lang: "en",
     initialSearch: "",
-    initialCategory: 1
+    initialCategory: 1,
+    headerCategoryIds,
+    onHeaderCategoryIdsChange: setHeaderCategoryIds
   });
 
   return createElement(
@@ -83,11 +87,14 @@ function HookProbe() {
     createElement("button", { onClick: () => grid.setCategory(2) }, "category-serums"),
     createElement("button", { onClick: () => grid.setCategory(undefined) }, "category-all"),
     createElement("button", { onClick: () => grid.setPriceRange({ min: "200", max: "230" }) }, "price-range"),
+    createElement("button", { onClick: () => grid.setHeaderCategoryIds([2, 3]) }, "header-categories"),
+    createElement("button", { onClick: () => grid.setHeaderCategoryIds([]) }, "header-clear"),
     createElement("button", { onClick: () => grid.handleClear() }, "clear"),
     createElement("div", null, `ids:${grid.filtered.map((product) => product.id).join(",")}`),
     createElement("div", null, `tree:${grid.categoryTree.map((item) => `${item.category.id}:${item.children.length}:${item.children[0]?.children.length ?? 0}`).join(",")}`),
     createElement("div", null, `active:${grid.hasActiveFilters ? "yes" : "no"}`),
-    createElement("div", null, `selected:${grid.category ?? "none"}`)
+    createElement("div", null, `selected:${grid.category ?? "none"}`),
+    createElement("div", null, `header:${grid.headerCategoryIds?.join(",") || "none"}`)
   );
 }
 
@@ -163,6 +170,32 @@ describe("useProductGridFilters", () => {
     await waitFor(() => {
       expect(replace).toHaveBeenCalledWith("/en/products", { scroll: false });
     });
+  });
+
+  it("lets header category pills filter by multiple categories and deactivate on second click", async () => {
+    render(createElement(HookProbe));
+
+    screen.getByText("header-categories").click();
+
+    expect(await screen.findByText("ids:1,2")).toBeInTheDocument();
+    expect(screen.getByText("header:2,3")).toBeInTheDocument();
+
+    screen.getByText("header-clear").click();
+
+    expect(await screen.findByText("header:none")).toBeInTheDocument();
+    expect(screen.getByText("ids:1,2")).toBeInTheDocument();
+  });
+
+  it("clears header category pills when a main filter becomes active", async () => {
+    render(createElement(HookProbe));
+
+    screen.getByText("header-categories").click();
+    expect(await screen.findByText("header:2,3")).toBeInTheDocument();
+
+    screen.getByText("search").click();
+
+    expect(await screen.findByText("header:none")).toBeInTheDocument();
+    expect(screen.getByText("ids:1")).toBeInTheDocument();
   });
 
 });

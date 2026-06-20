@@ -17,6 +17,8 @@ export function ProductGrid({
   initialSearch = "",
   initialCategory,
   lockCategory,
+  headerCategoryIds,
+  onHeaderCategoryIdsChange
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -40,7 +42,9 @@ export function ProductGrid({
     categories,
     lang,
     initialSearch,
-    initialCategory
+    initialCategory,
+    headerCategoryIds,
+    onHeaderCategoryIdsChange
   });
 
   const sharedFilterProps = {

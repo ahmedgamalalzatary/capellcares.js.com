@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -11,11 +11,11 @@ vi.mock("@/components/layout/breadcrumb", () => ({
 }));
 
 vi.mock("@/components/products/grid/product-grid", () => ({
-  ProductGrid: ({ categories, initialCategory, lockCategory }: any) =>
+  ProductGrid: ({ categories, initialCategory, lockCategory, headerCategoryIds }: any) =>
     createElement(
       "div",
       { "data-testid": "product-grid" },
-      `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"}`
+      `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"}`
     )
 }));
 
@@ -86,5 +86,27 @@ describe("category page", () => {
     expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "abc" });
     expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
     expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
+  });
+
+  it("toggles header filter pills as a multi-select source for the grid", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
+      searchParams: Promise.resolve({ categoryId: "8" })
+    }));
+
+    const hairTonicPill = screen.getByRole("button", { name: "Hair Tonic" });
+    const conditionerPill = screen.getByRole("button", { name: "Conditioner" });
+    const grid = screen.getByTestId("product-grid");
+
+    expect(grid).toHaveTextContent("header:none");
+
+    fireEvent.click(hairTonicPill);
+    expect(grid).toHaveTextContent("header:59");
+
+    fireEvent.click(conditionerPill);
+    expect(grid).toHaveTextContent("header:59,69");
+
+    fireEvent.click(hairTonicPill);
+    expect(grid).toHaveTextContent("header:69");
   });
 });

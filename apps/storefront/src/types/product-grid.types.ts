@@ -13,6 +13,8 @@ export interface ProductGridProps {
   initialSearch?: string;
   initialCategory?: number;
   lockCategory?: boolean;
+  headerCategoryIds?: number[];
+  onHeaderCategoryIdsChange?: (value: number[]) => void;
 }
 
 export type Sort = "default" | "newest" | "price-asc" | "price-desc" | "name";
