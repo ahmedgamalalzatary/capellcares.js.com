@@ -3,10 +3,17 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable
 
-FROM base AS builder
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY packages/database/package.json packages/database/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
 WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile
 # Bundle the API (inlining @capella/* TS + pure-JS deps) into a single
 # dist/server.js. Only mysql2 stays external, so the runtime node_modules is
 # just mysql2 + its transitive deps (~5 MB) instead of the whole workspace

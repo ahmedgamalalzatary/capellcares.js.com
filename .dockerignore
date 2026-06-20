@@ -3,6 +3,7 @@ node_modules
 .turbo
 .git
 .github
+.agents
 .next
 dist
 coverage
@@ -10,6 +11,9 @@ test-results
 playwright-report
 tmp
 *.log
+docs
+AGENTS.md
+README.md
 .env
 .env.*
 !.env.example

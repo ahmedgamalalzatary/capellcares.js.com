@@ -88,7 +88,7 @@ Build and start from a clean database:
 ```bash
 docker compose --env-file .env.production pull mysql
 docker compose --env-file .env.production down -v
-docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production build
 docker compose --env-file .env.production up -d
 ```
 
@@ -150,7 +150,7 @@ Build and start:
 
 ```bash
 docker compose --env-file .env.production pull mysql
-docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production build
 docker compose --env-file .env.production up -d
 ```
 
@@ -204,7 +204,7 @@ Build and start from a clean database:
 ```cmd
 docker compose --env-file .env.docker pull mysql
 docker compose --env-file .env.docker down -v
-docker compose --env-file .env.docker build --no-cache
+docker compose --env-file .env.docker build
 docker compose --env-file .env.docker up -d
 ```
 
@@ -248,7 +248,7 @@ Use this when you want to keep your local Docker database volume and it was alre
 ```cmd
 docker compose --env-file .env.docker config > nul
 docker compose --env-file .env.docker pull mysql
-docker compose --env-file .env.docker build --no-cache
+docker compose --env-file .env.docker build
 docker compose --env-file .env.docker up -d
 docker compose --env-file .env.docker ps
 docker compose --env-file .env.docker logs migrate --tail 80
@@ -295,6 +295,20 @@ Build one service:
 docker compose --env-file .env.production build api
 docker compose --env-file .env.production build storefront
 docker compose --env-file .env.production build erp
+```
+
+Restart only the changed service after a targeted rebuild:
+
+```bash
+docker compose --env-file .env.production up -d api
+docker compose --env-file .env.production up -d storefront
+docker compose --env-file .env.production up -d erp
+```
+
+If API code or schema changed and storefront / ERP depend on that new behavior:
+
+```bash
+docker compose --env-file .env.production up -d api storefront erp
 ```
 
 Stop without deleting data:
@@ -424,3 +438,43 @@ docker compose --env-file .env.docker exec mysql sh -lc 'mysql -u"$MYSQL_USER" -
 ```
 
 If the table is empty but business tables (e.g. `admin_users`, `products`) exist, the DB was bootstrapped with `push` and cannot be switched to `migrate` without manual hash backfill or a `down -v` reset.
+
+## Cache Policy
+
+Use cached builds as the normal path. The Dockerfiles are structured so
+dependency installation can stay cached when only application source changes.
+
+Normal rebuild:
+
+```bash
+docker compose --env-file .env.production build
+docker compose --env-file .env.production up -d
+```
+
+Targeted rebuild:
+
+```bash
+docker compose --env-file .env.production build storefront
+docker compose --env-file .env.production up -d storefront
+```
+
+Use `--no-cache` only as a recovery tool, not as the default. Typical reasons:
+
+- you changed a Dockerfile layer ordering or base image
+- you suspect a stale dependency-install layer
+- you changed package-manager behavior or the lockfile in a way that cached
+  layers are not reflecting correctly
+
+Forced clean rebuild for one service:
+
+```bash
+docker compose --env-file .env.production build --no-cache api
+docker compose --env-file .env.production up -d api
+```
+
+Forced clean rebuild for the full stack:
+
+```bash
+docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production up -d
+```
