@@ -128,7 +128,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         {categoryName ? (
           <p
-            className={`m-0 text-(--ink-3) ${
+            className={`m-0 ${
               isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
             }`}
           >

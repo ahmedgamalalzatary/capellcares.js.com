@@ -35,7 +35,7 @@ export const ar = {
     language: "اللغة"
   },
   common: {
-    addToCart: "أضف إلى السلة",
+    addToCart: " السلة",
     addToWishlist: "أضف إلى المفضلة",
     removeFromWishlist: "إزالة",
     buyNow: "اشتري الآن",
@@ -96,7 +96,7 @@ export const ar = {
     price: "السعر",
     priceMin: "الأدنى",
     priceMax: "الأعلى",
-    sortBy: "ترتيب حسب",
+    sortBy: "ترتيب",
     sortFeatured: "الأبرز",
     sortNewest: "الأحدث",
     sortPriceAsc: "السعر: من الأقل للأعلى",

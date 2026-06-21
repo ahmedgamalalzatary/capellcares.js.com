@@ -96,7 +96,7 @@ export const en = {
     price: "Price",
     priceMin: "Min",
     priceMax: "Max",
-    sortBy: "Sort by",
+    sortBy: "Sort",
     sortFeatured: "Featured",
     sortNewest: "Newest",
     sortPriceAsc: "Price: low to high",
@@ -179,7 +179,7 @@ export const en = {
     required: "Required"
   },
   offers: {
-    title: "Bundle offers",
+    title: "offers",
     badge: "Offer",
     save: "Save {amount}",
     includes: "Includes",
@@ -244,7 +244,7 @@ export const en = {
     viewAllOffers: "View all →",
     collectionsEyebrow: "Capella Sets",
     viewAllCollections: "View all →",
-    newProducts: "New arrival",
+    newProducts: "New arrivals",
     bestsellers: "Best Seller",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"

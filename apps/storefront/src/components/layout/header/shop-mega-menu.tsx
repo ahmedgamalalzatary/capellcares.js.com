@@ -121,7 +121,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-lg font-semibold uppercase">{label}</span>
+                  <span className="text-md font-bold uppercase">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />

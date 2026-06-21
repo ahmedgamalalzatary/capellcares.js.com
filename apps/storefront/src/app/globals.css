@@ -242,11 +242,9 @@ body {
 .filter-pill {
   display: inline-flex; align-items: center; justify-content: center;
   height: 38px; padding: 0 16px; border-radius: 6px;
-  background: var(--warm);
   font-size: 14px; font-weight: 500; white-space: nowrap;
-  transition: border-color var(--motion-fast) var(--ease-out-quart),
-              background var(--motion-fast) var(--ease-out-quart),
-              color var(--motion-fast) var(--ease-out-quart);
+  border: 1px solid var(--hairline-strong);
+
 }
 .filter-pill:hover { border-color: var(--ink); }
 .filter-pill--active { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
@@ -371,7 +369,7 @@ body {
 }
 .page-head p { color: var(--ink-2); font-size: 16px; line-height: 1.7; max-width: 62ch; }
 @media (max-width: 640px) {
-  .page-head { padding: 28px 0 20px; gap: 10px; }
+  .page-head { padding: 28px 0 30px; gap: 10px; }
   .page-head p { font-size: 14.5px; line-height: 1.65; }
 }
 
@@ -423,7 +421,7 @@ body {
 .pill-group {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: 12px;
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
   -webkit-overflow-scrolling: touch;
