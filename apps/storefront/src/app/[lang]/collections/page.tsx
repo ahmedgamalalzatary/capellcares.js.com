@@ -43,11 +43,6 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
       />
       <header className="page-head">
         <h1>{dict.collections.title}</h1>
-        <p className="max-w-[62ch] text-(--ink-2)">
-          {lang === "ar"
-            ? "اختيارات جاهزة حسب القسم، تضم أكثر من منتج في روتين واحد بسعر مجمع."
-            : "Ready-made sets built around one category, combining multiple products into one complete routine."}
-        </p>
       </header>
 
       {collections.length === 0 ? (

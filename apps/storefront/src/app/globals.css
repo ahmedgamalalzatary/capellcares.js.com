@@ -46,8 +46,8 @@
   --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
   --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
 
-  --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans: "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
+  --font-display:   "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Roboto", "Helvetica Neue", Arial, sans-serif;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   --font-rounded:   "Lobster", "Pacifico", "Brush Script MT", cursive;
 

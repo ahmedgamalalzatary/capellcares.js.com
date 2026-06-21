@@ -122,14 +122,16 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
-              <Icon.Cart size={24} count={count} />
+              <Icon.Cart size={24} />
+              <span className="absolute right-1/4 top-1/8 grid min-h-4 min-w-4 place-items-center text-xs font-semibold leading-none">{count}</span>
             </Link>
           </div>
 
           {/* Desktop right cluster: cart · wishlist · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
             <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
-              <Icon.Cart size={24} count={count} />
+              <Icon.Cart size={24} />
+              <span className="absolute right-1/4 top-1 grid min-h-4 min-w-4 place-items-center text-md font-bold leading-none  ">{count}</span>
             </Link>
             <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart size={24} />

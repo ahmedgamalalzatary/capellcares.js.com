@@ -89,9 +89,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         {tag ? (
           <span
-            className={`pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg px-3 py-1.5 text-xs uppercase tracking-[0.16em] ${
-              isNew ? "bg-[#c5bda8] text-ink" : "bg-accent text-canvas"
-            }`}
+            className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas"
           >
             {tag}
           </span>
@@ -139,7 +137,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         ) : null}
 
         <span
-          className={`font-bold leading-none text-accent font-(family-name:--font-ar) ${isAr ? "text-base" : "text-lg"}`}
+          className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
         >
           {prices.length > 1
             ? formatPriceRange(minPrice, maxPrice, lang)
@@ -157,7 +155,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           </Link>
           <button
             onClick={onAdd}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
             {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
             <span>{dict.common.addToCart}</span>

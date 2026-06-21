@@ -70,7 +70,14 @@ export const ar = {
     cancel: "إلغاء",
     confirm: "تأكيد",
     yes: "نعم",
-    no: "لا"
+    no: "لا",
+    added: "أُضيف",
+    currency: "ج.م"
+  },
+  itemType: {
+    product: "منتج",
+    offer: "عرض",
+    collection: "مجموعة"
   },
   product: {
     description: "الوصف",
@@ -109,10 +116,16 @@ export const ar = {
     remove: "إزالة",
     item: "المنتج",
     price: "السعر",
-    qty: "الكمية"
+    qty: "الكمية",
+    eyebrow: "خطوة قبل الدفع",
+    emptyTagline: "ابدئي رحلتك مع كابيلا اليوم. اختاري قطعةً واحدة وستفعل عجائب.",
+    summaryEyebrow: "الفاتورة",
+    summaryTitle: "ملخّص الطلب",
+    codNote: "الدفع عند الاستلام · شحن للقاهرة والجيزة"
   },
   wishlist: {
     title: "قائمة المفضلة",
+    eyebrow: "كل ما تحبينه",
     empty: "لم تضف أي منتج بعد.",
     loginRequired: "تحتاج إلى حساب لاستخدام المفضلة",
     loginRequiredDesc: "أنشئ حسابًا مجانيًا أو سجل دخولك لحفظ المنتجات في المفضلة.",
@@ -133,7 +146,8 @@ export const ar = {
     items: "العناصر",
     viewDetails: "عرض التفاصيل",
     backToOrders: "الرجوع إلى الطلبات",
-    startShopping: "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات."
+    startShopping: "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات.",
+    viewOrders: "عرض طلباتي"
   },
   advices: {
     title: "نصائح كابيلا",
@@ -158,6 +172,8 @@ export const ar = {
     cod: "الدفع عند الاستلام",
     codDesc: "ادفع نقدًا عند وصول طلبك.",
     review: "راجع طلبك",
+    reviewEyebrow: "المراجعة",
+    eyebrow: "آخر خطوة",
     placeOrder: "تأكيد الطلب",
     egPhoneInvalid: "أدخل رقم هاتف مصري صحيح.",
     required: "مطلوب"
@@ -197,7 +213,10 @@ export const ar = {
     noAccount: "جديد على كابيلا؟",
     haveAccount: "لديك حساب بالفعل؟",
     signupHere: "إنشاء حساب",
-    loginHere: "تسجيل الدخول"
+    loginHere: "تسجيل الدخول",
+    genericError: "حدث خطأ، حاولي مرة أخرى.",
+    loginSubtitle: "أهلاً بعودتك. سجّلي الدخول لمتابعة رحلتك مع كابيلا.",
+    signupSubtitle: "خطوة واحدة ويبدأ روتينك مع كابيلا."
   },
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
   badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },

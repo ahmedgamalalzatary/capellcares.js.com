@@ -8,7 +8,7 @@ export default async function WishlistPage({ params }: { params: Promise<{ lang:
   return (
     <StorefrontPageShell
       breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.wishlist.title }]}
-      eyebrow={lang === "ar" ? "كل ما تحبينه" : "Saved for later"}
+      eyebrow={dict.wishlist.eyebrow}
       title={dict.wishlist.title}
     >
       <WishlistView lang={lang} dict={dict} />

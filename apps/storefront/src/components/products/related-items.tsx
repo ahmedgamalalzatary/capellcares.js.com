@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
+import { formatPrice, getDict, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -16,13 +16,14 @@ function hrefFor(item: RelatedItemCard, lang: Language): string {
 }
 
 function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
+  const dict = getDict(lang);
   if (item.type === "offer") {
-    return lang === "ar" ? "عرض" : "Offer";
+    return dict.itemType.offer;
   }
   if (item.type === "collection") {
-    return lang === "ar" ? "مجموعة" : "Collection";
+    return dict.itemType.collection;
   }
-  return lang === "ar" ? "منتج" : "Product";
+  return dict.itemType.product;
 }
 
 export function RelatedItems({ items, lang, title }: Props) {

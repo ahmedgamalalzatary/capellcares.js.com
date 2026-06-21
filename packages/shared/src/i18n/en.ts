@@ -17,7 +17,7 @@ export const en = {
     logout: "Log out",
     search: "Search products",
     categories: "Categories",
-    allCategories: "All categories",
+    allCategories: "All Categories",
     announcement: "Free Cairo delivery on orders over EGP 600 · Cash on delivery",
     announcements: [
       "Free Cairo delivery on orders over EGP 600",
@@ -70,7 +70,14 @@ export const en = {
     cancel: "Cancel",
     confirm: "Confirm",
     yes: "Yes",
-    no: "No"
+    no: "No",
+    added: "Added",
+    currency: "EGP"
+  },
+  itemType: {
+    product: "Product",
+    offer: "Offer",
+    collection: "Collection"
   },
   product: {
     description: "Description",
@@ -109,10 +116,16 @@ export const en = {
     remove: "Remove",
     item: "Item",
     price: "Price",
-    qty: "Qty"
+    qty: "Qty",
+    eyebrow: "One step from checkout",
+    emptyTagline: "Pick one calm, considered piece. Let it do the work.",
+    summaryEyebrow: "Summary",
+    summaryTitle: "Your order",
+    codNote: "Cash on delivery · Cairo & Giza shipping"
   },
   wishlist: {
     title: "Your wishlist",
+    eyebrow: "Saved for later",
     empty: "You haven't saved anything yet.",
     loginRequired: "Wishlist requires an account",
     loginRequiredDesc: "Create a free account or log in to save products to your wishlist.",
@@ -133,7 +146,8 @@ export const en = {
     items: "Items",
     viewDetails: "View details",
     backToOrders: "Back to orders",
-    startShopping: "Start shopping and your orders will appear here."
+    startShopping: "Start shopping and your orders will appear here.",
+    viewOrders: "View my orders"
   },
   advices: {
     title: "Capella Advices",
@@ -158,6 +172,8 @@ export const en = {
     cod: "Cash on Delivery",
     codDesc: "Pay in cash when your order arrives.",
     review: "Review your order",
+    reviewEyebrow: "Review",
+    eyebrow: "Almost there",
     placeOrder: "Place order",
     egPhoneInvalid: "Enter a valid Egyptian phone number.",
     required: "Required"
@@ -197,7 +213,10 @@ export const en = {
     noAccount: "New to Capella?",
     haveAccount: "Already have an account?",
     signupHere: "Sign up",
-    loginHere: "Log in"
+    loginHere: "Log in",
+    genericError: "Something went wrong. Please try again.",
+    loginSubtitle: "Welcome back. Sign in to pick up where you left off.",
+    signupSubtitle: "One quick step before your Capella routine begins."
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
   badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },

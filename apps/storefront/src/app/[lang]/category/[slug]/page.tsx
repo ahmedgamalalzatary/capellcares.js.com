@@ -100,7 +100,6 @@ export default async function CategoryPage({
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow">{path.map((c) => pickLang(c.name, lang)).join(" · ")}</span>
         <h1>{pickLang(category.name, lang)}</h1>
       </header>
       <CategoryPageContent

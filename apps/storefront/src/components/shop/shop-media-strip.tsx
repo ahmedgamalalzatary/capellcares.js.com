@@ -340,7 +340,7 @@ export function ShopMediaStrip({
         section={section}
         label={label}
         viewport="desktop"
-        className="mb-16 hidden sm:block"
+        className="mb-12 hidden sm:block"
         flatTop={flatTop}
       />
       <ShopMediaViewportStrip
@@ -348,7 +348,7 @@ export function ShopMediaStrip({
         section={section}
         label={label}
         viewport="mobile"
-        className="mb-16 sm:hidden"
+        className="mb-12 sm:hidden"
         flatTop={flatTop}
       />
     </>

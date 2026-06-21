@@ -25,7 +25,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         </h2>
         <p className="max-w-[40ch] text-sm leading-[1.7] text-(--ink-2)">{dict.common.orderPlacedDesc}</p>
         <div className="mt-2 grid gap-1">
-          <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "رقم الطلب" : "Order code"}</span>
+          <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
           <div className={`rounded-(--radius) bg-(--warm-soft) px-7 py-3 tracking-[0.08em] text-ink ${lang === "ar"
             ? "text-2xl font-bold font-(family-name:--font-ar)"
             : "text-3xl font-(--font-display)"}`}>
@@ -34,7 +34,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href={`/${lang}/orders`} className="btn btn--ghost">
-            {lang === "ar" ? "عرض طلباتي" : "View my orders"}
+            {dict.orders.viewOrders}
           </Link>
           <Link href={`/${lang}/products`} className="btn btn--primary">
             {dict.cart.keepShopping}

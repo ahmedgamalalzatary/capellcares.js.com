@@ -26,11 +26,11 @@ export function SectionCard(props: SectionCardProps) {
   const subClass = `m-0 line-clamp-1 text-(--ink-3) ${
     isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
   }`;
-  const priceClass = `font-bold leading-none text-accent font-(family-name:--font-ar) ${isAr ? "text-base" : "text-lg"}`;
+  const priceClass = `font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`;
   const viewClass =
     "inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
   const addClass =
-    "inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
+    "inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 
   // Per-kind derivations — the card knows which one it is rendering.
   let href: string | null = null;

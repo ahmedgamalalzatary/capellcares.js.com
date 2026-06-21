@@ -1,6 +1,6 @@
 "use client";
 
-import type { Language } from "@capella/shared";
+import { getDict, type Language } from "@capella/shared";
 
 export function PriceInput({
   value,
@@ -13,6 +13,7 @@ export function PriceInput({
   placeholder: string;
   lang: Language;
 }) {
+  const dict = getDict(lang);
   return (
     <div
       style={{
@@ -36,7 +37,7 @@ export function PriceInput({
           userSelect: "none"
         }}
       >
-        {lang === "ar" ? "ج.م" : "EGP"}
+        {dict.common.currency}
       </span>
       <input
         type="number"

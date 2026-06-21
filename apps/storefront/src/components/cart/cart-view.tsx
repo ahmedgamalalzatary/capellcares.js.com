@@ -90,13 +90,13 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           key,
           type: "collection" as const,
           title: pickLang(collection.name, lang),
-          meta: lang === "ar" ? "مجموعة" : "Collection",
+          meta: dict.itemType.collection,
           unitPrice: collection.price,
           qty: l.qty,
           slug: `/${lang}/collections/${collection.slug}`,
           illustration: (
             <div className="grid h-full w-full place-items-center text-xs font-semibold text-(--ink-2)">
-              {lang === "ar" ? "مجموعة" : "Collection"}
+              {dict.itemType.collection}
             </div>
           )
         };
@@ -132,7 +132,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           {dict.cart.empty}
         </h1>
         <p className="max-w-[34ch] text-sm leading-[1.7] text-(--ink-2)">
-          {lang === "ar" ? "ابدئي رحلتك مع كابيلا اليوم. اختاري قطعةً واحدة وستفعل عجائب." : "Pick one calm, considered piece. Let it do the work."}
+          {dict.cart.emptyTagline}
         </p>
         <Link href={`/${lang}/products`} className="btn btn--primary btn--lg mt-2">
           {dict.cart.keepShopping}
@@ -203,11 +203,11 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
       </div>
 
       <aside className="self-start rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
-        <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "الفاتورة" : "Summary"}</span>
+        <span className="eyebrow text-(--ink-3)!">{dict.cart.summaryEyebrow}</span>
         <div className={`mt-1 ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
           : "text-2xl font-(--font-display) text-ink"}`}>
-          {lang === "ar" ? "ملخّص الطلب" : "Your order"}
+          {dict.cart.summaryTitle}
         </div>
         <div className="my-5 h-px bg-(--hairline)" />
         <div className="flex items-center justify-between py-1.5 text-sm">
@@ -235,7 +235,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         </Link>
         <div className="mt-5 flex items-center gap-2 text-xs text-(--ink-3)">
           <Icon.Check size={14} />
-          <span>{lang === "ar" ? "الدفع عند الاستلام · شحن للقاهرة والجيزة" : "Cash on delivery · Cairo & Giza shipping"}</span>
+          <span>{dict.cart.codNote}</span>
         </div>
       </aside>
     </div>

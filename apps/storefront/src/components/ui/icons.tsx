@@ -1,35 +1,17 @@
 import type { CSSProperties } from "react";
 
 type IconProps = { size?: number; className?: string; style?: CSSProperties };
-type CartIconProps = IconProps & { count?: number };
 
 const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 export const Icon = {
-  // Cart with the item count rendered inside the basket (as in the design),
-  // not as a separate corner badge.
-  Cart: ({ size = 20, className, style, count }: CartIconProps) => (
+  // Cart glyph only. The item count is rendered as a separate HTML corner
+  // badge by the header so it can never be clipped by the SVG viewBox.
+  Cart: ({ size = 20, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
       <path d="M2.5 4.5h2.3l2 9.8a1.7 1.7 0 0 0 1.7 1.4h8a1.7 1.7 0 0 0 1.7-1.3L21.8 6" />
       <circle cx="9" cy="20" r="1.4" />
       <circle cx="17" cy="20" r="1.4" />
-      {count != null && (
-        <>
-          <circle cx="13" cy="6" r="5.4" stroke="none" />
-          <text
-            x="13"
-            y="6.4"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="currentColor"
-            stroke="none"
-            fontSize="20"
-            fontWeight="700"
-          >
-            {count}
-          </text>
-        </>
-      )}
     </svg>
   ),
   Heart: ({ size = 20, className, style }: IconProps) => (

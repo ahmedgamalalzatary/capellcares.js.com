@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { pickLang } from "@capella/shared";
 import { ProductCard } from "../product-card";
 import { MobileFilterDrawer } from "../filters/mobile-filter-drawer";
 import { ProductGridEmptyState } from "./product-grid-empty-state";
@@ -21,6 +22,11 @@ export function ProductGrid({
   onHeaderCategoryIdsChange
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
+
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const)),
+    [categories, lang]
+  );
 
   const {
     q,
@@ -65,7 +71,7 @@ export function ProductGrid({
   };
 
   return (
-    <div className="grid gap-9 pb-20">
+    <div className="grid gap-9">
       {/* ── Product area ── */}
       <div className="min-w-0">
         <ProductGridToolbar
@@ -86,9 +92,15 @@ export function ProductGrid({
             onClear={handleClear}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[repeat(auto-fill,minmax(230px,1fr))] lg:gap-7">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4 lg:gap-7">
             {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                lang={lang}
+                dict={dict}
+                categoryName={categoryNameById.get(product.categoryId)}
+              />
             ))}
           </div>
         )}

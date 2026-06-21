@@ -12,7 +12,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ lang:
         { label: dict.cart.title, href: `/${lang}/cart` },
         { label: dict.checkout.title }
       ]}
-      eyebrow={lang === "ar" ? "آخر خطوة" : "Almost there"}
+      eyebrow={dict.checkout.eyebrow}
       title={dict.checkout.title}
     >
       <CheckoutView lang={lang} dict={dict} />

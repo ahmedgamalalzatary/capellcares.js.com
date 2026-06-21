@@ -200,7 +200,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
               <Icon.Cart size={18} />
-              {added ? (lang === "ar" ? "أُضيف" : "Added") : dict.common.addToCart}
+              {added ? dict.common.added : dict.common.addToCart}
             </button>
             <button className="btn btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}

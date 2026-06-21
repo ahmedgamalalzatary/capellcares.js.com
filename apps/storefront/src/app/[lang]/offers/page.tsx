@@ -41,11 +41,6 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
       />
       <header className="page-head">
         <h1>{dict.offers.title}</h1>
-        <p className="max-w-[62ch] text-(--ink-2)">
-          {lang === "ar"
-            ? "باقات مختارة بعناية، بسعرٍ أوفر، لروتينٍ يكتمل بقطعةٍ واحدة."
-            : "Considered rituals, bundled to make your routine simpler — and softer on the wallet."}
-        </p>
       </header>
 
       {offers.length === 0 ? (

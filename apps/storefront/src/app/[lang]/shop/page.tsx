@@ -49,9 +49,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Offers */}
       {activeOffers.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-8 flex items-end justify-between">
-            <div className="grid gap-1.5">
+        <section className="mb-12">
+          <header className="mb-6 flex items-end justify-between">
+            <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
@@ -82,9 +82,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Collections */}
       {activeCollections.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-8 flex items-end justify-between">
-            <div className="grid gap-1.5">
+        <section className="mb-12">
+          <header className="mb-6 flex items-end justify-between">
+            <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
@@ -115,9 +115,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Bestsellers */}
       {bestsellerProducts.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-8 flex items-end justify-between">
-            <div className="grid gap-1.5">
+        <section className="mb-12">
+          <header className="mb-6 flex items-end justify-between">
+            <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
@@ -148,9 +148,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* New */}
       {newProducts.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-8 flex items-end justify-between">
-            <div className="grid gap-1.5">
+        <section className="mb-12">
+          <header className="mb-6 flex items-end justify-between">
+            <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
                 : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>

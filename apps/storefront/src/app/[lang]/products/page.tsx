@@ -58,13 +58,7 @@ export default async function ProductsPage({
         ]}
       />
       <header className="page-head">
-        <span className="eyebrow">{lang === "ar" ? "مكتبة كابيلا" : "The Capella library"}</span>
-        <h1>{lang === "ar" ? "عنايةٌ تشبهكِ، بصدق." : "Care that fits your ritual."}</h1>
-        <p>
-          {lang === "ar"
-            ? "من ترطيب الجسد إلى لمسات المكياج الأخيرة، اختاري قطعةً واحدة وستفعل الكثير. مكوّناتٌ نظيفة، روائحُ هادئة، صناعةٌ مصرية."
-            : "From body balms to a final flush of color, every piece is made to do quiet, honest work. Clean ingredients, soft scents, made in Egypt."}
-        </p>
+        <h1>{dict.nav.allProducts}</h1>
       </header>
       <ProductGrid
         products={activeProducts}

@@ -39,7 +39,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       <div
       dir={isAr ? "rtl" : "ltr"}
       style={{ background: "var(--footer-bg)" }}
-      className="relative rounded-xl mt-24 mb-10 overflow-hidden pb-0 text-ink"
+      className="relative rounded-xl mt-20 mb-10 overflow-hidden pb-0 text-ink"
     >
       {/* Noise grain overlay */}
       <div
