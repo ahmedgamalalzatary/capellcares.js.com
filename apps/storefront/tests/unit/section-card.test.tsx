@@ -6,13 +6,17 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+vi.mock("@/components/providers/cart-provider", () => ({
+  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
+
 import { SectionCard } from "@/components/shop/section-card";
 
 const dict = {
   offers: { badge: "Bundle" },
   collections: { badge: "Set" },
   advices: { tipBadge: "Tip", readMore: "Read more" },
-  common: { save: "Save" }
+  common: { save: "Save", view: "View", addToCart: "Add to cart" }
 };
 
 const baseOffer = {
@@ -60,28 +64,36 @@ const baseAdvice = {
 };
 
 describe("SectionCard", () => {
-  it("renders an offer with title, savings, and a link to the offer detail page", () => {
-    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+  it("renders an offer with title, savings, and links to the offer detail page", () => {
+    const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 
     expect(screen.getByRole("heading", { name: "Rose Bundle" })).toBeInTheDocument();
     expect(screen.getByText("★ Bundle")).toBeInTheDocument(); // badge
-    expect(screen.getByText(/Save/)).toBeInTheDocument(); // savings chip (80 - 50 = 30)
-    const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", "/en/offers/rose");
+
+    // Savings are shown as the struck-through original total (80) beside the price (50).
+    const struckOriginal = container.querySelector(".line-through");
+    expect(struckOriginal).not.toBeNull();
+    expect(struckOriginal).toHaveTextContent(/80/); // original total (formatPrice 80) shown struck-through
+
+    // The card links to the detail page from the image, the heading, and the View button.
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeGreaterThan(0);
+    links.forEach((link) => expect(link).toHaveAttribute("href", "/en/offers/rose"));
   });
 
   it("renders a collection linking to the collection detail page", () => {
     render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
 
     expect(screen.getByRole("heading", { name: "Glow Set" })).toBeInTheDocument();
-    const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", "/en/collections/glow");
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeGreaterThan(0);
+    links.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/glow"));
   });
 
-  it("does not render a savings chip when there are no savings", () => {
-    render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
+  it("does not render a struck-through original price when there are no savings", () => {
+    const { container } = render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
 
-    expect(screen.queryByText(/Save/)).not.toBeInTheDocument();
+    expect(container.querySelector(".line-through")).toBeNull();
   });
 
   it("renders an advice with its title and a video link when videoUrl exists, without a price", () => {

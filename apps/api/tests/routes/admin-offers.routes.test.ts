@@ -34,7 +34,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
         name: { ar: "عرض اختبار", en: "Route Offer Test" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
-        price: 199,
+        price: 120,
         status: "active",
         visibility: "visible",
         items: [
@@ -104,6 +104,61 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
   await db.delete(offers).where(eq(offers.id, createdOffer.id));
 });
 
+serialTest("admin offer upsert rejects a price at or above the sum of its parts", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    // Bundle parts total 35 + 55 = 90; a 90 price saves the customer nothing.
+    const equalToParts = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-too-pricey-${Date.now()}`,
+        name: { ar: "عرض غالي", en: "Too Pricey Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: 90,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(equalToParts.status, 400);
+    assert.equal(equalToParts.json.reason, "price-not-below-original");
+
+    // Single-variant offer: the lone variant costs 35, so 40 is more expensive.
+    const aboveSingleVariant = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-above-single-${Date.now()}`,
+        name: { ar: "عرض متغير غالي", en: "Above Single Variant" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: 40,
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(aboveSingleVariant.status, 400);
+    assert.equal(aboveSingleVariant.json.reason, "price-not-below-original");
+  });
+
+  const leakedOffers = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(or(eq(offers.slug, "route-offer-too-pricey"), eq(offers.slug, "route-offer-above-single")));
+  assert.equal(leakedOffers.length, 0);
+});
+
 serialTest("admin offer upsert persists mirrored related links", async () => {
   const ids = await getBaselineIds();
   const slug = `route-offer-related-${Date.now()}`;
@@ -118,7 +173,7 @@ serialTest("admin offer upsert persists mirrored related links", async () => {
         name: { ar: "عرض مرتبط", en: "Related Offer" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
-        price: 199,
+        price: 30,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }],
@@ -212,7 +267,7 @@ serialTest("admin offer upsert preserves existing related links when relatedItem
         name: { ar: "عرض محدث", en: "Updated Offer" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
-        price: 199,
+        price: 30,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }]

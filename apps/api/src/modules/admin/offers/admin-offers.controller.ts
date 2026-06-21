@@ -16,7 +16,7 @@ import {
   setRelatedLinksForSourceRepo
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
-import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../inventory/bundle-inventory.js";
+import { calculateBundleInventory, computeBundleInventoryFromMap, validateBundlePriceBelowParts } from "../../inventory/bundle-inventory.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
@@ -116,6 +116,18 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
   try {
     const incoming = req.body as any;
     const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
+    const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
+    const items = (incoming.items ?? []).map((item: any) => ({
+      id: item.id ? Number(item.id) : undefined,
+      variantId: Number(item.variantId),
+      qty: Number(item.qty)
+    }));
+
+    const priceError = await validateBundlePriceBelowParts(fixedPrice, items);
+    if (priceError) {
+      return res.status(400).json({ ok: false, reason: priceError });
+    }
+
     const { id: offerId } = await upsertOfferRepo({
       id: incoming.id,
       slug,
@@ -124,14 +136,10 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       imagePath: incoming.imagePath ?? null,
-      fixedPrice: Number(incoming.price ?? incoming.fixedPrice ?? 0),
+      fixedPrice,
       status: incoming.status ?? "inactive",
       visibility: incoming.visibility ?? "visible",
-      items: (incoming.items ?? []).map((item: any) => ({
-        id: item.id ? Number(item.id) : undefined,
-        variantId: Number(item.variantId),
-        qty: Number(item.qty)
-      }))
+      items
     });
     if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
       const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(

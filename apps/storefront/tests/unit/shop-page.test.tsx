@@ -6,6 +6,10 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+vi.mock("@/components/providers/cart-provider", () => ({
+  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
+
 vi.mock("@capella/shared", async () => {
   const actual = await vi.importActual<any>("@capella/shared");
   return {
@@ -237,7 +241,10 @@ describe("shop page", () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     expect(screen.getByRole("heading", { name: "Collections" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Skin Care Set/i })).toBeInTheDocument();
+    // The collection card links to its detail page from both the image and the heading.
+    const collectionLinks = screen.getAllByRole("link", { name: /Skin Care Set/i });
+    expect(collectionLinks.length).toBeGreaterThan(0);
+    collectionLinks.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/skin-care-set"));
     expect(screen.getByRole("link", { name: "All collections" })).toBeInTheDocument();
   });
 

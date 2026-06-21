@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offers, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, offers, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -59,6 +59,66 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
   assert.equal(order?.paymentStatus, "pending");
   assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
+});
+
+test("createOrderFromCheckout charges the single-variant active offer price for a product line", async () => {
+  const ids = await getBaselineIds();
+
+  // A single-variant active offer on the first variant (normal price 35) at 25.
+  const [createdOffer] = await db
+    .insert(offers)
+    .values({
+      slug: `checkout-single-variant-${Date.now()}`,
+      arName: "عرض متغير واحد",
+      enName: "Single Variant Offer",
+      imagePath: "/uploads/single-variant-offer.png",
+      fixedPrice: "25.00",
+      status: "active",
+      visibility: "visible"
+    })
+    .$returningId();
+  await db.insert(offerItems).values({ offerId: createdOffer.id, variantId: ids.firstVariantId, qty: 1 });
+
+  const result = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
+  });
+
+  const [line] = await db
+    .select({ unitPrice: orderItems.unitPrice, lineTotal: orderItems.lineTotal })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, result.id))
+    .limit(1);
+  const [order] = await db
+    .select({ totalAmount: orders.totalAmount })
+    .from(orders)
+    .where(eq(orders.id, result.id))
+    .limit(1);
+
+  assert.equal(Number(line?.unitPrice), 25);
+  assert.equal(Number(line?.lineTotal), 50);
+  assert.equal(Number(order?.totalAmount), 50);
+
+  await db.delete(offerItems).where(eq(offerItems.offerId, createdOffer.id));
+  await db.delete(offers).where(eq(offers.id, createdOffer.id));
+});
+
+test("createOrderFromCheckout charges the normal variant price when no single-variant offer applies", async () => {
+  const ids = await getBaselineIds();
+
+  // The baseline offer is a two-item bundle, so the product line must keep price 35.
+  const result = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+  });
+
+  const [line] = await db
+    .select({ unitPrice: orderItems.unitPrice })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, result.id))
+    .limit(1);
+
+  assert.equal(Number(line?.unitPrice), 35);
 });
 
 test("createOrderFromCheckout rejects a variant whose product is inactive", async () => {

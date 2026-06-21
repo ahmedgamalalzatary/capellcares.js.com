@@ -52,17 +52,39 @@ async function loadActiveOfferData(productIds: number[]) {
       )
     );
 
-  const offersById = new Map<number, { status: "active" | "inactive"; fixedPrice: unknown; items: Array<{ variantId: number; qty: number }> }>();
   const offerIdsByProductId = new Map<number, Set<number>>();
 
   for (const row of rows) {
-    const offer = offersById.get(row.offerId) ?? { status: row.status, fixedPrice: row.fixedPrice, items: [] };
-    offer.items.push({ variantId: row.variantId, qty: row.qty });
-    offersById.set(row.offerId, offer);
-
     const productOfferIds = offerIdsByProductId.get(row.productId) ?? new Set<number>();
     productOfferIds.add(row.offerId);
     offerIdsByProductId.set(row.productId, productOfferIds);
+  }
+
+  // The query above is scoped to the requested products (and excludes soft-deleted
+  // variants), so its rows are NOT a reliable count of an offer's membership: a real
+  // bundle can look like a single item once filtered. Re-load the candidate offers'
+  // FULL item sets so single-variant detection sees each offer's true contents.
+  const candidateOfferIds = [...new Set(rows.map((row) => row.offerId))];
+  const offersById = new Map<number, { status: "active" | "inactive"; fixedPrice: unknown; items: Array<{ variantId: number; qty: number }> }>();
+
+  if (candidateOfferIds.length > 0) {
+    const fullItemRows = await db
+      .select({
+        offerId: offers.id,
+        status: offers.status,
+        fixedPrice: offers.fixedPrice,
+        variantId: offerItems.variantId,
+        qty: offerItems.qty
+      })
+      .from(offerItems)
+      .innerJoin(offers, eq(offerItems.offerId, offers.id))
+      .where(inArray(offerItems.offerId, candidateOfferIds));
+
+    for (const row of fullItemRows) {
+      const offer = offersById.get(row.offerId) ?? { status: row.status, fixedPrice: row.fixedPrice, items: [] };
+      offer.items.push({ variantId: row.variantId, qty: row.qty });
+      offersById.set(row.offerId, offer);
+    }
   }
 
   return {

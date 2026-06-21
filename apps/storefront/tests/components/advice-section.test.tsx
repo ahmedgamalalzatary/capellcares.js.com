@@ -1,6 +1,10 @@
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/providers/cart-provider", () => ({
+  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
 
 import { AdviceSection } from "@/components/products/advice-section";
 

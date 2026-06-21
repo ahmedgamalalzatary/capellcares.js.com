@@ -17,7 +17,7 @@ import {
   setRelatedLinksForSourceRepo
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
-import { calculateBundleInventory, computeBundleInventoryFromMap } from "../../inventory/bundle-inventory.js";
+import { calculateBundleInventory, computeBundleInventoryFromMap, validateBundlePriceBelowParts } from "../../inventory/bundle-inventory.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
@@ -172,6 +172,12 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       return res.status(400).json({ ok: false, reason: validationError });
     }
 
+    const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
+    const priceError = await validateBundlePriceBelowParts(fixedPrice, items);
+    if (priceError) {
+      return res.status(400).json({ ok: false, reason: priceError });
+    }
+
     const { id: collectionId } = await upsertCollectionRepo({
       id: incoming.id,
       slug,
@@ -180,7 +186,7 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       imagePath: incoming.imagePath ?? null,
-      fixedPrice: Number(incoming.price ?? incoming.fixedPrice ?? 0),
+      fixedPrice,
       categoryId,
       status: incoming.status ?? "inactive",
       visibility: incoming.visibility ?? "visible",

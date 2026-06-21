@@ -222,7 +222,7 @@ test("offer upsert persists product ordering inside the offer from item order", 
       body: JSON.stringify({
         slug,
         name: { ar: "عرض مرتب", en: "Ordered Offer" },
-        price: 199,
+        price: 80,
         status: "active",
         visibility: "visible",
         items: [
@@ -265,7 +265,7 @@ test("storefront offer detail returns items following the offer's product order"
       body: JSON.stringify({
         slug,
         name: { ar: "عرض", en: "Offer" },
-        price: 199,
+        price: 80,
         status: "active",
         visibility: "visible",
         items: [
@@ -286,7 +286,7 @@ test("storefront offer detail returns items following the offer's product order"
         id: createdOffer.id,
         slug,
         name: { ar: "عرض", en: "Offer" },
-        price: 199,
+        price: 80,
         status: "active",
         visibility: "visible",
         items: [
@@ -317,7 +317,7 @@ test("collection upsert persists product ordering inside the collection from ite
       body: JSON.stringify({
         slug,
         name: { ar: "مجموعة مرتبة", en: "Ordered Collection" },
-        price: 149,
+        price: 80,
         categoryId: ids.leafCategoryId,
         status: "active",
         visibility: "visible",
@@ -365,7 +365,7 @@ test("storefront collection detail returns items following the collection's prod
       body: JSON.stringify({
         slug,
         name: { ar: "مجموعة", en: "Collection" },
-        price: 149,
+        price: 80,
         categoryId: ids.leafCategoryId,
         status: "active",
         visibility: "visible",

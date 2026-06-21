@@ -40,7 +40,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
         name: { ar: "مجموعة اختبار", en: "Route Collection Test" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
-        price: 149,
+        price: 120,
         categoryId: ids.leafCategoryId,
         status: "active",
         visibility: "visible",
@@ -110,6 +110,43 @@ serialTest("admin collection upsert creates a new collection when the payload ha
   );
 });
 
+serialTest("admin collection upsert rejects a price at or above the sum of its parts", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+
+    // Parts total 35 + 55 = 90; pricing the collection at 90 saves nothing.
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-collection-too-pricey-${Date.now()}`,
+        name: { ar: "مجموعة غالية", en: "Too Pricey Collection" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-collection.png",
+        price: 90,
+        categoryId: ids.leafCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "price-not-below-original");
+  });
+
+  const leaked = await db
+    .select({ id: collections.id })
+    .from(collections)
+    .where(eq(collections.slug, "route-collection-too-pricey"));
+  assert.equal(leaked.length, 0);
+});
+
 serialTest("admin collection upsert persists mirrored related links", async () => {
   const ids = await getBaselineIds();
   const slug = `route-collection-related-${Date.now()}`;
@@ -124,7 +161,7 @@ serialTest("admin collection upsert persists mirrored related links", async () =
         name: { ar: "مجموعة مرتبطة", en: "Related Collection" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
-        price: 149,
+        price: 80,
         categoryId: ids.leafCategoryId,
         status: "active",
         visibility: "visible",
@@ -216,7 +253,7 @@ serialTest("admin collection upsert accepts variants from descendant categories 
         name: { ar: "مجموعة قسم أب", en: "Parent Category Collection" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
-        price: 149,
+        price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
@@ -296,7 +333,7 @@ serialTest("admin collection revalidation includes related product slugs for col
           name: { ar: "مجموعة ويب هوك", en: "Webhook Collection" },
           description: { ar: "وصف", en: "Description" },
           imagePath: "/uploads/test-collection.png",
-          price: 149,
+          price: 80,
           categoryId: ids.leafCategoryId,
           status: "active",
           visibility: "visible",
