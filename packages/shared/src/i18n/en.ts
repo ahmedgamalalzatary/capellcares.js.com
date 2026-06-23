@@ -154,7 +154,7 @@ export const en = {
     description: "Helpful guidance, shopping tips, and routine ideas from Capella.",
     eyebrow: "Capella Journal",
     tipBadge: "Tip",
-    readMore: "Read more →"
+    readMore: "View More →"
   },
   checkout: {
     title: "Checkout",

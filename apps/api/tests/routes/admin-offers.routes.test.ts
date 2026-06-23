@@ -106,6 +106,8 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
 
 serialTest("admin offer upsert rejects a price at or above the sum of its parts", async () => {
   const ids = await getBaselineIds();
+  const equalToPartsSlug = `route-offer-too-pricey-${Date.now()}`;
+  const aboveSingleVariantSlug = `route-offer-above-single-${Date.now()}`;
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -115,7 +117,7 @@ serialTest("admin offer upsert rejects a price at or above the sum of its parts"
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        slug: `route-offer-too-pricey-${Date.now()}`,
+        slug: equalToPartsSlug,
         name: { ar: "عرض غالي", en: "Too Pricey Offer" },
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
@@ -137,7 +139,7 @@ serialTest("admin offer upsert rejects a price at or above the sum of its parts"
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        slug: `route-offer-above-single-${Date.now()}`,
+        slug: aboveSingleVariantSlug,
         name: { ar: "عرض متغير غالي", en: "Above Single Variant" },
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
@@ -155,8 +157,33 @@ serialTest("admin offer upsert rejects a price at or above the sum of its parts"
   const leakedOffers = await db
     .select({ id: offers.id })
     .from(offers)
-    .where(or(eq(offers.slug, "route-offer-too-pricey"), eq(offers.slug, "route-offer-above-single")));
+    .where(or(eq(offers.slug, equalToPartsSlug), eq(offers.slug, aboveSingleVariantSlug)));
   assert.equal(leakedOffers.length, 0);
+});
+
+serialTest("admin offer upsert rejects non-numeric prices", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-invalid-price-${Date.now()}`,
+        name: { ar: "عرض سعر غير صالح", en: "Invalid Price Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: "not-a-number",
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-fixed-price");
+  });
 });
 
 serialTest("admin offer upsert persists mirrored related links", async () => {

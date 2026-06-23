@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
@@ -64,6 +64,21 @@ const baseAdvice = {
 };
 
 describe("SectionCard", () => {
+  it("clears its add-to-cart timeout when unmounted", () => {
+    vi.useFakeTimers();
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+
+    const { unmount } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("link", { name: "Add to cart" }));
+    unmount();
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+
+    clearTimeoutSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
   it("renders an offer with title, savings, and links to the offer detail page", () => {
     const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 

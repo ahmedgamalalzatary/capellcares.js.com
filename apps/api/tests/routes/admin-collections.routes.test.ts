@@ -112,6 +112,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
 
 serialTest("admin collection upsert rejects a price at or above the sum of its parts", async () => {
   const ids = await getBaselineIds();
+  const slug = `route-collection-too-pricey-${Date.now()}`;
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -121,7 +122,7 @@ serialTest("admin collection upsert rejects a price at or above the sum of its p
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        slug: `route-collection-too-pricey-${Date.now()}`,
+        slug,
         name: { ar: "مجموعة غالية", en: "Too Pricey Collection" },
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-collection.png",
@@ -143,8 +144,34 @@ serialTest("admin collection upsert rejects a price at or above the sum of its p
   const leaked = await db
     .select({ id: collections.id })
     .from(collections)
-    .where(eq(collections.slug, "route-collection-too-pricey"));
+    .where(eq(collections.slug, slug));
   assert.equal(leaked.length, 0);
+});
+
+serialTest("admin collection upsert rejects non-numeric prices", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-collection-invalid-price-${Date.now()}`,
+        name: { ar: "مجموعة سعر غير صالح", en: "Invalid Price Collection" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-collection.png",
+        price: "not-a-number",
+        categoryId: ids.leafCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-fixed-price");
+  });
 });
 
 serialTest("admin collection upsert persists mirrored related links", async () => {
