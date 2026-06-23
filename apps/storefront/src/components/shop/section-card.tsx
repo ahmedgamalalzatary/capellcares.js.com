@@ -49,7 +49,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(offer.name, lang);
     description = pickLang(offer.description, lang);
     badge = `★ ${dict.offers.badge}`;
-    image = <OfferIllustration offer={offer} className="h-full w-full object-cover" />;
+    image = <OfferIllustration offer={offer} className="absolute inset-0 h-full w-full object-cover" />;
     price = offer.price;
     originalTotal = offer.originalTotal;
     onAdd = (e) => {
@@ -64,7 +64,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(collection.name, lang);
     description = pickLang(collection.description, lang);
     badge = `★ ${dict.collections.badge}`;
-    image = <CollectionIllustration collection={collection} lang={lang} className="h-full w-full object-cover" />;
+    image = <CollectionIllustration collection={collection} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
     price = collection.price;
     originalTotal = collection.originalTotal;
     onAdd = (e) => {
@@ -84,7 +84,7 @@ export function SectionCard(props: SectionCardProps) {
         src={advice.imagePath}
         alt={title}
         loading="lazy"
-        className="h-full w-full object-cover transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
       />
     ) : null;
   }
@@ -104,7 +104,7 @@ export function SectionCard(props: SectionCardProps) {
         )}
 
         {badge ? (
-          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
+          <span className="pointer-events-none absolute top-0 start-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
             {badge}
           </span>
         ) : null}
