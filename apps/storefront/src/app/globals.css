@@ -518,28 +518,6 @@ html, body { overflow-x: hidden; }
   --radius-4xl: 48px;
 }
 
-/* dark mode — inverted navy palette */
-.dark {
-  --background: #061a2e;
-  --foreground: #ffffff;
-  --card: #092845;
-  --card-foreground: #ffffff;
-  --popover: #092845;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #092845;
-  --secondary: #0d365b;
-  --secondary-foreground: #ffffff;
-  --muted: #0d365b;
-  --muted-foreground: #9fb0c2;
-  --accent: var(--warm);
-  --accent-foreground: #092845;
-  --destructive: var(--error);
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: var(--warm);
-}
-
 @layer base {
   * { @apply border-border outline-ring/50; }
   body { @apply text-foreground; }

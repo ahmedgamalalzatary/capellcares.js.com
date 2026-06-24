@@ -8,9 +8,6 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { HeaderMobileDrawer } from "./header/mobile-drawer";
-import { AnnouncementBar } from "./header/announcement-bar";
-import { ShopMegaMenu } from "./header/shop-mega-menu";
-import { SearchOverlay } from "./header/search-overlay";
 import { useHeaderSearch } from "../../hooks/use-search";
 import type { HeaderProps } from "../../types/header.types";
 
@@ -69,7 +66,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           : "bg-white"
       ].join(" ")}
     >
-      <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
 
       <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 p-2 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
@@ -112,7 +108,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
             >
               <Icon.Search />
             </button>
-            <ShopMegaMenu lang={lang} dict={dict} menuEntries={menuEntries} isAr={isAr} />
           </div>
         </div>
 
@@ -163,9 +158,6 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           </div>
         </div>
       </div>
-
-      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
-
       <HeaderMobileDrawer
         lang={lang}
         dict={dict}
