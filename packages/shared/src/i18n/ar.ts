@@ -225,9 +225,26 @@ export const ar = {
     viewAllCollections: "كل المجموعات ←",
     newAndBestsellers: "الأحدث والأكثر مبيعًا",
     featuredHeading: "منتجات مميزة",
-    viewAllProducts: "كل المنتجات ←"
+    viewAllProducts: "كل المنتجات ←",
+    shopByCategoryTop: "تسوّقي حسب",
+    shopByCategoryBottom: "الفئة",
+    newArrivalsTop: "وصل",
+    newArrivalsBottom: "حديثًا",
+    bestSellersTop: "الأكثر",
+    bestSellersBottom: "مبيعًا",
+    inspirationTop: "بعض",
+    inspirationBottom: "الإلهام",
+    inspirationDesc: "قطع مختارة بعناية يعود إليها مجتمعنا دائمًا.",
+    shopCategory: "تسوّقي {name}"
   },
   footer: {
+    aboutTitle: "عن كابيلا",
+    aboutBody:
+      "تبدأ عنايتنا اليومية بلحظة صدق مع أنفسنا. تحتفي كابيلا بحرية الشعور بالرضا عن نفسكِ — راحة وشخصية وثقة في كل لحظة عناية من الرأس إلى القدم.",
+    usefulLinks: "روابط مفيدة",
+    policiesTitle: "السياسات",
+    joinList: "انضمي إلى قائمة كابيلا للوصول المبكر إلى المنتجات الجديدة والعروض الحصرية.",
+    craftedBy: "من إبداع",
     luxuryTagline: "عناية فاخرة — صُنع في مصر",
     ourPhilosophy: "فلسفتنا",
     philosophy: "كل قطرة تحكي قصة الطبيعة، وكل عناية تبدأ بلحظة صدق مع نفسكِ.",

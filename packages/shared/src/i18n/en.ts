@@ -225,9 +225,26 @@ export const en = {
     viewAllCollections: "View all →",
     newAndBestsellers: "New & Bestsellers",
     featuredHeading: "Featured products",
-    viewAllProducts: "View all →"
+    viewAllProducts: "View all →",
+    shopByCategoryTop: "Shop by",
+    shopByCategoryBottom: "Category",
+    newArrivalsTop: "New",
+    newArrivalsBottom: "Arrivals",
+    bestSellersTop: "Best",
+    bestSellersBottom: "Sellers",
+    inspirationTop: "Some",
+    inspirationBottom: "Inspiration",
+    inspirationDesc: "Hand-picked pieces our community keeps coming back to.",
+    shopCategory: "Shop {name}"
   },
   footer: {
+    aboutTitle: "About Capella",
+    aboutBody:
+      "Our daily care begins with an honest moment with ourselves. Capella celebrates the freedom to feel good in your own skin — comfort, character, and confidence in every ritual, head to toe.",
+    usefulLinks: "Useful Links",
+    policiesTitle: "Policies",
+    joinList: "Join the Capella list for early access to new drops & exclusive offers.",
+    craftedBy: "crafted by",
     luxuryTagline: "Luxury Care — Est. Egypt",
     ourPhilosophy: "Our Philosophy",
     philosophy: "Every drop tells nature's story. Every ritual begins with an honest moment with yourself.",

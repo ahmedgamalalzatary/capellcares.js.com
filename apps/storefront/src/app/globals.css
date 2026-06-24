@@ -437,6 +437,9 @@ body {
 .stack--lg { gap: 24px; }
 .pill-group { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 
+/* ZEE category tiles — lift on hover, mirrors the product card motion. */
+.cat-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+
 .skel {
   background: linear-gradient(90deg, var(--surface-2) 0%, #eef1f5 50%, var(--surface-2) 100%);
   background-size: 200% 100%;

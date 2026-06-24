@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/providers/cart-provider";
 import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
@@ -60,6 +61,7 @@ export default async function LocaleLayout({
               <Header lang={lang} dict={dict} menuEntries={menuEntries} />
             </Suspense>
             <div>{children}</div>
+            <Footer lang={lang} dict={dict} />
             <AskCapellaButton lang={lang} />
           </div>
         </CartProvider>
