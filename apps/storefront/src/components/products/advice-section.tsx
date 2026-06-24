@@ -11,7 +11,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
         <span className="eyebrow text-accent!">{dict.advices.eyebrow}</span>
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-          : "m-0 text-[clamp(28px,2.8vw,40px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+          : "m-0 text-[clamp(28px,2.8vw,40px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
           {dict.advices.title}
         </h2>
         <p className="max-w-[58ch] text-base leading-[1.7] text-(--ink-2)">{dict.advices.description}</p>
@@ -40,7 +40,7 @@ export function AdviceSection({ advices, lang, dict }: { advices: Advice[]; lang
             <div className="grid gap-3 p-5 sm:p-6">
               <h3 className={`m-0 leading-[1.2] ${isAr
                 ? "text-xl font-bold font-(family-name:--font-ar) text-ink"
-                : "text-2xl italic font-(--font-display) text-ink"}`}>
+                : "text-2xl font-(--font-display) text-ink"}`}>
                 {pickLang(advice.title, lang)}
               </h3>
               <p className="line-clamp-3 text-sm leading-[1.65] text-(--ink-2)">

@@ -75,7 +75,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
                 <div className="grid gap-3 p-5 sm:p-6">
                   <h2 className={`m-0 leading-[1.15] ${isAr
                     ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-                    : "text-2xl italic font-(--font-display) text-ink"}`}>
+                    : "text-2xl font-(--font-display) text-ink"}`}>
                     {pickLang(collection.name, lang)}
                   </h2>
                   <p className="line-clamp-2 text-sm leading-[1.65] text-(--ink-2)">
@@ -84,7 +84,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
                   <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
                     <span className={`leading-none text-accent ${isAr
                       ? "text-2xl font-bold font-(family-name:--font-ar)"
-                      : "text-2xl italic font-(--font-display)"}`}>
+                      : "text-2xl font-(--font-display)"}`}>
                       {formatPrice(collection.price, lang)}
                     </span>
                     {savings > 0 && (

@@ -5,29 +5,48 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Care — Parchment palette, OKLCH everywhere.
-   Canvas #f1f0ed · Ink black · Surface white
-   All tones are degrees between these three anchors.
+   ZEE — replicated design system.
+   Navy #092845 (brand) · Gold #f5c542 (promo) · White surfaces.
+   Display: BallPill (rounded) · Body: Neue Montreal.
+   Variable + class names are kept identical to the previous
+   Capella system so every existing component re-skins in place.
    ============================================================ */
+
+/* ---- ZEE self-hosted fonts (downloaded from the live site) ---- */
+@font-face {
+  font-family: "BallPill";
+  src: url("/fonts/BallPill-regular-1.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "NeueMontreal";
+  src: url("/fonts/NeueMontreal-Medium.woff") format("woff");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  /* Source palette: #f1f0ed (canvas) · black (ink) · white (surface) */
-  --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
-  --ink-2:        oklch(0.28 0.012 85);      /* body copy */
-  --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
-  --accent:       oklch(0.32 0.018 85);      /* dark interactive — buttons, links */
-  --accent-deep:  oklch(0.18 0.012 85);      /* pressed state */
-  --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
-  --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
-  --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
-  --canvas:       oklch(0.955 0.004 90);     /* #f1f0ed — primary background */
-  --surface:      oklch(1 0 0);              /* white — card background */
-  --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
-  --text:         oklch(0.12 0.010 85);      /* body copy */
-  --hairline:     oklch(0.78 0.028 90);      /* border */
-  --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
-  --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
-  --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
-  --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
+  /* ---- Ink scale → ZEE navy + neutral grays ---- */
+  --ink:          #092845;   /* brand navy — headings, header, strong text */
+  --ink-2:        #3f4b58;   /* body copy */
+  --ink-3:        #767676;   /* meta / secondary labels (ZEE body gray) */
+  --accent:       #092845;   /* primary interactive — buttons, links, prices */
+  --accent-deep:  #061a2e;   /* pressed state — darker navy */
+  --accent-soft:  #eaf0f6;   /* hover tint — pale navy */
+  --warm:         #f5c542;   /* ZEE promo gold */
+  --warm-soft:    #f5f6f8;   /* near-white gray — chip / soft bg */
+  --canvas:       #ffffff;   /* page background (ZEE is white) */
+  --surface:      #ffffff;   /* card background */
+  --surface-2:    #f7f8fa;   /* nested card / inset / image ground */
+  --text:         #1a1a1a;   /* default text */
+  --hairline:     #e5e7eb;   /* border */
+  --hairline-strong: #d2d7dd;/* strong border */
+  --error:        #dc2626;   /* ZEE sale red */
+  --success:      #16a34a;   /* ZEE "NEW" green */
+  --footer-bg:    #092845;   /* navy footer */
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
@@ -37,19 +56,21 @@
   --gold:         var(--warm);
   --danger:       var(--error);
 
-  --radius-sm: 6px;
-  --radius:    10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* ZEE radii — gentle on cards, full pills on chips/buttons. */
+  --radius-sm: 5px;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
-  --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
+  --shadow-1: 0 1px 2px rgba(9, 40, 69, 0.06), 0 6px 16px rgba(9, 40, 69, 0.08);
+  --shadow-2: 0 12px 32px rgba(9, 40, 69, 0.14);
 
-  --font-display:   "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
-  --font-sans: "Cormorant Garamond", "Playfair Display", "Times New Roman", serif;
+  /* ZEE typefaces. */
+  --font-display:   "BallPill", "Fredoka", "Baloo 2", system-ui, sans-serif;
+  --font-sans:      "NeueMontreal", "Manrope", "Helvetica Neue", Arial, sans-serif;
   --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-rounded:   "Lobster", "Pacifico", "Brush Script MT", cursive;
+  --font-rounded:   "BallPill", "Fredoka", "Baloo 2", cursive;
 
   --container: 1600px;
 
@@ -66,28 +87,28 @@
   --popover:            var(--surface);
   --popover-foreground: var(--text);
   --primary:            var(--ink);
-  --primary-foreground: var(--canvas);
+  --primary-foreground: #ffffff;
   --secondary:          var(--warm-soft);
   --secondary-foreground: var(--ink);
-  --muted:              var(--surface);
+  --muted:              var(--surface-2);
   --muted-foreground:   var(--ink-3);
-  --accent-foreground:  var(--canvas);
+  --accent-foreground:  #ffffff;
   --destructive:        var(--error);
   --border:             var(--hairline);
   --input:              var(--hairline);
   --ring:               var(--accent);
-  --chart-1: oklch(0.32 0.018 85);
-  --chart-2: oklch(0.48 0.015 85);
-  --chart-3: oklch(0.62 0.020 90);
-  --chart-4: oklch(0.75 0.025 90);
-  --chart-5: oklch(0.955 0.004 90);
+  --chart-1: #092845;
+  --chart-2: #2f5a86;
+  --chart-3: #6c9ad1;
+  --chart-4: #f5c542;
+  --chart-5: #e5e7eb;
   --sidebar: var(--ink);
-  --sidebar-foreground: var(--canvas);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--canvas);
-  --sidebar-accent: oklch(0.22 0.012 85);
-  --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border: oklch(0.22 0.012 85);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: var(--warm);
+  --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: #0d365b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #0d365b;
   --sidebar-ring: var(--warm);
 }
 
@@ -100,11 +121,11 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 .shell[lang="ar"] { font-family: var(--font-ar); }
 
-::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
+::selection { background: rgba(9, 40, 69, 0.16); color: var(--ink); }
 
 /* Element resets live in @layer base so Tailwind utilities (e.g. hover:underline)
    can override them — unlayered rules otherwise win over layered utilities in v4. */
@@ -123,19 +144,19 @@ body {
   .shell[lang="ar"] .eyebrow { letter-spacing: 0.06em; }
 }
 .display {
-  font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em;
+  font-family: var(--font-display); font-weight: 400; letter-spacing: 0;
 }
 .shell[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
 .muted { color: var(--ink-2); }
 
-/* Oversized cursive footer wordmark (Lobster). */
+/* Oversized display footer wordmark (BallPill). */
 .brand-wordmark {
   font-family: var(--font-rounded);
   font-weight: 400;
   letter-spacing: 0;
   line-height: 0.9;
   text-transform: lowercase;
-  color: #6e390b;
+  color: var(--warm);
   font-size: clamp(3.5rem, 17vw, 15rem);
 }
 .sr-only {
@@ -144,12 +165,13 @@ body {
 }
 
 /* ============================================================
-   Buttons — accent is rare; ghost & soft do most of the work.
+   Buttons — navy primary, pill-shaped to match ZEE's rounded brand.
    ============================================================ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 44px; padding: 0 22px; border-radius: var(--radius);
-  border: 1px solid transparent; background: var(--ink); color: var(--canvas);
+  height: 44px; padding: 0 24px; border-radius: var(--radius-pill);
+  border: 1px solid transparent; background: var(--ink); color: #ffffff;
+  font-family: var(--font-sans);
   font-weight: 600; letter-spacing: 0.01em;
   transition: transform var(--motion-fast) var(--ease-out-quart),
               background var(--motion-fast) var(--ease-out-quart),
@@ -162,39 +184,43 @@ body {
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
 
-.btn--primary { background: var(--accent); color: var(--canvas); }
+.btn--primary { background: var(--accent); color: #ffffff; }
 .btn--primary:hover { background: var(--accent-deep); }
 
 .btn--ghost {
   background: transparent; color: var(--ink);
   border-color: var(--hairline-strong);
 }
-.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); }
+.btn--ghost:hover { background: var(--accent-soft); border-color: var(--accent); }
 
 .btn--soft {
   background: var(--warm-soft); color: var(--ink);
 }
-.btn--soft:hover { background: var(--warm); color: var(--canvas); }
+.btn--soft:hover { background: var(--accent-soft); color: var(--ink); }
 
 .btn--outline-accent {
   background: transparent; color: var(--accent); border-color: var(--accent);
 }
-.btn--outline-accent:hover { background: var(--accent); color: var(--canvas); }
+.btn--outline-accent:hover { background: var(--accent); color: #ffffff; }
 
-.btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
-.btn--lg { height: 52px; padding: 0 26px; font-size: 15px; }
+/* Gold call-to-action — ZEE's promo button. */
+.btn--gold { background: var(--warm); color: var(--ink); }
+.btn--gold:hover { background: #e9b62e; }
+
+.btn--sm { height: 36px; padding: 0 16px; font-size: 13px; }
+.btn--lg { height: 52px; padding: 0 28px; font-size: 15px; }
 .btn--block { width: 100%; }
 
 /* ============================================================
-   Fields — cream surface, warm hairline, accent focus ring.
+   Fields — white surface, soft hairline, navy focus ring.
    ============================================================ */
 .field { display: grid; gap: 6px; }
 .field > label { font-size: 12px; color: var(--ink-2); font-weight: 600; letter-spacing: 0.02em; }
 .input, .select, .textarea {
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 10px 14px; min-height: 44px;
+  border-radius: var(--radius-pill);
+  padding: 10px 18px; min-height: 44px;
   outline: none;
   transition: border var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart),
@@ -202,13 +228,14 @@ body {
   font-size: 14px;
   color: var(--text);
 }
+.textarea { border-radius: var(--radius-lg); }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
 .textarea { min-height: 96px; padding-top: 12px; resize: vertical; }
 .input:hover, .select:hover, .textarea:hover { border-color: var(--hairline-strong); }
 .input:focus, .select:focus, .textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px oklch(0.32 0.018 85 / 0.14);
-  background: var(--surface-2);
+  box-shadow: 0 0 0 4px rgba(9, 40, 69, 0.12);
+  background: var(--surface);
 }
 .field-error { color: var(--error); font-size: 12px; font-weight: 500; }
 
@@ -227,31 +254,31 @@ body {
    ============================================================ */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 30px; padding: 0 14px; border-radius: var(--radius-pill);
-  background: var(--warm-soft); color: var(--ink);
-  font-size: 12px; font-weight: 500;
-  border: 1px solid transparent;
+  height: 36px; padding: 0 18px; border-radius: var(--radius-pill);
+  background: var(--surface); color: var(--ink);
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--hairline);
   transition: background var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast);
 }
-.chip:hover { background: var(--warm); color: var(--canvas); }
-.chip--active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
-.chip--accent { background: var(--accent); color: var(--canvas); }
-.chip--gold   { background: var(--warm); color: var(--ink); }
-.chip--sage   { background: oklch(0.86 0.04 130); color: oklch(0.32 0.06 130); }
+.chip:hover { background: var(--accent-soft); color: var(--ink); border-color: var(--accent); }
+.chip--active { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.chip--accent { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.chip--gold   { background: var(--warm); color: var(--ink); border-color: var(--warm); }
+.chip--sage   { background: #e7f4ec; color: var(--success); border-color: transparent; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-  padding: 5px 9px; border-radius: 4px; font-weight: 700;
-  background: var(--ink); color: var(--canvas);
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: var(--radius-pill); font-weight: 700;
+  background: var(--ink); color: #ffffff;
 }
 .shell[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
 @media (max-width: 640px) {
-  .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
+  .badge { letter-spacing: 0.08em; font-size: 9.5px; padding: 4px 8px; }
 }
-.badge--offer { background: var(--accent); }
-.badge--new   { background: var(--warm); color: var(--ink); }
-.badge--gold  { background: var(--ink); color: var(--warm); }
+.badge--offer { background: var(--error); }
+.badge--new   { background: var(--success); color: #ffffff; }
+.badge--gold  { background: var(--warm); color: var(--ink); }
 
 /* ============================================================
    Divider
@@ -269,7 +296,7 @@ body {
 }
 
 /* ============================================================
-   Product card — corner ribbons, no AI-slop card.
+   Product card — clean white ZEE card, light image ground.
    ============================================================ */
 .pcard {
   position: relative; display: flex; flex-direction: column;
@@ -284,22 +311,21 @@ body {
 .pcard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-2);
-  border-color: var(--warm);
+  border-color: var(--hairline-strong);
 }
 .pcard__img {
   aspect-ratio: 4/5;
-  background:
-    radial-gradient(140% 100% at 50% 0%, oklch(0.96 0.05 80), oklch(0.92 0.05 75));
+  background: var(--surface-2);
   display: grid; place-items: center; overflow: hidden;
   position: relative;
 }
 .pcard__img::after {
   content: "";
   position: absolute; inset: auto 0 0 0; height: 40%;
-  background: linear-gradient(to top, oklch(0.422 0.149 41 / 0.05), transparent);
+  background: linear-gradient(to top, rgba(9, 40, 69, 0.03), transparent);
   pointer-events: none;
 }
-.pcard__img img, .pcard__img svg { width: 72%; height: 72%; object-fit: contain; }
+.pcard__img img, .pcard__img svg { width: 82%; height: 82%; object-fit: contain; }
 .pcard__body {
   padding: 16px 18px 20px;
   display: grid; gap: 8px;
@@ -309,13 +335,16 @@ body {
   font-size: 14px; line-height: 1.35;
   min-height: 38px;
   color: var(--ink);
-  font-weight: 500;
-}
-.pcard__price {
-  font-family: var(--font-display);
   font-weight: 600;
-  font-size: 20px;
-  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shell[lang="ar"] .pcard__name { text-transform: none; letter-spacing: 0; }
+.pcard__price {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
   letter-spacing: 0.01em;
 }
 .shell[lang="ar"] .pcard__price { font-family: var(--font-ar); font-weight: 700; }
@@ -326,16 +355,16 @@ body {
 .pcard__wish {
   position: absolute; top: 14px; inset-inline-end: 14px;
   width: 38px; height: 38px; border-radius: 50%;
-  background: var(--canvas); border: 1px solid var(--hairline);
+  background: #ffffff; border: 1px solid var(--hairline);
   color: var(--ink);
   display: grid; place-items: center;
   transition: background var(--motion-fast), color var(--motion-fast),
               border-color var(--motion-fast), transform var(--motion-fast);
   z-index: 2;
 }
-.pcard__wish:hover { background: var(--warm-soft); transform: scale(1.05); }
+.pcard__wish:hover { background: var(--accent-soft); transform: scale(1.05); }
 .pcard__wish[data-active="true"] {
-  background: var(--accent); color: var(--canvas); border-color: var(--accent);
+  background: var(--error); color: #ffffff; border-color: var(--error);
 }
 
 /* ============================================================
@@ -346,16 +375,16 @@ body {
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 500;
-  font-size: clamp(30px, 5.2vw, 64px);
-  letter-spacing: -0.018em;
-  line-height: 1.02;
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(32px, 5.4vw, 68px);
+  letter-spacing: 0;
+  line-height: 1.05;
   color: var(--ink);
   max-width: 22ch;
 }
 .shell[lang="ar"] .page-head h1 {
-  font-family: var(--font-ar); font-weight: 700; font-style: normal;
+  font-family: var(--font-ar); font-weight: 700;
   letter-spacing: -0.005em; line-height: 1.2;
 }
 .page-head p { color: var(--ink-2); font-size: 16px; line-height: 1.7; max-width: 62ch; }
@@ -385,14 +414,14 @@ body {
   color: var(--text);
 }
 .table th {
-  background: var(--warm-soft);
-  color: var(--ink); font-weight: 600;
+  background: var(--surface-2);
+  color: var(--ink); font-weight: 700;
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
 }
 .shell[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background var(--motion-fast); }
-.table tbody tr:hover { background: oklch(0.96 0.04 80 / 0.6); }
+.table tbody tr:hover { background: var(--surface-2); }
 
 @media (max-width: 640px) {
   .table th, .table td { padding: 12px 12px; font-size: 13px; }
@@ -409,7 +438,7 @@ body {
 .pill-group { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 
 .skel {
-  background: linear-gradient(90deg, var(--warm-soft) 0%, oklch(0.94 0.05 80) 50%, var(--warm-soft) 100%);
+  background: linear-gradient(90deg, var(--surface-2) 0%, #eef1f5 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.2s linear infinite;
 }
@@ -480,34 +509,34 @@ html, body { overflow-x: hidden; }
   --color-canvas: var(--canvas);
   --color-warm: var(--warm);
   --color-surface: var(--surface);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
-  --radius-3xl: 40px;
-  --radius-4xl: 56px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-4xl: 48px;
 }
 
-/* dark mode — inverted parchment palette */
+/* dark mode — inverted navy palette */
 .dark {
-  --background: oklch(0.12 0.010 85);
-  --foreground: var(--canvas);
-  --card: oklch(0.18 0.012 85);
-  --card-foreground: var(--canvas);
-  --popover: oklch(0.18 0.012 85);
-  --popover-foreground: var(--canvas);
-  --primary: var(--canvas);
-  --primary-foreground: oklch(0.12 0.010 85);
-  --secondary: oklch(0.28 0.014 85);
-  --secondary-foreground: var(--canvas);
-  --muted: oklch(0.28 0.014 85);
-  --muted-foreground: oklch(0.65 0.020 90);
-  --accent: var(--accent);
-  --accent-foreground: var(--canvas);
+  --background: #061a2e;
+  --foreground: #ffffff;
+  --card: #092845;
+  --card-foreground: #ffffff;
+  --popover: #092845;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #092845;
+  --secondary: #0d365b;
+  --secondary-foreground: #ffffff;
+  --muted: #0d365b;
+  --muted-foreground: #9fb0c2;
+  --accent: var(--warm);
+  --accent-foreground: #092845;
   --destructive: var(--error);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
   --ring: var(--warm);
 }
 

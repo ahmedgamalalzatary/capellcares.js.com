@@ -19,7 +19,7 @@ function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
       </div>
       <h2 className={`m-0 leading-[1.1] ${isAr
         ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-        : "text-3xl italic font-(--font-display) text-ink"}`}>
+        : "text-3xl font-(--font-display) text-ink"}`}>
         {title}
       </h2>
       <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{desc}</p>

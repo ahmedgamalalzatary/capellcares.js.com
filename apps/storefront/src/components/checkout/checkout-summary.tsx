@@ -9,7 +9,7 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSumm
       <span className="eyebrow text-(--ink-3)!">{lang === "ar" ? "المراجعة" : "Review"}</span>
       <div className={`mt-1 ${lang === "ar"
         ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-        : "text-2xl italic font-(--font-display) text-ink"}`}>
+        : "text-2xl font-(--font-display) text-ink"}`}>
         {dict.checkout.review}
       </div>
       <div className="my-5 h-px bg-(--hairline)" />
@@ -39,7 +39,7 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSumm
         <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
         <span className={`leading-none text-accent ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar)"
-          : "text-3xl italic font-(--font-display)"}`}>
+          : "text-3xl font-(--font-display)"}`}>
           {formatPrice(subtotal, lang)}
         </span>
       </div>

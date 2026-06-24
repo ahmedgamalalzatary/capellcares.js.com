@@ -118,7 +118,7 @@ export function MobileFilterDrawer({
             <span
               style={{
                 fontFamily: isAr ? "var(--font-ar)" : "var(--font-display)",
-                fontStyle: isAr ? "normal" : "italic",
+                fontStyle: "normal",
                 fontWeight: isAr ? 700 : 400,
                 fontSize: isAr ? "20px" : "24px",
                 color: "var(--canvas)",

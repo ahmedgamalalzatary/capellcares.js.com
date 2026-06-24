@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getDict, formatPrice, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
+import { CategoryStrip } from "@/components/home/category-strip";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
@@ -23,18 +24,20 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const dict = getDict(lang);
   const isAr = lang === "ar";
 
-  const { products, offers, collections, advices } = await loadShopPageData(lang);
+  const { products, offers, collections, advices, categories } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
   const activeCollections = collections.filter(
     (collection) => collection.status === "active" && collection.visibility === "visible" && !collection.deletedAt
   );
-  const featuredProducts = products.filter(
-    (p) => p.status === "active" && !p.deletedAt && (p.isNew || p.isBestseller)
-  );
-
+  const activeProducts = products.filter((p) => p.status === "active" && !p.deletedAt);
+  const featuredProducts = activeProducts.filter((p) => p.isNew || p.isBestseller);
   return (
     <main className="container">
+
+
+      {/* Shop by Category */}
+      <CategoryStrip lang={lang} categories={categories} />
 
       {/* Offers */}
       {activeOffers.length > 0 && (
@@ -46,7 +49,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.offers.title}
               </h2>
             </div>
@@ -77,7 +80,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                   <div className="grid gap-3 p-5 sm:p-6">
                     <h3 className={`m-0 leading-[1.15] ${isAr
                       ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-                      : "text-2xl italic font-(--font-display) text-ink"}`}>
+                      : "text-2xl font-(--font-display) text-ink"}`}>
                     {pickLang(offer.name, lang)}
                     </h3>
                     <p className="line-clamp-2 text-sm leading-[1.65] text-(--ink-2)">
@@ -86,7 +89,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                     <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
                       <span className={`leading-none text-accent ${isAr
                         ? "text-2xl font-bold font-(family-name:--font-ar)"
-                        : "text-2xl italic font-(--font-display)"}`}>
+                        : "text-2xl font-(--font-display)"}`}>
                         {formatPrice(offer.price, lang)}
                       </span>
                       {savings > 0 && (
@@ -117,7 +120,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.collections.title}
               </h2>
             </div>
@@ -148,7 +151,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                   <div className="grid gap-3 p-5 sm:p-6">
                     <h3 className={`m-0 leading-[1.15] ${isAr
                       ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-                      : "text-2xl italic font-(--font-display) text-ink"}`}>
+                      : "text-2xl font-(--font-display) text-ink"}`}>
                       {pickLang(collection.name, lang)}
                     </h3>
                     <p className="line-clamp-2 text-sm leading-[1.65] text-(--ink-2)">
@@ -157,7 +160,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
                     <div className="mt-2 flex flex-wrap items-end gap-2.5 border-t border-(--hairline) pt-4">
                       <span className={`leading-none text-accent ${isAr
                         ? "text-2xl font-bold font-(family-name:--font-ar)"
-                        : "text-2xl italic font-(--font-display)"}`}>
+                        : "text-2xl font-(--font-display)"}`}>
                         {formatPrice(collection.price, lang)}
                       </span>
                       {savings > 0 && (
@@ -189,7 +192,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               </span>
               <h2 className={isAr
                 ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] italic font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
                 {dict.shop.featuredHeading}
               </h2>
             </div>

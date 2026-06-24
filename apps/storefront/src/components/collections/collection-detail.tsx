@@ -66,7 +66,7 @@ export function CollectionDetail({
           <span className="eyebrow text-accent!">{dict.collections.collectionEyebrow}</span>
           <h1 className={`m-0 leading-[1.05] ${isAr
             ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(family-name:--font-ar) tracking-normal text-ink"
-            : "text-[clamp(30px,3.4vw,46px)] italic font-(--font-display) tracking-[-0.01em] text-ink"}`}>
+            : "text-[clamp(30px,3.4vw,46px)] font-(--font-display) tracking-[-0.01em] text-ink"}`}>
             {pickLang(collection.name, lang)}
           </h1>
           <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(collection.description, lang)}</p>
@@ -77,7 +77,7 @@ export function CollectionDetail({
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
             <span className={`leading-none text-accent ${isAr
               ? "text-3xl font-bold font-(family-name:--font-ar) sm:text-[36px]"
-              : "text-3xl italic font-(--font-display) sm:text-[40px]"}`}>
+              : "text-3xl font-(--font-display) sm:text-[40px]"}`}>
               {formatPrice(collection.price, lang)}
             </span>
             {savings > 0 && (

@@ -14,15 +14,17 @@ export async function loadShopPageData(lang: string): Promise<{
   offers: Offer[];
   collections: Collection[];
   advices: Advice[];
+  categories: Category[];
 }> {
-  const [products, offers, collections, advices] = await Promise.all([
+  const [products, offers, collections, advices, categories] = await Promise.all([
     safeList(() => fetchProducts({ lang })),
     safeList(() => fetchOffers({ lang })),
     safeList(() => fetchCollections({ lang })),
-    safeList(() => fetchAdvices({ lang }))
+    safeList(() => fetchAdvices({ lang })),
+    safeList(() => fetchCategories({ lang }))
   ]);
 
-  return { products, offers, collections, advices };
+  return { products, offers, collections, advices, categories };
 }
 
 export async function loadSitemapData(): Promise<{

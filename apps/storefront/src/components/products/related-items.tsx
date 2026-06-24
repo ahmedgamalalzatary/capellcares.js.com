@@ -35,7 +35,7 @@ export function RelatedItems({ items, lang, title }: Props) {
       {title && (
         <h2 className={lang === "ar"
           ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
-          : "m-0 text-[clamp(22px,2.4vw,30px)] italic font-(--font-display) text-ink"}>
+          : "m-0 text-[clamp(22px,2.4vw,30px)] font-(--font-display) text-ink"}>
           {title}
         </h2>
       )}
@@ -71,13 +71,13 @@ export function RelatedItems({ items, lang, title }: Props) {
               <div className="grid gap-2 p-4 sm:p-5">
                 <h3 className={lang === "ar"
                   ? "m-0 text-base font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                  : "m-0 text-[17px] italic font-(--font-display) leading-[1.15] text-ink"}>
+                  : "m-0 text-[17px] font-(--font-display) leading-[1.15] text-ink"}>
                   {pickLang(item.name, lang)}
                 </h3>
                 <div className="mt-1 flex items-end gap-2 border-t border-(--hairline) pt-3">
                   <span className={lang === "ar"
                     ? "text-lg font-bold font-(family-name:--font-ar) leading-none text-accent"
-                    : "text-xl italic font-(--font-display) leading-none text-accent"}>
+                    : "text-xl font-(--font-display) leading-none text-accent"}>
                     {formatPrice(item.price, lang)}
                   </span>
                 </div>

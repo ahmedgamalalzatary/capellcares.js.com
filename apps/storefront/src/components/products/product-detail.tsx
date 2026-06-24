@@ -114,7 +114,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
         <div className="grid gap-3">
           <h1 className={lang === "ar"
             ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
-            : "m-0 text-[clamp(32px,3.4vw,48px)] italic font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
+            : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(product.name, lang)}
           </h1>
           {(isNew || isBestseller || offers.length > 0) && (
@@ -135,7 +135,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
         <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
           <span className={lang === "ar"
             ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
-            : "text-3xl italic font-(--font-display) leading-none text-accent sm:text-[40px]"}>
+            : "text-3xl font-(--font-display) leading-none text-accent sm:text-[40px]"}>
             {variant ? formatPrice(variant.price, lang) : dict.common.outOfStock}
           </span>
           {isOutOfStock ? (

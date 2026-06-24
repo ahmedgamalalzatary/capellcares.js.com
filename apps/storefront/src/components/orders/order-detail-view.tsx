@@ -41,7 +41,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
           <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
           <div className={`leading-none text-ink ${isAr
             ? "text-2xl font-bold font-(family-name:--font-ar)"
-            : "text-3xl italic font-(--font-display)"}`}>
+            : "text-3xl font-(--font-display)"}`}>
             {order.orderCode}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-(--ink-2)">

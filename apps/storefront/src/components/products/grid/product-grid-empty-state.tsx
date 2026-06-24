@@ -50,7 +50,7 @@ export function ProductGridEmptyState({
       <span
         style={{
           fontFamily: isAr ? "var(--font-ar)" : "var(--font-display)",
-          fontStyle: isAr ? "normal" : "italic",
+          fontStyle: "normal",
           fontWeight: isAr ? 700 : 500,
           fontSize: "24px",
           color: "var(--ink)",

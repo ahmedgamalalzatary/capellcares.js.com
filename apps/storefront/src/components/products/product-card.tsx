@@ -72,14 +72,14 @@ export function ProductCard({ product, lang, dict }: Props) {
       <div className="grid gap-2 p-4 sm:p-5">
         <h3 className={`m-0 leading-[1.2] ${isAr
           ? "text-base font-bold font-(family-name:--font-ar) text-ink"
-          : "text-lg italic font-(--font-display) text-ink"}`}>
+          : "text-lg font-(--font-display) text-ink"}`}>
           {pickLang(product.name, lang)}
         </h3>
 
         <div className="mt-1 flex flex-wrap items-end gap-2 border-t border-(--hairline) pt-3">
           <span className={`leading-none text-accent ${isAr
             ? "text-xl font-bold font-(family-name:--font-ar)"
-            : "text-2xl italic font-(--font-display)"}`}>
+            : "text-2xl font-(--font-display)"}`}>
             {prices.length > 1
               ? formatPriceRange(minPrice, maxPrice, lang)
               : formatPrice(minPrice, lang)}
