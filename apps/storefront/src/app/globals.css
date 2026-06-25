@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #16284a;
+  --color-navy-dark: #101f3c;
+  --color-search-bg: #f2f2f2;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --animate-marquee: marquee 30s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* The track holds two copies of the list; shift by exactly half. */
+    transform: translateX(-50%);
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-navy);
+}
