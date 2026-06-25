@@ -1,8 +1,8 @@
-# Capella Storefront + ERP Specification
+# Minikoshk Storefront + ERP Specification
 
 ## Summary
 
-This document is the product and architecture source of truth for the Capella storefront and ERP system.
+This document is the product and architecture source of truth for the Minikoshk storefront and ERP system.
 
 Locked stack:
 - `Next.js` for the storefront.
@@ -26,7 +26,7 @@ Core business rules:
 Recommended monorepo shape:
 
 ```text
-capella/
+minikoshk/
 ├─ apps/
 │  ├─ storefront/      # Next.js customer-facing app
 │  ├─ erp/             # Next.js Arabic-only ERP/admin app

@@ -1,8 +1,8 @@
-# Capella Monorepo Folder Structure
+# Minikoshk Monorepo Folder Structure
 
 ## Purpose
 
-This file defines the canonical folder and boundary expectations for the Capella project.
+This file defines the canonical folder and boundary expectations for the Minikoshk project.
 
 Treat this as the implementation baseline unless a new explicit product decision replaces it. The tree is intentionally pragmatic: required boundaries are strict, but helper folders/files are created when the implementation needs them.
 
@@ -39,14 +39,14 @@ This tree was last reconciled against the actual codebase on 2026-06-09. Since t
 ## Canonical Tree
 
 ```text
-capella/
+minikoshk/
 ├─ apps/
 │  ├─ storefront/
 │  │  ├─ public/
-│  │  │  ├─ capella logo.png
-│  │  │  ├─ capella logo1.png
-│  │  │  ├─ capella logo2.png
-│  │  │  └─ capella logo3.png
+│  │  │  ├─ minikoshk logo.png
+│  │  │  ├─ minikoshk logo1.png
+│  │  │  ├─ minikoshk logo2.png
+│  │  │  └─ minikoshk logo3.png
 │  │  ├─ src/
 │  │  │  ├─ app/
 │  │  │  │  ├─ [lang]/
@@ -85,10 +85,10 @@ capella/
 │  │  │  │  ├─ robots.ts
 │  │  │  │  └─ sitemap.ts
 │  │  │  ├─ components/
-│  │  │  │  ├─ ask-capella/
-│  │  │  │  │  ├─ ask-capella-button.tsx
-│  │  │  │  │  ├─ ask-capella-overlay.tsx
-│  │  │  │  │  └─ ask-capella-results.tsx
+│  │  │  │  ├─ ask-minikoshk/
+│  │  │  │  │  ├─ ask-minikoshk-button.tsx
+│  │  │  │  │  ├─ ask-minikoshk-overlay.tsx
+│  │  │  │  │  └─ ask-minikoshk-results.tsx
 │  │  │  │  ├─ auth/
 │  │  │  │  │  └─ auth-forms.tsx
 │  │  │  │  ├─ cart/
@@ -144,7 +144,7 @@ capella/
 │  │  │  ├─ constants/
 │  │  │  │  └─ socials.ts
 │  │  │  ├─ hooks/
-│  │  │  │  ├─ use-ask-capella.ts
+│  │  │  │  ├─ use-ask-minikoshk.ts
 │  │  │  │  ├─ use-checkout.ts
 │  │  │  │  ├─ use-product-grid-filters.ts
 │  │  │  │  └─ use-search.ts
@@ -169,7 +169,7 @@ capella/
 │  │  │  │  ├─ storefront-static-data.ts
 │  │  │  │  └─ utils.ts
 │  │  │  ├─ types/
-│  │  │  │  ├─ ask-capella.types.ts
+│  │  │  │  ├─ ask-minikoshk.types.ts
 │  │  │  │  ├─ auth-provider.types.ts
 │  │  │  │  ├─ checkout-view.types.ts
 │  │  │  │  ├─ header.types.ts
@@ -197,7 +197,7 @@ capella/
 │  │  │  ├─ unit/
 │  │  │  │  ├─ api-base.test.ts
 │  │  │  │  ├─ api-client.test.ts
-│  │  │  │  ├─ ask-capella-search.test.ts
+│  │  │  │  ├─ ask-minikoshk-search.test.ts
 │  │  │  │  ├─ cart.test.ts
 │  │  │  │  ├─ category-page.test.tsx
 │  │  │  │  ├─ collection-pages.test.tsx

@@ -22,7 +22,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
 ENV STOREFRONT_REVALIDATE_SECRET=$STOREFRONT_REVALIDATE_SECRET
 COPY . .
-RUN pnpm --filter @capella/storefront build
+RUN pnpm --filter @minikoshk/storefront build
 
 FROM base AS runner
 WORKDIR /app

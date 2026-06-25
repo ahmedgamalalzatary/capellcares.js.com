@@ -25,7 +25,7 @@ docker compose --env-file .env.docker ...
 Production and Docker auth require server-only ERP admin bootstrap values:
 
 ```env
-ADMIN_NAME=Capella Admin
+ADMIN_NAME=Minikoshk Admin
 ADMIN_EMAIL=your-admin-email
 ADMIN_PASSWORD=your-strong-admin-password
 ```
@@ -80,7 +80,7 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/capella-compose.yml
+docker compose --env-file .env.production config >/tmp/minikoshk-compose.yml
 ```
 
 Build and start from a clean database:
@@ -109,7 +109,7 @@ docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USE
 Optional seed data:
 
 ```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.production exec api pnpm --filter @minikoshk/database db:seed
 ```
 
 Verify seed data if you ran seed:
@@ -122,9 +122,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.capellacares.com/health
-curl -I https://capellacares.com
-curl -I https://erp.capellacares.com
+curl https://api.minikoshkcares.com/health
+curl -I https://minikoshkcares.com
+curl -I https://erp.minikoshkcares.com
 ```
 
 ## Production Existing DB Flow
@@ -143,7 +143,7 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/capella-compose.yml
+docker compose --env-file .env.production config >/tmp/minikoshk-compose.yml
 ```
 
 Build and start:
@@ -178,9 +178,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.capellacares.com/health
-curl -I https://capellacares.com
-curl -I https://erp.capellacares.com
+curl https://api.minikoshkcares.com/health
+curl -I https://minikoshkcares.com
+curl -I https://erp.minikoshkcares.com
 ```
 
 ## Local Docker Fresh DB Flow
@@ -190,7 +190,7 @@ Use this when your local Docker database has no valuable data.
 Run from the repo root on Windows:
 
 ```cmd
-D:\Documents\currentwork\capella\capellastore>
+D:\Documents\currentwork\minikoshk\minikoshkstore>
 ```
 
 Verify local Compose config:
@@ -225,7 +225,7 @@ docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\"
 Optional seed data:
 
 ```cmd
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.docker exec api pnpm --filter @minikoshk/database db:seed
 ```
 
 Verify seed data if you ran seed:
@@ -269,16 +269,16 @@ docker compose --env-file .env.docker up -d
 Use this when MySQL is running on your host machine and `.env` points to it.
 
 ```cmd
-pnpm --filter @capella/database db:migrate
-pnpm --filter @capella/database db:seed
+pnpm --filter @minikoshk/database db:migrate
+pnpm --filter @minikoshk/database db:seed
 pnpm dev
 ```
 
 For schema changes, generate a migration first:
 
 ```cmd
-pnpm --filter @capella/database db:generate
-pnpm --filter @capella/database db:migrate
+pnpm --filter @minikoshk/database db:generate
+pnpm --filter @minikoshk/database db:migrate
 ```
 
 Verify local non-Docker services:
@@ -383,10 +383,10 @@ For local Docker, replace `.env.production` with `.env.docker`.
 
 Production:
 
-- Storefront: `https://capellacares.com`
-- ERP: `https://erp.capellacares.com`
-- API: `https://api.capellacares.com`
-- API health: `https://api.capellacares.com/health`
+- Storefront: `https://minikoshkcares.com`
+- ERP: `https://erp.minikoshkcares.com`
+- API: `https://api.minikoshkcares.com`
+- API health: `https://api.minikoshkcares.com/health`
 
 Local Docker:
 

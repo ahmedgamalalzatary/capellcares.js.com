@@ -19,7 +19,7 @@ ARG API_INTERNAL_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
 COPY . .
-RUN pnpm --filter @capella/erp build
+RUN pnpm --filter @minikoshk/erp build
 
 FROM base AS runner
 WORKDIR /app
