@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/homepage-banners", () => ({
   getHomepageBanners: vi.fn(async () => ({
@@ -42,6 +42,10 @@ vi.mock("@/lib/homepage-banners", () => ({
 
 import HomePage from "@/app/page";
 
+afterEach(() => {
+  cleanup();
+});
+
 describe("HomePage homepage sections", () => {
   it("renders carousel, four-up grid, and single-image sections", async () => {
     render(await HomePage());
@@ -52,5 +56,18 @@ describe("HomePage homepage sections", () => {
     expect(screen.getByRole("region", { name: "Homepage hero secondary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Homepage single footer" })).toBeInTheDocument();
     expect(screen.getAllByRole("img").length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("supports arrows and dragging for multi-image sections", async () => {
+    render(await HomePage());
+
+    fireEvent.click(screen.getByRole("button", { name: "Homepage hero primary next" }));
+    expect(screen.getByRole("img", { name: "Homepage hero primary image 2" })).toBeInTheDocument();
+
+    const featuredGrid = screen.getByRole("region", { name: "Homepage featured grid" });
+    fireEvent.pointerDown(featuredGrid, { clientX: 220 });
+    fireEvent.pointerUp(featuredGrid, { clientX: 40 });
+
+    expect(screen.getByRole("img", { name: "Homepage featured grid image 14" })).toBeInTheDocument();
   });
 });

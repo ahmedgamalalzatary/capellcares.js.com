@@ -6,6 +6,7 @@ import { ImageUpload } from "@/components/forms/image-upload";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { hasErpPermission } from "@/lib/erp-permissions";
+import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 
 type SectionKey = "hero_primary" | "grid_featured" | "single_mid" | "hero_secondary" | "single_footer";
@@ -33,6 +34,7 @@ export default function HomepageBannersPage() {
   const homepageSections = useStore((store) => store.homepageSections);
   const [drafts, setDrafts] = useState(createInitialDrafts);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!hasErpPermission(user, "homepage_banners.read")) {
     return (
@@ -94,9 +96,14 @@ export default function HomepageBannersPage() {
                             event.currentTarget.value = item.href;
                             return;
                           }
+                          setError(null);
                           setSavingKey(`item-${item.id}`);
                           void getStore()
                             .updateHomepageBannerItem(item.id, { href })
+                            .catch((updateError) => {
+                              event.currentTarget.value = item.href;
+                              setError(showErrorToast(updateError, "تعذر تحديث رابط البنر. حاولي مرة أخرى."));
+                            })
                             .finally(() => setSavingKey(null));
                         }}
                       />
@@ -105,9 +112,13 @@ export default function HomepageBannersPage() {
                           type="button"
                           className="btn btn--ghost btn--sm"
                           onClick={() => {
+                            setError(null);
                             setSavingKey(`delete-${item.id}`);
                             void getStore()
                               .deleteHomepageBannerItem(item.id)
+                              .catch((deleteError) => {
+                                setError(showErrorToast(deleteError, "تعذر حذف صورة البنر. حاولي مرة أخرى."));
+                              })
                               .finally(() => setSavingKey(null));
                           }}
                           disabled={savingKey != null}
@@ -143,6 +154,7 @@ export default function HomepageBannersPage() {
                       className="btn btn--primary btn--sm"
                       disabled={!draft.imagePath.trim() || !draft.href.trim() || savingKey === sectionKey}
                       onClick={() => {
+                        setError(null);
                         setSavingKey(sectionKey);
                         void getStore()
                           .addHomepageBannerItem(sectionKey, {
@@ -154,6 +166,9 @@ export default function HomepageBannersPage() {
                               ...current,
                               [sectionKey]: { imagePath: "", href: "" }
                             }));
+                          })
+                          .catch((createError) => {
+                            setError(showErrorToast(createError, "تعذر إضافة صورة البنر. حاولي مرة أخرى."));
                           })
                           .finally(() => setSavingKey(null));
                       }}
@@ -167,6 +182,7 @@ export default function HomepageBannersPage() {
           );
         })}
       </div>
+      {error ? <p className="field-error" style={{ margin: "12px 0 0" }}>{error}</p> : null}
     </AdminShell>
   );
 }

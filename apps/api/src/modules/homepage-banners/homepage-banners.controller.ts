@@ -65,7 +65,7 @@ export async function updateHomepageBannerItemController(req: Request, res: Resp
   }
 
   const href = readRequiredText(req.body?.href);
-  const imagePath = typeof req.body?.imagePath === "string" ? req.body.imagePath.trim() : null;
+  const imagePath = readRequiredText(req.body?.imagePath);
   if (!href) {
     return res.status(400).json({ message: "Href is required" });
   }

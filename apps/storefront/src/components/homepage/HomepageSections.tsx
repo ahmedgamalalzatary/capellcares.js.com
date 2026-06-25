@@ -1,9 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { HomepageBannersDto, HomepageBannerSectionDto } from "@capella/shared";
+import { ChevronLeft, ChevronRight } from "../icons";
 
 type HomepageSectionsMap = HomepageBannersDto["sections"];
+const DRAG_THRESHOLD = 40;
+
+function useDragPaging(onPrevious: () => void, onNext: () => void) {
+  const dragStartXRef = useRef<number | null>(null);
+
+  return {
+    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+      dragStartXRef.current = event.clientX;
+    },
+    onPointerUp: (event: React.PointerEvent<HTMLElement>) => {
+      if (dragStartXRef.current == null) {
+        return;
+      }
+
+      const deltaX = event.clientX - dragStartXRef.current;
+      dragStartXRef.current = null;
+
+      if (Math.abs(deltaX) < DRAG_THRESHOLD) {
+        return;
+      }
+
+      if (deltaX < 0) {
+        onNext();
+        return;
+      }
+
+      onPrevious();
+    },
+    onPointerCancel: () => {
+      dragStartXRef.current = null;
+    },
+    onPointerLeave: () => {
+      dragStartXRef.current = null;
+    }
+  };
+}
 
 function CarouselSection({
   section,
@@ -16,6 +53,9 @@ function CarouselSection({
 }) {
   const [index, setIndex] = useState(0);
   const total = section.items.length;
+  const showPrevious = () => setIndex((current) => (current - 1 + total) % total);
+  const showNext = () => setIndex((current) => (current + 1) % total);
+  const dragHandlers = useDragPaging(showPrevious, showNext);
 
   useEffect(() => {
     if (!autoRotate || total <= 1) {
@@ -34,13 +74,16 @@ function CarouselSection({
   const item = section.items[index] ?? section.items[0];
 
   return (
-    <section aria-label={ariaLabel} role="region" style={{ padding: "24px 0" }}>
-      <div style={{ position: "relative" }}>
+    <section aria-label={ariaLabel} role="region" className="py-6">
+      <div
+        {...(total > 1 ? dragHandlers : {})}
+        className={`relative touch-pan-y ${total > 1 ? "cursor-grab" : "cursor-default"}`}
+      >
         <a href={item.href}>
           <img
             src={item.imagePath}
             alt={`${ariaLabel} image ${index + 1}`}
-            style={{ width: "100%", height: "clamp(280px, 48vw, 560px)", objectFit: "cover", borderRadius: 24 }}
+            className="h-[clamp(280px,48vw,560px)] w-full rounded-3xl object-cover"
           />
         </a>
         {total > 1 && (
@@ -48,37 +91,33 @@ function CarouselSection({
             <button
               type="button"
               aria-label={`${ariaLabel} previous`}
-              onClick={() => setIndex((current) => (current - 1 + total) % total)}
-              style={{ position: "absolute", top: "50%", left: 16, transform: "translateY(-50%)" }}
+              onClick={showPrevious}
+              className="absolute top-1/2 left-2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center text-brand-dark min-[600px]:left-4"
             >
-              ‹
+              <ChevronLeft className="h-8 w-8" />
             </button>
             <button
               type="button"
               aria-label={`${ariaLabel} next`}
-              onClick={() => setIndex((current) => (current + 1) % total)}
-              style={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)" }}
+              onClick={showNext}
+              className="absolute top-1/2 right-2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center text-brand-dark min-[600px]:right-4"
             >
-              ›
+              <ChevronRight className="h-8 w-8" />
             </button>
           </>
         )}
       </div>
       {total > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12 }}>
+        <div className="mt-3 flex justify-center gap-2">
           {section.items.map((slideItem, slideIndex) => (
             <button
               key={slideItem.id}
               type="button"
               aria-label={`${ariaLabel} slide ${slideIndex + 1}`}
               onClick={() => setIndex(slideIndex)}
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 999,
-                border: 0,
-                background: slideIndex === index ? "#111827" : "#d1d5db"
-              }}
+              className={`h-2.5 w-2.5 rounded-full border-0 transition ${
+                slideIndex === index ? "bg-brand-dark" : "bg-gray-300"
+              }`}
             />
           ))}
         </div>
@@ -91,34 +130,41 @@ function GridSection({ section, ariaLabel }: { section: HomepageBannerSectionDto
   const [page, setPage] = useState(0);
   const pageCount = Math.max(1, Math.ceil(section.items.length / 4));
   const visibleItems = section.items.slice(page * 4, page * 4 + 4);
+  const showPrevious = () => setPage((current) => (current - 1 + pageCount) % pageCount);
+  const showNext = () => setPage((current) => (current + 1) % pageCount);
+  const dragHandlers = useDragPaging(showPrevious, showNext);
 
   if (section.items.length === 0) {
     return null;
   }
 
   return (
-    <section aria-label={ariaLabel} role="region" style={{ padding: "24px 0" }}>
-      <div
-        style={{
-          display: "grid",
-          gap: 16,
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
-        }}
-      >
+    <section
+      aria-label={ariaLabel}
+      role="region"
+      className={`touch-pan-y py-6 ${pageCount > 1 ? "cursor-grab" : "cursor-default"}`}
+      {...(pageCount > 1 ? dragHandlers : {})}
+    >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
         {visibleItems.map((item) => (
           <a key={item.id} href={item.href}>
             <img
               src={item.imagePath}
               alt={`${ariaLabel} image ${item.id}`}
-              style={{ width: "100%", height: 240, objectFit: "cover", borderRadius: 20 }}
+              className="h-60 w-full rounded-[20px] object-cover"
             />
           </a>
         ))}
       </div>
       {pageCount > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 12 }}>
-          <button type="button" aria-label={`${ariaLabel} previous`} onClick={() => setPage((current) => (current - 1 + pageCount) % pageCount)}>
-            ‹
+        <div className="mt-3 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            aria-label={`${ariaLabel} previous`}
+            onClick={showPrevious}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-brand-dark transition hover:bg-gray-200"
+          >
+            <ChevronLeft className="h-6 w-6" />
           </button>
           {Array.from({ length: pageCount }, (_, pageIndex) => (
             <button
@@ -126,17 +172,18 @@ function GridSection({ section, ariaLabel }: { section: HomepageBannerSectionDto
               type="button"
               aria-label={`${ariaLabel} page ${pageIndex + 1}`}
               onClick={() => setPage(pageIndex)}
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 999,
-                border: 0,
-                background: pageIndex === page ? "#111827" : "#d1d5db"
-              }}
+              className={`h-2.5 w-2.5 rounded-full border-0 transition ${
+                pageIndex === page ? "bg-brand-dark" : "bg-gray-300"
+              }`}
             />
           ))}
-          <button type="button" aria-label={`${ariaLabel} next`} onClick={() => setPage((current) => (current + 1) % pageCount)}>
-            ›
+          <button
+            type="button"
+            aria-label={`${ariaLabel} next`}
+            onClick={showNext}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-brand-dark transition hover:bg-gray-200"
+          >
+            <ChevronRight className="h-6 w-6" />
           </button>
         </div>
       )}
@@ -151,12 +198,12 @@ function SingleSection({ section, ariaLabel }: { section: HomepageBannerSectionD
   }
 
   return (
-    <section aria-label={ariaLabel} role="region" style={{ padding: "24px 0" }}>
+    <section aria-label={ariaLabel} role="region" className="py-6">
       <a href={item.href}>
         <img
           src={item.imagePath}
           alt={`${ariaLabel} image`}
-          style={{ width: "100%", height: "clamp(220px, 32vw, 420px)", objectFit: "cover", borderRadius: 24 }}
+          className="h-[clamp(220px,32vw,420px)] w-full rounded-3xl object-cover"
         />
       </a>
     </section>
