@@ -23,9 +23,6 @@ export function SectionCard(props: SectionCardProps) {
   const nameClass = `m-0 leading-tight text-ink ${
     isAr ? "text-sm font-bold font-(family-name:--font-ar)" : "text-sm font-bold uppercase tracking-[0.06em]"
   }`;
-  const subClass = `m-0 line-clamp-1 text-(--ink-3) ${
-    isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
-  }`;
   const priceClass = `font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`;
   const viewClass =
     "inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
@@ -120,7 +117,6 @@ export function SectionCard(props: SectionCardProps) {
           <h3 className={nameClass}>{title}</h3>
         )}
 
-        {description ? <p className={subClass}>{description}</p> : null}
 
         {price != null ? (
           <span className={priceClass}>
@@ -141,7 +137,7 @@ export function SectionCard(props: SectionCardProps) {
           </Link>
           <button onClick={onAdd} className={addClass}>
             {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
-            <span>{dict.common.addToCart}</span>
+            <span>{added ? dict.common.added : dict.common.addToCart}</span>
           </button>
         </div>
       ) : videoUrl ? (

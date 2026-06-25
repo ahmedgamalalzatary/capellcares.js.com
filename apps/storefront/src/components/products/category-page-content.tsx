@@ -45,6 +45,11 @@ export function CategoryPageContent({
                 onClick={() => toggleHeaderCategory(item.id)}
               >
                 {pickLang(item.name, lang)}
+                {active && (
+                  <span className="filter-pill__x" aria-hidden="true">
+                    X
+                  </span>
+                )}
               </button>
             );
           })}

@@ -158,7 +158,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
             className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
             {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
-            <span>{dict.common.addToCart}</span>
+            <span>{added ? dict.common.added : dict.common.addToCart}</span>
           </button>
         </div>
       ) : null}
