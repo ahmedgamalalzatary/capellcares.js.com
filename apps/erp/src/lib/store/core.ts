@@ -1,6 +1,16 @@
 "use client";
 
-import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product } from "@capella/shared";
+import type {
+  Advice,
+  Category,
+  Collection,
+  HomepageBannersDto,
+  HomepageSectionKey,
+  Offer,
+  Order,
+  OrderSummary,
+  Product
+} from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -25,6 +35,13 @@ export class ErpStore {
   categories: Category[] = [];
   collections: Collection[] = [];
   offers: Offer[] = [];
+  homepageSections: HomepageBannersDto["sections"] = {
+    hero_primary: { key: "hero_primary", title: "Section 1", behavior: "carousel", maxItems: null, items: [] },
+    grid_featured: { key: "grid_featured", title: "Section 2", behavior: "manual-grid", maxItems: null, items: [] },
+    single_mid: { key: "single_mid", title: "Section 3", behavior: "single-image", maxItems: 1, items: [] },
+    hero_secondary: { key: "hero_secondary", title: "Section 4", behavior: "carousel", maxItems: null, items: [] },
+    single_footer: { key: "single_footer", title: "Section 5", behavior: "single-image", maxItems: 1, items: [] }
+  };
   advices: Advice[] = [];
   orders: OrderSummary[] = [];
   sales: SalesAnalytics = {
@@ -54,6 +71,7 @@ export class ErpStore {
       categories: this.categories,
       collections: this.collections,
       offers: this.offers,
+      homepageSections: this.homepageSections,
       advices: this.advices,
       orders: this.orders,
       sales: this.sales,
@@ -92,6 +110,13 @@ export class ErpStore {
       this.categories = [];
       this.collections = [];
       this.offers = [];
+      this.homepageSections = {
+        hero_primary: { key: "hero_primary", title: "Section 1", behavior: "carousel", maxItems: null, items: [] },
+        grid_featured: { key: "grid_featured", title: "Section 2", behavior: "manual-grid", maxItems: null, items: [] },
+        single_mid: { key: "single_mid", title: "Section 3", behavior: "single-image", maxItems: 1, items: [] },
+        hero_secondary: { key: "hero_secondary", title: "Section 4", behavior: "carousel", maxItems: null, items: [] },
+        single_footer: { key: "single_footer", title: "Section 5", behavior: "single-image", maxItems: 1, items: [] }
+      };
       this.advices = [];
       this.orders = [];
       this.sales = this.createEmptySales();
@@ -220,6 +245,12 @@ export class ErpStore {
         load: () => api.get<{ items: Offer[] }>("/api/erp/offers"),
         assign: (result: { items: Offer[] }, store: ErpStore) => {
           store.offers = result.items;
+        }
+      },
+      canRead("homepage_banners.read") && {
+        load: () => api.get<HomepageBannersDto>("/api/erp/homepage-banners"),
+        assign: (result: HomepageBannersDto, store: ErpStore) => {
+          store.homepageSections = result.sections;
         }
       },
       canRead("advices.read") && {
@@ -365,6 +396,21 @@ export class ErpStore {
 
   async deleteAdvice(id: number) {
     await api.del(`/api/erp/advices/${id}`);
+    await this.refetch();
+  }
+
+  async addHomepageBannerItem(sectionKey: HomepageSectionKey, input: { imagePath: string; href: string }) {
+    await api.post(`/api/erp/homepage-banners/sections/${sectionKey}/items`, input);
+    await this.refetch();
+  }
+
+  async updateHomepageBannerItem(id: number, input: { imagePath?: string; href: string }) {
+    await api.post(`/api/erp/homepage-banners/items/${id}`, input);
+    await this.refetch();
+  }
+
+  async deleteHomepageBannerItem(id: number) {
+    await api.del(`/api/erp/homepage-banners/items/${id}`);
     await this.refetch();
   }
 

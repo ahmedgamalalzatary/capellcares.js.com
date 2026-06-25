@@ -6,4 +6,5 @@ export * from "./checkout.dto.js";
 export * from "./offer.dto.js";
 export * from "./order.dto.js";
 export * from "./product.dto.js";
+export * from "./homepage-banner.dto.js";
 export * from "./wishlist.dto.js";

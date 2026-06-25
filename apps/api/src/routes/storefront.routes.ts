@@ -8,6 +8,7 @@ import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-adv
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";
+import { listStorefrontHomepageBannersController } from "../modules/homepage-banners/homepage-banners.controller.js";
 
 export const storefrontRoutes = Router();
 storefrontRoutes.use(localeMiddleware);
@@ -22,3 +23,4 @@ storefrontRoutes.use("/wishlist", wishlistRoutes);
 storefrontRoutes.get("/categories", listCategories);
 storefrontRoutes.get("/offers", listOffers);
 storefrontRoutes.get("/offers/:slug", getOfferBySlug);
+storefrontRoutes.get("/homepage-banners", listStorefrontHomepageBannersController);

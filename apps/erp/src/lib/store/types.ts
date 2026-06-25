@@ -1,4 +1,14 @@
-import type { Advice, Category, Collection, Offer, OrderSummary, Product, ProductMedia } from "@capella/shared";
+import type {
+  Advice,
+  Category,
+  Collection,
+  HomepageBannerSectionDto,
+  HomepageSectionKey,
+  Offer,
+  OrderSummary,
+  Product,
+  ProductMedia
+} from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -93,6 +103,7 @@ export type ErpStoreSnapshot = {
   categories: Category[];
   collections: Collection[];
   offers: Offer[];
+  homepageSections: Record<HomepageSectionKey, HomepageBannerSectionDto>;
   advices: Advice[];
   orders: OrderSummary[];
   sales: SalesAnalytics;

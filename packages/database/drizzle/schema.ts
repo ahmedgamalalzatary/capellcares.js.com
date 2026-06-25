@@ -15,6 +15,13 @@ import {
 export const relatedItemEntityTypes = ["product", "offer", "collection"] as const;
 
 export const relatedItemTargetTypes = ["product", "offer", "collection"] as const;
+export const homepageBannerSectionKeys = [
+  "hero_primary",
+  "grid_featured",
+  "single_mid",
+  "hero_secondary",
+  "single_footer"
+] as const;
 
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
@@ -153,6 +160,16 @@ export const advices = mysqlTable("advices", {
   imagePath: varchar("image_path", { length: 1024 }),
   videoUrl: varchar("video_url", { length: 1024 }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const homepageBannerItems = mysqlTable("homepage_banner_items", {
+  id: int("id").autoincrement().primaryKey(),
+  sectionKey: mysqlEnum("section_key", homepageBannerSectionKeys).notNull(),
+  imagePath: varchar("image_path", { length: 1024 }).notNull(),
+  href: varchar("href", { length: 1024 }).notNull(),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()

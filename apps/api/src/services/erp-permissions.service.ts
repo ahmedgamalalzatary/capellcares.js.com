@@ -41,7 +41,9 @@ const ERP_PERMISSION_KEYS = [
   "orders.read",
   "orders.update_payment_status",
   "sales.read",
-  "trash.read"
+  "trash.read",
+  "homepage_banners.read",
+  "homepage_banners.update"
 ] as const;
 
 export type ErpPermissionKey = (typeof ERP_PERMISSION_KEYS)[number];
@@ -75,7 +77,8 @@ const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissio
   "advices.update": ["advices.read"],
   "advices.delete": ["advices.read"],
   "advices.toggle_status": ["advices.read"],
-  "orders.update_payment_status": ["orders.read"]
+  "orders.update_payment_status": ["orders.read"],
+  "homepage_banners.update": ["homepage_banners.read"]
 };
 
 export function normalizePermissionKeys(keys: string[]) {

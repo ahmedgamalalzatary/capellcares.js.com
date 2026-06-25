@@ -32,6 +32,12 @@ import { adminAdvicesRoutes } from "./advices/admin-advices.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
 import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
+import {
+  createHomepageBannerItemController,
+  deleteHomepageBannerItemController,
+  listAdminHomepageBannersController,
+  updateHomepageBannerItemController
+} from "../homepage-banners/homepage-banners.controller.js";
 
 export const adminRoutes = Router();
 
@@ -64,6 +70,10 @@ adminRoutes.post("/collections", requireErpPermission((req) => (req.body?.id ? "
 adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_delete"), wrapAsync(adminSoftDeleteCollection));
 adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), wrapAsync(adminRestoreCollection));
 adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), wrapAsync(adminToggleCollectionStatus));
+adminRoutes.get("/homepage-banners", requireErpPermission("homepage_banners.read"), wrapAsync(listAdminHomepageBannersController));
+adminRoutes.post("/homepage-banners/sections/:sectionKey/items", requireErpPermission("homepage_banners.update"), wrapAsync(createHomepageBannerItemController));
+adminRoutes.post("/homepage-banners/items/:id", requireErpPermission("homepage_banners.update"), wrapAsync(updateHomepageBannerItemController));
+adminRoutes.delete("/homepage-banners/items/:id", requireErpPermission("homepage_banners.update"), wrapAsync(deleteHomepageBannerItemController));
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);

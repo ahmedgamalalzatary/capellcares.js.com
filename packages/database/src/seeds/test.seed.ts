@@ -4,6 +4,7 @@ import {
   collectionItems,
   collections,
   customers,
+  homepageBannerItems,
   offerItems,
   offers,
   orderItems,
@@ -30,6 +31,7 @@ export async function clearTestSeed() {
   await db.delete(orders);
   await db.delete(offerItems);
   await db.delete(collections);
+  await db.delete(homepageBannerItems);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);
