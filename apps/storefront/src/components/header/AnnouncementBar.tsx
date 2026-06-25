@@ -6,12 +6,12 @@ const MESSAGES = [
 ];
 
 function Sparkle() {
-  return <span aria-hidden className="px-1 text-amber-300">✨</span>;
+  return <span aria-hidden className="px-1 text-white">✨</span>;
 }
 
 /**
  * Top promo bar: a continuously scrolling marquee of offers on the navy
- * background, matching the ZEE storefront announcement strip.
+ * background, matching the Minikoshk storefront announcement strip.
  */
 export function AnnouncementBar() {
   // Duplicate the list so the marquee loops seamlessly.

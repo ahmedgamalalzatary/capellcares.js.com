@@ -1,3 +1,4 @@
+import { Logo } from "../Logo";
 import { SearchIcon, UserIcon } from "./icons";
 
 /**
@@ -7,7 +8,8 @@ import { SearchIcon, UserIcon } from "./icons";
 export function SearchBar() {
   return (
     <div className="bg-search-bg">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-6 py-3">
+      <div className="container flex items-center gap-6 py-3">
+        <Logo size={56} className="shrink-0" />
         <form className="relative flex-1" role="search">
           <input
             type="search"

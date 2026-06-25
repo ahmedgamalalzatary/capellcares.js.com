@@ -1,9 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy: #16284a;
-  --color-navy-dark: #101f3c;
+  /* Brand palette */
+  --color-brand-red: #df1f3c;
+  --color-brand-dark: #353a3f;
+  /* Kept as aliases so existing class names resolve to the brand dark. */
+  --color-navy: #353a3f;
+  --color-navy-dark: #2b2f33;
   --color-search-bg: #f2f2f2;
+  /* Footer tokens */
+  --color-footer-bg: #353a3f;
+  --color-footer-text: #d1d5db;
+  --color-footer-muted: #9ca3af;
+  --color-footer-heading: #e5e7eb;
+  --color-footer-border: #1f2937;
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --animate-marquee: marquee 30s linear infinite;
 }
@@ -27,4 +37,11 @@ body {
 body {
   font-family: var(--font-sans);
   color: var(--color-navy);
+}
+
+/* Shared centered page wrapper used by the header, footer, and sections. */
+@utility container {
+  margin-inline: auto;
+  max-width: 1600px;
+  padding-inline: 1.5rem;
 }
