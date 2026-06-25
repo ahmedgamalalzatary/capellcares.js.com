@@ -134,6 +134,13 @@
       "when": 1782147600001,
       "tag": "0018_shop_media_optional_images",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1782342000000,
+      "tag": "0019_advices_video_only",
+      "breakpoints": true
     }
   ]
 }

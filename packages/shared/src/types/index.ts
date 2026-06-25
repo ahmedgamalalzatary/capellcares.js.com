@@ -157,8 +157,7 @@ export interface Advice {
   id: number;
   title: Bilingual;
   description: Bilingual;
-  imagePath: string | null;
-  videoUrl?: string | null;
+  videoUrl: string;
   status: "active" | "inactive";
   sortOrder: number;
   createdAt: string;

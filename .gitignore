@@ -24,7 +24,7 @@ lerna-debug.log*
 .next/
 .next/cache/
 out/
-
+*.d.ts
 # Turbo
 .turbo/
 

@@ -98,7 +98,6 @@ describe("ERP store", () => {
           id: 1,
           title: { ar: "نصيحة", en: "Advice" },
           description: { ar: "وصف", en: "Description" },
-          imagePath: "/uploads/advice.png",
           videoUrl: "https://instagram.com/capella",
           status: "active",
           sortOrder: 1,

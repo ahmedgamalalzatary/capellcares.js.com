@@ -42,6 +42,7 @@ describe("ProductDetail", () => {
         inStock: "In stock",
         quantity: "Quantity",
         addToCart: "Add to cart",
+        added: "Added",
         buyNow: "Buy now",
         addToWishlist: "Wishlist"
       },
@@ -119,6 +120,7 @@ describe("ProductDetail", () => {
         inStock: "In stock",
         quantity: "Quantity",
         addToCart: "Add to cart",
+        added: "Added",
         buyNow: "Buy now",
         addToWishlist: "Wishlist"
       },
@@ -189,6 +191,7 @@ describe("ProductDetail", () => {
         inStock: "In stock",
         quantity: "Quantity",
         addToCart: "Add to cart",
+        added: "Added",
         buyNow: "Buy now",
         addToWishlist: "Wishlist"
       },

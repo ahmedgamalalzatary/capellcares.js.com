@@ -8,8 +8,7 @@ export interface AdviceDto {
     ar: string;
     en: string;
   };
-  imagePath: string | null;
-  videoUrl: string | null;
+  videoUrl: string;
   status: "active" | "inactive";
   sortOrder: number;
   createdAt?: string;

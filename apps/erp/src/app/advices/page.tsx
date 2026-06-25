@@ -6,7 +6,6 @@ import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
-import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
@@ -61,9 +60,8 @@ export default function AdvicesPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>الصورة</th>
                 <th>العنوان</th>
-                <th>الرابط</th>
+                <th>الفيديو</th>
                 <th>الترتيب</th>
                 <th>الحالة</th>
                 <th></th>
@@ -73,17 +71,11 @@ export default function AdvicesPage() {
               {filtered.map((advice) => (
                 <tr key={advice.id}>
                   <td>
-                    <EntityAvatar
-                      src={advice.imagePath}
-                      fallback={advice.title.en?.trim().charAt(0) || advice.title.ar?.trim().charAt(0) || "?"}
-                    />
-                  </td>
-                  <td>
                     <Link href={`/advices/${advice.id}/edit`} className="table-title">{advice.title.ar}</Link>
                     <div className="table-subtitle">{advice.title.en}</div>
                   </td>
                   <td className="muted" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {advice.videoUrl || "—"}
+                    {advice.videoUrl}
                   </td>
                   <td>{advice.sortOrder}</td>
                   <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
@@ -116,7 +108,7 @@ export default function AdvicesPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
+                <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
               )}
             </tbody>
           </table>

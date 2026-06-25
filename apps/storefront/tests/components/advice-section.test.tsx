@@ -17,7 +17,6 @@ describe("AdviceSection", () => {
         id: 1,
         title: { ar: "نصيحة", en: "Advice" },
         description: { ar: "وصف", en: "Description" },
-        imagePath: "/uploads/advice.png",
         videoUrl: "https://instagram.com/capella",
         status: "active",
         sortOrder: 1,
@@ -27,7 +26,7 @@ describe("AdviceSection", () => {
     }));
 
     expect(screen.getByText("Capella Advices")).toBeInTheDocument();
-    expect(screen.getByText("Advice")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Advice" })).toHaveAttribute("src", "/uploads/advice.png");
+    expect(screen.getByRole("link", { name: "Advice" })).toHaveAttribute("href", "https://instagram.com/capella");
+    expect(screen.queryByRole("img", { name: "Advice" })).toBeNull();
   });
 });

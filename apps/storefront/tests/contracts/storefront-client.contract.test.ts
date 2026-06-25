@@ -99,7 +99,6 @@ const adviceBoundaryPayload = {
   id: 12,
   title: { ar: "نصيحة", en: "Advice" },
   description: { ar: "وصف", en: "Description" },
-  imagePath: "/uploads/advice.png",
   videoUrl: "https://instagram.com/capella",
   status: "active" as const,
   sortOrder: 1
@@ -181,6 +180,7 @@ describe("storefront client contracts", () => {
 
     const result = await fetchAdvices({ lang: "ar" });
     assertConformsTo(result[0], storefrontAdviceContract);
+    expect(result[0]).not.toHaveProperty("imagePath");
   });
 
   it("synthesizes media from legacy imagePath-only product payloads", async () => {

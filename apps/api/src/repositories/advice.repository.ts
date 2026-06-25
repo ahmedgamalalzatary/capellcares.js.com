@@ -16,8 +16,7 @@ export async function upsertAdviceRepo(input: {
   enTitle: string;
   arDescription: string;
   enDescription: string;
-  imagePath?: string | null;
-  videoUrl?: string | null;
+  videoUrl: string;
   status: "active" | "inactive";
   sortOrder: number;
 }) {

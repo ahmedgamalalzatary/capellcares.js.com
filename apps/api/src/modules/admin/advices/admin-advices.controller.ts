@@ -17,13 +17,17 @@ function sanitizeOptionalText(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function sanitizeRequiredVideoUrl(value: unknown): string | null {
+  const sanitized = sanitizeOptionalText(value);
+  return sanitized;
+}
+
 function toAdviceDto(item: any) {
   return {
     id: item.id,
     title: { ar: item.arTitle, en: item.enTitle },
     description: { ar: item.arDescription, en: item.enDescription },
-    imagePath: item.imagePath ?? null,
-    videoUrl: item.videoUrl ?? null,
+    videoUrl: item.videoUrl,
     status: item.status,
     sortOrder: item.sortOrder,
     createdAt: item.createdAt?.toISOString?.() ?? String(item.createdAt ?? ""),
@@ -67,14 +71,18 @@ export async function upsertAdviceController(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid advice status" });
   }
 
+  const videoUrl = sanitizeRequiredVideoUrl(input.videoUrl);
+  if (!videoUrl) {
+    return res.status(400).json({ error: "Invalid advice video URL" });
+  }
+
   await upsertAdviceRepo({
     id,
     arTitle: input.title.ar,
     enTitle: input.title.en,
     arDescription: input.description.ar,
     enDescription: input.description.en,
-    imagePath: sanitizeOptionalText(input.imagePath),
-    videoUrl: sanitizeOptionalText(input.videoUrl),
+    videoUrl,
     status: input.status ?? "inactive",
     sortOrder: parsedSortOrder
   });

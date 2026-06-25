@@ -10,8 +10,7 @@ export const storefrontAdviceContract = z.object({
   id: z.number().int().positive(),
   title: bilingualSchema,
   description: bilingualSchema,
-  imagePath: z.string().nullable(),
-  videoUrl: z.string().nullable(),
+  videoUrl: z.string().min(1),
   status: z.enum(["active", "inactive"]),
   sortOrder: z.number().int()
 });

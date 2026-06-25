@@ -14,7 +14,6 @@ function makeAdvicePayload() {
   return {
     title: { ar: "نصيحة كابيلا", en: "Capella Advice" },
     description: { ar: "اشتركي بخطوات واضحة.", en: "Shop with clear steps." },
-    imagePath: "/uploads/advice.jpg",
     videoUrl: "https://www.youtube.com/watch?v=capella",
     status: "active",
     sortOrder: 2
@@ -45,6 +44,8 @@ test("erp advice CRUD persists and updates advice records", async () => {
 
     const created = listResponse.json.items[0];
     assert.equal(created.title.ar, "نصيحة كابيلا");
+    assert.equal("imagePath" in created, false);
+    assert.equal(created.videoUrl, "https://www.youtube.com/watch?v=capella");
 
     const updateResponse = await request("/api/erp/advices", {
       method: "POST",
@@ -245,6 +246,23 @@ test("erp advice routes reject invalid ids and invalid upsert payloads", async (
 
     assert.equal(badCreate.status, 400);
     assert.equal(badCreate.json.error, "Invalid advice payload");
+
+    const missingVideo = await request("/api/erp/advices", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        title: { ar: "نصيحة", en: "Advice" },
+        description: { ar: "وصف", en: "Description" },
+        status: "active",
+        sortOrder: 1
+      })
+    });
+
+    assert.equal(missingVideo.status, 400);
+    assert.equal(missingVideo.json.error, "Invalid advice video URL");
 
     const badDelete = await request("/api/erp/advices/not-a-number", {
       method: "DELETE",

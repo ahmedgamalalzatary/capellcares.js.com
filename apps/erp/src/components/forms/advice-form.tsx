@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStore } from "@/lib/store";
-import { ImageUpload } from "@/components/forms/image-upload";
 import type { Advice } from "@capella/shared";
 
 type AdviceDraft = {
   title: { ar: string; en: string };
   description: { ar: string; en: string };
-  imagePath: string;
   videoUrl: string;
   status: "active" | "inactive";
   sortOrder: number;
@@ -18,7 +16,6 @@ type AdviceDraft = {
 const empty: AdviceDraft = {
   title: { ar: "", en: "" },
   description: { ar: "", en: "" },
-  imagePath: "",
   videoUrl: "",
   status: "inactive",
   sortOrder: 0,
@@ -36,8 +33,7 @@ export function AdviceForm({ mode, initial }: Props) {
       ? {
           title: initial.title,
           description: initial.description,
-          imagePath: initial.imagePath ?? "",
-          videoUrl: initial.videoUrl ?? "",
+          videoUrl: initial.videoUrl,
           status: initial.status,
           sortOrder: initial.sortOrder,
         }
@@ -51,6 +47,7 @@ export function AdviceForm({ mode, initial }: Props) {
 
   const handleSave = async () => {
     if (!form.title.ar.trim()) { setError("العنوان بالعربية مطلوب."); return; }
+    if (!form.videoUrl.trim()) { setError("رابط الفيديو مطلوب."); return; }
     try {
       setSaving(true);
       setError(null);
@@ -132,17 +129,6 @@ export function AdviceForm({ mode, initial }: Props) {
       </div>
 
       <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
-        <div className="card">
-          <div className="card__head"><h3 className="card__title">الصورة</h3></div>
-          <div className="card__body">
-            <ImageUpload
-              value={form.imagePath || null}
-              onChange={(v) => set("imagePath", v ?? "")}
-              uploadContext={mode === "edit" ? "advices.update" : "advices.create"}
-            />
-          </div>
-        </div>
-
         <div className="card">
           <div className="card__head"><h3 className="card__title">الإعدادات</h3></div>
           <div className="card__body form-stack">

@@ -30,6 +30,7 @@ const dict = {
     outOfStock: "Out",
     addToWishlist: "Wishlist",
     addToCart: "Add to cart",
+    added: "Added",
     buyNow: "Buy now",
     view: "View"
   },
@@ -209,5 +210,39 @@ describe("ProductCard", () => {
     }));
 
     expect(screen.getByText("Offer")).toBeInTheDocument();
+  });
+
+  it("uses the shared common.added label after adding to cart", () => {
+    vi.useFakeTimers();
+
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      }
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+
+    expect(screen.getByText("Added")).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });
