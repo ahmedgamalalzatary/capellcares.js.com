@@ -5,6 +5,7 @@ import {
   EG_PHONE_REGEX,
   PAYMENT_METHODS,
   type Collection,
+  getEffectiveVariantPrice,
   pickLang
 } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -70,7 +71,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
             key: `p${line.productId}${line.variantId}`,
             title: pickLang(product.name, lang),
             meta: variant.size,
-            unit: variant.price,
+            unit: getEffectiveVariantPrice(variant),
             qty: line.qty
           };
         }

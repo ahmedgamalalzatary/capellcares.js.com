@@ -41,7 +41,7 @@ export function useProductForm({
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
   const [variants, setVariants] = useState<ProductVariant[]>(
-    initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
+    initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0, discount: null }]
   );
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
   const [errors, setErrors] = useState<ProductFormErrors>({});
@@ -55,7 +55,7 @@ export function useProductForm({
   };
 
   const addVariant = () => {
-    setVariants((vs) => [...vs, { id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]);
+    setVariants((vs) => [...vs, { id: newVariantId(), productId: 0, size: "", price: 0, stock: 0, discount: null }]);
   };
 
   const removeVariant = (id: number) => {
@@ -123,7 +123,8 @@ export function useProductForm({
         productId: id ?? 0,
         sortOrder: i + 1,
         stock: Math.max(0, v.stock),
-        price: Math.max(0, v.price)
+        price: Math.max(0, v.price),
+        discount: v.discount ?? null
       })),
       offerIds: initial?.offerIds ?? [],
       createdAt: initial?.createdAt ?? new Date().toISOString(),

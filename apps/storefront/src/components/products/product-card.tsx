@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { pickLang, formatPrice, formatPriceRange, getProductBadgeState, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -23,9 +23,12 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
   const cart = useCart();
-  const prices = product.variants.map((v) => v.price);
+  const prices = product.variants.map((v) => getEffectiveVariantPrice(v));
+  const basePrices = product.variants.map((v) => v.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
+  const minBasePrice = Math.min(...basePrices);
+  const maxBasePrice = Math.max(...basePrices);
   const { isNew, isBestseller, isOffer, isOutOfStock } = getProductBadgeState(product);
   const isAr = lang === "ar";
   const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
@@ -39,7 +42,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const buyVariant = useMemo(() => {
     const inStock = product.variants.filter((v) => (v.stock ?? 0) > 0);
     const pool = inStock.length ? inStock : product.variants;
-    return pool.reduce((lo, v) => (v.price < lo.price ? v : lo), pool[0]);
+    return pool.reduce((lo, v) => (getEffectiveVariantPrice(v) < getEffectiveVariantPrice(lo) ? v : lo), pool[0]);
   }, [product.variants]);
 
   // The floating label on the image — mirrors the lead badge of the card.
@@ -143,6 +146,13 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
             ? formatPriceRange(minPrice, maxPrice, lang)
             : formatPrice(minPrice, lang)}
         </span>
+        {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
+          <span className="text-sm text-(--ink-3) line-through">
+            {basePrices.length > 1
+              ? formatPriceRange(minBasePrice, maxBasePrice, lang)
+              : formatPrice(minBasePrice, lang)}
+          </span>
+        ) : null}
       </div>
 
       {!isOutOfStock ? (

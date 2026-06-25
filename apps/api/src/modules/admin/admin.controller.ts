@@ -5,6 +5,7 @@ export {
   adminReorderProducts,
   adminRestoreProduct,
   adminSetVariantStock,
+  adminUpdateProductDiscounts,
   adminSoftDeleteProduct,
   adminToggleProductStatus,
   adminUpsertProduct

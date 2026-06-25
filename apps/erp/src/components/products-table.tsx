@@ -6,10 +6,13 @@ import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { Icon } from "@/components/ui/icons";
 import { RowMenu } from "@/components/ui/row-menu";
+import type { AdminAuthUser } from "@/lib/api/client";
+import { hasErpPermission } from "@/lib/erp-permissions";
 
 export function ProductsTable({
   products,
   categories,
+  user,
   canToggle,
   canEdit,
   canDelete,
@@ -20,6 +23,7 @@ export function ProductsTable({
 }: {
   products: Product[];
   categories: Array<{ id: number; name: { ar: string; en: string } }>;
+  user: AdminAuthUser | null;
   canToggle: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -28,6 +32,7 @@ export function ProductsTable({
   onDelete: (id: number) => void;
   onMove?: (id: number, direction: -1 | 1) => void;
 }) {
+  const canManageDiscount = (user: AdminAuthUser | null) => hasErpPermission(user, "products.discount");
   return (
     <div className="card">
       <div className="table-outer">
@@ -108,6 +113,11 @@ export function ProductsTable({
                           >
                             {product.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
                           </button>
+                        )}
+                        {canManageDiscount(user) && (
+                          <Link href={`/products/${product.id}/discount`} className="row-menu__item" aria-label={`خصم ${product.name.ar}`}>
+                            <Icon.Tag /> خصم
+                          </Link>
                         )}
                         {canEdit && (
                           <Link href={`/products/${product.id}/edit`} className="row-menu__item" aria-label={`تعديل ${product.name.ar}`}>

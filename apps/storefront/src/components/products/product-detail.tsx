@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -44,6 +44,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
     () => product.variants.find((item) => item.id === variantId) ?? null,
     [variantId, product.variants]
   );
+  const effectiveVariantPrice = variant ? getEffectiveVariantPrice(variant) : null;
   const isOutOfStock = variant == null || variant.stock === 0;
 
   const addToCart = () => {
@@ -136,8 +137,11 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <span className={lang === "ar"
               ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
               : "text-3xl font-(--font-display) leading-none text-accent sm:text-[40px]"}>
-              {variant ? formatPrice(variant.price, lang) : dict.common.outOfStock}
+              {variant && effectiveVariantPrice != null ? formatPrice(effectiveVariantPrice, lang) : dict.common.outOfStock}
             </span>
+            {variant && effectiveVariantPrice != null && effectiveVariantPrice !== variant.price ? (
+              <span className="text-base text-(--ink-3) line-through">{formatPrice(variant.price, lang)}</span>
+            ) : null}
             {isOutOfStock ? (
               <span className="chip chip--accent">{dict.common.outOfStock}</span>
             ) : variant.stock <= 5 ? (
@@ -166,7 +170,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
                   disabled={item.stock === 0}
                 >
                   <span className="text-sm font-medium">{item.size}</span>
-                  <span className="text-xs opacity-80">{formatPrice(item.price, lang)}</span>
+                  <span className="text-xs opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span>
                 </button>
               ))}
             </div>

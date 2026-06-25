@@ -110,6 +110,7 @@ export default function ProductsListPage() {
       <ProductsTable
         products={filteredProducts}
         categories={categories}
+        user={user}
         canToggle={canToggleErpModule(user, "products")}
         canEdit={canUpdateErpModule(user, "products")}
         canDelete={canSoftDeleteErpModule(user, "products")}

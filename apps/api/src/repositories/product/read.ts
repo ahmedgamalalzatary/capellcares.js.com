@@ -5,6 +5,7 @@ import { db } from "@capella/database/src/db";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
+  loadVariantDiscountRows,
   mapVariant,
   normalizeMedia,
   resolveHoverImagePath,
@@ -132,11 +133,12 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     })
     .from(productVariants)
     .where(and(inArray(productVariants.productId, productIds), isNull(productVariants.deletedAt)));
+  const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
     const list = variantsByProduct.get(v.productId) ?? [];
-    list.push(mapVariant(v));
+    list.push(mapVariant(v, discountByVariantId.get(v.id) ?? null));
     variantsByProduct.set(v.productId, list);
   }
 
@@ -209,6 +211,7 @@ export async function findVisibleProductBySlug(slug: string) {
     })
     .from(productVariants)
     .where(and(eq(productVariants.productId, product.id), isNull(productVariants.deletedAt)));
+  const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
   const media = normalizeMedia(mediaByProduct.get(product.id), product.imagePath);
   return {
@@ -217,7 +220,7 @@ export async function findVisibleProductBySlug(slug: string) {
     hoverImagePath: resolveHoverImagePath(product.hoverImagePath) ?? "",
     media,
     keywords: toKeywords(product.keywords),
-    variants: variantsRows.map((variant) => mapVariant(variant)).sort((a, b) => a.sortOrder - b.sortOrder),
+    variants: variantsRows.map((variant) => mapVariant(variant, discountByVariantId.get(variant.id) ?? null)).sort((a, b) => a.sortOrder - b.sortOrder),
     name: { ar: product.arName, en: product.enName },
     description: { ar: product.arDescription ?? "", en: product.enDescription ?? "" },
     ingredients: { ar: product.arIngredients ?? "", en: product.enIngredients ?? "" },
@@ -252,11 +255,12 @@ export async function listAdminProductsRepo() {
     })
     .from(productVariants)
     .where(and(inArray(productVariants.productId, rows.map((r) => r.id)), isNull(productVariants.deletedAt)));
+  const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
     const list = variantsByProduct.get(v.productId) ?? [];
-    list.push(mapVariant(v));
+    list.push(mapVariant(v, discountByVariantId.get(v.id) ?? null));
     variantsByProduct.set(v.productId, list);
   }
 
@@ -296,6 +300,7 @@ export async function findAdminProductByIdRepo(id: number) {
     })
     .from(productVariants)
     .where(and(eq(productVariants.productId, row.id), isNull(productVariants.deletedAt)));
+  const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
   const media = normalizeMedia(mediaByProduct.get(row.id), row.imagePath);
   return {
@@ -305,6 +310,6 @@ export async function findAdminProductByIdRepo(id: number) {
     media,
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],
-    variants: variantsRows.map((variant) => mapVariant(variant)).sort((a, b) => a.sortOrder - b.sortOrder)
+    variants: variantsRows.map((variant) => mapVariant(variant, discountByVariantId.get(variant.id) ?? null)).sort((a, b) => a.sortOrder - b.sortOrder)
   };
 }

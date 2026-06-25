@@ -69,6 +69,15 @@ export type ProductApiShape = {
     stock?: number | string;
     stockQty?: number | string;
     sortOrder?: number | string;
+    discount?: {
+      id?: number | string;
+      variantId?: number | string;
+      type?: "percentage" | "fixed";
+      value?: number | string;
+      startsAt?: string;
+      endsAt?: string;
+      status?: "active" | "inactive";
+    } | null;
   }>;
   offerIds?: Array<number | string>;
   sortOrder?: number;

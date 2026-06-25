@@ -164,6 +164,24 @@ export const productVariants = mysqlTable(
   })
 );
 
+export const variantDiscounts = mysqlTable(
+  "variant_discounts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    variantId: int("variant_id")
+      .notNull()
+      .references(() => productVariants.id, { onDelete: "cascade" })
+      .unique(),
+    type: mysqlEnum("type", ["percentage", "fixed"]).notNull(),
+    value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+    startsAt: datetime("starts_at").notNull(),
+    endsAt: datetime("ends_at").notNull(),
+    status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  }
+);
+
 export const productMedia = mysqlTable("product_media", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
@@ -411,6 +429,12 @@ export const orderItems = mysqlTable("order_items", {
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
   snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 }),
+  snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 2 }),
+  snapshotDiscountId: int("snapshot_discount_id"),
+  snapshotDiscountType: mysqlEnum("snapshot_discount_type", ["percentage", "fixed"]),
+  snapshotDiscountValue: decimal("snapshot_discount_value", { precision: 10, scale: 2 }),
+  snapshotDiscountStartsAt: datetime("snapshot_discount_starts_at"),
+  snapshotDiscountEndsAt: datetime("snapshot_discount_ends_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });

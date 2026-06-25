@@ -11,6 +11,7 @@ const ERP_PERMISSION_KEYS = [
   "products.read",
   "products.create",
   "products.update",
+  "products.discount",
   "products.soft_delete",
   "products.restore",
   "products.permanent_delete",
@@ -56,6 +57,7 @@ type PermissionsDbExecutor = Pick<typeof db, "select" | "insert" | "delete">;
 const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissionKey[]>> = {
   "products.create": ["products.read"],
   "products.update": ["products.read"],
+  "products.discount": ["products.read"],
   "products.soft_delete": ["products.read"],
   "products.restore": ["products.read", "trash.read"],
   "products.permanent_delete": ["products.read", "trash.read"],

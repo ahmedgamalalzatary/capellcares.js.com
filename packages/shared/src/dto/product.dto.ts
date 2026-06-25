@@ -5,6 +5,17 @@ export interface ProductVariantDto {
   sellingPrice: number;
   stockQty: number;
   sortOrder: number;
+  discount?: VariantDiscountDto | null;
+}
+
+export interface VariantDiscountDto {
+  id: number;
+  variantId: number;
+  type: "percentage" | "fixed";
+  value: number;
+  startsAt: string;
+  endsAt: string;
+  status: "active" | "inactive";
 }
 
 export interface ProductMediaDto {

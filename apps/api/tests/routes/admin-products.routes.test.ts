@@ -12,6 +12,7 @@ import {
   products,
   productVariants,
   relatedItems,
+  variantDiscounts,
   wishlists
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
@@ -216,6 +217,114 @@ serialTest("admin product upsert activates a complete product successfully", asy
 
     assert.equal(response.status, 200);
     assert.equal(response.json.ok, true);
+  });
+});
+
+serialTest("admin product upsert persists a variant discount for a targeted variant", async () => {
+  const ids = await getBaselineIds();
+
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
+        name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+        description: { ar: "وصف", en: "Description" },
+        keywords: ["test", "baseline"],
+        imagePath: "/uploads/test-baseline.png",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        variants: [
+          {
+            id: ids.firstVariantId,
+            size: "100ml",
+            price: 35,
+            stock: 10,
+            discount: {
+              type: "percentage",
+              value: 20,
+              startsAt: "2026-06-01T00:00:00.000Z",
+              endsAt: "2026-06-30T23:59:59.000Z",
+              status: "active"
+            }
+          }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [discount] = await db
+    .select({
+      variantId: variantDiscounts.variantId,
+      type: variantDiscounts.type,
+      value: variantDiscounts.value,
+      status: variantDiscounts.status
+    })
+    .from(variantDiscounts)
+    .where(eq(variantDiscounts.variantId, ids.firstVariantId))
+    .limit(1);
+
+  assert.equal(discount?.variantId, ids.firstVariantId);
+  assert.equal(discount?.type, "percentage");
+  assert.equal(Number(discount?.value), 20);
+  assert.equal(discount?.status, "active");
+});
+
+serialTest("admin product upsert rejects a fixed discount that would zero out or exceed the variant price", async () => {
+  const ids = await getBaselineIds();
+
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: ids.productOneId,
+        sku: "TEST-SKU-001",
+        slug: "test-product-baseline-1",
+        name: { ar: "منتج تجريبي 1", en: "Baseline Product 1" },
+        description: { ar: "وصف", en: "Description" },
+        keywords: ["test", "baseline"],
+        imagePath: "/uploads/test-baseline.png",
+        status: "active",
+        categoryId: ids.leafCategoryId,
+        variants: [
+          {
+            id: ids.firstVariantId,
+            size: "100ml",
+            price: 35,
+            stock: 10,
+            discount: {
+              type: "fixed",
+              value: 35,
+              startsAt: "2026-06-01T00:00:00.000Z",
+              endsAt: "2026-06-30T23:59:59.000Z",
+              status: "active"
+            }
+          }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-variant-discount");
   });
 });
 

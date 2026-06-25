@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.discount", "products.soft_delete", "products.toggle_status"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -84,7 +84,7 @@ afterEach(() => {
 beforeEach(() => {
   mockedUseAdminAuth.mockReset();
   mockedUseAdminAuth.mockReturnValue({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.discount", "products.soft_delete", "products.toggle_status"] },
     hydrated: true,
     logout: vi.fn()
   });
@@ -128,6 +128,8 @@ describe("ProductForm related items", () => {
     const form = within(view.container);
     expect(form.getByTestId("related-items-field")).toBeInTheDocument();
     expect(form.getByTestId("related-items-add")).toBeInTheDocument();
+    expect(form.queryByLabelText("نوع الخصم")).not.toBeInTheDocument();
+    expect(form.queryByLabelText("قيمة الخصم")).not.toBeInTheDocument();
   });
 
   it("excludes the current product from its own related options", () => {
@@ -240,6 +242,29 @@ describe("ProductsListPage", () => {
     render(createElement(ProductsListPage));
 
     expect(screen.getByText("ضمن عرض")).toBeInTheDocument();
+  });
+
+  it("shows a discount action in the row menu", async () => {
+    render(createElement(ProductsListPage));
+
+    fireEvent.click(screen.getByLabelText("إجراءات"));
+
+    expect(await screen.findByRole("link", { name: "خصم منتج" })).toHaveAttribute("href", "/products/1/discount");
+  });
+
+  it("hides the discount action when staff lacks products.discount", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read", "products.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(ProductsListPage));
+    fireEvent.click(screen.getByLabelText("إجراءات"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("link", { name: "خصم منتج" })).not.toBeInTheDocument();
+    });
   });
 
   it("submits gallery media separately from the dedicated hover image", async () => {

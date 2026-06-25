@@ -69,7 +69,15 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T {
     variants: product.variants.map((variant) => ({
       ...variant,
       id: variant.id != null ? Number(variant.id) : variant.id as never,
-      productId: variant.productId != null ? Number(variant.productId) : variant.productId as never
+      productId: variant.productId != null ? Number(variant.productId) : variant.productId as never,
+      discount: variant.discount
+        ? {
+          ...variant.discount,
+          id: variant.discount.id != null ? Number(variant.discount.id) : variant.discount.id,
+          variantId: variant.discount.variantId != null ? Number(variant.discount.variantId) : variant.discount.variantId,
+          value: Number(variant.discount.value)
+        }
+        : null
     }))
   } as T;
 }

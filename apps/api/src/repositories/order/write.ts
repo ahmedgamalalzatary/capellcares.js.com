@@ -28,6 +28,12 @@ interface OrderItem {
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
+  snapshotBaseUnitPrice?: number | null;
+  snapshotDiscountId?: number | null;
+  snapshotDiscountType?: "percentage" | "fixed" | null;
+  snapshotDiscountValue?: number | null;
+  snapshotDiscountStartsAt?: string | null;
+  snapshotDiscountEndsAt?: string | null;
 }
 
 /**
@@ -220,6 +226,13 @@ export async function createOrderWithItems(input: {
         snapshotNameAr: item.snapshotNameAr ?? null,
         snapshotNameEn: item.snapshotNameEn ?? null,
         snapshotSizeLabel: item.snapshotSizeLabel ?? null
+        ,
+        snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : sql`${item.snapshotBaseUnitPrice}`,
+        snapshotDiscountId: item.snapshotDiscountId ?? null,
+        snapshotDiscountType: item.snapshotDiscountType ?? null,
+        snapshotDiscountValue: item.snapshotDiscountValue == null ? null : sql`${item.snapshotDiscountValue}`,
+        snapshotDiscountStartsAt: item.snapshotDiscountStartsAt == null ? null : new Date(item.snapshotDiscountStartsAt),
+        snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt)
       }))
     );
 

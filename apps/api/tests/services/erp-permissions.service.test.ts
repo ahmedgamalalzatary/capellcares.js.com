@@ -53,6 +53,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "orders.read",
     "orders.update_payment_status",
     "products.create",
+    "products.discount",
     "products.permanent_delete",
     "products.read",
     "products.restore",
@@ -129,5 +130,14 @@ test("getEffectiveAdminPermissions returns all permissions for admin and assigne
     "orders.update_payment_status",
     "products.read",
     "products.update"
+  ]);
+});
+
+test("normalizePermissionKeys adds read dependency for products.discount", () => {
+  const normalized = normalizePermissionKeys(["products.discount"]);
+
+  assert.deepEqual(normalized, [
+    "products.discount",
+    "products.read"
   ]);
 });

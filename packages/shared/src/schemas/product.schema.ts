@@ -6,7 +6,16 @@ export const productVariantSchema = z.object({
   sizeLabel: z.string().min(1),
   sellingPrice: z.number().nonnegative(),
   stockQty: z.number().int().nonnegative(),
-  sortOrder: z.number().int()
+  sortOrder: z.number().int(),
+  discount: z.object({
+    id: z.number().int().positive().optional(),
+    variantId: z.number().int().positive().optional(),
+    type: z.enum(["percentage", "fixed"]),
+    value: z.number().positive(),
+    startsAt: z.string().min(1),
+    endsAt: z.string().min(1),
+    status: z.enum(["active", "inactive"])
+  }).nullable().optional()
 });
 
 export const productMediaSchema = z.object({

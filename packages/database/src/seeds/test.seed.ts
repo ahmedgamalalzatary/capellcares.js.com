@@ -12,7 +12,8 @@ import {
   orders,
   productMedia,
   productVariants,
-  products
+  products,
+  variantDiscounts
 } from "../../drizzle/schema.js";
 import { db } from "../db.js";
 
@@ -34,6 +35,7 @@ export async function clearTestSeed() {
   await db.delete(collections);
   await db.delete(categoryPaths);
   await db.delete(entityOrderings);
+  await db.delete(variantDiscounts);
   await db.delete(productMedia);
   await db.delete(productVariants);
   await db.delete(offers);

@@ -141,6 +141,13 @@
       "when": 1782342000000,
       "tag": "0019_advices_video_only",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1782345600000,
+      "tag": "0020_variant_discounts",
+      "breakpoints": true
     }
   ]
 }

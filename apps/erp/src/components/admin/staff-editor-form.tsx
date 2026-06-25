@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   read: "عرض",
   create: "إضافة",
   update: "تعديل",
+  discount: "إدارة الخصم",
   soft_delete: "حذف",
   delete: "حذف",
   permanent_delete: "حذف نهائي",

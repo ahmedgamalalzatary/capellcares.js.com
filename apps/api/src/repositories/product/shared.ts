@@ -1,5 +1,5 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { productMedia, productVariants } from "@capella/database/drizzle/schema";
+import { productMedia, productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
@@ -7,6 +7,16 @@ const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
 export type ProductMediaItem = {
   type: "image" | "video";
   url: string;
+};
+
+export type VariantDiscountRecord = {
+  id: number;
+  variantId: number;
+  type: "percentage" | "fixed";
+  value: number;
+  startsAt: string;
+  endsAt: string;
+  status: "active" | "inactive";
 };
 
 export function normalizeVariantSizeLabel(value: string) {
@@ -31,14 +41,15 @@ export function mapVariant(v: {
   sellingPrice: unknown;
   stockQty: number;
   sortOrder: number;
-}) {
+}, discount?: VariantDiscountRecord | null) {
   return {
     id: v.id,
     productId: v.productId,
     size: v.sizeLabel,
     price: toNumber(v.sellingPrice),
     stock: v.stockQty,
-    sortOrder: v.sortOrder
+    sortOrder: v.sortOrder,
+    discount: discount ?? null
   };
 }
 
@@ -114,6 +125,38 @@ export async function loadMediaRows(productIds: number[]) {
     byProduct.set(row.productId, list);
   }
   return byProduct;
+}
+
+export async function loadVariantDiscountRows(variantIds: number[]) {
+  if (variantIds.length === 0) {
+    return new Map<number, VariantDiscountRecord>();
+  }
+
+  const rows = await db
+    .select({
+      id: variantDiscounts.id,
+      variantId: variantDiscounts.variantId,
+      type: variantDiscounts.type,
+      value: variantDiscounts.value,
+      startsAt: variantDiscounts.startsAt,
+      endsAt: variantDiscounts.endsAt,
+      status: variantDiscounts.status
+    })
+    .from(variantDiscounts)
+    .where(inArray(variantDiscounts.variantId, variantIds));
+
+  return new Map(rows.map((row) => [
+    row.variantId,
+    {
+      id: row.id,
+      variantId: row.variantId,
+      type: row.type,
+      value: toNumber(row.value),
+      startsAt: row.startsAt.toISOString(),
+      endsAt: row.endsAt.toISOString(),
+      status: row.status
+    }
+  ]));
 }
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

@@ -33,6 +33,17 @@ export interface ProductVariant {
   price: number;
   stock: number;
   sortOrder?: number;
+  discount?: VariantDiscount | null;
+}
+
+export interface VariantDiscount {
+  id?: number;
+  variantId?: number;
+  type: "percentage" | "fixed";
+  value: number;
+  startsAt: string;
+  endsAt: string;
+  status: "active" | "inactive";
 }
 
 export interface ProductMedia {
@@ -210,6 +221,12 @@ export interface OrderItem {
   snapshotNameAr: string | null;
   snapshotNameEn: string | null;
   snapshotSizeLabel: string | null;
+  snapshotBaseUnitPrice?: number | null;
+  snapshotDiscountId?: number | null;
+  snapshotDiscountType?: "percentage" | "fixed" | null;
+  snapshotDiscountValue?: number | null;
+  snapshotDiscountStartsAt?: string | null;
+  snapshotDiscountEndsAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -281,4 +298,26 @@ export function getProductBadgeState(product: Pick<Product, "isNew" | "isBestsel
     isOffer: (product.offerIds?.length ?? 0) > 0,
     isOutOfStock: product.variants.every((variant) => variant.stock === 0)
   };
+}
+
+export function getEffectiveVariantPrice(
+  variant: Pick<ProductVariant, "price" | "discount">,
+  now: Date = new Date()
+) {
+  const discount = variant.discount;
+  if (!discount || discount.status !== "active") {
+    return variant.price;
+  }
+
+  const startsAt = new Date(discount.startsAt);
+  const endsAt = new Date(discount.endsAt);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || now < startsAt || now > endsAt) {
+    return variant.price;
+  }
+
+  const nextPrice = discount.type === "percentage"
+    ? variant.price * (1 - discount.value / 100)
+    : variant.price - discount.value;
+
+  return Math.max(0, Number(nextPrice.toFixed(2)));
 }

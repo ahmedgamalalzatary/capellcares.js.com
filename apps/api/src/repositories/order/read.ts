@@ -46,7 +46,11 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
     items: items.map((item) => ({
       ...item,
       unitPrice: toNumber(item.unitPrice),
-      lineTotal: toNumber(item.lineTotal)
+      lineTotal: toNumber(item.lineTotal),
+      snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : toNumber(item.snapshotBaseUnitPrice),
+      snapshotDiscountValue: item.snapshotDiscountValue == null ? null : toNumber(item.snapshotDiscountValue),
+      snapshotDiscountStartsAt: item.snapshotDiscountStartsAt?.toISOString() ?? null,
+      snapshotDiscountEndsAt: item.snapshotDiscountEndsAt?.toISOString() ?? null
     }))
   };
 }

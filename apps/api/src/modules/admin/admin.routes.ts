@@ -6,6 +6,7 @@ import {
   adminGetProduct,
   adminReorderProducts,
   adminUpsertProduct,
+  adminUpdateProductDiscounts,
   adminSoftDeleteProduct,
   adminRestoreProduct,
   adminHardDeleteProduct,
@@ -44,6 +45,7 @@ export const adminRoutes = Router();
 adminRoutes.get("/products", requireErpPermission("products.read"), wrapAsync(adminListProducts));
 adminRoutes.get("/products/:id", requireErpPermission("products.read"), wrapAsync(adminGetProduct));
 adminRoutes.post("/products", requireErpPermission((req) => (req.body?.id ? "products.update" : "products.create")), wrapAsync(adminUpsertProduct));
+adminRoutes.post("/products/:id/discount", requireErpPermission("products.discount"), wrapAsync(adminUpdateProductDiscounts));
 adminRoutes.post("/products/reorder", requireErpPermission("products.update"), wrapAsync(adminReorderProducts));
 adminRoutes.delete("/products/:id", requireErpPermission("products.soft_delete"), wrapAsync(adminSoftDeleteProduct));
 adminRoutes.post("/products/:id/restore", requireErpPermission("products.restore"), wrapAsync(adminRestoreProduct));

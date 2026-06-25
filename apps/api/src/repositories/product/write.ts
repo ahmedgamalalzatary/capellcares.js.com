@@ -1,5 +1,5 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
+import { offerItems, orderItems, productMedia, products, productVariants, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   normalizeMedia,
@@ -109,7 +109,19 @@ export async function createAdminProductRepo(input: {
 
 export async function replaceVariantsRepo(
   productId: number,
-  variants: Array<{ id?: number; sizeLabel: string; sellingPrice: number; stockQty: number }>,
+  variants: Array<{
+    id?: number;
+    sizeLabel: string;
+    sellingPrice: number;
+    stockQty: number;
+    discount?: {
+      type: "percentage" | "fixed";
+      value: number;
+      startsAt: string;
+      endsAt: string;
+      status: "active" | "inactive";
+    } | null;
+  }>,
   executor?: DbTransaction
 ) {
   const run = async (tx: DbTransaction) => {
@@ -157,6 +169,7 @@ export async function replaceVariantsRepo(
     for (let index = 0; index < variants.length; index += 1) {
       const variant = variants[index]!;
       const sortOrder = index + 1;
+      let persistedVariantId = variant.id;
       if (variant.id && existingIds.includes(variant.id)) {
         await tx
           .update(productVariants)
@@ -168,13 +181,44 @@ export async function replaceVariantsRepo(
           })
           .where(eq(productVariants.id, variant.id));
       } else {
-        await tx.insert(productVariants).values({
+        const [createdVariant] = await tx.insert(productVariants).values({
           productId,
           sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
           sellingPrice: sql`${variant.sellingPrice}`,
           stockQty: variant.stockQty,
           sortOrder
-        });
+        }).$returningId();
+        persistedVariantId = createdVariant.id;
+      }
+
+      if (!persistedVariantId) {
+        continue;
+      }
+
+      if (variant.discount) {
+        const discountValues = {
+          variantId: persistedVariantId,
+          type: variant.discount.type,
+          value: sql`${variant.discount.value}`,
+          startsAt: new Date(variant.discount.startsAt),
+          endsAt: new Date(variant.discount.endsAt),
+          status: variant.discount.status
+        };
+        const [existingDiscount] = await tx
+          .select({ id: variantDiscounts.id })
+          .from(variantDiscounts)
+          .where(eq(variantDiscounts.variantId, persistedVariantId))
+          .limit(1);
+        if (existingDiscount) {
+          await tx
+            .update(variantDiscounts)
+            .set(discountValues)
+            .where(eq(variantDiscounts.variantId, persistedVariantId));
+        } else {
+          await tx.insert(variantDiscounts).values(discountValues);
+        }
+      } else {
+        await tx.delete(variantDiscounts).where(eq(variantDiscounts.variantId, persistedVariantId));
       }
     }
   };

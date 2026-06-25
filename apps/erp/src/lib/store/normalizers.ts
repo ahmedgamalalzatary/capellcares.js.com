@@ -66,7 +66,18 @@ export function normalizeProduct(input: ProductApiShape): Product {
       size: v.size ?? v.sizeLabel ?? "",
       price: toNumber(v.price ?? v.sellingPrice),
       stock: toNumber(v.stock ?? v.stockQty),
-      sortOrder: toNumber(v.sortOrder, index + 1)
+      sortOrder: toNumber(v.sortOrder, index + 1),
+      discount: v.discount
+        ? {
+          id: v.discount.id == null ? undefined : toNumber(v.discount.id),
+          variantId: v.discount.variantId == null ? undefined : toNumber(v.discount.variantId),
+          type: v.discount.type ?? "percentage",
+          value: toNumber(v.discount.value),
+          startsAt: v.discount.startsAt ?? "",
+          endsAt: v.discount.endsAt ?? "",
+          status: v.discount.status ?? "inactive"
+        }
+        : null
     })),
     offerIds: Array.isArray((input as { offerIds?: unknown[] }).offerIds)
       ? (input as { offerIds?: unknown[] }).offerIds!.map((value) => toNumber(value)).filter((value) => value > 0)

@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offerItems, offers, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, offers, orderItems, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -119,6 +119,48 @@ test("createOrderFromCheckout charges the normal variant price when no single-va
     .limit(1);
 
   assert.equal(Number(line?.unitPrice), 35);
+});
+
+test("createOrderFromCheckout applies an active variant discount and snapshots both base and final prices", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId,
+    type: "percentage",
+    value: "20.00",
+    startsAt: new Date("2026-06-01T00:00:00.000Z"),
+    endsAt: new Date("2026-06-30T23:59:59.000Z"),
+    status: "active"
+  });
+
+  const result = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
+  });
+
+  const [line] = await db
+    .select({
+      unitPrice: orderItems.unitPrice,
+      lineTotal: orderItems.lineTotal,
+      snapshotBaseUnitPrice: orderItems.snapshotBaseUnitPrice,
+      snapshotDiscountType: orderItems.snapshotDiscountType,
+      snapshotDiscountValue: orderItems.snapshotDiscountValue
+    })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, result.id))
+    .limit(1);
+  const [order] = await db
+    .select({ totalAmount: orders.totalAmount })
+    .from(orders)
+    .where(eq(orders.id, result.id))
+    .limit(1);
+
+  assert.equal(Number(line?.unitPrice), 28);
+  assert.equal(Number(line?.lineTotal), 56);
+  assert.equal(Number(line?.snapshotBaseUnitPrice), 35);
+  assert.equal(line?.snapshotDiscountType, "percentage");
+  assert.equal(Number(line?.snapshotDiscountValue), 20);
+  assert.equal(Number(order?.totalAmount), 56);
 });
 
 test("createOrderFromCheckout rejects a variant whose product is inactive", async () => {

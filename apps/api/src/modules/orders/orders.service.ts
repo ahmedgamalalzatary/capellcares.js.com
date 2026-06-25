@@ -1,9 +1,55 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { collections, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
+
+function resolveEffectiveVariantPrice(input: {
+  basePrice: number;
+  discount: null | {
+    id: number;
+    type: "percentage" | "fixed";
+    value: number;
+    startsAt: Date;
+    endsAt: Date;
+    status: "active" | "inactive";
+  };
+  now?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const discount = input.discount;
+  if (
+    !discount ||
+    discount.status !== "active" ||
+    now < discount.startsAt ||
+    now > discount.endsAt
+  ) {
+    return {
+      unitPrice: input.basePrice,
+      snapshotBaseUnitPrice: null,
+      snapshotDiscountId: null,
+      snapshotDiscountType: null,
+      snapshotDiscountValue: null,
+      snapshotDiscountStartsAt: null,
+      snapshotDiscountEndsAt: null
+    };
+  }
+
+  const discountedPrice = discount.type === "percentage"
+    ? input.basePrice * (1 - discount.value / 100)
+    : input.basePrice - discount.value;
+
+  return {
+    unitPrice: Number(discountedPrice.toFixed(2)),
+    snapshotBaseUnitPrice: input.basePrice,
+    snapshotDiscountId: discount.id,
+    snapshotDiscountType: discount.type,
+    snapshotDiscountValue: discount.value,
+    snapshotDiscountStartsAt: discount.startsAt.toISOString(),
+    snapshotDiscountEndsAt: discount.endsAt.toISOString()
+  };
+}
 
 export async function createOrderFromCheckout(
   payload: CheckoutPayload
@@ -19,10 +65,17 @@ export async function createOrderFromCheckout(
           sellingPrice: productVariants.sellingPrice,
           sizeLabel: productVariants.sizeLabel,
           arName: products.arName,
-          enName: products.enName
+          enName: products.enName,
+          discountId: variantDiscounts.id,
+          discountType: variantDiscounts.type,
+          discountValue: variantDiscounts.value,
+          discountStartsAt: variantDiscounts.startsAt,
+          discountEndsAt: variantDiscounts.endsAt,
+          discountStatus: variantDiscounts.status
         })
         .from(productVariants)
         .innerJoin(products, eq(products.id, productVariants.productId))
+        .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
         .where(
           and(
             eq(productVariants.id, variantId),
@@ -33,7 +86,21 @@ export async function createOrderFromCheckout(
         )
         .limit(1);
       if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
-      const unitPrice = Number(variant.sellingPrice);
+      const basePrice = Number(variant.sellingPrice);
+      const pricing = resolveEffectiveVariantPrice({
+        basePrice,
+        discount: variant.discountId
+          ? {
+            id: variant.discountId,
+            type: variant.discountType!,
+            value: Number(variant.discountValue),
+            startsAt: variant.discountStartsAt!,
+            endsAt: variant.discountEndsAt!,
+            status: variant.discountStatus!
+          }
+          : null
+      });
+      const unitPrice = pricing.unitPrice;
       pricedItems.push({
         itemType: "product_variant",
         variantId,
@@ -43,7 +110,13 @@ export async function createOrderFromCheckout(
         lineTotal: multiplyMoney(unitPrice, item.qty),
         snapshotNameAr: variant.arName,
         snapshotNameEn: variant.enName,
-        snapshotSizeLabel: variant.sizeLabel
+        snapshotSizeLabel: variant.sizeLabel,
+        snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+        snapshotDiscountId: pricing.snapshotDiscountId,
+        snapshotDiscountType: pricing.snapshotDiscountType,
+        snapshotDiscountValue: pricing.snapshotDiscountValue,
+        snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+        snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
       });
       continue;
     }

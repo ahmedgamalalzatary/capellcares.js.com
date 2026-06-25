@@ -19,6 +19,53 @@ import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 
+type NormalizedVariantDiscount = {
+  type: "percentage" | "fixed";
+  value: number;
+  startsAt: string;
+  endsAt: string;
+  status: "active" | "inactive";
+};
+
+function validateVariantDiscount(input: unknown, sellingPrice: number): { ok: true; value: NormalizedVariantDiscount | null } | { ok: false } {
+  if (input == null) {
+    return { ok: true as const, value: null };
+  }
+
+  const discount = input as {
+    type?: unknown;
+    value?: unknown;
+    startsAt?: unknown;
+    endsAt?: unknown;
+    status?: unknown;
+  };
+  const type = discount.type;
+  const value = Number(discount.value);
+  const startsAt = new Date(String(discount.startsAt ?? ""));
+  const endsAt = new Date(String(discount.endsAt ?? ""));
+  const status = discount.status;
+
+  if (type !== "percentage" && type !== "fixed") return { ok: false as const };
+  if (!Number.isFinite(value) || value <= 0) return { ok: false as const };
+  if (!(startsAt instanceof Date) || Number.isNaN(startsAt.getTime())) return { ok: false as const };
+  if (!(endsAt instanceof Date) || Number.isNaN(endsAt.getTime())) return { ok: false as const };
+  if (startsAt >= endsAt) return { ok: false as const };
+  if (status !== "active" && status !== "inactive") return { ok: false as const };
+  if (type === "percentage" && value > 100) return { ok: false as const };
+  if (type === "fixed" && value >= sellingPrice) return { ok: false as const };
+
+  return {
+    ok: true as const,
+    value: {
+      type,
+      value,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      status
+    }
+  };
+}
+
 async function buildCategorySlugs(categoryId: number): Promise<string[]> {
   const categories = await listCategoriesRepo(true);
   return buildCategorySlugsFromMap(categoryId, new Map(categories.map((category) => [category.id, category])));
@@ -111,6 +158,13 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
     }
+    for (const variant of productVariants) {
+      const price = Number(variant?.sellingPrice ?? variant?.price ?? 0);
+      const discountValidation = validateVariantDiscount(variant?.discount, price);
+      if (!discountValidation.ok) {
+        return res.status(400).json({ ok: false, reason: "invalid-variant-discount" });
+      }
+    }
     await db.transaction(async (tx) => {
       const product = await createAdminProductRepo({
         id: incoming.id ? Number(incoming.id) : undefined,
@@ -146,12 +200,16 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
       }, tx);
       await replaceVariantsRepo(
         product.id,
-        productVariants.map((v: any) => ({
-          id: v.id ? Number(v.id) : undefined,
-          sizeLabel: v.sizeLabel ?? v.size ?? "",
-          sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
-          stockQty: Number(v.stockQty ?? v.stock ?? 0)
-        })),
+        productVariants.map((v: any) => {
+          const validatedDiscount = validateVariantDiscount(v.discount, Number(v.sellingPrice ?? v.price ?? 0));
+          return {
+            id: v.id ? Number(v.id) : undefined,
+            sizeLabel: v.sizeLabel ?? v.size ?? "",
+            sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
+            stockQty: Number(v.stockQty ?? v.stock ?? 0),
+            discount: validatedDiscount.ok ? validatedDiscount.value : null
+          };
+        }),
         tx
       );
       if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
@@ -298,5 +356,69 @@ export async function adminSetVariantStock(req: Request, res: Response) {
   if (!updated) {
     return res.status(404).json({ message: "Variant not found" });
   }
+  res.json({ ok: true });
+}
+
+export async function adminUpdateProductDiscounts(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const product = await findAdminProductByIdRepo(id);
+  if (!product) {
+    return res.status(404).json({ ok: false, reason: "not-found" });
+  }
+
+  type DiscountVariantInput = {
+    id?: number;
+    discount?: unknown;
+    sellingPrice?: number;
+    price?: number;
+  };
+  const incomingVariants: DiscountVariantInput[] = Array.isArray(req.body?.variants) ? req.body.variants : [];
+  const byId = new Map(incomingVariants
+    .map((variant: DiscountVariantInput) => [Number(variant?.id), variant] as const)
+    .filter(([variantId]) => Number.isInteger(variantId) && variantId > 0));
+
+  for (const existingVariant of product.variants) {
+    const incoming = byId.get(existingVariant.id);
+    if (!incoming) {
+      continue;
+    }
+    const discountValidation = validateVariantDiscount(incoming.discount, Number(incoming.sellingPrice ?? incoming.price ?? existingVariant.price));
+    if (!discountValidation.ok) {
+      return res.status(400).json({ ok: false, reason: "invalid-variant-discount" });
+    }
+  }
+
+  await replaceVariantsRepo(
+    product.id,
+    product.variants.map((variant) => {
+      const incoming = byId.get(variant.id);
+      const existingDiscount = variant.discount
+        ? {
+          type: variant.discount.type as "percentage" | "fixed",
+          value: variant.discount.value,
+          startsAt: variant.discount.startsAt,
+          endsAt: variant.discount.endsAt,
+          status: variant.discount.status as "active" | "inactive"
+        }
+        : null;
+      return {
+        id: variant.id,
+        sizeLabel: variant.size,
+        sellingPrice: variant.price,
+        stockQty: variant.stock,
+        discount: incoming
+          ? (() => {
+            const validatedDiscount = validateVariantDiscount(incoming.discount, variant.price);
+            return validatedDiscount.ok ? validatedDiscount.value : null;
+          })()
+          : existingDiscount
+      };
+    })
+  );
+
+  await safeTriggerProductRevalidation({
+    slug: product.slug,
+    categorySlugs: await buildCategorySlugs(product.categoryId)
+  });
   res.json({ ok: true });
 }
