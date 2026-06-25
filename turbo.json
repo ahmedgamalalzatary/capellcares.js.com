@@ -9,6 +9,9 @@
       "cache": false
     },
     "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
     "test": {
       "dependsOn": ["^build"],
       "passThroughEnv": [
