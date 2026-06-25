@@ -128,7 +128,7 @@ pnpm --filter @capella/erp test
 pnpm test:staging-smoke
 ```
 
-API and database tests use `.env.test` at the repo root. Keep a dedicated test database (`capella_test`) separate from local dev data.
+API and database tests use `.env.test` at the repo root. Keep a dedicated test database (`minikoshk_test`) separate from local dev data.
 
 ## Docker
 

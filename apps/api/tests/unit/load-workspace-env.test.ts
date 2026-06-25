@@ -12,7 +12,7 @@ test("loadWorkspaceEnv loads .env.test from workspace root and maps TEST_DATABAS
   const envPath = join(tempRoot, ".env.test");
 
   try {
-    writeFileSync(envPath, "TEST_DATABASE_URL=mysql://root:pass@localhost:3306/capella_test\n");
+    writeFileSync(envPath, "TEST_DATABASE_URL=mysql://root:pass@localhost:3306/minikoshk_test\n");
 
     const env: NodeJS.ProcessEnv = {
       NODE_ENV: "test"
@@ -26,13 +26,13 @@ test("loadWorkspaceEnv loads .env.test from workspace root and maps TEST_DATABAS
       fileExists: (path) => path === envPath,
       loadFile: (path) => {
         loadedPaths.push(path);
-        env.TEST_DATABASE_URL = "mysql://root:pass@localhost:3306/capella_test";
+        env.TEST_DATABASE_URL = "mysql://root:pass@localhost:3306/minikoshk_test";
       }
     });
 
     assert.deepEqual(loadedPaths, [envPath]);
-    assert.equal(env.TEST_DATABASE_URL, "mysql://root:pass@localhost:3306/capella_test");
-    assert.equal(env.DATABASE_URL, "mysql://root:pass@localhost:3306/capella_test");
+    assert.equal(env.TEST_DATABASE_URL, "mysql://root:pass@localhost:3306/minikoshk_test");
+    assert.equal(env.DATABASE_URL, "mysql://root:pass@localhost:3306/minikoshk_test");
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -41,7 +41,7 @@ test("loadWorkspaceEnv loads .env.test from workspace root and maps TEST_DATABAS
 test("loadWorkspaceEnv maps TEST_DATABASE_URL during tests even without .env.test", () => {
   const env: NodeJS.ProcessEnv = {
     NODE_ENV: "test",
-    TEST_DATABASE_URL: "mysql://root:pass@localhost:3306/capella_test"
+    TEST_DATABASE_URL: "mysql://root:pass@localhost:3306/minikoshk_test"
   };
 
   let loaderCalled = false;
@@ -55,7 +55,7 @@ test("loadWorkspaceEnv maps TEST_DATABASE_URL during tests even without .env.tes
   });
 
   assert.equal(loaderCalled, false);
-  assert.equal(env.DATABASE_URL, "mysql://root:pass@localhost:3306/capella_test");
+  assert.equal(env.DATABASE_URL, "mysql://root:pass@localhost:3306/minikoshk_test");
 });
 
 test("loadWorkspaceEnv skips loading when DATABASE_URL already exists", () => {

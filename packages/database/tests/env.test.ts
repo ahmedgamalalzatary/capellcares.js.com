@@ -6,20 +6,20 @@ import { resolveDatabaseUrl } from "../src/env.js";
 test("resolveDatabaseUrl prefers TEST_DATABASE_URL when NODE_ENV is test", () => {
   const databaseUrl = resolveDatabaseUrl({
     NODE_ENV: "test",
-    DATABASE_URL: "mysql://root:pass@localhost:3306/capella",
-    TEST_DATABASE_URL: "mysql://root:pass@localhost:3306/capella_test"
+    DATABASE_URL: "mysql://root:pass@localhost:3306/minikoshk",
+    TEST_DATABASE_URL: "mysql://root:pass@localhost:3306/minikoshk_test"
   });
 
-  assert.equal(databaseUrl, "mysql://root:pass@localhost:3306/capella_test");
+  assert.equal(databaseUrl, "mysql://root:pass@localhost:3306/minikoshk_test");
 });
 
 test("resolveDatabaseUrl falls back to DATABASE_URL outside tests", () => {
   const databaseUrl = resolveDatabaseUrl({
     NODE_ENV: "development",
-    DATABASE_URL: "mysql://root:pass@localhost:3306/capella"
+    DATABASE_URL: "mysql://root:pass@localhost:3306/minikoshk"
   });
 
-  assert.equal(databaseUrl, "mysql://root:pass@localhost:3306/capella");
+  assert.equal(databaseUrl, "mysql://root:pass@localhost:3306/minikoshk");
 });
 
 test("resolveDatabaseUrl throws when no database url is configured", () => {
