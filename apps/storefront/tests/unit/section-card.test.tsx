@@ -70,7 +70,7 @@ describe("SectionCard", () => {
 
     const { unmount } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 
-    fireEvent.click(screen.getByRole("link", { name: "Add to cart" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
     unmount();
 
     expect(clearTimeoutSpy).toHaveBeenCalled();

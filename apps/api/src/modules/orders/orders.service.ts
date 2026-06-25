@@ -1,61 +1,9 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collections, offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
-import { findSingleVariantActiveOfferPriceByVariantId } from "../offers/effective-offer-pricing.js";
 import { addMoney, multiplyMoney } from "./money.js";
-
-/**
- * A product variant that is the sole item of an active offer advertises that
- * offer's price on the storefront, so checkout must charge the same number.
- * Loads the active/visible offers containing this variant, then uses the shared
- * single-variant decision (over each offer's TRUE item set) so display and
- * checkout never diverge. Falls back to the raw selling price when none qualify.
- */
-async function resolveEffectiveVariantPrice(variantId: number, sellingPrice: unknown): Promise<number> {
-  const candidateRows = await db
-    .select({ offerId: offerItems.offerId })
-    .from(offerItems)
-    .innerJoin(offers, eq(offerItems.offerId, offers.id))
-    .where(
-      and(
-        eq(offerItems.variantId, variantId),
-        eq(offers.status, "active"),
-        eq(offers.visibility, "visible"),
-        isNull(offers.deletedAt)
-      )
-    );
-
-  const candidateOfferIds = [...new Set(candidateRows.map((row) => row.offerId))];
-  if (candidateOfferIds.length === 0) {
-    return Number(sellingPrice);
-  }
-
-  const itemRows = await db
-    .select({
-      offerId: offers.id,
-      status: offers.status,
-      fixedPrice: offers.fixedPrice,
-      variantId: offerItems.variantId,
-      qty: offerItems.qty
-    })
-    .from(offerItems)
-    .innerJoin(offers, eq(offerItems.offerId, offers.id))
-    .where(inArray(offerItems.offerId, candidateOfferIds));
-
-  const offersById = new Map<number, { status: "active" | "inactive"; fixedPrice: unknown; items: Array<{ variantId: number; qty: number }> }>();
-  for (const row of itemRows) {
-    const offer = offersById.get(row.offerId) ?? { status: row.status, fixedPrice: row.fixedPrice, items: [] };
-    offer.items.push({ variantId: row.variantId, qty: row.qty });
-    offersById.set(row.offerId, offer);
-  }
-
-  const prices = findSingleVariantActiveOfferPriceByVariantId(
-    [...offersById.entries()].map(([id, offer]) => ({ id, ...offer }))
-  );
-  return prices.get(variantId) ?? Number(sellingPrice);
-}
 
 export async function createOrderFromCheckout(
   payload: CheckoutPayload
@@ -85,7 +33,7 @@ export async function createOrderFromCheckout(
         )
         .limit(1);
       if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
-      const unitPrice = await resolveEffectiveVariantPrice(variantId, variant.sellingPrice);
+      const unitPrice = Number(variant.sellingPrice);
       pricedItems.push({
         itemType: "product_variant",
         variantId,

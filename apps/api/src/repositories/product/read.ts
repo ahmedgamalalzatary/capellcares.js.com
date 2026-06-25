@@ -2,7 +2,6 @@ import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering } from "@capella/shared";
 import { categories, offerItems, offers, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { findSingleVariantActiveOfferPriceByVariantId } from "../../modules/offers/effective-offer-pricing.js";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
@@ -13,30 +12,16 @@ import {
   toKeywords
 } from "./shared.js";
 
-type VariantRow = {
-  id: number;
-  productId: number;
-  sizeLabel: string;
-  sellingPrice: unknown;
-  stockQty: number;
-  sortOrder: number;
-};
-
 async function loadActiveOfferData(productIds: number[]) {
   if (productIds.length === 0) {
     return {
-      offerIdsByProductId: new Map<number, number[]>(),
-      effectiveOfferPriceByVariantId: new Map<number, number>()
+      offerIdsByProductId: new Map<number, number[]>()
     };
   }
 
   const rows = await db
     .select({
       offerId: offers.id,
-      status: offers.status,
-      fixedPrice: offers.fixedPrice,
-      variantId: offerItems.variantId,
-      qty: offerItems.qty,
       productId: productVariants.productId
     })
     .from(offerItems)
@@ -60,51 +45,11 @@ async function loadActiveOfferData(productIds: number[]) {
     offerIdsByProductId.set(row.productId, productOfferIds);
   }
 
-  // The query above is scoped to the requested products (and excludes soft-deleted
-  // variants), so its rows are NOT a reliable count of an offer's membership: a real
-  // bundle can look like a single item once filtered. Re-load the candidate offers'
-  // FULL item sets so single-variant detection sees each offer's true contents.
-  const candidateOfferIds = [...new Set(rows.map((row) => row.offerId))];
-  const offersById = new Map<number, { status: "active" | "inactive"; fixedPrice: unknown; items: Array<{ variantId: number; qty: number }> }>();
-
-  if (candidateOfferIds.length > 0) {
-    const fullItemRows = await db
-      .select({
-        offerId: offers.id,
-        status: offers.status,
-        fixedPrice: offers.fixedPrice,
-        variantId: offerItems.variantId,
-        qty: offerItems.qty
-      })
-      .from(offerItems)
-      .innerJoin(offers, eq(offerItems.offerId, offers.id))
-      .where(inArray(offerItems.offerId, candidateOfferIds));
-
-    for (const row of fullItemRows) {
-      const offer = offersById.get(row.offerId) ?? { status: row.status, fixedPrice: row.fixedPrice, items: [] };
-      offer.items.push({ variantId: row.variantId, qty: row.qty });
-      offersById.set(row.offerId, offer);
-    }
-  }
-
   return {
     offerIdsByProductId: new Map(
       [...offerIdsByProductId.entries()].map(([productId, offerIds]) => [productId, [...offerIds]])
-    ),
-    effectiveOfferPriceByVariantId: findSingleVariantActiveOfferPriceByVariantId(
-      [...offersById.entries()].map(([id, offer]) => ({ id, ...offer }))
     )
   };
-}
-
-function mapEffectiveVariant(
-  variant: VariantRow,
-  effectiveOfferPriceByVariantId: Map<number, number>
-) {
-  return mapVariant({
-    ...variant,
-    sellingPrice: effectiveOfferPriceByVariantId.get(variant.id) ?? variant.sellingPrice
-  });
 }
 
 function escapeLikeTerm(value: string) {
@@ -175,7 +120,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   const orderingRows = await loadProductOrderingRowsRepo(productIds);
   const rankByProductId = rankForProductScope(orderingRows, scopeCategoryId);
   const mediaByProduct = await loadMediaRows(productIds);
-  const { offerIdsByProductId, effectiveOfferPriceByVariantId } = await loadActiveOfferData(productIds);
+  const { offerIdsByProductId } = await loadActiveOfferData(productIds);
   const variantsRows = await db
     .select({
       id: productVariants.id,
@@ -191,7 +136,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
     const list = variantsByProduct.get(v.productId) ?? [];
-    list.push(mapEffectiveVariant(v, effectiveOfferPriceByVariantId));
+    list.push(mapVariant(v));
     variantsByProduct.set(v.productId, list);
   }
 
@@ -210,8 +155,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
         description: { ar: "", en: "" },
         ingredients: { ar: "", en: "" },
         howToUse: { ar: "", en: "" },
-        warnings: { ar: "", en: "" }
-        ,
+        warnings: { ar: "", en: "" },
         offerIds: offerIdsByProductId.get(r.id) ?? []
       };
     })
@@ -252,7 +196,7 @@ export async function findVisibleProductBySlug(slug: string) {
   const product = rows[0];
   if (!product) return null;
   const mediaByProduct = await loadMediaRows([product.id]);
-  const { offerIdsByProductId, effectiveOfferPriceByVariantId } = await loadActiveOfferData([product.id]);
+  const { offerIdsByProductId } = await loadActiveOfferData([product.id]);
 
   const variantsRows = await db
     .select({
@@ -273,7 +217,7 @@ export async function findVisibleProductBySlug(slug: string) {
     hoverImagePath: resolveHoverImagePath(product.hoverImagePath) ?? "",
     media,
     keywords: toKeywords(product.keywords),
-    variants: variantsRows.map((variant) => mapEffectiveVariant(variant, effectiveOfferPriceByVariantId)).sort((a, b) => a.sortOrder - b.sortOrder),
+    variants: variantsRows.map((variant) => mapVariant(variant)).sort((a, b) => a.sortOrder - b.sortOrder),
     name: { ar: product.arName, en: product.enName },
     description: { ar: product.arDescription ?? "", en: product.enDescription ?? "" },
     ingredients: { ar: product.arIngredients ?? "", en: product.enIngredients ?? "" },
@@ -295,7 +239,7 @@ export async function listAdminProductsRepo() {
     orderingsByProductId.set(row.entityId, list);
   }
   const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
-  const { offerIdsByProductId, effectiveOfferPriceByVariantId } = await loadActiveOfferData(rows.map((r) => r.id));
+  const { offerIdsByProductId } = await loadActiveOfferData(rows.map((r) => r.id));
 
   const variantsRows = await db
     .select({
@@ -312,7 +256,7 @@ export async function listAdminProductsRepo() {
   const variantsByProduct = new Map<number, ReturnType<typeof mapVariant>[]>();
   for (const v of variantsRows) {
     const list = variantsByProduct.get(v.productId) ?? [];
-    list.push(mapEffectiveVariant(v, effectiveOfferPriceByVariantId));
+    list.push(mapVariant(v));
     variantsByProduct.set(v.productId, list);
   }
 
@@ -340,7 +284,7 @@ export async function findAdminProductByIdRepo(id: number) {
   }
 
   const mediaByProduct = await loadMediaRows([row.id]);
-  const { offerIdsByProductId, effectiveOfferPriceByVariantId } = await loadActiveOfferData([row.id]);
+  const { offerIdsByProductId } = await loadActiveOfferData([row.id]);
   const variantsRows = await db
     .select({
       id: productVariants.id,
@@ -361,6 +305,6 @@ export async function findAdminProductByIdRepo(id: number) {
     media,
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],
-    variants: variantsRows.map((variant) => mapEffectiveVariant(variant, effectiveOfferPriceByVariantId)).sort((a, b) => a.sortOrder - b.sortOrder)
+    variants: variantsRows.map((variant) => mapVariant(variant)).sort((a, b) => a.sortOrder - b.sortOrder)
   };
 }

@@ -61,7 +61,7 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
 });
 
-test("createOrderFromCheckout charges the single-variant active offer price for a product line", async () => {
+test("createOrderFromCheckout ignores a single-variant active offer price for a product line", async () => {
   const ids = await getBaselineIds();
 
   // A single-variant active offer on the first variant (normal price 35) at 25.
@@ -95,9 +95,9 @@ test("createOrderFromCheckout charges the single-variant active offer price for 
     .where(eq(orders.id, result.id))
     .limit(1);
 
-  assert.equal(Number(line?.unitPrice), 25);
-  assert.equal(Number(line?.lineTotal), 50);
-  assert.equal(Number(order?.totalAmount), 50);
+  assert.equal(Number(line?.unitPrice), 35);
+  assert.equal(Number(line?.lineTotal), 70);
+  assert.equal(Number(order?.totalAmount), 70);
 
   await db.delete(offerItems).where(eq(offerItems.offerId, createdOffer.id));
   await db.delete(offers).where(eq(offers.id, createdOffer.id));

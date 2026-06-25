@@ -7,7 +7,7 @@ import { offerItems, offers, productVariants } from "@capella/database/drizzle/s
 import { findAdminProductByIdRepo, findVisibleProductBySlug, findVisibleProducts } from "../../src/repositories/product.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
-test("product reads use an active single-variant offer price everywhere and expose offerIds", async () => {
+test("product reads ignore an active single-variant offer price and still expose offerIds", async () => {
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
@@ -32,19 +32,19 @@ test("product reads use an active single-variant offer price everywhere and expo
   const storefrontRows = await findVisibleProducts({ lang: "en" });
   const storefrontProduct = storefrontRows.find((product) => product.id === ids.productOneId);
   assert.ok(storefrontProduct);
-  assert.equal(storefrontProduct.variants[0]?.price, 22);
+  assert.equal(storefrontProduct.variants[0]?.price, 35);
   assert.ok(storefrontProduct.offerIds?.includes(createdOffer.id));
 
   const adminProduct = await findAdminProductByIdRepo(ids.productOneId);
   assert.ok(adminProduct);
-  assert.equal(adminProduct.variants[0]?.price, 22);
+  assert.equal(adminProduct.variants[0]?.price, 35);
   assert.ok(adminProduct.offerIds?.includes(createdOffer.id));
 
   await db.delete(offerItems).where(eq(offerItems.offerId, createdOffer.id));
   await db.delete(offers).where(eq(offers.id, createdOffer.id));
 });
 
-test("inactive single-variant offers do not override product prices or tag products", async () => {
+test("inactive single-variant offers do not affect product prices or tag products", async () => {
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
@@ -76,7 +76,7 @@ test("inactive single-variant offers do not override product prices or tag produ
   await db.delete(offers).where(eq(offers.id, createdOffer.id));
 });
 
-test("a multi-variant bundle spanning products does not override a single product's price when read by slug", async () => {
+test("a multi-variant bundle spanning products does not affect a single product's price when read by slug", async () => {
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
@@ -88,7 +88,7 @@ test("a multi-variant bundle spanning products does not override a single produc
   assert.ok(product.offerIds?.includes(ids.offerId));
 });
 
-test("a two-item offer with one soft-deleted variant is not treated as single-variant", async () => {
+test("a two-item offer with one soft-deleted variant does not affect product pricing", async () => {
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
@@ -104,4 +104,3 @@ test("a two-item offer with one soft-deleted variant is not treated as single-va
   assert.ok(storefrontProduct);
   assert.equal(storefrontProduct.variants[0]?.price, 35);
 });
-

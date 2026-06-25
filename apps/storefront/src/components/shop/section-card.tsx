@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pickLang, formatPrice, type Language, type Offer, type Collection, type Advice } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -18,6 +18,13 @@ export function SectionCard(props: SectionCardProps) {
   const isAr = lang === "ar";
   const cart = useCart();
   const [added, setAdded] = useState(false);
+  const addedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (addedResetTimeoutRef.current != null) {
+      clearTimeout(addedResetTimeoutRef.current);
+    }
+  }, []);
 
   // Typography mirrors ProductCard exactly, only the content/colors differ per kind.
   const nameClass = `m-0 leading-tight text-ink ${
@@ -53,7 +60,13 @@ export function SectionCard(props: SectionCardProps) {
       e.preventDefault();
       cart.add({ type: "offer", offerId: offer.id, qty: 1 });
       setAdded(true);
-      setTimeout(() => setAdded(false), 1400);
+      if (addedResetTimeoutRef.current != null) {
+        clearTimeout(addedResetTimeoutRef.current);
+      }
+      addedResetTimeoutRef.current = setTimeout(() => {
+        setAdded(false);
+        addedResetTimeoutRef.current = null;
+      }, 1400);
     };
   } else if (props.kind === "collection") {
     const collection = props.data;
@@ -68,7 +81,13 @@ export function SectionCard(props: SectionCardProps) {
       e.preventDefault();
       cart.add({ type: "collection", collectionId: collection.id, qty: 1 });
       setAdded(true);
-      setTimeout(() => setAdded(false), 1400);
+      if (addedResetTimeoutRef.current != null) {
+        clearTimeout(addedResetTimeoutRef.current);
+      }
+      addedResetTimeoutRef.current = setTimeout(() => {
+        setAdded(false);
+        addedResetTimeoutRef.current = null;
+      }, 1400);
     };
   } else {
     const advice = props.data;

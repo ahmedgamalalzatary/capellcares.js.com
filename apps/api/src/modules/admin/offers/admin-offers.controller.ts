@@ -117,6 +117,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     const incoming = req.body as any;
     const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
     const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
+    if (!Number.isFinite(fixedPrice) || fixedPrice < 0) {
+      return res.status(400).json({ ok: false, reason: "invalid-fixed-price" });
+    }
     const items = (incoming.items ?? []).map((item: any) => ({
       id: item.id ? Number(item.id) : undefined,
       variantId: Number(item.variantId),

@@ -1,7 +1,6 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useStore } from "@/lib/store";
 
 const { toastSuccess, showErrorToast } = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
@@ -139,7 +138,7 @@ describe("ShopMediaPage", () => {
   });
 
   it("allows saving with only desktop image provided", () => {
-    const stateWithMissingMobile = {
+    mockState = {
       ...makeMockState(),
       shopMediaSections: [{
         id: 1,
@@ -148,16 +147,16 @@ describe("ShopMediaPage", () => {
         items: [{
           id: 11,
           imagePath: "/uploads/desktop.jpg",
-          mobileImagePath: null,
+          mobileImagePath: null as any,
           targetType: "offers",
           targetId: null,
           sortOrder: 1
         }]
       }]
     };
-    vi.mocked(useStore).mockReturnValue(stateWithMissingMobile as any);
     render(createElement(ShopMediaPage));
 
+    fireEvent.click(screen.getAllByRole("checkbox", { name: "تفعيل القسم" })[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({

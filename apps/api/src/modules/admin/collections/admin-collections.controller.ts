@@ -161,6 +161,10 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
   try {
     const incoming = req.body as any;
     const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
+    const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
+    if (!Number.isFinite(fixedPrice) || fixedPrice < 0) {
+      return res.status(400).json({ ok: false, reason: "invalid-fixed-price" });
+    }
     const items = (incoming.items ?? []).map((item: any) => ({
       id: item.id ? Number(item.id) : undefined,
       variantId: Number(item.variantId),
@@ -172,7 +176,6 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       return res.status(400).json({ ok: false, reason: validationError });
     }
 
-    const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
     const priceError = await validateBundlePriceBelowParts(fixedPrice, items);
     if (priceError) {
       return res.status(400).json({ ok: false, reason: priceError });
