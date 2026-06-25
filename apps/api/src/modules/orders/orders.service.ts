@@ -40,6 +40,10 @@ function resolveEffectiveVariantPrice(input: {
     ? input.basePrice * (1 - discount.value / 100)
     : input.basePrice - discount.value;
 
+  if (!Number.isFinite(discountedPrice) || discountedPrice <= 0 || discountedPrice >= input.basePrice) {
+    throw new Error("Invalid discounted price");
+  }
+
   return {
     unitPrice: Number(discountedPrice.toFixed(2)),
     snapshotBaseUnitPrice: input.basePrice,

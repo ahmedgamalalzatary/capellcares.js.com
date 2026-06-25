@@ -102,7 +102,7 @@ export function ProductsTable({
                         </button>
                       </>
                     )}
-                    {(canToggle || canEdit || canDelete) && (
+                    {(canToggle || canEdit || canDelete || canManageDiscount(user)) && (
                       <RowMenu>
                         {canToggle && (
                           <button

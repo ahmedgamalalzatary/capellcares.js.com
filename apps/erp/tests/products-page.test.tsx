@@ -267,6 +267,20 @@ describe("ProductsListPage", () => {
     });
   });
 
+  it("shows the row menu when discount is the only allowed action", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read", "products.discount"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(ProductsListPage));
+
+    fireEvent.click(screen.getByLabelText("إجراءات"));
+
+    expect(await screen.findByRole("link", { name: "خصم منتج" })).toHaveAttribute("href", "/products/1/discount");
+  });
+
   it("submits gallery media separately from the dedicated hover image", async () => {
     const view = render(createElement(ProductForm, {
       mode: "edit",

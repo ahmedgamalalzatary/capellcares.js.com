@@ -382,9 +382,11 @@ export async function adminUpdateProductDiscounts(req: Request, res: Response) {
     if (!incoming) {
       continue;
     }
-    const discountValidation = validateVariantDiscount(incoming.discount, Number(incoming.sellingPrice ?? incoming.price ?? existingVariant.price));
-    if (!discountValidation.ok) {
-      return res.status(400).json({ ok: false, reason: "invalid-variant-discount" });
+    if (Object.prototype.hasOwnProperty.call(incoming, "discount")) {
+      const discountValidation = validateVariantDiscount(incoming.discount, existingVariant.price);
+      if (!discountValidation.ok) {
+        return res.status(400).json({ ok: false, reason: "invalid-variant-discount" });
+      }
     }
   }
 
@@ -406,7 +408,7 @@ export async function adminUpdateProductDiscounts(req: Request, res: Response) {
         sizeLabel: variant.size,
         sellingPrice: variant.price,
         stockQty: variant.stock,
-        discount: incoming
+        discount: incoming && Object.prototype.hasOwnProperty.call(incoming, "discount")
           ? (() => {
             const validatedDiscount = validateVariantDiscount(incoming.discount, variant.price);
             return validatedDiscount.ok ? validatedDiscount.value : null;

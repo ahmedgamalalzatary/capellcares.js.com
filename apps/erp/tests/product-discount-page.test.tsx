@@ -72,16 +72,18 @@ vi.mock("@/lib/api/client", () => ({
 import ProductDiscountPage from "@/app/products/[id]/discount/page";
 
 describe("ProductDiscountPage", () => {
-  beforeEach(() => {
-    push.mockClear();
-    mockedUseAdminAuth.mockReset();
-    mockedUseAdminAuth.mockReturnValue({
+beforeEach(() => {
+  push.mockClear();
+  mockedUseAdminAuth.mockReset();
+  mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.discount"] },
       hydrated: true,
       logout: vi.fn()
-    });
-    apiPost.mockClear();
   });
+  apiPost.mockClear();
+  storeState.products[0]!.variants[0]!.discount = null;
+  storeState.products[0]!.variants[1]!.discount = null;
+});
 
   it("shows a forbidden state for staff without products.discount", async () => {
     mockedUseAdminAuth.mockReturnValue({
@@ -130,6 +132,59 @@ describe("ProductDiscountPage", () => {
       });
     });
     expect(push).toHaveBeenCalledWith("/products");
+  });
+
+  it("renders discount times in local datetime-local format", async () => {
+    storeState.products[0]!.variants[0]!.discount = {
+      id: 9,
+      variantId: 11,
+      type: "percentage",
+      value: 10,
+      startsAt: "2026-06-01T10:00:00.000Z",
+      endsAt: "2026-06-01T12:30:00.000Z",
+      status: "active"
+    };
+
+    await act(async () => {
+      render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
+    });
+
+    const startsAtInput = screen.getAllByLabelText("بداية الخصم")[0] as HTMLInputElement;
+    const endsAtInput = screen.getAllByLabelText("نهاية الخصم")[0] as HTMLInputElement;
+
+    const expectedStart = new Date("2026-06-01T10:00:00.000Z");
+    const expectedEnd = new Date("2026-06-01T12:30:00.000Z");
+    const formatLocal = (value: Date) => {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      const hours = String(value.getHours()).padStart(2, "0");
+      const minutes = String(value.getMinutes()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    expect(startsAtInput.value).toBe(formatLocal(expectedStart));
+    expect(endsAtInput.value).toBe(formatLocal(expectedEnd));
+
+    storeState.products[0]!.variants[0]!.discount = null;
+  });
+
+  it("removes a brand-new placeholder discount when toggled back off", async () => {
+    await act(async () => {
+      render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
+    });
+
+    const saveButton = screen.getByRole("button", { name: "حفظ الخصومات" });
+
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+    fireEvent.change(screen.getAllByLabelText("قيمة الخصم")[0]!, { target: { value: "10" } });
+    fireEvent.change(screen.getAllByLabelText("بداية الخصم")[0]!, { target: { value: "2026-06-01T10:00" } });
+    fireEvent.change(screen.getAllByLabelText("نهاية الخصم")[0]!, { target: { value: "2026-06-01T12:00" } });
+    expect(saveButton).not.toBeDisabled();
+
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+    expect(saveButton).not.toBeDisabled();
+    expect(screen.queryByText(/راجعي بيانات الخصم/)).not.toBeInTheDocument();
   });
 
   it("renders variants after a delayed store load on refresh", async () => {

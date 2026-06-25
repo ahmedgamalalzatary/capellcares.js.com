@@ -231,4 +231,62 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
   });
+
+  it("shows out-of-stock instead of a price for a selected zero-stock variant", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size",
+        related: "You may also like"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [
+          { id: 11, productId: 1, size: "100ml", price: 50, stock: 0, sortOrder: 1 }
+        ],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    expect(screen.getAllByText("Out of stock").length).toBeGreaterThanOrEqual(2);
+    const primaryPrice = document.querySelector(".text-3xl, .sm\\:text-\\[40px\\]");
+    expect(primaryPrice).toHaveTextContent("Out of stock");
+  });
 });

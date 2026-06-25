@@ -13,7 +13,15 @@ import { useStore } from "@/lib/store";
 type VariantDiscountState = NonNullable<ProductVariant["discount"]>;
 
 function toDateTimeLocal(value: string) {
-  return value ? value.slice(0, 16) : "";
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function toIsoOrEmpty(value: string) {
@@ -149,7 +157,14 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
                       <input
                         type="checkbox"
                         checked={isActive}
-                        onChange={(e) => updateVariantDiscount(variant.id, { ...discount, status: e.target.checked ? "active" : "inactive" })}
+                        onChange={(e) => updateVariantDiscount(
+                          variant.id,
+                          e.target.checked
+                            ? { ...discount, status: "active" }
+                            : variant.discount == null
+                              ? null
+                              : { ...discount, status: "inactive" }
+                        )}
                       />
                       تفعيل الخصم
                     </label>

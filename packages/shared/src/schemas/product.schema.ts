@@ -1,5 +1,27 @@
 import { z } from "zod";
 
+const timestampString = z.string().min(1).refine((value) => !Number.isNaN(new Date(value).getTime()), {
+  message: "Invalid timestamp"
+});
+
+const discountSchema = z.object({
+  id: z.number().int().positive().optional(),
+  variantId: z.number().int().positive().optional(),
+  type: z.enum(["percentage", "fixed"]),
+  value: z.number().positive(),
+  startsAt: timestampString,
+  endsAt: timestampString,
+  status: z.enum(["active", "inactive"])
+}).superRefine((discount, ctx) => {
+  if (new Date(discount.startsAt).getTime() >= new Date(discount.endsAt).getTime()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Discount start must be before end",
+      path: ["endsAt"]
+    });
+  }
+});
+
 export const productVariantSchema = z.object({
   id: z.number().int().positive(),
   productId: z.number().int().positive(),
@@ -7,15 +29,7 @@ export const productVariantSchema = z.object({
   sellingPrice: z.number().nonnegative(),
   stockQty: z.number().int().nonnegative(),
   sortOrder: z.number().int(),
-  discount: z.object({
-    id: z.number().int().positive().optional(),
-    variantId: z.number().int().positive().optional(),
-    type: z.enum(["percentage", "fixed"]),
-    value: z.number().positive(),
-    startsAt: z.string().min(1),
-    endsAt: z.string().min(1),
-    status: z.enum(["active", "inactive"])
-  }).nullable().optional()
+  discount: discountSchema.nullable().optional()
 });
 
 export const productMediaSchema = z.object({

@@ -123,13 +123,14 @@ test("createOrderFromCheckout charges the normal variant price when no single-va
 
 test("createOrderFromCheckout applies an active variant discount and snapshots both base and final prices", async () => {
   const ids = await getBaselineIds();
+  const now = Date.now();
 
   await db.insert(variantDiscounts).values({
     variantId: ids.firstVariantId,
     type: "percentage",
     value: "20.00",
-    startsAt: new Date("2026-06-01T00:00:00.000Z"),
-    endsAt: new Date("2026-06-30T23:59:59.000Z"),
+    startsAt: new Date(now - 60_000),
+    endsAt: new Date(now + 60_000),
     status: "active"
   });
 
@@ -161,6 +162,28 @@ test("createOrderFromCheckout applies an active variant discount and snapshots b
   assert.equal(line?.snapshotDiscountType, "percentage");
   assert.equal(Number(line?.snapshotDiscountValue), 20);
   assert.equal(Number(order?.totalAmount), 56);
+});
+
+test("createOrderFromCheckout rejects a discount that would reduce the checkout price to zero or less", async () => {
+  const ids = await getBaselineIds();
+  const now = Date.now();
+
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId,
+    type: "fixed",
+    value: "35.00",
+    startsAt: new Date(now - 60_000),
+    endsAt: new Date(now + 60_000),
+    status: "active"
+  });
+
+  await assert.rejects(
+    createOrderFromCheckout({
+      ...baseCheckoutPayload(),
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+    }),
+    /invalid discounted price/i
+  );
 });
 
 test("createOrderFromCheckout rejects a variant whose product is inactive", async () => {

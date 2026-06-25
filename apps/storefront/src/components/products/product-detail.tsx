@@ -137,9 +137,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <span className={lang === "ar"
               ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
               : "text-3xl font-(--font-display) leading-none text-accent sm:text-[40px]"}>
-              {variant && effectiveVariantPrice != null ? formatPrice(effectiveVariantPrice, lang) : dict.common.outOfStock}
+              {variant && effectiveVariantPrice != null && !isOutOfStock ? formatPrice(effectiveVariantPrice, lang) : dict.common.outOfStock}
             </span>
-            {variant && effectiveVariantPrice != null && effectiveVariantPrice !== variant.price ? (
+            {variant && effectiveVariantPrice != null && !isOutOfStock && effectiveVariantPrice !== variant.price ? (
               <span className="text-base text-(--ink-3) line-through">{formatPrice(variant.price, lang)}</span>
             ) : null}
             {isOutOfStock ? (

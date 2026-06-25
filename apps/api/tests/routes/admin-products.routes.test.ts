@@ -328,6 +328,83 @@ serialTest("admin product upsert rejects a fixed discount that would zero out or
   });
 });
 
+serialTest("admin product discount update preserves an existing discount when the request omits the discount field", async () => {
+  const ids = await getBaselineIds();
+
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId,
+    type: "percentage",
+    value: "20.00",
+    startsAt: new Date("2026-06-01T00:00:00.000Z"),
+    endsAt: new Date("2026-06-30T23:59:59.000Z"),
+    status: "active"
+  });
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/discount`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        variants: [{ id: ids.firstVariantId }]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [discount] = await db
+    .select({
+      variantId: variantDiscounts.variantId,
+      type: variantDiscounts.type,
+      value: variantDiscounts.value,
+      status: variantDiscounts.status
+    })
+    .from(variantDiscounts)
+    .where(eq(variantDiscounts.variantId, ids.firstVariantId))
+    .limit(1);
+
+  assert.equal(discount?.variantId, ids.firstVariantId);
+  assert.equal(discount?.type, "percentage");
+  assert.equal(Number(discount?.value), 20);
+  assert.equal(discount?.status, "active");
+});
+
+serialTest("admin product discount update validates fixed discounts against the persisted variant price", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/discount`, {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        variants: [{
+          id: ids.firstVariantId,
+          price: 999,
+          discount: {
+            type: "fixed",
+            value: 35,
+            startsAt: "2026-06-01T00:00:00.000Z",
+            endsAt: "2026-06-30T23:59:59.000Z",
+            status: "active"
+          }
+        }]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-variant-discount");
+  });
+});
+
 serialTest("admin product upsert persists ordered media and a dedicated hover image separately", async () => {
   const ids = await getBaselineIds();
 

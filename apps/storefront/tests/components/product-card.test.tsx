@@ -1,6 +1,10 @@
 import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -243,6 +247,5 @@ describe("ProductCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /add to cart/i }));
 
     expect(screen.getByText("Added")).toBeInTheDocument();
-    vi.useRealTimers();
   });
 });
