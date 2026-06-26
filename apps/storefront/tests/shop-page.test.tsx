@@ -1,6 +1,20 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/en/shop",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() })
+}));
+
+vi.mock("@/lib/categories", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/categories")>()),
+  getCategories: vi.fn(async () => [
+    { id: 1, parentId: null, slug: "women", sortOrder: 1, name: { ar: "نساء", en: "Women" }, imagePath: null, isLeaf: false, deletedAt: null },
+    { id: 2, parentId: 1, slug: "slides", sortOrder: 1, name: { ar: "شباشب", en: "Slides" }, imagePath: "/uploads/slides.png", isLeaf: true, deletedAt: null },
+    { id: 3, parentId: 1, slug: "socks", sortOrder: 2, name: { ar: "جوارب", en: "Socks" }, imagePath: "/uploads/socks.png", isLeaf: true, deletedAt: null }
+  ])
+}));
+
 vi.mock("@/lib/homepage-banners", () => ({
   getHomepageBanners: vi.fn(async () => ({
     sections: {
@@ -40,15 +54,20 @@ vi.mock("@/lib/homepage-banners", () => ({
   }))
 }));
 
-import HomePage from "@/app/page";
+import ShopPage from "@/app/[lang]/shop/page";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 
 afterEach(() => {
   cleanup();
 });
 
+async function renderShop() {
+  return render(<LocaleProvider lang="en">{await ShopPage()}</LocaleProvider>);
+}
+
 describe("HomePage homepage sections", () => {
   it("renders carousel, four-up grid, and single-image sections", async () => {
-    render(await HomePage());
+    await renderShop();
 
     expect(screen.getByRole("region", { name: "Homepage hero primary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Homepage featured grid" })).toBeInTheDocument();
@@ -58,8 +77,16 @@ describe("HomePage homepage sections", () => {
     expect(screen.getAllByRole("img").length).toBeGreaterThanOrEqual(8);
   });
 
+  it("renders the shop-by-category strip from depth-1 categories with images", async () => {
+    await renderShop();
+
+    expect(screen.getByRole("region", { name: /shop by category/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /slides/i })).toHaveAttribute("href", "/en/shop?category=slides");
+    expect(screen.getByRole("link", { name: /socks/i })).toHaveAttribute("href", "/en/shop?category=socks");
+  });
+
   it("supports arrows and dragging for multi-image sections", async () => {
-    render(await HomePage());
+    await renderShop();
 
     fireEvent.click(screen.getByRole("button", { name: "Homepage hero primary next" }));
     expect(screen.getByRole("img", { name: "Homepage hero primary image 2" })).toBeInTheDocument();

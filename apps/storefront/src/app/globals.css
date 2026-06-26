@@ -45,3 +45,20 @@ body {
   max-width: 1600px;
   padding-inline: 1.5rem;
 }
+
+/* ── RTL / LTR layout support ──────────────────────────────────────────────
+   `dir` is set on <html> per locale (ltr for en, rtl for ar). Most mirroring
+   is handled by logical Tailwind utilities (ps-/pe-, start-/end-, margin-inline,
+   etc.). These rules cover the physical bits that don't flip on their own. */
+
+/* Body direction follows the document `dir` automatically; keep text aligned
+   to the reading edge. */
+body {
+  text-align: start;
+}
+
+/* The announcement marquee scrolls toward the reading edge: leftward in LTR,
+   rightward in RTL. */
+[dir="rtl"] .animate-marquee {
+  animation-direction: reverse;
+}

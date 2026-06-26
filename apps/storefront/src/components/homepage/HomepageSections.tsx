@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { HomepageBannersDto, HomepageBannerSectionDto } from "@minikoshk/shared";
 import { ChevronLeft, ChevronRight } from "../icons";
+import { ShopByCategory } from "./ShopByCategory";
+import type { StorefrontCategory } from "@/lib/categories";
 
 type HomepageSectionsMap = HomepageBannersDto["sections"];
 const DRAG_THRESHOLD = 40;
@@ -210,10 +212,17 @@ function SingleSection({ section, ariaLabel }: { section: HomepageBannerSectionD
   );
 }
 
-export function HomepageSections({ sections }: { sections: HomepageSectionsMap }) {
+export function HomepageSections({
+  sections,
+  shopByCategories = []
+}: {
+  sections: HomepageSectionsMap;
+  shopByCategories?: StorefrontCategory[];
+}) {
   return (
     <div className="container">
       <CarouselSection section={sections.hero_primary} ariaLabel="Homepage hero primary" autoRotate />
+      <ShopByCategory categories={shopByCategories} />
       <GridSection section={sections.grid_featured} ariaLabel="Homepage featured grid" />
       <SingleSection section={sections.single_mid} ariaLabel="Homepage single middle" />
       <CarouselSection section={sections.hero_secondary} ariaLabel="Homepage hero secondary" autoRotate />

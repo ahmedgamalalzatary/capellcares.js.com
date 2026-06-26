@@ -42,7 +42,7 @@ export default function LoginPage() {
           <span className="login-aside__eyebrow">إدارة المتجر</span>
           <h2>
             أهلاً بعودتكِ<br />
-            <em>إلى لوحة مينيكوشك.</em>
+            <em>إلى لوحة ميني كشك.</em>
           </h2>
           <p>
             تحكّمي في الكتالوج، تابعي المخزون، وحدّثي العروض من مكان واحد.
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       <section className="login-form-wrap">
         <form onSubmit={submit} className="login-form">
-          <span className="eyebrow" style={{ color: "var(--accent)" }}>مينيكوشك</span>
+          <span className="eyebrow" style={{ color: "var(--accent)" }}>ميني كشك</span>
           <h1>تسجيل الدخول</h1>
           <p className="muted login-form__sub">أدخلي بيانات حساب المسؤول لمتابعة العمل.</p>
 

@@ -1,9 +1,6 @@
-const MESSAGES = [
-  "Get 3 Zanooba for 1199 EGP",
-  "Any 3 EVA Pieces for only 999 EGP",
-  "2nd item -15% | 3rd item -30% | Free Shipping 800+ EGP | +15% with Card",
-  "Get 3 Classics for 1199 EGP",
-];
+"use client";
+
+import { useLocale } from "../i18n/LocaleProvider";
 
 function Sparkle() {
   return <span aria-hidden className="px-1 text-white">✨</span>;
@@ -14,8 +11,9 @@ function Sparkle() {
  * background, matching the Minikoshk storefront announcement strip.
  */
 export function AnnouncementBar() {
+  const { dict } = useLocale();
   // Duplicate the list so the marquee loops seamlessly.
-  const track = [...MESSAGES, ...MESSAGES];
+  const track = [...dict.header.announcements, ...dict.header.announcements];
 
   return (
     <div className="overflow-hidden bg-navy-dark text-white">

@@ -16,6 +16,7 @@ export async function listCategories(_req: Request, res: Response) {
       ar: category.arName,
       en: category.enName
     },
+    imagePath: category.imagePath,
     isLeaf: category.isLeaf,
     deletedAt: category.deletedAt
   }));
