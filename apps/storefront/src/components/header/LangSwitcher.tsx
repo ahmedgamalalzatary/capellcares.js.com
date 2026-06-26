@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getDict, languages, type Language } from "@minikoshk/shared";
 import { useLocale } from "../i18n/LocaleProvider";
 import { withLocale } from "@/lib/locale";
@@ -9,14 +9,20 @@ import { withLocale } from "@/lib/locale";
 export function LangSwitcher({ className }: { className?: string }) {
   const { lang } = useLocale();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   const target = (languages.find((candidate) => candidate !== lang) ?? lang) as Language;
+  const targetPath = withLocale(pathname, target);
 
   return (
     <button
       type="button"
-      onClick={() => router.push(withLocale(pathname, target))}
+      onClick={() => {
+        const query = searchParams.toString();
+        const hash = window.location.hash;
+        router.push(`${targetPath}${query ? `?${query}` : ""}${hash}`);
+      }}
       aria-label={getDict(target).langSwitch[target]}
       className={
         className ??

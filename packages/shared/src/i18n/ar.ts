@@ -30,7 +30,22 @@ export const ar = {
   },
   shop: {
     shopByCategoryTop: "تسوّق حسب",
-    shopByCategoryBottom: "القسم"
+    shopByCategoryBottom: "القسم",
+    newArrivalsTop: "وصل",
+    newArrivalsBottom: "حديثًا",
+    bestSellersTop: "الأكثر",
+    bestSellersBottom: "مبيعًا",
+    viewAll: "عرض الكل"
+  },
+  product: {
+    currency: "ج.م",
+    wishlist: "أضف للمفضلة",
+    new: "جديد",
+    payWithCard: "الدفع بالبطاقة",
+    discount: "خصم ١٥٪",
+    freeShipping: "شحن مجاني",
+    cardPrice: "سعر البطاقة",
+    bestDeal: "أفضل عرض"
   },
   footer: {
     aboutTitle: "عن ميني كشك",

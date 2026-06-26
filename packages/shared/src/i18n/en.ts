@@ -30,7 +30,22 @@ export const en = {
   },
   shop: {
     shopByCategoryTop: "Shop by",
-    shopByCategoryBottom: "Category"
+    shopByCategoryBottom: "Category",
+    newArrivalsTop: "NEW",
+    newArrivalsBottom: "ARRIVALS",
+    bestSellersTop: "BEST",
+    bestSellersBottom: "SELLERS",
+    viewAll: "View All"
+  },
+  product: {
+    currency: "EGP",
+    wishlist: "Add to wishlist",
+    new: "NEW",
+    payWithCard: "PAY WITH CARD",
+    discount: "15% OFF",
+    freeShipping: "FREE SHIPPING",
+    cardPrice: "Card Price",
+    bestDeal: "BEST DEAL"
   },
   footer: {
     aboutTitle: "About Minikoshk",

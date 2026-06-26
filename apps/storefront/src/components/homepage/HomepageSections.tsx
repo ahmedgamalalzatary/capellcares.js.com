@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { HomepageBannersDto, HomepageBannerSectionDto } from "@minikoshk/shared";
-import { ChevronLeft, ChevronRight } from "../icons";
 import { ShopByCategory } from "./ShopByCategory";
+import { NewArrivals } from "./NewArrivals";
+import { BestSellers } from "./BestSellers";
+import { PagerControls, useVisibleCount } from "./carousel-ui";
+import { clampStart, maxStart, trackTransform } from "@/lib/carousel";
 import type { StorefrontCategory } from "@/lib/categories";
+import type { StorefrontProduct } from "@/lib/products";
 
 type HomepageSectionsMap = HomepageBannersDto["sections"];
 const DRAG_THRESHOLD = 40;
@@ -79,115 +83,85 @@ function CarouselSection({
     <section aria-label={ariaLabel} role="region" className="py-6">
       <div
         {...(total > 1 ? dragHandlers : {})}
-        className={`relative touch-pan-y ${total > 1 ? "cursor-grab" : "cursor-default"}`}
+        className={`overflow-hidden rounded-3xl touch-pan-y ${total > 1 ? "cursor-grab" : "cursor-default"}`}
       >
         <a href={item.href}>
           <img
             src={item.imagePath}
             alt={`${ariaLabel} image ${index + 1}`}
-            className="h-[clamp(280px,48vw,560px)] w-full rounded-3xl object-cover"
+            className="h-[clamp(280px,48vw,560px)] w-full object-cover"
           />
         </a>
-        {total > 1 && (
-          <>
-            <button
-              type="button"
-              aria-label={`${ariaLabel} previous`}
-              onClick={showPrevious}
-              className="absolute top-1/2 left-2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center text-brand-dark min-[600px]:left-4"
-            >
-              <ChevronLeft className="h-8 w-8" />
-            </button>
-            <button
-              type="button"
-              aria-label={`${ariaLabel} next`}
-              onClick={showNext}
-              className="absolute top-1/2 right-2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center text-brand-dark min-[600px]:right-4"
-            >
-              <ChevronRight className="h-8 w-8" />
-            </button>
-          </>
-        )}
       </div>
-      {total > 1 && (
-        <div className="mt-3 flex justify-center gap-2">
-          {section.items.map((slideItem, slideIndex) => (
-            <button
-              key={slideItem.id}
-              type="button"
-              aria-label={`${ariaLabel} slide ${slideIndex + 1}`}
-              onClick={() => setIndex(slideIndex)}
-              className={`h-2.5 w-2.5 rounded-full border-0 transition ${
-                slideIndex === index ? "bg-brand-dark" : "bg-gray-300"
-              }`}
-            />
-          ))}
-        </div>
-      )}
+      <PagerControls
+        ariaLabel={ariaLabel}
+        count={total}
+        index={index}
+        dotNoun="slide"
+        onPrevious={showPrevious}
+        onNext={showNext}
+        onSelect={setIndex}
+      />
     </section>
   );
 }
 
 function GridSection({ section, ariaLabel }: { section: HomepageBannerSectionDto; ariaLabel: string }) {
-  const [page, setPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(section.items.length / 4));
-  const visibleItems = section.items.slice(page * 4, page * 4 + 4);
-  const showPrevious = () => setPage((current) => (current - 1 + pageCount) % pageCount);
-  const showNext = () => setPage((current) => (current + 1) % pageCount);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const visible = useVisibleCount(viewportRef);
+  const total = section.items.length;
+  const [start, setStart] = useState(0);
+
+  // Clamp on every render so a window resize (which changes `visible`) can never
+  // leave the track scrolled past the last full window.
+  const safeStart = clampStart(start, total, visible);
+  const steps = maxStart(total, visible);
+
+  const showPrevious = () => setStart((current) => clampStart(current - 1, total, visible));
+  const showNext = () => setStart((current) => clampStart(current + 1, total, visible));
   const dragHandlers = useDragPaging(showPrevious, showNext);
 
-  if (section.items.length === 0) {
+  if (total === 0) {
     return null;
   }
 
+  const canPage = steps > 0;
+
   return (
-    <section
-      aria-label={ariaLabel}
-      role="region"
-      className={`touch-pan-y py-6 ${pageCount > 1 ? "cursor-grab" : "cursor-default"}`}
-      {...(pageCount > 1 ? dragHandlers : {})}
-    >
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-        {visibleItems.map((item) => (
-          <a key={item.id} href={item.href}>
-            <img
-              src={item.imagePath}
-              alt={`${ariaLabel} image ${item.id}`}
-              className="h-60 w-full rounded-[20px] object-cover"
-            />
-          </a>
-        ))}
-      </div>
-      {pageCount > 1 && (
-        <div className="mt-3 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            aria-label={`${ariaLabel} previous`}
-            onClick={showPrevious}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-brand-dark transition hover:bg-gray-200"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          {Array.from({ length: pageCount }, (_, pageIndex) => (
-            <button
-              key={pageIndex}
-              type="button"
-              aria-label={`${ariaLabel} page ${pageIndex + 1}`}
-              onClick={() => setPage(pageIndex)}
-              className={`h-2.5 w-2.5 rounded-full border-0 transition ${
-                pageIndex === page ? "bg-brand-dark" : "bg-gray-300"
-              }`}
-            />
+    <section aria-label={ariaLabel} role="region" className="py-6">
+      <div
+        ref={viewportRef}
+        className={`overflow-hidden touch-pan-y ${canPage ? "cursor-grab" : "cursor-default"}`}
+        {...(canPage ? dragHandlers : {})}
+      >
+        <div
+          data-testid={`${ariaLabel} track`}
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: trackTransform(safeStart, visible) }}
+        >
+          {section.items.map((item) => (
+            <div key={item.id} className="box-border shrink-0 px-2" style={{ flexBasis: `${100 / visible}%` }}>
+              <a href={item.href}>
+                <img
+                  src={item.imagePath}
+                  alt={`${ariaLabel} image ${item.id}`}
+                  className="w-full rounded-md object-cover"
+                />
+              </a>
+            </div>
           ))}
-          <button
-            type="button"
-            aria-label={`${ariaLabel} next`}
-            onClick={showNext}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-brand-dark transition hover:bg-gray-200"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
         </div>
+      </div>
+      {canPage && (
+        <PagerControls
+          ariaLabel={ariaLabel}
+          count={steps + 1}
+          index={safeStart}
+          dotNoun="position"
+          onPrevious={showPrevious}
+          onNext={showNext}
+          onSelect={setStart}
+        />
       )}
     </section>
   );
@@ -214,10 +188,14 @@ function SingleSection({ section, ariaLabel }: { section: HomepageBannerSectionD
 
 export function HomepageSections({
   sections,
-  shopByCategories = []
+  shopByCategories = [],
+  newArrivals = [],
+  bestSellers = []
 }: {
   sections: HomepageSectionsMap;
   shopByCategories?: StorefrontCategory[];
+  newArrivals?: StorefrontProduct[];
+  bestSellers?: StorefrontProduct[];
 }) {
   return (
     <div className="container">
@@ -225,7 +203,9 @@ export function HomepageSections({
       <ShopByCategory categories={shopByCategories} />
       <GridSection section={sections.grid_featured} ariaLabel="Homepage featured grid" />
       <SingleSection section={sections.single_mid} ariaLabel="Homepage single middle" />
+      <NewArrivals products={newArrivals} />
       <CarouselSection section={sections.hero_secondary} ariaLabel="Homepage hero secondary" autoRotate />
+      <BestSellers products={bestSellers} />
       <SingleSection section={sections.single_footer} ariaLabel="Homepage single footer" />
     </div>
   );

@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/en/shop",
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() })
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useSearchParams: () => new URLSearchParams()
 }));
 
 vi.mock("@/lib/categories", async (importOriginal) => ({
@@ -85,16 +86,24 @@ describe("HomePage homepage sections", () => {
     expect(screen.getByRole("link", { name: /socks/i })).toHaveAttribute("href", "/en/shop?category=socks");
   });
 
-  it("supports arrows and dragging for multi-image sections", async () => {
+  it("advances the hero carousel one image at a time", async () => {
     await renderShop();
 
     fireEvent.click(screen.getByRole("button", { name: "Homepage hero primary next" }));
     expect(screen.getByRole("img", { name: "Homepage hero primary image 2" })).toBeInTheDocument();
+  });
 
-    const featuredGrid = screen.getByRole("region", { name: "Homepage featured grid" });
-    fireEvent.pointerDown(featuredGrid, { clientX: 220 });
-    fireEvent.pointerUp(featuredGrid, { clientX: 40 });
+  it("slides the featured grid one card per step instead of paging by four", async () => {
+    await renderShop();
 
-    expect(screen.getByRole("img", { name: "Homepage featured grid image 14" })).toBeInTheDocument();
+    const track = screen.getByTestId("Homepage featured grid track");
+    expect(track.style.transform).toBe("translateX(-0%)");
+
+    fireEvent.click(screen.getByRole("button", { name: "Homepage featured grid next" }));
+    expect(track.style.transform).toBe("translateX(-25%)");
+
+    // Five items with a four-wide window: only one step exists, so it clamps.
+    fireEvent.click(screen.getByRole("button", { name: "Homepage featured grid next" }));
+    expect(track.style.transform).toBe("translateX(-25%)");
   });
 });
