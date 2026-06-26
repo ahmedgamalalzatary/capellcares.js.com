@@ -82,7 +82,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
         <div className="sidebar__brand">
           <Icon.Logo size={34} />
           <div className="sidebar__brand-text">
-            <div className="sidebar__brand-name">Capella</div>
+            <div className="sidebar__brand-name">Minikoshk</div>
             <div className="sidebar__brand-tag">ERP</div>
           </div>
         </div>

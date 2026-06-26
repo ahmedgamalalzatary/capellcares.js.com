@@ -33,7 +33,7 @@ export default function LoginPage() {
         <div className="login-aside__brand">
           <Icon.Logo size={36} />
           <div>
-            <div className="login-aside__brand-name">Capella</div>
+            <div className="login-aside__brand-name">Minikoshk</div>
             <div className="login-aside__brand-tag">ERP</div>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function LoginPage() {
           <span className="login-aside__eyebrow">إدارة المتجر</span>
           <h2>
             أهلاً بعودتكِ<br />
-            <em>إلى لوحة كابيلا.</em>
+            <em>إلى لوحة مينيكوشك.</em>
           </h2>
           <p>
             تحكّمي في الكتالوج، تابعي المخزون، وحدّثي العروض من مكان واحد.
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       <section className="login-form-wrap">
         <form onSubmit={submit} className="login-form">
-          <span className="eyebrow" style={{ color: "var(--accent)" }}>كابيلا كيرز</span>
+          <span className="eyebrow" style={{ color: "var(--accent)" }}>مينيكوشك</span>
           <h1>تسجيل الدخول</h1>
           <p className="muted login-form__sub">أدخلي بيانات حساب المسؤول لمتابعة العمل.</p>
 

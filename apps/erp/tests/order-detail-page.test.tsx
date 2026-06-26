@@ -59,7 +59,7 @@ describe("OrderDetailsPage", () => {
     fetchOrder.mockResolvedValueOnce({
       id: 5,
       orderCode: "YMFI-005",
-      fullName: "Capella User",
+      fullName: "Minikoshk User",
       phone: "01012345678",
       governorate: "Cairo",
       cityArea: "Nasr City",
@@ -85,7 +85,7 @@ describe("OrderDetailsPage", () => {
     fetchOrder.mockResolvedValueOnce({
       id: 5,
       orderCode: "YMFI-005",
-      fullName: "Capella User",
+      fullName: "Minikoshk User",
       phone: "01012345678",
       governorate: "Cairo",
       cityArea: "Nasr City",
@@ -120,7 +120,7 @@ describe("OrderDetailsPage", () => {
     fetchOrder.mockResolvedValueOnce({
       id: 5,
       orderCode: "YMFI-005",
-      fullName: "Capella User",
+      fullName: "Minikoshk User",
       phone: "01012345678",
       governorate: "Cairo",
       cityArea: "Nasr City",

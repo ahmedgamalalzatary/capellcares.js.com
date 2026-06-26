@@ -1,6 +1,6 @@
-# Capella Store
+# Minikoshk Store
 
-Capella is a pnpm + Turborepo monorepo for a bilingual e-commerce storefront, an Arabic-only ERP/admin app, and a shared Express API backed by MySQL.
+Minikoshk is a pnpm + Turborepo monorepo for a bilingual e-commerce storefront, an Arabic-only ERP/admin app, and a shared Express API backed by MySQL.
 
 Storefront and ERP talk to the API over HTTP only. Database schema, migrations, and seeds live in `packages/database`.
 
@@ -28,7 +28,7 @@ Storefront and ERP talk to the API over HTTP only. Database schema, migrations, 
 
 - Bilingual routing under `/[lang]` (`ar`, `en`)
 - Catalog browsing: products, categories, collections, offers, shop
-- Shop mega-menu, Ask-Capella search overlay, and announcement bar
+- Shop mega-menu, Ask-Minikoshk search overlay, and announcement bar
 - Product detail with variants, media, and related items
 - Cart, checkout (Cash on Delivery), orders, wishlist
 - Customer signup/login

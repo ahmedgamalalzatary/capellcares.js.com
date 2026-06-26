@@ -14,7 +14,7 @@ const mockedUseStore = vi.fn((selector: any) => selector({
     orderCode: "YMFI-005",
     customerType: "registered",
     customerId: 1,
-    fullName: "Capella User",
+    fullName: "minikoshk User",
     phone: "01012345678",
     email: "user@minikoshk.test",
     governorate: "Cairo",

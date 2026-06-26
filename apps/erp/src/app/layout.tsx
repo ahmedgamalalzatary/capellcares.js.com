@@ -4,8 +4,8 @@ import { AdminAuthProvider } from "@/components/providers/admin-auth";
 import { ErpToaster } from "@/components/providers/erp-toaster";
 
 export const metadata = {
-  title: "Capella ERP",
-  description: "Capella admin panel",
+  title: "Minikoshk ERP",
+  description: "Minikoshk admin panel",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

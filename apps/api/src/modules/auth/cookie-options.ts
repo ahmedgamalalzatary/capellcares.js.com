@@ -2,9 +2,7 @@ import type { CookieOptions } from "express";
 import { resolveRefreshTtlMs } from "../../services/auth-session.service.js";
 
 export const CUSTOMER_REFRESH_COOKIE = "minikoshk_refresh";
-export const LEGACY_CUSTOMER_REFRESH_COOKIE = "capella_refresh";
 export const ADMIN_REFRESH_COOKIE = "minikoshk_admin_refresh";
-export const LEGACY_ADMIN_REFRESH_COOKIE = "capella_admin_refresh";
 
 export function refreshCookieOptions(): CookieOptions {
   return {

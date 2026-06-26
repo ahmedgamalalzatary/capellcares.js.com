@@ -2,7 +2,6 @@ import type { Request, Response } from "express";
 import {
   clearRefreshCookieOptions,
   ADMIN_REFRESH_COOKIE,
-  LEGACY_ADMIN_REFRESH_COOKIE,
   refreshCookieOptions
 } from "../../auth/cookie-options.js";
 import { loginAdmin, logoutAdminSession, refreshAdminSession } from "./admin-auth.service.js";
@@ -18,7 +17,7 @@ export function adminLoginController(req: Request, res: Response) {
 
 export async function adminRefreshController(req: Request, res: Response) {
   try {
-    const token = req.cookies?.[ADMIN_REFRESH_COOKIE] ?? req.cookies?.[LEGACY_ADMIN_REFRESH_COOKIE];
+    const token = req.cookies?.[ADMIN_REFRESH_COOKIE];
     if (!token) return res.status(401).json({ message: "Missing refresh token" });
     const result = await refreshAdminSession(token);
     res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
@@ -29,11 +28,10 @@ export async function adminRefreshController(req: Request, res: Response) {
 }
 
 export async function adminLogoutController(req: Request, res: Response) {
-  const token = req.cookies?.[ADMIN_REFRESH_COOKIE] ?? req.cookies?.[LEGACY_ADMIN_REFRESH_COOKIE];
+  const token = req.cookies?.[ADMIN_REFRESH_COOKIE];
   if (token) {
     await logoutAdminSession(token);
   }
   res.cookie(ADMIN_REFRESH_COOKIE, "", clearRefreshCookieOptions());
-  res.cookie(LEGACY_ADMIN_REFRESH_COOKIE, "", clearRefreshCookieOptions());
   return res.status(204).send();
 }

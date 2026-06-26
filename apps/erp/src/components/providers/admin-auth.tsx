@@ -10,7 +10,6 @@ interface AdminAuthValue {
 }
 
 const Ctx = createContext<AdminAuthValue | null>(null);
-const LEGACY_KEY = "capella.admin.v1";
 const KEY = "minikoshk.admin.v1";
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
@@ -21,7 +20,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     setAdminAuthHydrated(false);
     try {
-      const raw = sessionStorage.getItem(KEY) ?? sessionStorage.getItem(LEGACY_KEY);
+      const raw = sessionStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<AdminAuthUser>;
         const role = parsed.role === "admin" || parsed.role === "staff" ? parsed.role : "staff";
@@ -31,7 +30,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
           role,
           permissionKeys: Array.isArray(parsed.permissionKeys) ? parsed.permissionKeys : []
         });
-        sessionStorage.removeItem(LEGACY_KEY);
       }
     } catch {}
 

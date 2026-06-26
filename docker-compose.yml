@@ -1,12 +1,12 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: capella-mysql
+    container_name: minikoshk-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-minikoshk}
-      MYSQL_USER: ${MYSQL_USER:-capella}
+      MYSQL_USER: ${MYSQL_USER:-minikoshk}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
     command:
       - --character-set-server=utf8mb4
@@ -27,11 +27,11 @@ services:
       context: .
       dockerfile: Dockerfile.api
       target: builder
-    container_name: capella-migrate
+    container_name: minikoshk-migrate
     restart: "no"
     working_dir: /app/packages/database
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-capella}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-minikoshk}
+      DATABASE_URL: mysql://${MYSQL_USER:-minikoshk}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-minikoshk}
     depends_on:
       mysql:
         condition: service_healthy
@@ -41,19 +41,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
-    container_name: capella-api
+    container_name: minikoshk-api
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: mysql://${MYSQL_USER:-capella}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-minikoshk}
+      DATABASE_URL: mysql://${MYSQL_USER:-minikoshk}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-minikoshk}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in env file}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in env file}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
-      ADMIN_NAME: ${ADMIN_NAME:-Capella Admin}
+      ADMIN_NAME: ${ADMIN_NAME:-Minikoshk Admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in env file}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in env file}
       UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-20971520}
@@ -87,7 +87,7 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: ${STOREFRONT_BUILD_API_URL:?set STOREFRONT_BUILD_API_URL in env file}
         STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
-    container_name: capella-storefront
+    container_name: minikoshk-storefront
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -106,7 +106,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: http://api:4000
-    container_name: capella-erp
+    container_name: minikoshk-erp
     restart: unless-stopped
     environment:
       NODE_ENV: production

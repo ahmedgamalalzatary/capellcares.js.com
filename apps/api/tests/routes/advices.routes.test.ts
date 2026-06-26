@@ -12,7 +12,7 @@ beforeEach(async () => {
 
 function makeAdvicePayload() {
   return {
-    title: { ar: "نصيحة كابيلا", en: "Capella Advice" },
+    title: { ar: "نصيحة مينيكوشك", en: "Minikoshk Advice" },
     description: { ar: "اشتركي بخطوات واضحة.", en: "Shop with clear steps." },
     imagePath: "/uploads/advice.jpg",
     videoUrl: "https://www.youtube.com/watch?v=minikoshk",
@@ -44,7 +44,7 @@ test("erp advice CRUD persists and updates advice records", async () => {
     assert.equal(listResponse.json.items.length, 1);
 
     const created = listResponse.json.items[0];
-    assert.equal(created.title.ar, "نصيحة كابيلا");
+    assert.equal(created.title.ar, "نصيحة مينيكوشك");
 
     const updateResponse = await request("/api/erp/advices", {
       method: "POST",

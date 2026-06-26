@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminAuthProvider, useAdminAuth } from "@/components/providers/admin-auth";
 
-const LEGACY_KEY = "capella.admin.v1";
 const KEY = "minikoshk.admin.v1";
 
 describe("AdminAuthProvider", () => {
@@ -17,7 +16,7 @@ describe("AdminAuthProvider", () => {
     vi.restoreAllMocks();
   });
 
-  it("hydrates from the legacy session key and persists under the new key", async () => {
+  it("hydrates from the canonical session key", async () => {
     const storedUser = {
       name: "Admin User",
       email: "admin@minikoshk.test",
@@ -25,7 +24,7 @@ describe("AdminAuthProvider", () => {
       permissionKeys: ["dashboard.read"]
     };
 
-    sessionStorage.setItem(LEGACY_KEY, JSON.stringify(storedUser));
+    sessionStorage.setItem(KEY, JSON.stringify(storedUser));
 
     vi.stubGlobal(
       "fetch",
@@ -57,6 +56,5 @@ describe("AdminAuthProvider", () => {
     await waitFor(() => expect(latestHydrated).toBe(true));
     expect(latestUserEmail).toBe("admin@minikoshk.test");
     expect(sessionStorage.getItem(KEY)).toContain("admin@minikoshk.test");
-    expect(sessionStorage.getItem(LEGACY_KEY)).toBeNull();
   });
 });

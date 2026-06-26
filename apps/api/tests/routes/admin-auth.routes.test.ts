@@ -98,7 +98,6 @@ test("erp admin logout revokes the current refresh session", async () => {
     assert.equal(logoutResponse.status, 204);
     const clearedCookies = logoutResponse.headers.get("set-cookie") ?? "";
     assert.match(clearedCookies, /minikoshk_admin_refresh=;/);
-    assert.match(clearedCookies, /capella_admin_refresh=;/);
 
     const refreshResponse = await request("/api/erp/auth/refresh", {
       method: "POST",
@@ -142,32 +141,6 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
     assert.equal(refreshResponse.json.user.email, "staff@minikoshk.test");
     assert.equal(refreshResponse.json.user.role, "staff");
     assert.deepEqual(refreshResponse.json.user.permissionKeys, ["orders.read", "orders.update_payment_status"]);
-  });
-});
-
-test("erp auth refresh accepts the legacy admin refresh cookie name during migration", async () => {
-  await withTestServer(app, async (request) => {
-    const loginResponse = await request("/api/erp/auth/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        email: "admin@minikoshk.test",
-        password: "AdminPass123"
-      })
-    });
-
-    assert.equal(loginResponse.status, 200);
-    const refreshCookie = loginResponse.headers.get("set-cookie");
-    assert.ok(refreshCookie);
-
-    const legacyCookie = refreshCookie.replace("minikoshk_admin_refresh=", "capella_admin_refresh=");
-    const refreshResponse = await request("/api/erp/auth/refresh", {
-      method: "POST",
-      headers: { cookie: legacyCookie }
-    });
-
-    assert.equal(refreshResponse.status, 200);
-    assert.match(refreshResponse.headers.get("set-cookie") ?? "", /minikoshk_admin_refresh=/);
   });
 });
 

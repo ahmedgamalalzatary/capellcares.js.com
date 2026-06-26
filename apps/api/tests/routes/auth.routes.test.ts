@@ -119,34 +119,6 @@ test("refresh route rotates the refresh cookie and rejects the previous refresh 
   });
 });
 
-test("refresh route accepts the legacy refresh cookie name during migration", async () => {
-  await withTestServer(app, async (request) => {
-    await request("/api/v1/auth/signup", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: "Route Legacy Refresh", email: loginEmail, password })
-    });
-
-    const loginResponse = await request("/api/v1/auth/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: loginEmail, password })
-    });
-
-    const refreshCookie = loginResponse.headers.get("set-cookie");
-    assert.ok(refreshCookie);
-
-    const legacyCookie = refreshCookie.replace("minikoshk_refresh=", "capella_refresh=");
-    const refreshResponse = await request("/api/v1/auth/refresh", {
-      method: "POST",
-      headers: { cookie: legacyCookie }
-    });
-
-    assert.equal(refreshResponse.status, 200);
-    assert.match(refreshResponse.headers.get("set-cookie") ?? "", /minikoshk_refresh=/);
-  });
-});
-
 test("logout route revokes the current refresh session and clears the refresh cookie", async () => {
   await withTestServer(app, async (request) => {
     await request("/api/v1/auth/signup", {
@@ -172,7 +144,6 @@ test("logout route revokes the current refresh session and clears the refresh co
     assert.equal(logoutResponse.status, 204);
     const clearedCookies = logoutResponse.headers.get("set-cookie") ?? "";
     assert.match(clearedCookies, /minikoshk_refresh=;/);
-    assert.match(clearedCookies, /capella_refresh=;/);
 
     const refreshResponse = await request("/api/v1/auth/refresh", {
       method: "POST",
