@@ -29,7 +29,7 @@ test("erp orders list returns created orders for admins", async () => {
     customerId: ids.customerId,
     fullName: "Seed Customer",
     phone: "01012345678",
-    email: "seed-customer@capella.test",
+    email: "seed-customer@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",
@@ -65,7 +65,7 @@ test("erp order detail returns line items for admins", async () => {
       body: JSON.stringify({
         fullName: "Detail Order",
         phone: "01012345678",
-        email: "detail-order@capella.test",
+        email: "detail-order@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -98,7 +98,7 @@ test("erp orders can update payment status", async () => {
     customerId: ids.customerId,
     fullName: "Seed Customer",
     phone: "01012345678",
-    email: "seed-customer@capella.test",
+    email: "seed-customer@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",
@@ -150,7 +150,7 @@ test("erp denied orders restore stock and reject further payment-status changes"
       body: JSON.stringify({
         fullName: "Denied Order",
         phone: "01012345678",
-        email: "denied-order@capella.test",
+        email: "denied-order@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -208,7 +208,7 @@ test("storefront orders list only returns the authenticated customer's orders", 
   const ids = await getBaselineIds();
   const [otherCustomer] = await db.insert(customers).values({
     name: "Other Customer",
-    email: "other@capella.test",
+    email: "other@minikoshk.test",
     passwordHash: "$2a$10$0V6QY0bL5Qn5hEw5N1iXROXGdPvxI6Bjq5lHppZArYrusS4x2QVFG"
   }).$returningId();
 
@@ -219,7 +219,7 @@ test("storefront orders list only returns the authenticated customer's orders", 
       customerId: ids.customerId,
       fullName: "Seed Customer",
       phone: "01012345678",
-      email: "seed-customer@capella.test",
+      email: "seed-customer@minikoshk.test",
       governorate: "Cairo",
       cityArea: "Nasr City",
       addressLine: "Street 10",
@@ -235,7 +235,7 @@ test("storefront orders list only returns the authenticated customer's orders", 
       customerId: otherCustomer.id,
       fullName: "Other Customer",
       phone: "01000000000",
-      email: "other@capella.test",
+      email: "other@minikoshk.test",
       governorate: "Giza",
       cityArea: "Dokki",
       addressLine: "Street 11",
@@ -264,7 +264,7 @@ test("storefront order detail rejects access to another customer's order", async
   const ids = await getBaselineIds();
   const [otherCustomer] = await db.insert(customers).values({
     name: "Other Customer",
-    email: "other-order@capella.test",
+    email: "other-order@minikoshk.test",
     passwordHash: "$2a$10$0V6QY0bL5Qn5hEw5N1iXROXGdPvxI6Bjq5lHppZArYrusS4x2QVFG"
   }).$returningId();
 
@@ -274,7 +274,7 @@ test("storefront order detail rejects access to another customer's order", async
     customerId: ids.customerId,
     fullName: "Seed Customer",
     phone: "01012345678",
-    email: "seed-customer@capella.test",
+    email: "seed-customer@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",
@@ -305,7 +305,7 @@ test("order routes reject invalid ids and invalid payment statuses", async () =>
     customerId: ids.customerId,
     fullName: "Seed Customer",
     phone: "01012345678",
-    email: "seed-customer@capella.test",
+    email: "seed-customer@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",

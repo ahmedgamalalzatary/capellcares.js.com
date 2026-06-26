@@ -7,7 +7,7 @@ import test from "node:test";
 import { loadWorkspaceEnv } from "../../src/config/env.js";
 
 test("loadWorkspaceEnv loads .env.test from workspace root and maps TEST_DATABASE_URL during tests", () => {
-  const tempRoot = mkdtempSync(join(tmpdir(), "capella-env-test-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "minikoshk-env-test-"));
   const apiDir = join(tempRoot, "apps", "api");
   const envPath = join(tempRoot, ".env.test");
 

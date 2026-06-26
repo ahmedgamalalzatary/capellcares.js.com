@@ -12,7 +12,7 @@ beforeEach(async () => {
   await resetApiTestDatabase();
   adminUserId = await createTestAdminUser({
     name: "Session Admin",
-    email: `session-admin-${Date.now()}@capella.test`,
+    email: `session-admin-${Date.now()}@minikoshk.test`,
     passwordHash: await bcrypt.hash("password", 1),
     role: "admin",
     isActive: true

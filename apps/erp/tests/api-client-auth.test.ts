@@ -28,7 +28,7 @@ describe("ERP API client auth invalidation", () => {
     client.setAdminAccessToken("access-token");
     client.setAdminAuthUser({
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["orders.read"]
     });
@@ -65,7 +65,7 @@ describe("ERP API client auth invalidation", () => {
           accessToken: "fresh-admin-token",
           user: {
             name: "Staff User",
-            email: "staff@capella.test",
+            email: "staff@minikoshk.test",
             role: "staff",
             permissionKeys: ["orders.read"]
           }
@@ -79,7 +79,7 @@ describe("ERP API client auth invalidation", () => {
     client.setAdminAccessToken("expired-admin-token");
     client.setAdminAuthUser({
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["orders.read"]
     });

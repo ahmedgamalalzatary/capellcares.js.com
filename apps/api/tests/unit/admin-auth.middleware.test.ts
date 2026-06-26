@@ -44,7 +44,7 @@ beforeEach(async () => {
 test("adminAuthMiddleware rejects staff tokens for inactive ERP users", async () => {
   const staffId = await createTestAdminUser({
     name: "Inactive Staff",
-    email: "inactive-staff@capella.test",
+    email: "inactive-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: false

@@ -33,7 +33,7 @@ describe("AdminShell", () => {
 
   it("shows the staff management navigation item for admin users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin" },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -46,7 +46,7 @@ describe("AdminShell", () => {
 
   it("hides the staff management navigation item for staff users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["sales.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["sales.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -58,7 +58,7 @@ describe("AdminShell", () => {
 
   it("includes a visible sales navigation item", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["dashboard.read"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["dashboard.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -71,7 +71,7 @@ describe("AdminShell", () => {
 
   it("includes a visible collections navigation item", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["dashboard.read"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["dashboard.read"] },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -86,7 +86,7 @@ describe("AdminShell", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: {
         name: "Staff User",
-        email: "staff@capella.test",
+        email: "staff@minikoshk.test",
         role: "staff",
         permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
       },

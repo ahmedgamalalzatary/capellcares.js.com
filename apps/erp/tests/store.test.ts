@@ -9,7 +9,7 @@ const authUserListeners: Array<(user: unknown) => void> = [];
 let adminAuthHydrated = true;
 let adminAuthUser: unknown = {
   name: "Admin User",
-  email: "admin@capella.test",
+  email: "admin@minikoshk.test",
   role: "admin",
   permissionKeys: [
     "dashboard.read",
@@ -68,7 +68,7 @@ afterEach(() => {
   adminAuthHydrated = true;
   adminAuthUser = {
     name: "Admin User",
-    email: "admin@capella.test",
+    email: "admin@minikoshk.test",
     role: "admin",
     permissionKeys: [
       "dashboard.read",
@@ -97,7 +97,7 @@ describe("ERP store", () => {
           title: { ar: "نصيحة", en: "Advice" },
           description: { ar: "وصف", en: "Description" },
           imagePath: "/uploads/advice.png",
-          videoUrl: "https://instagram.com/capella",
+          videoUrl: "https://instagram.com/minikoshk",
           status: "active",
           sortOrder: 1,
           createdAt: "",
@@ -112,7 +112,7 @@ describe("ERP store", () => {
           customerId: 1,
           fullName: "Seed Customer",
           phone: "01012345678",
-          email: "seed-customer@capella.test",
+          email: "seed-customer@minikoshk.test",
           governorate: "Cairo",
           cityArea: "Nasr City",
           addressLine: "Street 10",
@@ -315,7 +315,7 @@ describe("ERP store", () => {
   it("preloads only datasets allowed by the current staff permissions", async () => {
     adminAuthUser = {
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
     };
@@ -341,7 +341,7 @@ describe("ERP store", () => {
   it("applies permission changes on the next protected interaction without re-login", async () => {
     adminAuthUser = {
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["orders.read"]
     };
@@ -361,7 +361,7 @@ describe("ERP store", () => {
 
     adminAuthUser = {
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["orders.read", "sales.read"]
     };
@@ -379,7 +379,7 @@ describe("ERP store", () => {
   it("keeps unrelated authorized datasets when one staff preload request fails", async () => {
     adminAuthUser = {
       name: "Staff User",
-      email: "staff@capella.test",
+      email: "staff@minikoshk.test",
       role: "staff",
       permissionKeys: ["orders.read", "sales.read"]
     };
@@ -393,7 +393,7 @@ describe("ERP store", () => {
           customerId: 1,
           fullName: "Seed Customer",
           phone: "01012345678",
-          email: "seed-customer@capella.test",
+          email: "seed-customer@minikoshk.test",
           governorate: "Cairo",
           cityArea: "Nasr City",
           addressLine: "Street 10",

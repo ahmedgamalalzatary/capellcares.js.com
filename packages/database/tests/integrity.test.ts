@@ -50,18 +50,18 @@ async function loadBaseline(): Promise<Baseline> {
   const [customer] = await db
     .select({ id: customers.id })
     .from(customers)
-    .where(eq(customers.email, "seed-customer@capella.test"))
+    .where(eq(customers.email, "seed-customer@minikoshk.test"))
     .limit(1);
   let [adminUser] = await db
     .select({ id: adminUsers.id })
     .from(adminUsers)
-    .where(eq(adminUsers.email, "integrity-admin@capella.test"))
+    .where(eq(adminUsers.email, "integrity-admin@minikoshk.test"))
     .limit(1);
 
   if (!adminUser) {
     const [createdAdmin] = await db.insert(adminUsers).values({
       name: "Integrity Admin",
-      email: "integrity-admin@capella.test",
+      email: "integrity-admin@minikoshk.test",
       passwordHash: "hash",
       role: "admin",
       isActive: true

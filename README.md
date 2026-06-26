@@ -8,11 +8,11 @@ Storefront and ERP talk to the API over HTTP only. Database schema, migrations, 
 
 | Path | Package | Role |
 | --- | --- | --- |
-| `apps/storefront` | `@capella/storefront` | Customer-facing Next.js app (Arabic + English) on port `3000` |
-| `apps/erp` | `@capella/erp` | Arabic-only admin ERP on port `3001` |
-| `apps/api` | `@capella/api` | Express API on port `4000` |
-| `packages/shared` | `@capella/shared` | Shared DTOs, Zod schemas, constants, i18n, UI primitives |
-| `packages/database` | `@capella/database` | Drizzle schema, migrations, seeds, DB client |
+| `apps/storefront` | `@minikoshk/storefront` | Customer-facing Next.js app (Arabic + English) on port `3000` |
+| `apps/erp` | `@minikoshk/erp` | Arabic-only admin ERP on port `3001` |
+| `apps/api` | `@minikoshk/api` | Express API on port `4000` |
+| `packages/shared` | `@minikoshk/shared` | Shared DTOs, Zod schemas, constants, i18n, UI primitives |
+| `packages/database` | `@minikoshk/database` | Drizzle schema, migrations, seeds, DB client |
 
 ## Tech Stack
 
@@ -75,8 +75,8 @@ Edit `.env` with local MySQL credentials, JWT secrets, admin bootstrap values, a
 With MySQL running locally and `DATABASE_URL` set in `.env`:
 
 ```powershell
-pnpm --filter @capella/database exec drizzle-kit push --config=drizzle.config.ts
-pnpm --filter @capella/database db:seed
+pnpm --filter @minikoshk/database exec drizzle-kit push --config=drizzle.config.ts
+pnpm --filter @minikoshk/database db:seed
 ```
 
 For disposable local Docker databases or production, use `db:migrate` instead of `push`. See [docs/deploy.md](docs/deploy.md) for the full migration policy.
@@ -92,9 +92,9 @@ pnpm dev
 Run individual apps:
 
 ```powershell
-pnpm --filter @capella/api dev
-pnpm --filter @capella/storefront dev
-pnpm --filter @capella/erp dev
+pnpm --filter @minikoshk/api dev
+pnpm --filter @minikoshk/storefront dev
+pnpm --filter @minikoshk/erp dev
 ```
 
 Default local URLs:
@@ -122,9 +122,9 @@ pnpm test
 Targeted test runs:
 
 ```powershell
-pnpm --filter @capella/api test -- tests/routes/admin-products.routes.test.ts
-pnpm --filter @capella/storefront test -- tests/unit/cart.test.ts
-pnpm --filter @capella/erp test
+pnpm --filter @minikoshk/api test -- tests/routes/admin-products.routes.test.ts
+pnpm --filter @minikoshk/storefront test -- tests/unit/cart.test.ts
+pnpm --filter @minikoshk/erp test
 pnpm test:staging-smoke
 ```
 

@@ -6,7 +6,7 @@ const toggleOfferStatus = vi.fn().mockRejectedValue(new Error("toggle failed"));
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["offers.read", "offers.create", "offers.update", "offers.soft_delete", "offers.toggle_status"] },
+    user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["offers.read", "offers.create", "offers.update", "offers.soft_delete", "offers.toggle_status"] },
     hydrated: true,
     logout: vi.fn()
   })

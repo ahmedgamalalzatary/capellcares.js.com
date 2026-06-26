@@ -87,7 +87,7 @@ test("getEffectiveAdminPermissions returns all permissions for admin and assigne
 
   const adminId = await createTestAdminUser({
     name: "Bootstrap Admin Mirror",
-    email: "admin-permissions@capella.test",
+    email: "admin-permissions@minikoshk.test",
     passwordHash: await bcrypt.hash("AdminPass123", 10),
     role: "admin",
     isActive: true
@@ -95,7 +95,7 @@ test("getEffectiveAdminPermissions returns all permissions for admin and assigne
 
   const staffId = await createTestAdminUser({
     name: "Staff User",
-    email: "staff-permissions@capella.test",
+    email: "staff-permissions@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true

@@ -22,7 +22,7 @@ const previousEnv = {
 beforeEach(async () => {
   await resetApiTestDatabase();
   process.env.ALLOW_DEV_ADMIN_FALLBACK = "false";
-  process.env.ADMIN_EMAIL = "admin@capella.test";
+  process.env.ADMIN_EMAIL = "admin@minikoshk.test";
   process.env.ADMIN_PASSWORD = "AdminPass123";
   await ensureBootstrapAdmin();
 });
@@ -49,26 +49,26 @@ test("erp admin login uses the single server-configured admin account", async ()
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: "admin@capella.test",
+        email: "admin@minikoshk.test",
         password: "AdminPass123"
       })
     });
 
     assert.equal(response.status, 200);
     assert.ok(response.json.accessToken);
-    assert.equal(response.json.user.email, "admin@capella.test");
+    assert.equal(response.json.user.email, "admin@minikoshk.test");
     assert.match(response.headers.get("set-cookie") ?? "", /capella_admin_refresh=/);
   });
 });
 
 test("erp protected routes reject x-admin-basic even when the old fallback flag is enabled", async () => {
   process.env.ALLOW_DEV_ADMIN_FALLBACK = "true";
-  process.env.DEV_ADMIN_EMAIL = "admin@capella.eg";
+  process.env.DEV_ADMIN_EMAIL = "admin@minikoshk.eg";
   process.env.DEV_ADMIN_PASSWORD = "admin1234";
 
   await withTestServer(app, async (request) => {
     const response = await request("/api/erp/products", {
-      headers: { "x-admin-basic": "admin@capella.eg:admin1234" }
+      headers: { "x-admin-basic": "admin@minikoshk.eg:admin1234" }
     });
 
     assert.equal(response.status, 401);
@@ -81,7 +81,7 @@ test("erp admin logout revokes the current refresh session", async () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: "admin@capella.test",
+        email: "admin@minikoshk.test",
         password: "AdminPass123"
       })
     });
@@ -110,19 +110,19 @@ test("erp admin logout revokes the current refresh session", async () => {
 test("erp auth refresh returns the staff user linked to the refresh session", async () => {
   await createTestAdminUser({
     name: "Staff User",
-    email: "staff@capella.test",
+    email: "staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
   });
-  await updateAdminUserPermissions("staff@capella.test", ["orders.update_payment_status"]);
+  await updateAdminUserPermissions("staff@minikoshk.test", ["orders.update_payment_status"]);
 
   await withTestServer(app, async (request) => {
     const loginResponse = await request("/api/erp/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: "staff@capella.test",
+        email: "staff@minikoshk.test",
         password: "StaffPass123"
       })
     });
@@ -137,7 +137,7 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
     });
 
     assert.equal(refreshResponse.status, 200);
-    assert.equal(refreshResponse.json.user.email, "staff@capella.test");
+    assert.equal(refreshResponse.json.user.email, "staff@minikoshk.test");
     assert.equal(refreshResponse.json.user.role, "staff");
     assert.deepEqual(refreshResponse.json.user.permissionKeys, ["orders.read", "orders.update_payment_status"]);
   });
@@ -146,7 +146,7 @@ test("erp auth refresh returns the staff user linked to the refresh session", as
 test("erp auth refresh rejects deactivated staff sessions", async () => {
   await createTestAdminUser({
     name: "Staff User",
-    email: "inactive-refresh@capella.test",
+    email: "inactive-refresh@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
@@ -157,7 +157,7 @@ test("erp auth refresh rejects deactivated staff sessions", async () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        email: "inactive-refresh@capella.test",
+        email: "inactive-refresh@minikoshk.test",
         password: "StaffPass123"
       })
     });
@@ -169,7 +169,7 @@ test("erp auth refresh rejects deactivated staff sessions", async () => {
     await db
       .update(adminUsers)
       .set({ isActive: false })
-      .where(eq(adminUsers.email, "inactive-refresh@capella.test"));
+      .where(eq(adminUsers.email, "inactive-refresh@minikoshk.test"));
 
     const refreshResponse = await request("/api/erp/auth/refresh", {
       method: "POST",

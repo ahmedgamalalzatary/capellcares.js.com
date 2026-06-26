@@ -6,7 +6,7 @@ const toggleAdviceStatus = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["advices.read", "advices.create", "advices.update", "advices.delete", "advices.toggle_status"] },
+    user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["advices.read", "advices.create", "advices.update", "advices.delete", "advices.toggle_status"] },
     hydrated: true,
     logout: vi.fn()
   })
@@ -27,7 +27,7 @@ vi.mock("@/lib/store", () => ({
       title: { ar: "نصيحة", en: "Advice" },
       description: { ar: "وصف", en: "Description" },
       imagePath: "/uploads/advice.png",
-      videoUrl: "https://instagram.com/capella",
+      videoUrl: "https://instagram.com/minikoshk",
       status: "active",
       sortOrder: 1,
       createdAt: "",

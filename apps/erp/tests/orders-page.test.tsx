@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -16,7 +16,7 @@ const mockedUseStore = vi.fn((selector: any) => selector({
     customerId: 1,
     fullName: "Capella User",
     phone: "01012345678",
-    email: "user@capella.test",
+    email: "user@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",
@@ -53,7 +53,7 @@ describe("OrdersPage", () => {
   beforeEach(() => {
     mockedUseAdminAuth.mockReset();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -62,7 +62,7 @@ describe("OrdersPage", () => {
 
   it("shows a 403 state without subscribing to order data for unauthorized staff", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: [] },
       hydrated: true,
       logout: vi.fn()
     });

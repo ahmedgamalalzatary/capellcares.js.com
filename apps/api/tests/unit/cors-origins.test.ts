@@ -5,10 +5,10 @@ import { resolveAllowedOrigins } from "../../src/config/cors.js";
 
 test("resolveAllowedOrigins parses a comma-separated allowlist", () => {
   const origins = resolveAllowedOrigins({
-    CORS_ALLOWED_ORIGINS: "https://erp.capella.test, https://shop.capella.test",
+    CORS_ALLOWED_ORIGINS: "https://erp.minikoshk.test, https://shop.minikoshk.test",
     NODE_ENV: "production"
   });
-  assert.deepEqual(origins, ["https://erp.capella.test", "https://shop.capella.test"]);
+  assert.deepEqual(origins, ["https://erp.minikoshk.test", "https://shop.minikoshk.test"]);
 });
 
 test("resolveAllowedOrigins falls back to localhost defaults outside production", () => {

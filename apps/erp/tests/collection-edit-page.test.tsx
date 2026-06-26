@@ -15,7 +15,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 }));
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -100,7 +100,7 @@ describe("EditCollectionPage data plumbing", () => {
   it("shows a 403 state for staff without collections.update", async () => {
     apiGet.mockResolvedValue({ relatedItems: [] });
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["collections.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -122,7 +122,7 @@ describe("EditCollectionPage data plumbing", () => {
   it("fetches existing related links and passes them plus options to the form", async () => {
     capturedProps = null;
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -156,7 +156,7 @@ describe("EditCollectionPage data plumbing", () => {
   it("renders the form in safe mode when existing related links fail to load", async () => {
     capturedProps = null;
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["collections.read", "collections.update"] },
       hydrated: true,
       logout: vi.fn()
     });

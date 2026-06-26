@@ -255,7 +255,7 @@ export const ar = {
     hairCare: "العناية بالشعر",
     fragrances: "العطور",
     organicOils: "الزيوت العضوية",
-    capellaTitle: "كابيلا",
+    capellaTitle: "مينيكوشك",
     ourStory: "قصّتنا",
     branches: "الفروع",
     contact: "تواصلي معنا",

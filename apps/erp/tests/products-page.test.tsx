@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -83,7 +83,7 @@ afterEach(() => {
 beforeEach(() => {
   mockedUseAdminAuth.mockReset();
   mockedUseAdminAuth.mockReturnValue({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+    user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
     hydrated: true,
     logout: vi.fn()
   });
@@ -191,7 +191,7 @@ describe("ProductForm related items", () => {
 describe("ProductsListPage", () => {
   it("shows a 403 state for staff without products.read", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: [] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -204,7 +204,7 @@ describe("ProductsListPage", () => {
 
   it("hides create and mutation actions for staff without the matching product action permissions", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["products.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -219,7 +219,7 @@ describe("ProductsListPage", () => {
 
   it("keeps the toggle modal open, shows an error, and resets loading when status toggle fails", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
       hydrated: true,
       logout: vi.fn()
     });

@@ -15,7 +15,7 @@ function makeAdvicePayload() {
     title: { ar: "نصيحة كابيلا", en: "Capella Advice" },
     description: { ar: "اشتركي بخطوات واضحة.", en: "Shop with clear steps." },
     imagePath: "/uploads/advice.jpg",
-    videoUrl: "https://www.youtube.com/watch?v=capella",
+    videoUrl: "https://www.youtube.com/watch?v=minikoshk",
     status: "active",
     sortOrder: 2
   };

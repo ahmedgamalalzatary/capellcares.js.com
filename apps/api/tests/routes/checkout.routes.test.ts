@@ -29,7 +29,7 @@ test("checkout route allows guest checkout when the email already exists", async
       body: JSON.stringify({
         fullName: "Existing Guest",
         phone: "01012345678",
-        email: "seed-customer@capella.test",
+        email: "seed-customer@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -54,7 +54,7 @@ test("checkout route returns a pending COD payment status for a created order", 
       body: JSON.stringify({
         fullName: "Pending COD",
         phone: "01012345678",
-        email: "pending-cod@capella.test",
+        email: "pending-cod@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -92,7 +92,7 @@ test("checkout route persists registered customer orders for authenticated custo
       body: JSON.stringify({
         fullName: "Registered Customer",
         phone: "01012345678",
-        email: "seed-customer@capella.test",
+        email: "seed-customer@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -125,7 +125,7 @@ test("checkout route ignores guest-supplied customerId values", async () => {
       body: JSON.stringify({
         fullName: "Guest Spoof Attempt",
         phone: "01012345678",
-        email: "guest-spoof@capella.test",
+        email: "guest-spoof@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -162,7 +162,7 @@ test("checkout route uses the authenticated customer id instead of trusting the 
       body: JSON.stringify({
         fullName: "Authenticated Customer",
         phone: "01012345678",
-        email: "seed-customer@capella.test",
+        email: "seed-customer@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",
@@ -214,7 +214,7 @@ test("checkout route accepts buyable collection items", async () => {
       body: JSON.stringify({
         fullName: "Collection Customer",
         phone: "01012345678",
-        email: "collection-route@capella.test",
+        email: "collection-route@minikoshk.test",
         governorate: "Cairo",
         cityArea: "Nasr City",
         addressLine: "Street 10",

@@ -68,7 +68,7 @@ test("orders.update_payment_status is enforced separately from orders.read", asy
     customerId: ids.customerId,
     fullName: "Seed Customer",
     phone: "01012345678",
-    email: "seed-customer@capella.test",
+    email: "seed-customer@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 10",
@@ -81,7 +81,7 @@ test("orders.update_payment_status is enforced separately from orders.read", asy
 
   await withTestServer(app, async (request) => {
     const auth = await getStaffAuthHeaders(request, {
-      email: "orders-staff@capella.test"
+      email: "orders-staff@minikoshk.test"
     });
     await updateAdminUserPermissions(auth.user.email, ["orders.read"]);
 
@@ -130,7 +130,7 @@ test("uploads are denied unless the request comes from an authorized edit-capabl
 
   await withTestServer(app, async (request) => {
     const auth = await getStaffAuthHeaders(request, {
-      email: "uploads-staff@capella.test"
+      email: "uploads-staff@minikoshk.test"
     });
     await updateAdminUserPermissions(auth.user.email, ["products.read"]);
 

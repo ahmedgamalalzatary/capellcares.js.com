@@ -28,8 +28,8 @@ describe("resolveApiBase", () => {
   });
 
   it("derives the public API host from the ERP domain when no public env is present", () => {
-    vi.stubGlobal("window", { location: { protocol: "https:", hostname: "erp.capellacares.com", port: "" } } as Window & typeof globalThis);
+    vi.stubGlobal("window", { location: { protocol: "https:", hostname: "erp.minikoshk.com", port: "" } } as Window & typeof globalThis);
 
-    expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("https://api.capellacares.com");
+    expect(resolveApiBase({} as NodeJS.ProcessEnv)).toBe("https://api.minikoshk.com");
   });
 });

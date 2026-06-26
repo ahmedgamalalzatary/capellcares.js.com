@@ -19,14 +19,14 @@ beforeEach(async () => {
 test("admin can list staff users", async () => {
   const activeStaffId = await createTestAdminUser({
     name: "Active Staff",
-    email: "active-staff@capella.test",
+    email: "active-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
   });
   const inactiveStaffId = await createTestAdminUser({
     name: "Inactive Staff",
-    email: "inactive-staff@capella.test",
+    email: "inactive-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: false
@@ -47,8 +47,8 @@ test("admin can list staff users", async () => {
         isActive: item.isActive
       })).sort((a: { email: string }, b: { email: string }) => a.email.localeCompare(b.email)),
       [
-        { id: activeStaffId, email: "active-staff@capella.test", isActive: true },
-        { id: inactiveStaffId, email: "inactive-staff@capella.test", isActive: false }
+        { id: activeStaffId, email: "active-staff@minikoshk.test", isActive: true },
+        { id: inactiveStaffId, email: "inactive-staff@minikoshk.test", isActive: false }
       ]
     );
   });
@@ -57,7 +57,7 @@ test("admin can list staff users", async () => {
 test("admin can read a single staff user by id", async () => {
   const staffId = await createTestAdminUser({
     name: "Detail Staff",
-    email: "detail-staff@capella.test",
+    email: "detail-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
@@ -73,7 +73,7 @@ test("admin can read a single staff user by id", async () => {
     assert.deepEqual(response.json.item, {
       id: staffId,
       name: "Detail Staff",
-      email: "detail-staff@capella.test",
+      email: "detail-staff@minikoshk.test",
       role: "staff",
       isActive: true,
       permissionKeys: []
@@ -89,7 +89,7 @@ test("admin can create active staff with explicit permissions", async () => {
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Orders Staff",
-        email: "orders-staff@capella.test",
+        email: "orders-staff@minikoshk.test",
         password: "StaffPass123",
         isActive: true,
         permissionKeys: ["orders.update_payment_status"]
@@ -97,7 +97,7 @@ test("admin can create active staff with explicit permissions", async () => {
     });
 
     assert.equal(response.status, 201);
-    assert.equal(response.json.item.email, "orders-staff@capella.test");
+    assert.equal(response.json.item.email, "orders-staff@minikoshk.test");
     assert.equal(response.json.item.role, "staff");
     assert.equal(response.json.item.isActive, true);
     assert.deepEqual(response.json.item.permissionKeys, ["orders.read", "orders.update_payment_status"]);
@@ -112,7 +112,7 @@ test("admin staff create returns 400 for invalid payload instead of crashing", a
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "",
-        email: "invalid-staff@capella.test",
+        email: "invalid-staff@minikoshk.test",
         password: "StaffPass123",
         isActive: true,
         permissionKeys: []
@@ -127,7 +127,7 @@ test("admin staff create returns 400 for invalid payload instead of crashing", a
 test("admin staff create returns 409 for duplicate email without mutating permissions", async () => {
   const existingStaffId = await createTestAdminUser({
     name: "Existing Staff",
-    email: "duplicate-staff@capella.test",
+    email: "duplicate-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
@@ -140,7 +140,7 @@ test("admin staff create returns 409 for duplicate email without mutating permis
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Duplicate Staff",
-        email: "duplicate-staff@capella.test",
+        email: "duplicate-staff@minikoshk.test",
         password: "StaffPass123",
         isActive: true,
         permissionKeys: ["orders.update_payment_status"]
@@ -156,7 +156,7 @@ test("admin staff create returns 409 for duplicate email without mutating permis
     .from(adminUsers)
     .where(eq(adminUsers.role, "staff"));
 
-  assert.deepEqual(allStaffUsers, [{ id: existingStaffId, email: "duplicate-staff@capella.test" }]);
+  assert.deepEqual(allStaffUsers, [{ id: existingStaffId, email: "duplicate-staff@minikoshk.test" }]);
 
   const assignedPermissions = await db
     .select({ permissionId: adminUserPermissions.permissionId })
@@ -169,7 +169,7 @@ test("admin staff create returns 409 for duplicate email without mutating permis
 test("admin can edit staff without replacing password when password is blank", async () => {
   const staffId = await createTestAdminUser({
     name: "Editable Staff",
-    email: "editable-staff@capella.test",
+    email: "editable-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("KeepThisPass123", 10),
     role: "staff",
     isActive: true
@@ -188,7 +188,7 @@ test("admin can edit staff without replacing password when password is blank", a
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Edited Staff",
-        email: "edited-staff@capella.test",
+        email: "edited-staff@minikoshk.test",
         password: "",
         isActive: true,
         permissionKeys: ["products.update"]
@@ -196,7 +196,7 @@ test("admin can edit staff without replacing password when password is blank", a
     });
 
     assert.equal(response.status, 200);
-    assert.equal(response.json.item.email, "edited-staff@capella.test");
+    assert.equal(response.json.item.email, "edited-staff@minikoshk.test");
     assert.deepEqual(response.json.item.permissionKeys, ["products.read", "products.update"]);
   });
 
@@ -207,14 +207,14 @@ test("admin can edit staff without replacing password when password is blank", a
     .limit(1);
 
   assert.equal(afterUpdate?.name, "Edited Staff");
-  assert.equal(afterUpdate?.email, "edited-staff@capella.test");
+  assert.equal(afterUpdate?.email, "edited-staff@minikoshk.test");
   assert.equal(afterUpdate?.passwordHash, beforeUpdate?.passwordHash);
 });
 
 test("admin can deactivate a staff user", async () => {
   const staffId = await createTestAdminUser({
     name: "Deactivate Staff",
-    email: "deactivate-staff@capella.test",
+    email: "deactivate-staff@minikoshk.test",
     passwordHash: await bcrypt.hash("StaffPass123", 10),
     role: "staff",
     isActive: true
@@ -227,7 +227,7 @@ test("admin can deactivate a staff user", async () => {
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Deactivate Staff",
-        email: "deactivate-staff@capella.test",
+        email: "deactivate-staff@minikoshk.test",
         password: "",
         isActive: false,
         permissionKeys: []
@@ -242,7 +242,7 @@ test("admin can deactivate a staff user", async () => {
 test("deactivated staff immediately lose access on the next protected request", async () => {
   await withTestServer(app, async (request) => {
     const staffAuth = await getStaffAuthHeaders(request, {
-      email: "protected-staff@capella.test",
+      email: "protected-staff@minikoshk.test",
       isActive: true
     });
     const adminAuth = await getAdminAuthHeaders(request);
@@ -250,7 +250,7 @@ test("deactivated staff immediately lose access on the next protected request", 
     const [staffUser] = await db
       .select({ id: adminUsers.id })
       .from(adminUsers)
-      .where(eq(adminUsers.email, "protected-staff@capella.test"))
+      .where(eq(adminUsers.email, "protected-staff@minikoshk.test"))
       .limit(1);
 
     assert.ok(staffUser);
@@ -260,7 +260,7 @@ test("deactivated staff immediately lose access on the next protected request", 
       headers: { ...adminAuth, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Protected Staff",
-        email: "protected-staff@capella.test",
+        email: "protected-staff@minikoshk.test",
         password: "",
         isActive: false,
         permissionKeys: ["products.read"]
@@ -308,7 +308,7 @@ test("admin cannot mutate the bootstrap admin through staff-management flows", a
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Mutated Admin",
-        email: "mutated-admin@capella.test",
+        email: "mutated-admin@minikoshk.test",
         password: "NewAdminPass123",
         isActive: false,
         permissionKeys: []
@@ -327,7 +327,7 @@ test("permission dependencies are normalized when saving staff assignments", asy
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         name: "Products Staff",
-        email: "products-staff@capella.test",
+        email: "products-staff@minikoshk.test",
         password: "StaffPass123",
         isActive: true,
         permissionKeys: ["products.restore"]
@@ -339,7 +339,7 @@ test("permission dependencies are normalized when saving staff assignments", asy
     const [staffUser] = await db
       .select({ id: adminUsers.id })
       .from(adminUsers)
-      .where(eq(adminUsers.email, "products-staff@capella.test"))
+      .where(eq(adminUsers.email, "products-staff@minikoshk.test"))
       .limit(1);
 
     assert.ok(staffUser);

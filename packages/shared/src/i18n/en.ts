@@ -255,7 +255,7 @@ export const en = {
     hairCare: "Hair Care",
     fragrances: "Fragrances",
     organicOils: "Organic Oils",
-    capellaTitle: "Capella",
+    capellaTitle: "Minikoshk",
     ourStory: "Our Story",
     branches: "Branches",
     contact: "Contact",

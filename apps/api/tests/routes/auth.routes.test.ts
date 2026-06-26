@@ -6,8 +6,8 @@ import { app } from "../../src/app.js";
 import { deleteCustomerByEmail, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 
-const signupEmail = "route-auth-signup@capella.test";
-const loginEmail = "route-auth-login@capella.test";
+const signupEmail = "route-auth-signup@minikoshk.test";
+const loginEmail = "route-auth-login@minikoshk.test";
 const password = "Password123!";
 
 beforeEach(async () => {

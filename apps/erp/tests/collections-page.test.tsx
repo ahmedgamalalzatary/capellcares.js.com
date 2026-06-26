@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update", "collections.toggle_status"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update", "collections.toggle_status"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -54,7 +54,7 @@ describe("CollectionsListPage", () => {
   beforeEach(() => {
     mockedUseAdminAuth.mockReset();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update", "collections.toggle_status"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["collections.read", "collections.create", "collections.update", "collections.toggle_status"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -68,7 +68,7 @@ describe("CollectionsListPage", () => {
 
   it("shows a 403 state for staff without collections.read", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: [] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -89,7 +89,7 @@ describe("CollectionsListPage", () => {
 
   it("hides create and edit actions for read-only staff", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["collections.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -131,7 +131,7 @@ describe("NewCollectionPage", () => {
   it("shows a 403 state for staff without collections.create", () => {
     mockedUseStore.mockClear();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["collections.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["collections.read"] },
       hydrated: true,
       logout: vi.fn()
     });

@@ -33,7 +33,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   const ids = await getBaselineIds();
 
   const offerOrder = await createOrderWithItems({
-    order: buildBaseOrder(35, "offer-restock@capella.test"),
+    order: buildBaseOrder(35, "offer-restock@minikoshk.test"),
     items: [{ variantId: null, offerId: ids.offerId, itemType: "offer", qty: 1, unitPrice: 35, lineTotal: 35 }]
   });
   await db.update(orderItems).set({ offerId: null }).where(eq(orderItems.orderId, offerOrder.id));
@@ -57,7 +57,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   await db.insert(collectionItems).values({ collectionId: createdCollection.id, variantId: ids.firstVariantId, qty: 1 });
 
   const collectionOrder = await createOrderWithItems({
-    order: buildBaseOrder(90, "collection-restock@capella.test"),
+    order: buildBaseOrder(90, "collection-restock@minikoshk.test"),
     items: [{ variantId: null, collectionId: createdCollection.id, itemType: "collection", qty: 1, unitPrice: 90, lineTotal: 90 }]
   });
   await db.update(orderItems).set({ collectionId: null }).where(eq(orderItems.orderId, collectionOrder.id));
@@ -67,7 +67,7 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   );
 
   const variantOrder = await createOrderWithItems({
-    order: buildBaseOrder(35, "variant-restock@capella.test"),
+    order: buildBaseOrder(35, "variant-restock@minikoshk.test"),
     items: [{ variantId: ids.firstVariantId, qty: 1, unitPrice: 35, lineTotal: 35 }]
   });
   await db.update(orderItems).set({ variantId: null }).where(eq(orderItems.orderId, variantOrder.id));

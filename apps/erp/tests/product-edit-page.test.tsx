@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 afterEach(() => cleanup());
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -98,7 +98,7 @@ describe("EditProductPage data plumbing", () => {
   it("shows a 403 state without subscribing to store data for staff without products.update", async () => {
     mockedUseStore.mockClear();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["products.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -122,7 +122,7 @@ describe("EditProductPage data plumbing", () => {
   it("shows a 403 state for staff without products.update", async () => {
     mockedUseStore.mockClear();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["products.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -144,7 +144,7 @@ describe("EditProductPage data plumbing", () => {
   it("fetches existing related links and passes them plus options to the form", async () => {
     capturedProps = null;
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -179,7 +179,7 @@ describe("EditProductPage data plumbing", () => {
   it("renders the form in safe mode when existing related links fail to load", async () => {
     capturedProps = null;
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
       hydrated: true,
       logout: vi.fn()
     });

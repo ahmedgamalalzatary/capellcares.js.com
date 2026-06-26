@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockedUseAdminAuth = vi.fn(() => ({
   user: {
     name: "Admin User",
-    email: "admin@capella.test",
+    email: "admin@minikoshk.test",
     role: "admin",
     permissionKeys: ["homepage_banners.read", "homepage_banners.update"]
   },
@@ -78,7 +78,7 @@ describe("HomepageBannersPage", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: {
         name: "Admin User",
-        email: "admin@capella.test",
+        email: "admin@minikoshk.test",
         role: "admin",
         permissionKeys: ["homepage_banners.read", "homepage_banners.update"]
       },
@@ -107,7 +107,7 @@ describe("HomepageBannersPage", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: {
         name: "Staff User",
-        email: "staff@capella.test",
+        email: "staff@minikoshk.test",
         role: "staff",
         permissionKeys: []
       },

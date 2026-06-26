@@ -32,7 +32,7 @@ describe("StaffNewPage", () => {
 
   it("shows a 403 state for non-admin ERP users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff" },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff" },
       hydrated: true,
       logout: vi.fn()
     });
@@ -45,7 +45,7 @@ describe("StaffNewPage", () => {
 
   it("renders the shared staff create form for admin users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin" },
       hydrated: true,
       logout: vi.fn()
     });

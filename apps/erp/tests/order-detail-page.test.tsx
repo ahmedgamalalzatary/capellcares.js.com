@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const fetchOrder = vi.fn();
 const updateOrderPaymentStatus = vi.fn();
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -41,7 +41,7 @@ afterEach(() => {
 beforeEach(() => {
   mockedUseAdminAuth.mockReset();
   mockedUseAdminAuth.mockReturnValue({
-    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+    user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
     hydrated: true,
     logout: vi.fn()
   });
@@ -52,7 +52,7 @@ beforeEach(() => {
 describe("OrderDetailsPage", () => {
   it("disables payment-status mutation for staff without orders.update_payment_status", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["orders.read"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -78,7 +78,7 @@ describe("OrderDetailsPage", () => {
 
   it("renders the fetched admin order detail and updates payment status", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -139,7 +139,7 @@ describe("OrderDetailsPage", () => {
 
   it("shows an error state instead of hanging when order fetch fails", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
       hydrated: true,
       logout: vi.fn()
     });

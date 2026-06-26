@@ -19,7 +19,7 @@ import { db } from "../db.js";
 
 const seedSkus = ["TEST-SKU-001", "TEST-SKU-002"];
 const seedOfferSlug = "test-offer-baseline";
-const seedCustomerEmail = "seed-customer@capella.test";
+const seedCustomerEmail = "seed-customer@minikoshk.test";
 const rootCategorySlug = "body-care";
 const leafCategorySlug = "body-lotion";
 

@@ -3,7 +3,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn(() => ({
-  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: [] },
+  user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: [] },
   hydrated: true,
   logout: vi.fn()
 }));
@@ -42,7 +42,7 @@ describe("StaffEditPage", () => {
   beforeEach(() => {
     mockedUseAdminAuth.mockReset();
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: [] },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin", permissionKeys: [] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -52,7 +52,7 @@ describe("StaffEditPage", () => {
 
   it("shows a 403 state for non-admin ERP users", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: [] },
       hydrated: true,
       logout: vi.fn()
     });
@@ -77,7 +77,7 @@ describe("StaffEditPage", () => {
         item: {
           id: 11,
           name: "Orders Staff",
-          email: "orders-staff@capella.test",
+          email: "orders-staff@minikoshk.test",
           role: "staff",
           isActive: true,
           permissionKeys: ["orders.read", "orders.update_payment_status"]
@@ -106,7 +106,7 @@ describe("StaffEditPage", () => {
 
     expect(apiGet).toHaveBeenNthCalledWith(1, "/api/erp/staff/11");
     expect(apiGet).toHaveBeenNthCalledWith(2, "/api/erp/staff/permissions");
-    expect(screen.getByDisplayValue("orders-staff@capella.test")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("orders-staff@minikoshk.test")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "حفظ التعديلات" })).toBeInTheDocument();
   });
 });

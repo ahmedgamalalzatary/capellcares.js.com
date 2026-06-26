@@ -12,7 +12,7 @@ vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
     user: {
       name: "Admin User",
-      email: "admin@capella.test",
+      email: "admin@minikoshk.test",
       role: "admin",
       permissionKeys: ["categories.read", "categories.create", "categories.update", "categories.soft_delete"]
     },

@@ -60,7 +60,7 @@ export async function getBaselineIds() {
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-001")).then((rows) => rows[0]),
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-002")).then((rows) => rows[0]),
     db.select({ id: offers.id }).from(offers).where(eq(offers.slug, "test-offer-baseline")).then((rows) => rows[0]),
-    db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
+    db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@minikoshk.test")).then((rows) => rows[0])
   ]);
 
   if (!productOne || !productTwo || !offer || !customer) {

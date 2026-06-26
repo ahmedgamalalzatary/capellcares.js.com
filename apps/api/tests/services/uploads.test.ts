@@ -42,7 +42,7 @@ test("parseUploadBody rejects unsupported mime type", () => {
 });
 
 test("uploadBase64Media saves image file and returns public URL + path", async () => {
-  const uploadsDir = mkdtempSync(join(tmpdir(), "capella-upload-test-"));
+  const uploadsDir = mkdtempSync(join(tmpdir(), "minikoshk-upload-test-"));
   try {
     const result = await uploadBase64Media(
       {
@@ -68,7 +68,7 @@ test("uploadBase64Media saves image file and returns public URL + path", async (
 });
 
 test("uploadBase64Media saves video files without changing the extension", async () => {
-  const uploadsDir = mkdtempSync(join(tmpdir(), "capella-upload-test-"));
+  const uploadsDir = mkdtempSync(join(tmpdir(), "minikoshk-upload-test-"));
   try {
     const result = await uploadBase64Media(
       {
@@ -94,7 +94,7 @@ test("uploadBase64Media saves video files without changing the extension", async
 });
 
 test("uploadBase64Media rejects oversized payloads", async () => {
-  const uploadsDir = mkdtempSync(join(tmpdir(), "capella-upload-test-"));
+  const uploadsDir = mkdtempSync(join(tmpdir(), "minikoshk-upload-test-"));
   try {
     const huge = Buffer.alloc(11).fill("a").toString("base64");
     await assert.rejects(

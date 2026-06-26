@@ -9,7 +9,7 @@ const restoreOffer = vi.fn();
 const useAdminAuth = vi.fn(() => ({
   user: {
     name: "Admin User",
-    email: "admin@capella.test",
+    email: "admin@minikoshk.test",
     role: "admin" as "admin" | "staff",
     permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
   }
@@ -79,7 +79,7 @@ describe("TrashPage hard delete", () => {
     useAdminAuth.mockReturnValue({
       user: {
         name: "Admin User",
-        email: "admin@capella.test",
+        email: "admin@minikoshk.test",
         role: "admin",
         permissionKeys: ["trash.read", "products.restore", "products.permanent_delete", "categories.restore", "offers.restore"]
       }
@@ -134,7 +134,7 @@ describe("TrashPage hard delete", () => {
     useAdminAuth.mockReturnValue({
       user: {
         name: "Restricted Staff",
-        email: "staff@capella.test",
+        email: "staff@minikoshk.test",
         role: "staff",
         permissionKeys: ["trash.read"]
       }

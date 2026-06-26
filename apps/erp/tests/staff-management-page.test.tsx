@@ -40,7 +40,7 @@ describe("StaffManagementPage", () => {
 
   it("shows a 403 state for non-admin ERP users", () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff" },
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff" },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -53,7 +53,7 @@ describe("StaffManagementPage", () => {
 
   it("loads and shows staff records for admin users", async () => {
     mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      user: { name: "Admin User", email: "admin@minikoshk.test", role: "admin" },
       hydrated: true,
       logout: vi.fn().mockResolvedValue(undefined)
     });
@@ -67,7 +67,7 @@ describe("StaffManagementPage", () => {
             {
               id: 11,
               name: "Orders Staff",
-              email: "orders-staff@capella.test",
+              email: "orders-staff@minikoshk.test",
               role: "staff",
               isActive: true,
               permissionKeys: ["orders.read", "orders.update_payment_status"]
@@ -79,7 +79,7 @@ describe("StaffManagementPage", () => {
     render(createElement(StaffManagementPage));
 
     await waitFor(() => {
-      expect(screen.getByText("orders-staff@capella.test")).toBeInTheDocument();
+      expect(screen.getByText("orders-staff@minikoshk.test")).toBeInTheDocument();
     });
 
     expect(screen.getByRole("link", { name: /إضافة عضو/i })).toHaveAttribute("href", "/staff/new");

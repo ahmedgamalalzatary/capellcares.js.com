@@ -8,7 +8,7 @@ let authCounter = 0;
 
 export async function getAdminAuthHeaders(request: TestRequest) {
   authCounter += 1;
-  process.env.ADMIN_EMAIL = `admin-${authCounter}@capella.test`;
+  process.env.ADMIN_EMAIL = `admin-${authCounter}@minikoshk.test`;
   process.env.ADMIN_PASSWORD = "AdminPass123";
   await ensureBootstrapAdmin();
 
@@ -33,7 +33,7 @@ export async function getStaffAuthHeaders(
   options?: { email?: string; password?: string; isActive?: boolean }
 ) {
   authCounter += 1;
-  const email = options?.email ?? `staff-${authCounter}@capella.test`;
+  const email = options?.email ?? `staff-${authCounter}@minikoshk.test`;
   const password = options?.password ?? "StaffPass123";
 
   await createTestAdminUser({

@@ -11,7 +11,7 @@ function baseCheckoutPayload() {
   return {
     fullName: "Checkout Guard",
     phone: "01012345678",
-    email: "guard-checkout@capella.test",
+    email: "guard-checkout@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 9",
@@ -30,7 +30,7 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
   const result = await createOrderFromCheckout({
     fullName: "Checkout Variant",
     phone: "01012345678",
-    email: "variant-checkout@capella.test",
+    email: "variant-checkout@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 1",
@@ -139,7 +139,7 @@ test("createOrderFromCheckout deducts offer stock from each included variant mul
   await createOrderFromCheckout({
     fullName: "Checkout Offer",
     phone: "01012345678",
-    email: "offer-checkout@capella.test",
+    email: "offer-checkout@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 2",
@@ -184,7 +184,7 @@ test("createOrderFromCheckout stores a collection order line and deducts each un
   const result = await createOrderFromCheckout({
     fullName: "Checkout Collection",
     phone: "01012345678",
-    email: "collection-checkout@capella.test",
+    email: "collection-checkout@minikoshk.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
     addressLine: "Street 3",
