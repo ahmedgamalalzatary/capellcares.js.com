@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { formatPrice } from "@capella/shared";
+import { formatPrice } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { ImageUpload } from "./image-upload";

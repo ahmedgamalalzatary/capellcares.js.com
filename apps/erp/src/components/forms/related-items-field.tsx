@@ -1,6 +1,6 @@
 "use client";
 
-import type { Bilingual, RelatedItemRef, RelatedItemType } from "@capella/shared";
+import type { Bilingual, RelatedItemRef, RelatedItemType } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
 
 export interface RelatedOption {

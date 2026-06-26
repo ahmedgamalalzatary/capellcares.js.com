@@ -1,6 +1,6 @@
 import { asc, desc, eq } from "drizzle-orm";
-import { advices } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { advices } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 export async function listAdvicesRepo(includeInactive = false) {
   return db

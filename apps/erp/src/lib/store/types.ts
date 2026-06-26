@@ -8,7 +8,7 @@ import type {
   OrderSummary,
   Product,
   ProductMedia
-} from "@capella/shared";
+} from "@minikoshk/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };

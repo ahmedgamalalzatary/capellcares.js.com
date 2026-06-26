@@ -11,7 +11,7 @@ RUN pnpm install --frozen-lockfile
 # dist/server.js. Only mysql2 stays external, so the runtime node_modules is
 # just mysql2 + its transitive deps (~5 MB) instead of the whole workspace
 # dependency closure (which would drag in @minikoshk/shared's React/Radix/Lucide).
-RUN pnpm --filter @capella/api build:bundle
+RUN pnpm --filter @minikoshk/api build:bundle
 RUN mkdir -p /prod && cd /prod \
     && npm init -y >/dev/null \
     && npm install --omit=dev --no-audit --no-fund mysql2@^3.11.3

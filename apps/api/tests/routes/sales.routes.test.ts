@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { app } from "../../src/app.js";
-import { db } from "@capella/database/src/db";
+import { db } from "@minikoshk/database/src/db";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
-import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { offerItems, orderItems, orders, productVariants } from "@minikoshk/database/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 beforeEach(async () => {

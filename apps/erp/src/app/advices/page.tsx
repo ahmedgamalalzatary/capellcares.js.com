@@ -13,7 +13,7 @@ import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpM
 import { getStore, useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { RowMenu } from "@/components/ui/row-menu";
-import type { Advice } from "@capella/shared";
+import type { Advice } from "@minikoshk/shared";
 
 export default function AdvicesPage() {
   const { user } = useAdminAuth();

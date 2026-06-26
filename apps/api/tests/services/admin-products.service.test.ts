@@ -8,8 +8,8 @@ loadWorkspaceEnv();
 
 test("createAdminProduct accepts the ERP product payload shape", async () => {
   const { eq } = await import("drizzle-orm");
-  const { productVariants, products } = await import("@capella/database/drizzle/schema");
-  const { db } = await import("@capella/database/src/db");
+  const { productVariants, products } = await import("@minikoshk/database/drizzle/schema");
+  const { db } = await import("@minikoshk/database/src/db");
   const { createAdminProduct } = await import("../../src/modules/admin/products/admin-products.service.js");
 
   const unique = Date.now();

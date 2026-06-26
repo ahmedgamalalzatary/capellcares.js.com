@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
-import { db } from "@capella/database/src/db";
-import { collectionItems, collections, orderItems } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collectionItems, collections, orderItems } from "@minikoshk/database/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createOrderWithItems, updateOrderPaymentStatusRepo } from "../../src/repositories/order.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";

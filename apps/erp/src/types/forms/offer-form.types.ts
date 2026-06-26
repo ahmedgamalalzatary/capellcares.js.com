@@ -1,4 +1,4 @@
-import type { Offer, Product, RelatedItemRef } from "@capella/shared";
+import type { Offer, Product, RelatedItemRef } from "@minikoshk/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface OfferFormProps {

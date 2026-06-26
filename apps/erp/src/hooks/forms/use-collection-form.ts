@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Collection, CollectionItem, RelatedItemRef } from "@capella/shared";
+import type { Collection, CollectionItem, RelatedItemRef } from "@minikoshk/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "../../components/forms/form-slug";

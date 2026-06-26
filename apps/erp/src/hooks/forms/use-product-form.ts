@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product, ProductVariant, RelatedItemRef } from "@capella/shared";
+import type { Product, ProductVariant, RelatedItemRef } from "@minikoshk/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "../../components/forms/form-slug";

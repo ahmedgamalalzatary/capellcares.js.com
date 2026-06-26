@@ -1,4 +1,4 @@
-import { resolveApiBase } from "@capella/shared/api/base";
+import { resolveApiBase } from "@minikoshk/shared/api/base";
 import { showErrorToast } from "@/lib/errors";
 
 export const API_BASE = resolveApiBase();

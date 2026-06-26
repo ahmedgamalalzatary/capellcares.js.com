@@ -2,8 +2,8 @@ import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { eq } from "drizzle-orm";
-import { products } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { products } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { setRelatedLinksForSourceRepo } from "../../src/repositories/related-item.repository.js";
@@ -16,8 +16,8 @@ import {
   storefrontOfferContract,
   storefrontProductContract,
   storefrontRelatedItemContract
-} from "@capella/shared/tests/contracts";
-import { collectionItems, collections } from "@capella/database/drizzle/schema";
+} from "@minikoshk/shared/tests/contracts";
+import { collectionItems, collections } from "@minikoshk/database/drizzle/schema";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

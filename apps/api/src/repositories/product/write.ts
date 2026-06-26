@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import {
   normalizeMedia,
   normalizeVariantSizeLabel,

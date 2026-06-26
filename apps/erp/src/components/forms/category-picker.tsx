@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Category } from "@capella/shared";
+import type { Category } from "@minikoshk/shared";
 
 interface Props {
   categories: Category[];

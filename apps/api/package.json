@@ -1,5 +1,5 @@
 {
-  "name": "@capella/api",
+  "name": "@minikoshk/api",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,13 +8,13 @@
     "build": "tsc -p tsconfig.json",
     "build:bundle": "node esbuild.config.mjs",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "pretest": "pnpm --filter @capella/database pretest",
+    "pretest": "pnpm --filter @minikoshk/database pretest",
     "start": "node dist/server.js",
     "test": "node ./scripts/run-tests.mjs"
   },
   "dependencies": {
-    "@capella/database": "workspace:*",
-    "@capella/shared": "workspace:*",
+    "@minikoshk/database": "workspace:*",
+    "@minikoshk/shared": "workspace:*",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

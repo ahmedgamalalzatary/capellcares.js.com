@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
-import type { Category } from "@capella/shared";
+import type { Category } from "@minikoshk/shared";
 import { BilingualNameFields, EditorActions } from "./editor-form-parts";
 import { slugifyFormName } from "./form-slug";
 import { ImageUpload } from "./image-upload";

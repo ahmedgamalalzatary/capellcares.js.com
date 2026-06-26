@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collectionItems, collections, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import {
   findCollectionByIdRepo,
   listCollectionsRepo,

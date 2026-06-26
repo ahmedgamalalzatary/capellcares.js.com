@@ -1,12 +1,12 @@
 import { asc, eq } from "drizzle-orm";
-import { homepageBannerItems } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { homepageBannerItems } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import type {
   HomepageBannerItemDto,
   HomepageBannersDto,
   HomepageSectionBehavior,
   HomepageSectionKey
-} from "@capella/shared";
+} from "@minikoshk/shared";
 
 const SECTION_CONFIG: Record<
   HomepageSectionKey,

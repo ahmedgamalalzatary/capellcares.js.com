@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { adminUsers } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { adminUsers } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 export type AdminUserRole = "admin" | "staff";
 

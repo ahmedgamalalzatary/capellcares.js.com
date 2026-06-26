@@ -1,6 +1,6 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
-import { authSessions } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { authSessions } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 type AccountType = "customer" | "admin";
 

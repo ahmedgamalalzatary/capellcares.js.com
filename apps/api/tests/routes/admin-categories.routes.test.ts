@@ -3,9 +3,9 @@ import test, { beforeEach } from "node:test";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
-import { rebuildCategoryPaths } from "@capella/database/src/category-paths";
-import { db } from "@capella/database/src/db";
-import { categories, categoryPaths, products } from "@capella/database/drizzle/schema";
+import { rebuildCategoryPaths } from "@minikoshk/database/src/category-paths";
+import { db } from "@minikoshk/database/src/db";
+import { categories, categoryPaths, products } from "@minikoshk/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";

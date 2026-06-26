@@ -12,7 +12,7 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
-import { formatPrice, type Offer } from "@capella/shared";
+import { formatPrice, type Offer } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
 

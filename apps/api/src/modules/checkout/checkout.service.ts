@@ -1,4 +1,4 @@
-import { EG_PHONE_REGEX, GOVERNORATES } from "@capella/shared/constants";
+import { EG_PHONE_REGEX, GOVERNORATES } from "@minikoshk/shared/constants";
 import { createOrderFromCheckout } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
 

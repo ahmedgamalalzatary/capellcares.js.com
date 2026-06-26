@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { eq, inArray } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { offerItems, offers, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import {
   findOfferByIdRepo,
   listOffersRepo,

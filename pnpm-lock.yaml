@@ -26,10 +26,10 @@ importers:
 
   apps/api:
     dependencies:
-      '@capella/database':
+      '@minikoshk/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@capella/shared':
+      '@minikoshk/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       bcryptjs:
@@ -87,7 +87,7 @@ importers:
 
   apps/erp:
     dependencies:
-      '@capella/shared':
+      '@minikoshk/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       next:
@@ -145,7 +145,7 @@ importers:
 
   apps/storefront:
     dependencies:
-      '@capella/shared':
+      '@minikoshk/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       next:

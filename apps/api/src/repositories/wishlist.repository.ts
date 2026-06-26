@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { wishlists } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { wishlists } from "@minikoshk/database/drizzle/schema";
 
 export function listWishlistByCustomer(customerId: number) {
   return db.select().from(wishlists).where(eq(wishlists.customerId, customerId));

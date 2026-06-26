@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product } from "@capella/shared";
+import type { Product } from "@minikoshk/shared";
 import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 

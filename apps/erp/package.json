@@ -1,5 +1,5 @@
 {
-  "name": "@capella/erp",
+  "name": "@minikoshk/erp",
   "private": true,
   "version": "0.1.0",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@capella/shared": "workspace:*",
+    "@minikoshk/shared": "workspace:*",
     "next": "15.5.18",
     "react": "19.2.6",
     "react-dom": "19.2.6",

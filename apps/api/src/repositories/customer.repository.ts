@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { customers } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { customers } from "@minikoshk/database/drizzle/schema";
 
 export function findCustomerById(id: number) {
   return db.select().from(customers).where(eq(customers.id, id)).limit(1).then((x) => x[0] ?? null);

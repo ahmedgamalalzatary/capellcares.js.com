@@ -6,8 +6,8 @@ import { eq } from "drizzle-orm";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
-import { db } from "@capella/database/src/db";
-import { collectionItems, collections, orders } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collectionItems, collections, orders } from "@minikoshk/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 

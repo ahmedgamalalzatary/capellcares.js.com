@@ -1,6 +1,6 @@
 import { inArray } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { productVariants } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { productVariants } from "@minikoshk/database/drizzle/schema";
 
 type BundleItem = { variantId: number; qty: number };
 type VariantPricing = { sellingPrice: unknown; stockQty: number };

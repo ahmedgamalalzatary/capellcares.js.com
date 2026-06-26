@@ -8,8 +8,8 @@ loadWorkspaceEnv();
 
 test("createAdminProductRepo creates product when provided id does not exist", async () => {
   const { eq } = await import("drizzle-orm");
-  const { products } = await import("@capella/database/drizzle/schema");
-  const { db } = await import("@capella/database/src/db");
+  const { products } = await import("@minikoshk/database/drizzle/schema");
+  const { db } = await import("@minikoshk/database/src/db");
   const { createAdminProductRepo } = await import("../../src/repositories/product.repository.js");
 
   const sku = `TDD-SKU-${Date.now()}`;

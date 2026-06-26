@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { and, eq, sql } from "drizzle-orm";
-import { collectionItems, collections, offers, relatedItems } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { collectionItems, collections, offers, relatedItems } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo

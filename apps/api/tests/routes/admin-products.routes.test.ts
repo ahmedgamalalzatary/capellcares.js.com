@@ -13,8 +13,8 @@ import {
   productVariants,
   relatedItems,
   wishlists
-} from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+} from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";

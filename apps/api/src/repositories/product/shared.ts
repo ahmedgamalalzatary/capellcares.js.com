@@ -1,6 +1,6 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { productMedia, productVariants } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { productMedia, productVariants } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
 

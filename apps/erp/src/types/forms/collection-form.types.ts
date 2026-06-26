@@ -1,4 +1,4 @@
-import type { Category, Collection, Product, RelatedItemRef } from "@capella/shared";
+import type { Category, Collection, Product, RelatedItemRef } from "@minikoshk/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface CollectionFormProps {

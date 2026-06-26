@@ -1,4 +1,4 @@
-import type { Collection } from "@capella/shared";
+import type { Collection } from "@minikoshk/shared";
 import { toCollectionBase } from "../../collections/collection-mapper.shared.js";
 
 type AdminCollectionRow = {

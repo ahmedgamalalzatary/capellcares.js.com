@@ -7,8 +7,8 @@ import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
-import { db } from "@capella/database/src/db";
-import { customers, orders, productVariants } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { customers, orders, productVariants } from "@minikoshk/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 

@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
-import { db } from "@capella/database/src/db";
+import { db } from "@minikoshk/database/src/db";
 import {
   adminUserPermissions,
   permissions
-} from "@capella/database/drizzle/schema";
+} from "@minikoshk/database/drizzle/schema";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import {
   getEffectiveAdminPermissions,

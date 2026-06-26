@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { eq } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { homepageBannerItems } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { homepageBannerItems } from "@minikoshk/database/drizzle/schema";
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";

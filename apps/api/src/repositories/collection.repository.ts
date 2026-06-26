@@ -1,6 +1,6 @@
 import { eq, inArray, isNull, sql } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { collectionItems, collections } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collectionItems, collections } from "@minikoshk/database/drizzle/schema";
 
 function mergeCollectionItems(items: Array<{ id?: number; variantId: number; qty: number }>) {
   const merged = new Map<number, { id?: number; variantId: number; qty: number }>();

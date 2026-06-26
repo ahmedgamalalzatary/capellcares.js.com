@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
-import { relatedItems } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { relatedItems } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 export type RelatedEntityType = "product" | "offer" | "collection";
 

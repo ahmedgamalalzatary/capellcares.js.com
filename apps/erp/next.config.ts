@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import type { NextConfig } from "next";
-import { loadWorkspaceEnv } from "@capella/shared/config/workspace-env";
+import { loadWorkspaceEnv } from "@minikoshk/shared/config/workspace-env";
 
 loadWorkspaceEnv();
 
@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
   },
-  transpilePackages: ["@capella/shared"],
+  transpilePackages: ["@minikoshk/shared"],
   webpack: (config) => {
     config.resolve.extensionAlias = {
       ".js": [".ts", ".tsx", ".js"],

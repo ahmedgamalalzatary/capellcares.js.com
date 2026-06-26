@@ -3,7 +3,7 @@ import type {
   Language as SharedLanguage,
   Order as SharedOrder,
   PaymentStatus as SharedPaymentStatus
-} from "@capella/shared";
+} from "@minikoshk/shared";
 
 export type Language = SharedLanguage;
 export type PaymentStatus = SharedPaymentStatus;

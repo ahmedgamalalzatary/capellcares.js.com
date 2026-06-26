@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { collectionItems, collections, offers, productVariants, products, relatedItems } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { collectionItems, collections, offers, productVariants, products, relatedItems } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
 /**

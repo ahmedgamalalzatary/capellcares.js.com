@@ -12,9 +12,9 @@ import {
   products,
   relatedItems,
   wishlists
-} from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
-import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
+} from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { clearTestSeed, seedTestData } from "@minikoshk/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
   await db.delete(relatedItems);

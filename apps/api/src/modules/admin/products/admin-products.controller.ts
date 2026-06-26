@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { products } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { products } from "@minikoshk/database/drizzle/schema";
 import { listCategoriesRepo } from "../../../repositories/category.repository.js";
 import {
   createAdminProductRepo,

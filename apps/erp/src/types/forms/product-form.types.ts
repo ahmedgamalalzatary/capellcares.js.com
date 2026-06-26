@@ -1,4 +1,4 @@
-import type { Category, Product } from "@capella/shared";
+import type { Category, Product } from "@minikoshk/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface ProductFormProps {

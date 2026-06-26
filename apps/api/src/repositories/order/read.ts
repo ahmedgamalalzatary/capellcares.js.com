@@ -1,5 +1,5 @@
-import { db } from "@capella/database/src/db";
-import { offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { offerItems, orderItems, orders, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import {
   mergeProductTotal,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore } from "@/lib/store";
-import { formatPrice } from "@capella/shared";
+import { formatPrice } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
 
 export default function DashboardPage() {

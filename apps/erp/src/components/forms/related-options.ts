@@ -1,4 +1,4 @@
-import type { Collection, Offer, Product } from "@capella/shared";
+import type { Collection, Offer, Product } from "@minikoshk/shared";
 import type { RelatedOption } from "./related-items-field";
 
 /**

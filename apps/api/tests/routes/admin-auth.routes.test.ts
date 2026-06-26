@@ -3,8 +3,8 @@ import test, { afterEach, beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { adminUsers } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { adminUsers } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import { app } from "../../src/app.js";
 import { ensureBootstrapAdmin } from "../../src/modules/admin/auth/admin-auth.service.js";
 import { updateAdminUserPermissions } from "../../src/services/erp-permissions.service.js";

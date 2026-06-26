@@ -1,5 +1,5 @@
-import { resolveApiBase } from "@capella/shared/api/base";
-import type { HomepageBannersDto } from "@capella/shared";
+import { resolveApiBase } from "@minikoshk/shared/api/base";
+import type { HomepageBannersDto } from "@minikoshk/shared";
 
 const API_BASE = resolveApiBase(process.env, { isServer: true });
 

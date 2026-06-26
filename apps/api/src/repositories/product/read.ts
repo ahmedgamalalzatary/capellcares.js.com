@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { categories, categoryPaths, products, productVariants } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { categories, categoryPaths, products, productVariants } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import {
   loadMediaRows,
   mapVariant,

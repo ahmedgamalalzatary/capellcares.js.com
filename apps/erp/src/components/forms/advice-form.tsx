@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStore } from "@/lib/store";
 import { ImageUpload } from "@/components/forms/image-upload";
-import type { Advice } from "@capella/shared";
+import type { Advice } from "@minikoshk/shared";
 
 type AdviceDraft = {
   title: { ar: string; en: string };

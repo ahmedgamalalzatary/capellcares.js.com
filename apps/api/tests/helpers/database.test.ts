@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { eq } from "drizzle-orm";
-import { categories, products } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { categories, products } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 import { getBaselineIds, resetApiTestDatabase } from "./database.js";
 
 beforeEach(async () => {

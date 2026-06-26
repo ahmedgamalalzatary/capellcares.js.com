@@ -1,4 +1,4 @@
-import type { Category, Product } from "@capella/shared";
+import type { Category, Product } from "@minikoshk/shared";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 
 function toNumber(value: unknown, fallback = 0): number {

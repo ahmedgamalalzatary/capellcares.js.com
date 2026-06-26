@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
-import { collections, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collections, offers, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";

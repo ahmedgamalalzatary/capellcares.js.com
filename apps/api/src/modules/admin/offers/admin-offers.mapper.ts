@@ -1,4 +1,4 @@
-import type { Offer } from "@capella/shared";
+import type { Offer } from "@minikoshk/shared";
 import { toOfferBase } from "../../offers/offer-mapper.shared.js";
 
 type AdminOfferRow = {

@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/icons";
 import { RowMenu } from "@/components/ui/row-menu";
 import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
-import type { Category } from "@capella/shared";
+import type { Category } from "@minikoshk/shared";
 
 function categoryParentKey(parentId: number | null) {
   return parentId == null ? "root" : `parent:${parentId}`;

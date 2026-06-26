@@ -1,4 +1,4 @@
-import type { Collection } from "@capella/shared";
+import type { Collection } from "@minikoshk/shared";
 
 type CollectionMapperRow = {
   id: number;

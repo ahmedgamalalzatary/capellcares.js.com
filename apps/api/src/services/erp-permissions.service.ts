@@ -3,8 +3,8 @@ import {
   adminUserPermissions,
   adminUsers,
   permissions
-} from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+} from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
 
 const ERP_PERMISSION_KEYS = [
   "dashboard.read",

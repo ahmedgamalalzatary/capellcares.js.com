@@ -10,7 +10,7 @@ import type {
   Order,
   OrderSummary,
   Product
-} from "@capella/shared";
+} from "@minikoshk/shared";
 import {
   api,
   getAdminAuthUser,

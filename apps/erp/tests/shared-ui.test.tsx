@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "@capella/shared/ui";
+} from "@minikoshk/shared/ui";
 
 describe("shared UI exports", () => {
   it("renders shared badge and label primitives in ERP", () => {

@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import type { RelatedItemRef } from "@capella/shared";
+import type { RelatedItemRef } from "@minikoshk/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";

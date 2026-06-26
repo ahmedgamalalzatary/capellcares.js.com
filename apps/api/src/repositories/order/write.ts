@@ -1,5 +1,5 @@
-import { db } from "@capella/database/src/db";
-import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { collectionItems, offerItems, orderItems, orders, productVariants } from "@minikoshk/database/drizzle/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 

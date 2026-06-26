@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { HomepageBannersDto, HomepageBannerSectionDto } from "@capella/shared";
+import type { HomepageBannersDto, HomepageBannerSectionDto } from "@minikoshk/shared";
 import { ChevronLeft, ChevronRight } from "../icons";
 
 type HomepageSectionsMap = HomepageBannersDto["sections"];

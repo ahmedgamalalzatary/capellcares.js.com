@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, ne, or, sql } from "drizzle-orm";
-import { categories, categoryPaths, products } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
-import { rebuildCategoryPaths } from "@capella/database/src/category-paths";
+import { categories, categoryPaths, products } from "@minikoshk/database/drizzle/schema";
+import { db } from "@minikoshk/database/src/db";
+import { rebuildCategoryPaths } from "@minikoshk/database/src/category-paths";
 
 export function listCategoriesRepo(includeDeleted = false) {
   return db

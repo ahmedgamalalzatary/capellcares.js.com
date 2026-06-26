@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import bcrypt from "bcryptjs";
-import { db } from "@capella/database/src/db";
+import { db } from "@minikoshk/database/src/db";
 import {
   createAdminUser,
   findAdminUserByEmail,

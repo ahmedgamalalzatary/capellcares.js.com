@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
+import { formatPrice, formatPriceRange, type Product } from "@minikoshk/shared";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { Icon } from "@/components/ui/icons";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { ProductMedia } from "@capella/shared";
+import type { ProductMedia } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
 import { api, type ErpUploadContext } from "@/lib/api/client";
 

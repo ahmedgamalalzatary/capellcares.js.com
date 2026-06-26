@@ -1,4 +1,4 @@
-import type { Product } from "@capella/shared";
+import type { Product } from "@minikoshk/shared";
 
 type ProductRow = {
   id: number;
