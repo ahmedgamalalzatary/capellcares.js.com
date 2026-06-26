@@ -94,6 +94,7 @@ export type CategoryApiShape = {
   name?: { ar?: string; en?: string };
   arName?: string;
   enName?: string;
+  imagePath?: string | null;
   isLeaf?: boolean;
   deletedAt?: string | null;
 };

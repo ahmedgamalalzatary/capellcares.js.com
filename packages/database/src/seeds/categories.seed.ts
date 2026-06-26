@@ -1,4 +1,5 @@
 import { categories } from "../../drizzle/schema.js";
+import { rebuildCategoryPaths } from "../category-paths.js";
 import { db } from "../db.js";
 
 export async function seedCategories() {
@@ -8,4 +9,5 @@ export async function seedCategories() {
     { slug: "hair-care", arName: "العناية بالشعر", enName: "Hair Care", isLeaf: false },
     { slug: "body-lotion", arName: "لوشن الجسم", enName: "Body Lotion", isLeaf: true }
   ]);
+  await rebuildCategoryPaths();
 }

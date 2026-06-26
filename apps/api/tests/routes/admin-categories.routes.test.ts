@@ -3,8 +3,9 @@ import test, { beforeEach } from "node:test";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
+import { rebuildCategoryPaths } from "@capella/database/src/category-paths";
 import { db } from "@capella/database/src/db";
-import { categories } from "@capella/database/drizzle/schema";
+import { categories, categoryPaths, products } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
@@ -78,6 +79,117 @@ test("admin category create supports deeper nesting and marks the parent as non-
     assert.equal(updatedParent?.isLeaf, false);
     assert.equal(createdChild?.parentId, parent.id);
   });
+});
+
+test("admin category create materializes closure-table paths for the new node", async () => {
+  const [root] = await db
+    .insert(categories)
+    .values({ slug: `paths-root-${Date.now()}`, arName: "جذر", enName: "Root", isLeaf: false })
+    .$returningId();
+  const [child] = await db
+    .insert(categories)
+    .values({ slug: `paths-child-${Date.now()}`, arName: "فرع", enName: "Child", isLeaf: true, parentId: root.id })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `paths-grandchild-${Date.now()}`,
+        name: { ar: "حفيد", en: "Grandchild" },
+        parentId: child.id,
+        isLeaf: true
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const [grandchild] = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(eq(categories.enName, "Grandchild"))
+    .limit(1);
+
+  assert.ok(grandchild);
+
+  const paths = await db
+    .select({
+      ancestorId: categoryPaths.ancestorId,
+      descendantId: categoryPaths.descendantId,
+      depth: categoryPaths.depth
+    })
+    .from(categoryPaths)
+    .where(eq(categoryPaths.descendantId, grandchild.id));
+
+  assert.deepEqual(
+    paths
+      .map((row) => ({ ancestorId: row.ancestorId, descendantId: row.descendantId, depth: row.depth }))
+      .sort((a, b) => a.depth - b.depth),
+    [
+      { ancestorId: grandchild.id, descendantId: grandchild.id, depth: 0 },
+      { ancestorId: child.id, descendantId: grandchild.id, depth: 1 },
+      { ancestorId: root.id, descendantId: grandchild.id, depth: 2 }
+    ]
+  );
+});
+
+test("admin category update rebuilds closure-table paths after reparenting", async () => {
+  const [firstRoot] = await db
+    .insert(categories)
+    .values({ slug: `reparent-root-a-${Date.now()}`, arName: "الأول", enName: "First Root", isLeaf: false })
+    .$returningId();
+  const [secondRoot] = await db
+    .insert(categories)
+    .values({ slug: `reparent-root-b-${Date.now()}`, arName: "الثاني", enName: "Second Root", isLeaf: false })
+    .$returningId();
+  const [child] = await db
+    .insert(categories)
+    .values({ slug: `reparent-child-${Date.now()}`, arName: "الابن", enName: "Child Node", isLeaf: false, parentId: firstRoot.id })
+    .$returningId();
+  const [grandchild] = await db
+    .insert(categories)
+    .values({ slug: `reparent-grandchild-${Date.now()}`, arName: "الحفيد", enName: "Grandchild Node", isLeaf: true, parentId: child.id })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: child.id,
+        slug: `reparent-child-${Date.now()}`,
+        name: { ar: "الابن", en: "Child Node" },
+        parentId: secondRoot.id,
+        isLeaf: false
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const paths = await db
+    .select({
+      ancestorId: categoryPaths.ancestorId,
+      descendantId: categoryPaths.descendantId,
+      depth: categoryPaths.depth
+    })
+    .from(categoryPaths)
+    .where(eq(categoryPaths.descendantId, grandchild.id));
+
+  assert.deepEqual(
+    paths
+      .map((row) => ({ ancestorId: row.ancestorId, descendantId: row.descendantId, depth: row.depth }))
+      .sort((a, b) => a.depth - b.depth),
+    [
+      { ancestorId: grandchild.id, descendantId: grandchild.id, depth: 0 },
+      { ancestorId: child.id, descendantId: grandchild.id, depth: 1 },
+      { ancestorId: secondRoot.id, descendantId: grandchild.id, depth: 2 }
+    ]
+  );
 });
 
 test("admin category create returns a conflict instead of crashing on duplicate slug", async () => {
@@ -456,4 +568,116 @@ test("admin category update rejects setting a category as its own parent", async
     .limit(1);
 
   assert.equal(rootCategory?.parentId, null);
+});
+
+test("admin category delete rejects a category when a descendant has linked products", async () => {
+  const [root] = await db
+    .insert(categories)
+    .values({ slug: `delete-root-${Date.now()}`, arName: "جذر الحذف", enName: "Delete Root", isLeaf: false })
+    .$returningId();
+  const [child] = await db
+    .insert(categories)
+    .values({ slug: `delete-child-${Date.now()}`, arName: "فرع الحذف", enName: "Delete Child", isLeaf: true, parentId: root.id })
+    .$returningId();
+  await rebuildCategoryPaths();
+
+  const ids = await getBaselineIds();
+  await db
+    .update(products)
+    .set({ categoryId: child.id })
+    .where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/categories/${root.id}`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "has-products");
+  });
+});
+
+test("admin category create allows imagePath for depth-1 categories", async () => {
+  const [root] = await db
+    .insert(categories)
+    .values({ slug: `img-root-${Date.now()}`, arName: "جذر صورة", enName: "Image Root", isLeaf: false })
+    .$returningId();
+  await rebuildCategoryPaths();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `img-child-${Date.now()}`,
+        name: { ar: "فرع صورة", en: "Image Child" },
+        parentId: root.id,
+        isLeaf: true,
+        imagePath: "/uploads/category-child.png"
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const [created] = await db
+    .select({ imagePath: categories.imagePath })
+    .from(categories)
+    .where(eq(categories.enName, "Image Child"))
+    .limit(1);
+
+  assert.equal(created?.imagePath, "/uploads/category-child.png");
+});
+
+test("admin category create rejects imagePath for root categories", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `img-root-disallowed-${Date.now()}`,
+        name: { ar: "جذر ممنوع", en: "Root Disallowed" },
+        parentId: null,
+        isLeaf: true,
+        imagePath: "/uploads/category-root.png"
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "category-image-depth-invalid");
+  });
+});
+
+test("admin category create rejects imagePath for depth-2 categories", async () => {
+  const [root] = await db
+    .insert(categories)
+    .values({ slug: `img-depth2-root-${Date.now()}`, arName: "جذر عمق 2", enName: "Depth2 Root", isLeaf: false })
+    .$returningId();
+  const [child] = await db
+    .insert(categories)
+    .values({ slug: `img-depth2-child-${Date.now()}`, arName: "فرع عمق 2", enName: "Depth2 Child", isLeaf: false, parentId: root.id })
+    .$returningId();
+  await rebuildCategoryPaths();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `img-depth2-grandchild-${Date.now()}`,
+        name: { ar: "حفيد صورة", en: "Image Grandchild" },
+        parentId: child.id,
+        isLeaf: true,
+        imagePath: "/uploads/category-grandchild.png"
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "category-image-depth-invalid");
+  });
 });

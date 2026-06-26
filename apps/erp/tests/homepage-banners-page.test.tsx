@@ -64,7 +64,9 @@ vi.mock("@/components/shell/admin-shell", () => ({
 
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => mockedUseStore(selector),
-  getStore: () => ({})
+  getStore: () => ({
+    fetchHomepageBanners: vi.fn().mockResolvedValue(undefined)
+  })
 }));
 
 import HomepageBannersPage from "@/app/homepage-banners/page";

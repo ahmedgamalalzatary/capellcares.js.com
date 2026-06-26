@@ -70,6 +70,7 @@ export function normalizeCategory(input: CategoryApiShape): Category {
       ar: input.name?.ar ?? input.arName ?? "",
       en: input.name?.en ?? input.enName ?? ""
     },
+    imagePath: input.imagePath ?? null,
     isLeaf: Boolean(input.isLeaf ?? true),
     deletedAt: input.deletedAt ?? null
   };

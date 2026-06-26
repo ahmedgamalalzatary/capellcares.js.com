@@ -4,6 +4,8 @@ import type { ErpPermissionKey } from "../../services/erp-permissions.service.js
 // create and update flows may upload, so a brand-new offer/collection/product/
 // advice can attach an image before it is first saved.
 const UPLOAD_CONTEXT_PERMISSIONS = new Set<ErpPermissionKey>([
+  "categories.create",
+  "categories.update",
   "products.create",
   "products.update",
   "offers.create",

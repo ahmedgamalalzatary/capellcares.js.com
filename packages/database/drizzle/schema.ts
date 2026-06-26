@@ -35,6 +35,7 @@ export const categories = mysqlTable("categories", {
   slug: varchar("slug", { length: 191 }).notNull(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
+  imagePath: varchar("image_path", { length: 1024 }),
   sortOrder: int("sort_order").notNull().default(0),
   isLeaf: boolean("is_leaf").notNull().default(false),
   deletedAt: datetime("deleted_at"),
@@ -46,6 +47,26 @@ export const categories = mysqlTable("categories", {
     table.slug
   )
 }));
+
+export const categoryPaths = mysqlTable(
+  "category_paths",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    ancestorId: int("ancestor_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    descendantId: int("descendant_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    depth: int("depth").notNull()
+  },
+  (table) => ({
+    categoryPathsAncestorDescendantUnique: unique("category_paths_ancestor_descendant_unique").on(
+      table.ancestorId,
+      table.descendantId
+    )
+  })
+);
 
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),

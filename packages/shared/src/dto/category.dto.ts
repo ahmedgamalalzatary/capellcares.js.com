@@ -5,6 +5,7 @@ export interface CategoryDto {
   sortOrder?: number;
   arName: string;
   enName: string;
+  imagePath: string | null;
   isLeaf: boolean;
   deletedAt: string | null;
 }

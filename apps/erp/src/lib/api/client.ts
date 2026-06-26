@@ -11,6 +11,8 @@ export type AdminAuthUser = {
 };
 
 export type ErpUploadContext =
+  | "categories.create"
+  | "categories.update"
   | "products.create"
   | "products.update"
   | "offers.create"

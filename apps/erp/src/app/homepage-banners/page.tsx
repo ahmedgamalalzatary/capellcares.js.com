@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { ImageUpload } from "@/components/forms/image-upload";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -45,6 +45,12 @@ export default function HomepageBannersPage() {
   }
 
   const editable = hasErpPermission(user, "homepage_banners.update");
+
+  useEffect(() => {
+    void getStore().fetchHomepageBanners().catch((loadError) => {
+      setError(showErrorToast(loadError, "تعذر تحميل بنرات الصفحة الرئيسية. حاولي مرة أخرى."));
+    });
+  }, []);
 
   return (
     <AdminShell title="بنرات الصفحة الرئيسية" crumbs={[{ label: "بنرات الصفحة الرئيسية" }]}>

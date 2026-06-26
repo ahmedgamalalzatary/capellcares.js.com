@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import {
   categories,
+  categoryPaths,
   collectionItems,
   collections,
   customers,
@@ -13,6 +14,7 @@ import {
   productVariants,
   products
 } from "../../drizzle/schema.js";
+import { rebuildCategoryPaths } from "../category-paths.js";
 import { db } from "../db.js";
 
 const seedSkus = ["TEST-SKU-001", "TEST-SKU-002"];
@@ -37,6 +39,7 @@ export async function clearTestSeed() {
   await db.delete(offers);
   await db.delete(products);
   await db.delete(customers);
+  await db.delete(categoryPaths);
 
   for (;;) {
     const childRows = await db.select({ parentId: categories.parentId }).from(categories);
@@ -128,6 +131,7 @@ export async function seedTestData() {
     email: seedCustomerEmail,
     passwordHash: "$2a$10$0V6QY0bL5Qn5hEw5N1iXROXGdPvxI6Bjq5lHppZArYrusS4x2QVFG"
   });
+  await rebuildCategoryPaths();
 }
 
 async function ensureCategory(input: {

@@ -16,6 +16,15 @@ vi.mock("@/lib/store", () => ({
   })
 }));
 
+vi.mock("@/components/forms/image-upload", () => ({
+  ImageUpload: ({ value, onChange }: { value: string | null; onChange: (value: string | null) => void }) =>
+    createElement("div", null, [
+      createElement("div", { key: "label" }, "IMAGE_UPLOAD"),
+      createElement("button", { key: "set", type: "button", onClick: () => onChange("/uploads/category.png") }, "set image"),
+      createElement("div", { key: "value" }, value ?? "")
+    ])
+}));
+
 import { CategoryForm } from "@/components/forms/category-form";
 
 const categories = [
@@ -35,5 +44,18 @@ describe("CategoryForm", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "3" } });
 
     expect(screen.getByText("المسار: العناية بالشعر › زيوت الشعر › شعر جاف")).toBeInTheDocument();
+  });
+
+  it("shows category image upload only when the selected category depth is 1", () => {
+    render(createElement(CategoryForm, { mode: "new", categories }));
+    const parentSelect = screen.getAllByRole("combobox").at(-1)!;
+
+    expect(screen.queryByText("IMAGE_UPLOAD")).not.toBeInTheDocument();
+
+    fireEvent.change(parentSelect, { target: { value: "1" } });
+    expect(screen.getByText("IMAGE_UPLOAD")).toBeInTheDocument();
+
+    fireEvent.change(parentSelect, { target: { value: "2" } });
+    expect(screen.queryByText("IMAGE_UPLOAD")).not.toBeInTheDocument();
   });
 });

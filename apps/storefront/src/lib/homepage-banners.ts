@@ -60,8 +60,8 @@ function normalizeHomepageBanners(payload: unknown): HomepageBannersDto {
                 typeof typedItem.sortOrder === "number"
               ? {
                   id: typedItem.id,
-                  imagePath: typedItem.imagePath,
-                  href: typedItem.href,
+                  imagePath: typedItem.imagePath.trim(),
+                  href: typedItem.href.trim(),
                   sortOrder: typedItem.sortOrder
                 }
               : null;

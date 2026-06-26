@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { categories, products, productVariants } from "@capella/database/drizzle/schema";
+import { categories, categoryPaths, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   loadMediaRows,
@@ -17,21 +17,18 @@ function escapeLikeTerm(value: string) {
 export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
   const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
   if (params.category) {
-    const allCategories = await db.select({ id: categories.id, parentId: categories.parentId, slug: categories.slug }).from(categories).where(isNull(categories.deletedAt));
-    const root = allCategories.find((c) => c.slug === params.category);
+    const [root] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.slug, params.category), isNull(categories.deletedAt)))
+      .limit(1);
     if (!root) return [];
-    const descendantIds = new Set<number>([root.id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const c of allCategories) {
-        if (c.parentId != null && descendantIds.has(c.parentId) && !descendantIds.has(c.id)) {
-          descendantIds.add(c.id);
-          changed = true;
-        }
-      }
-    }
-    filters.push(inArray(products.categoryId, [...descendantIds]));
+    const descendants = await db
+      .select({ id: categoryPaths.descendantId })
+      .from(categoryPaths)
+      .innerJoin(categories, eq(categoryPaths.descendantId, categories.id))
+      .where(and(eq(categoryPaths.ancestorId, root.id), isNull(categories.deletedAt)));
+    filters.push(inArray(products.categoryId, descendants.map((row) => row.id)));
   }
   if (params.q?.trim()) {
     const q = params.q.trim();

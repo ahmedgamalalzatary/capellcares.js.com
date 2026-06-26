@@ -7,6 +7,7 @@ export const categorySchema = z.object({
   sortOrder: z.number().int().nonnegative().optional(),
   arName: z.string().min(1),
   enName: z.string().min(1),
+  imagePath: z.string().nullable().optional(),
   isLeaf: z.boolean(),
   deletedAt: z.string().nullable()
 });
