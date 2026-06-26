@@ -1,14 +1,14 @@
 import { build } from "esbuild";
 
 // Bundle the API entrypoint into a single self-contained file.
-// Everything — our source, the workspace packages (@capella/*), and pure-JS
+// Everything — our source, the workspace packages (@minikoshk/*), and pure-JS
 // npm deps (express, drizzle-orm, zod, ...) — is inlined. Node builtins are
 // external automatically under platform:node.
 //
 // `mysql2` is the only package kept external: it lazily `require()`s charset
 // and auth-plugin files at runtime, which a static bundle cannot resolve.
 // The runner installs just mysql2 (a few MB) instead of the whole workspace
-// dependency closure, so React/Radix/Lucide from @capella/shared never ship.
+// dependency closure, so React/Radix/Lucide from @minikoshk/shared never ship.
 await build({
   entryPoints: ["src/server.ts"],
   bundle: true,

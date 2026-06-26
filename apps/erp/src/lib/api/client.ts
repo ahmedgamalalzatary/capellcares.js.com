@@ -204,7 +204,7 @@ export const api = {
     file.arrayBuffer().then((buffer) =>
       request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
         method: "POST",
-        headers: context ? { "x-capella-upload-context": context } : undefined,
+        headers: context ? { "x-minikoshk-upload-context": context } : undefined,
         body: JSON.stringify({
           fileName: file.name,
           mimeType: file.type,
@@ -216,7 +216,7 @@ export const api = {
     file.arrayBuffer().then((buffer) =>
       request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
         method: "POST",
-        headers: context ? { "x-capella-upload-context": context } : undefined,
+        headers: context ? { "x-minikoshk-upload-context": context } : undefined,
         body: JSON.stringify({
           fileName: file.name,
           mimeType: file.type,

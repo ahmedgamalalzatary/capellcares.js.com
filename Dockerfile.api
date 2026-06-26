@@ -7,10 +7,10 @@ FROM base AS builder
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
-# Bundle the API (inlining @capella/* TS + pure-JS deps) into a single
+# Bundle the API (inlining @minikoshk/* TS + pure-JS deps) into a single
 # dist/server.js. Only mysql2 stays external, so the runtime node_modules is
 # just mysql2 + its transitive deps (~5 MB) instead of the whole workspace
-# dependency closure (which would drag in @capella/shared's React/Radix/Lucide).
+# dependency closure (which would drag in @minikoshk/shared's React/Radix/Lucide).
 RUN pnpm --filter @capella/api build:bundle
 RUN mkdir -p /prod && cd /prod \
     && npm init -y >/dev/null \

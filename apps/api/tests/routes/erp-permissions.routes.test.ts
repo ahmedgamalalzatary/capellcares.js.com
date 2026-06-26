@@ -156,7 +156,7 @@ test("uploads are denied unless the request comes from an authorized edit-capabl
       headers: {
         authorization: auth.authorization,
         "content-type": "application/json",
-        "x-capella-upload-context": "products.update"
+        "x-minikoshk-upload-context": "products.update"
       },
       body: JSON.stringify({
         fileName: "cream.png",

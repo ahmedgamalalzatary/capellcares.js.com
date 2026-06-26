@@ -8,7 +8,7 @@ import { parseUploadBody } from "./uploads.schemas.js";
 export const uploadsRoutes = Router();
 uploadsRoutes.post(
   "/",
-  requireErpPermission((req) => resolveUploadPermission(req.headers["x-capella-upload-context"])),
+  requireErpPermission((req) => resolveUploadPermission(req.headers["x-minikoshk-upload-context"])),
   validateBody(parseUploadBody),
   uploadMediaController
 );

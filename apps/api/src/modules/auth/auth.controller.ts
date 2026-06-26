@@ -3,6 +3,7 @@ import { login, logoutCustomerSession, refreshCustomerSession, signup } from "./
 import {
   clearRefreshCookieOptions,
   CUSTOMER_REFRESH_COOKIE,
+  LEGACY_CUSTOMER_REFRESH_COOKIE,
   refreshCookieOptions
 } from "./cookie-options.js";
 
@@ -27,7 +28,7 @@ export async function loginController(req: Request, res: Response) {
 
 export async function refreshController(req: Request, res: Response) {
   try {
-    const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE];
+    const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE] ?? req.cookies?.[LEGACY_CUSTOMER_REFRESH_COOKIE];
     if (!token) return res.status(401).json({ message: "Missing refresh token" });
     const result = await refreshCustomerSession(token);
     res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
@@ -38,10 +39,11 @@ export async function refreshController(req: Request, res: Response) {
 }
 
 export async function logoutController(req: Request, res: Response) {
-  const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE];
+  const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE] ?? req.cookies?.[LEGACY_CUSTOMER_REFRESH_COOKIE];
   if (token) {
     await logoutCustomerSession(token);
   }
   res.cookie(CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
+  res.cookie(LEGACY_CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
   return res.status(204).send();
 }
