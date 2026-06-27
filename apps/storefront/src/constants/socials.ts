@@ -1,4 +1,4 @@
-export const HEADER_SOCIAL_LINKS = [
+export const SOCIAL_LINKS = [
   {
     label: "Facebook",
     href: "https://www.facebook.com/share/1CVnkzEyuC/?mibextid=wwXIfr",

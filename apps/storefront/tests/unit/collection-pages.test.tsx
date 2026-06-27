@@ -64,8 +64,64 @@ vi.mock("@/lib/storefront-detail-page", () => ({
   StorefrontJsonLd: () => createElement("div", { "data-testid": "json-ld" })
 }));
 
-const fetchCollections = vi.fn(async () => ([
-    {
+const {
+  fetchCollections,
+  fetchCollectionBySlug,
+  fetchCollectionDetailBySlug,
+  fetchProducts,
+  fetchCategories
+} = vi.hoisted(() => ({
+  fetchCollections: vi.fn(async () => ([
+      {
+        id: 1,
+        slug: "skin-care-set",
+        name: { ar: "مجموعة", en: "Skin Care Set" },
+        description: { ar: "وصف", en: "Routine set" },
+        imagePath: "/uploads/collection.jpg",
+        price: 200,
+        originalTotal: 260,
+        categoryId: 11,
+        items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
+        stock: 3,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 2,
+        slug: "body-lotion-set",
+        name: { ar: "مجموعة لوشن", en: "Body Lotion Set" },
+        description: { ar: "وصف", en: "Body routine" },
+        imagePath: "/uploads/body.jpg",
+        price: 120,
+        originalTotal: 180,
+        categoryId: 12,
+        items: [{ variantId: 103, qty: 1 }, { variantId: 104, qty: 1 }],
+        stock: 3,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 3,
+        slug: "hair-set",
+        name: { ar: "مجموعة شعر", en: "Hair Set" },
+        description: { ar: "وصف", en: "Hair routine" },
+        imagePath: "/uploads/hair.jpg",
+        price: 90,
+        originalTotal: 130,
+        categoryId: 13,
+        items: [{ variantId: 105, qty: 1 }, { variantId: 106, qty: 1 }],
+        stock: 3,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: ""
+      }
+    ])),
+  fetchCollectionBySlug: vi.fn(async () => ({
       id: 1,
       slug: "skin-care-set",
       name: { ar: "مجموعة", en: "Skin Care Set" },
@@ -80,133 +136,81 @@ const fetchCollections = vi.fn(async () => ([
       visibility: "visible",
       createdAt: "",
       updatedAt: ""
-    },
-    {
-      id: 2,
-      slug: "body-lotion-set",
-      name: { ar: "مجموعة لوشن", en: "Body Lotion Set" },
-      description: { ar: "وصف", en: "Body routine" },
-      imagePath: "/uploads/body.jpg",
-      price: 120,
-      originalTotal: 180,
-      categoryId: 12,
-      items: [{ variantId: 103, qty: 1 }, { variantId: 104, qty: 1 }],
+    })),
+  fetchCollectionDetailBySlug: vi.fn(async () => ({
+      id: 1,
+      slug: "skin-care-set",
+      name: { ar: "مجموعة", en: "Skin Care Set" },
+      description: { ar: "وصف", en: "Routine set" },
+      imagePath: "/uploads/collection.jpg",
+      price: 200,
+      originalTotal: 260,
+      categoryId: 11,
+      items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
       stock: 3,
       status: "active",
       visibility: "visible",
+      relatedItems: [],
       createdAt: "",
       updatedAt: ""
-    },
-    {
-      id: 3,
-      slug: "hair-set",
-      name: { ar: "مجموعة شعر", en: "Hair Set" },
-      description: { ar: "وصف", en: "Hair routine" },
-      imagePath: "/uploads/hair.jpg",
-      price: 90,
-      originalTotal: 130,
-      categoryId: 13,
-      items: [{ variantId: 105, qty: 1 }, { variantId: 106, qty: 1 }],
-      stock: 3,
-      status: "active",
-      visibility: "visible",
-      createdAt: "",
-      updatedAt: ""
-    }
-  ]));
-
-const fetchCollectionBySlug = vi.fn(async () => ({
-    id: 1,
-    slug: "skin-care-set",
-    name: { ar: "مجموعة", en: "Skin Care Set" },
-    description: { ar: "وصف", en: "Routine set" },
-    imagePath: "/uploads/collection.jpg",
-    price: 200,
-    originalTotal: 260,
-    categoryId: 11,
-    items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
-    stock: 3,
-    status: "active",
-    visibility: "visible",
-    createdAt: "",
-    updatedAt: ""
-  }));
-
-const fetchCollectionDetailBySlug = vi.fn(async () => ({
-    id: 1,
-    slug: "skin-care-set",
-    name: { ar: "مجموعة", en: "Skin Care Set" },
-    description: { ar: "وصف", en: "Routine set" },
-    imagePath: "/uploads/collection.jpg",
-    price: 200,
-    originalTotal: 260,
-    categoryId: 11,
-    items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
-    stock: 3,
-    status: "active",
-    visibility: "visible",
-    relatedItems: [],
-    createdAt: "",
-    updatedAt: ""
-  }));
-
-const fetchProducts = vi.fn(async () => ([
-    {
-      id: 10,
-      sku: "P10",
-      slug: "cleanser",
-      name: { ar: "غسول", en: "Cleanser" },
-      description: { ar: "", en: "" },
-      ingredients: { ar: "", en: "" },
-      howToUse: { ar: "", en: "" },
-      warnings: { ar: "", en: "" },
-      keywords: [],
-      buyingPrice: 10,
-      imagePath: "",
-      media: [],
-      status: "active",
-      isNew: false,
-      isBestseller: false,
-      categoryId: 11,
-      variants: [{ id: 101, productId: 10, size: "100ml", price: 120, stock: 5, sortOrder: 1 }],
-      createdAt: "",
-      updatedAt: ""
-    },
-    {
-      id: 11,
-      sku: "P11",
-      slug: "serum",
-      name: { ar: "سيروم", en: "Serum" },
-      description: { ar: "", en: "" },
-      ingredients: { ar: "", en: "" },
-      howToUse: { ar: "", en: "" },
-      warnings: { ar: "", en: "" },
-      keywords: [],
-      buyingPrice: 10,
-      imagePath: "",
-      media: [],
-      status: "active",
-      isNew: false,
-      isBestseller: false,
-      categoryId: 11,
-      variants: [{ id: 102, productId: 11, size: "30ml", price: 140, stock: 4, sortOrder: 1 }],
-      createdAt: "",
-      updatedAt: ""
-    }
-  ]));
-
-const fetchCategories = vi.fn(async () => ([
-    { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true },
-    { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
-    { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
-  ]));
+    })),
+  fetchProducts: vi.fn(async () => ([
+      {
+        id: 10,
+        sku: "P10",
+        slug: "cleanser",
+        name: { ar: "غسول", en: "Cleanser" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "",
+        media: [],
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 11,
+        variants: [{ id: 101, productId: 10, size: "100ml", price: 120, stock: 5, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 11,
+        sku: "P11",
+        slug: "serum",
+        name: { ar: "سيروم", en: "Serum" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "",
+        media: [],
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 11,
+        variants: [{ id: 102, productId: 11, size: "30ml", price: 140, stock: 4, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      }
+    ])),
+  fetchCategories: vi.fn(async () => ([
+      { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true },
+      { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
+      { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
+    ]))
+}));
 
 vi.mock("@/lib/api/client", () => ({
-  fetchCollections: (...args: unknown[]) => fetchCollections(...args),
-  fetchCollectionBySlug: (...args: unknown[]) => fetchCollectionBySlug(...args),
-  fetchCollectionDetailBySlug: (...args: unknown[]) => fetchCollectionDetailBySlug(...args),
-  fetchProducts: (...args: unknown[]) => fetchProducts(...args),
-  fetchCategories: (...args: unknown[]) => fetchCategories(...args)
+  fetchCollections,
+  fetchCollectionBySlug,
+  fetchCollectionDetailBySlug,
+  fetchProducts,
+  fetchCategories
 }));
 
 import CollectionsPage from "@/app/[lang]/collections/page";

@@ -150,7 +150,7 @@ export const ar = {
     viewOrders: "عرض طلباتي"
   },
   advices: {
-    title: "نصائح كابيلا",
+    title: "نصائح ",
     description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا.",
     eyebrow: "نصائح كابيلا",
     tipBadge: "نصيحة",
@@ -283,6 +283,13 @@ export const ar = {
     subscribe: "اشتراك",
     privacyNote: "بالاشتراك، أنتِ توافقين على سياسة الخصوصية.",
     navigate: "تصفحي",
+    shop: "المتجر",
+    new: "جديد",
+    bestseller: "الأكثر مبيعًا",
+    bodyCare: "العناية بالجسم",
+    skincare: "العناية بالبشرة",
+    haircare: "العناية بالشعر",
+    makeup: "المكياج",
     social: "تابعينا",
     support: "الدعم",
     facebook: "فيسبوك",

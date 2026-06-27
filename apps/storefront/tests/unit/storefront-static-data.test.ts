@@ -1,19 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const fetchProducts = vi.fn();
-const fetchOffers = vi.fn();
-const fetchCollections = vi.fn();
-const fetchAdvices = vi.fn();
-const fetchCategories = vi.fn();
-const fetchShopMediaSections = vi.fn();
+const {
+  fetchProducts,
+  fetchOffers,
+  fetchCollections,
+  fetchAdvices,
+  fetchCategories,
+  fetchShopMediaSections
+} = vi.hoisted(() => ({
+  fetchProducts: vi.fn(),
+  fetchOffers: vi.fn(),
+  fetchCollections: vi.fn(),
+  fetchAdvices: vi.fn(),
+  fetchCategories: vi.fn(),
+  fetchShopMediaSections: vi.fn()
+}));
 
 vi.mock("@/lib/api/client", () => ({
-  fetchProducts: (...args: unknown[]) => fetchProducts(...args),
-  fetchOffers: (...args: unknown[]) => fetchOffers(...args),
-  fetchCollections: (...args: unknown[]) => fetchCollections(...args),
-  fetchAdvices: (...args: unknown[]) => fetchAdvices(...args),
-  fetchCategories: (...args: unknown[]) => fetchCategories(...args),
-  fetchShopMediaSections: (...args: unknown[]) => fetchShopMediaSections(...args)
+  fetchProducts,
+  fetchOffers,
+  fetchCollections,
+  fetchAdvices,
+  fetchCategories,
+  fetchShopMediaSections
 }));
 
 describe("storefront static data", () => {

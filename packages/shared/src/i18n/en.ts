@@ -150,7 +150,7 @@ export const en = {
     viewOrders: "View my orders"
   },
   advices: {
-    title: "Capella Advices",
+    title: "Advices",
     description: "Helpful guidance, shopping tips, and routine ideas from Capella.",
     eyebrow: "Capella Journal",
     tipBadge: "Tip",
@@ -283,6 +283,13 @@ export const en = {
     subscribe: "Subscribe",
     privacyNote: "By signing up, you agree to our Privacy Policy.",
     navigate: "Navigate",
+    shop: "Shop",
+    new: "New",
+    bestseller: "Bestseller",
+    bodyCare: "Body Care",
+    skincare: "Skincare",
+    haircare: "Haircare",
+    makeup: "Makeup",
     social: "Social",
     support: "Support",
     facebook: "Facebook",

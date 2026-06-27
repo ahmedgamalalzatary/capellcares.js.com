@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { pickLang, formatPrice, type Language, type Offer, type Collection, type Advice } from "@capella/shared";
+import { SOCIAL_LINKS } from "@/constants/socials";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { Icon } from "@/components/ui/icons";
@@ -184,6 +185,7 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
+  const mediaRoundedClass = props.kind === "advice" ? "rounded-lg" : "rounded-t-lg";
   const closeAdvice = () => {
     setAdviceOpen(false);
     setAdvicePreviewActive(false);
@@ -226,7 +228,7 @@ export function SectionCard(props: SectionCardProps) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+      <div className={`relative aspect-8/9 overflow-hidden ${mediaRoundedClass} bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (
           <>
@@ -343,6 +345,14 @@ export function SectionCard(props: SectionCardProps) {
                 </h3>
                 <p className="m-0 text-sm leading-7 text-(--ink-2)">{description}</p>
               </div>
+              <Link
+                href={SOCIAL_LINKS.find((entry) => entry.label === "Instagram")?.href ?? ""}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold tracking-[0.06em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+              >
+                {dict.advices.readMore}
+              </Link>
             </div>
           </div>
         </div>

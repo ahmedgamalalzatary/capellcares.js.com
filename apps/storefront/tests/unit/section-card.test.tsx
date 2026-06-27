@@ -115,6 +115,21 @@ describe("SectionCard", () => {
     expect(container.querySelector(".line-through")).toBeNull();
   });
 
+  it("uses full rounding for advice media while keeping top-only rounding for offers", () => {
+    const { container, rerender } = render(
+      createElement(SectionCard, { kind: "advice", data: baseAdvice, lang: "en", dict } as any)
+    );
+
+    const adviceMedia = container.querySelector(".aspect-8\\/9");
+    expect(adviceMedia?.className).toContain("rounded-lg");
+    expect(adviceMedia?.className).not.toContain("rounded-t-lg");
+
+    rerender(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    const offerMedia = container.querySelector(".aspect-8\\/9");
+    expect(offerMedia?.className).toContain("rounded-t-lg");
+  });
+
   it("renders an advice as a video-only tile and opens a dialog with full content", () => {
     render(createElement(SectionCard, {
       kind: "advice",
@@ -130,7 +145,10 @@ describe("SectionCard", () => {
     expect(screen.getByRole("heading", { name: "Tip One" })).toBeInTheDocument();
     expect(screen.getByText("Advice description")).toBeInTheDocument();
     expect(screen.getByTitle("Tip One video")).toHaveAttribute("src", expect.stringContaining("autoplay=1"));
-    expect(screen.queryByRole("link", { name: /read more/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /read more/i })).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/capellacare?igsh=aDllZTVycjc4ZjJw&utm_source=qr"
+    );
   });
 
   it("renders Instagram advice in the popup through the official embed markup instead of an iframe player", () => {
@@ -204,9 +222,10 @@ describe("SectionCard", () => {
 
     const closeButton = screen.getByRole("button", { name: "Close" });
     expect(closeButton).toHaveFocus();
+    const readMoreLink = screen.getByRole("link", { name: /read more/i });
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Tab", shiftKey: true });
-    expect(closeButton).toHaveFocus();
+    expect(readMoreLink).toHaveFocus();
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();

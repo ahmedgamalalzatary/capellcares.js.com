@@ -7,7 +7,7 @@ import { compareHeaderCategoryEntries } from "@/lib/header-menu";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
-import { HEADER_SOCIAL_LINKS } from "../../../constants/socials";
+import { SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
 
 // The desktop mega menu reveals at min-[880px]; keep the drawer's auto-close in sync.
@@ -266,7 +266,7 @@ export function HeaderMobileDrawer({
                 {dict.nav.followUs}
               </p>
               <div className="flex items-center gap-3">
-                {HEADER_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+                {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
                   <a
                     key={label}
                     href={href}

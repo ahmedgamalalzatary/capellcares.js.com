@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
-import { HEADER_SOCIAL_LINKS } from "../../constants/socials";
+import { SOCIAL_LINKS } from "../../constants/socials";
 import { Icon } from "@/components/ui/icons";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
@@ -109,16 +109,17 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           {/* Link columns */}
           <div className="grid grid-cols-1 justify-items-center text-center gap-y-8 min-[380px]:grid-cols-2 min-[380px]:justify-items-start min-[380px]:text-start min-[380px]:gap-x-4 min-[380px]:gap-y-10 sm:grid-cols-4 sm:gap-x-8 sm:gap-y-12 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
             <FooterCol title={dict.footer.navigate} isAr={isAr}>
-              <FooterLink href={`/${lang}/shop`}>{dict.nav.products}</FooterLink>
-              <FooterLink href={`/${lang}/new`}>{dict.nav.new}</FooterLink>
-              <FooterLink href={`/${lang}/bestsellers`}>{dict.nav.bestsellers}</FooterLink>
-              <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
-              <FooterLink href={`/${lang}/collections`}>{dict.footer.collections}</FooterLink>
-                <FooterLink href={`/${lang}/about`}>{dict.footer.about}</FooterLink> {/* not working yet */}
+              <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
+              <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
+              <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>
+              <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
+              <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skincare}</FooterLink>
+              <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.haircare}</FooterLink>
+              <FooterLink href={`/${lang}/category/makeup`}>{dict.footer.makeup}</FooterLink>
             </FooterCol>
 
             <FooterCol title={dict.footer.social} isAr={isAr}>
-              {HEADER_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+              {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
                 <a
                   key={label}
                   href={href}

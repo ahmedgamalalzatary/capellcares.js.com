@@ -22,14 +22,13 @@ export function AdviceSection({
   ));
 
   return (
-    <section className="mt-12 mb-12">
-      <header className="mb-10 grid gap-2 pt-8 ">
+    <section className="mt-8 mb-8">
+      <header className="mb-8 grid gap-2 pt-8 ">
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(family-name:--font-ar) leading-tight text-ink "
           : "m-0 text-[clamp(28px,2.8vw,40px)] leading-[1.1] tracking-[-0.005em] text-ink font-bold uppercase"}>
           {dict.advices.title}
         </h2>
-        <p className="max-w-[58ch] text-base leading-[1.7] text-(--ink-2)">{dict.advices.description}</p>
       </header>
 
       {scrollRow ? (
