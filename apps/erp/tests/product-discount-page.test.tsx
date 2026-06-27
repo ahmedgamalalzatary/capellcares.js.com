@@ -1,5 +1,6 @@
 import { createElement, Suspense } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { Product } from "@capella/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => cleanup());
@@ -12,7 +13,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
 }));
 const mockedUseStore = vi.fn((selector: any) => selector(storeState));
 
-const storeState = {
+const storeState: { products: Product[]; loaded: boolean; error: string | null } = {
   products: [
     {
       id: 1,

@@ -9,7 +9,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
 }));
 
 const toggleCollectionStatus = vi.fn().mockResolvedValue(undefined);
-const mockedUseStore = vi.fn((selector: any) => selector({
+const storeState: any = {
   collections: [{
     id: 1,
     slug: "collection-1",
@@ -26,7 +26,8 @@ const mockedUseStore = vi.fn((selector: any) => selector({
     updatedAt: ""
   }],
   categories: [{ id: 7, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
-}));
+};
+const mockedUseStore = vi.fn((selector: any) => selector(storeState));
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -60,6 +61,22 @@ describe("CollectionsListPage", () => {
     });
     toggleCollectionStatus.mockClear();
     mockedUseStore.mockClear();
+    storeState.collections = [{
+      id: 1,
+      slug: "collection-1",
+      name: { ar: "مجموعة", en: "Collection" },
+      description: { ar: "", en: "" },
+      imagePath: "",
+      price: 100,
+      originalTotal: 150,
+      categoryId: 7,
+      items: [{ variantId: 3, qty: 1 }],
+      stock: 2,
+      status: "active",
+      createdAt: "",
+      updatedAt: ""
+    }];
+    storeState.categories = [{ id: 7, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }];
   });
 
   afterEach(() => {
@@ -124,6 +141,57 @@ describe("CollectionsListPage", () => {
 
     expect(container.querySelector("img.avatar-tile")).toBeNull();
     expect(container.querySelector(".avatar-tile")?.textContent).toBe("C");
+  });
+
+  it("keeps search and filters collections by status and descendant category", () => {
+    storeState.categories = [
+      { id: 7, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false },
+      { id: 8, parentId: 7, slug: "body-lotion", name: { ar: "لوشن الجسم", en: "Body Lotion" }, isLeaf: true },
+      { id: 9, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
+    ];
+    storeState.collections = [
+      {
+        id: 1,
+        slug: "dry-skin-set",
+        name: { ar: "مجموعة البشرة الجافة", en: "Dry Skin Set" },
+        description: { ar: "", en: "" },
+        imagePath: "",
+        price: 100,
+        originalTotal: 150,
+        categoryId: 8,
+        items: [{ variantId: 3, qty: 1 }],
+        stock: 2,
+        status: "active",
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        id: 2,
+        slug: "hair-set",
+        name: { ar: "مجموعة الشعر", en: "Hair Set" },
+        description: { ar: "", en: "" },
+        imagePath: "",
+        price: 120,
+        originalTotal: 170,
+        categoryId: 9,
+        items: [{ variantId: 4, qty: 1 }],
+        stock: 2,
+        status: "inactive",
+        createdAt: "",
+        updatedAt: ""
+      }
+    ];
+
+    render(createElement(CollectionsListPage));
+
+    expect(screen.getByPlaceholderText("ابحثي عن مجموعة…")).toBeInTheDocument();
+    fireEvent.change(screen.getByDisplayValue("كل الأقسام"), { target: { value: "7" } });
+    expect(screen.getByText("مجموعة البشرة الجافة")).toBeInTheDocument();
+    expect(screen.queryByText("مجموعة الشعر")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("كل الحالات"), { target: { value: "inactive" } });
+    expect(screen.queryByText("مجموعة البشرة الجافة")).not.toBeInTheDocument();
+    expect(screen.queryByText("مجموعة الشعر")).not.toBeInTheDocument();
   });
 });
 

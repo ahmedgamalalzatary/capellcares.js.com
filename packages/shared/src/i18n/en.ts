@@ -196,6 +196,8 @@ export const en = {
     listEmpty: "No Sets available right now.",
     related: "You may also like",
     categoryLabel: "Category",
+    categoryFilterLabel: "Collection category",
+    searchPlaceholder: "Search collections",
     itemsLabel: "Included items",
     addCollectionToCart: "Add collection to cart",
     added: "Added ✓",

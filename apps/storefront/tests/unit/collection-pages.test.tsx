@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -16,6 +16,14 @@ vi.mock("@capella/shared", async () => {
     ...actual,
     getDict: () => ({
       common: { breadcrumbHome: "Home", buyNow: "Buy now", save: "Save" },
+      filters: {
+        sortBy: "Sort by",
+        sortFeatured: "Featured",
+        sortNewest: "Newest",
+        sortPriceAsc: "Price: low to high",
+        sortPriceDesc: "Price: high to low",
+        sortName: "Name"
+      },
       collections: {
         title: "Collections",
         listEmpty: "No collections",
@@ -68,6 +76,38 @@ vi.mock("@/lib/api/client", () => ({
       originalTotal: 260,
       categoryId: 11,
       items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
+      stock: 3,
+      status: "active",
+      visibility: "visible",
+      createdAt: "",
+      updatedAt: ""
+    },
+    {
+      id: 2,
+      slug: "body-lotion-set",
+      name: { ar: "مجموعة لوشن", en: "Body Lotion Set" },
+      description: { ar: "وصف", en: "Body routine" },
+      imagePath: "/uploads/body.jpg",
+      price: 120,
+      originalTotal: 180,
+      categoryId: 12,
+      items: [{ variantId: 103, qty: 1 }, { variantId: 104, qty: 1 }],
+      stock: 3,
+      status: "active",
+      visibility: "visible",
+      createdAt: "",
+      updatedAt: ""
+    },
+    {
+      id: 3,
+      slug: "hair-set",
+      name: { ar: "مجموعة شعر", en: "Hair Set" },
+      description: { ar: "وصف", en: "Hair routine" },
+      imagePath: "/uploads/hair.jpg",
+      price: 90,
+      originalTotal: 130,
+      categoryId: 13,
+      items: [{ variantId: 105, qty: 1 }, { variantId: 106, qty: 1 }],
       stock: 3,
       status: "active",
       visibility: "visible",
@@ -153,7 +193,9 @@ vi.mock("@/lib/api/client", () => ({
     }
   ])),
   fetchCategories: vi.fn(async () => ([
-    { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true }
+    { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true },
+    { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
+    { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
   ]))
 }));
 
@@ -168,6 +210,16 @@ describe("collection storefront pages", () => {
     expect(collectionLinks.length).toBeGreaterThan(0);
     collectionLinks.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/skin-care-set"));
     expect(screen.getByText("Collections")).toBeInTheDocument();
+  });
+
+  it("filters collections locally by category without search or sorting controls", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(screen.queryByRole("searchbox", { name: "Search collections" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Sort by" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Collection category" }), { target: { value: "13" } });
+    expect(screen.getByRole("heading", { name: "Hair Set" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Body Lotion Set" })).not.toBeInTheDocument();
   });
 
   it("renders the collection detail page", async () => {

@@ -56,10 +56,16 @@ export function resolveAdviceVideo(videoUrl: string): AdviceVideoPresentation | 
 
   const youtubeId = youtubeVideoId(url);
   if (youtubeId) {
-    const params = new URLSearchParams({
+    const previewParams = new URLSearchParams({
       rel: "0",
       playsinline: "1",
       mute: "1",
+      controls: "0",
+      modestbranding: "1"
+    });
+    const popupParams = new URLSearchParams({
+      rel: "0",
+      playsinline: "1",
       controls: "0",
       modestbranding: "1"
     });
@@ -67,8 +73,8 @@ export function resolveAdviceVideo(videoUrl: string): AdviceVideoPresentation | 
     return {
       provider: "youtube",
       permalinkUrl: url.toString(),
-      previewUrl: `${base}?${params.toString()}`,
-      popupUrl: `${base}?${params.toString()}`
+      previewUrl: `${base}?${previewParams.toString()}`,
+      popupUrl: `${base}?${popupParams.toString()}`
     };
   }
 

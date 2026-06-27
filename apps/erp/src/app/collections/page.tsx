@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { formatPrice, type Collection } from "@capella/shared";
+import { compareByScopedOrdering, formatPrice, type Category, type Collection } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
@@ -22,6 +22,45 @@ import { showErrorToast } from "@/lib/errors";
 import { Icon } from "@/components/ui/icons";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 
+type CollectionStatusFilter = "all" | "active" | "inactive";
+
+function buildCategoryOptions(categories: Category[]) {
+  const active = categories
+    .filter((category) => !category.deletedAt)
+    .slice()
+    .sort(compareByScopedOrdering.bind(null, "erp"));
+  const childrenByParent = new Map<number | null, Category[]>();
+  for (const category of active) {
+    const siblings = childrenByParent.get(category.parentId) ?? [];
+    siblings.push(category);
+    childrenByParent.set(category.parentId, siblings);
+  }
+
+  const options: Array<{ id: number; label: string; depth: number }> = [];
+  const visit = (parentId: number | null, depth: number) => {
+    for (const category of childrenByParent.get(parentId) ?? []) {
+      options.push({ id: category.id, label: category.name.ar, depth });
+      visit(category.id, depth + 1);
+    }
+  };
+  visit(null, 0);
+  return options;
+}
+
+function isInCategoryTree(categories: Category[], categoryId: number, selectedCategoryId: number) {
+  let current = categories.find((category) => category.id === categoryId);
+  const visited = new Set<number>();
+  while (current) {
+    if (visited.has(current.id)) return false;
+    if (current.id === selectedCategoryId) return true;
+    visited.add(current.id);
+    current = current.parentId != null
+      ? categories.find((category) => category.id === current?.parentId)
+      : undefined;
+  }
+  return false;
+}
+
 export default function CollectionsListPage() {
   const { user } = useAdminAuth();
 
@@ -40,6 +79,8 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
   const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<CollectionStatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<number | "">("");
   const [pendingToggle, setPendingToggle] = useState<Collection | null>(null);
 
   const visibleCollections = useMemo(
@@ -52,19 +93,22 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
     successMessage: "تم حفظ ترتيب المجموعات.",
     errorMessage: "تعذر حفظ ترتيب المجموعات. حاولي مرة أخرى."
   });
-  // Reordering needs the complete list, so it is hidden while searching.
-  const canReorder = !search.trim() && canUpdateErpModule(user, "collections");
+  const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);
+  // Reordering saves one global collection order, so it is hidden whenever the visible list is partial.
+  const canReorder = !search.trim() && statusFilter === "all" && categoryFilter === "" && canUpdateErpModule(user, "collections");
 
   const filtered = useMemo(() => {
     const ordered = sortByIdOrder(visibleCollections, reorder.orderedIds);
-    if (!search.trim()) return ordered;
     const q = search.trim().toLowerCase();
     return ordered.filter((collection) =>
-      collection.name.ar.toLowerCase().includes(q) ||
-      collection.name.en.toLowerCase().includes(q) ||
-      collection.slug.toLowerCase().includes(q)
+      (statusFilter === "all" || collection.status === statusFilter) &&
+      (categoryFilter === "" || isInCategoryTree(categories, collection.categoryId, categoryFilter)) &&
+      (!q ||
+        collection.name.ar.toLowerCase().includes(q) ||
+        collection.name.en.toLowerCase().includes(q) ||
+        collection.slug.toLowerCase().includes(q))
     );
-  }, [search, visibleCollections, reorder.orderedIds]);
+  }, [categories, categoryFilter, search, statusFilter, visibleCollections, reorder.orderedIds]);
 
   return (
     <AdminShell
@@ -93,10 +137,36 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
       }
     >
       <AdminListToolbar
+        stacked
         searchPlaceholder="ابحثي عن مجموعة…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filtered.length} مجموعة`}
+        extraControls={(
+          <>
+            <div className="toolbar__filter1">
+              <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as CollectionStatusFilter)}>
+                <option value="all">كل الحالات</option>
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+              </select>
+            </div>
+            <div className="toolbar__filter2">
+              <select
+                className="select"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}
+              >
+                <option value="">كل الأقسام</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {`${"— ".repeat(option.depth)}${option.label}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
       />
 
       <div className="card">

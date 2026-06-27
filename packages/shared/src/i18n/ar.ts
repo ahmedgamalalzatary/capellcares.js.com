@@ -196,6 +196,8 @@ export const ar = {
     listEmpty: "لا توجد مجموعات حاليًا.",
     related: "قد يعجبك أيضًا",
     categoryLabel: "القسم",
+    categoryFilterLabel: "قسم المجموعة",
+    searchPlaceholder: "ابحثي عن مجموعة",
     itemsLabel: "العناصر المضمنة",
     addCollectionToCart: "أضف المجموعة إلى السلة",
     added: "أُضيف ✓",

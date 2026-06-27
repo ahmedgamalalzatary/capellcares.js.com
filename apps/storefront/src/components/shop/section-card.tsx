@@ -294,7 +294,7 @@ export function SectionCard(props: SectionCardProps) {
         >
           <div
             ref={adviceDialogRef}
-            className="grid w-full max-w-5xl gap-5 rounded-[28px] bg-canvas p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)] md:p-6"
+            className="relative grid h-[min(640px,90vh)] w-[min(960px,92vw)] gap-5 overflow-y-auto rounded-[28px] bg-canvas p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)] md:p-6"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="overflow-hidden rounded-[20px] bg-ink">
@@ -324,16 +324,16 @@ export function SectionCard(props: SectionCardProps) {
                 </div>
               ) : null}
             </div>
+            <button
+              ref={adviceCloseButtonRef}
+              type="button"
+              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-canvas/85 text-ink backdrop-blur transition hover:bg-surface"
+              aria-label={dict.advices.close ?? dict.common.cancel}
+              onClick={closeAdvice}
+            >
+              <Icon.Close size={18} />
+            </button>
             <div className="flex flex-col gap-4 self-center text-start">
-              <button
-                ref={adviceCloseButtonRef}
-                type="button"
-                className="ms-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-line text-ink transition hover:bg-surface"
-                aria-label={dict.advices.close ?? dict.common.cancel}
-                onClick={closeAdvice}
-              >
-                <Icon.Close size={18} />
-              </button>
               <div className="grid gap-3">
                 <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-(--ink-3)">
                   {dict.advices.tipBadge}

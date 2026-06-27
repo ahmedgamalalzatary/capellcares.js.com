@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getDict } from "@capella/shared";
+import { CollectionGrid } from "@/components/collections/collection-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { SectionCard } from "@/components/shop/section-card";
-import { fetchCollections } from "@/lib/api/client";
+import { fetchCategories, fetchCollections } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { breadcrumbJsonLd, buildCollectionsMetadata } from "@/lib/seo";
 
@@ -18,7 +18,8 @@ export async function generateMetadata({
 export default async function CollectionsPage({ params }: { params: Promise<{ lang: string }> }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const collections = (await fetchCollections({ lang })).filter(
+  const [allCollections, categories] = await Promise.all([fetchCollections({ lang }), fetchCategories({ lang })]);
+  const collections = allCollections.filter(
     (collection) => collection.status === "active" && collection.visibility === "visible" && !collection.deletedAt
   );
 
@@ -45,15 +46,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
         <h1>{dict.collections.title}</h1>
       </header>
 
-      {collections.length === 0 ? (
-        <p className="py-12 text-center text-(--ink-3)">{dict.collections.listEmpty}</p>
-      ) : (
-        <div className="grid gap-5 pb-16 sm:grid-cols-2 sm:gap-6 sm:pb-24 lg:grid-cols-3 lg:gap-7">
-          {collections.map((collection) => (
-            <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
-          ))}
-        </div>
-      )}
+      <CollectionGrid collections={collections} categories={categories.filter((category) => !category.deletedAt)} lang={lang} dict={dict} />
     </main>
   );
 }
