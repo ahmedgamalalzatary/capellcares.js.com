@@ -145,7 +145,12 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
         extraControls={(
           <>
             <div className="toolbar__filter1">
-              <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as CollectionStatusFilter)}>
+              <select
+                aria-label="حالة المجموعة"
+                className="select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as CollectionStatusFilter)}
+              >
                 <option value="all">كل الحالات</option>
                 <option value="active">نشط</option>
                 <option value="inactive">غير نشط</option>
@@ -153,6 +158,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
             </div>
             <div className="toolbar__filter2">
               <select
+                aria-label="قسم المجموعة"
                 className="select"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}

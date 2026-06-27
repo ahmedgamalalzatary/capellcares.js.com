@@ -30,6 +30,25 @@ export const productVariantSchema = z.object({
   stockQty: z.number().int().nonnegative(),
   sortOrder: z.number().int(),
   discount: discountSchema.nullable().optional()
+}).superRefine((variant, ctx) => {
+  const discount = variant.discount;
+  if (!discount) return;
+
+  if (discount.type === "percentage" && discount.value > 100) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Percentage discount cannot exceed 100",
+      path: ["discount", "value"]
+    });
+  }
+
+  if (discount.type === "fixed" && discount.value >= variant.sellingPrice) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Fixed discount must be less than selling price",
+      path: ["discount", "value"]
+    });
+  }
 });
 
 export const productMediaSchema = z.object({

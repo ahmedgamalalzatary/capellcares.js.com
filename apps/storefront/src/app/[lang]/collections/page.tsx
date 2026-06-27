@@ -18,7 +18,8 @@ export async function generateMetadata({
 export default async function CollectionsPage({ params }: { params: Promise<{ lang: string }> }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const [allCollections, categories] = await Promise.all([fetchCollections({ lang }), fetchCategories({ lang })]);
+  const allCollections = await fetchCollections({ lang });
+  const categories = await fetchCategories({ lang }).catch(() => []);
   const collections = allCollections.filter(
     (collection) => collection.status === "active" && collection.visibility === "visible" && !collection.deletedAt
   );

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -64,8 +64,7 @@ vi.mock("@/lib/storefront-detail-page", () => ({
   StorefrontJsonLd: () => createElement("div", { "data-testid": "json-ld" })
 }));
 
-vi.mock("@/lib/api/client", () => ({
-  fetchCollections: vi.fn(async () => ([
+const fetchCollections = vi.fn(async () => ([
     {
       id: 1,
       slug: "skin-care-set",
@@ -114,8 +113,9 @@ vi.mock("@/lib/api/client", () => ({
       createdAt: "",
       updatedAt: ""
     }
-  ])),
-  fetchCollectionBySlug: vi.fn(async () => ({
+  ]));
+
+const fetchCollectionBySlug = vi.fn(async () => ({
     id: 1,
     slug: "skin-care-set",
     name: { ar: "مجموعة", en: "Skin Care Set" },
@@ -130,8 +130,9 @@ vi.mock("@/lib/api/client", () => ({
     visibility: "visible",
     createdAt: "",
     updatedAt: ""
-  })),
-  fetchCollectionDetailBySlug: vi.fn(async () => ({
+  }));
+
+const fetchCollectionDetailBySlug = vi.fn(async () => ({
     id: 1,
     slug: "skin-care-set",
     name: { ar: "مجموعة", en: "Skin Care Set" },
@@ -147,8 +148,9 @@ vi.mock("@/lib/api/client", () => ({
     relatedItems: [],
     createdAt: "",
     updatedAt: ""
-  })),
-  fetchProducts: vi.fn(async () => ([
+  }));
+
+const fetchProducts = vi.fn(async () => ([
     {
       id: 10,
       sku: "P10",
@@ -191,18 +193,34 @@ vi.mock("@/lib/api/client", () => ({
       createdAt: "",
       updatedAt: ""
     }
-  ])),
-  fetchCategories: vi.fn(async () => ([
+  ]));
+
+const fetchCategories = vi.fn(async () => ([
     { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true },
     { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
     { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
-  ]))
+  ]));
+
+vi.mock("@/lib/api/client", () => ({
+  fetchCollections: (...args: unknown[]) => fetchCollections(...args),
+  fetchCollectionBySlug: (...args: unknown[]) => fetchCollectionBySlug(...args),
+  fetchCollectionDetailBySlug: (...args: unknown[]) => fetchCollectionDetailBySlug(...args),
+  fetchProducts: (...args: unknown[]) => fetchProducts(...args),
+  fetchCategories: (...args: unknown[]) => fetchCategories(...args)
 }));
 
 import CollectionsPage from "@/app/[lang]/collections/page";
 import CollectionDetailPage from "@/app/[lang]/collections/[slug]/page";
 
 describe("collection storefront pages", () => {
+  beforeEach(() => {
+    fetchCollections.mockClear();
+    fetchCollectionBySlug.mockClear();
+    fetchCollectionDetailBySlug.mockClear();
+    fetchProducts.mockClear();
+    fetchCategories.mockClear();
+  });
+
   it("renders the collections listing page", async () => {
     render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
 
@@ -220,6 +238,14 @@ describe("collection storefront pages", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Collection category" }), { target: { value: "13" } });
     expect(screen.getByRole("heading", { name: "Hair Set" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Body Lotion Set" })).not.toBeInTheDocument();
+  });
+
+  it("renders collections when categories loading fails", async () => {
+    fetchCategories.mockRejectedValueOnce(new Error("offline"));
+
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(screen.getByRole("heading", { name: "Skin Care Set" })).toBeInTheDocument();
   });
 
   it("renders the collection detail page", async () => {

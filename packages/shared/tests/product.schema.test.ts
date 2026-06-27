@@ -40,3 +40,33 @@ test("productVariantSchema rejects discount ranges where startsAt is not before 
 
   assert.equal(result.success, false);
 });
+
+test("productVariantSchema rejects percentage discounts above 100", () => {
+  const result = productVariantSchema.safeParse({
+    ...baseVariant,
+    discount: {
+      type: "percentage",
+      value: 101,
+      startsAt: "2026-06-01T12:00:00.000Z",
+      endsAt: "2026-06-02T12:00:00.000Z",
+      status: "active"
+    }
+  });
+
+  assert.equal(result.success, false);
+});
+
+test("productVariantSchema rejects fixed discounts that meet the selling price", () => {
+  const result = productVariantSchema.safeParse({
+    ...baseVariant,
+    discount: {
+      type: "fixed",
+      value: 50,
+      startsAt: "2026-06-01T12:00:00.000Z",
+      endsAt: "2026-06-02T12:00:00.000Z",
+      status: "active"
+    }
+  });
+
+  assert.equal(result.success, false);
+});
