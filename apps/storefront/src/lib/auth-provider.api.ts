@@ -1,6 +1,5 @@
 import type { AuthUser } from "../types/auth-provider.types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
 let currentAccessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 const accessTokenListeners = new Set<(token: string | null) => void>();

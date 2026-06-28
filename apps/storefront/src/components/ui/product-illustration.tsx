@@ -1,5 +1,6 @@
 // Lightweight SVG illustrations keyed by product slug so the storefront feels
 // finished without needing real photography uploaded yet.
+import Image from "next/image";
 import type { Product } from "@capella/shared";
 
 const palettes: Record<string, { bg: string; bottle: string; accent: string; cap: string }> = {
@@ -29,11 +30,13 @@ interface Props {
 export function ProductIllustration({ product, className }: Props) {
   if (product.imagePath) {
     return (
-      <img
+      <Image
         className={className ?? "h-full w-full object-cover"}
         src={product.imagePath}
         alt={product.name.en}
-        loading="lazy"
+        width={800}
+        height={1000}
+        sizes="(min-width: 1024px) 22vw, (min-width: 640px) 34vw, 78vw"
       />
     );
   }

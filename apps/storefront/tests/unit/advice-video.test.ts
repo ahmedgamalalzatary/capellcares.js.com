@@ -7,12 +7,12 @@ beforeEach(() => {
 });
 
 describe("resolveAdviceVideo", () => {
-  it("builds YouTube preview and popup player URLs", () => {
+  it("builds YouTube popup player and thumbnail URLs", () => {
     expect(resolveAdviceVideo("https://www.youtube.com/watch?v=capella")).toEqual({
       provider: "youtube",
       permalinkUrl: "https://www.youtube.com/watch?v=capella",
-      previewUrl: expect.stringContaining("https://www.youtube.com/embed/capella?"),
-      popupUrl: expect.stringContaining("https://www.youtube.com/embed/capella?")
+      popupUrl: expect.stringContaining("https://www.youtube.com/embed/capella?"),
+      thumbnailUrl: "https://i.ytimg.com/vi/capella/sddefault.jpg"
     });
   });
 

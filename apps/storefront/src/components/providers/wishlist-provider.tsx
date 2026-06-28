@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
 
 interface WishlistContextValue {
   ids: number[];
@@ -11,7 +12,6 @@ interface WishlistContextValue {
 }
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();

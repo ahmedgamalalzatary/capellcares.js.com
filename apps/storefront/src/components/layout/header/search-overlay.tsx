@@ -7,6 +7,7 @@ import { pickLang, formatPrice, type Language, type Product } from "@capella/sha
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { fetchProducts } from "@/lib/api/client";
+import { SEARCH_MAX_RESULTS as MAX_RESULTS } from "@/constants/ui";
 
 type SearchOverlayProps = {
   lang: Language;
@@ -14,8 +15,6 @@ type SearchOverlayProps = {
   open: boolean;
   onClose: () => void;
 };
-
-const MAX_RESULTS = 6;
 
 export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps) {
   const router = useRouter();

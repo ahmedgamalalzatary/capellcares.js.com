@@ -127,20 +127,32 @@ export function SectionCard(props: SectionCardProps) {
     adviceVideoUrl = advice.videoUrl;
     adviceVideo = resolveAdviceVideo(advice.videoUrl);
     image = adviceVideo?.provider === "youtube" ? (
-      <iframe
-        title={title}
-        src={`${adviceVideo.previewUrl}${adviceVideo.previewUrl.includes("?") ? "&" : "?"}autoplay=${advicePreviewActive ? "1" : "0"}`}
-        className="absolute inset-0 h-full w-full object-cover"
-        allow={advicePreviewActive ? "autoplay; encrypted-media; picture-in-picture" : "encrypted-media; picture-in-picture"}
-        loading="lazy"
-        tabIndex={-1}
-      />
+      <div className="absolute inset-0 overflow-hidden bg-ink">
+        <img
+          src={adviceVideo.thumbnailUrl}
+          alt=""
+          loading="lazy"
+          className={`h-full w-full object-cover transition-transform duration-300 ${
+            advicePreviewActive ? "scale-[1.03]" : "scale-100"
+          }`}
+        />
+        <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/15 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 grid gap-3 p-5 text-canvas">
+          <span
+            aria-hidden="true"
+            className="inline-flex size-12 items-center justify-center rounded-full border border-white/60 bg-black/30 backdrop-blur-sm"
+          >
+            <span className="ms-0.5 block h-0 w-0 border-y-8 border-y-transparent border-s-14 border-s-canvas" />
+          </span>
+          <span className="text-sm font-semibold">{title}</span>
+        </div>
+      </div>
     ) : (
       <div className="absolute inset-0 flex items-center justify-center bg-ink text-canvas">
         <div className="grid gap-3 px-6 text-center">
           <span
             aria-hidden="true"
-            className="mx-auto block h-0 w-0 border-y-[14px] border-y-transparent border-s-[24px] border-s-canvas"
+            className="mx-auto block h-0 w-0 border-y-14 border-y-transparent border-s-24 border-s-canvas"
           />
           <span className="text-sm font-semibold">{title}</span>
         </div>

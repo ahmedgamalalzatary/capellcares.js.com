@@ -176,7 +176,7 @@ describe("SectionCard", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("does not nest the YouTube preview iframe inside the advice trigger button", () => {
+  it("does not render any YouTube iframe before the advice modal opens", () => {
     render(createElement(SectionCard, {
       kind: "advice",
       data: baseAdvice,
@@ -186,7 +186,7 @@ describe("SectionCard", () => {
 
     const trigger = screen.getByRole("button", { name: "Tip One" });
     expect(trigger.querySelector("iframe")).toBeNull();
-    expect(screen.getByTitle("Tip One")).toBeInTheDocument();
+    expect(document.querySelector('iframe[title="Tip One"]')).toBeNull();
   });
 
   it("renders unsupported advice URLs as external links instead of opening a dead modal", () => {

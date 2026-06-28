@@ -1,4 +1,4 @@
-const DEV_REVALIDATE_SECRET = "dev-revalidate-secret";
+import { DEV_REVALIDATE_SECRET } from "@/constants/api";
 
 /**
  * Resolve the storefront revalidation secret, failing closed in production so a

@@ -3,6 +3,19 @@ import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ShopMediaSection } from "@capella/shared";
 
+vi.mock("next/image", () => ({
+  default: ({ alt, src, fill, sizes, priority, ...rest }: any) =>
+    createElement("img", {
+      alt,
+      src: typeof src === "string" ? src : src?.src,
+      "data-next-image": "true",
+      "data-fill": fill ? "true" : "false",
+      "data-priority": priority ? "true" : "false",
+      sizes,
+      ...rest
+    })
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
@@ -15,6 +28,22 @@ function getDesktopStrip(container: HTMLElement) {
     throw new Error("Expected desktop strip to render");
   }
   return strip;
+}
+
+function mockViewport(isDesktop: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(min-width: 640px)" ? isDesktop : false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    }))
+  });
 }
 
 function getDesktopCarousel(container: HTMLElement) {
@@ -45,6 +74,7 @@ function makeSection(itemCount: number): ShopMediaSection {
 describe("ShopMediaStrip carousel", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    mockViewport(true);
   });
 
   afterEach(() => {
@@ -65,6 +95,36 @@ describe("ShopMediaStrip carousel", () => {
 
     const image = getDesktopStrip(container).querySelector("img");
     expect(image).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+  });
+
+  it("mounts only one responsive strip instead of separate desktop and mobile strips", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+
+    expect(container.querySelectorAll("[data-viewport]")).toHaveLength(1);
+  });
+
+  it("uses the mobile image source when the viewport is below the desktop breakpoint", () => {
+    mockViewport(false);
+
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+
+    const strip = container.querySelector('[data-viewport="mobile"]');
+    expect(strip?.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
+  });
+
+  it("renders strip images through next/image with responsive sizing", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+
+    const image = getDesktopStrip(container).querySelector("img");
+    expect(image).toHaveAttribute("data-next-image", "true");
+    expect(image).toHaveAttribute("sizes");
+  });
+
+  it("keeps slide images on the original box model without injecting an aspect-ratio frame", () => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+
+    const frame = getDesktopStrip(container).querySelector("[data-slide-frame]");
+    expect(frame).toBeNull();
   });
 
   it("skips items without desktop images in the desktop strip", () => {

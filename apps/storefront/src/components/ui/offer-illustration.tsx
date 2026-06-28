@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Offer } from "@capella/shared";
 
 interface Props {
@@ -14,11 +15,13 @@ const palettes: Record<string, { a: string; b: string; ink: string }> = {
 export function OfferIllustration({ offer, className }: Props) {
   if (offer.imagePath) {
     return (
-      <img
+      <Image
         className={className}
         src={offer.imagePath}
         alt={offer.name.en}
-        loading="lazy"
+        width={800}
+        height={1000}
+        sizes="(min-width: 1024px) 22vw, (min-width: 640px) 34vw, 78vw"
       />
     );
   }

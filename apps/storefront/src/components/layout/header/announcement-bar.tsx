@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  ANNOUNCEMENT_CROSS_S as CROSS_S,
+  ANNOUNCEMENT_REDUCED_HOLD_MS as REDUCED_HOLD_MS
+} from "@/constants/ui";
 
 type AnnouncementBarProps = {
   items: string[];
@@ -8,11 +12,6 @@ type AnnouncementBarProps = {
   pauseLabel: string;
   playLabel: string;
 };
-
-// Total per-sentence cycle: fast in (~0.6s) · hold centered (~5s) · fast out (~0.4s).
-const CROSS_S = 6;
-// Pause between sentences when reduced-motion is on (no slide animation).
-const REDUCED_HOLD_MS = 3500;
 
 export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: AnnouncementBarProps) {
   const slides = items.length ? items : [""];

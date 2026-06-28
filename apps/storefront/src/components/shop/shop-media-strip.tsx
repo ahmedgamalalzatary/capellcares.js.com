@@ -8,13 +8,16 @@ import {
   type PointerEvent,
   type TransitionEvent
 } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Language, ShopMediaSection } from "@capella/shared";
 import { resolveMediaUrl } from "@/lib/api/client/normalizers";
 import { Icon } from "@/components/ui/icons";
-
-const AUTOPLAY_MS = 5000;
-const SWIPE_THRESHOLD_PX = 50;
+import {
+  SHOP_MEDIA_AUTOPLAY_MS as AUTOPLAY_MS,
+  SHOP_MEDIA_SWIPE_THRESHOLD_PX as SWIPE_THRESHOLD_PX,
+  SHOP_MEDIA_DESKTOP_MEDIA_QUERY as DESKTOP_MEDIA_QUERY
+} from "@/constants/ui";
 
 function normalizeShopMediaImageSrc(imagePath: string) {
   return resolveMediaUrl(imagePath);
@@ -104,11 +107,14 @@ function Slide({
       className="group relative block w-full shrink-0 overflow-hidden"
     >
       <div className="relative overflow-hidden">
-        <img
+        <Image
           src={imagePath}
           alt=""
-          loading="lazy"
+          width={1600}
+          height={900}
+          sizes="100vw"
           className="h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
+          loading="lazy"
         />
       </div>
     </Link>
@@ -333,24 +339,41 @@ export function ShopMediaStrip({
     return null;
   }
 
+  const desktopItems = pickSlidesForViewport(section, lang, "desktop");
+  const mobileItems = pickSlidesForViewport(section, lang, "mobile");
+  const [prefersDesktop, setPrefersDesktop] = useState(() =>
+    typeof window === "undefined" ? true : window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const applyPreference = () => setPrefersDesktop(mediaQuery.matches);
+
+    applyPreference();
+    mediaQuery.addEventListener?.("change", applyPreference);
+
+    return () => {
+      mediaQuery.removeEventListener?.("change", applyPreference);
+    };
+  }, []);
+
+  const viewport = prefersDesktop
+    ? (desktopItems.length > 0 ? "desktop" : mobileItems.length > 0 ? "mobile" : null)
+    : (mobileItems.length > 0 ? "mobile" : desktopItems.length > 0 ? "desktop" : null);
+
+  if (!viewport) {
+    return null;
+  }
+
   return (
-    <>
-      <ShopMediaViewportStrip
-        lang={lang}
-        section={section}
-        label={label}
-        viewport="desktop"
-        className="mb-12 hidden sm:block"
-        flatTop={flatTop}
-      />
-      <ShopMediaViewportStrip
-        lang={lang}
-        section={section}
-        label={label}
-        viewport="mobile"
-        className="mb-12 sm:hidden"
-        flatTop={flatTop}
-      />
-    </>
+    <ShopMediaViewportStrip
+      lang={lang}
+      section={section}
+      label={label}
+      viewport={viewport}
+      className="mb-12"
+      flatTop={flatTop}
+    />
   );
 }

@@ -1,8 +1,6 @@
 import type { Metadata, MetadataRoute } from "next";
 import { defaultLanguage, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
-
-const FALLBACK_SITE_URL = "https://capellacares.com";
-const BRAND_NAME = "Capella Care";
+import { BRAND_NAME, FALLBACK_SITE_URL } from "@/constants/brand";
 
 function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim() || FALLBACK_SITE_URL;

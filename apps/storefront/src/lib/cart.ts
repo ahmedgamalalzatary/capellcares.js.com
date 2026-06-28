@@ -1,6 +1,5 @@
 import type { CartLine } from "@capella/shared";
-
-const STORAGE_KEY = "capella.cart.v1";
+import { CART_STORAGE_KEY as STORAGE_KEY } from "@/constants/storage";
 
 export function normalizeCartLine(line: unknown): CartLine | null {
   if (!line || typeof line !== "object") return null;

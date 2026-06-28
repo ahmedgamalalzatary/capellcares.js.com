@@ -30,4 +30,30 @@ describe("storefront next config", () => {
     expect(process.env.NEXT_PUBLIC_API_URL).toBe("http://localhost:4000");
     expect(mod.default.env?.NEXT_PUBLIC_API_URL).toBe("http://localhost:4000");
   });
+
+  it("allows remote image optimization for the API uploads host", async () => {
+    process.chdir(storefrontDir);
+
+    const mod = await importConfig();
+    const patterns = mod.default.images?.remotePatterns ?? [];
+
+    expect(patterns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          protocol: "http",
+          hostname: "localhost",
+          port: "4000",
+          pathname: "/uploads/**"
+        })
+      ])
+    );
+  });
+
+  it("allows the image optimizer to fetch local API uploads during development", async () => {
+    process.chdir(storefrontDir);
+
+    const mod = await importConfig();
+
+    expect(mod.default.images?.dangerouslyAllowLocalIP).toBe(true);
+  });
 });

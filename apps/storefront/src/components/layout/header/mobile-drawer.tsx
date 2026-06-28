@@ -8,10 +8,8 @@ import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { SOCIAL_LINKS } from "../../../constants/socials";
+import { DESKTOP_BREAKPOINT } from "@/constants/ui";
 import type { HeaderProps } from "../../../types/header.types";
-
-// The desktop mega menu reveals at min-[880px]; keep the drawer's auto-close in sync.
-const DESKTOP_BREAKPOINT = 880;
 
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"> & {
   isAr: boolean;
