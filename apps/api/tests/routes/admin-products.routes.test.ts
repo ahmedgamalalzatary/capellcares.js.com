@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { and, asc, eq, or } from "drizzle-orm";
 import {
   categories,
+  collectionItems,
   offerItems,
   productMedia,
   products,
@@ -532,8 +533,9 @@ serialTest("admin product upsert preserves existing related links when relatedIt
   const ids = await getBaselineIds();
 
   // This test replaces productOne's variant set, which requires its variant not be
-  // linked to the baseline offer (the seed links it). Unlink it for this scenario.
+  // linked to the baseline offer or collection (the seed links it). Unlink it for this scenario.
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  await db.delete(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
 
   await db.insert(relatedItems).values([
     {
@@ -858,7 +860,7 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
   await writeFile(absolutePath, "fake-image-bytes");
 
   await db.update(products).set({ deletedAt: new Date(), imagePath: `/uploads/${fileName}` }).where(eq(products.id, ids.productOneId));
-  await db.insert(wishlists).values({ customerId: ids.customerId, productId: ids.productOneId });
+  await db.insert(wishlists).values({ customerId: ids.customerId, entityType: "product", entityId: ids.productOneId });
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -881,7 +883,7 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
   const remainingWishlists = await db
     .select({ id: wishlists.id })
     .from(wishlists)
-    .where(eq(wishlists.productId, ids.productOneId));
+    .where(and(eq(wishlists.entityType, "product"), eq(wishlists.entityId, ids.productOneId)));
   assert.equal(remainingWishlists.length, 0, "expected wishlist rows to be removed");
 
   await assert.rejects(access(absolutePath), "expected image file to be unlinked");

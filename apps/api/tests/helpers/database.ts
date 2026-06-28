@@ -4,6 +4,7 @@ import {
   adminUserPermissions,
   adminUsers,
   authSessions,
+  collections,
   customers,
   permissions,
   advices,
@@ -60,14 +61,15 @@ export async function deleteCustomerByEmail(email: string) {
 }
 
 export async function getBaselineIds() {
-  const [productOne, productTwo, offer, customer] = await Promise.all([
+  const [productOne, productTwo, offer, collection, customer] = await Promise.all([
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-001")).then((rows) => rows[0]),
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-002")).then((rows) => rows[0]),
     db.select({ id: offers.id }).from(offers).where(eq(offers.slug, "test-offer-baseline")).then((rows) => rows[0]),
+    db.select({ id: collections.id }).from(collections).where(eq(collections.slug, "test-collection-baseline")).then((rows) => rows[0]),
     db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
   ]);
 
-  if (!productOne || !productTwo || !offer || !customer) {
+  if (!productOne || !productTwo || !offer || !collection || !customer) {
     throw new Error("Baseline test seed is incomplete");
   }
 
@@ -111,6 +113,7 @@ export async function getBaselineIds() {
     productOneId: productOne.id,
     productTwoId: productTwo.id,
     offerId: offer.id,
+    collectionId: collection.id,
     rootCategoryId: rootCategory.id,
     leafCategoryId: leafCategory.id,
     customerId: customer.id,

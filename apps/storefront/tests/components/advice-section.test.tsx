@@ -2,8 +2,20 @@ import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() })
+}));
+
 vi.mock("@/components/providers/cart-provider", () => ({
   useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
+
+vi.mock("@/components/providers/wishlist-provider", () => ({
+  useWishlist: () => ({ has: () => false, toggle: vi.fn(), ids: [] })
+}));
+
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: { id: 1 } })
 }));
 
 import { AdviceSection } from "@/components/products/advice-section";

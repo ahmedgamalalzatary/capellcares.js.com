@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
@@ -35,12 +35,15 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; pointerType: string } | null>(null);
+  const activeMediaPointerTargetRef = useRef<HTMLElement | null>(null);
+  const activeMediaIndexRef = useRef(0);
   const media = useMemo(
     () => (product.media?.length ? product.media : product.imagePath ? [{ type: "image" as const, url: product.imagePath }] : []),
     [product.media, product.imagePath]
   );
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const activeMedia = media[activeMediaIndex] ?? media[0] ?? null;
+  activeMediaIndexRef.current = activeMediaIndex;
 
   const variant = useMemo(
     () => product.variants.find((item) => item.id === variantId) ?? null,
@@ -67,7 +70,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
       router.push(`/${lang}/wishlist`);
       return;
     }
-    wishlist.toggle(product.id);
+    wishlist.toggle("product", product.id);
   };
 
   const tabs: { key: Tab; label: string; content: string }[] = [
@@ -77,22 +80,57 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     { key: "warnings", label: dict.product.warnings, content: pickLang(product.warnings, lang) }
   ];
 
+  const clearMediaPointer = (pointerId: number) => {
+    dragStartRef.current = null;
+    const target = activeMediaPointerTargetRef.current;
+    activeMediaPointerTargetRef.current = null;
+    if (target && "hasPointerCapture" in target && target.hasPointerCapture(pointerId) && "releasePointerCapture" in target) {
+      target.releasePointerCapture(pointerId);
+    }
+  };
+
+  const completeMediaSwipe = ({ clientX, clientY, isPrimary, pointerId }: Pick<globalThis.PointerEvent, "clientX" | "clientY" | "isPrimary" | "pointerId">) => {
+    const dragStart = dragStartRef.current;
+    clearMediaPointer(pointerId);
+    if (media.length <= 1 || !isPrimary || !dragStart) return;
+    const deltaX = clientX - dragStart.x;
+    const deltaY = clientY - dragStart.y;
+    if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    const direction = deltaX < 0 ? 1 : -1;
+    const nextIndex = Math.max(0, Math.min(media.length - 1, activeMediaIndexRef.current + direction));
+    if (nextIndex === activeMediaIndexRef.current) return;
+    setActiveMediaIndex(nextIndex);
+  };
+
+  useEffect(() => {
+    const handlePointerUp = (event: globalThis.PointerEvent) => {
+      if (!dragStartRef.current) return;
+      completeMediaSwipe(event);
+    };
+    const handlePointerCancel = (event: globalThis.PointerEvent) => {
+      if (!dragStartRef.current) return;
+      clearMediaPointer(event.pointerId);
+    };
+
+    document.addEventListener("pointerup", handlePointerUp);
+    document.addEventListener("pointercancel", handlePointerCancel);
+    return () => {
+      document.removeEventListener("pointerup", handlePointerUp);
+      document.removeEventListener("pointercancel", handlePointerCancel);
+    };
+  }, [media.length]);
+
   const onMediaPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (media.length <= 1 || !event.isPrimary) return;
     dragStartRef.current = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
+    activeMediaPointerTargetRef.current = event.currentTarget;
+    if ("setPointerCapture" in event.currentTarget) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
   };
 
   const onMediaPointerUp = (event: PointerEvent<HTMLElement>) => {
-    const dragStart = dragStartRef.current;
-    dragStartRef.current = null;
-    if (media.length <= 1 || !event.isPrimary || !dragStart) return;
-    const deltaX = event.clientX - dragStart.x;
-    const deltaY = event.clientY - dragStart.y;
-    if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
-    const direction = deltaX < 0 ? 1 : -1;
-    const nextIndex = Math.max(0, Math.min(media.length - 1, activeMediaIndex + direction));
-    if (nextIndex === activeMediaIndex) return;
-    setActiveMediaIndex(nextIndex);
+    completeMediaSwipe(event.nativeEvent);
   };
 
   return (
@@ -104,7 +142,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             data-testid="product-media-main"
             onPointerDown={onMediaPointerDown}
             onPointerUp={onMediaPointerUp}
-            onPointerCancel={() => { dragStartRef.current = null; }}
+            onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
           >
             {activeMedia?.type === "video" ? (
               <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
@@ -120,7 +158,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             data-testid="product-media-thumbs"
             onPointerDown={onMediaPointerDown}
             onPointerUp={onMediaPointerUp}
-            onPointerCancel={() => { dragStartRef.current = null; }}
+            onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
           >
             {(media.length ? media : [{ type: "image" as const, url: product.imagePath }]).map((item, index) => (
               <button
@@ -244,7 +282,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               {dict.common.buyNow}
             </button>
             <button className="btn btn--soft" onClick={onWish} aria-label={dict.common.addToWishlist}>
-              {wishlist.has(product.id) ? <Icon.HeartFill /> : <Icon.Heart />}
+              {wishlist.has("product", product.id) ? <Icon.HeartFill /> : <Icon.Heart />}
             </button>
           </div>
 

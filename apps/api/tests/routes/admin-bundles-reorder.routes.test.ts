@@ -158,7 +158,7 @@ test("admin collection reorder persists root ordering ranks", async () => {
     const response = await request("/api/erp/collections/reorder", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
-      body: JSON.stringify({ ids: [secondCollectionId, firstCollectionId] })
+      body: JSON.stringify({ ids: [secondCollectionId, firstCollectionId, ids.collectionId] })
     });
 
     assert.equal(response.status, 200);
@@ -191,7 +191,7 @@ test("storefront collections list orders by root ranks then newest-first fallbac
     const reorderResponse = await request("/api/erp/collections/reorder", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
-      body: JSON.stringify({ ids: [secondCollectionId, firstCollectionId] })
+      body: JSON.stringify({ ids: [secondCollectionId, firstCollectionId, ids.collectionId] })
     });
     assert.equal(reorderResponse.status, 200);
 

@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
-import { type Language, type Product } from "@capella/shared";
-import { fetchProducts } from "@/lib/api/client";
-import { ProductCard } from "@/components/products/product-card";
+import { pickLang, type Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 
 function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
@@ -30,19 +27,8 @@ function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
 
 export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const { user } = useAuth();
-  const { ids } = useWishlist();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items, remove } = useWishlist();
   const isAr = lang === "ar";
-
-  useEffect(() => {
-    fetchProducts({ lang })
-      .then((items) => {
-        setProducts(items);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [lang]);
 
   if (!user) {
     return (
@@ -56,10 +42,6 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
       />
     );
   }
-
-  if (loading) return <p className="py-12 text-center text-(--ink-3)">{dict.common.loading}</p>;
-
-  const items = products.filter((product) => ids.includes(product.id));
   if (items.length === 0) {
     return (
       <EmptyShell
@@ -74,9 +56,43 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 pb-16 sm:gap-6 sm:pb-20 lg:grid-cols-[repeat(auto-fill,minmax(230px,1fr))] lg:gap-7">
-      {items.map((product) => (
-        <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
+    <div className="grid gap-4 pb-16 sm:gap-6 sm:pb-20">
+      {items.map((item) => (
+        <article
+          key={`${item.entityType}:${item.entityId}`}
+          className="grid gap-4 rounded-lg border border-(--hairline) bg-surface p-4 sm:grid-cols-[112px_1fr_auto] sm:items-center"
+        >
+          <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-md bg-(--warm-soft)">
+            {item.imagePath ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={item.imagePath} alt={pickLang(item.name, lang)} className="h-full w-full object-cover" />
+            ) : (
+              <Icon.Heart size={24} />
+            )}
+          </div>
+          <div className="grid gap-2">
+            <div className="text-xs uppercase tracking-[0.14em] text-(--ink-3)">
+              {dict.wishlist.itemTypes?.[item.entityType] ?? item.entityType}
+            </div>
+            {item.href ? (
+              <Link href={`/${lang}${item.href}`} className="text-lg font-semibold text-ink">
+                {pickLang(item.name, lang)}
+              </Link>
+            ) : (
+              <div className="text-lg font-semibold text-ink">{pickLang(item.name, lang)}</div>
+            )}
+            {item.availability === "unavailable" ? (
+              <span className="chip chip--muted">{dict.common.outOfStock ?? "Unavailable"}</span>
+            ) : null}
+          </div>
+          <button
+            className="btn btn--ghost btn--sm justify-self-start sm:justify-self-end"
+            onClick={() => remove(item.entityType, item.entityId)}
+            aria-label={dict.common.removeFromWishlist}
+          >
+            {dict.common.removeFromWishlist}
+          </button>
+        </article>
       ))}
     </div>
   );

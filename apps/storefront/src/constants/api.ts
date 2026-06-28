@@ -3,7 +3,7 @@
 export const DEFAULT_API_BASE = "http://localhost:4000";
 
 function resolvePublicApiBase() {
-  const value = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const value = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
   if (value) return value;
   if (process.env.NODE_ENV !== "production") return DEFAULT_API_BASE;
   throw new Error("NEXT_PUBLIC_API_URL must be set in production");

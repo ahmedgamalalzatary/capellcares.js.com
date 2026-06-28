@@ -130,7 +130,12 @@ export const en = {
     loginRequired: "Wishlist requires an account",
     loginRequiredDesc: "Create a free account or log in to save products to your wishlist.",
     goLogin: "Log in",
-    savedEmpty: "Tap the heart on any piece you love and it will land here."
+    savedEmpty: "Tap the heart on any piece you love and it will land here.",
+    itemTypes: {
+      product: "Product",
+      offer: "Offer",
+      collection: "Collection"
+    }
   },
   orders: {
     title: "Your orders",

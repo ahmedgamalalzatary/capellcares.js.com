@@ -62,7 +62,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
       router.push(`/${lang}/wishlist`);
       return;
     }
-    toggle(product.id);
+    toggle("product", product.id);
   };
 
   const onAdd = (e: React.MouseEvent) => {
@@ -105,12 +105,12 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         <button
           className={`absolute top-3 rounded-full inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
-            has(product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
+            has("product", product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
           }`}
           aria-label={dict.common.addToWishlist}
           onClick={onWish}
         >
-          {has(product.id) ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
+          {has("product", product.id) ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
         </button>
 
       </div>

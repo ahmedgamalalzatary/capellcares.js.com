@@ -1,6 +1,6 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -14,6 +14,21 @@ vi.mock("@/components/providers/cart-provider", () => ({
   useCart: () => ({ add: vi.fn() })
 }));
 
+const has = vi.fn(() => false);
+const toggle = vi.fn();
+
+vi.mock("@/components/providers/wishlist-provider", () => ({
+  useWishlist: () => ({ has, toggle })
+}));
+
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: { id: 1 } })
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  has.mockReturnValue(false);
+});
 import { OfferDetail } from "@/components/offers/offer-detail";
 
 const dict = {
@@ -25,9 +40,10 @@ const dict = {
     added: "Added",
     addBundleToCart: "Add bundle",
     unavailable: "Unavailable",
-    related: "You may also like"
+    related: "You may also like",
+    saveToWishlist: "Save offer"
   },
-  common: { buyNow: "Buy now" }
+  common: { buyNow: "Buy now", addToWishlist: "Wishlist" }
 };
 
 const offer = {
@@ -69,5 +85,12 @@ describe("OfferDetail", () => {
   it("renders no related section when there are none", () => {
     render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
     expect(screen.queryByTestId("related-items")).toBeNull();
+  });
+
+  it("adds the offer to wishlist", () => {
+    render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+    expect(toggle).toHaveBeenCalledWith("offer", 1);
   });
 });

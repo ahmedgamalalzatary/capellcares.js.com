@@ -8,6 +8,8 @@ import { CollectionIllustration } from "@/components/ui/collection-illustration"
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
+import { useWishlist } from "@/components/providers/wishlist-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { RelatedItems } from "@/components/products/related-items";
 
 interface ItemEntry {
@@ -36,6 +38,8 @@ export function CollectionDetail({
 }) {
   const router = useRouter();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const savings = collection.originalTotal - collection.price;
   const inStock = items.every((item) => item.available >= item.qty);
@@ -50,6 +54,14 @@ export function CollectionDetail({
   const buyNow = () => {
     cart.add({ type: "collection", collectionId: collection.id, qty: 1 });
     router.push(`/${lang}/checkout`);
+  };
+
+  const onWish = () => {
+    if (!user) {
+      router.push(`/${lang}/wishlist`);
+      return;
+    }
+    wishlist.toggle("collection", collection.id);
   };
 
   return (
@@ -110,7 +122,10 @@ export function CollectionDetail({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-[auto_1fr_1fr]">
+            <button className="btn btn--soft" onClick={onWish} aria-label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}>
+              {wishlist.has("collection", collection.id) ? <Icon.HeartFill /> : <Icon.Heart />}
+            </button>
             <button className="btn btn--primary btn--lg btn--block" onClick={add} disabled={!inStock}>
               <Icon.Cart size={18} /> {added ? dict.collections.added : dict.collections.addCollectionToCart}
             </button>

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import {
   categories,
   categoryPaths,
@@ -13,12 +13,14 @@ import {
   productMedia,
   productVariants,
   products,
+  relatedItems,
   variantDiscounts
 } from "../../drizzle/schema.js";
 import { db } from "../db.js";
 
 const seedSkus = ["TEST-SKU-001", "TEST-SKU-002"];
 const seedOfferSlug = "test-offer-baseline";
+const seedCollectionSlug = "test-collection-baseline";
 const seedCustomerEmail = "seed-customer@capella.test";
 const rootCategorySlug = "body-care";
 const leafCategorySlug = "body-lotion";
@@ -28,43 +30,50 @@ export async function clearTestSeed() {
     throw new Error("clearTestSeed may only run in tests or when ALLOW_DB_WIPE=true.");
   }
 
-  await db.delete(orderItems);
-  await db.delete(collectionItems);
-  await db.delete(orders);
-  await db.delete(offerItems);
-  await db.delete(collections);
-  await db.delete(categoryPaths);
-  await db.delete(entityOrderings);
-  await db.delete(variantDiscounts);
-  await db.delete(productMedia);
-  await db.delete(productVariants);
-  await db.delete(offers);
-  await db.delete(products);
-  await db.delete(customers);
+  await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
 
-  for (;;) {
-    const childRows = await db.select({ parentId: categories.parentId }).from(categories);
-    const parentIds = childRows
-      .map((row) => row.parentId)
-      .filter((parentId): parentId is number => parentId !== null);
+  try {
+    await db.delete(relatedItems);
+    await db.delete(orderItems);
+    await db.delete(collectionItems);
+    await db.delete(orders);
+    await db.delete(offerItems);
+    await db.delete(collections);
+    await db.delete(categoryPaths);
+    await db.delete(entityOrderings);
+    await db.delete(variantDiscounts);
+    await db.delete(productMedia);
+    await db.delete(productVariants);
+    await db.delete(offers);
+    await db.delete(products);
+    await db.delete(customers);
 
-    const leafRows = parentIds.length
-      ? await db
-          .select({ id: categories.id })
-          .from(categories)
-          .where(notInArray(categories.id, parentIds))
-      : await db.select({ id: categories.id }).from(categories);
+    for (;;) {
+      const childRows = await db.select({ parentId: categories.parentId }).from(categories);
+      const parentIds = childRows
+        .map((row) => row.parentId)
+        .filter((parentId): parentId is number => parentId !== null);
 
-    if (leafRows.length === 0) {
-      break;
+      const leafRows = parentIds.length
+        ? await db
+            .select({ id: categories.id })
+            .from(categories)
+            .where(notInArray(categories.id, parentIds))
+        : await db.select({ id: categories.id }).from(categories);
+
+      if (leafRows.length === 0) {
+        break;
+      }
+
+      await db.delete(categories).where(
+        inArray(
+          categories.id,
+          leafRows.map((row) => row.id)
+        )
+      );
     }
-
-    await db.delete(categories).where(
-      inArray(
-        categories.id,
-        leafRows.map((row) => row.id)
-      )
-    );
+  } finally {
+    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
   }
 }
 
@@ -128,6 +137,15 @@ export async function seedTestData() {
 
   await ensureOfferItem({ offerId, variantId: firstVariantId, qty: 1 });
   await ensureOfferItem({ offerId, variantId: secondVariantId, qty: 1 });
+  const collectionId = await ensureCollection({
+    slug: seedCollectionSlug,
+    arName: "تجميعة تجريبية",
+    enName: "Baseline Collection",
+    fixedPrice: "65.00",
+    categoryId: leafCategory.id
+  });
+  await ensureCollectionItem({ collectionId, variantId: firstVariantId, qty: 1 });
+  await ensureCollectionItem({ collectionId, variantId: secondVariantId, qty: 1 });
   await ensureCustomer({
     name: "Seed Customer",
     email: seedCustomerEmail,
@@ -333,6 +351,57 @@ async function ensureOfferItem(input: { offerId: number; variantId: number; qty:
   }
 
   const [created] = await db.insert(offerItems).values(input).$returningId();
+  return created.id;
+}
+
+async function ensureCollection(input: {
+  slug: string;
+  arName: string;
+  enName: string;
+  fixedPrice: string;
+  categoryId: number;
+}) {
+  const [existing] = await db.select().from(collections).where(eq(collections.slug, input.slug)).limit(1);
+  if (existing) {
+    return existing.id;
+  }
+
+  const [created] = await db
+    .insert(collections)
+    .values({
+      ...input,
+      status: "active",
+      visibility: "visible",
+      imagePath: "/uploads/test-collection.png"
+    })
+    .$returningId()
+    .catch(async (error: any) => {
+      if (error?.code === "ER_DUP_ENTRY") {
+        const [row] = await db.select().from(collections).where(eq(collections.slug, input.slug)).limit(1);
+        if (row) return [{ id: row.id }];
+      }
+      throw error;
+    });
+
+  return created.id;
+}
+
+async function ensureCollectionItem(input: { collectionId: number; variantId: number; qty: number }) {
+  const [existing] = await db
+    .select()
+    .from(collectionItems)
+    .where(
+      and(
+        eq(collectionItems.collectionId, input.collectionId),
+        eq(collectionItems.variantId, input.variantId)
+      )
+    )
+    .limit(1);
+  if (existing) {
+    return existing.id;
+  }
+
+  const [created] = await db.insert(collectionItems).values(input).$returningId();
   return created.id;
 }
 

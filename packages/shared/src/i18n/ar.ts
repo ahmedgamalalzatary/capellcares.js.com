@@ -130,7 +130,12 @@ export const ar = {
     loginRequired: "تحتاج إلى حساب لاستخدام المفضلة",
     loginRequiredDesc: "أنشئ حسابًا مجانيًا أو سجل دخولك لحفظ المنتجات في المفضلة.",
     goLogin: "تسجيل الدخول",
-    savedEmpty: "احفظي القطع التي تعجبك بضغطة قلب وستظهر هنا."
+    savedEmpty: "احفظي القطع التي تعجبك بضغطة قلب وستظهر هنا.",
+    itemTypes: {
+      product: "منتج",
+      offer: "عرض",
+      collection: "مجموعة"
+    }
   },
   orders: {
     title: "طلباتي",

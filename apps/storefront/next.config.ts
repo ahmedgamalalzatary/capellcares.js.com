@@ -4,11 +4,22 @@ import { loadWorkspaceEnv } from "@capella/shared/config/workspace-env";
 
 loadWorkspaceEnv();
 
+const isNonProduction = process.env.NODE_ENV !== "production";
+
+function isAllowedImageCandidate(candidate: string) {
+  try {
+    const url = new URL(candidate);
+    return isNonProduction || url.hostname !== "localhost";
+  } catch {
+    return false;
+  }
+}
+
 function resolveRemotePatterns() {
   const candidates = [
     process.env.NEXT_PUBLIC_API_URL?.trim(),
-    "http://localhost:4000"
-  ].filter((value): value is string => Boolean(value));
+    isNonProduction ? "http://localhost:4000" : null
+  ].filter((value): value is string => Boolean(value) && isAllowedImageCandidate(value));
 
   const unique = new Map<string, NonNullable<NextConfig["images"]>["remotePatterns"][number]>();
 
@@ -35,7 +46,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(process.cwd(), "..", ".."),
   reactStrictMode: true,
   images: {
-    dangerouslyAllowLocalIP: true,
+    dangerouslyAllowLocalIP: isNonProduction,
     remotePatterns: resolveRemotePatterns()
   },
   env: {

@@ -1,14 +1,35 @@
 import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const push = vi.fn();
+const has = vi.fn(() => false);
+const toggle = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push })
+}));
+
 vi.mock("@/components/providers/cart-provider", () => ({
   useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
 }));
+
+vi.mock("@/components/providers/wishlist-provider", () => ({
+  useWishlist: () => ({ has, toggle })
+}));
+
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: { id: 1 } })
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  has.mockReturnValue(false);
+});
 
 import { SectionCard } from "@/components/shop/section-card";
 
@@ -16,7 +37,7 @@ const dict = {
   offers: { badge: "Bundle" },
   collections: { badge: "Set" },
   advices: { tipBadge: "Tip", readMore: "Read more", close: "Close" },
-  common: { save: "Save", view: "View", addToCart: "Add to cart", added: "Added", cancel: "Cancel" }
+  common: { save: "Save", view: "View", addToCart: "Add to cart", added: "Added", cancel: "Cancel", addToWishlist: "Wishlist" }
 };
 
 const baseOffer = {
@@ -109,6 +130,22 @@ describe("SectionCard", () => {
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/glow"));
   });
 
+  it("adds an offer to wishlist from the card overlay", () => {
+    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("offer", 1);
+  });
+
+  it("adds a collection to wishlist from the card overlay", () => {
+    render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("collection", 2);
+  });
+
   it("does not render a struck-through original price when there are no savings", () => {
     const { container } = render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
 
@@ -186,7 +223,7 @@ describe("SectionCard", () => {
 
     const trigger = screen.getByRole("button", { name: "Tip One" });
     expect(trigger.querySelector("iframe")).toBeNull();
-    expect(document.querySelector('iframe[title="Tip One"]')).toBeNull();
+    expect(screen.queryByTitle("Tip One video")).toBeNull();
   });
 
   it("renders unsupported advice URLs as external links instead of opening a dead modal", () => {

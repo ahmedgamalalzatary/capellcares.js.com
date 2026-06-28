@@ -148,6 +148,13 @@
       "when": 1782345600000,
       "tag": "0020_variant_discounts",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1782604800000,
+      "tag": "0021_wishlist_entities",
+      "breakpoints": true
     }
   ]
 }

@@ -81,6 +81,16 @@ export interface Product {
 }
 
 export type RelatedItemType = "product" | "offer" | "collection";
+export type WishlistEntityType = RelatedItemType;
+
+export interface WishlistEntry {
+  entityType: WishlistEntityType;
+  entityId: number;
+  name: Bilingual;
+  imagePath: string | null;
+  href: string | null;
+  availability: "available" | "unavailable";
+}
 
 export interface RelatedItemRef {
   type: RelatedItemType;

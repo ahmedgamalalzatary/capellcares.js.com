@@ -6,4 +6,4 @@ export const wishlistRoutes = Router();
 wishlistRoutes.use(authMiddleware);
 wishlistRoutes.get("/", listWishlistController);
 wishlistRoutes.post("/", addWishlistController);
-wishlistRoutes.delete("/:productId", removeWishlistController);
+wishlistRoutes.delete("/:entityType/:entityId", removeWishlistController);

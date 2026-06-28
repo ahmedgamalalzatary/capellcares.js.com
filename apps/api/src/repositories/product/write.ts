@@ -1,5 +1,5 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
-import { offerItems, orderItems, productMedia, products, productVariants, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { collectionItems, entityOrderings, offerItems, orderItems, productMedia, products, productVariants, relatedItems, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   normalizeMedia,
@@ -278,7 +278,29 @@ export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: st
       .limit(1);
     if (!row || row.deletedAt == null) return null;
 
-    await tx.delete(wishlists).where(eq(wishlists.productId, id));
+    const variantRows = await tx
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(eq(productVariants.productId, id));
+    const variantIds = variantRows.map((variant) => variant.id);
+
+    await tx
+      .delete(wishlists)
+      .where(and(eq(wishlists.entityType, "product"), eq(wishlists.entityId, id)));
+    await tx
+      .delete(relatedItems)
+      .where(
+        or(
+          and(eq(relatedItems.sourceType, "product"), eq(relatedItems.sourceId, id)),
+          and(eq(relatedItems.targetType, "product"), eq(relatedItems.targetId, id))
+        )
+      );
+    await tx
+      .delete(entityOrderings)
+      .where(and(eq(entityOrderings.entityType, "product"), eq(entityOrderings.entityId, id)));
+    if (variantIds.length > 0) {
+      await tx.delete(collectionItems).where(inArray(collectionItems.variantId, variantIds));
+    }
     await tx.delete(productMedia).where(eq(productMedia.productId, id));
     await tx.delete(productVariants).where(eq(productVariants.productId, id));
     await tx.delete(products).where(eq(products.id, id));

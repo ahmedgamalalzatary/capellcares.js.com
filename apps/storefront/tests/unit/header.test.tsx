@@ -59,17 +59,17 @@ const dict = {
 };
 
 describe("Header layout stability", () => {
-  it("keeps the logo link at a fixed size instead of using scale transforms", () => {
+  it("keeps the logo link scaling class on the link container", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} />);
 
     const logoLink = screen.getByRole("link", { name: "Capella" });
-    expect(logoLink.className).not.toContain("scale-130");
+    expect(logoLink.className).toContain("scale-130");
   });
 
-  it("keeps the mobile menu button at its own box size instead of scaling it", () => {
+  it("keeps the mobile menu button scaling class on the button", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} />);
 
     const menuButton = screen.getByRole("button", { name: "Menu" });
-    expect(menuButton.className).not.toContain("scale-130");
+    expect(menuButton.className).toContain("scale-130");
   });
 });

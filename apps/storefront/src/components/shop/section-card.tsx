@@ -8,6 +8,9 @@ import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
+import { useWishlist } from "@/components/providers/wishlist-provider";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 import { loadInstagramEmbedScript, resolveAdviceVideo } from "@/lib/advice-video";
 
 type SectionCardProps =
@@ -18,7 +21,10 @@ type SectionCardProps =
 export function SectionCard(props: SectionCardProps) {
   const { lang, dict } = props;
   const isAr = lang === "ar";
+  const router = useRouter();
   const cart = useCart();
+  const wishlist = useWishlist();
+  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const addedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [adviceOpen, setAdviceOpen] = useState(false);
@@ -74,6 +80,8 @@ export function SectionCard(props: SectionCardProps) {
   let adviceVideo: ReturnType<typeof resolveAdviceVideo> = null;
   let adviceVideoUrl: string | null = null;
   let adviceTrigger: React.ReactNode = null;
+  let isWishlisted = false;
+  let onWish: ((e: React.MouseEvent) => void) | null = null;
 
   if (props.kind === "offer") {
     const offer = props.data;
@@ -96,6 +104,15 @@ export function SectionCard(props: SectionCardProps) {
         addedResetTimeoutRef.current = null;
       }, 1400);
     };
+    isWishlisted = wishlist.has("offer", offer.id);
+    onWish = (e) => {
+      e.preventDefault();
+      if (!user) {
+        router.push(`/${lang}/wishlist`);
+        return;
+      }
+      wishlist.toggle("offer", offer.id);
+    };
   } else if (props.kind === "collection") {
     const collection = props.data;
     href = `/${lang}/collections/${collection.slug}`;
@@ -116,6 +133,15 @@ export function SectionCard(props: SectionCardProps) {
         setAdded(false);
         addedResetTimeoutRef.current = null;
       }, 1400);
+    };
+    isWishlisted = wishlist.has("collection", collection.id);
+    onWish = (e) => {
+      e.preventDefault();
+      if (!user) {
+        router.push(`/${lang}/wishlist`);
+        return;
+      }
+      wishlist.toggle("collection", collection.id);
     };
   } else {
     const advice = props.data;
@@ -259,6 +285,17 @@ export function SectionCard(props: SectionCardProps) {
           <span className="pointer-events-none absolute top-0 start-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
             {badge}
           </span>
+        ) : null}
+        {onWish ? (
+          <button
+            className={`absolute top-3 rounded-full inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
+              isWishlisted ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
+            }`}
+            aria-label={dict.common.addToWishlist}
+            onClick={onWish}
+          >
+            {isWishlisted ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
+          </button>
         ) : null}
       </div>
 

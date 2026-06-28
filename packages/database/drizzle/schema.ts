@@ -383,13 +383,15 @@ export const wishlists = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     customerId: int("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
-    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    entityType: mysqlEnum("entity_type", relatedItemEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull()
   },
   (table) => ({
-    customerProductUnique: unique("wishlists_customer_product_unique").on(
+    customerEntityUnique: unique("wishlists_customer_entity_unique").on(
       table.customerId,
-      table.productId
+      table.entityType,
+      table.entityId
     )
   })
 );

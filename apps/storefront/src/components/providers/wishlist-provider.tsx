@@ -3,22 +3,31 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
+import type { WishlistEntry, WishlistEntityType } from "@capella/shared";
 
 interface WishlistContextValue {
-  ids: number[];
-  has: (id: number) => boolean;
-  toggle: (id: number) => void;
+  ids: string[];
+  items: WishlistEntry[];
+  has: (entityType: WishlistEntityType, entityId: number) => boolean;
+  toggle: (entityType: WishlistEntityType, entityId: number) => void;
+  remove: (entityType: WishlistEntityType, entityId: number) => void;
   clear: () => void;
 }
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
+function keyOf(entityType: WishlistEntityType, entityId: number) {
+  return `${entityType}:${entityId}`;
+}
+
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
-  const [ids, setIds] = useState<number[]>([]);
+  const [items, setItems] = useState<WishlistEntry[]>([]);
+  const [ids, setIds] = useState<string[]>([]);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (!user || !accessToken) {
+      setItems([]);
       setIds([]);
       return;
     }
@@ -26,29 +35,68 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       headers: { authorization: `Bearer ${accessToken}` }
     })
       .then((r) => (r.ok ? r.json() : { items: [] }))
-      .then((data) => setIds((data.items ?? []).map((x: any) => Number(x.productId))))
-      .catch(() => setIds([]));
+      .then((data) => {
+        const nextItems = (data.items ?? []) as WishlistEntry[];
+        setItems(nextItems);
+        setIds(nextItems.map((item) => keyOf(item.entityType, item.entityId)));
+      })
+      .catch(() => {
+        setItems([]);
+        setIds([]);
+      });
   }, [user, accessToken]);
 
-  const has = useCallback((id: number) => ids.includes(id), [ids]);
-  const toggle = useCallback((id: number) => {
-    if (!accessToken) return;
-    setIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      fetch(`${API_BASE}/api/v1/wishlist${prev.includes(id) ? `/${id}` : ""}`, {
-        method: prev.includes(id) ? "DELETE" : "POST",
-        headers: {
-          authorization: `Bearer ${accessToken}`,
-          "content-type": "application/json"
-        },
-        body: prev.includes(id) ? undefined : JSON.stringify({ productId: id })
-      }).catch(() => {});
-      return next;
-    });
-  }, [accessToken]);
-  const clear = useCallback(() => setIds([]), []);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
-  const value = useMemo(() => ({ ids, has, toggle, clear }), [ids, has, toggle, clear]);
+  const has = useCallback((entityType: WishlistEntityType, entityId: number) => ids.includes(keyOf(entityType, entityId)), [ids]);
+  const remove = useCallback((entityType: WishlistEntityType, entityId: number) => {
+    if (!accessToken) return;
+    const key = keyOf(entityType, entityId);
+    setIds((prev) => prev.filter((item) => item !== key));
+    setItems((prev) => prev.filter((item) => !(item.entityType === entityType && item.entityId === entityId)));
+    fetch(`${API_BASE}/api/v1/wishlist/${entityType}/${entityId}`, {
+      method: "DELETE",
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
+    })
+      .then((response) => {
+        if (!response.ok) refresh();
+      })
+      .catch(() => {
+        refresh();
+      });
+  }, [accessToken, refresh]);
+  const toggle = useCallback((entityType: WishlistEntityType, entityId: number) => {
+    if (!accessToken) return;
+    if (has(entityType, entityId)) {
+      remove(entityType, entityId);
+      return;
+    }
+
+    const key = keyOf(entityType, entityId);
+    setIds((prev) => [...prev, key]);
+    fetch(`${API_BASE}/api/v1/wishlist`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ entityType, entityId })
+    })
+      .then(() => refresh())
+      .catch(() => {
+        setIds((prev) => prev.filter((item) => item !== key));
+      });
+  }, [accessToken, has, refresh, remove]);
+  const clear = useCallback(() => {
+    setItems([]);
+    setIds([]);
+  }, []);
+
+  const value = useMemo(() => ({ ids, items, has, toggle, remove, clear }), [ids, items, has, toggle, remove, clear]);
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 }
 

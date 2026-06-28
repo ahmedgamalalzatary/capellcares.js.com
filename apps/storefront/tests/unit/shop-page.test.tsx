@@ -6,8 +6,20 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() })
+}));
+
 vi.mock("@/components/providers/cart-provider", () => ({
   useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
+}));
+
+vi.mock("@/components/providers/wishlist-provider", () => ({
+  useWishlist: () => ({ has: () => false, toggle: vi.fn(), ids: [] })
+}));
+
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: { id: 1 } })
 }));
 
 vi.mock("@capella/shared", async () => {

@@ -129,7 +129,15 @@ afterEach(async () => {
   // post-constraint behavior.
   await db.delete(orderItems).where(eq(orderItems.snapshotNameEn, "integrity-marker")).catch(() => {});
   await db.delete(orders).where(eq(orders.email, "integrity@test.local")).catch(() => {});
-  await db.delete(wishlists).where(eq(wishlists.productId, base?.productId ?? MISSING_ID)).catch(() => {});
+  await db
+    .delete(wishlists)
+    .where(
+      and(
+        eq(wishlists.entityType, "product"),
+        eq(wishlists.entityId, base?.productId ?? MISSING_ID)
+      )
+    )
+    .catch(() => {});
 });
 
 serialTest("clearTestSeed removes unified ordering rows", async () => {
@@ -174,24 +182,34 @@ serialTest("rejects order_items with a non-existent variant_id", async () => {
   );
 });
 
-serialTest("rejects a duplicate wishlists (customer_id, product_id)", async () => {
+serialTest("rejects a duplicate wishlists (customer_id, entity_type, entity_id)", async () => {
   const customerId = base.customerId;
-  await db.insert(wishlists).values({ customerId, productId: base.productId });
+  await db.insert(wishlists).values({ customerId, entityType: "product", entityId: base.productId });
   await assert.rejects(
-    db.insert(wishlists).values({ customerId, productId: base.productId })
+    db.insert(wishlists).values({ customerId, entityType: "product", entityId: base.productId })
   );
 });
 
 serialTest("rejects wishlists with a non-existent customer_id", async () => {
   await assert.rejects(
-    db.insert(wishlists).values({ customerId: MISSING_ID, productId: base.productId })
+    db.insert(wishlists).values({ customerId: MISSING_ID, entityType: "product", entityId: base.productId })
   );
 });
 
-serialTest("rejects wishlists with a non-existent product_id", async () => {
-  await assert.rejects(
-    db.insert(wishlists).values({ customerId: base.customerId, productId: MISSING_ID })
-  );
+serialTest("allows wishlists to reference missing entities until repository validation runs", async () => {
+  await db.insert(wishlists).values({ customerId: base.customerId, entityType: "product", entityId: MISSING_ID });
+
+  const rows = await db
+    .select({ customerId: wishlists.customerId, entityType: wishlists.entityType, entityId: wishlists.entityId })
+    .from(wishlists)
+    .where(
+      and(
+        eq(wishlists.customerId, base.customerId),
+        eq(wishlists.entityType, "product"),
+        eq(wishlists.entityId, MISSING_ID)
+      )
+    );
+  assert.equal(rows.length, 1);
 });
 
 serialTest("rejects auth_sessions with a non-existent customer_id", async () => {
