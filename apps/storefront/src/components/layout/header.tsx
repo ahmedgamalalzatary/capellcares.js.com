@@ -58,9 +58,9 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
       <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
-          <div className="inline-flex items-center justify-center gap-1 min-[880px]:hidden">
+          <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
             <button
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-12 sm:w-12"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
               onClick={() => setMobileOpen((open) => !open)}
               aria-label="Menu"
               aria-expanded={mobileOpen}
@@ -102,7 +102,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
         <Link
           href={`/${lang}`}
-          className="group flex h-12 items-center justify-self-center sm:h-[4.5rem]"
+          className="group flex items-center justify-self-center scale-130"
           aria-label={dict.brand}
         >
           <Image
@@ -110,13 +110,13 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
             alt={dict.brand}
             width={400}
             height={100}
-            className="h-full w-auto object-contain transition-transform duration-200"
+            className=" w-auto object-contain transition-transform duration-200 h-10 sm:h-14 "
           />
         </Link>
 
         <div className="flex items-center justify-end">
           {/* Mobile cluster: wishlist · cart */}
-          <div className="inline-flex items-center gap-1 min-[880px]:hidden">
+          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart size={24} />
               {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
