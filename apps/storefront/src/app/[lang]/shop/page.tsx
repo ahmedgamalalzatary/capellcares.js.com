@@ -49,7 +49,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Offers */}
       {activeOffers.length > 0 && (
-        <section className="mb-12">
+        <section className="mb-8">
           <header className="mb-6 flex items-end justify-between">
             <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
@@ -82,7 +82,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Collections */}
       {activeCollections.length > 0 && (
-        <section className="mb-12">
+        <section className="mb-8">
           <header className="mb-6 flex items-end justify-between">
             <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
@@ -115,7 +115,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Bestsellers */}
       {bestsellerProducts.length > 0 && (
-        <section className="mb-12">
+        <section className="mb-8">
           <header className="mb-6 flex items-end justify-between">
             <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr
@@ -148,7 +148,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* New */}
       {newProducts.length > 0 && (
-        <section className="mb-12">
+        <section className="mb-8">
           <header className="mb-6 flex items-end justify-between">
             <div className="grid gap-1.5 font-bold uppercase">
               <h2 className={isAr

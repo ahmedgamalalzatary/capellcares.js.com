@@ -25,7 +25,7 @@ vi.mock("@/lib/storefront-detail-page", () => ({
     slug: "curly-hair",
     dict: {
       common: { breadcrumbHome: "Home" },
-      nav: { products: "Products" }
+      nav: { products: "Products", viewAllCategory: "All {name}" }
     }
   }),
   requireStorefrontValue: (value: any) => value,
@@ -86,6 +86,15 @@ describe("category page", () => {
     expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "abc" });
     expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
     expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
+  });
+
+  it("shows the page heading as all plus the category name", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
+      searchParams: Promise.resolve({ categoryId: "62" })
+    }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "All Curly Hair" })).toBeInTheDocument();
   });
 
   it("toggles header filter pills as a multi-select source for the grid", async () => {

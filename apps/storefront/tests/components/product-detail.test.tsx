@@ -103,6 +103,132 @@ describe("ProductDetail", () => {
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/legacy.jpg");
   });
 
+  it("renders the product category directly under the product title", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size",
+        relatedOffers: "Related offers"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict,
+      categoryName: "Hair Care"
+    }));
+
+    const heading = screen.getByRole("heading", { level: 1, name: "Product" });
+    expect(heading.nextElementSibling).toHaveTextContent("Hair Care");
+  });
+
+  it("switches product media when the user drags on the main media area or thumbnail row", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size",
+        relatedOffers: "Related offers"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [
+          { type: "image" as const, url: "/uploads/primary.jpg" },
+          { type: "image" as const, url: "/uploads/secondary.jpg" },
+          { type: "video" as const, url: "/uploads/demo.mp4" }
+        ],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/primary.jpg");
+
+    fireEvent.pointerDown(screen.getByTestId("product-media-main"), { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    fireEvent.pointerUp(screen.getByTestId("product-media-main"), { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
+
+    fireEvent.pointerDown(screen.getByTestId("product-media-main"), { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    fireEvent.pointerUp(screen.getByTestId("product-media-main"), { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    expect(document.querySelector("video[controls]")).toHaveAttribute("src", "/uploads/demo.mp4");
+
+    fireEvent.pointerDown(screen.getByTestId("product-media-thumbs"), { clientX: 120, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+    fireEvent.pointerUp(screen.getByTestId("product-media-thumbs"), { clientX: 260, clientY: 105, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+    expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
+  });
+
   it("renders related items in order with links to their detail pages", () => {
     const dict = {
       product: {

@@ -346,7 +346,7 @@ function CategoryCard({
         )}
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base text-ink">{title}</span>
+          <span className="block truncate text-sm text-ink">{title}</span>
         </span>
 
         <Icon.Chevron className={`shrink-0 text-(--ink-3) ${isAr ? "rotate-180" : ""}`} />

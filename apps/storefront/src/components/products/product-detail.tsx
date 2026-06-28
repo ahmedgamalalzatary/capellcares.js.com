@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
@@ -18,10 +18,11 @@ interface Props {
   offers: Offer[];
   lang: Language;
   dict: any;
+  categoryName?: string;
   relatedItems?: RelatedItemCard[];
 }
 
-export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }: Props) {
+export function ProductDetail({ product, offers, lang, dict, categoryName, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
   const wishlist = useWishlist();
@@ -33,6 +34,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; pointerType: string } | null>(null);
   const media = useMemo(
     () => (product.media?.length ? product.media : product.imagePath ? [{ type: "image" as const, url: product.imagePath }] : []),
     [product.media, product.imagePath]
@@ -75,26 +77,56 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
     { key: "warnings", label: dict.product.warnings, content: pickLang(product.warnings, lang) }
   ];
 
+  const onMediaPointerDown = (event: PointerEvent<HTMLElement>) => {
+    if (media.length <= 1 || !event.isPrimary) return;
+    dragStartRef.current = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
+  };
+
+  const onMediaPointerUp = (event: PointerEvent<HTMLElement>) => {
+    const dragStart = dragStartRef.current;
+    dragStartRef.current = null;
+    if (media.length <= 1 || !event.isPrimary || !dragStart) return;
+    const deltaX = event.clientX - dragStart.x;
+    const deltaY = event.clientY - dragStart.y;
+    if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    const direction = deltaX < 0 ? 1 : -1;
+    const nextIndex = Math.max(0, Math.min(media.length - 1, activeMediaIndex + direction));
+    if (nextIndex === activeMediaIndex) return;
+    setActiveMediaIndex(nextIndex);
+  };
+
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-          <div className="relative grid  place-items-center overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
+          <div
+            className="relative grid  place-items-center overflow-hidden rounded-lg sm:rounded-xl"
+            data-testid="product-media-main"
+            onPointerDown={onMediaPointerDown}
+            onPointerUp={onMediaPointerUp}
+            onPointerCancel={() => { dragStartRef.current = null; }}
+          >
             {activeMedia?.type === "video" ? (
               <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
                 <track kind="captions" />
               </video>
             ) : (
-              <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} className="h-4/5 w-4/5" />
+              <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} />
             )}
           </div>
 
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          <div
+            className="grid grid-cols-4 gap-4 sm:gap-4"
+            data-testid="product-media-thumbs"
+            onPointerDown={onMediaPointerDown}
+            onPointerUp={onMediaPointerUp}
+            onPointerCancel={() => { dragStartRef.current = null; }}
+          >
             {(media.length ? media : [{ type: "image" as const, url: product.imagePath }]).map((item, index) => (
               <button
                 key={`${item.type}-${item.url}-${index}`}
                 type="button"
-                className="aspect-square rounded-(--radius) border border-(--hairline) bg-surface p-2 transition-colors hover:border-warm data-[active=true]:border-accent"
+                className="bg-surface transition-transform hover:border-warm data-[active=true]:scale-105"
                 data-active={activeMediaIndex === index}
                 aria-label={`view ${index + 1}`}
                 onClick={() => setActiveMediaIndex(index)}
@@ -118,6 +150,11 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
               : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
               {pickLang(product.name, lang)}
             </h1>
+            {categoryName ? (
+              <p className={lang === "ar" ? "font-(family-name:--font-ar)" : "tracking-[0.08em] uppercase"}>
+                {categoryName}
+              </p>
+            ) : null}
             {(isNew || isBestseller || offers.length > 0) && (
               <div className="flex flex-wrap gap-2">
                 {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
@@ -130,9 +167,6 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
               </div>
             )}
           </div>
-
-          <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(product.description, lang)}</p>
-
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
             <span className={lang === "ar"
               ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
@@ -160,9 +194,9 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
                 <button
                   key={item.id}
                   className={[
-                    "grid min-w-28 gap-0.5 rounded-(--radius) border px-4 py-3 text-start transition-colors",
+                    "grid min-w-28 gap-0.5 rounded-md px-4 py-3 text-start transition-colors",
                     item.stock > 0 ? "hover:border-warm hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
-                    variantId === item.id ? "border-accent bg-(--accent-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
+                    variantId === item.id ? "border-accent bg-canvas text-ink" : "border border-(--hairline) bg-surface text-(--ink-2)"
                   ].join(" ")}
                   data-active={variantId === item.id}
                   data-out={item.stock === 0 ? "true" : undefined}
@@ -180,7 +214,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             <div className="eyebrow text-(--ink-3)! opacity-100!">
               {dict.common.quantity}
             </div>
-            <div className="inline-flex items-center justify-self-start gap-1 rounded-(--radius-pill) border border-(--hairline) bg-surface p-1">
+            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) border border-(--hairline) bg-surface p-1">
               <button
                 className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}
@@ -236,7 +270,7 @@ export function ProductDetail({ product, offers, lang, dict, relatedItems = [] }
             </div>
           </div>
 
-          <div className="min-h-20 max-w-[65ch] text-base leading-[1.85] text-(--ink-2)">
+          <div className="text-base leading-[1.85] text-(--ink-2)">
             {tabs.find((item) => item.key === tab)?.content}
           </div>
         </div>

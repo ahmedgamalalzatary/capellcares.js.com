@@ -63,6 +63,8 @@ export default async function CategoryPage({
     : getCategoryBySlug(categories, slug);
   const category = requireStorefrontValue(resolvedCategory);
   const path = getCategoryPath(categories, category.id);
+  const categoryName = pickLang(category.name, lang);
+  const heading = dict.nav.viewAllCategory.replace("{name}", categoryName);
   const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
   const subtreeCategoryIds = new Set<number>([category.id]);
   let changed = true;
@@ -100,7 +102,7 @@ export default async function CategoryPage({
         ]}
       />
       <header className="page-head">
-        <h1>{pickLang(category.name, lang)}</h1>
+        <h1>{heading}</h1>
       </header>
       <CategoryPageContent
         category={category}

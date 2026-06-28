@@ -80,6 +80,7 @@ export default async function ProductDetailsPage({
         offers={offers}
         lang={lang}
         dict={dict}
+        categoryName={category ? pickLang(category.name, lang) : undefined}
         relatedItems={product.relatedItems ?? []}
       />
     </main>

@@ -32,7 +32,7 @@ export function RelatedItems({ items, lang, title }: Props) {
   }
 
   return (
-    <section className="grid gap-4 border-t border-(--hairline) py-6 sm:py-8" data-testid="related-items">
+    <section className="grid gap-4 border-t border-(--hairline) py-4 sm:py-4" data-testid="related-items">
       {title && (
         <h2 className={lang === "ar"
           ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
@@ -65,9 +65,6 @@ export function RelatedItems({ items, lang, title }: Props) {
                     className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
-                <span className="absolute top-3 inset-s-3 rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-(--ink-2) shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-                  {itemTypeLabel(item, lang)}
-                </span>
               </div>
               <div className="grid gap-2 p-4 sm:p-5">
                 <h3 className={lang === "ar"
