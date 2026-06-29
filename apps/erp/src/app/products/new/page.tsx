@@ -13,6 +13,7 @@ export default function NewProductPage() {
   const categories = useStore((s) => s.categories);
   const products = useStore((s) => s.products);
   const offers = useStore((s) => s.offers);
+  const collections = useStore((s) => s.collections);
 
   if (!canCreateErpModule(user, "products")) {
     return (
@@ -23,7 +24,7 @@ export default function NewProductPage() {
   }
   return (
     <AdminShell title="منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "منتج جديد" }]}>
-      <ProductForm mode="new" categories={categories} relatedOptions={buildRelatedOptions(products, offers)} />
+      <ProductForm mode="new" categories={categories} relatedOptions={buildRelatedOptions(products, offers, collections)} />
     </AdminShell>
   );
 }

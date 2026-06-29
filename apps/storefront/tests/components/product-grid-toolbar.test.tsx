@@ -5,11 +5,13 @@ import { describe, expect, it, vi } from "vitest";
 import { ProductGridToolbar } from "@/components/products/grid/product-grid-toolbar";
 
 describe("ProductGridToolbar", () => {
-  it("renders the result count and forwards sort and filter actions", () => {
+  it("forwards sort, filter, and column-toggle actions", () => {
     const onOpenFilters = vi.fn();
     const onSortChange = vi.fn();
+    const onColsChange = vi.fn();
 
     render(createElement(ProductGridToolbar, {
+      lang: "en",
       dict: {
         common: {
           filters: "Filters",
@@ -27,16 +29,19 @@ describe("ProductGridToolbar", () => {
       filteredCount: 7,
       hasActiveFilters: true,
       sort: "default",
+      cols: 1,
+      onColsChange,
       onOpenFilters,
       onSortChange
     }));
-
-    expect(screen.getByText("7 results")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /filters/i }));
     expect(onOpenFilters).toHaveBeenCalledTimes(1);
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "price-desc" } });
     expect(onSortChange).toHaveBeenCalledWith("price-desc");
+
+    fireEvent.click(screen.getByRole("button", { name: "2 per row" }));
+    expect(onColsChange).toHaveBeenCalledWith(2);
   });
 });

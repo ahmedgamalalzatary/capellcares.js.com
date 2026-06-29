@@ -153,6 +153,26 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             )}
           </div>
 
+          {media.length > 1 && (
+            <div
+              className="flex items-center justify-center gap-2"
+              data-testid="product-media-dots"
+            >
+              {media.map((item, index) => (
+                <button
+                  key={`dot-${item.type}-${item.url}-${index}`}
+                  type="button"
+                  onClick={() => setActiveMediaIndex(index)}
+                  aria-label={`go to media ${index + 1}`}
+                  aria-current={activeMediaIndex === index}
+                  className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
+                    activeMediaIndex === index ? "bg-accent" : "bg-transparent"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
           <div
             className="grid grid-cols-4 gap-4 sm:gap-4"
             data-testid="product-media-thumbs"
@@ -215,11 +235,11 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               <span className="text-base text-(--ink-3) line-through">{formatPrice(variant.price, lang)}</span>
             ) : null}
             {isOutOfStock ? (
-              <span className="chip chip--accent">{dict.common.outOfStock}</span>
+              <span className="chip text-(--error)! font-semibold">{dict.common.outOfStock}</span>
             ) : variant.stock <= 5 ? (
               <span className="chip chip--gold">{dict.common.lowStock.replace("{n}", String(variant.stock))}</span>
             ) : (
-              <span className="chip chip--sage">{dict.common.inStock}</span>
+              <span className="chip text-(--success)! font-semibold">{dict.common.inStock}</span>
             )}
           </div>
 
@@ -275,7 +295,6 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
 
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
-              <Icon.Cart size={18} />
               {added ? dict.common.added : dict.common.addToCart}
             </button>
             <button className="btn btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>

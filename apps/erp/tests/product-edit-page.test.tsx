@@ -65,6 +65,9 @@ const storeState = {
   offers: [
     { id: 9, slug: "offer-9", name: { ar: "عرض", en: "Offer 9" }, status: "active", deletedAt: null }
   ],
+  collections: [
+    { id: 12, slug: "collection-12", name: { ar: "مجموعة", en: "Collection 12" }, status: "active", deletedAt: null }
+  ],
   categories: [],
   loaded: true,
   error: null
@@ -172,7 +175,8 @@ describe("EditProductPage data plumbing", () => {
     expect(capturedProps.relatedOptions).toEqual([
       { type: "product", id: 1, name: { ar: "منتج", en: "Product 1" }, slug: "product-1" },
       { type: "product", id: 2, name: { ar: "منتج٢", en: "Product 2" }, slug: "product-2" },
-      { type: "offer", id: 9, name: { ar: "عرض", en: "Offer 9" }, slug: "offer-9" }
+      { type: "offer", id: 9, name: { ar: "عرض", en: "Offer 9" }, slug: "offer-9" },
+      { type: "collection", id: 12, name: { ar: "مجموعة", en: "Collection 12" }, slug: "collection-12" }
     ]);
   });
 

@@ -35,7 +35,7 @@ export const en = {
     language: "Language"
   },
   common: {
-    addToCart: "Add to cart",
+    addToCart: "Cart",
     addToWishlist: "Add to wishlist",
     removeFromWishlist: "Remove",
     buyNow: "Buy now",
@@ -155,7 +155,7 @@ export const en = {
     viewOrders: "View my orders"
   },
   advices: {
-    title: "Capella Advices",
+    title: "Capella Tips",
     description: "Helpful guidance, shopping tips, and routine ideas from Capella.",
     eyebrow: "Capella Journal",
     tipBadge: "Tip",

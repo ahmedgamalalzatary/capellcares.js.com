@@ -103,13 +103,22 @@ describe("category page", () => {
     expect(notFound).toHaveBeenCalled();
   });
 
-  it("shows the page heading as all plus the category name", async () => {
+  it("shows the page heading as all plus the name for a parent category", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "hair-care" }),
+      searchParams: Promise.resolve({ categoryId: "8" })
+    }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "All Hair Care" })).toBeInTheDocument();
+  });
+
+  it("shows the page heading as just the name for a leaf category", async () => {
     render(await CategoryPage({
       params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
       searchParams: Promise.resolve({ categoryId: "62" })
     }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "All Curly Hair" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Curly Hair" })).toBeInTheDocument();
   });
 
   it("toggles header filter pills as a multi-select source for the grid", async () => {

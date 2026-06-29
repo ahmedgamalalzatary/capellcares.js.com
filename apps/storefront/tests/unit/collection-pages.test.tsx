@@ -27,14 +27,36 @@ vi.mock("@capella/shared", async () => {
   return {
     ...actual,
     getDict: () => ({
-      common: { breadcrumbHome: "Home", buyNow: "Buy now", save: "Save" },
+      brand: "Capella",
+      common: {
+        breadcrumbHome: "Home",
+        buyNow: "Buy now",
+        save: "Save",
+        filters: "Filters",
+        results: "{n} results",
+        clear: "Clear",
+        view: "View",
+        addToCart: "Add to cart",
+        added: "Added",
+        addToWishlist: "Wishlist"
+      },
+      nav: { search: "Search", allCategories: "All categories" },
       filters: {
         sortBy: "Sort by",
         sortFeatured: "Featured",
         sortNewest: "Newest",
         sortPriceAsc: "Price: low to high",
         sortPriceDesc: "Price: high to low",
-        sortName: "Name"
+        sortName: "Name",
+        title: "Filters",
+        bytype: "Category",
+        price: "Price",
+        priceMin: "Min",
+        priceMax: "Max",
+        to: "to",
+        toggleCategory: "Toggle category",
+        showResults: "Show results",
+        closeFilters: "Close filters"
       },
       collections: {
         title: "Collections",
@@ -108,7 +130,7 @@ const {
         imagePath: "/uploads/body.jpg",
         price: 120,
         originalTotal: 180,
-        categoryId: 12,
+        categoryId: 14,
         items: [{ variantId: 103, qty: 1 }, { variantId: 104, qty: 1 }],
         stock: 3,
         status: "active",
@@ -211,9 +233,11 @@ const {
       }
     ])),
   fetchCategories: vi.fn(async () => ([
-      { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: true },
-      { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
-      { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: true }
+      { id: 11, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false },
+      { id: 12, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false },
+      { id: 13, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false },
+      { id: 14, parentId: 12, slug: "body-lotion", name: { ar: "لوشن الجسم", en: "Body Lotion" }, isLeaf: true },
+      { id: 15, parentId: null, slug: "fragrance", name: { ar: "عطور", en: "Fragrance" }, isLeaf: false }
     ]))
 }));
 
@@ -246,12 +270,61 @@ describe("collection storefront pages", () => {
     expect(screen.getByText("Collections")).toBeInTheDocument();
   });
 
-  it("filters collections locally by category without search or sorting controls", async () => {
+  it("uses the global filter drawer with only a category filter (no search, price, or sort)", async () => {
     render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    expect(screen.queryByRole("searchbox", { name: "Search collections" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Filters/ })).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "Sort by" })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "Collection category" }), { target: { value: "13" } });
+    expect(screen.queryByPlaceholderText("Search")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Min")).not.toBeInTheDocument();
+  });
+
+  it("only lists big categories that contain collections, never leaf or empty ones", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    // Big categories that own collections appear...
+    expect(screen.getByRole("radio", { name: "Body Care" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Hair Care" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Skin Care" })).toBeInTheDocument();
+    // ...but leaf subcategories and empty big categories do not.
+    expect(screen.queryByRole("radio", { name: "Body Lotion" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Fragrance" })).not.toBeInTheDocument();
+  });
+
+  it("filters collections by the selected big category, including descendants", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    fireEvent.click(screen.getByRole("radio", { name: "Body Care" }));
+
+    // Body Lotion Set lives under Body Care via the leaf category, so it stays.
+    expect(screen.getByRole("heading", { name: "Body Lotion Set" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hair Set" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Skin Care Set" })).not.toBeInTheDocument();
+  });
+
+  it("renders a pill-group of the big categories that own collections", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    const pillGroup = document.querySelector(".pill-group");
+    expect(pillGroup).toBeInTheDocument();
+    const pillLabels = Array.from(pillGroup!.querySelectorAll(".filter-pill")).map((pill) => pill.textContent);
+    expect(pillLabels).toEqual(["Skin Care", "Body Care", "Hair Care"]);
+  });
+
+  it("toggles category pills as a descendant-aware multi-select over the grid", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    fireEvent.click(screen.getByRole("button", { name: /^Body Care/ }));
+    expect(screen.getByRole("heading", { name: "Body Lotion Set" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hair Set" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Skin Care Set" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Hair Care/ }));
+    expect(screen.getByRole("heading", { name: "Body Lotion Set" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hair Set" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Skin Care Set" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Body Care/ }));
     expect(screen.getByRole("heading", { name: "Hair Set" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Body Lotion Set" })).not.toBeInTheDocument();
   });

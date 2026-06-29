@@ -23,6 +23,8 @@ interface MobileFilterDrawerProps {
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;
   lockCategory?: boolean;
+  showSearch?: boolean;
+  showPrice?: boolean;
   onClear: () => void;
 }
 
@@ -42,6 +44,8 @@ export function MobileFilterDrawer({
   openParents,
   toggleParent,
   lockCategory,
+  showSearch,
+  showPrice,
   onClear
 }: MobileFilterDrawerProps) {
   const isAr = lang === "ar";
@@ -165,6 +169,8 @@ export function MobileFilterDrawer({
             openParents={openParents}
             toggleParent={toggleParent}
             lockCategory={lockCategory}
+            showSearch={showSearch}
+            showPrice={showPrice}
             mode="mobile"
           />
         </div>

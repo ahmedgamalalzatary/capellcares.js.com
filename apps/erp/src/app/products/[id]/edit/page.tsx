@@ -37,6 +37,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
   const { id } = use(params);
   const products = useStore((s) => s.products);
   const offers = useStore((s) => s.offers);
+  const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
   const loaded = useStore((s) => s.loaded);
   const error = useStore((s) => s.error);
@@ -103,7 +104,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
         mode="edit"
         initial={relatedItems === null ? product : { ...product, relatedItems }}
         categories={categories}
-        relatedOptions={buildRelatedOptions(products, offers)}
+        relatedOptions={buildRelatedOptions(products, offers, collections)}
         relatedItemsAvailable={!relatedItemsError}
       />
     </AdminShell>

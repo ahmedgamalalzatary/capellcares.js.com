@@ -173,6 +173,152 @@ describe("ProductDetail", () => {
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
   });
 
+  it("shows pagination dots and switches media on click when there are 2+ media", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    const baseProduct = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    const { rerender } = render(createElement(ProductDetail, {
+      product: {
+        ...baseProduct,
+        media: [
+          { type: "image" as const, url: "/uploads/primary.jpg" },
+          { type: "image" as const, url: "/uploads/secondary.jpg" }
+        ]
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    const dots = screen.getByTestId("product-media-dots");
+    const dotButtons = dots.querySelectorAll("button");
+    expect(dotButtons).toHaveLength(2);
+    expect(dotButtons[0]).toHaveAttribute("aria-current", "true");
+
+    fireEvent.click(dotButtons[1]!);
+    expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
+    expect(dots.querySelectorAll("button")[1]).toHaveAttribute("aria-current", "true");
+
+    rerender(createElement(ProductDetail, {
+      product: {
+        ...baseProduct,
+        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }]
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    expect(screen.queryByTestId("product-media-dots")).not.toBeInTheDocument();
+  });
+
+  it("colors the stock status chip green when in stock and red when out of stock", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    const base = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    const { rerender } = render(createElement(ProductDetail, {
+      product: { ...base, variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 12, sortOrder: 1 }] },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    const inStockChip = screen.getByText("In stock");
+    expect(inStockChip).toHaveClass("chip");
+    expect(inStockChip.className).toContain("text-(--success)");
+
+    rerender(createElement(ProductDetail, {
+      product: { ...base, variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 0, sortOrder: 1 }] },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    const outChip = screen.getAllByText("Out of stock").find((el) => el.classList.contains("chip"));
+    expect(outChip).toBeTruthy();
+    expect(outChip!.className).toContain("text-(--error)");
+  });
+
   it("renders related items in order with links to their detail pages", () => {
     const dict = {
       product: {
@@ -226,12 +372,13 @@ describe("ProductDetail", () => {
       dict,
       relatedItems: [
         { type: "product", id: 2, slug: "related-product", name: { ar: "", en: "Related Product" }, imagePath: "/uploads/related-product.jpg", price: 30 },
-        { type: "offer", id: 3, slug: "related-offer", name: { ar: "", en: "Related Offer" }, imagePath: "/uploads/related-offer.jpg", price: 40 }
+        { type: "offer", id: 3, slug: "related-offer", name: { ar: "", en: "Related Offer" }, imagePath: "/uploads/related-offer.jpg", price: 40 },
+        { type: "collection", id: 4, slug: "related-collection", name: { ar: "", en: "Related Collection" }, imagePath: "/uploads/related-collection.jpg", price: 60 }
       ]
     }));
 
     const rows = screen.getAllByTestId("related-item");
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Related Product");
     expect(rows[0]!.querySelector("a")).toHaveAttribute("href", "/en/products/related-product");
     expect(screen.getByRole("img", { name: "Related Product" })).toHaveAttribute("src", "/uploads/related-product.jpg");
@@ -242,6 +389,11 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("img", { name: "Related Offer" })).toHaveAttribute("src", "/uploads/related-offer.jpg");
     expect(rows[1]).toHaveTextContent("Offer");
     expect(rows[1]).toHaveTextContent("40");
+    expect(rows[2]).toHaveTextContent("Related Collection");
+    expect(rows[2]!.querySelector("a")).toHaveAttribute("href", "/en/collections/related-collection");
+    expect(screen.getByRole("img", { name: "Related Collection" })).toHaveAttribute("src", "/uploads/related-collection.jpg");
+    expect(rows[2]).toHaveTextContent("Collection");
+    expect(rows[2]).toHaveTextContent("60");
   });
 
   it("renders an unavailable state instead of crashing when the product has no variants", () => {

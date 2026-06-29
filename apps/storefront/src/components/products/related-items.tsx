@@ -1,8 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { formatPrice, getDict, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
+import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 
 interface Props {
   items: RelatedItemCard[];
@@ -27,20 +31,29 @@ function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
 }
 
 export function RelatedItems({ items, lang, title }: Props) {
+  const [cols, setCols] = useState<Cols>(1);
+
   if (items.length === 0) {
     return null;
   }
 
+  const isAr = lang === "ar";
+  const gridCols = cols === 1 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+
   return (
     <section className="grid gap-4 border-t border-(--hairline) py-4 sm:py-4" data-testid="related-items">
-      {title && (
-        <h2 className={lang === "ar"
-          ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
-          : "m-0 text-[clamp(22px,2.4vw,30px)] font-(--font-display) text-ink"}>
-          {title}
-        </h2>
-      )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      <div className="flex items-center justify-between gap-4">
+        {title ? (
+          <h2 className={isAr
+            ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
+            : "m-0 text-[clamp(22px,2.4vw,30px)] font-(--font-display) text-ink"}>
+            {title}
+          </h2>
+        ) : <span />}
+
+        <ColumnsToggle cols={cols} onChange={setCols} lang={lang} />
+      </div>
+      <div className={`grid gap-3 sm:gap-4 ${gridCols}`}>
         {items.map((item) => (
           <div className="related-item" data-testid="related-item" key={`${item.type}-${item.id}`}>
             <Link

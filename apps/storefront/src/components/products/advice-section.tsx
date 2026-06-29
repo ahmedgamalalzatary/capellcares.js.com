@@ -23,7 +23,7 @@ export function AdviceSection({
 
   return (
     <section className="mt-4 mb-4">
-      <header className="mb-8 grid gap-2 pt-8 ">
+      <header className="mb-8 grid gap-2">
         <h2 className={isAr
           ? "m-0 text-[clamp(26px,2.6vw,38px)] font-bold font-(family-name:--font-ar) leading-tight text-ink "
           : "m-0 text-[clamp(28px,2.8vw,40px)] leading-[1.1] tracking-[-0.005em] text-ink font-bold uppercase"}>

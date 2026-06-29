@@ -328,7 +328,7 @@ export function SectionCard(props: SectionCardProps) {
             {dict.common.view}
           </Link>
           <button onClick={onAdd} className={addClass}>
-            {added ? <Icon.Check size={16} /> : <Icon.Cart size={16} />}
+            {added ? <Icon.Check size={16} /> : null}
             <span>{added ? dict.common.added : dict.common.addToCart}</span>
           </button>
         </div>

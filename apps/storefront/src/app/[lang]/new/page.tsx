@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getDict } from "@capella/shared";
-import { ProductCard } from "@/components/products/product-card";
+import { ProductGrid } from "@/components/products/grid/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { fetchProducts } from "@/lib/api/client";
+import { fetchCategories, fetchProducts } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 
 export async function generateMetadata({
@@ -20,8 +20,9 @@ export default async function NewProductsPage({ params }: { params: Promise<{ la
   const dict = getDict(lang);
 
   let products: Awaited<ReturnType<typeof fetchProducts>> = [];
+  let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
   try {
-    products = await fetchProducts({ lang });
+    [products, categories] = await Promise.all([fetchProducts({ lang }), fetchCategories({ lang })]);
   } catch (error) {
     console.error("Failed to load new products", error);
   }
@@ -39,15 +40,12 @@ export default async function NewProductsPage({ params }: { params: Promise<{ la
         <h1>{dict.nav.new}</h1>
       </header>
 
-      {newProducts.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-          {newProducts.map((product) => (
-            <ProductCard key={product.id} product={product} lang={lang} dict={dict} />
-          ))}
-        </div>
-      ) : (
-        <p className="py-16 text-center text-(--ink-3)">{dict.common.empty}</p>
-      )}
+      <ProductGrid
+        products={newProducts}
+        categories={categories.filter((c) => !c.deletedAt)}
+        lang={lang}
+        dict={dict}
+      />
     </main>
   );
 }

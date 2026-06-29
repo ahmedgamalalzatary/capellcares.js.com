@@ -22,6 +22,8 @@ interface ProductFiltersContentProps {
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;
   lockCategory?: boolean;
+  showSearch?: boolean;
+  showPrice?: boolean;
   mode: "mobile" | "desktop";
 }
 
@@ -39,12 +41,15 @@ export function ProductFiltersContent({
   openParents,
   toggleParent,
   lockCategory,
+  showSearch = true,
+  showPrice = true,
   mode
 }: ProductFiltersContentProps) {
   const isMobile = mode === "mobile";
 
   return (
     <>
+      {showSearch && (
       <FilterSection label={dict.nav.search} defaultOpen>
         <div
           style={{
@@ -94,6 +99,7 @@ export function ProductFiltersContent({
           )}
         </div>
       </FilterSection>
+      )}
 
       {!lockCategory && (
         <FilterSection label={dict.filters.bytype} defaultOpen>
@@ -111,6 +117,7 @@ export function ProductFiltersContent({
         </FilterSection>
       )}
 
+      {showPrice && (
       <FilterSection label={dict.filters.price} defaultOpen={false}>
         <div style={{ display: "grid", gap: 8 }}>
           <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} />
@@ -124,6 +131,7 @@ export function ProductFiltersContent({
           <PriceInput value={priceRange.max} onChange={(value) => setPriceRange((state) => ({ ...state, max: value }))} placeholder={dict.filters.priceMax} lang={lang} />
         </div>
       </FilterSection>
+      )}
     </>
   );
 }

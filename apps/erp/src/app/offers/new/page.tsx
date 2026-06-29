@@ -12,6 +12,7 @@ export default function NewOfferPage() {
   const { user } = useAdminAuth();
   const products = useStore((s) => s.products);
   const offers = useStore((s) => s.offers);
+  const collections = useStore((s) => s.collections);
   if (!canCreateErpModule(user, "offers")) {
     return (
       <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
@@ -21,7 +22,7 @@ export default function NewOfferPage() {
   }
   return (
     <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "عرض جديد" }]}>
-      <OfferForm mode="new" products={products} relatedOptions={buildRelatedOptions(products, offers)} />
+      <OfferForm mode="new" products={products} relatedOptions={buildRelatedOptions(products, offers, collections)} />
     </AdminShell>
   );
 }

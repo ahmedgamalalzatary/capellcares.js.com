@@ -17,6 +17,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const offers = useStore((s) => s.offers);
   const products = useStore((s) => s.products);
+  const collections = useStore((s) => s.collections);
   const loaded = useStore((s) => s.loaded);
   const error = useStore((s) => s.error);
   const offer = offers.find((o) => o.id === Number(id));
@@ -96,7 +97,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
         mode="edit"
         initial={relatedItems === null ? offer : { ...offer, relatedItems }}
         products={products}
-        relatedOptions={buildRelatedOptions(products, offers)}
+        relatedOptions={buildRelatedOptions(products, offers, collections)}
         relatedItemsAvailable={!relatedItemsError}
       />
     </AdminShell>

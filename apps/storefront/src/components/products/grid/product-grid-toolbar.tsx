@@ -1,31 +1,39 @@
 "use client";
 
+import type { Language } from "@capella/shared";
 import type { Sort } from "../../../types/product-grid.types";
+import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 
 interface ProductGridToolbarProps {
+  lang: Language;
   dict: any;
   filteredCount: number;
   hasActiveFilters: boolean;
   sort: Sort;
+  cols: Cols;
+  onColsChange: (cols: Cols) => void;
   onOpenFilters: () => void;
   onSortChange: (sort: Sort) => void;
 }
 
 export function ProductGridToolbar({
+  lang,
   dict,
   filteredCount,
   hasActiveFilters,
   sort,
+  cols,
+  onColsChange,
   onOpenFilters,
   onSortChange
 }: ProductGridToolbarProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-y-3 border-b border-(--hairline) pb-3.5">
       {/* Left: All Filters (bordered) + borderless Sort dropdown — Bath & Body Works layout. */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-3">
         <button
           onClick={onOpenFilters}
-          className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors ${
+          className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-2 text-sm font-medium transition-colors ${
             hasActiveFilters
               ? "border-ink bg-ink text-canvas"
               : "border-(--hairline-strong) bg-surface text-ink hover:border-ink"
@@ -56,7 +64,7 @@ export function ProductGridToolbar({
               value={sort}
               onChange={(e) => onSortChange(e.target.value as Sort)}
               aria-label={dict.filters.sortBy}
-              className="cursor-pointer appearance-none border-0 bg-transparent py-1 pe-5 ps-0 font-medium text-ink outline-none focus-visible:underline"
+              className="cursor-pointer appearance-none border-0 bg-transparent py-1 ps-0 font-medium text-ink outline-none focus-visible:underline"
             >
               <option value="default">{dict.filters.sortFeatured}</option>
               <option value="newest">{dict.filters.sortNewest}</option>
@@ -73,10 +81,10 @@ export function ProductGridToolbar({
         </div>
       </div>
 
-      {/* Right: muted item count */}
-      <span className="text-lg font-bold text-(--ink-3)">
-        {dict.common.results.replace("{n}", String(filteredCount))}
-      </span>
+      {/* Right: POV column toggle + muted item count */}
+      <div className="flex items-center gap-2">
+        <ColumnsToggle cols={cols} onChange={onColsChange} lang={lang} />
+      </div>
     </div>
   );
 }

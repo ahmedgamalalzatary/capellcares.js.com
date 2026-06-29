@@ -90,6 +90,19 @@ export const Icon = {
       <line x1="4" y1="18" x2="20" y2="18" />
     </svg>
   ),
+  ColumnsOne: ({ size = 16, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  ),
+  ColumnsTwo: ({ size = 16, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  ),
   Visa: ({ className, style }: IconProps) => (
     <svg viewBox="0 0 48 16" className={className} style={style} role="img" aria-label="Visa">
       <text

@@ -3,25 +3,20 @@
 import { useMemo, useState } from "react";
 import { pickLang, type Category, type Collection, type Language } from "@capella/shared";
 import { SectionCard } from "@/components/shop/section-card";
+import { MobileFilterDrawer } from "@/components/products/filters/mobile-filter-drawer";
+import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
+import type { CategoryTreeNode } from "@/types/product-grid.types";
 
-function buildCategoryOptions(categories: Category[], lang: Language) {
-  const active = categories.filter((category) => !category.deletedAt);
-  const childrenByParent = new Map<number | null, Category[]>();
-  for (const category of active) {
-    const siblings = childrenByParent.get(category.parentId) ?? [];
-    siblings.push(category);
-    childrenByParent.set(category.parentId, siblings);
+/** Walk up to the top-level ("big") ancestor of a category. */
+function findRootCategory(categories: Category[], categoryId: number): Category | undefined {
+  let current = categories.find((category) => category.id === categoryId);
+  const visited = new Set<number>();
+  while (current && current.parentId != null) {
+    if (visited.has(current.id)) break;
+    visited.add(current.id);
+    current = categories.find((category) => category.id === current?.parentId);
   }
-
-  const options: Array<{ id: number; label: string; depth: number }> = [];
-  const visit = (parentId: number | null, depth: number) => {
-    for (const category of childrenByParent.get(parentId) ?? []) {
-      options.push({ id: category.id, label: pickLang(category.name, lang), depth });
-      visit(category.id, depth + 1);
-    }
-  };
-  visit(null, 0);
-  return options;
+  return current;
 }
 
 function isInCategoryTree(categories: Category[], categoryId: number, selectedCategoryId: number) {
@@ -49,15 +44,49 @@ export function CollectionGrid({
   lang: Language;
   dict: any;
 }) {
-  const [categoryId, setCategoryId] = useState<number | "">("");
-  const categoryOptions = useMemo(() => buildCategoryOptions(categories, lang), [categories, lang]);
-  const categoryLabel = dict.collections?.categoryFilterLabel ?? "Collection category";
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [pillCategoryIds, setPillCategoryIds] = useState<number[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [cols, setCols] = useState<Cols>(1);
+
+  const activeCategories = useMemo(
+    () => categories.filter((category) => !category.deletedAt),
+    [categories]
+  );
+
+  // Only the big (top-level) categories that actually own at least one collection
+  // — leaf subcategories and empty big categories are never offered as filters.
+  const bigCategories = useMemo<Category[]>(() => {
+    const rootsWithCollections = new Map<number, Category>();
+    for (const collection of collections) {
+      const root = findRootCategory(activeCategories, collection.categoryId);
+      if (root) {
+        rootsWithCollections.set(root.id, root);
+      }
+    }
+    return [...rootsWithCollections.values()].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [activeCategories, collections]);
+
+  const categoryTree = useMemo<CategoryTreeNode[]>(
+    () => bigCategories.map((category) => ({ category, children: [] })),
+    [bigCategories]
+  );
+
+  const togglePillCategory = (id: number) => {
+    setPillCategoryIds((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
+    );
+  };
 
   const filtered = useMemo(() => {
+    const selectedIds = [...pillCategoryIds, ...(categoryId != null ? [categoryId] : [])];
+    if (selectedIds.length === 0) return collections;
     return collections.filter((collection) =>
-      categoryId === "" || isInCategoryTree(categories, collection.categoryId, categoryId)
+      selectedIds.some((selectedId) => isInCategoryTree(activeCategories, collection.categoryId, selectedId))
     );
-  }, [categories, categoryId, collections]);
+  }, [activeCategories, categoryId, pillCategoryIds, collections]);
+
+  const hasActiveFilters = categoryId != null || pillCategoryIds.length > 0;
 
   if (collections.length === 0) {
     return <p className="py-12 text-center text-(--ink-3)">{dict.collections.listEmpty}</p>;
@@ -65,31 +94,96 @@ export function CollectionGrid({
 
   return (
     <div className="grid gap-6 pb-16 sm:pb-24">
-      <div className="flex flex-wrap items-center justify-start gap-3 border-b border-(--hairline) pb-3.5">
-        <select
-          className="min-h-10 rounded-md border border-(--hairline-strong) bg-surface px-3 text-sm text-ink"
-          aria-label={categoryLabel}
-          value={categoryId}
-          onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : "")}
+      {bigCategories.length > 0 && (
+        <div className="pill-group">
+          {bigCategories.map((item) => {
+            const active = pillCategoryIds.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={active ? "filter-pill filter-pill--active" : "filter-pill"}
+                aria-pressed={active}
+                onClick={() => togglePillCategory(item.id)}
+              >
+                {pickLang(item.name, lang)}
+                {active && (
+                  <span className="filter-pill__x" aria-hidden="true">
+                    X
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
+        <button
+          onClick={() => setShowFilters(true)}
+          className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors ${
+            hasActiveFilters
+              ? "border-ink bg-ink text-canvas"
+              : "border-(--hairline-strong) bg-surface text-ink hover:border-ink"
+          }`}
         >
-          <option value="">{dict.nav?.allCategories ?? "All categories"}</option>
-          {categoryOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {`${"— ".repeat(option.depth)}${option.label}`}
-            </option>
-          ))}
-        </select>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 6h16M7 12h10M10 18h4" />
+          </svg>
+          {dict.common.filters}
+          {hasActiveFilters && <span className="inline-block size-1.5 rounded-full bg-canvas/80" />}
+        </button>
+
+        <div className="flex items-center gap-4">
+          <ColumnsToggle cols={cols} onChange={setCols} lang={lang} />
+          <span className="text-lg font-bold text-(--ink-3)">
+            {dict.common.results.replace("{n}", String(filtered.length))}
+          </span>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <p className="py-12 text-center text-(--ink-3)">{dict.collections.listEmpty}</p>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7">
+        <div className={`grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 ${cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
           {filtered.map((collection) => (
             <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
           ))}
         </div>
       )}
+
+      <MobileFilterDrawer
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        lang={lang}
+        dict={dict}
+        q=""
+        setQ={() => {}}
+        category={categoryId}
+        setCategory={setCategoryId}
+        priceRange={{ min: "", max: "" }}
+        setPriceRange={() => {}}
+        categoryTree={categoryTree}
+        categories={activeCategories}
+        openParents={{}}
+        toggleParent={() => {}}
+        showSearch={false}
+        showPrice={false}
+        onClear={() => {
+          setCategoryId(undefined);
+          setPillCategoryIds([]);
+        }}
+      />
     </div>
   );
 }

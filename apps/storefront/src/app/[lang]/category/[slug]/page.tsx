@@ -65,7 +65,9 @@ export default async function CategoryPage({
   const category = requireStorefrontValue(resolvedCategory);
   const path = getCategoryPath(categories, category.id);
   const categoryName = pickLang(category.name, lang);
-  const heading = dict.nav.viewAllCategory.replace("{name}", categoryName);
+  const heading = category.isLeaf
+    ? categoryName
+    : dict.nav.viewAllCategory.replace("{name}", categoryName);
   const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
   const subtreeCategoryIds = new Set<number>([category.id]);
   let changed = true;

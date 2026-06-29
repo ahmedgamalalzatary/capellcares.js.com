@@ -8,6 +8,7 @@ import { ProductGridEmptyState } from "./product-grid-empty-state";
 import { ProductGridToolbar } from "./product-grid-toolbar";
 import type { ProductGridProps } from "../../../types/product-grid.types";
 import { useProductGridFilters } from "../../../hooks/use-product-grid-filters";
+import type { Cols } from "@/components/ui/columns-toggle";
 
 /* ─── Main ProductGrid ─── */
 export function ProductGrid({
@@ -22,6 +23,7 @@ export function ProductGrid({
   onHeaderCategoryIdsChange
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
+  const [cols, setCols] = useState<Cols>(1);
 
   const categoryNameById = useMemo(
     () => new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const)),
@@ -75,10 +77,13 @@ export function ProductGrid({
       {/* ── Product area ── */}
       <div className="min-w-0">
         <ProductGridToolbar
+          lang={lang}
           dict={dict}
           filteredCount={filtered.length}
           hasActiveFilters={hasActiveFilters}
           sort={sort}
+          cols={cols}
+          onColsChange={setCols}
           onOpenFilters={() => setShowFilters(true)}
           onSortChange={setSort}
         />
@@ -92,7 +97,7 @@ export function ProductGrid({
             onClear={handleClear}
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4 lg:gap-7">
+          <div className={`grid gap-4 md:gap-6 lg:gap-7 md:grid-cols-2 lg:grid-cols-4 ${cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
             {filtered.map((product) => (
               <ProductCard
                 key={product.id}
