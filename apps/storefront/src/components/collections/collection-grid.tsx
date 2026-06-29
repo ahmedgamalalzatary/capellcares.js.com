@@ -155,7 +155,13 @@ export function CollectionGrid({
       {filtered.length === 0 ? (
         <p className="py-12 text-center text-(--ink-3)">{dict.collections.listEmpty}</p>
       ) : (
-        <div className={`grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7 ${cols === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        <div
+          className={`grid gap-5 sm:gap-6 lg:gap-7 ${
+            cols === 1
+              ? "grid-cols-1 sm:grid-cols-1 lg:grid-cols-1"
+              : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-2"
+          }`}
+        >
           {filtered.map((collection) => (
             <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
           ))}

@@ -108,7 +108,7 @@ describe("SectionCard", () => {
     const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 
     expect(screen.getByRole("heading", { name: "Rose Bundle" })).toBeInTheDocument();
-    expect(screen.getByText("★ Bundle")).toBeInTheDocument(); // badge
+    expect(screen.getByText("Bundle")).toBeInTheDocument(); // badge (★ is a separate decorative span)
 
     // Savings are shown as the struck-through original total (80) beside the price (50).
     const struckOriginal = container.querySelector(".line-through");

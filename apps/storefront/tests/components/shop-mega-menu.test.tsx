@@ -132,6 +132,28 @@ describe("ShopMegaMenu", () => {
     expect(screen.getByRole("link", { name: "All Skin Care →" })).toHaveAttribute("href", "/en/category/skin-care?categoryId=10");
   });
 
+  it("omits categoryId from the root category link when the active category id is missing", () => {
+    render(createElement(ShopMegaMenu, {
+      lang: "en",
+      dict,
+      menuEntries: [
+        {
+          type: "category",
+          key: "category-no-id",
+          slug: "skin-care",
+          label: "Skin Care",
+          sortOrder: 1,
+          children: []
+        } as HeaderMenuEntry
+      ],
+      isAr: false
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+
+    expect(screen.getByRole("link", { name: "All Skin Care →" })).toHaveAttribute("href", "/en/category/skin-care");
+  });
+
   it("adds categoryId to child category links so duplicate slugs stay on the right branch", () => {
     render(createElement(ShopMegaMenu, {
       lang: "en",

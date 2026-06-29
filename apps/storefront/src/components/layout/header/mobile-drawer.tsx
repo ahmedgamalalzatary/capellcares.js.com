@@ -122,7 +122,7 @@ export function HeaderMobileDrawer({
       [
         <CategoryCard
           key="all"
-          href={buildCategoryHref(lang, { id: group.id ?? 0, slug: group.slug })}
+          href={buildCategoryHref(lang, { id: group.id, slug: group.slug })}
           title={dict.nav.viewAllCategory.replace("{name}", group.label)}
           isAr={isAr}
           onClick={onClose}
@@ -147,7 +147,7 @@ export function HeaderMobileDrawer({
       ]
     ) : (
       <CategoryCard
-        href={buildCategoryHref(lang, { id: group.id ?? 0, slug: group.slug })}
+        href={buildCategoryHref(lang, { id: group.id, slug: group.slug })}
         title={group.label}
         subtitle={dict.nav.viewAll}
         count={0}

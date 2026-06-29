@@ -31,14 +31,14 @@ function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
 }
 
 export function RelatedItems({ items, lang, title }: Props) {
-  const [cols, setCols] = useState<Cols>(1);
+  const [cols, setCols] = useState<Cols>(2);
 
   if (items.length === 0) {
     return null;
   }
 
   const isAr = lang === "ar";
-  const gridCols = cols === 1 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+  const gridCols = cols === 1 ? "grid-cols-1" : "grid-cols-2";
 
   return (
     <section className="grid gap-4 border-t border-(--hairline) py-4 sm:py-4" data-testid="related-items">

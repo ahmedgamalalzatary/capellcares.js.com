@@ -179,6 +179,42 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("link", { name: "كل العناية ←" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
   });
 
+  it("omits categoryId from slug-only root category links when the group id is missing", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "en",
+      dict: {
+        nav: {
+          search: "Search",
+          viewAll: "View all",
+          viewAllCategory: "All {name} →",
+          products: "Products",
+          offers: "Offers",
+          orders: "Orders",
+          followUs: "Follow us"
+        },
+        langSwitch: { ar: "Arabic", en: "English" }
+      },
+      menuEntries: [
+        {
+          type: "category",
+          key: "category-missing-id",
+          slug: "care",
+          label: "Care",
+          sortOrder: 1,
+          children: []
+        } as HeaderMenuEntry
+      ],
+      isAr: false,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    expect(screen.getByRole("link", { name: "Care" })).toHaveAttribute("href", "/en/category/care");
+  });
+
   it("sorts category tabs by sortOrder even when menuEntries arrive unsorted", () => {
     render(createElement(HeaderMobileDrawer, {
       lang: "ar",

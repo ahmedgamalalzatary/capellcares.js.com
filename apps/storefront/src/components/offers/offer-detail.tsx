@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, type Language, type Offer, type Product, type RelatedItemCard } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
+import { ItemTagPill } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -62,9 +63,10 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
     <>
       <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-16">
         <div className="relative overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
-          <div className="absolute inset-e-4 top-4 inline-flex items-center gap-1.5 bg-accent px-3 py-1.5 text-xs tracking-[0.16em] text-canvas uppercase sm:inset-e-5 sm:top-5">
-            ★ {dict.offers.badge}
-          </div>
+          <ItemTagPill
+            tag={{ kind: "offer", label: dict.offers.badge, star: true }}
+            className="absolute inset-e-4 top-4 sm:inset-e-5 sm:top-5"
+          />
           <OfferIllustration offer={offer} className="min-h-65 w-full sm:min-h-90 lg:min-h-105" />
         </div>
 

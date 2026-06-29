@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
+import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -29,7 +30,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const maxPrice = Math.max(...prices);
   const minBasePrice = Math.min(...basePrices);
   const maxBasePrice = Math.max(...basePrices);
-  const { isNew, isBestseller, isOffer, isOutOfStock } = getProductBadgeState(product);
+  const { isOutOfStock } = getProductBadgeState(product);
+  const leadTag = getProductTags(product, dict, { lead: true })[0];
   const isAr = lang === "ar";
   const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
   const primaryImage = imageMedia[0]?.url ?? product.imagePath;
@@ -44,15 +46,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
     const pool = inStock.length ? inStock : product.variants;
     return pool.reduce((lo, v) => (getEffectiveVariantPrice(v) < getEffectiveVariantPrice(lo) ? v : lo), pool[0]);
   }, [product.variants]);
-
-  // The floating label on the image — mirrors the lead badge of the card.
-  const tag = isNew
-    ? dict.badges.new
-    : isBestseller
-      ? dict.badges.bestseller
-      : isOffer
-        ? dict.badges.offer
-        : null;
 
   const href = `/${lang}/products/${product.slug}`;
 
@@ -90,21 +83,18 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         />
       </Link>
 
-        {tag ? (
-          <span
-            className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas"
-          >
-            {tag}
-          </span>
+        {leadTag ? (
+          <ItemTagPill tag={leadTag} className="absolute top-0 z-10 rounded-ss-lg" />
         ) : null}
         {isOutOfStock ? (
-          <span className="pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-ink px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
-            {dict.common.outOfStock}
-          </span>
+          <ItemTagPill
+            tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
+            className="absolute top-0 z-10 rounded-ss-lg"
+          />
         ) : null}
 
         <button
-          className={`absolute top-3 rounded-full inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
+          className={`absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
             has("product", product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
           }`}
           aria-label={dict.common.addToWishlist}
@@ -159,13 +149,13 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         <div className="mt-3 flex gap-2">
           <Link
             href={href}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
             {dict.common.view}
           </Link>
           <button
             onClick={onAdd}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
           >
             {added ? <Icon.Check size={16} /> : null}
             <span>{added ? dict.common.added : dict.common.addToCart}</span>

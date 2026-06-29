@@ -151,7 +151,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
                   {/* "All {category}" sits beside the sub-categories */}
                   <Link
-                    href={buildCategoryHref(lang, { id: active.id ?? 0, slug: active.slug })}
+                    href={buildCategoryHref(lang, { id: active.id, slug: active.slug })}
                     onClick={closeNow}
                     className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
                   >

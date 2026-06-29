@@ -160,17 +160,86 @@ describe("ProductDetail", () => {
 
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/primary.jpg");
 
-    fireEvent.pointerDown(screen.getByTestId("product-media-main"), { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
-    fireEvent.pointerUp(screen.getByTestId("product-media-main"), { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    const mediaMain = screen.getByTestId("product-media-main");
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    Object.assign(mediaMain, {
+      setPointerCapture,
+      releasePointerCapture,
+      hasPointerCapture: vi.fn((pointerId: number) => pointerId === 1)
+    });
+
+    fireEvent.pointerDown(mediaMain, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    fireEvent.pointerUp(document, { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    expect(setPointerCapture).toHaveBeenCalledWith(1);
+    expect(releasePointerCapture).toHaveBeenCalledWith(1);
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
 
-    fireEvent.pointerDown(screen.getByTestId("product-media-main"), { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
-    fireEvent.pointerUp(screen.getByTestId("product-media-main"), { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    fireEvent.pointerDown(mediaMain, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
+    fireEvent.pointerUp(document, { clientX: 120, clientY: 110, pointerId: 1, pointerType: "mouse", button: 0, isPrimary: true });
     expect(document.querySelector("video[controls]")).toHaveAttribute("src", "/uploads/demo.mp4");
 
     fireEvent.pointerDown(screen.getByTestId("product-media-thumbs"), { clientX: 120, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
     fireEvent.pointerUp(screen.getByTestId("product-media-thumbs"), { clientX: 260, clientY: 105, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
+  });
+
+  it("localizes media dot labels from the product dictionary", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size",
+        mediaDotLabel: "انتقل إلى الوسائط {index}"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [
+          { type: "image" as const, url: "/uploads/primary.jpg" },
+          { type: "image" as const, url: "/uploads/secondary.jpg" }
+        ],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "ar",
+      dict
+    }));
+
+    expect(screen.getByRole("button", { name: "انتقل إلى الوسائط 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "انتقل إلى الوسائط 2" })).toBeInTheDocument();
   });
 
   it("shows pagination dots and switches media on click when there are 2+ media", () => {

@@ -22,9 +22,14 @@ export default async function NewProductsPage({ params }: { params: Promise<{ la
   let products: Awaited<ReturnType<typeof fetchProducts>> = [];
   let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
   try {
-    [products, categories] = await Promise.all([fetchProducts({ lang }), fetchCategories({ lang })]);
+    products = await fetchProducts({ lang });
   } catch (error) {
-    console.error("Failed to load new products", error);
+    console.error("Failed to load new products list", error);
+  }
+  try {
+    categories = await fetchCategories({ lang });
+  } catch (error) {
+    console.error("Failed to load new products categories", error);
   }
   const newProducts = products.filter((p) => p.status === "active" && !p.deletedAt && p.isNew);
 

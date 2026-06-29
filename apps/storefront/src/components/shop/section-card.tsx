@@ -6,6 +6,7 @@ import { pickLang, formatPrice, type Language, type Offer, type Collection, type
 import { SOCIAL_LINKS } from "@/constants/socials";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
+import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -72,7 +73,7 @@ export function SectionCard(props: SectionCardProps) {
   let href: string | null = null;
   let title = "";
   let description = "";
-  let badge = "";
+  let badge: ItemTag | null = null;
   let image: React.ReactNode = null;
   let price: number | null = null;
   let originalTotal: number | null = null;
@@ -88,7 +89,7 @@ export function SectionCard(props: SectionCardProps) {
     href = `/${lang}/offers/${offer.slug}`;
     title = pickLang(offer.name, lang);
     description = pickLang(offer.description, lang);
-    badge = `★ ${dict.offers.badge}`;
+    badge = { kind: "offer", label: dict.offers.badge, star: true };
     image = <OfferIllustration offer={offer} className="absolute inset-0 h-full w-full object-cover" />;
     price = offer.price;
     originalTotal = offer.originalTotal;
@@ -118,7 +119,7 @@ export function SectionCard(props: SectionCardProps) {
     href = `/${lang}/collections/${collection.slug}`;
     title = pickLang(collection.name, lang);
     description = pickLang(collection.description, lang);
-    badge = `★ ${dict.collections.badge}`;
+    badge = { kind: "collection", label: dict.collections.badge, star: true };
     image = <CollectionIllustration collection={collection} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
     price = collection.price;
     originalTotal = collection.originalTotal;
@@ -282,13 +283,11 @@ export function SectionCard(props: SectionCardProps) {
         )}
 
         {badge ? (
-          <span className="pointer-events-none absolute top-0 start-0 z-10 inline-flex items-center gap-1.5 rounded-ss-lg bg-accent px-3 py-1.5 text-xs uppercase tracking-[0.16em] text-canvas">
-            {badge}
-          </span>
+          <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
         ) : null}
         {onWish ? (
           <button
-            className={`absolute top-3 rounded-full inset-e-3 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
+            className={`absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
               isWishlisted ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
             }`}
             aria-label={dict.common.addToWishlist}

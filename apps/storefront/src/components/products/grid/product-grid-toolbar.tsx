@@ -64,7 +64,7 @@ export function ProductGridToolbar({
               value={sort}
               onChange={(e) => onSortChange(e.target.value as Sort)}
               aria-label={dict.filters.sortBy}
-              className="cursor-pointer appearance-none border-0 bg-transparent py-1 ps-0 font-medium text-ink outline-none focus-visible:underline"
+              className="cursor-pointer appearance-none border-0 bg-transparent py-1 pe-4 ps-0 font-medium text-ink outline-none focus-visible:underline"
             >
               <option value="default">{dict.filters.sortFeatured}</option>
               <option value="newest">{dict.filters.sortNewest}</option>

@@ -84,6 +84,7 @@ export const en = {
     ingredients: "Ingredients",
     howToUse: "How to use",
     warnings: "Warnings",
+    mediaDotLabel: "go to media {index}",
     relatedOffers: "Part of these offers",
     related: "You may also like",
     sku: "SKU",

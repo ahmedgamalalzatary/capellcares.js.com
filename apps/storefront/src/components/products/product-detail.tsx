@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
+import { ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -27,7 +27,15 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const cart = useCart();
   const wishlist = useWishlist();
   const auth = useAuth();
-  const { isNew, isBestseller } = getProductBadgeState(product);
+  const badgeTags: ItemTag[] = [
+    ...getProductTags(product, dict),
+    ...offers.map((offer): ItemTag => ({
+      kind: "offer",
+      label: pickLang(offer.name, lang),
+      href: `/${lang}/offers/${offer.slug}`,
+      star: true,
+    })),
+  ];
 
   const firstInStockVariant = product.variants.find((variant) => variant.stock > 0);
   const [variantId, setVariantId] = useState<number | null>(firstInStockVariant?.id ?? product.variants[0]?.id ?? null);
@@ -79,6 +87,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     { key: "howToUse", label: dict.product.howToUse, content: pickLang(product.howToUse, lang) },
     { key: "warnings", label: dict.product.warnings, content: pickLang(product.warnings, lang) }
   ];
+  const mediaDotLabelTemplate = dict.product?.mediaDotLabel ?? (lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}");
 
   const clearMediaPointer = (pointerId: number) => {
     dragStartRef.current = null;
@@ -163,7 +172,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                   key={`dot-${item.type}-${item.url}-${index}`}
                   type="button"
                   onClick={() => setActiveMediaIndex(index)}
-                  aria-label={`go to media ${index + 1}`}
+                  aria-label={mediaDotLabelTemplate.replace("{index}", String(index + 1))}
                   aria-current={activeMediaIndex === index}
                   className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
                     activeMediaIndex === index ? "bg-accent" : "bg-transparent"
@@ -213,17 +222,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                 {categoryName}
               </p>
             ) : null}
-            {(isNew || isBestseller || offers.length > 0) && (
-              <div className="flex flex-wrap gap-2">
-                {isNew && <span className="badge badge--new">{dict.badges.new}</span>}
-                {isBestseller && <span className="badge badge--gold">{dict.badges.bestseller}</span>}
-                {offers.map((offer) => (
-                  <Link key={offer.id} href={`/${lang}/offers/${offer.slug}`} className="badge badge--offer">
-                    ★ {pickLang(offer.name, lang)}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <ItemTags tags={badgeTags} variant="badge" />
           </div>
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
             <span className={lang === "ar"

@@ -84,6 +84,7 @@ export const ar = {
     ingredients: "المكونات",
     howToUse: "طريقة الاستخدام",
     warnings: "تحذيرات",
+    mediaDotLabel: "انتقل إلى الوسائط {index}",
     relatedOffers: "ضمن هذه العروض",
     related: "قد يعجبك أيضًا",
     sku: "كود المنتج",
