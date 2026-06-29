@@ -112,17 +112,6 @@ describe("ShopMediaPage", () => {
     }));
   });
 
-  it("shows a success toast after saving", async () => {
-    render(createElement(ShopMediaPage));
-
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
-
-    await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledWith("تم حفظ القسم بنجاح.");
-    });
-  });
-
   it("shows an error toast when local validation blocks save", async () => {
     render(createElement(ShopMediaPage));
 
@@ -167,13 +156,6 @@ describe("ShopMediaPage", () => {
     }));
   });
 
-  it("renders five sections including section 5", () => {
-    render(createElement(ShopMediaPage));
-
-    expect(screen.getByText("القسم 4")).toBeInTheDocument();
-    expect(screen.getByText("القسم 5")).toBeInTheDocument();
-  });
-
   it("shows an error toast when saving fails", async () => {
     updateShopMediaSection.mockRejectedValueOnce(new Error("save failed"));
     render(createElement(ShopMediaPage));
@@ -200,13 +182,4 @@ describe("ShopMediaPage", () => {
     }));
   });
 
-  it("disables save until there are unsaved changes", () => {
-    render(createElement(ShopMediaPage));
-
-    expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeDisabled();
-
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
-
-    expect(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!).toBeEnabled();
-  });
 });

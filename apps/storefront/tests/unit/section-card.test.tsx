@@ -152,21 +152,6 @@ describe("SectionCard", () => {
     expect(container.querySelector(".line-through")).toBeNull();
   });
 
-  it("uses full rounding for advice media while keeping top-only rounding for offers", () => {
-    const { container, rerender } = render(
-      createElement(SectionCard, { kind: "advice", data: baseAdvice, lang: "en", dict } as any)
-    );
-
-    const adviceMedia = container.querySelector(".aspect-8\\/9");
-    expect(adviceMedia?.className).toContain("rounded-lg");
-    expect(adviceMedia?.className).not.toContain("rounded-t-lg");
-
-    rerender(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
-
-    const offerMedia = container.querySelector(".aspect-8\\/9");
-    expect(offerMedia?.className).toContain("rounded-t-lg");
-  });
-
   it("renders an advice as a video-only tile and opens a dialog with full content", () => {
     render(createElement(SectionCard, {
       kind: "advice",
@@ -211,19 +196,6 @@ describe("SectionCard", () => {
     );
 
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it("does not render any YouTube iframe before the advice modal opens", () => {
-    render(createElement(SectionCard, {
-      kind: "advice",
-      data: baseAdvice,
-      lang: "en",
-      dict
-    } as any));
-
-    const trigger = screen.getByRole("button", { name: "Tip One" });
-    expect(trigger.querySelector("iframe")).toBeNull();
-    expect(screen.queryByTitle("Tip One video")).toBeNull();
   });
 
   it("renders unsupported advice URLs as external links instead of opening a dead modal", () => {

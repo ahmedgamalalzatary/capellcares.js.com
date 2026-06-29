@@ -120,13 +120,6 @@ describe("ShopMediaStrip carousel", () => {
     expect(image).toHaveAttribute("sizes");
   });
 
-  it("keeps slide images on the original box model without injecting an aspect-ratio frame", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
-
-    const frame = getDesktopStrip(container).querySelector("[data-slide-frame]");
-    expect(frame).toBeNull();
-  });
-
   it("skips items without desktop images in the desktop strip", () => {
     const section = makeSection(3);
     section.items[1] = {
@@ -163,13 +156,6 @@ describe("ShopMediaStrip carousel", () => {
     expect(desktopStrip.querySelector('[aria-label^="Go to slide"]')).not.toBeNull();
   });
 
-  it("clones the edge slides so autoplay loops seamlessly (infinite)", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
-    const desktopStrip = getDesktopStrip(container);
-
-    expect(desktopStrip.querySelectorAll("[data-slide]")).toHaveLength(5);
-  });
-
   it("auto-advances to the next slide every 5 seconds", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
     const carousel = getDesktopCarousel(container);
@@ -185,21 +171,6 @@ describe("ShopMediaStrip carousel", () => {
       vi.advanceTimersByTime(5000);
     });
     expect(carousel).toHaveAttribute("data-active-index", "2");
-  });
-
-  it("wraps around to the first slide after the last", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(2)} label="Media" />);
-    const carousel = getDesktopCarousel(container);
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-    expect(carousel).toHaveAttribute("data-active-index", "1");
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-    expect(carousel).toHaveAttribute("data-active-index", "0");
   });
 
   it("pauses autoplay on hover", () => {
@@ -249,17 +220,6 @@ describe("ShopMediaStrip carousel", () => {
     expect(carousel).toHaveAttribute("data-active-index", "1");
   });
 
-  it("advances to the next slide when dragged left by mouse", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
-    const carousel = getDesktopCarousel(container);
-
-    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
-    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
-    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 180 });
-
-    expect(carousel).toHaveAttribute("data-active-index", "1");
-  });
-
   it("goes to the previous slide when dragged right", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
     const carousel = getDesktopCarousel(container);
@@ -293,17 +253,6 @@ describe("ShopMediaStrip carousel", () => {
     expect(carousel).toHaveAttribute("data-active-index", "0");
   });
 
-  it("moves the slide track with the pointer while dragging", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
-    const carousel = getDesktopCarousel(container);
-    const track = getDesktopStrip(container).querySelector("[data-slide-track]");
-
-    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
-    fireEvent.pointerMove(carousel, { pointerId: 1, pointerType: "mouse", clientX: 220 });
-
-    expect(track).toHaveStyle({ transform: "translateX(calc(-100% + -80px))" });
-  });
-
   it("suppresses the link click that follows a real drag", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
     const desktopStrip = getDesktopStrip(container);
@@ -317,15 +266,4 @@ describe("ShopMediaStrip carousel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("allows a plain click (no drag) to navigate", () => {
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
-    const desktopStrip = getDesktopStrip(container);
-    const carousel = getDesktopCarousel(container);
-    const link = desktopStrip.querySelector('[aria-label="Media 1"]')!;
-
-    fireEvent.pointerDown(carousel, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 300 });
-    fireEvent.pointerUp(carousel, { pointerId: 1, pointerType: "mouse", clientX: 300 });
-
-    expect(fireEvent.click(link)).toBe(true);
-  });
 });

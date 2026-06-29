@@ -7,8 +7,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
-    maxWorkers: 1,
-    fileParallelism: false
+    maxWorkers: "75%",
+    fileParallelism: true
   },
   resolve: {
     alias: {

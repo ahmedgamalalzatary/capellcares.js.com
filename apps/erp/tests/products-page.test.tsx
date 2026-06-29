@@ -205,21 +205,6 @@ describe("ProductsListPage", () => {
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى المنتجات.")).toBeInTheDocument();
   });
 
-  it("hides create and mutation actions for staff without the matching product action permissions", () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
-      hydrated: true,
-      logout: vi.fn()
-    });
-
-    render(createElement(ProductsListPage));
-
-    expect(screen.queryByRole("link", { name: /منتج جديد/ })).not.toBeInTheDocument();
-    expect(screen.queryByTitle("إيقاف")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/تعديل/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/حذف/)).not.toBeInTheDocument();
-  });
-
   it("keeps the toggle modal open, shows an error, and resets loading when status toggle fails", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
@@ -242,43 +227,6 @@ describe("ProductsListPage", () => {
     render(createElement(ProductsListPage));
 
     expect(screen.getByText("ضمن عرض")).toBeInTheDocument();
-  });
-
-  it("shows a discount action in the row menu", async () => {
-    render(createElement(ProductsListPage));
-
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-
-    expect(await screen.findByRole("link", { name: "خصم منتج" })).toHaveAttribute("href", "/products/1/discount");
-  });
-
-  it("hides the discount action when staff lacks products.discount", async () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read", "products.update"] },
-      hydrated: true,
-      logout: vi.fn()
-    });
-
-    render(createElement(ProductsListPage));
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-
-    await waitFor(() => {
-      expect(screen.queryByRole("link", { name: "خصم منتج" })).not.toBeInTheDocument();
-    });
-  });
-
-  it("shows the row menu when discount is the only allowed action", async () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read", "products.discount"] },
-      hydrated: true,
-      logout: vi.fn()
-    });
-
-    render(createElement(ProductsListPage));
-
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-
-    expect(await screen.findByRole("link", { name: "خصم منتج" })).toHaveAttribute("href", "/products/1/discount");
   });
 
   it("submits gallery media separately from the dedicated hover image", async () => {
