@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { CategoryPageContent } from "@/components/products/category-page-content";
+import { buildCategoryHref } from "@/lib/category-links";
 import {
   fetchCategories,
   fetchProducts,
@@ -87,7 +88,7 @@ export default async function CategoryPage({
           { name: dict.nav.products, url: `/${lang}/products` },
           ...path.map((c, i) => ({
             name: pickLang(c.name, lang),
-            url: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}?categoryId=${c.id}`
+            url: i === path.length - 1 ? undefined : buildCategoryHref(lang, c)
           }))
         ])
       ]} />
@@ -97,7 +98,7 @@ export default async function CategoryPage({
           { label: dict.nav.products, href: `/${lang}/products` },
           ...path.map((c, i) => ({
             label: pickLang(c.name, lang),
-            href: i === path.length - 1 ? undefined : `/${lang}/category/${c.slug}?categoryId=${c.id}`
+            href: i === path.length - 1 ? undefined : buildCategoryHref(lang, c)
           }))
         ]}
       />

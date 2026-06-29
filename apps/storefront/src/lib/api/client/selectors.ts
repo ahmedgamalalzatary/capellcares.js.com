@@ -5,7 +5,8 @@ export function getCategoryById(categories: Category[], id: number): Category | 
 }
 
 export function getCategoryBySlug(categories: Category[], slug: string): Category | undefined {
-  return categories.find((category) => category.slug === slug && !category.deletedAt);
+  const matches = categories.filter((category) => category.slug === slug && !category.deletedAt);
+  return matches.length === 1 ? matches[0] : undefined;
 }
 
 export function getCategoryPath(categories: Category[], id: number): Category[] {

@@ -4,7 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
 import { db } from "@capella/database/src/db";
-import { entityOrderings, products } from "@capella/database/drizzle/schema";
+import { categories, entityOrderings, products } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
@@ -245,5 +245,42 @@ test("storefront category product list also accepts categoryId for unambiguous f
     assert.equal(response.status, 200);
     assert.ok(Array.isArray(response.json.items));
     assert.ok(response.json.items.length > 0);
+  });
+});
+
+test("storefront duplicate leaf slugs require categoryId instead of silently picking the first match", async () => {
+  const [menRoot] = await db.insert(categories).values({
+    slug: `men-s-${Date.now()}`,
+    arName: "رجالي",
+    enName: "Men's",
+    isLeaf: false
+  }).$returningId();
+
+  const [menBodyLotion] = await db.insert(categories).values({
+    parentId: menRoot.id,
+    slug: "body-lotion",
+    arName: "لوشن الجسم",
+    enName: "Body Lotion",
+    isLeaf: true
+  }).$returningId();
+
+  const expSlug = `exp-${Date.now()}`;
+  await insertExtraProduct({
+    categoryId: menBodyLotion.id,
+    sku: `EXP-${Date.now()}`,
+    slug: expSlug
+  });
+
+  await withTestServer(app, async (request) => {
+    const ambiguousResponse = await request("/api/v1/products?category=body-lotion");
+    assert.equal(ambiguousResponse.status, 200);
+    assert.deepEqual(ambiguousResponse.json.items, []);
+
+    const scopedResponse = await request(`/api/v1/products?category=body-lotion&categoryId=${menBodyLotion.id}`);
+    assert.equal(scopedResponse.status, 200);
+    assert.deepEqual(
+      scopedResponse.json.items.map((item: { slug: string }) => item.slug),
+      [expSlug]
+    );
   });
 });

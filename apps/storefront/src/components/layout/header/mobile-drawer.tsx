@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
 import { compareHeaderCategoryEntries } from "@/lib/header-menu";
+import { buildCategoryHref } from "@/lib/category-links";
 import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
@@ -121,7 +122,7 @@ export function HeaderMobileDrawer({
       [
         <CategoryCard
           key="all"
-          href={`/${lang}/category/${group.slug}`}
+          href={buildCategoryHref(lang, { id: group.id ?? 0, slug: group.slug })}
           title={dict.nav.viewAllCategory.replace("{name}", group.label)}
           isAr={isAr}
           onClick={onClose}
@@ -129,7 +130,7 @@ export function HeaderMobileDrawer({
         ...group.children.map((child) => (
         <CategoryCard
           key={child.id}
-          href={`/${lang}/category/${child.slug}`}
+          href={buildCategoryHref(lang, child)}
           title={child.label}
           imagePath={child.imagePath ?? null}
           subtitle={
@@ -146,7 +147,7 @@ export function HeaderMobileDrawer({
       ]
     ) : (
       <CategoryCard
-        href={`/${lang}/category/${group.slug}`}
+        href={buildCategoryHref(lang, { id: group.id ?? 0, slug: group.slug })}
         title={group.label}
         subtitle={dict.nav.viewAll}
         count={0}

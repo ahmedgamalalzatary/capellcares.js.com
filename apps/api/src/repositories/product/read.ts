@@ -57,6 +57,18 @@ function escapeLikeTerm(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
+function findUniqueCategoryBySlug(
+  rows: Array<{ id: number; parentId: number | null; slug: string }>,
+  slug: string | undefined
+) {
+  if (!slug) {
+    return undefined;
+  }
+
+  const matches = rows.filter((row) => row.slug === slug);
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
 export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string; categoryId?: string }) {
   const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
   let scopeCategoryId: number | null = null;
@@ -65,7 +77,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     const requestedCategoryId = Number(params.categoryId);
     const root = Number.isInteger(requestedCategoryId) && requestedCategoryId > 0
       ? allCategories.find((c) => c.id === requestedCategoryId)
-      : allCategories.find((c) => c.slug === params.category);
+      : findUniqueCategoryBySlug(allCategories, params.category);
     if (!root) return [];
     scopeCategoryId = root.id;
     const descendantIds = new Set<number>([root.id]);

@@ -47,7 +47,11 @@ vi.mock("@/lib/api/client", () => ({
     { id: 1, parentId: null, slug: "care", name: { ar: "العناية", en: "Care" }, isLeaf: false },
     { id: 2, parentId: 1, slug: "serums", name: { ar: "سيروم", en: "Serums" }, isLeaf: true }
   ])),
-  fetchAdvices: vi.fn(async () => ([]))
+  fetchAdvices: vi.fn(async () => ([])),
+  getCategoryBySlug: vi.fn((categories, slug) => {
+    const matches = categories.filter((category: any) => category.slug === slug);
+    return matches.length === 1 ? matches[0] : undefined;
+  })
 }));
 
 import ProductsPage from "@/app/[lang]/products/page";

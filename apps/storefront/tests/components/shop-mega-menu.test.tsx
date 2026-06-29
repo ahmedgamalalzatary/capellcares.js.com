@@ -9,6 +9,7 @@ const menuEntries: HeaderMenuEntry[] = [
   {
     type: "category",
     key: "category-10",
+    id: 10,
     slug: "skin-care",
     label: "Skin Care",
     sortOrder: 2,
@@ -20,6 +21,7 @@ const menuEntries: HeaderMenuEntry[] = [
   {
     type: "category",
     key: "category-11",
+    id: 11,
     slug: "body-care",
     label: "Body Care",
     sortOrder: 1,
@@ -127,7 +129,22 @@ describe("ShopMegaMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
 
-    expect(screen.getByRole("link", { name: "All Skin Care →" })).toHaveAttribute("href", "/en/category/skin-care");
+    expect(screen.getByRole("link", { name: "All Skin Care →" })).toHaveAttribute("href", "/en/category/skin-care?categoryId=10");
+  });
+
+  it("adds categoryId to child category links so duplicate slugs stay on the right branch", () => {
+    render(createElement(ShopMegaMenu, {
+      lang: "en",
+      dict,
+      menuEntries,
+      isAr: false
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
+
+    expect(screen.getByRole("link", { name: "Cleansers" })).toHaveAttribute("href", "/en/category/cleansers?categoryId=102");
+    expect(screen.getByRole("link", { name: "Serums" })).toHaveAttribute("href", "/en/category/serums?categoryId=101");
   });
 
   it("sorts category tabs by sortOrder even when menuEntries arrive unsorted", () => {

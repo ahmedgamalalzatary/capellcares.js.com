@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { compareHeaderCategoryEntries, type HeaderMenuEntry } from "@/lib/header-menu";
+import { buildCategoryHref } from "@/lib/category-links";
 import type { NavNode } from "@/lib/nav";
 
 type ShopMegaMenuProps = {
@@ -150,7 +151,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
                   {/* "All {category}" sits beside the sub-categories */}
                   <Link
-                    href={`/${lang}/category/${active.slug}`}
+                    href={buildCategoryHref(lang, { id: active.id ?? 0, slug: active.slug })}
                     onClick={closeNow}
                     className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
                   >
@@ -211,7 +212,7 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
   return (
     <div className="min-w-0">
       <Link
-        href={`/${lang}/category/${node.slug}`}
+        href={buildCategoryHref(lang, node)}
         aria-label={node.label}
         onClick={onNavigate}
         className="flex items-center gap-3 text-base text-ink uppercase transition-colors hover:font-bold hover:underline"

@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+const notFound = vi.fn(() => {
+  throw new Error("notFound");
+});
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
@@ -28,8 +32,17 @@ vi.mock("@/lib/storefront-detail-page", () => ({
       nav: { products: "Products", viewAllCategory: "All {name}" }
     }
   }),
-  requireStorefrontValue: (value: any) => value,
+  requireStorefrontValue: (value: any) => {
+    if (value == null) {
+      notFound();
+    }
+    return value;
+  },
   StorefrontJsonLd: () => createElement("div", { "data-testid": "json-ld" })
+}));
+
+vi.mock("next/navigation", () => ({
+  notFound
 }));
 
 vi.mock("@/lib/seo", () => ({
@@ -47,7 +60,10 @@ vi.mock("@/lib/api/client", () => ({
   ])),
   fetchProducts: vi.fn(async () => ([])),
   getCategoryById: vi.fn((categories, id) => categories.find((category: any) => category.id === id)),
-  getCategoryBySlug: vi.fn((categories, slug) => categories.find((category: any) => category.slug === slug)),
+  getCategoryBySlug: vi.fn((categories, slug) => {
+    const matches = categories.filter((category: any) => category.slug === slug);
+    return matches.length === 1 ? matches[0] : undefined;
+  }),
   getCategoryPath: vi.fn((categories, id) => {
     const byId = new Map(categories.map((category: any) => [category.id, category]));
     const path = [];
@@ -77,15 +93,14 @@ describe("category page", () => {
     expect(screen.getByTestId("product-grid")).toHaveTextContent("locked:no");
   });
 
-  it("falls back to slug lookup when categoryId is invalid", async () => {
-    render(await CategoryPage({
+  it("rejects ambiguous slug lookup when categoryId is invalid", async () => {
+    await expect(CategoryPage({
       params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
       searchParams: Promise.resolve({ categoryId: "abc" })
-    }));
+    })).rejects.toThrow("notFound");
 
     expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "abc" });
-    expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
+    expect(notFound).toHaveBeenCalled();
   });
 
   it("shows the page heading as all plus the category name", async () => {

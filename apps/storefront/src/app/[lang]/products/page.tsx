@@ -3,7 +3,7 @@ import { getDict } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductGrid } from "@/components/products/grid/product-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { fetchAdvices, fetchCategories, fetchProducts } from "@/lib/api/client";
+import { fetchAdvices, fetchCategories, fetchProducts, getCategoryBySlug } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { buildProductsMetadata } from "@/lib/seo";
 
@@ -46,7 +46,7 @@ export default async function ProductsPage({
   const initialCategory = parsedCategoryId != null
     ? categories.find((category) => category.id === parsedCategoryId)?.id
     : sp.category
-      ? categories.find((category) => category.slug === sp.category)?.id
+      ? getCategoryBySlug(categories, sp.category)?.id
       : undefined;
 
   return (

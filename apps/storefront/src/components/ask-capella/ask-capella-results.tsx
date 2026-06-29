@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatPrice, getDict, pickLang, type Language } from "@capella/shared";
+import { buildCategoryHref } from "@/lib/category-links";
 import type { AskCapellaResults } from "../../types/ask-capella.types";
 
 export function AskCapellaReplyContent({
@@ -87,7 +88,7 @@ export function AskCapellaReplyContent({
             {results.categories.map((category) => (
               <Link
                 key={category.id}
-                href={`/${lang}/category/${category.slug}`}
+                href={buildCategoryHref(lang, category)}
                 onClick={onClose}
                 className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
               >

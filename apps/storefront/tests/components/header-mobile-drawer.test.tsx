@@ -27,6 +27,7 @@ const menuEntries: HeaderMenuEntry[] = [
   {
     type: "category",
     key: "category-1",
+    id: 1,
     slug: "care",
     label: "العناية",
     sortOrder: 2,
@@ -38,6 +39,7 @@ const menuEntries: HeaderMenuEntry[] = [
   {
     type: "category",
     key: "category-2",
+    id: 2,
     slug: "body",
     label: "الجسم",
     sortOrder: 1,
@@ -143,7 +145,7 @@ describe("HeaderMobileDrawer", () => {
     }));
 
     fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(screen.getByRole("link", { name: "سيروم" })).toHaveAttribute("href", "/ar/category/serums");
+    expect(screen.getByRole("link", { name: "سيروم" })).toHaveAttribute("href", "/ar/category/serums?categoryId=2");
     // The drawer renders only the second-level category cards; deeper grandchild
     // levels are no longer surfaced as their own links.
     expect(screen.queryByRole("link", { name: "فيتامين سي" })).toBeNull();
@@ -174,7 +176,7 @@ describe("HeaderMobileDrawer", () => {
     }));
 
     fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(screen.getByRole("link", { name: "كل العناية ←" })).toHaveAttribute("href", "/ar/category/care");
+    expect(screen.getByRole("link", { name: "كل العناية ←" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
   });
 
   it("sorts category tabs by sortOrder even when menuEntries arrive unsorted", () => {
