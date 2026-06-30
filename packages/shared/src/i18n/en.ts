@@ -203,7 +203,7 @@ export const en = {
     categoryFilterLabel: "Collection category",
     searchPlaceholder: "Search collections",
     itemsLabel: "Included items",
-    addCollectionToCart: "cart",
+    addCollectionToCart: "Add to cart",
     added: "Added ✓",
     unavailable: "One of the products in this collection is currently unavailable.",
     collectionEyebrow: "Capella collection"

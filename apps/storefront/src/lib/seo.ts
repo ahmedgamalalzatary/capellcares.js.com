@@ -1,5 +1,5 @@
 import type { Metadata, MetadataRoute } from "next";
-import { defaultLanguage, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
+import { defaultLanguage, getEffectiveVariantPrice, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
 import { BRAND_NAME, FALLBACK_SITE_URL } from "@/constants/brand";
 
 function getSiteUrl(): string {
@@ -309,7 +309,9 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url?: string }>) {
 
 export function productJsonLd(lang: Language, product: Product, category?: Category) {
   const productName = pickLang(product.name, lang);
-  const firstVariant = [...product.variants].sort((a, b) => a.price - b.price)[0];
+  const firstVariant = [...product.variants].sort(
+    (a, b) => getEffectiveVariantPrice(a) - getEffectiveVariantPrice(b)
+  )[0];
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -322,7 +324,7 @@ export function productJsonLd(lang: Language, product: Product, category?: Categ
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/products/${product.slug}`)),
       priceCurrency: "EGP",
-      price: firstVariant.price,
+      price: getEffectiveVariantPrice(firstVariant),
       availability: firstVariant.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     } : undefined
   };

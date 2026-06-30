@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, getDict, pickLang, type Language } from "@capella/shared";
+import { formatPrice, getDict, getEffectiveVariantPrice, pickLang, type Language } from "@capella/shared";
 import { buildCategoryHref } from "@/lib/category-links";
 import type { AskCapellaResults } from "../../types/ask-capella.types";
 
@@ -72,8 +72,8 @@ export function AskCapellaReplyContent({
               <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{pickLang(product.name, lang)}</p>
-                {product.variants?.[0]?.price != null && (
-                  <p className="text-xs text-(--ink-3)">{formatPrice(product.variants[0].price, lang)}</p>
+                {product.variants?.[0] != null && (
+                  <p className="text-xs text-(--ink-3)">{formatPrice(getEffectiveVariantPrice(product.variants[0]), lang)}</p>
                 )}
               </div>
             </Link>

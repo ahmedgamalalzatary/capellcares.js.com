@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { collectionItems, collections, offers, productVariants, products, relatedItems } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import { getEffectiveVariantPrice } from "@capella/shared";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
 /**
@@ -53,9 +54,15 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
           .select({
             productId: productVariants.productId,
             sellingPrice: productVariants.sellingPrice,
-            stockQty: productVariants.stockQty
+            stockQty: productVariants.stockQty,
+            discountType: variantDiscounts.type,
+            discountValue: variantDiscounts.value,
+            discountStartsAt: variantDiscounts.startsAt,
+            discountEndsAt: variantDiscounts.endsAt,
+            discountStatus: variantDiscounts.status
           })
           .from(productVariants)
+          .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
           .where(inArray(productVariants.productId, rows.map((row) => row.id)))
       : [];
 
@@ -67,7 +74,22 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
       }
       const inStockVariants = variants.filter((variant) => variant.stockQty > 0);
       const price = inStockVariants.length
-        ? Math.min(...inStockVariants.map((variant) => Number(variant.sellingPrice)))
+        ? Math.min(
+            ...inStockVariants.map((variant) =>
+              getEffectiveVariantPrice({
+                price: Number(variant.sellingPrice),
+                discount: variant.discountStatus
+                  ? {
+                      type: variant.discountType!,
+                      value: Number(variant.discountValue),
+                      startsAt: variant.discountStartsAt!.toISOString(),
+                      endsAt: variant.discountEndsAt!.toISOString(),
+                      status: variant.discountStatus
+                    }
+                  : null
+              })
+            )
+          )
         : 0;
       productCards.set(row.id, {
         type: "product",

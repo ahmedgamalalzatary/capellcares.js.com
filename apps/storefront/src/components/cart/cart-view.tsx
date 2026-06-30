@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
-import { pickLang, formatPrice, type Language, type Product, type Offer, type Collection } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type Offer, type Collection } from "@capella/shared";
 import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
@@ -62,7 +62,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             type: "product" as const,
             title: pickLang(p.name, lang),
             meta: `${dict.common.size}: ${v.size}`,
-            unitPrice: v.price,
+            unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,
             slug: `/${lang}/products/${p.slug}`,
             illustration: <ProductIllustration product={p} />

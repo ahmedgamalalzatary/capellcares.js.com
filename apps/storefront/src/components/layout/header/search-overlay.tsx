@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { fetchProducts } from "@/lib/api/client";
@@ -118,7 +118,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
               ) : (
                 <ul>
                   {results.map((p) => {
-                    const prices = p.variants.map((v) => v.price);
+                    const prices = p.variants.map((v) => getEffectiveVariantPrice(v));
                     const min = prices.length ? Math.min(...prices) : 0;
                     return (
                       <li key={p.id}>
