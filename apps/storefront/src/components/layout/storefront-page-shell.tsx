@@ -4,7 +4,7 @@ import { Breadcrumb, type Crumb } from "@/components/layout/breadcrumb";
 
 interface StorefrontPageShellProps {
   breadcrumbItems: Crumb[];
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   children: ReactNode;
 }
@@ -19,7 +19,7 @@ export function StorefrontPageShell({
     <main className="container">
       <Breadcrumb items={breadcrumbItems} />
       <header className="page-head">
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
       </header>
       {children}

@@ -41,8 +41,8 @@ export default async function BestsellersPage({ params }: { params: Promise<{ la
           { label: dict.nav.bestsellers }
         ]}
       />
-      <header className="page-head">
-        <h1>{dict.nav.bestsellers}</h1>
+      <header className="page-head uppercase">
+        <h1>{dict.shop.bestsellers}</h1>
       </header>
 
       <ProductGrid

@@ -118,7 +118,6 @@ export const en = {
     item: "Item",
     price: "Price",
     qty: "Qty",
-    eyebrow: "One step from checkout",
     emptyTagline: "Pick one calm, considered piece. Let it do the work.",
     summaryEyebrow: "Summary",
     summaryTitle: "Your order",
@@ -126,7 +125,6 @@ export const en = {
   },
   wishlist: {
     title: "Your wishlist",
-    eyebrow: "Saved for later",
     empty: "You haven't saved anything yet.",
     loginRequired: "Wishlist requires an account",
     loginRequiredDesc: "Create a free account or log in to save products to your wishlist.",
@@ -189,7 +187,7 @@ export const en = {
     badge: "Offer",
     save: "Save {amount}",
     includes: "Includes",
-    addBundleToCart: "Add bundle to cart",
+    addBundleToCart: "Add to cart",
     listEmpty: "No offers available right now.",
     bundleEyebrow: "Capella bundle",
     added: "Added ✓",
@@ -197,7 +195,7 @@ export const en = {
     related: "You may also like"
   },
   collections: {
-    title: "Sets",
+    title: "SETS",
     badge: "Collection",
     listEmpty: "No Sets available right now.",
     related: "You may also like",
@@ -205,7 +203,7 @@ export const en = {
     categoryFilterLabel: "Collection category",
     searchPlaceholder: "Search collections",
     itemsLabel: "Included items",
-    addCollectionToCart: "Add collection to cart",
+    addCollectionToCart: "cart",
     added: "Added ✓",
     unavailable: "One of the products in this collection is currently unavailable.",
     collectionEyebrow: "Capella collection"
@@ -253,7 +251,7 @@ export const en = {
     collectionsEyebrow: "Capella Sets",
     viewAllCollections: "View all →",
     newProducts: "New arrivals",
-    bestsellers: "Best Seller",
+    bestsellers: "Bestseller",
     featuredHeading: "Featured products",
     viewAllProducts: "View all →"
   },

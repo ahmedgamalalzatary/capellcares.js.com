@@ -101,8 +101,8 @@ export function ProductGrid({
             data-cols={cols}
             className={`group/cards grid gap-4 md:gap-6 lg:gap-7 ${
               cols === 1
-                ? "grid-cols-1 md:grid-cols-1 lg:grid-cols-1"
-                : "grid-cols-2 md:grid-cols-2 lg:grid-cols-2"
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
             }`}
           >
             {filtered.map((product) => (

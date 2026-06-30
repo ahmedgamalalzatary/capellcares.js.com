@@ -119,7 +119,7 @@ const {
         stock: 3,
         status: "active",
         visibility: "visible",
-        createdAt: "",
+        createdAt: "2024-01-01T00:00:00.000Z",
         updatedAt: ""
       },
       {
@@ -135,7 +135,7 @@ const {
         stock: 3,
         status: "active",
         visibility: "visible",
-        createdAt: "",
+        createdAt: "2024-02-01T00:00:00.000Z",
         updatedAt: ""
       },
       {
@@ -151,7 +151,7 @@ const {
         stock: 3,
         status: "active",
         visibility: "visible",
-        createdAt: "",
+        createdAt: "2024-03-01T00:00:00.000Z",
         updatedAt: ""
       }
     ])),
@@ -270,13 +270,27 @@ describe("collection storefront pages", () => {
     expect(screen.getByText("Collections")).toBeInTheDocument();
   });
 
-  it("uses the global filter drawer with only a category filter (no search, price, or sort)", async () => {
+  it("uses the global filter drawer with only a category filter and includes the shared sort control", async () => {
     render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
 
     expect(screen.getByRole("button", { name: /Filters/ })).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Sort by" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Sort by" })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Search")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Min")).not.toBeInTheDocument();
+  });
+
+  it("sorts collections with the shared sort options", async () => {
+    render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort by" }), {
+      target: { value: "price-asc" }
+    });
+
+    expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      "Hair Set",
+      "Body Lotion Set",
+      "Skin Care Set"
+    ]);
   });
 
   it("only lists big categories that contain collections, never leaf or empty ones", async () => {

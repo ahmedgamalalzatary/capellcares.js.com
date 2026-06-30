@@ -57,7 +57,7 @@ export default async function ProductsPage({
           { label: dict.nav.products }
         ]}
       />
-      <header className="page-head">
+      <header className="page-head uppercase">
         <h1>{dict.nav.allProducts}</h1>
       </header>
       <ProductGrid

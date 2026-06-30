@@ -43,7 +43,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
           { label: dict.collections.title }
         ]}
       />
-      <header className="page-head">
+      <header className="page-head uppercase">
         <h1>{dict.collections.title}</h1>
       </header>
 

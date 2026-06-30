@@ -66,14 +66,25 @@ const categories: Category[] = [
   { id: 3, parentId: 1, slug: "balms", name: { ar: "بلسم", en: "Balms" }, isLeaf: true }
 ];
 
-function HookProbe() {
+const categoryPageSubtreeCategories: Category[] = [
+  { id: 102, parentId: 101, slug: "oily-skin", name: { ar: "بشرة دهنية", en: "Oily Skin" }, isLeaf: true, sortOrder: 1 },
+  { id: 101, parentId: 99, slug: "skin-cream", name: { ar: "كريم البشرة", en: "Skin Cream" }, isLeaf: true, sortOrder: 2 },
+  { id: 103, parentId: 101, slug: "dry-skin", name: { ar: "بشرة جافة", en: "Dry Skin" }, isLeaf: true, sortOrder: 3 }
+];
+
+interface HookProbeProps {
+  categoryInput?: Category[];
+  initialCategory?: number;
+}
+
+function HookProbe({ categoryInput = categories, initialCategory = 1 }: HookProbeProps) {
   const [headerCategoryIds, setHeaderCategoryIds] = useState<number[]>([]);
   const grid = useProductGridFilters({
     products,
-    categories,
+    categories: categoryInput,
     lang: "en",
     initialSearch: "",
-    initialCategory: 1,
+    initialCategory,
     headerCategoryIds,
     onHeaderCategoryIdsChange: setHeaderCategoryIds
   });
@@ -92,6 +103,7 @@ function HookProbe() {
     createElement("button", { onClick: () => grid.handleClear() }, "clear"),
     createElement("div", null, `ids:${grid.filtered.map((product) => product.id).join(",")}`),
     createElement("div", null, `tree:${grid.categoryTree.map((item) => `${item.category.id}:${item.children.length}:${item.children[0]?.children.length ?? 0}`).join(",")}`),
+    createElement("div", null, `tree-order:${grid.categoryTree.map((item) => [item.category.id, ...item.children.map((child) => child.category.id)].join(">")).join("|")}`),
     createElement("div", null, `active:${grid.hasActiveFilters ? "yes" : "no"}`),
     createElement("div", null, `selected:${grid.category ?? "none"}`),
     createElement("div", null, `header:${grid.headerCategoryIds?.join(",") || "none"}`)
@@ -117,6 +129,13 @@ describe("useProductGridFilters", () => {
     expect(screen.getByText("ids:1,2")).toBeInTheDocument();
     expect(screen.getByText("tree:1:2:1")).toBeInTheDocument();
     expect(screen.getByText("selected:1")).toBeInTheDocument();
+  });
+
+  it("roots category-page subtrees at the current category and sorts descendants by category order", () => {
+    render(createElement(HookProbe, { categoryInput: categoryPageSubtreeCategories, initialCategory: 101 }));
+
+    expect(screen.getByText("tree:101:2:0")).toBeInTheDocument();
+    expect(screen.getByText("tree-order:101>102>103")).toBeInTheDocument();
   });
 
   it("updates search, sort, and price filters through the returned state actions", async () => {

@@ -8,7 +8,6 @@ export default async function CartPage({ params }: { params: Promise<{ lang: str
   return (
     <StorefrontPageShell
       breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.cart.title }]}
-      eyebrow={dict.cart.eyebrow}
       title={dict.cart.title}
     >
       <CartView lang={lang} dict={dict} />

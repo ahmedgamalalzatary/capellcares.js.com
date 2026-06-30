@@ -5,7 +5,7 @@ import { pickLang, type Category, type Collection, type Language } from "@capell
 import { SectionCard } from "@/components/shop/section-card";
 import { MobileFilterDrawer } from "@/components/products/filters/mobile-filter-drawer";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
-import type { CategoryTreeNode } from "@/types/product-grid.types";
+import type { CategoryTreeNode, Sort } from "@/types/product-grid.types";
 
 /** Walk up to the top-level ("big") ancestor of a category. */
 function findRootCategory(categories: Category[], categoryId: number): Category | undefined {
@@ -33,6 +33,12 @@ function isInCategoryTree(categories: Category[], categoryId: number, selectedCa
   return false;
 }
 
+function dateValue(value: string | Date | undefined) {
+  if (!value) return 0;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function CollectionGrid({
   collections,
   categories,
@@ -46,6 +52,7 @@ export function CollectionGrid({
 }) {
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const [pillCategoryIds, setPillCategoryIds] = useState<number[]>([]);
+  const [sort, setSort] = useState<Sort>("default");
   const [showFilters, setShowFilters] = useState(false);
   const [cols, setCols] = useState<Cols>(1);
 
@@ -80,11 +87,25 @@ export function CollectionGrid({
 
   const filtered = useMemo(() => {
     const selectedIds = [...pillCategoryIds, ...(categoryId != null ? [categoryId] : [])];
-    if (selectedIds.length === 0) return collections;
-    return collections.filter((collection) =>
-      selectedIds.some((selectedId) => isInCategoryTree(activeCategories, collection.categoryId, selectedId))
-    );
-  }, [activeCategories, categoryId, pillCategoryIds, collections]);
+    const next = selectedIds.length === 0
+      ? [...collections]
+      : collections.filter((collection) =>
+        selectedIds.some((selectedId) => isInCategoryTree(activeCategories, collection.categoryId, selectedId))
+      );
+
+    switch (sort) {
+      case "newest":
+        return next.sort((a, b) => dateValue(b.createdAt) - dateValue(a.createdAt));
+      case "price-asc":
+        return next.sort((a, b) => a.price - b.price);
+      case "price-desc":
+        return next.sort((a, b) => b.price - a.price);
+      case "name":
+        return next.sort((a, b) => pickLang(a.name, lang).localeCompare(pickLang(b.name, lang), lang));
+      default:
+        return next;
+    }
+  }, [activeCategories, categoryId, pillCategoryIds, collections, lang, sort]);
 
   const hasActiveFilters = categoryId != null || pillCategoryIds.length > 0;
 
@@ -118,37 +139,59 @@ export function CollectionGrid({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-(--hairline) pb-3.5">
-        <button
-          onClick={() => setShowFilters(true)}
-          className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors ${
-            hasActiveFilters
-              ? "border-ink bg-ink text-canvas"
-              : "border-(--hairline-strong) bg-surface text-ink hover:border-ink"
-          }`}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+      <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-3 border-b border-(--hairline) pb-3.5">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-3">
+          <button
+            onClick={() => setShowFilters(true)}
+            className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-colors ${
+              hasActiveFilters
+                ? "border-ink bg-ink text-canvas"
+                : "border-(--hairline-strong) bg-surface text-ink hover:border-ink"
+            }`}
           >
-            <path d="M4 6h16M7 12h10M10 18h4" />
-          </svg>
-          {dict.common.filters}
-          {hasActiveFilters && <span className="inline-block size-1.5 rounded-full bg-canvas/80" />}
-        </button>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            {dict.common.filters}
+            {hasActiveFilters && <span className="inline-block size-1.5 rounded-full bg-canvas/80" />}
+          </button>
+
+          <div className="relative inline-flex items-center rounded-md border border-(--hairline-strong) px-1 py-1 text-sm text-ink">
+            <span className="pointer-events-none text-(--ink-3)">{dict.filters.sortBy}:&nbsp;</span>
+            <div className="relative inline-flex items-center">
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as Sort)}
+                aria-label={dict.filters.sortBy}
+                className="cursor-pointer appearance-none border-0 bg-transparent py-1 pe-2 ps-0 font-medium text-ink outline-none focus-visible:underline"
+              >
+                <option value="default">{dict.filters.sortFeatured}</option>
+                <option value="newest">{dict.filters.sortNewest}</option>
+                <option value="price-asc">{dict.filters.sortPriceAsc}</option>
+                <option value="price-desc">{dict.filters.sortPriceDesc}</option>
+                <option value="name">{dict.filters.sortName}</option>
+              </select>
+              <span className="pointer-events-none absolute inset-e-0 text-(--ink-3)">
+                <svg width="11" height="11" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <path d="M2 3.5l3 3 3-3" />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
 
         <div className="flex items-center gap-4">
           <ColumnsToggle cols={cols} onChange={setCols} lang={lang} />
-          <span className="text-lg font-bold text-(--ink-3)">
-            {dict.common.results.replace("{n}", String(filtered.length))}
-          </span>
         </div>
       </div>
 
@@ -158,8 +201,8 @@ export function CollectionGrid({
         <div
           className={`grid gap-5 sm:gap-6 lg:gap-7 ${
             cols === 1
-              ? "grid-cols-1 sm:grid-cols-1 lg:grid-cols-1"
-              : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-2"
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
           }`}
         >
           {filtered.map((collection) => (

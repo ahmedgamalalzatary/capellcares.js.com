@@ -30,7 +30,7 @@ export function ProductGridToolbar({
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-y-3 border-b border-(--hairline) pb-3.5">
       {/* Left: All Filters (bordered) + borderless Sort dropdown — Bath & Body Works layout. */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-3">
         <button
           onClick={onOpenFilters}
           className={`inline-flex h-9.5 items-center gap-2 rounded-md border px-2 text-sm font-medium transition-colors ${

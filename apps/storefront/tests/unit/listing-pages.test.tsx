@@ -8,7 +8,8 @@ vi.mock("@capella/shared", async () => {
     ...actual,
     getDict: () => ({
       common: { breadcrumbHome: "Home" },
-      nav: { bestsellers: "Bestsellers", new: "New" }
+      nav: { bestsellers: "Bestsellers", new: "New" },
+      shop: { bestsellers: "Bestsellers", new: "New" }
     })
   };
 });

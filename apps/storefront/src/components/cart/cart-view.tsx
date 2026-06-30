@@ -143,7 +143,60 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   return (
     <div className="grid gap-6 pb-16 sm:gap-9 sm:pb-20 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="-mx-4 overflow-x-auto sm:mx-0">
+      <div>
+        {/* Mobile: stacked cards */}
+        <ul className="flex flex-col gap-3 sm:hidden">
+          {resolved.map((r) => (
+            <li
+              key={r.key}
+              className="rounded-lg border border-(--hairline) bg-surface p-3"
+            >
+              <div className="flex items-start gap-3">
+                <Link href={r.slug} className="shrink-0">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
+                    {r.illustration}
+                  </div>
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link href={r.slug} className="block min-w-0">
+                    <div className="truncate font-semibold">{r.title}</div>
+                    <div className="text-xs text-(--ink-2)">{r.meta}</div>
+                  </Link>
+                  <div className="mt-2 font-semibold">{formatPrice(r.unitPrice * r.qty, lang)}</div>
+                </div>
+                <button
+                  className="-mt-1 -me-1 shrink-0 rounded-(--radius) border-0 bg-transparent p-2 text-(--ink-3) transition-colors hover:bg-[color-mix(in_oklch,var(--error)_10%,transparent)] hover:text-(--error)"
+                  onClick={() => remove(r.key)}
+                  aria-label={dict.cart.remove}
+                >
+                  <Icon.Trash size={18} />
+                </button>
+              </div>
+              <div className="mt-3">
+                <div className="inline-grid grid-cols-[36px_44px_36px] items-center rounded-full border border-(--hairline) bg-surface">
+                  <button
+                    className="grid h-9 place-items-center rounded-full border-0 bg-transparent"
+                    onClick={() => setQty(r.key, r.qty - 1)}
+                    aria-label="−"
+                  >
+                    <Icon.Minus />
+                  </button>
+                  <span className="text-center text-sm font-semibold">{r.qty}</span>
+                  <button
+                    className="grid h-9 place-items-center rounded-full border-0 bg-transparent"
+                    onClick={() => setQty(r.key, r.qty + 1)}
+                    aria-label="+"
+                  >
+                    <Icon.Plus />
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* Tablet/desktop: table */}
+        <div className="hidden sm:block">
         <table className="table">
           <thead>
             <tr>
@@ -200,6 +253,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <aside className="self-start rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">

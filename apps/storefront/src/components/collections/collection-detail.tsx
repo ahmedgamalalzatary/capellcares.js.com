@@ -77,7 +77,6 @@ export function CollectionDetail({
         </div>
 
         <div className="grid gap-5 self-start sm:gap-6">
-          <span className="eyebrow text-accent!">{dict.collections.collectionEyebrow}</span>
           <h1 className={`m-0 leading-[1.05] ${isAr
             ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(family-name:--font-ar) tracking-normal text-ink"
             : "text-[clamp(30px,3.4vw,46px)] font-(--font-display) tracking-[-0.01em] text-ink"}`}>
@@ -128,8 +127,8 @@ export function CollectionDetail({
             <button className="btn btn--soft" onClick={onWish} aria-label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}>
               {wishlist.has("collection", collection.id) ? <Icon.HeartFill /> : <Icon.Heart />}
             </button>
-            <button className="btn btn--primary btn--lg btn--block" onClick={add} disabled={!inStock}>
-              <Icon.Cart size={18} /> {added ? dict.collections.added : dict.collections.addCollectionToCart}
+            <button className="btn btn--primary btn--lg btn--block capitalize" onClick={add} disabled={!inStock}>
+              {added ? dict.collections.added : dict.collections.addCollectionToCart}
             </button>
             <button className="btn btn--ghost btn--lg btn--block" onClick={buyNow} disabled={!inStock}>
               {dict.common.buyNow}

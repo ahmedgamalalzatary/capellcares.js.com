@@ -41,7 +41,7 @@ export default async function NewProductsPage({ params }: { params: Promise<{ la
           { label: dict.nav.new }
         ]}
       />
-      <header className="page-head">
+      <header className="page-head uppercase">
         <h1>{dict.nav.new}</h1>
       </header>
 

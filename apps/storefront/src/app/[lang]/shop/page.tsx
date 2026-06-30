@@ -6,7 +6,6 @@ import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
-import { BackToTop } from "@/components/shop/back-to-top";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -181,8 +180,6 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} scrollRow />
-
-      <BackToTop label={dict.common.backToTop} />
     </main>
   );
 }

@@ -104,7 +104,7 @@ export default async function CategoryPage({
           }))
         ]}
       />
-      <header className="page-head">
+      <header className="page-head uppercase">
         <h1>{heading}</h1>
       </header>
       <CategoryPageContent

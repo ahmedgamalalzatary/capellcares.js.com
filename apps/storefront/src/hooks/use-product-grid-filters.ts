@@ -79,7 +79,10 @@ export function useProductGridFilters({
 
   const categoryTree = useMemo<CategoryTreeNode[]>(() => {
     const active = categories.filter((item) => !item.deletedAt);
+    const activeIds = new Set(active.map((item) => item.id));
     const byParent = new Map<number | null, Category[]>();
+    const compareCategories = (a: Category, b: Category) =>
+      (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER) || a.id - b.id;
 
     for (const category of active) {
       const children = byParent.get(category.parentId) ?? [];
@@ -88,12 +91,18 @@ export function useProductGridFilters({
     }
 
     const buildNodes = (parentId: number | null): CategoryTreeNode[] =>
-      (byParent.get(parentId) ?? []).map((category) => ({
+      (byParent.get(parentId) ?? []).sort(compareCategories).map((category) => ({
         category,
         children: buildNodes(category.id)
       }));
 
-    return buildNodes(null);
+    return active
+      .filter((category) => category.parentId == null || !activeIds.has(category.parentId))
+      .sort(compareCategories)
+      .map((category) => ({
+        category,
+        children: buildNodes(category.id)
+      }));
   }, [categories]);
 
   const [openParents, setOpenParents] = useState<Record<number, boolean>>(() => {

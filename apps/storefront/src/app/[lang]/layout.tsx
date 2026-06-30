@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
+import { BackToTop } from "@/components/shop/back-to-top";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
@@ -65,6 +66,7 @@ export default async function LocaleLayout({
             </Suspense>
             <div>{children}</div>
             <Footer lang={lang} dict={dict} />
+            <BackToTop label={dict.common.backToTop} />
             <AskCapellaButton lang={lang} />
           </div>
         </CartProvider>
