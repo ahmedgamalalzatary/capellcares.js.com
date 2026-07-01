@@ -67,19 +67,21 @@ export function CollectionDetail({
 
   return (
     <>
-      <div className="grid gap-7 py-3 sm:gap-10 sm:py-6 lg:grid-cols-2 lg:gap-16">
-        <div className="relative overflow-hidden rounded-lg border border-(--hairline) bg-[radial-gradient(120%_120%_at_50%_0%,var(--surface),var(--warm-soft))] sm:rounded-xl">
-          <ItemTagPill
-            tag={{ kind: "collection", label: dict.collections.badge, star: true }}
-            className="absolute inset-e-4 top-4 sm:inset-e-5 sm:top-5"
-          />
-          <CollectionIllustration collection={collection} lang={lang} className="min-h-65 w-full sm:min-h-90 lg:min-h-105" />
+      <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
+        <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
+          <div className="relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start">
+            <ItemTagPill
+              tag={{ kind: "collection", label: dict.collections.badge, star: true }}
+              className="absolute inset-s-0 top-0 sm:inset-s-0 sm:top-0"
+            />
+            <CollectionIllustration collection={collection} lang={lang} className="h-full w-full object-contain rounded-lg" />
+          </div>
         </div>
 
-        <div className="grid gap-5 self-start sm:gap-6">
-          <h1 className={`m-0 leading-[1.05] ${isAr
-            ? "text-[clamp(28px,3.2vw,42px)] font-bold font-(family-name:--font-ar) tracking-normal text-ink"
-            : "text-[clamp(30px,3.4vw,46px)] font-(--font-display) tracking-[-0.01em] text-ink"}`}>
+        <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
+          <h1 className={isAr
+            ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
+            : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(collection.name, lang)}
           </h1>
           <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(collection.description, lang)}</p>
@@ -123,15 +125,15 @@ export function CollectionDetail({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-[auto_1fr_1fr]">
-            <button className="btn btn--soft" onClick={onWish} aria-label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}>
-              {wishlist.has("collection", collection.id) ? <Icon.HeartFill /> : <Icon.Heart />}
-            </button>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <button className="btn btn--primary btn--lg btn--block capitalize" onClick={add} disabled={!inStock}>
               {added ? dict.collections.added : dict.collections.addCollectionToCart}
             </button>
             <button className="btn btn--ghost btn--lg btn--block" onClick={buyNow} disabled={!inStock}>
               {dict.common.buyNow}
+            </button>
+            <button className="btn btn--soft" onClick={onWish} aria-label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}>
+              {wishlist.has("collection", collection.id) ? <Icon.HeartFill /> : <Icon.Heart />}
             </button>
           </div>
 

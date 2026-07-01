@@ -56,7 +56,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
   }
 
   return (
-    <div className="grid gap-6 pb-16 sm:gap-9 sm:pb-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+    <div className="grid gap-6 pb-8 sm:gap-9 sm:pb-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
       <CheckoutForm
         lang={lang}
         dict={dict}

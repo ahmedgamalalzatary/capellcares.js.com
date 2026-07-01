@@ -46,7 +46,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
       {offers.length === 0 ? (
         <p className="py-12 text-center text-(--ink-3)">{dict.offers.listEmpty}</p>
       ) : (
-        <div className="grid gap-5 pb-16 sm:grid-cols-2 sm:gap-6 sm:pb-24 lg:grid-cols-3 lg:gap-7">
+        <div className="grid gap-5 pb-8 sm:grid-cols-2 sm:gap-6 sm:pb-8 lg:grid-cols-3 lg:gap-7">
           {offers.map((offer) => (
             <SectionCard key={offer.id} kind="offer" data={offer} lang={lang} dict={dict} />
           ))}

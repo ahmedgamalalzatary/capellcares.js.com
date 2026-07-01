@@ -12,6 +12,7 @@ export interface ProductGridProps {
   >;
   initialSearch?: string;
   initialCategory?: number;
+  initialCols?: 1 | 2;
   lockCategory?: boolean;
   headerCategoryIds?: number[];
   onHeaderCategoryIdsChange?: (value: number[]) => void;

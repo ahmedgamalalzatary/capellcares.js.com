@@ -147,7 +147,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <div
-            className="relative grid  place-items-center overflow-hidden rounded-lg sm:rounded-xl"
+            className="relative grid place-items-center lg:place-items-start overflow-hidden rounded-md sm:rounded-md"
             data-testid="product-media-main"
             onPointerDown={onMediaPointerDown}
             onPointerUp={onMediaPointerUp}

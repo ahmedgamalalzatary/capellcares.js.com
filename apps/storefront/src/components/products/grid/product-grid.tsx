@@ -18,12 +18,13 @@ export function ProductGrid({
   dict,
   initialSearch = "",
   initialCategory,
+  initialCols = 1,
   lockCategory,
   headerCategoryIds,
   onHeaderCategoryIdsChange
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
-  const [cols, setCols] = useState<Cols>(1);
+  const [cols, setCols] = useState<Cols>(initialCols);
 
   const categoryNameById = useMemo(
     () => new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const)),

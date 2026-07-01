@@ -354,13 +354,13 @@ body {
 /* ============================================================
    Page heading
    ============================================================ */
-.page-head { display: grid; gap: 14px; padding: 48px 0 32px; }
+.page-head { display: grid; gap: 14px; padding: 42px 0 24px; }
 .page-head .eyebrow { color: var(--accent); opacity: 1; }
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(30px, 5.2vw, 64px);
+  font-size: clamp(20px, 5.2vw, 48px);
   letter-spacing: -0.018em;
   line-height: 1.02;
   color: var(--ink);
@@ -432,6 +432,32 @@ body {
 }
 .pill-group::-webkit-scrollbar { display: none; } /* WebKit */
 .pill-group > * { flex: 0 0 auto; } /* keep chips on one row, never shrink */
+
+/* Row wrapper that hosts the scrollable pill track between prev/next arrows. */
+.pill-group-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pill-group-wrap .pill-group { flex: 1 1 auto; min-width: 0; }
+
+/* Prev/next arrows — desktop only; mobile relies on touch/trackpad scroll. */
+.pill-nav {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 1rem; /* align with .pill-group's own bottom spacing */
+  transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+.pill-nav:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+@media (min-width: 768px) {
+  .pill-nav { display: inline-flex; }
+}
 
 .skel {
   background: linear-gradient(90deg, var(--warm-soft) 0%, oklch(0.94 0.05 80) 50%, var(--warm-soft) 100%);

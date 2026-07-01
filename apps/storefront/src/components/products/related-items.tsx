@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatPrice, getDict, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
+import { formatPrice, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -19,17 +19,6 @@ function hrefFor(item: RelatedItemCard, lang: Language): string {
   return `/${lang}/${segment}/${item.slug}`;
 }
 
-function itemTypeLabel(item: RelatedItemCard, lang: Language): string {
-  const dict = getDict(lang);
-  if (item.type === "offer") {
-    return dict.itemType.offer;
-  }
-  if (item.type === "collection") {
-    return dict.itemType.collection;
-  }
-  return dict.itemType.product;
-}
-
 export function RelatedItems({ items, lang, title }: Props) {
   const [cols, setCols] = useState<Cols>(2);
 
@@ -38,7 +27,11 @@ export function RelatedItems({ items, lang, title }: Props) {
   }
 
   const isAr = lang === "ar";
-  const gridCols = cols === 1 ? "grid-cols-1" : "grid-cols-2";
+  // Mirror the category page grid: cols toggle sets the mobile base, then the
+  // layout steps up on md/lg the same way (1→3 and 2→4 on desktop).
+  const gridCols = cols === 1
+    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
 
   return (
     <section className="grid gap-4 border-t border-(--hairline) py-4 sm:py-4" data-testid="related-items">
@@ -53,7 +46,7 @@ export function RelatedItems({ items, lang, title }: Props) {
 
         <ColumnsToggle cols={cols} onChange={setCols} lang={lang} />
       </div>
-      <div className={`grid gap-3 sm:gap-4 ${gridCols}`}>
+      <div className={`grid gap-4 md:gap-6 lg:gap-7 ${gridCols}`}>
         {items.map((item) => (
           <div className="related-item" data-testid="related-item" key={`${item.type}-${item.id}`}>
             <Link

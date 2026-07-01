@@ -16,12 +16,14 @@ export interface ItemTag {
 type Variant = "float" | "badge";
 
 // Floating accent pill — sits on top of an illustration (cards, detail images).
-// Default sizing matches the roomy 1-col card. When the pill sits inside a grid
-// flagged `data-cols="2"` (the dense POV layout) it shrinks via group-data so the
-// tag stays proportional to the smaller card.
+// Default is the roomy size. It only shrinks in the single dense case: a mobile
+// view (below `md`) inside a grid flagged `data-cols="2"`, where cards are narrow
+// enough that the full-size tag would overflow. Every other case (desktop at any
+// column count, and cols=1 on mobile) keeps the roomy size.
 const FLOAT_BASE =
   "inline-flex items-center text-xs uppercase text-canvas px-3 tracking-[0.16em] py-1.5 " +
-  "group-data-[cols=2]/cards:px-2 group-data-[cols=2]/cards:py-1 group-data-[cols=2]/cards:text-[10px] group-data-[cols=2]/cards:tracking-[0.06em]";
+  "max-md:group-data-[cols=2]/cards:px-2 max-md:group-data-[cols=2]/cards:py-1 " +
+  "max-md:group-data-[cols=2]/cards:text-[10px] max-md:group-data-[cols=2]/cards:tracking-[0.06em]";
 const FLOAT_BG: Record<ItemTagKind, string> = {
   new: "bg-accent",
   bestseller: "bg-accent",

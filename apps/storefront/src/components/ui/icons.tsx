@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 type IconProps = { size?: number; className?: string; style?: CSSProperties };
 
-const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 export const Icon = {
   // Cart glyph only. The item count is rendered as a separate HTML corner

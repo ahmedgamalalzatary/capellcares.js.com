@@ -31,7 +31,7 @@ export function ProductIllustration({ product, className }: Props) {
   if (product.imagePath) {
     return (
       <Image
-        className={className ?? "h-full w-full object-contain rounded-lg"}
+        className={className ?? "w-140 object-contain rounded-md"}
         src={product.imagePath}
         alt={product.name.en}
         width={800}

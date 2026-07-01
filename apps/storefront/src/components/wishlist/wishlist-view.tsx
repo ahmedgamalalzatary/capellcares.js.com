@@ -56,7 +56,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   }
 
   return (
-    <div className="grid gap-4 pb-16 sm:gap-6 sm:pb-20">
+    <div className="grid gap-4 pb-8 sm:gap-6 sm:pb-8">
       {items.map((item) => (
         <article
           key={`${item.entityType}:${item.entityId}`}

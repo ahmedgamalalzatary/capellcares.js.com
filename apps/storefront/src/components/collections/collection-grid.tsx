@@ -114,7 +114,7 @@ export function CollectionGrid({
   }
 
   return (
-    <div className="grid gap-6 pb-16 sm:pb-24">
+    <div className="grid gap-6 pb-8 sm:pb-8">
       {bigCategories.length > 0 && (
         <div className="pill-group">
           {bigCategories.map((item) => {

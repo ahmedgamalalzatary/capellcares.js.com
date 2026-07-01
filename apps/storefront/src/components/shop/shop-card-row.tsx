@@ -87,7 +87,7 @@ export function ShopCardRow({
         disabled={!canPrev}
         className={`${buttonClass} inset-s-1`}
       >
-        <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "" : "rotate-180"}`} />
+        <Icon.Chevron size={40} className={isRtl ? "" : "rotate-180"} />
       </button>
       <button
         type="button"
@@ -96,7 +96,7 @@ export function ShopCardRow({
         disabled={!canNext}
         className={`${buttonClass} inset-e-1`}
       >
-        <Icon.Chevron size={40} className={`stroke-1 ${isRtl ? "rotate-180" : ""}`} />
+        <Icon.Chevron size={40} className={isRtl ? "rotate-180" : ""} />
       </button>
     </div>
   );
