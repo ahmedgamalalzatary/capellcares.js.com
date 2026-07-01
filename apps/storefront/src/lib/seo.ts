@@ -285,6 +285,30 @@ export function buildCollectionMetadata(lang: Language, collection: Collection):
   };
 }
 
+export function buildContactMetadata(lang: Language): Metadata {
+  const isAr = lang === "ar";
+  const title = isAr ? "تواصلي معنا | مركز مساعدة كابيلا كير" : "Contact Us | Capella Care Help Center";
+  const description = isAr
+    ? "تواصلي مع فريق كابيلا كير للاستفسار عن الطلبات والمنتجات أو لإرسال ملاحظاتك. نرد خلال يومي عمل."
+    : "Reach the Capella Care team for help with orders, product questions, and feedback. We reply within 2 business days.";
+
+  return {
+    title,
+    description,
+    alternates: buildLocalizedAlternates(lang, "/contact"),
+    openGraph: {
+      title: joinTitle([title, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, "/contact"))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([title, BRAND_NAME]),
+      description
+    }
+  };
+}
+
 export function noIndexMetadata(): Metadata {
   return {
     robots: {

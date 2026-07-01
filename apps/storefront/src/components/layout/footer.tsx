@@ -145,7 +145,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             </FooterCol>
 
             <FooterCol title={dict.footer.support} isAr={isAr}>
-                <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink> {/* not working yet */}
+              <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink>
               <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
               <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
             </FooterCol>

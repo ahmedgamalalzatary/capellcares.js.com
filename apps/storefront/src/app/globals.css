@@ -206,10 +206,42 @@ body {
 .input:hover, .select:hover, .textarea:hover { border-color: var(--hairline-strong); }
 .input:focus, .select:focus, .textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px oklch(0.32 0.018 85 / 0.14);
   background: var(--surface-2);
 }
 .field-error { color: var(--error); font-size: 12px; font-weight: 500; }
+
+/* Floating-label field — label rests inside the control and floats onto the
+   border on focus or when the control holds a value (data-filled="true"). */
+.field--float { position: relative; display: block; }
+.field--float > .input,
+.field--float > .select,
+.field--float > .textarea { width: 100%; }
+.field--float > label {
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 22px;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 0 5px;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-3);
+  background: var(--surface);
+  pointer-events: none;
+  transition: top var(--motion-fast) var(--ease-out-quart),
+              font-size var(--motion-fast) var(--ease-out-quart),
+              color var(--motion-fast) var(--ease-out-quart);
+}
+.field--float:focus-within > label,
+.field--float[data-filled="true"] > label {
+  top: 0;
+  font-size: 12px;
+  color: var(--accent);
+}
 
 /* ============================================================
    Cards
