@@ -117,8 +117,8 @@ function GridSection({ section, ariaLabel }: { section: HomepageBannerSectionDto
   const safeStart = clampStart(start, total, visible);
   const steps = maxStart(total, visible);
 
-  const showPrevious = () => setStart((current) => clampStart(current - 1, total, visible));
-  const showNext = () => setStart((current) => clampStart(current + 1, total, visible));
+  const showPrevious = () => setStart(clampStart(safeStart - 1, total, visible));
+  const showNext = () => setStart(clampStart(safeStart + 1, total, visible));
   const dragHandlers = useDragPaging(showPrevious, showNext);
 
   if (total === 0) {

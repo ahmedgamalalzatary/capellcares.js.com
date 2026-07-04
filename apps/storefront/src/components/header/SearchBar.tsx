@@ -34,7 +34,6 @@ export function SearchBar() {
         </form>
 
         <div className="flex shrink-0 items-center gap-4">
-          <span className="hidden text-lg font-semibold tracking-wide text-navy md:inline">{dict.header.hotline}</span>
           <button aria-label={dict.header.account} className="cursor-pointer text-navy">
             <UserIcon className="h-6 w-6" />
           </button>

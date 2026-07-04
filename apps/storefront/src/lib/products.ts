@@ -24,6 +24,8 @@ export interface StorefrontProduct {
   keywords: string[];
   imagePath: string;
   hoverImagePath?: string;
+  /** Original (pre-discount) price; when higher than the live price, the card shows a SAVE badge. */
+  compareAtPrice?: number;
   media: StorefrontMedia[];
   status: "active" | "inactive";
   isNew: boolean;

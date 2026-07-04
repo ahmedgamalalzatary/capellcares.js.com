@@ -20,7 +20,6 @@ export const ar = {
     account: "حسابي",
     search: "بحث",
     searchPlaceholder: "عمّا تبحث؟",
-    hotline: "16772",
     announcements: [
       "اشترِ ٣ زنوبة بـ ١١٩٩ جنيه",
       "أي ٣ قطع EVA بـ ٩٩٩ جنيه فقط",
@@ -45,7 +44,9 @@ export const ar = {
     discount: "خصم ١٥٪",
     freeShipping: "شحن مجاني",
     cardPrice: "سعر البطاقة",
-    bestDeal: "أفضل عرض"
+    bestDeal: "أفضل عرض",
+    addToCart: "أضف إلى السلة",
+    save: "وفّر"
   },
   footer: {
     aboutTitle: "عن ميني كشك",

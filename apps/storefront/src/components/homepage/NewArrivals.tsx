@@ -43,7 +43,7 @@ export function NewArrivals({
 
   if (variant === "grid") {
     return (
-      <section aria-label="New arrivals" role="region" className="py-8">
+      <section aria-label={dict.header.menu.newArrivals} role="region" className="py-8">
         <SectionHeading top={dict.shop.newArrivalsTop} bottom={dict.shop.newArrivalsBottom} />
         <div className="grid grid-cols-2 gap-4 min-[600px]:grid-cols-3 min-[900px]:grid-cols-4">
           {products.map((product) => (
@@ -60,7 +60,7 @@ export function NewArrivals({
   const showNext = () => setStart((current) => clampStart(current + 1, total, visible));
 
   return (
-    <section aria-label="New arrivals" role="region" className="py-8">
+    <section aria-label={dict.header.menu.newArrivals} role="region" className="py-8">
       <SectionHeading top={dict.shop.newArrivalsTop} bottom={dict.shop.newArrivalsBottom} />
       <div ref={viewportRef} className="overflow-hidden">
         <div
@@ -76,7 +76,7 @@ export function NewArrivals({
       </div>
       {steps > 0 && (
         <PagerControls
-          ariaLabel="New arrivals"
+          ariaLabel={dict.header.menu.newArrivals}
           count={steps + 1}
           index={safeStart}
           dotNoun="position"

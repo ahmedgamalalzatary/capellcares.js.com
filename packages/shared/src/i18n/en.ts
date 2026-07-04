@@ -20,7 +20,6 @@ export const en = {
     account: "Account",
     search: "Search",
     searchPlaceholder: "What are you looking for?",
-    hotline: "16772",
     announcements: [
       "Get 3 Zanooba for 1199 EGP",
       "Any 3 EVA Pieces for only 999 EGP",
@@ -45,7 +44,9 @@ export const en = {
     discount: "15% OFF",
     freeShipping: "FREE SHIPPING",
     cardPrice: "Card Price",
-    bestDeal: "BEST DEAL"
+    bestDeal: "BEST DEAL",
+    addToCart: "ADD TO CART",
+    save: "SAVE"
   },
   footer: {
     aboutTitle: "About Minikoshk",
