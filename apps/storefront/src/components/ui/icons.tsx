@@ -90,6 +90,19 @@ export const Icon = {
       <line x1="4" y1="18" x2="20" y2="18" />
     </svg>
   ),
+  Image: ({ size = 20, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="1.6" />
+      <path d="m21 15-4.5-4.5L6 21" />
+    </svg>
+  ),
+  Upload: ({ size = 20, className, style }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
+      <path d="M12 16V4M8 8l4-4 4 4" />
+      <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+  ),
   ColumnsOne: ({ size = 16, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
       <rect x="4" y="4" width="16" height="16" rx="2" />

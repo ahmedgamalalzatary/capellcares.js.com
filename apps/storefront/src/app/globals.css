@@ -411,10 +411,14 @@ body {
 /* ============================================================
    Shell
    ============================================================ */
-/* minmax(0, 1fr) lets the column shrink below its children's min-content; without
-   it the single auto column blows out to the widest unbreakable child (e.g. an EN
-   nowrap string) and pins header/main/footer to that floor on narrow phones. */
-.shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
+/* Flex column, NOT grid: a grid item's containing block is its own grid area,
+   so a sticky header in an auto row has zero room to travel and never sticks.
+   Flex items' containing block is the whole container, letting the header stick
+   for the full page height. (Width blowout isn't a concern here the way it was
+   with grid's content-sized tracks: the flex container's width comes from body,
+   and wide nowrap children just overflow and get clipped.) The main-content div
+   carries flex-1 in the locale layout to keep the footer pinned on short pages. */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ============================================================
    Table
@@ -560,7 +564,11 @@ body {
    Mobile niceties — prevent layout overflow & soften horizontal
    scroll on tablet/phone breakpoints.
    ============================================================ */
-html, body { overflow-x: hidden; }
+/* `clip`, NOT `hidden`: overflow-x hidden forces overflow-y to compute to auto,
+   turning <body> into a scroll container. The sticky header then tracks body's
+   scrollport — which never scrolls (the viewport does) — so sticky silently
+   never engages. `clip` cuts horizontal overflow without creating a scroller. */
+html, body { overflow-x: clip; }
 @media (max-width: 640px) {
   .hr { margin: 16px 0; }
   .row { gap: 8px; }

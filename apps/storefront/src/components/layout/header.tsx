@@ -30,7 +30,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   // Non-shifting scroll lock: freeze <html> with overflow:hidden and pad for the
   // removed scrollbar. The page never moves, so the sticky header and the drawer's
   // measured open-height stay valid no matter the scroll offset at open time.
-  // (A position:fixed/top:-scrollY lock fights globals' `overflow-x:hidden` body +
+  // (A position:fixed/top:-scrollY lock fights globals' `overflow-x: clip` body +
   // the sticky header — it shifts the drawer on a scrolled reopen and breaks its
   // inner scroll.)
   useEffect(() => {
@@ -47,15 +47,22 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
     };
   }, [mobileOpen]);
 
+  // The announcement bar scrolls away with the page; only the nav row below is
+  // sticky. They must be siblings (not nested) because a sticky element can
+  // never escape its parent's box — wrapping both in one sticky <header> would
+  // pin the announcement bar too.
   return (
-    <header
-      className={[
-        "container sticky top-0 z-30 transition-[background,box-shadow] duration-200"
-      ].join(" ")}
-    >
-      <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
+    <>
+      <div className="container">
+        <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
+      </div>
 
-      <div className="grid items-center mt-4 bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
+      <header
+        className={[
+          "container sticky top-0 z-30 transition-[background,box-shadow] duration-200"
+        ].join(" ")}
+      >
+      <div className="grid items-center bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
           <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
@@ -164,7 +171,8 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
           setSearchOpen(true);
         }}
       />
-    </header>
+      </header>
+    </>
   );
 }
 

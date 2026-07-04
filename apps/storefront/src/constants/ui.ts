@@ -11,6 +11,10 @@ export const SEARCH_MAX_RESULTS = 6;
 // The desktop mega menu reveals at min-[880px]; keep the drawer's auto-close in sync.
 export const DESKTOP_BREAKPOINT = 880;
 
+// Contact form image attachments.
+export const CONTACT_MAX_FILES = 10;
+export const CONTACT_MAX_TOTAL_MB = 50;
+
 // Announcement bar timing.
 // Total per-sentence cycle: fast in (~0.6s) · hold centered (~5s) · fast out (~0.4s).
 export const ANNOUNCEMENT_CROSS_S = 6;

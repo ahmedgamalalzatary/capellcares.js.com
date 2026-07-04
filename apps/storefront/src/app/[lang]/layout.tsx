@@ -64,7 +64,7 @@ export default async function LocaleLayout({
             <Suspense fallback={null}>
               <Header lang={lang} dict={dict} menuEntries={menuEntries} />
             </Suspense>
-            <div>{children}</div>
+            <div className="flex-1">{children}</div>
             <Footer lang={lang} dict={dict} />
             <BackToTop label={dict.common.backToTop} />
             <AskCapellaButton lang={lang} />
