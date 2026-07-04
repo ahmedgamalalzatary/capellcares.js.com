@@ -391,8 +391,13 @@ export class ErpStore {
     await this.refetch();
   }
 
-  async upsertAdvice(advice: Omit<Advice, "id" | "createdAt" | "updatedAt"> & { id?: number }) {
+  async upsertAdvice(advice: Omit<Advice, "id" | "createdAt" | "updatedAt" | "sortOrder"> & { id?: number }) {
     await api.post("/api/erp/advices", advice);
+    await this.refetch();
+  }
+
+  async reorderAdvices(input: { ids: number[] }) {
+    await api.post("/api/erp/advices/reorder", input);
     await this.refetch();
   }
 

@@ -13,6 +13,7 @@ import { getStore, useStore } from "@/lib/store";
 import { Icon } from "@/components/ui/icons";
 import { RowMenu } from "@/components/ui/row-menu";
 import type { Advice } from "@capella/shared";
+import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 
 export default function AdvicesPage() {
   const { user } = useAdminAuth();
@@ -20,15 +21,23 @@ export default function AdvicesPage() {
   const [search, setSearch] = useState("");
   const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Advice | null>(null);
+  const reorder = useListReorder({
+    persistedIds: useMemo(() => advices.map((advice) => advice.id), [advices]),
+    save: (ids) => getStore().reorderAdvices({ ids }),
+    successMessage: "تم حفظ ترتيب النصائح.",
+    errorMessage: "تعذر حفظ ترتيب النصائح. حاولي مرة أخرى."
+  });
+  const canReorder = !search.trim() && canUpdateErpModule(user, "advices");
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return advices;
+    const ordered = sortByIdOrder(advices, reorder.orderedIds);
+    if (!search.trim()) return ordered;
     const term = search.trim().toLowerCase();
-    return advices.filter((a) =>
+    return ordered.filter((a) =>
       a.title.ar.toLowerCase().includes(term) ||
       a.title.en.toLowerCase().includes(term)
     );
-  }, [advices, search]);
+  }, [advices, reorder.orderedIds, search]);
 
   if (!canReadErpModule(user, "advices")) {
     return (
@@ -42,11 +51,27 @@ export default function AdvicesPage() {
     <AdminShell
       title="نصائح كابيلا"
       crumbs={[{ label: "نصائح كابيلا" }]}
-      actions={canCreateErpModule(user, "advices") ? (
-        <Link href="/advices/new" className="btn btn--primary btn--sm">
-          <Icon.Plus /> نصيحة جديدة
-        </Link>
-      ) : undefined}
+      actions={
+        <>
+          {reorder.isDirty && canUpdateErpModule(user, "advices") && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                void reorder.saveOrder();
+              }}
+              disabled={reorder.saving}
+            >
+              <Icon.Check /> حفظ ترتيب النصائح
+            </button>
+          )}
+          {canCreateErpModule(user, "advices") ? (
+            <Link href="/advices/new" className="btn btn--primary btn--sm">
+              <Icon.Plus /> نصيحة جديدة
+            </Link>
+          ) : undefined}
+        </>
+      }
     >
       <AdminListToolbar
         searchPlaceholder="ابحثي عن نصيحة…"
@@ -62,13 +87,12 @@ export default function AdvicesPage() {
               <tr>
                 <th>العنوان</th>
                 <th>الفيديو</th>
-                <th>الترتيب</th>
                 <th>الحالة</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((advice) => (
+              {filtered.map((advice, index) => (
                 <tr key={advice.id}>
                   <td>
                     <Link href={`/advices/${advice.id}/edit`} className="table-title">{advice.title.ar}</Link>
@@ -77,38 +101,61 @@ export default function AdvicesPage() {
                   <td className="muted" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {advice.videoUrl}
                   </td>
-                  <td>{advice.sortOrder}</td>
                   <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
-                    {(canToggleErpModule(user, "advices") || canUpdateErpModule(user, "advices") || hasErpPermission(user, "advices.delete")) && (
-                      <RowMenu>
-                        {canToggleErpModule(user, "advices") && (
+                    <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      {canReorder && filtered.length > 1 && (
+                        <>
                           <button
                             type="button"
-                            className="row-menu__item"
-                            onClick={() => setPendingToggle(advice)}
-                            title={advice.status === "active" ? "إيقاف" : "تفعيل"}
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => reorder.moveItem(advice.id, -1)}
+                            aria-label="تحريك لأعلى"
+                            disabled={index === 0}
                           >
-                            {advice.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                            <Icon.Chevron size={14} className="rotate-180" />
                           </button>
-                        )}
-                        {canUpdateErpModule(user, "advices") && (
-                          <Link href={`/advices/${advice.id}/edit`} className="row-menu__item">
-                            <Icon.Edit /> تعديل
-                          </Link>
-                        )}
-                        {hasErpPermission(user, "advices.delete") && (
-                          <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => setPendingDelete(advice)}>
-                            <Icon.Trash /> حذف
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => reorder.moveItem(advice.id, 1)}
+                            aria-label="تحريك لأسفل"
+                            disabled={index === filtered.length - 1}
+                          >
+                            <Icon.Chevron size={14} />
                           </button>
-                        )}
-                      </RowMenu>
-                    )}
+                        </>
+                      )}
+                      {(canToggleErpModule(user, "advices") || canUpdateErpModule(user, "advices") || hasErpPermission(user, "advices.delete")) && (
+                        <RowMenu>
+                          {canToggleErpModule(user, "advices") && (
+                            <button
+                              type="button"
+                              className="row-menu__item"
+                              onClick={() => setPendingToggle(advice)}
+                              title={advice.status === "active" ? "إيقاف" : "تفعيل"}
+                            >
+                              {advice.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                            </button>
+                          )}
+                          {canUpdateErpModule(user, "advices") && (
+                            <Link href={`/advices/${advice.id}/edit`} className="row-menu__item">
+                              <Icon.Edit /> تعديل
+                            </Link>
+                          )}
+                          {hasErpPermission(user, "advices.delete") && (
+                            <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => setPendingDelete(advice)}>
+                              <Icon.Trash /> حذف
+                            </button>
+                          )}
+                        </RowMenu>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
+                <tr><td colSpan={4} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
               )}
             </tbody>
           </table>

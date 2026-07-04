@@ -180,7 +180,7 @@ export interface Advice {
   description: Bilingual;
   videoUrl: string;
   status: "active" | "inactive";
-  sortOrder: number;
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -31,7 +31,6 @@ describe("AdviceSection", () => {
         description: { ar: "وصف", en: "Description" },
         videoUrl: "https://instagram.com/capella",
         status: "active",
-        sortOrder: 1,
         createdAt: "",
         updatedAt: ""
       }]

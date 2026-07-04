@@ -100,8 +100,7 @@ const adviceBoundaryPayload = {
   title: { ar: "نصيحة", en: "Advice" },
   description: { ar: "وصف", en: "Description" },
   videoUrl: "https://instagram.com/capella",
-  status: "active" as const,
-  sortOrder: 1
+  status: "active" as const
 };
 
 afterEach(() => {

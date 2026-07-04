@@ -23,15 +23,15 @@ describe("RelatedItems", () => {
   it("keeps the selected one-column and two-column layouts across breakpoints", () => {
     render(createElement(RelatedItems, { items, lang: "en", title: "Related" }));
 
-    const grid = screen.getByTestId("related-items").querySelector(".grid.gap-3") as HTMLElement;
+    const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
     expect(grid.className).toContain("grid-cols-2");
-    expect(grid.className).not.toContain("sm:grid-cols-3");
-    expect(grid.className).not.toContain("lg:grid-cols-4");
+    expect(grid.className).toContain("md:grid-cols-3");
+    expect(grid.className).toContain("lg:grid-cols-4");
 
     fireEvent.click(screen.getByRole("button", { name: /1 per row/i }));
 
     expect(grid.className).toContain("grid-cols-1");
-    expect(grid.className).not.toContain("sm:grid-cols-2");
-    expect(grid.className).not.toContain("lg:grid-cols-2");
+    expect(grid.className).toContain("md:grid-cols-2");
+    expect(grid.className).toContain("lg:grid-cols-3");
   });
 });

@@ -12,7 +12,7 @@ export const storefrontAdviceContract = z.object({
   description: bilingualSchema,
   videoUrl: z.string().min(1),
   status: z.enum(["active", "inactive"]),
-  sortOrder: z.number().int()
+  sortOrder: z.number().int().optional()
 });
 
 export { assertConformsTo };

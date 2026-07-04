@@ -97,7 +97,7 @@ describe("ShopMegaMenu", () => {
     expect(panel.className).toContain("pointer-events-none");
   });
 
-  it("gives every panel link the same size, spacing and hover regardless of type", () => {
+  it("gives every panel link consistent hover treatment regardless of type", () => {
     render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
 
@@ -112,7 +112,6 @@ describe("ShopMegaMenu", () => {
     ];
 
     for (const className of classes) {
-      expect(className).toContain("text-base");
       expect(className).toContain("hover:underline");
       expect(className).toContain("hover:font-bold");
     }

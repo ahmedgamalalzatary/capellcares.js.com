@@ -318,7 +318,7 @@ test("collection upsert persists product ordering inside the collection from ite
         slug,
         name: { ar: "مجموعة مرتبة", en: "Ordered Collection" },
         price: 80,
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -366,7 +366,7 @@ test("storefront collection detail returns items following the collection's prod
         slug,
         name: { ar: "مجموعة", en: "Collection" },
         price: 80,
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [

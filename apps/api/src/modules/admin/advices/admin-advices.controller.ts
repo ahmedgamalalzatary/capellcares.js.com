@@ -1,5 +1,11 @@
-import type { Request, Response } from "express";
-import { deleteAdviceRepo, listAdvicesRepo, toggleAdviceStatusRepo, upsertAdviceRepo } from "../../../repositories/advice.repository.js";
+import type { NextFunction, Request, Response } from "express";
+import {
+  deleteAdviceRepo,
+  listAdvicesRepo,
+  reorderAdvicesRepo,
+  toggleAdviceStatusRepo,
+  upsertAdviceRepo
+} from "../../../repositories/advice.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 
 function isBilingualText(value: unknown): value is { ar: string; en: string } {
@@ -29,7 +35,7 @@ function toAdviceDto(item: any) {
     description: { ar: item.arDescription, en: item.enDescription },
     videoUrl: item.videoUrl,
     status: item.status,
-    sortOrder: item.sortOrder,
+    sortOrder: item.sortOrder ?? 0,
     createdAt: item.createdAt?.toISOString?.() ?? String(item.createdAt ?? ""),
     updatedAt: item.updatedAt?.toISOString?.() ?? String(item.updatedAt ?? "")
   };
@@ -62,11 +68,6 @@ export async function upsertAdviceController(req: Request, res: Response) {
     id = parsedId;
   }
 
-  const parsedSortOrder = Number.parseInt(String(input.sortOrder ?? 0), 10);
-  if (!Number.isFinite(parsedSortOrder)) {
-    return res.status(400).json({ error: "Invalid sort order" });
-  }
-
   if (input.status != null && input.status !== "active" && input.status !== "inactive") {
     return res.status(400).json({ error: "Invalid advice status" });
   }
@@ -83,11 +84,31 @@ export async function upsertAdviceController(req: Request, res: Response) {
     arDescription: input.description.ar,
     enDescription: input.description.en,
     videoUrl,
-    status: input.status ?? "inactive",
-    sortOrder: parsedSortOrder
+    status: input.status ?? "inactive"
   });
   await safeTriggerAdviceRevalidation();
   res.json({ ok: true });
+}
+
+export async function reorderAdvicesController(req: Request, res: Response, next: NextFunction) {
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids.map((value: unknown): number => Number(value))
+    : [];
+
+  if (ids.length === 0 || ids.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+    return res.status(400).json({ ok: false, reason: "invalid-advice-order" });
+  }
+
+  try {
+    await reorderAdvicesRepo({ ids });
+    await safeTriggerAdviceRevalidation();
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === "INVALID_ADVICE_ORDER") {
+      return res.status(400).json({ ok: false, reason: "invalid-advice-order" });
+    }
+    next(error);
+  }
 }
 
 export async function deleteAdviceController(req: Request, res: Response) {
@@ -116,5 +137,5 @@ export async function toggleAdviceStatusController(req: Request, res: Response) 
 }
 
 export async function listStorefrontAdvicesController(_req: Request, res: Response) {
-  res.json({ items: (await listAdvicesRepo(false)).map(toAdviceDto) });
+  res.json({ items: (await listAdvicesRepo(false, "storefront")).map(toAdviceDto) });
 }

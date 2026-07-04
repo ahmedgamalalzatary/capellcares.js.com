@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
+import { db } from "@capella/database/src/db";
+import { entityOrderings } from "@capella/database/drizzle/schema";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -15,8 +18,7 @@ function makeAdvicePayload() {
     title: { ar: "نصيحة كابيلا", en: "Capella Advice" },
     description: { ar: "اشتركي بخطوات واضحة.", en: "Shop with clear steps." },
     videoUrl: "https://www.youtube.com/watch?v=capella",
-    status: "active",
-    sortOrder: 2
+    status: "active"
   };
 }
 
@@ -56,8 +58,7 @@ test("erp advice CRUD persists and updates advice records", async () => {
       body: JSON.stringify({
         ...makeAdvicePayload(),
         id: created.id,
-        status: "inactive",
-        sortOrder: 5
+        status: "inactive"
       })
     });
 
@@ -69,11 +70,10 @@ test("erp advice CRUD persists and updates advice records", async () => {
 
     const updated = updatedList.json.items[0];
     assert.equal(updated.status, "inactive");
-    assert.equal(updated.sortOrder, 5);
   });
 });
 
-test("storefront advices only returns active advices sorted by sortOrder", async () => {
+test("admin advice reorder persists root ordering ranks", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
     await request("/api/erp/advices", {
@@ -84,8 +84,7 @@ test("storefront advices only returns active advices sorted by sortOrder", async
       },
       body: JSON.stringify({
         ...makeAdvicePayload(),
-        title: { ar: "الثانية", en: "Second" },
-        sortOrder: 2
+        title: { ar: "الأولى", en: "First" }
       })
     });
 
@@ -97,8 +96,66 @@ test("storefront advices only returns active advices sorted by sortOrder", async
       },
       body: JSON.stringify({
         ...makeAdvicePayload(),
-        title: { ar: "الأولى", en: "First" },
-        sortOrder: 1
+        title: { ar: "الثانية", en: "Second" }
+      })
+    });
+
+    const listResponse = await request("/api/erp/advices", {
+      headers: { ...authHeaders }
+    });
+    const ids = listResponse.json.items.map((item: any) => item.id);
+    const response = await request("/api/erp/advices/reorder", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ ids: ids.slice().reverse() })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+
+    const rows = await db
+      .select({ entityId: entityOrderings.entityId, rank: entityOrderings.rank })
+      .from(entityOrderings)
+      .where(
+        and(
+          eq(entityOrderings.scopeType, "root"),
+          isNull(entityOrderings.scopeId),
+          eq(entityOrderings.entityType, "advice")
+        )
+      );
+    const rankById = new Map(rows.map((row) => [row.entityId, row.rank]));
+    assert.equal(rankById.get(ids[1]), 1);
+    assert.equal(rankById.get(ids[0]), 2);
+  });
+});
+
+test("storefront advices only returns active advices sorted by saved ordering", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    await request("/api/erp/advices", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ...makeAdvicePayload(),
+        title: { ar: "الأولى", en: "First" }
+      })
+    });
+
+    await request("/api/erp/advices", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ...makeAdvicePayload(),
+        title: { ar: "الثانية", en: "Second" }
       })
     });
 
@@ -111,17 +168,32 @@ test("storefront advices only returns active advices sorted by sortOrder", async
       body: JSON.stringify({
         ...makeAdvicePayload(),
         title: { ar: "مخفية", en: "Hidden" },
-        status: "inactive",
-        sortOrder: 0
+        status: "inactive"
       })
     });
+
+    const listResponse = await request("/api/erp/advices", {
+      headers: { ...authHeaders }
+    });
+    const visibleIds = listResponse.json.items
+      .filter((item: any) => item.status === "active")
+      .map((item: any) => item.id);
+    const reorderResponse = await request("/api/erp/advices/reorder", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ ids: [visibleIds[1], visibleIds[0], listResponse.json.items.find((item: any) => item.status === "inactive").id] })
+    });
+    assert.equal(reorderResponse.status, 200);
 
     const response = await request("/api/v1/advices");
 
     assert.equal(response.status, 200);
     assert.deepEqual(
       response.json.items.map((item: any) => item.title.en),
-      ["First", "Second"]
+      ["Second", "First"]
     );
   });
 });
@@ -239,8 +311,7 @@ test("erp advice routes reject invalid ids and invalid upsert payloads", async (
       },
       body: JSON.stringify({
         title: { ar: "نصيحة" },
-        description: { ar: "وصف", en: "Description" },
-        sortOrder: "NaN"
+        description: { ar: "وصف", en: "Description" }
       })
     });
 
@@ -256,8 +327,7 @@ test("erp advice routes reject invalid ids and invalid upsert payloads", async (
       body: JSON.stringify({
         title: { ar: "نصيحة", en: "Advice" },
         description: { ar: "وصف", en: "Description" },
-        status: "active",
-        sortOrder: 1
+        status: "active"
       })
     });
 

@@ -10,7 +10,7 @@ export interface AdviceDto {
   };
   videoUrl: string;
   status: "active" | "inactive";
-  sortOrder: number;
+  sortOrder?: number;
   createdAt?: string;
   updatedAt?: string;
 }

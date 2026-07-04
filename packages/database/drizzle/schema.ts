@@ -18,7 +18,7 @@ export const relatedItemTargetTypes = ["product", "offer", "collection"] as cons
 
 export const orderingScopeTypes = ["root", "category", "offer", "collection"] as const;
 
-export const orderingEntityTypes = ["category", "product", "offer", "collection"] as const;
+export const orderingEntityTypes = ["category", "product", "offer", "collection", "advice"] as const;
 
 export const shopMediaSectionTargetTypes = [
   "shop",
@@ -235,7 +235,6 @@ export const advices = mysqlTable("advices", {
   enDescription: text("en_description").notNull(),
   videoUrl: varchar("video_url", { length: 1024 }).notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
-  sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });

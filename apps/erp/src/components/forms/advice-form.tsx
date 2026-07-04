@@ -10,7 +10,6 @@ type AdviceDraft = {
   description: { ar: string; en: string };
   videoUrl: string;
   status: "active" | "inactive";
-  sortOrder: number;
 };
 
 const empty: AdviceDraft = {
@@ -18,7 +17,6 @@ const empty: AdviceDraft = {
   description: { ar: "", en: "" },
   videoUrl: "",
   status: "inactive",
-  sortOrder: 0,
 };
 
 interface Props {
@@ -35,7 +33,6 @@ export function AdviceForm({ mode, initial }: Props) {
           description: initial.description,
           videoUrl: initial.videoUrl,
           status: initial.status,
-          sortOrder: initial.sortOrder,
         }
       : empty
   );
@@ -143,16 +140,6 @@ export function AdviceForm({ mode, initial }: Props) {
                 <option value="inactive">غير نشط</option>
                 <option value="active">نشط</option>
               </select>
-            </div>
-            <div className="field">
-              <label htmlFor="advice-sort-order">الترتيب</label>
-              <input
-                id="advice-sort-order"
-                className="input"
-                type="number"
-                value={form.sortOrder}
-                onChange={(e) => set("sortOrder", Number(e.target.value))}
-              />
             </div>
           </div>
         </div>

@@ -1,13 +1,47 @@
-import { asc, desc, eq } from "drizzle-orm";
-import { advices } from "@capella/database/drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
+import { advices, entityOrderings } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import {
+  assertCompleteOrderedIds,
+  loadScopedRanksRepo,
+  replaceScopedOrderingRepo
+} from "./entity-ordering.repository.js";
 
-export async function listAdvicesRepo(includeInactive = false) {
-  return db
+async function withAdviceRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
+  const rankByAdviceId = await loadScopedRanksRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "advice",
+    entityIds: rows.map((row) => row.id)
+  });
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByAdviceId.get(row.id) }))
+    .sort(compareByScopedOrdering.bind(null, surface));
+}
+
+export async function listAdvicesRepo(includeInactive = false, surface: OrderingSurface = "erp") {
+  const rows = await db
     .select()
     .from(advices)
-    .where(includeInactive ? undefined : eq(advices.status, "active"))
-    .orderBy(asc(advices.sortOrder), desc(advices.createdAt));
+    .where(includeInactive ? undefined : eq(advices.status, "active"));
+  return withAdviceRanks(rows, surface);
+}
+
+export async function reorderAdvicesRepo(input: { ids: number[] }) {
+  const scopeRows = await db.select({ id: advices.id }).from(advices);
+  assertCompleteOrderedIds({
+    requestedIds: input.ids,
+    scopeEntityIds: scopeRows.map((row) => row.id),
+    errorCode: "INVALID_ADVICE_ORDER",
+    errorMessage: "Advice order is invalid"
+  });
+  await replaceScopedOrderingRepo({
+    scopeType: "root",
+    scopeId: null,
+    entityType: "advice",
+    ids: input.ids
+  });
 }
 
 export async function upsertAdviceRepo(input: {
@@ -18,7 +52,6 @@ export async function upsertAdviceRepo(input: {
   enDescription: string;
   videoUrl: string;
   status: "active" | "inactive";
-  sortOrder: number;
 }) {
   if (input.id) {
     const [existing] = await db.select({ id: advices.id }).from(advices).where(eq(advices.id, input.id)).limit(1);
@@ -34,8 +67,15 @@ export async function upsertAdviceRepo(input: {
 }
 
 export async function deleteAdviceRepo(id: number) {
-  const result = await db.delete(advices).where(eq(advices.id, id));
-  return Number(result[0]?.affectedRows ?? 0) > 0;
+  return db.transaction(async (tx) => {
+    await tx
+      .delete(entityOrderings)
+      .where(
+        and(eq(entityOrderings.entityType, "advice"), eq(entityOrderings.entityId, id))
+      );
+    const result = await tx.delete(advices).where(eq(advices.id, id));
+    return Number(result[0]?.affectedRows ?? 0) > 0;
+  });
 }
 
 export async function toggleAdviceStatusRepo(id: number) {

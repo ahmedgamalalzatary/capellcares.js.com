@@ -78,7 +78,6 @@ const baseAdvice = {
   description: { ar: "وصف", en: "Advice description" },
   videoUrl: "https://www.youtube.com/watch?v=capella",
   status: "active" as const,
-  sortOrder: 1,
   createdAt: "",
   updatedAt: ""
 };
