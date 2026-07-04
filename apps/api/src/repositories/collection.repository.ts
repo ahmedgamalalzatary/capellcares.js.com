@@ -1,7 +1,7 @@
-import { eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
+import { categories, collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksRepo,
@@ -85,6 +85,20 @@ function mergeCollectionItems(items: Array<{ id?: number; variantId: number; qty
   return [...merged.values()];
 }
 
+async function assertRootCollectionCategory(categoryId: number) {
+  const [category] = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), isNull(categories.deletedAt)))
+    .limit(1);
+
+  if (!category || category.parentId != null) {
+    const error = new Error("Collection category must be a root category");
+    (error as Error & { code?: string }).code = "COLLECTION_CATEGORY_MUST_BE_ROOT";
+    throw error;
+  }
+}
+
 export async function listCollectionsRepo(includeDeleted = false) {
   const rows = await db.select().from(collections).where(includeDeleted ? undefined : isNull(collections.deletedAt));
   const ranked = await withCollectionRanks(rows, "erp");
@@ -141,6 +155,7 @@ export async function upsertCollectionRepo(input: {
   visibility?: "visible" | "hidden";
   items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
+  await assertRootCollectionCategory(input.categoryId);
   const mergedItems = mergeCollectionItems(input.items);
   return db.transaction(async (tx) => {
   let collectionId = input.id;

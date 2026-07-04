@@ -49,6 +49,7 @@ export function CollectionForm({
   } = useCollectionForm({ mode, initial, products, categories, relatedOptions, relatedItemsAvailable });
 
   const savings = originalTotal - Number(price || 0);
+  const rootCategories = categories.filter((category) => category.parentId == null);
   const allowedCategoryIds = categoryId != null ? getDescendantCategoryIds(categories, categoryId) : null;
   const categoryProducts = products.filter(
     (product) => !product.deletedAt && allowedCategoryIds?.has(product.categoryId)
@@ -78,7 +79,7 @@ export function CollectionForm({
 
             <div className="field">
               <label htmlFor="collection-category">القسم</label>
-              <CategoryPicker id="collection-category" categories={categories} value={categoryId} onChange={setCategoryId} />
+              <CategoryPicker id="collection-category" categories={rootCategories} value={categoryId} onChange={setCategoryId} />
               {errors.categoryId && <span className="field-error">{errors.categoryId}</span>}
             </div>
 

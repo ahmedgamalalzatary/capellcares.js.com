@@ -1,6 +1,6 @@
 import { createElement } from "react";
-import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
 
@@ -42,7 +42,34 @@ vi.mock("@/components/ui/icons", () => ({
 import { CollectionForm } from "@/components/forms/collection-form";
 import { useCollectionForm } from "@/hooks/forms/use-collection-form";
 
+afterEach(() => {
+  cleanup();
+});
+
 describe("CollectionForm", () => {
+  it("only offers root categories for the collection category", () => {
+    render(createElement(CollectionForm, {
+      mode: "new",
+      categories: [
+        { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null },
+        { id: 2, parentId: 1, slug: "skin-cream", name: { ar: "كريمات", en: "Creams" }, isLeaf: true, deletedAt: null },
+        { id: 3, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false, deletedAt: null }
+      ],
+      products: []
+    }));
+
+    const categorySelect = screen.getByLabelText("القسم");
+
+    expect(categorySelect).toHaveDisplayValue("— اختاري —");
+    expect(screen.getByRole("option", { name: "العناية بالبشرة" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "العناية بالشعر" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "كريمات" })).not.toBeInTheDocument();
+
+    fireEvent.change(categorySelect, { target: { value: "1" } });
+
+    expect(screen.queryByRole("option", { name: "كريمات" })).not.toBeInTheDocument();
+  });
+
   it("lists descendant-category products when the selected category is a parent", () => {
     render(createElement(CollectionForm, {
       mode: "new",

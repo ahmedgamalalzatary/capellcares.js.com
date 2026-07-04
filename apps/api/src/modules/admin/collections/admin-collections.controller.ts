@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
-import { listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
+import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
 import {
   findCollectionByIdRepo,
   listCollectionsRepo,
@@ -104,6 +104,19 @@ async function validateCollectionItems(categoryId: number, items: Array<{ varian
   return null;
 }
 
+async function validateCollectionCategory(categoryId: number) {
+  if (!Number.isInteger(categoryId) || categoryId < 1) {
+    return "collection-category-must-be-root";
+  }
+
+  const category = await getCategoryByIdRepo(categoryId);
+  if (!category || category.parentId != null) {
+    return "collection-category-must-be-root";
+  }
+
+  return null;
+}
+
 export async function adminReorderCollections(req: Request, res: Response, next: NextFunction) {
   try {
     const ids = Array.isArray(req.body?.ids)
@@ -171,6 +184,11 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       qty: Number(item.qty)
     }));
     const categoryId = Number(incoming.categoryId ?? 0);
+    const categoryError = await validateCollectionCategory(categoryId);
+    if (categoryError) {
+      return res.status(400).json({ ok: false, reason: categoryError });
+    }
+
     const validationError = await validateCollectionItems(categoryId, items);
     if (validationError) {
       return res.status(400).json({ ok: false, reason: validationError });
@@ -207,6 +225,9 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
   } catch (error) {
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
+    }
+    if ((error as { code?: string })?.code === "COLLECTION_CATEGORY_MUST_BE_ROOT") {
+      return res.status(400).json({ ok: false, reason: "collection-category-must-be-root" });
     }
     next(error);
   }

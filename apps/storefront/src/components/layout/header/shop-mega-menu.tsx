@@ -215,7 +215,7 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
         href={buildCategoryHref(lang, node)}
         aria-label={node.label}
         onClick={onNavigate}
-        className="flex items-center gap-3 text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
+        className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
       >
         {node.imagePath ? (
           <img

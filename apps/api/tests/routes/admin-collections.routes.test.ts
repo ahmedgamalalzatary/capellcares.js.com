@@ -41,7 +41,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
         price: 120,
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -88,7 +88,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
   assert.equal(createdCollection.arName, "مجموعة اختبار");
   assert.equal(createdCollection.enName, "Route Collection Test");
   assert.equal(createdCollection.visibility, "visible");
-  assert.equal(createdCollection.categoryId, ids.leafCategoryId);
+  assert.equal(createdCollection.categoryId, ids.rootCategoryId);
 
   const createdItems = await db
     .select({
@@ -127,7 +127,7 @@ serialTest("admin collection upsert rejects a price at or above the sum of its p
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-collection.png",
         price: 90,
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -162,7 +162,7 @@ serialTest("admin collection upsert rejects non-numeric prices", async () => {
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-collection.png",
         price: "not-a-number",
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }]
@@ -189,7 +189,7 @@ serialTest("admin collection upsert persists mirrored related links", async () =
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
         price: 80,
-        categoryId: ids.leafCategoryId,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -296,6 +296,38 @@ serialTest("admin collection upsert accepts variants from descendant categories 
   });
 });
 
+serialTest("admin collection upsert rejects non-root categories", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug: `route-collection-leaf-${Date.now()}`,
+        name: { ar: "مجموعة قسم فرعي", en: "Leaf Category Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        price: 80,
+        categoryId: ids.leafCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "collection-category-must-be-root");
+  });
+});
+
 serialTest("admin collection detail returns a related-items array for editing", async () => {
   const ids = await getBaselineIds();
 
@@ -306,7 +338,7 @@ serialTest("admin collection detail returns a related-items array for editing", 
       arName: "مجموعة تفاصيل",
       enName: "Detail Collection",
       fixedPrice: sql`120`,
-      categoryId: ids.leafCategoryId,
+      categoryId: ids.rootCategoryId,
       status: "active",
       visibility: "visible"
     })
@@ -361,7 +393,7 @@ serialTest("admin collection revalidation includes related product slugs for col
           description: { ar: "وصف", en: "Description" },
           imagePath: "/uploads/test-collection.png",
           price: 80,
-          categoryId: ids.leafCategoryId,
+          categoryId: ids.rootCategoryId,
           status: "active",
           visibility: "visible",
           items: [
