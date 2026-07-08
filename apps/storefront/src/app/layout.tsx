@@ -11,7 +11,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = (await headers()).get("x-capella-locale");
   const lang = locale === "en" ? "en" : "ar";
   return (
-    <html lang={lang} dir={dir(lang)} suppressHydrationWarning className={cn("font-sans")}>
+    <html lang={lang} dir={dir(lang)} data-scroll-behavior="smooth" suppressHydrationWarning className={cn("font-sans")}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

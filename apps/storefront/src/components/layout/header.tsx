@@ -59,7 +59,10 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
       <header
         className={[
-          "container sticky top-0 z-30 transition-[background,box-shadow] duration-200"
+          // bg-surface matches the white page body: it fills the notches outside
+          // the nav row's rounded top corners so scrolling content can't peek
+          // through them while the header is stuck.
+          "container sticky top-0 z-30 bg-surface transition-[background,box-shadow] duration-200"
         ].join(" ")}
       >
       <div className="grid items-center bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
