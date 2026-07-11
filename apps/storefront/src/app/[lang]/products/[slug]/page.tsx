@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/client";
 import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { breadcrumbJsonLd, buildProductMetadata, productJsonLd } from "@/lib/seo";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 
 export async function generateMetadata({
   params
@@ -83,6 +84,7 @@ export default async function ProductDetailsPage({
         categoryName={category ? pickLang(category.name, lang) : undefined}
         relatedItems={product.relatedItems ?? []}
       />
+      <ReviewsSection entityType="product" entityId={product.id} lang={lang} dict={dict} />
     </main>
   );
 }

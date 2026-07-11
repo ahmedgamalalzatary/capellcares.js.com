@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   datetime,
   decimal,
   int,
@@ -439,3 +440,53 @@ export const orderItems = mysqlTable("order_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
+
+export const reviewSubmissions = mysqlTable(
+  "review_submissions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    customerId: int("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    entityType: mysqlEnum("entity_type", relatedItemEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull()
+  },
+  (table) => ({
+    customerEntityUnique: unique("review_submissions_customer_entity_unique").on(
+      table.customerId,
+      table.entityType,
+      table.entityId
+    )
+  })
+);
+
+export const reviews = mysqlTable(
+  "reviews",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    submissionId: int("submission_id")
+      .notNull()
+      .references(() => reviewSubmissions.id, { onDelete: "restrict" })
+      .unique(),
+    customerId: int("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    entityType: mysqlEnum("entity_type", relatedItemEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
+    rating: int("rating").notNull(),
+    comment: text("comment"),
+    status: mysqlEnum("status", ["pending", "approved", "rejected", "hidden"])
+      .notNull()
+      .default("pending"),
+    moderatedByAdminUserId: int("moderated_by_admin_user_id").references(() => adminUsers.id, {
+      onDelete: "set null"
+    }),
+    moderatedAt: datetime("moderated_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    ratingRangeCheck: check("reviews_rating_range_check", sql`${table.rating} between 1 and 5`)
+  })
+);

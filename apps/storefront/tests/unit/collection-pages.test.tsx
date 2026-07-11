@@ -80,6 +80,9 @@ vi.mock("@/components/layout/breadcrumb", () => ({
 vi.mock("@/components/collections/collection-detail", () => ({
   CollectionDetail: ({ collection }: any) => createElement("div", { "data-testid": "collection-detail" }, collection.name.en)
 }));
+vi.mock("@/components/reviews/reviews-section", () => ({
+  ReviewsSection: () => createElement("section", { "data-testid": "reviews-section" })
+}));
 
 vi.mock("@/lib/storefront-page-context", () => ({
   resolveStorefrontLang: async () => "en"

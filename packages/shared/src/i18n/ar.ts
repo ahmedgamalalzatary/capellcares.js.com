@@ -155,6 +155,21 @@ export const ar = {
     startShopping: "ابدئي تسوّقك واملئي هذه الصفحة بالطلبات.",
     viewOrders: "عرض طلباتي"
   },
+  reviews: {
+    eyebrow: "تجارب شراء موثّقة",
+    title: "آراء العملاء",
+    empty: "لا توجد مراجعات معتمدة حتى الآن.",
+    stars: "نجوم",
+    writeReview: "اكتب مراجعة",
+    ratingLabel: "التقييم",
+    commentLabel: "التعليق",
+    commentOptional: "اختياري — أخبرنا عن تجربتك",
+    submissionError: "تعذر إرسال مراجعتك. يرجى المحاولة مرة أخرى.",
+    submit: "إرسال المراجعة",
+    submitted: "تم إرسال المراجعة",
+    pendingApproval: "بانتظار الموافقة",
+    statuses: { pending: "بانتظار الموافقة", approved: "معتمدة", rejected: "مرفوضة", hidden: "مخفية", deleted: "محذوفة" }
+  },
   advices: {
     title: "نصائح ",
     description: "إرشادات مفيدة ونصائح شراء وأفكار روتين من كابيلا.",

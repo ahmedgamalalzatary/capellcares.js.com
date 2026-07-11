@@ -82,6 +82,36 @@ export interface Product {
 
 export type RelatedItemType = "product" | "offer" | "collection";
 export type WishlistEntityType = RelatedItemType;
+export type ReviewEntityType = RelatedItemType;
+export type ReviewStatus = "pending" | "approved" | "rejected" | "hidden";
+
+export interface Review {
+  id: number;
+  customerId: number;
+  customerName: string;
+  entityType: ReviewEntityType;
+  entityId: number;
+  rating: number;
+  comment: string | null;
+  status: ReviewStatus;
+  moderatedByAdminUserId: number | null;
+  moderatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PublicReview {
+  id: number;
+  customerName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface ReviewSummary {
+  averageRating: number | null;
+  reviewCount: number;
+}
 
 export interface WishlistEntry {
   entityType: WishlistEntityType;

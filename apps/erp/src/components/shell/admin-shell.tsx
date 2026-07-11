@@ -25,6 +25,7 @@ const NAV = [
   { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
   { href: "/shop-media", label: "وسائط المتجر", icon: <Icon.Sparkle />  },
   { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
+  { href: "/reviews",    label: "المراجعات", icon: <Icon.Sparkle />   },
   { href: "/sales",      label: "المبيعات",  icon: <Icon.Tag />       },
   { href: "/staff",      label: "فريق العمل", icon: <Icon.Eye />      },
   { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
@@ -48,6 +49,7 @@ function canAccessNavItem(user: { role: "admin" | "staff"; permissionKeys?: stri
     "/advices": "advices.read",
     "/shop-media": "shop_media.read",
     "/orders": "orders.read",
+    "/reviews": "reviews.read",
     "/sales": "sales.read",
     "/trash": "trash.read"
   };

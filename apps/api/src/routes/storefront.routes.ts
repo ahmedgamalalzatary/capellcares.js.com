@@ -9,6 +9,7 @@ import { authRoutes } from "../modules/auth/auth.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
 import { storefrontShopMediaRoutes } from "../modules/shop-media/storefront-shop-media.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";
+import { storefrontReviewsRoutes } from "../modules/reviews/reviews.routes.js";
 
 export const storefrontRoutes = Router();
 storefrontRoutes.use(localeMiddleware);
@@ -20,6 +21,7 @@ storefrontRoutes.use("/advices", storefrontAdvicesRoutes);
 storefrontRoutes.use("/auth", authRoutes);
 storefrontRoutes.use("/orders", storefrontOrdersRoutes);
 storefrontRoutes.use("/wishlist", wishlistRoutes);
+storefrontRoutes.use("/reviews", storefrontReviewsRoutes);
 storefrontRoutes.use("/shop-media-sections", storefrontShopMediaRoutes);
 storefrontRoutes.get("/categories", listCategories);
 storefrontRoutes.get("/offers", listOffers);

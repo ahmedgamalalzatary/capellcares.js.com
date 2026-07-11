@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { fetchOfferBySlug, fetchOfferDetailBySlug, fetchProducts } from "@/lib/api/client";
 import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { breadcrumbJsonLd, buildOfferMetadata, offerJsonLd } from "@/lib/seo";
+import { ReviewsSection } from "@/components/reviews/reviews-section";
 
 export async function generateMetadata({
   params
@@ -58,6 +59,7 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
         dict={dict}
         relatedItems={offer.relatedItems ?? []}
       />
+      <ReviewsSection entityType="offer" entityId={offer.id} lang={lang} dict={dict} />
     </main>
   );
 }

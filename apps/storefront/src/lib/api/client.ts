@@ -6,6 +6,9 @@ import type {
   Order,
   OrderSummary,
   Product,
+  PublicReview,
+  ReviewEntityType,
+  ReviewSummary,
   ShopMediaSection,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
@@ -116,6 +119,42 @@ export async function fetchCustomerOrders(accessToken: string): Promise<OrderSum
 
 export async function fetchCustomerOrderById(id: number, accessToken: string): Promise<Order | null> {
   return authedGetJSON<Order>(`/api/v1/orders/${id}`, accessToken);
+}
+
+export interface OrderReviewEligibility {
+  orderId: number;
+  paymentStatus: string;
+  items: Array<{
+    orderItemId: number;
+    entityType: ReviewEntityType;
+    entityId: number;
+    eligible: boolean;
+    submitted: boolean;
+    status: "pending" | "approved" | "rejected" | "hidden" | "deleted" | null;
+  }>;
+}
+
+export async function fetchOrderReviewEligibility(orderId: number, accessToken: string) {
+  return authedGetJSON<OrderReviewEligibility>(`/api/v1/reviews/eligibility/${orderId}`, accessToken);
+}
+
+export async function fetchPublicReviews(entityType: ReviewEntityType, entityId: number) {
+  return getJSON<{ summary: ReviewSummary; items: PublicReview[] }>(`/api/v1/reviews/${entityType}/${entityId}`);
+}
+
+export async function submitCustomerReview(
+  accessToken: string,
+  input: { entityType: ReviewEntityType; entityId: number; rating: number; comment?: string }
+) {
+  const { API_BASE } = await import("./client/http");
+  const response = await fetch(`${API_BASE}/api/v1/reviews`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(`API ${response.status} /api/v1/reviews`);
+  return response.json();
 }
 
 export {

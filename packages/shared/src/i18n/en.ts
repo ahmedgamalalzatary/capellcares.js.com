@@ -153,6 +153,21 @@ export const en = {
     startShopping: "Start shopping and your orders will appear here.",
     viewOrders: "View my orders"
   },
+  reviews: {
+    eyebrow: "Verified experiences",
+    title: "Customer reviews",
+    empty: "No approved reviews yet.",
+    stars: "stars",
+    writeReview: "Write review",
+    ratingLabel: "Rating",
+    commentLabel: "Comment",
+    commentOptional: "Optional — tell us about your experience",
+    submissionError: "Could not submit your review. Please try again.",
+    submit: "Submit review",
+    submitted: "Review submitted",
+    pendingApproval: "Pending approval",
+    statuses: { pending: "Pending approval", approved: "Approved", rejected: "Rejected", hidden: "Hidden", deleted: "Removed" }
+  },
   advices: {
     title: "Capella Tips",
     description: "Helpful guidance, shopping tips, and routine ideas from Capella.",

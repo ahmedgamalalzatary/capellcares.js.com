@@ -61,6 +61,9 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "products.stock_update",
     "products.toggle_status",
     "products.update",
+    "reviews.delete",
+    "reviews.moderate",
+    "reviews.read",
     "sales.read",
     "shop_media.read",
     "shop_media.update",
@@ -140,4 +143,9 @@ test("normalizePermissionKeys adds read dependency for products.discount", () =>
     "products.discount",
     "products.read"
   ]);
+});
+
+test("normalizePermissionKeys keeps review moderation and deletion separately assignable with read access", () => {
+  assert.deepEqual(normalizePermissionKeys(["reviews.moderate"]), ["reviews.moderate", "reviews.read"]);
+  assert.deepEqual(normalizePermissionKeys(["reviews.delete"]), ["reviews.delete", "reviews.read"]);
 });
