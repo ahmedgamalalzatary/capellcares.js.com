@@ -18,7 +18,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
 
   if (!canReadErpModule(user, "advices")) {
     return (
-      <AdminShell title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
+      <AdminShell title="نصائح مينى كشك" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
       </AdminShell>
     );
@@ -26,7 +26,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
 
   if (!canUpdateErpModule(user, "advices")) {
     return (
-      <AdminShell title="تعديل النصيحة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
+      <AdminShell title="تعديل النصيحة" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية تعديل النصائح." />
       </AdminShell>
     );
@@ -34,7 +34,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل…" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "تحميل" }]}>
+      <AdminShell title="تحميل…" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "تحميل" }]}>
         <div className="card" style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>جارٍ تحميل البيانات…</div>
       </AdminShell>
     );
@@ -45,7 +45,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
   return (
     <AdminShell
       title={`تعديل: ${advice.title.ar}`}
-      crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "تعديل" }]}
+      crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "تعديل" }]}
     >
       <AdviceForm mode="edit" initial={advice} />
     </AdminShell>

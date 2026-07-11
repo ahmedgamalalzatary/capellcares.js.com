@@ -10,7 +10,7 @@ export default function NewAdvicePage() {
   const { user } = useAdminAuth();
   if (!canCreateErpModule(user, "advices")) {
     return (
-      <AdminShell title="نصيحة جديدة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
+      <AdminShell title="نصيحة جديدة" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية إنشاء النصائح." />
       </AdminShell>
     );
@@ -18,7 +18,7 @@ export default function NewAdvicePage() {
   return (
     <AdminShell
       title="نصيحة جديدة"
-      crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "نصيحة جديدة" }]}
+      crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "نصيحة جديدة" }]}
     >
       <AdviceForm mode="new" />
     </AdminShell>

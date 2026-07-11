@@ -33,7 +33,7 @@ export default function AdvicesPage() {
 
   if (!canReadErpModule(user, "advices")) {
     return (
-      <AdminShell title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا" }]}>
+      <AdminShell title="نصائح مينى كشك" crumbs={[{ label: "نصائح مينى كشك" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
       </AdminShell>
     );
@@ -41,8 +41,8 @@ export default function AdvicesPage() {
 
   return (
     <AdminShell
-      title="نصائح كابيلا"
-      crumbs={[{ label: "نصائح كابيلا" }]}
+      title="نصائح مينى كشك"
+      crumbs={[{ label: "نصائح مينى كشك" }]}
       actions={canCreateErpModule(user, "advices") ? (
         <Link href="/advices/new" className="btn btn--primary btn--sm">
           <Icon.Plus /> نصيحة جديدة
