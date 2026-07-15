@@ -9,6 +9,7 @@ import {
   categories,
   offerItems,
   productMedia,
+  productSizes,
   products,
   productVariants,
   relatedItems,
@@ -447,11 +448,12 @@ serialTest("admin product upsert preserves linked variant ids when editing an ex
   const [updatedVariant] = await db
     .select({
       id: productVariants.id,
-      sizeLabel: productVariants.sizeLabel,
+      sizeLabel: productSizes.sizeLabel,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty
     })
     .from(productVariants)
+    .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
     .where(eq(productVariants.id, ids.firstVariantId))
     .limit(1);
 
@@ -504,8 +506,9 @@ serialTest("admin product upsert normalizes variant size whitespace before savin
   });
 
   const [updatedVariant] = await db
-    .select({ sizeLabel: productVariants.sizeLabel })
+    .select({ sizeLabel: productSizes.sizeLabel })
     .from(productVariants)
+    .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
     .where(eq(productVariants.id, ids.firstVariantId))
     .limit(1);
 

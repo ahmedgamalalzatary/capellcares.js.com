@@ -1,4 +1,5 @@
-import { addVariantRepo, createAdminProductRepo } from "../../../repositories/product.repository.js";
+import { db } from "@minikoshk/database/src/db";
+import { createAdminProductRepo, replaceProductOptionsAndVariantsRepo, replaceVariantsRepo } from "../../../repositories/product.repository.js";
 import {
   canActivateAdminProduct,
   normalizeAdminProductInput,
@@ -17,33 +18,42 @@ export async function createAdminProduct(input: AdminProductInput) {
   if (normalized.status === "active" && !canActivateAdminProduct(normalized)) {
     throw new Error("Cannot activate incomplete product");
   }
-  const created = await createAdminProductRepo({
-    sku: normalized.sku ?? "",
-    slug,
-    arName: normalized.arName,
-    enName: normalized.enName,
-    buyingPrice: normalized.buyingPrice,
-    keywords: normalized.keywords.join(","),
-    arDescription: normalized.arDescription ?? null,
-    enDescription: normalized.enDescription ?? null,
-    arIngredients: normalized.arIngredients ?? null,
-    enIngredients: normalized.enIngredients ?? null,
-    arHowToUse: normalized.arHowToUse ?? null,
-    enHowToUse: normalized.enHowToUse ?? null,
-    arWarnings: normalized.arWarnings ?? null,
-    enWarnings: normalized.enWarnings ?? null,
-    youtubeUrl: normalized.youtubeUrl ?? null,
-    imagePath: normalized.imagePath ?? null,
-    categoryId: normalized.categoryId || 1,
-    status: normalized.status
+  return db.transaction(async (tx) => {
+    const created = await createAdminProductRepo({
+      sku: normalized.sku ?? "",
+      slug,
+      arName: normalized.arName,
+      enName: normalized.enName,
+      buyingPrice: normalized.buyingPrice,
+      keywords: normalized.keywords.join(","),
+      arDescription: normalized.arDescription ?? null,
+      enDescription: normalized.enDescription ?? null,
+      arIngredients: normalized.arIngredients ?? null,
+      enIngredients: normalized.enIngredients ?? null,
+      arHowToUse: normalized.arHowToUse ?? null,
+      enHowToUse: normalized.enHowToUse ?? null,
+      arWarnings: normalized.arWarnings ?? null,
+      enWarnings: normalized.enWarnings ?? null,
+      youtubeUrl: normalized.youtubeUrl ?? null,
+      imagePath: normalized.imagePath ?? null,
+      categoryId: normalized.categoryId || 1,
+      status: normalized.status
+    }, tx);
+    if (normalized.sizes.length > 0) {
+      await replaceProductOptionsAndVariantsRepo(
+        created.id,
+        normalized.sizes,
+        normalized.colors,
+        normalized.variants.flatMap((variant) => "sizeId" in variant ? [variant] : []),
+        tx
+      );
+    } else {
+      await replaceVariantsRepo(
+        created.id,
+        normalized.variants.flatMap((variant) => "sizeLabel" in variant ? [variant] : []),
+        tx
+      );
+    }
+    return created;
   });
-  for (const v of normalized.variants) {
-    await addVariantRepo({
-      productId: created.id,
-      sizeLabel: v.sizeLabel,
-      sellingPrice: v.sellingPrice,
-      stockQty: v.stockQty
-    });
-  }
-  return created;
 }

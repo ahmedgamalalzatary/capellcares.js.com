@@ -45,10 +45,23 @@ export function normalizeProduct(input: ProductApiShape): Product {
     isNew: input.isNew ?? false,
     isBestseller: input.isBestseller ?? false,
     categoryId: toNumber(input.categoryId),
+    sizes: (input.sizes ?? []).map((size, index) => ({
+      id: toNumber(size.id),
+      productId: toNumber(size.productId, toNumber(input.id)),
+      label: size.label ?? size.sizeLabel ?? "",
+      sortOrder: toNumber(size.sortOrder, index + 1)
+    })),
+    colors: (input.colors ?? []).map((color, index) => ({
+      id: toNumber(color.id),
+      productId: toNumber(color.productId, toNumber(input.id)),
+      hex: color.hex ?? color.colorHex ?? "",
+      sortOrder: toNumber(color.sortOrder, index + 1)
+    })),
     variants: (input.variants ?? []).map((v, index) => ({
       id: toNumber(v.id),
       productId: toNumber(v.productId, toNumber(input.id)),
-      size: v.size ?? v.sizeLabel ?? "",
+      sizeId: toNumber(v.sizeId),
+      colorId: v.colorId == null ? null : toNumber(v.colorId),
       price: toNumber(v.price ?? v.sellingPrice),
       stock: toNumber(v.stock ?? v.stockQty),
       sortOrder: toNumber(v.sortOrder, index + 1)

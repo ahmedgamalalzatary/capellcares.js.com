@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { productPrice, selectBestSellers, selectNewArrivals, type StorefrontProduct } from "@/lib/products";
+import * as productModule from "@/lib/products";
+
+afterEach(() => vi.unstubAllGlobals());
 
 function makeProduct(overrides: Partial<StorefrontProduct> & { id: number }): StorefrontProduct {
   return {
@@ -12,7 +15,9 @@ function makeProduct(overrides: Partial<StorefrontProduct> & { id: number }): St
     status: "active",
     isNew: true,
     isBestseller: false,
-    variants: [{ price: 1690, stock: 5 }],
+    sizes: [{ id: 1, label: "100ml", sortOrder: 1 }],
+    colors: [],
+    variants: [{ id: 1, sizeId: 1, colorId: null, price: 1690, stock: 5 }],
     ...overrides
   };
 }
@@ -22,8 +27,8 @@ describe("productPrice", () => {
     const product = makeProduct({
       id: 1,
       variants: [
-        { price: 1990, stock: 3 },
-        { price: 1690, stock: 2 }
+        { id: 1, sizeId: 1, colorId: null, price: 1990, stock: 3 },
+        { id: 2, sizeId: 1, colorId: null, price: 1690, stock: 2 }
       ]
     });
     expect(productPrice(product)).toBe(1690);
@@ -31,6 +36,51 @@ describe("productPrice", () => {
 
   it("returns 0 when there are no variants", () => {
     expect(productPrice(makeProduct({ id: 2, variants: [] }))).toBe(0);
+  });
+});
+
+describe("variant selection", () => {
+  it("resolves the exact size and color to the sellable variant id", () => {
+    const resolveVariant = (productModule as unknown as {
+      resolveVariant?: (product: StorefrontProduct, sizeId: number, colorId: number | null) => { id?: number } | undefined;
+    }).resolveVariant;
+    expect(typeof resolveVariant).toBe("function");
+    const product = makeProduct({
+      id: 8,
+      sizes: [{ id: 1, label: "100ml", sortOrder: 1 }],
+      colors: [{ id: 2, hex: "#FFFFFF", sortOrder: 1 }],
+      variants: [{ id: 30, sizeId: 1, colorId: 2, price: 100, stock: 4 }]
+    } as never);
+
+    expect(resolveVariant!(product, 1, 2)?.id).toBe(30);
+  });
+
+  it("chooses the first in-stock combination by default", () => {
+    const firstInStockVariant = (productModule as unknown as {
+      firstInStockVariant?: (product: StorefrontProduct) => { id: number } | undefined;
+    }).firstInStockVariant;
+    expect(typeof firstInStockVariant).toBe("function");
+    const product = makeProduct({
+      id: 9,
+      variants: [
+        { id: 1, sizeId: 1, colorId: null, price: 100, stock: 0 },
+        { id: 2, sizeId: 1, colorId: null, price: 100, stock: 3 }
+      ]
+    });
+    expect(firstInStockVariant!(product)?.id).toBe(2);
+  });
+});
+
+describe("product detail", () => {
+  it("loads the product selected by the shop query", async () => {
+    const detail = makeProduct({ id: 12, slug: "matrix-product" });
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => detail }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await productModule.getProductBySlug("matrix-product");
+
+    expect(result).toEqual(detail);
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/products/matrix-product"), { cache: "no-store" });
   });
 });
 

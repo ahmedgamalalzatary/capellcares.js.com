@@ -1,3 +1,5 @@
+import { normalizeColorHex } from "@minikoshk/shared/schemas";
+
 type ErpProductInput = {
   sku?: string;
   name?: { ar?: string; en?: string };
@@ -11,8 +13,12 @@ type ErpProductInput = {
   youtubeUrl?: string;
   status: "active" | "inactive";
   categoryId?: number;
+  sizes?: Array<{ id: number; label: string }>;
+  colors?: Array<{ id: number; hex: string }>;
   variants?: Array<{
     size?: string;
+    sizeId?: number;
+    colorId?: number | null;
     price?: number;
     stock?: number;
   }>;
@@ -41,10 +47,14 @@ type ApiProductInput = {
   youtubeUrl?: string;
   status: "active" | "inactive";
   categoryId?: number;
+  sizes?: Array<{ id: number; label: string }>;
+  colors?: Array<{ id: number; hex: string }>;
   variants?: Array<{
     sizeLabel?: string;
     sellingPrice?: number;
     stockQty?: number;
+    sizeId?: number;
+    colorId?: number | null;
   }>;
 };
 
@@ -57,6 +67,8 @@ type RawVariant = {
   sizeLabel?: string;
   sellingPrice?: number;
   stockQty?: number;
+  sizeId?: number;
+  colorId?: number | null;
 };
 
 export type NormalizedProductInput = {
@@ -77,8 +89,14 @@ export type NormalizedProductInput = {
   youtubeUrl?: string;
   status: "active" | "inactive";
   categoryId: number;
-  variants: Array<{
+  sizes: Array<{ id: number; label: string }>;
+  colors: Array<{ id: number; hex: string }>;
+  variants: Array<({
+    sizeId: number;
+    colorId: number | null;
+  } | {
     sizeLabel: string;
+  }) & {
     sellingPrice: number;
     stockQty: number;
   }>;
@@ -89,9 +107,19 @@ export function normalizeAdminProductInput(input: AdminProductInput): Normalized
   const api = input as ApiProductInput;
 
   const variants = ((input.variants ?? []) as RawVariant[]).map((variant) => ({
-    sizeLabel: variant.sizeLabel ?? variant.size ?? "",
+    ...(variant.sizeId == null
+      ? { sizeLabel: variant.sizeLabel ?? variant.size ?? "" }
+      : { sizeId: Number(variant.sizeId), colorId: variant.colorId == null ? null : Number(variant.colorId) }),
     sellingPrice: Number(variant.sellingPrice ?? variant.price ?? 0),
     stockQty: Number(variant.stockQty ?? variant.stock ?? 0)
+  }));
+  const sizes = ((input as ErpProductInput).sizes ?? []).map((size) => ({
+    id: Number(size.id),
+    label: size.label.trim().replace(/\s+/g, " ")
+  }));
+  const colors = ((input as ErpProductInput).colors ?? []).map((color) => ({
+    id: Number(color.id),
+    hex: normalizeColorHex(color.hex)
   }));
 
   return {
@@ -112,6 +140,8 @@ export function normalizeAdminProductInput(input: AdminProductInput): Normalized
     youtubeUrl: api.youtubeUrl ?? erp.youtubeUrl ?? undefined,
     status: input.status,
     categoryId: Number(api.categoryId ?? erp.categoryId ?? 0),
+    sizes,
+    colors,
     variants
   };
 }
@@ -123,6 +153,7 @@ export function canActivateAdminProduct(input: NormalizedProductInput) {
       input.keywords.length > 0 &&
       input.imagePath &&
       input.categoryId &&
-      input.variants.length > 0
+      input.variants.length > 0 &&
+      input.variants.every((variant) => variant.sellingPrice > 0)
   );
 }

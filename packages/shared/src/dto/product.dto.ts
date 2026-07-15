@@ -1,9 +1,24 @@
+export interface ProductSizeDto {
+  id: number;
+  productId: number;
+  label: string;
+  sortOrder: number;
+}
+
+export interface ProductColorDto {
+  id: number;
+  productId: number;
+  hex: string;
+  sortOrder: number;
+}
+
 export interface ProductVariantDto {
   id: number;
   productId: number;
-  sizeLabel: string;
-  sellingPrice: number;
-  stockQty: number;
+  sizeId: number;
+  colorId: number | null;
+  price: number;
+  stock: number;
   sortOrder: number;
 }
 
@@ -37,5 +52,7 @@ export interface ProductDto {
   isBestseller: boolean;
   categoryId: number;
   deletedAt: string | null;
+  sizes: ProductSizeDto[];
+  colors: ProductColorDto[];
   variants: ProductVariantDto[];
 }

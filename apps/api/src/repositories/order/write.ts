@@ -28,6 +28,7 @@ interface OrderItem {
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
+  snapshotColorHex?: string | null;
 }
 
 /**
@@ -219,7 +220,8 @@ export async function createOrderWithItems(input: {
         lineTotal: sql`${item.lineTotal}`,
         snapshotNameAr: item.snapshotNameAr ?? null,
         snapshotNameEn: item.snapshotNameEn ?? null,
-        snapshotSizeLabel: item.snapshotSizeLabel ?? null
+        snapshotSizeLabel: item.snapshotSizeLabel ?? null,
+        snapshotColorHex: item.snapshotColorHex ?? null
       }))
     );
 

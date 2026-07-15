@@ -1,5 +1,5 @@
-import { asc, eq, inArray, sql } from "drizzle-orm";
-import { productMedia, productVariants } from "@minikoshk/database/drizzle/schema";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { productColors, productMedia, productSizes, productVariants } from "@minikoshk/database/drizzle/schema";
 import { db } from "@minikoshk/database/src/db";
 
 const FALLBACK_PUBLIC_UPLOADS_BASE = "http://localhost:4000/uploads";
@@ -27,7 +27,8 @@ export function toKeywords(value: string): string[] {
 export function mapVariant(v: {
   id: number;
   productId: number;
-  sizeLabel: string;
+  sizeId: number;
+  colorId: number | null;
   sellingPrice: unknown;
   stockQty: number;
   sortOrder: number;
@@ -35,11 +36,77 @@ export function mapVariant(v: {
   return {
     id: v.id,
     productId: v.productId,
-    size: v.sizeLabel,
+    sizeId: v.sizeId,
+    colorId: v.colorId,
     price: toNumber(v.sellingPrice),
     stock: v.stockQty,
     sortOrder: v.sortOrder
   };
+}
+
+export function mapSize(size: {
+  id: number;
+  productId: number;
+  sizeLabel: string;
+  sortOrder: number;
+}) {
+  return {
+    id: size.id,
+    productId: size.productId,
+    label: size.sizeLabel,
+    sortOrder: size.sortOrder
+  };
+}
+
+export function mapColor(color: {
+  id: number;
+  productId: number;
+  colorHex: string;
+  sortOrder: number;
+}) {
+  return {
+    id: color.id,
+    productId: color.productId,
+    hex: color.colorHex,
+    sortOrder: color.sortOrder
+  };
+}
+
+export async function loadProductOptions(productIds: number[]) {
+  const sizesByProduct = new Map<number, ReturnType<typeof mapSize>[]>();
+  const colorsByProduct = new Map<number, ReturnType<typeof mapColor>[]>();
+  if (productIds.length === 0) return { sizesByProduct, colorsByProduct };
+
+  const [sizeRows, colorRows] = await Promise.all([
+    db.select({
+      id: productSizes.id,
+      productId: productSizes.productId,
+      sizeLabel: productSizes.sizeLabel,
+      sortOrder: productSizes.sortOrder
+    }).from(productSizes)
+      .where(and(inArray(productSizes.productId, productIds), isNull(productSizes.deletedAt)))
+      .orderBy(asc(productSizes.sortOrder), asc(productSizes.id)),
+    db.select({
+      id: productColors.id,
+      productId: productColors.productId,
+      colorHex: productColors.colorHex,
+      sortOrder: productColors.sortOrder
+    }).from(productColors)
+      .where(and(inArray(productColors.productId, productIds), isNull(productColors.deletedAt)))
+      .orderBy(asc(productColors.sortOrder), asc(productColors.id))
+  ]);
+
+  for (const row of sizeRows) {
+    const items = sizesByProduct.get(row.productId) ?? [];
+    items.push(mapSize(row));
+    sizesByProduct.set(row.productId, items);
+  }
+  for (const row of colorRows) {
+    const items = colorsByProduct.get(row.productId) ?? [];
+    items.push(mapColor(row));
+    colorsByProduct.set(row.productId, items);
+  }
+  return { sizesByProduct, colorsByProduct };
 }
 
 function getPublicUploadsBase(): string {
@@ -157,16 +224,19 @@ export async function addVariantRepo(input: {
   sellingPrice: number;
   stockQty: number;
 }) {
-  const [row] = await db
-    .select({ maxSortOrder: sql<number | null>`max(${productVariants.sortOrder})` })
-    .from(productVariants)
-    .where(eq(productVariants.productId, input.productId));
-
-  await db.insert(productVariants).values({
+  const [row] = await db.select({ maxSortOrder: sql<number | null>`max(${productSizes.sortOrder})` })
+    .from(productSizes).where(eq(productSizes.productId, input.productId));
+  const sortOrder = Number(row?.maxSortOrder ?? 0) + 1;
+  const [size] = await db.insert(productSizes).values({
     productId: input.productId,
     sizeLabel: normalizeVariantSizeLabel(input.sizeLabel),
+    sortOrder
+  }).$returningId();
+  await db.insert(productVariants).values({
+    productId: input.productId,
+    sizeId: size.id,
     sellingPrice: sql`${input.sellingPrice}`,
     stockQty: input.stockQty,
-    sortOrder: Number(row?.maxSortOrder ?? 0) + 1
+    sortOrder
   });
 }

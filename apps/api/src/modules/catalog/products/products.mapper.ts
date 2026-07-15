@@ -13,13 +13,16 @@ type ProductRow = {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
+  sizes: Product["sizes"];
+  colors: Product["colors"];
   variants: Array<{
     id: number;
     productId: number;
-    size: string;
+    sizeId: number;
+    colorId: number | null;
     price: number;
     stock: number;
-    sortOrder?: number;
+    sortOrder: number;
   }>;
   name: { ar: string; en: string };
   description: { ar: string; en: string };
@@ -47,6 +50,8 @@ export function toStorefrontProduct(product: ProductRow): Omit<Product, "buyingP
     isNew: product.isNew,
     isBestseller: product.isBestseller,
     categoryId: product.categoryId,
+    sizes: product.sizes,
+    colors: product.colors,
     variants: product.variants
   };
 }

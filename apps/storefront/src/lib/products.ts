@@ -4,8 +4,23 @@ const API_BASE = resolveApiBase(process.env, { isServer: true });
 
 /** Variant fields the storefront card actually uses (see `toStorefrontProduct`). */
 export interface StorefrontVariant {
+  id: number;
+  sizeId: number;
+  colorId: number | null;
   price: number;
   stock: number;
+}
+
+export interface StorefrontSize {
+  id: number;
+  label: string;
+  sortOrder: number;
+}
+
+export interface StorefrontColor {
+  id: number;
+  hex: string;
+  sortOrder: number;
 }
 
 export interface StorefrontMedia {
@@ -30,7 +45,23 @@ export interface StorefrontProduct {
   status: "active" | "inactive";
   isNew: boolean;
   isBestseller: boolean;
+  sizes: StorefrontSize[];
+  colors: StorefrontColor[];
   variants: StorefrontVariant[];
+}
+
+export function resolveVariant(
+  product: StorefrontProduct,
+  sizeId: number,
+  colorId: number | null
+) {
+  return product.variants.find((variant) =>
+    variant.sizeId === sizeId && variant.colorId === colorId
+  );
+}
+
+export function firstInStockVariant(product: StorefrontProduct) {
+  return product.variants.find((variant) => variant.stock > 0);
 }
 
 /** Lowest variant price, or 0 when the product has no variants. */
@@ -93,5 +124,14 @@ export async function getBestSellers(): Promise<StorefrontProduct[]> {
     return Array.isArray(payload.items) ? selectBestSellers(payload.items) : [];
   } catch {
     return [];
+  }
+}
+
+export async function getProductBySlug(slug: string): Promise<StorefrontProduct | null> {
+  try {
+    const response = await fetch(`${API_BASE}/api/v1/products/${encodeURIComponent(slug)}`, { cache: "no-store" });
+    return response.ok ? await response.json() as StorefrontProduct : null;
+  } catch {
+    return null;
   }
 }

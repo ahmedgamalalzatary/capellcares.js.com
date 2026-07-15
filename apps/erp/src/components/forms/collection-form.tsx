@@ -9,6 +9,7 @@ import { useCollectionForm } from "../../hooks/forms/use-collection-form";
 import { RelatedItemsField } from "./related-items-field";
 import type { CollectionFormProps } from "../../types/forms/collection-form.types";
 import { Icon } from "@/components/ui/icons";
+import { getVariantLabel } from "@/lib/product-options";
 
 export function CollectionForm({
   mode,
@@ -122,7 +123,7 @@ export function CollectionForm({
                         <select className="select" disabled={!product} value={row.variantId} onChange={(e) => updateRow(index, { variantId: Number(e.target.value) })}>
                           <option value="0">— مقاس —</option>
                           {variants.map((candidate) => (
-                            <option key={candidate.id} value={candidate.id}>{candidate.size}</option>
+                            <option key={candidate.id} value={candidate.id}>{product ? getVariantLabel(product, candidate) : "—"}</option>
                           ))}
                         </select>
                       </td>

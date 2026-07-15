@@ -55,6 +55,19 @@ vi.mock("@/lib/homepage-banners", () => ({
   }))
 }));
 
+vi.mock("@/lib/products", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/products")>()),
+  getNewArrivals: vi.fn(async () => []),
+  getBestSellers: vi.fn(async () => []),
+  getProductBySlug: vi.fn(async (slug: string) => slug === "matrix-product" ? ({
+    id: 7, slug, name: { ar: "منتج", en: "Matrix product" }, keywords: [],
+    imagePath: "/uploads/product.png", media: [], status: "active", isNew: false, isBestseller: false,
+    sizes: [{ id: 1, label: "100ml", sortOrder: 1 }],
+    colors: [{ id: 10, hex: "#FFFFFF", sortOrder: 1 }],
+    variants: [{ id: 101, sizeId: 1, colorId: 10, price: 20, stock: 2 }]
+  }) : null)
+}));
+
 import ShopPage from "@/app/[lang]/shop/page";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 
@@ -63,7 +76,7 @@ afterEach(() => {
 });
 
 async function renderShop() {
-  return render(<LocaleProvider lang="en">{await ShopPage()}</LocaleProvider>);
+  return render(<LocaleProvider lang="en">{await ShopPage({ searchParams: Promise.resolve({}) })}</LocaleProvider>);
 }
 
 describe("HomePage homepage sections", () => {
@@ -105,5 +118,15 @@ describe("HomePage homepage sections", () => {
     // Five items with a four-wide window: only one step exists, so it clamps.
     fireEvent.click(screen.getByRole("button", { name: "Homepage featured grid next" }));
     expect(track.style.transform).toBe("translateX(-25%)");
+  });
+
+  it("consumes product option query parameters in a real selection view", async () => {
+    render(<LocaleProvider lang="en">{await ShopPage({
+      searchParams: Promise.resolve({ product: "matrix-product", size: "1", color: "10", variant: "101" })
+    })}</LocaleProvider>);
+
+    expect(screen.getByRole("region", { name: "Matrix product" })).toBeInTheDocument();
+    expect(screen.getByText("20 EGP")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Color #FFFFFF" })).toBeInTheDocument();
   });
 });

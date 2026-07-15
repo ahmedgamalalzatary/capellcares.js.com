@@ -10,6 +10,8 @@ import {
   offers,
   orderItems,
   orders,
+  productColors,
+  productSizes,
   productVariants,
   products,
   wishlists
@@ -227,19 +229,57 @@ serialTest("rejects a duplicate offer_items (offer_id, variant_id)", async () =>
   );
 });
 
-serialTest("rejects a duplicate product_variants (product_id, size_label)", async () => {
+serialTest("rejects a duplicate active size-only product combination", async () => {
   const [existing] = await db
-    .select({ sizeLabel: productVariants.sizeLabel })
+    .select({ sizeId: productVariants.sizeId })
     .from(productVariants)
     .where(eq(productVariants.id, base.variantId))
     .limit(1);
   await assert.rejects(
     db.insert(productVariants).values({
       productId: base.productId,
-      sizeLabel: existing!.sizeLabel,
+      sizeId: existing!.sizeId,
       sellingPrice: "9.99",
       stockQty: 1
     })
+  );
+});
+
+serialTest("rejects negative variant stock", async () => {
+  const [size] = await db
+    .insert(productSizes)
+    .values({ productId: base.productId, sizeLabel: "negative-stock-size" })
+    .$returningId();
+
+  await assert.rejects(
+    db.insert(productVariants).values({
+      productId: base.productId,
+      sizeId: size.id,
+      sellingPrice: "9.99",
+      stockQty: -1
+    })
+  );
+});
+
+serialTest("rejects negative variant prices", async () => {
+  const [size] = await db
+    .insert(productSizes)
+    .values({ productId: base.productId, sizeLabel: "negative-price-size" })
+    .$returningId();
+
+  await assert.rejects(
+    db.insert(productVariants).values({
+      productId: base.productId,
+      sizeId: size.id,
+      sellingPrice: "-0.01",
+      stockQty: 0
+    })
+  );
+});
+
+serialTest("rejects non-canonical lowercase color hex values", async () => {
+  await assert.rejects(
+    db.insert(productColors).values({ productId: base.productId, colorHex: "#ffffff" })
   );
 });
 
@@ -307,7 +347,7 @@ serialTest("supports soft-deleting a product_variant via deleted_at", async () =
 
 serialTest("allows a new active variant with the same size after the old one is soft-deleted", async () => {
   const [existing] = await db
-    .select({ sizeLabel: productVariants.sizeLabel })
+    .select({ sizeId: productVariants.sizeId })
     .from(productVariants)
     .where(eq(productVariants.id, base.variantId))
     .limit(1);
@@ -321,7 +361,7 @@ serialTest("allows a new active variant with the same size after the old one is 
     .insert(productVariants)
     .values({
       productId: base.productId,
-      sizeLabel: existing!.sizeLabel,
+      sizeId: existing!.sizeId,
       sellingPrice: "12.50",
       stockQty: 3
     })

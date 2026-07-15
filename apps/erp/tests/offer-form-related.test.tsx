@@ -39,7 +39,9 @@ const products = [
     isNew: false,
     isBestseller: false,
     categoryId: 5,
-    variants: [{ id: 1, productId: 10, size: "100ml", price: 50, stock: 5, sortOrder: 1 }],
+    sizes: [{ id: 101, productId: 10, label: "100ml", sortOrder: 1 }],
+    colors: [],
+    variants: [{ id: 1, productId: 10, sizeId: 101, colorId: null, price: 50, stock: 5, sortOrder: 1 }],
     createdAt: "",
     updatedAt: ""
   }

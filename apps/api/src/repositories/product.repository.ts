@@ -7,6 +7,7 @@ export {
 export {
   createAdminProductRepo,
   hardDeleteProductRepo,
+  replaceProductOptionsAndVariantsRepo,
   replaceVariantsRepo,
   restoreProductRepo,
   setVariantStockRepo,

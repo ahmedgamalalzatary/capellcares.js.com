@@ -11,6 +11,8 @@ import {
   orderItems,
   orders,
   productMedia,
+  productColors,
+  productSizes,
   productVariants,
   products
 } from "../../drizzle/schema.js";
@@ -36,6 +38,8 @@ export async function clearTestSeed() {
   await db.delete(homepageBannerItems);
   await db.delete(productMedia);
   await db.delete(productVariants);
+  await db.delete(productColors);
+  await db.delete(productSizes);
   await db.delete(offers);
   await db.delete(products);
   await db.delete(customers);
@@ -224,6 +228,7 @@ async function ensureVariant(input: {
   stockQty: number;
   sortOrder: number;
 }) {
+  const sizeId = await ensureSize(input.productId, input.sizeLabel, input.sortOrder);
   const [existing] = await db
     .select()
     .from(productVariants)
@@ -233,7 +238,29 @@ async function ensureVariant(input: {
     return existing.id;
   }
 
-  const [created] = await db.insert(productVariants).values(input).$returningId();
+  const [created] = await db.insert(productVariants).values({
+    productId: input.productId,
+    sizeId,
+    sellingPrice: input.sellingPrice,
+    stockQty: input.stockQty,
+    sortOrder: input.sortOrder
+  }).$returningId();
+  return created.id;
+}
+
+async function ensureSize(productId: number, sizeLabel: string, sortOrder: number) {
+  const [existing] = await db
+    .select({ id: productSizes.id })
+    .from(productSizes)
+    .where(and(eq(productSizes.productId, productId), eq(productSizes.sizeLabel, sizeLabel)))
+    .limit(1);
+  if (existing) return existing.id;
+
+  const [created] = await db.insert(productSizes).values({
+    productId,
+    sizeLabel,
+    sortOrder
+  }).$returningId();
   return created.id;
 }
 

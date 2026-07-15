@@ -60,7 +60,9 @@ vi.mock("@/lib/store", () => ({
       isNew: false,
       isBestseller: false,
       categoryId: 5,
-      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      sizes: [{ id: 101, productId: 1, label: "100ml", sortOrder: 1 }],
+      colors: [],
+      variants: [{ id: 11, productId: 1, sizeId: 101, colorId: null, price: 50, stock: 2, sortOrder: 1 }],
       createdAt: "",
       updatedAt: ""
     }],
@@ -115,7 +117,9 @@ function minimalProduct(id: number) {
     isNew: false,
     isBestseller: false,
     categoryId: 5,
-    variants: [{ id: 11, productId: id, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+    sizes: [{ id: 101, productId: id, label: "100ml", sortOrder: 1 }],
+    colors: [],
+    variants: [{ id: 11, productId: id, sizeId: 101, colorId: null, price: 50, stock: 2, sortOrder: 1 }],
     createdAt: "",
     updatedAt: ""
   };

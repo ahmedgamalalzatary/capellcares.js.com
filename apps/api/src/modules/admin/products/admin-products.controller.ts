@@ -2,11 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "@minikoshk/database/src/db";
 import { products } from "@minikoshk/database/drizzle/schema";
+import { normalizeColorHex } from "@minikoshk/shared/schemas";
 import { listCategoriesRepo } from "../../../repositories/category.repository.js";
 import {
   createAdminProductRepo,
   findAdminProductByIdRepo,
   listAdminProductsRepo,
+  replaceProductOptionsAndVariantsRepo,
   replaceVariantsRepo
 } from "../../../repositories/product.repository.js";
 import {
@@ -114,7 +116,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         productKeywords.length === 0 ||
         !incoming.imagePath ||
         !incoming.categoryId ||
-        productVariants.length === 0
+        productVariants.length === 0 ||
+        productVariants.some((variant: any) => Number(variant.sellingPrice ?? variant.price ?? 0) <= 0) ||
+        (Array.isArray(incoming.sizes) && incoming.sizes.length === 0)
       )
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
@@ -152,16 +156,38 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         isNew: incoming.isNew ?? false,
         isBestseller: incoming.isBestseller ?? false
       }, tx);
-      await replaceVariantsRepo(
-        product.id,
-        productVariants.map((v: any) => ({
-          id: v.id ? Number(v.id) : undefined,
-          sizeLabel: v.sizeLabel ?? v.size ?? "",
-          sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
-          stockQty: Number(v.stockQty ?? v.stock ?? 0)
-        })),
-        tx
-      );
+      if (Array.isArray(incoming.sizes)) {
+        await replaceProductOptionsAndVariantsRepo(
+          product.id,
+          incoming.sizes.map((size: any, index: number) => ({
+            id: Number(size.id ?? -(index + 1)),
+            label: String(size.label ?? size.sizeLabel ?? "").trim().replace(/\s+/g, " ")
+          })),
+          (Array.isArray(incoming.colors) ? incoming.colors : []).map((color: any, index: number) => ({
+            id: Number(color.id ?? -(index + 1)),
+            hex: normalizeColorHex(String(color.hex ?? color.colorHex ?? ""))
+          })),
+          productVariants.map((variant: any) => ({
+            id: variant.id ? Number(variant.id) : undefined,
+            sizeId: Number(variant.sizeId),
+            colorId: variant.colorId == null ? null : Number(variant.colorId),
+            sellingPrice: Number(variant.sellingPrice ?? variant.price ?? 0),
+            stockQty: Number(variant.stockQty ?? variant.stock ?? 0)
+          })),
+          tx
+        );
+      } else {
+        await replaceVariantsRepo(
+          product.id,
+          productVariants.map((v: any) => ({
+            id: v.id ? Number(v.id) : undefined,
+            sizeLabel: v.sizeLabel ?? v.size ?? "",
+            sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
+            stockQty: Number(v.stockQty ?? v.stock ?? 0)
+          })),
+          tx
+        );
+      }
       if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
         const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
           (target) => !(target.type === "product" && target.id === product.id)
@@ -182,8 +208,17 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     });
     res.json({ ok: true });
   } catch (error: any) {
+    if (error?.code === "INVALID_PRODUCT_OPTIONS") {
+      return res.status(400).json({ ok: false, reason: "invalid-product-options" });
+    }
     if (error?.code === "PRODUCT_VARIANT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    if (error?.code === "PRODUCT_VARIANT_LINKED_TO_BUNDLES") {
+      return res.status(409).json({ ok: false, reason: "linked-to-bundles" });
+    }
+    if (/hexadecimal|complete size and color matrix|unknown product option/i.test(error?.message ?? "")) {
+      return res.status(400).json({ ok: false, reason: "invalid-product-options" });
     }
     next(error);
   }

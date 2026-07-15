@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@minikoshk/database/src/db";
-import { collections, offers, productVariants, products } from "@minikoshk/database/drizzle/schema";
+import { collections, offers, productColors, productSizes, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
@@ -17,12 +17,15 @@ export async function createOrderFromCheckout(
         .select({
           id: productVariants.id,
           sellingPrice: productVariants.sellingPrice,
-          sizeLabel: productVariants.sizeLabel,
+          sizeLabel: productSizes.sizeLabel,
+          colorHex: productColors.colorHex,
           arName: products.arName,
           enName: products.enName
         })
         .from(productVariants)
         .innerJoin(products, eq(products.id, productVariants.productId))
+        .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
+        .leftJoin(productColors, eq(productColors.id, productVariants.colorId))
         .where(
           and(
             eq(productVariants.id, variantId),
@@ -43,7 +46,8 @@ export async function createOrderFromCheckout(
         lineTotal: multiplyMoney(unitPrice, item.qty),
         snapshotNameAr: variant.arName,
         snapshotNameEn: variant.enName,
-        snapshotSizeLabel: variant.sizeLabel
+        snapshotSizeLabel: variant.sizeLabel,
+        snapshotColorHex: variant.colorHex
       });
       continue;
     }
@@ -72,7 +76,8 @@ export async function createOrderFromCheckout(
         lineTotal: multiplyMoney(Number(collection.fixedPrice), item.qty),
         snapshotNameAr: collection.arName,
         snapshotNameEn: collection.enName,
-        snapshotSizeLabel: null
+        snapshotSizeLabel: null,
+        snapshotColorHex: null
       });
       continue;
     }
@@ -99,7 +104,8 @@ export async function createOrderFromCheckout(
       lineTotal: multiplyMoney(Number(offer.fixedPrice), item.qty),
       snapshotNameAr: offer.arName,
       snapshotNameEn: offer.enName,
-      snapshotSizeLabel: null
+      snapshotSizeLabel: null,
+      snapshotColorHex: null
     });
   }
 

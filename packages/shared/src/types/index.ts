@@ -18,13 +18,28 @@ export interface Category {
   deletedAt?: string | null;
 }
 
+export interface ProductSize {
+  id: number;
+  productId: number;
+  label: string;
+  sortOrder: number;
+}
+
+export interface ProductColor {
+  id: number;
+  productId: number;
+  hex: string;
+  sortOrder: number;
+}
+
 export interface ProductVariant {
   id: number;
   productId: number;
-  size: string;
+  sizeId: number;
+  colorId: number | null;
   price: number;
   stock: number;
-  sortOrder?: number;
+  sortOrder: number;
 }
 
 export interface ProductMedia {
@@ -51,6 +66,8 @@ export interface Product {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
+  sizes?: ProductSize[];
+  colors?: ProductColor[];
   variants: ProductVariant[];
   offerIds?: number[];
   relatedItems?: RelatedItemRef[];
@@ -166,6 +183,7 @@ export interface OrderItem {
   snapshotNameAr: string | null;
   snapshotNameEn: string | null;
   snapshotSizeLabel: string | null;
+  snapshotColorHex: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

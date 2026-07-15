@@ -1,5 +1,5 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { offerItems, orderItems, productMedia, products, productVariants, wishlists } from "@minikoshk/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, productColors, productMedia, productSizes, products, productVariants, wishlists } from "@minikoshk/database/drizzle/schema";
 import { db } from "@minikoshk/database/src/db";
 import {
   normalizeMedia,
@@ -10,6 +10,40 @@ import {
 } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function invalidProductOptions(message: string) {
+  const error = new Error(message) as Error & { code?: string };
+  error.code = "INVALID_PRODUCT_OPTIONS";
+  return error;
+}
+
+function validateProductOptions(
+  sizes: Array<{ id: number; label: string }>,
+  colors: Array<{ id: number; hex: string }>,
+  variants: Array<{ sellingPrice: number; stockQty: number }>
+) {
+  const normalizedSizes = sizes.map((size) => normalizeVariantSizeLabel(size.label));
+  if (
+    normalizedSizes.some((label) => label.length === 0) ||
+    new Set(sizes.map((size) => size.id)).size !== sizes.length ||
+    new Set(normalizedSizes.map((label) => label.toLocaleLowerCase())).size !== sizes.length
+  ) {
+    throw invalidProductOptions("Product sizes must be nonempty and unique");
+  }
+  if (
+    new Set(colors.map((color) => color.id)).size !== colors.length ||
+    colors.some((color) => !/^#[0-9A-F]{6}$/.test(color.hex)) ||
+    new Set(colors.map((color) => color.hex)).size !== colors.length
+  ) {
+    throw invalidProductOptions("Product colors must be canonical and unique hexadecimal values");
+  }
+  if (variants.some((variant) =>
+    !Number.isFinite(variant.sellingPrice) || variant.sellingPrice < 0 ||
+    !Number.isInteger(variant.stockQty) || variant.stockQty < 0
+  )) {
+    throw invalidProductOptions("Variant prices and stock must be nonnegative numbers");
+  }
+}
 
 export async function createAdminProductRepo(input: {
   id?: number;
@@ -112,78 +146,195 @@ export async function replaceVariantsRepo(
   variants: Array<{ id?: number; sizeLabel: string; sellingPrice: number; stockQty: number }>,
   executor?: DbTransaction
 ) {
+  const repo = executor ?? db;
+  const existing = await repo.select({
+    id: productVariants.id,
+    sizeId: productVariants.sizeId,
+    sizeLabel: productSizes.sizeLabel
+  }).from(productVariants)
+    .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
+    .where(eq(productVariants.productId, productId));
+  const sizeIdByVariantId = new Map(existing.map((row) => [row.id, row.sizeId]));
+  const claimedExistingIds = new Set<number>();
+  const resolvedVariants = variants.map((variant) => {
+    const byId = variant.id != null ? existing.find((row) => row.id === variant.id) : undefined;
+    const normalizedLabel = normalizeVariantSizeLabel(variant.sizeLabel);
+    const byLabel = existing.find((row) =>
+      !claimedExistingIds.has(row.id) && normalizeVariantSizeLabel(row.sizeLabel) === normalizedLabel
+    );
+    const matched = byId ?? byLabel;
+    if (matched) claimedExistingIds.add(matched.id);
+    return { ...variant, id: matched?.id ?? variant.id, resolvedSizeId: matched?.sizeId };
+  });
+  const sizes = resolvedVariants.map((variant, index) => ({
+    id: variant.resolvedSizeId ?? -(index + 1),
+    label: variant.sizeLabel
+  }));
+  await replaceProductOptionsAndVariantsRepo(
+    productId,
+    sizes,
+    [],
+    resolvedVariants.map((variant, index) => ({
+      id: variant.id,
+      sizeId: sizes[index]!.id,
+      colorId: null,
+      sellingPrice: variant.sellingPrice,
+      stockQty: variant.stockQty
+    })),
+    executor
+  );
+}
+
+export async function replaceProductOptionsAndVariantsRepo(
+  productId: number,
+  sizes: Array<{ id: number; label: string }>,
+  colors: Array<{ id: number; hex: string }>,
+  variants: Array<{
+    id?: number;
+    sizeId: number;
+    colorId: number | null;
+    sellingPrice: number;
+    stockQty: number;
+  }>,
+  executor?: DbTransaction
+) {
+  validateProductOptions(sizes, colors, variants);
   const run = async (tx: DbTransaction) => {
-    const existing = await tx
-      .select({ id: productVariants.id })
-      .from(productVariants)
+    const expectedCombinations = sizes.flatMap((size) =>
+      colors.length === 0
+        ? [`${size.id}:null`]
+        : colors.map((color) => `${size.id}:${color.id}`)
+    );
+    const requestedCombinations = variants.map((variant) =>
+      `${variant.sizeId}:${variant.colorId == null ? "null" : variant.colorId}`
+    );
+    if (
+      new Set(requestedCombinations).size !== requestedCombinations.length ||
+      requestedCombinations.length !== expectedCombinations.length ||
+      expectedCombinations.some((combination) => !requestedCombinations.includes(combination))
+    ) {
+      throw new Error("Product variants must contain the complete size and color matrix");
+    }
+
+    const existingSizes = await tx.select({ id: productSizes.id }).from(productSizes)
+      .where(eq(productSizes.productId, productId));
+    const existingSizeIds = new Set(existingSizes.map((row) => row.id));
+    const sizeIds = new Map<number, number>();
+    for (let index = 0; index < sizes.length; index += 1) {
+      const size = sizes[index]!;
+      if (existingSizeIds.has(size.id)) {
+        await tx.update(productSizes).set({
+          sizeLabel: normalizeVariantSizeLabel(size.label),
+          sortOrder: index + 1,
+          deletedAt: null
+        }).where(and(eq(productSizes.id, size.id), eq(productSizes.productId, productId)));
+        sizeIds.set(size.id, size.id);
+      } else {
+        const [created] = await tx.insert(productSizes).values({
+          productId,
+          sizeLabel: normalizeVariantSizeLabel(size.label),
+          sortOrder: index + 1
+        }).$returningId();
+        sizeIds.set(size.id, created.id);
+      }
+    }
+
+    const existingColors = await tx.select({ id: productColors.id }).from(productColors)
+      .where(eq(productColors.productId, productId));
+    const existingColorIds = new Set(existingColors.map((row) => row.id));
+    const colorIds = new Map<number, number>();
+    for (let index = 0; index < colors.length; index += 1) {
+      const color = colors[index]!;
+      if (existingColorIds.has(color.id)) {
+        await tx.update(productColors).set({
+          colorHex: color.hex,
+          sortOrder: index + 1,
+          deletedAt: null
+        }).where(and(eq(productColors.id, color.id), eq(productColors.productId, productId)));
+        colorIds.set(color.id, color.id);
+      } else {
+        const [created] = await tx.insert(productColors).values({
+          productId,
+          colorHex: color.hex,
+          sortOrder: index + 1
+        }).$returningId();
+        colorIds.set(color.id, created.id);
+      }
+    }
+
+    const existingVariants = await tx.select({ id: productVariants.id }).from(productVariants)
       .where(eq(productVariants.productId, productId));
-
-    const existingIds = existing.map((row) => row.id);
-    const requestedExistingIds = variants
+    const existingVariantIds = new Set(existingVariants.map((row) => row.id));
+    const requestedExistingVariantIds = variants
       .map((variant) => variant.id)
-      .filter((id): id is number => typeof id === "number" && existingIds.includes(id));
-
-    const removedIds = existingIds.filter((id) => !requestedExistingIds.includes(id));
-    if (removedIds.length > 0) {
-      const linkedRows = await tx
-        .select({ variantId: offerItems.variantId })
-        .from(offerItems)
-        .where(inArray(offerItems.variantId, removedIds))
-        .limit(1);
+      .filter((id): id is number => id != null && existingVariantIds.has(id));
+    const removedVariantIds = existingVariants
+      .map((row) => row.id)
+      .filter((id) => !requestedExistingVariantIds.includes(id));
+    if (removedVariantIds.length > 0) {
+      const linkedRows = await tx.select({ id: offerItems.id }).from(offerItems)
+        .where(inArray(offerItems.variantId, removedVariantIds)).limit(1);
       if (linkedRows.length > 0) {
         const error = new Error("linked-to-offers") as Error & { code?: string };
         error.code = "PRODUCT_VARIANT_LINKED_TO_OFFERS";
         throw error;
       }
-
-      const soldRows = await tx
-        .select({ variantId: orderItems.variantId })
-        .from(orderItems)
-        .where(inArray(orderItems.variantId, removedIds));
-      const soldIds = [...new Set(soldRows.map((row) => row.variantId).filter((id): id is number => id != null))];
-      const hardDeletableIds = removedIds.filter((id) => !soldIds.includes(id));
-
-      if (soldIds.length > 0) {
-        await tx
-          .update(productVariants)
-          .set({ deletedAt: sql`NOW()` })
-          .where(inArray(productVariants.id, soldIds));
+      const linkedCollectionRows = await tx.select({ id: collectionItems.id }).from(collectionItems)
+        .where(inArray(collectionItems.variantId, removedVariantIds)).limit(1);
+      if (linkedCollectionRows.length > 0) {
+        const error = new Error("linked-to-bundles") as Error & { code?: string };
+        error.code = "PRODUCT_VARIANT_LINKED_TO_BUNDLES";
+        throw error;
       }
-      if (hardDeletableIds.length > 0) {
-        await tx.delete(productVariants).where(inArray(productVariants.id, hardDeletableIds));
+      const soldRows = await tx.select({ variantId: orderItems.variantId }).from(orderItems)
+        .where(inArray(orderItems.variantId, removedVariantIds));
+      const soldIds = new Set(soldRows.map((row) => row.variantId).filter((id): id is number => id != null));
+      const hardDeleteIds = removedVariantIds.filter((id) => !soldIds.has(id));
+      if (soldIds.size > 0) {
+        await tx.update(productVariants).set({ deletedAt: sql`NOW()` })
+          .where(inArray(productVariants.id, [...soldIds]));
+      }
+      if (hardDeleteIds.length > 0) {
+        await tx.delete(productVariants).where(inArray(productVariants.id, hardDeleteIds));
       }
     }
 
     for (let index = 0; index < variants.length; index += 1) {
       const variant = variants[index]!;
-      const sortOrder = index + 1;
-      if (variant.id && existingIds.includes(variant.id)) {
-        await tx
-          .update(productVariants)
-          .set({
-            sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
-            sellingPrice: sql`${variant.sellingPrice}`,
-            stockQty: variant.stockQty,
-            sortOrder
-          })
-          .where(eq(productVariants.id, variant.id));
-      } else {
-        await tx.insert(productVariants).values({
-          productId,
-          sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
-          sellingPrice: sql`${variant.sellingPrice}`,
-          stockQty: variant.stockQty,
-          sortOrder
-        });
+      const sizeId = sizeIds.get(variant.sizeId);
+      const colorId = variant.colorId == null ? null : colorIds.get(variant.colorId);
+      if (!sizeId || (variant.colorId != null && !colorId)) {
+        throw new Error("Variant references an unknown product option");
       }
+      const values = {
+        sizeId,
+        colorId,
+        sellingPrice: sql`${variant.sellingPrice}`,
+        stockQty: variant.stockQty,
+        sortOrder: index + 1,
+        deletedAt: null
+      };
+      if (variant.id != null && existingVariantIds.has(variant.id)) {
+        await tx.update(productVariants).set(values)
+          .where(and(eq(productVariants.id, variant.id), eq(productVariants.productId, productId)));
+      } else {
+        await tx.insert(productVariants).values({ productId, ...values });
+      }
+    }
+
+    const retainedSizeIds = new Set([...sizeIds.values()]);
+    const removedSizeIds = existingSizes.map((row) => row.id).filter((id) => !retainedSizeIds.has(id));
+    if (removedSizeIds.length > 0) {
+      await tx.update(productSizes).set({ deletedAt: sql`NOW()` }).where(inArray(productSizes.id, removedSizeIds));
+    }
+    const retainedColorIds = new Set([...colorIds.values()]);
+    const removedColorIds = existingColors.map((row) => row.id).filter((id) => !retainedColorIds.has(id));
+    if (removedColorIds.length > 0) {
+      await tx.update(productColors).set({ deletedAt: sql`NOW()` }).where(inArray(productColors.id, removedColorIds));
     }
   };
 
-  if (executor) {
-    await run(executor);
-    return;
-  }
-
+  if (executor) return run(executor);
   await db.transaction(run);
 }
 

@@ -1,5 +1,5 @@
 import { db } from "@minikoshk/database/src/db";
-import { offerItems, orderItems, orders, productVariants, products } from "@minikoshk/database/drizzle/schema";
+import { offerItems, orderItems, orders, productColors, productSizes, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import {
   mergeProductTotal,
@@ -58,12 +58,15 @@ export async function getSalesAnalyticsRepo() {
     .select({
       variantId: productVariants.id,
       productId: productVariants.productId,
-      variantLabel: productVariants.sizeLabel,
+      sizeLabel: productSizes.sizeLabel,
+      colorHex: productColors.colorHex,
       sellingPrice: productVariants.sellingPrice,
       productName: products.enName
     })
     .from(productVariants)
-    .innerJoin(products, eq(products.id, productVariants.productId));
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
+    .leftJoin(productColors, eq(productColors.id, productVariants.colorId));
   const offerItemRows = await db.select().from(offerItems);
 
   const variantById = new Map(
@@ -72,7 +75,7 @@ export async function getSalesAnalyticsRepo() {
       {
         variantId: row.variantId,
         productId: row.productId,
-        variantLabel: row.variantLabel,
+        variantLabel: row.colorHex ? `${row.sizeLabel} / ${row.colorHex}` : row.sizeLabel,
         productName: row.productName,
         defaultUnitPrice: toNumber(row.sellingPrice)
       }

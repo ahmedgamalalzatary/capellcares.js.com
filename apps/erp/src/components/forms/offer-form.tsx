@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
+import { getVariantLabel } from "@/lib/product-options";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { ImageUpload } from "./image-upload";
 import { RelatedItemsField } from "./related-items-field";
@@ -101,7 +102,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                       <td>
                         <select className="select" disabled={!product} value={r.variantId} onChange={(e) => updateRow(i, { variantId: Number(e.target.value) })}>
                           <option value="0">— مقاس —</option>
-                          {variants.map((v) => <option key={v.id} value={v.id}>{v.size}</option>)}
+                          {variants.map((v) => <option key={v.id} value={v.id}>{product ? getVariantLabel(product, v) : "—"}</option>)}
                         </select>
                       </td>
                       <td style={{ width: 100 }}>

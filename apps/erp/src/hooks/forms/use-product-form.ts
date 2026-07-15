@@ -6,12 +6,18 @@ import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "../../components/forms/form-slug";
 import type { ProductFormErrors, ProductFormProps, Requirement } from "../../types/forms/product-form.types";
+import {
+  buildVariantMatrix,
+  type ProductColorOption,
+  type ProductSizeOption
+} from "./product-variant-matrix";
+import { validateProductOptionValues } from "./product-option-validation";
 
 // Negative, monotonically-decreasing temp ids never collide with positive DB autoincrement ids.
-let tempVariantIdCounter = 0;
-function newVariantId() {
-  tempVariantIdCounter -= 1;
-  return tempVariantIdCounter;
+let tempIdCounter = 0;
+function newTempId() {
+  tempIdCounter -= 1;
+  return tempIdCounter;
 }
 
 export function useProductForm({
@@ -40,11 +46,23 @@ export function useProductForm({
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
+  const [sizes, setSizes] = useState<ProductSizeOption[]>(
+    initial?.sizes?.map((size) => ({ id: size.id, label: size.label })) ?? [{ id: newTempId(), label: "" }]
+  );
+  const [colors, setColors] = useState<ProductColorOption[]>(
+    initial?.colors?.map((color) => ({ id: color.id, hex: color.hex })) ?? []
+  );
   const [variants, setVariants] = useState<ProductVariant[]>(
-    initial?.variants ?? [{ id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]
+    () => buildVariantMatrix(
+      initial?.sizes?.map((size) => ({ id: size.id, label: size.label })) ?? [{ id: sizes[0]!.id, label: "" }],
+      initial?.colors?.map((color) => ({ id: color.id, hex: color.hex })) ?? [],
+      initial?.variants ?? [],
+      newTempId
+    )
   );
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
   const [errors, setErrors] = useState<ProductFormErrors>({});
+  const optionValidationError = validateProductOptionValues(sizes, colors);
 
   const relatedSelectableOptions = relatedOptions.filter(
     (option) => !(option.type === "product" && option.id === initial?.id)
@@ -54,12 +72,47 @@ export function useProductForm({
     setVariants((vs) => vs.map((v) => v.id === id ? { ...v, ...patch } : v));
   };
 
-  const addVariant = () => {
-    setVariants((vs) => [...vs, { id: newVariantId(), productId: 0, size: "", price: 0, stock: 0 }]);
+  const updateSize = (id: number, label: string) => {
+    setSizes((current) => current.map((size) => size.id === id ? { ...size, label } : size));
   };
 
-  const removeVariant = (id: number) => {
-    setVariants((vs) => vs.length === 1 ? vs : vs.filter((v) => v.id !== id));
+  const addSize = () => {
+    const size = { id: newTempId(), label: "" };
+    setSizes((current) => {
+      const next = [...current, size];
+      setVariants((existing) => buildVariantMatrix(next, colors, existing, newTempId));
+      return next;
+    });
+  };
+
+  const removeSize = (id: number) => {
+    setSizes((current) => {
+      if (current.length === 1) return current;
+      const next = current.filter((size) => size.id !== id);
+      setVariants((existing) => buildVariantMatrix(next, colors, existing, newTempId));
+      return next;
+    });
+  };
+
+  const addColor = () => {
+    const color = { id: newTempId(), hex: "#000000" };
+    setColors((current) => {
+      const next = [...current, color];
+      setVariants((existing) => buildVariantMatrix(sizes, next, existing, newTempId));
+      return next;
+    });
+  };
+
+  const updateColor = (id: number, hex: string) => {
+    setColors((current) => current.map((color) => color.id === id ? { ...color, hex: hex.toUpperCase() } : color));
+  };
+
+  const removeColor = (id: number) => {
+    setColors((current) => {
+      const next = current.filter((color) => color.id !== id);
+      setVariants((existing) => buildVariantMatrix(sizes, next, existing, newTempId));
+      return next;
+    });
   };
 
   const requirements: Requirement[] = useMemo(() => [
@@ -69,8 +122,8 @@ export function useProductForm({
     { key: "keywords", label: "كلمات مفتاحية", target: "section-basics", ok: keywords.trim().length > 0 },
     { key: "categoryId", label: "اختيار قسم", target: "section-publish", ok: !!categoryId },
     { key: "image", label: "صورة المنتج", target: "section-media", ok: media.some((item) => item.type === "image") },
-    { key: "variants", label: "مقاس وسعر", target: "section-variants", ok: variants.length > 0 && variants.every((v) => v.size.trim() && v.price > 0) }
-  ], [nameAr, nameEn, buyingPrice, keywords, categoryId, media, variants]);
+    { key: "variants", label: "المقاسات والأسعار", target: "section-variants", ok: sizes.length > 0 && !optionValidationError && variants.length > 0 && variants.every((v) => v.price > 0) }
+  ], [nameAr, nameEn, buyingPrice, keywords, categoryId, media, sizes, variants, optionValidationError]);
 
   const completedCount = requirements.filter((r) => r.ok).length;
   const totalCount = requirements.length;
@@ -80,11 +133,14 @@ export function useProductForm({
 
   const validate = () => {
     const next: ProductFormErrors = {};
+    if (optionValidationError === "duplicate-size") next.variants = "لا يمكن تكرار نفس المقاس";
+    if (optionValidationError === "duplicate-color") next.variants = "لا يمكن تكرار نفس اللون";
     if (wantActive) {
+      if (optionValidationError === "blank-size") next.variants = "أدخلي قيمة لكل مقاس";
       if (!nameAr.trim()) next.nameAr = "مطلوب لتفعيل المنتج";
       if (!nameEn.trim()) next.nameEn = "مطلوب لتفعيل المنتج";
       if (!buyingPrice || buyingPrice <= 0) next.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
-      if (variants.length === 0 || variants.some((v) => !v.size.trim() || v.price <= 0)) next.variants = "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح";
+      if (!next.variants && (sizes.length === 0 || variants.length === 0 || variants.some((v) => v.price <= 0))) next.variants = "أضيفي المقاسات وأدخلي سعرًا صحيحًا لكل تركيبة";
       if (!categoryId) next.categoryId = "اختاري قسمًا";
       if (!keywords.trim()) next.keywords = "أضيفي كلمات مفتاحية";
       if (!media.some((item) => item.type === "image")) next.image = "أضيفي صورة المنتج";
@@ -99,6 +155,7 @@ export function useProductForm({
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
     const primaryImage = media.find((item) => item.type === "image")?.url ?? "";
+    const validSizeIds = new Set(sizes.filter((size) => size.label.trim()).map((size) => size.id));
     const product: Product = {
       id: id ?? 0,
       sku: sku.trim() || `SKU-${Date.now()}`,
@@ -118,7 +175,19 @@ export function useProductForm({
       isNew,
       isBestseller,
       categoryId: categoryId ?? 0,
-      variants: variants.map((v, i) => ({
+      sizes: sizes.filter((size) => validSizeIds.has(size.id)).map((size, index) => ({
+        ...size,
+        productId: id ?? 0,
+        label: size.label.trim().replace(/\s+/g, " "),
+        sortOrder: index + 1
+      })),
+      colors: colors.map((color, index) => ({
+        ...color,
+        productId: id ?? 0,
+        hex: color.hex.toUpperCase(),
+        sortOrder: index + 1
+      })),
+      variants: variants.filter((variant) => validSizeIds.has(variant.sizeId)).map((v, i) => ({
         ...v,
         productId: id ?? 0,
         sortOrder: i + 1,
@@ -168,14 +237,20 @@ export function useProductForm({
     status, setStatus,
     isNew, setIsNew,
     isBestseller, setIsBestseller,
+    sizes,
+    colors,
     variants,
     relatedItems,
     setRelatedItems,
     errors,
     relatedSelectableOptions,
     updateVariant,
-    addVariant,
-    removeVariant,
+    updateSize,
+    addSize,
+    removeSize,
+    updateColor,
+    addColor,
+    removeColor,
     requirements,
     completedCount,
     totalCount,

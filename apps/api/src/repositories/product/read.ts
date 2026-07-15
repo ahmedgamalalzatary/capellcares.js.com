@@ -3,6 +3,7 @@ import { categories, categoryPaths, products, productVariants } from "@minikoshk
 import { db } from "@minikoshk/database/src/db";
 import {
   loadMediaRows,
+  loadProductOptions,
   mapVariant,
   normalizeMedia,
   resolveHoverImagePath,
@@ -67,11 +68,13 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   if (rows.length === 0) return [];
   const productIds = rows.map((r) => r.id);
   const mediaByProduct = await loadMediaRows(productIds);
+  const { sizesByProduct, colorsByProduct } = await loadProductOptions(productIds);
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
-      sizeLabel: productVariants.sizeLabel,
+      sizeId: productVariants.sizeId,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -94,6 +97,8 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
       media,
       keywords: toKeywords(r.keywords),
+      sizes: sizesByProduct.get(r.id) ?? [],
+      colors: colorsByProduct.get(r.id) ?? [],
       variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
       name: { ar: r.arName, en: r.enName },
       description: { ar: "", en: "" },
@@ -138,12 +143,14 @@ export async function findVisibleProductBySlug(slug: string) {
   const product = rows[0];
   if (!product) return null;
   const mediaByProduct = await loadMediaRows([product.id]);
+  const { sizesByProduct, colorsByProduct } = await loadProductOptions([product.id]);
 
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
-      sizeLabel: productVariants.sizeLabel,
+      sizeId: productVariants.sizeId,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -158,6 +165,8 @@ export async function findVisibleProductBySlug(slug: string) {
     hoverImagePath: resolveHoverImagePath(product.hoverImagePath) ?? "",
     media,
     keywords: toKeywords(product.keywords),
+    sizes: sizesByProduct.get(product.id) ?? [],
+    colors: colorsByProduct.get(product.id) ?? [],
     variants: variantsRows.map(mapVariant).sort((a, b) => a.sortOrder - b.sortOrder),
     name: { ar: product.arName, en: product.enName },
     description: { ar: product.arDescription ?? "", en: product.enDescription ?? "" },
@@ -171,12 +180,14 @@ export async function listAdminProductsRepo() {
   const rows = await db.select().from(products);
   if (rows.length === 0) return [];
   const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
+  const { sizesByProduct, colorsByProduct } = await loadProductOptions(rows.map((r) => r.id));
 
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
-      sizeLabel: productVariants.sizeLabel,
+      sizeId: productVariants.sizeId,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -198,6 +209,8 @@ export async function listAdminProductsRepo() {
       imagePath: resolvePrimaryImagePath(media, r.imagePath),
       hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
       media,
+      sizes: sizesByProduct.get(r.id) ?? [],
+      colors: colorsByProduct.get(r.id) ?? [],
       variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
     };
   });
@@ -210,11 +223,13 @@ export async function findAdminProductByIdRepo(id: number) {
   }
 
   const mediaByProduct = await loadMediaRows([row.id]);
+  const { sizesByProduct, colorsByProduct } = await loadProductOptions([row.id]);
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
-      sizeLabel: productVariants.sizeLabel,
+      sizeId: productVariants.sizeId,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -229,6 +244,8 @@ export async function findAdminProductByIdRepo(id: number) {
     hoverImagePath: resolveHoverImagePath(row.hoverImagePath) ?? "",
     media,
     keywords: toKeywords(row.keywords),
+    sizes: sizesByProduct.get(row.id) ?? [],
+    colors: colorsByProduct.get(row.id) ?? [],
     variants: variantsRows.map(mapVariant).sort((a, b) => a.sortOrder - b.sortOrder)
   };
 }

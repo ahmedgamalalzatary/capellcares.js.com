@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@minikoshk/database/src/db";
-import { collectionItems, collections, offers, orderItems, orders, productVariants, products } from "@minikoshk/database/drizzle/schema";
+import { collectionItems, collections, offers, orderItems, orders, productColors, productVariants, products } from "@minikoshk/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -59,6 +59,26 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
   assert.equal(order?.paymentStatus, "pending");
   assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
+});
+
+test("createOrderFromCheckout snapshots the selected color hex", async () => {
+  const ids = await getBaselineIds();
+  const [color] = await db.insert(productColors).values({
+    productId: ids.productOneId,
+    colorHex: "#FFFFFF"
+  }).$returningId();
+  await db.update(productVariants).set({ colorId: color.id }).where(eq(productVariants.id, ids.firstVariantId));
+
+  const result = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+  });
+  const [item] = await db.select({
+    size: orderItems.snapshotSizeLabel,
+    color: orderItems.snapshotColorHex
+  }).from(orderItems).where(eq(orderItems.orderId, result.id)).limit(1);
+
+  assert.deepEqual(item, { size: "100ml", color: "#FFFFFF" });
 });
 
 test("createOrderFromCheckout rejects a variant whose product is inactive", async () => {

@@ -8,7 +8,7 @@ loadWorkspaceEnv();
 
 test("createAdminProduct accepts the ERP product payload shape", async () => {
   const { eq } = await import("drizzle-orm");
-  const { productVariants, products } = await import("@minikoshk/database/drizzle/schema");
+  const { productSizes, productVariants, products } = await import("@minikoshk/database/drizzle/schema");
   const { db } = await import("@minikoshk/database/src/db");
   const { createAdminProduct } = await import("../../src/modules/admin/products/admin-products.service.js");
 
@@ -55,11 +55,12 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
 
   const createdVariants = await db
     .select({
-      sizeLabel: productVariants.sizeLabel,
+      sizeLabel: productSizes.sizeLabel,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty
     })
     .from(productVariants)
+    .innerJoin(productSizes, eq(productSizes.id, productVariants.sizeId))
     .where(eq(productVariants.productId, created.id));
 
   assert.equal(createdVariants.length, 1);
@@ -69,4 +70,30 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
 
   await db.delete(productVariants).where(eq(productVariants.productId, created.id));
   await db.delete(products).where(eq(products.id, created.id));
+});
+
+test("createAdminProduct rolls back the product when its option matrix is invalid", async () => {
+  const { eq } = await import("drizzle-orm");
+  const { products } = await import("@minikoshk/database/drizzle/schema");
+  const { db } = await import("@minikoshk/database/src/db");
+  const { createAdminProduct } = await import("../../src/modules/admin/products/admin-products.service.js");
+
+  await resetApiTestDatabase();
+  const ids = await getBaselineIds();
+  const sku = `ERP-ROLLBACK-${Date.now()}`;
+
+  await assert.rejects(() => createAdminProduct({
+    sku,
+    name: { ar: "اختبار", en: "Rollback test" },
+    keywords: ["test"],
+    buyingPrice: 10,
+    status: "inactive",
+    categoryId: ids.leafCategoryId,
+    sizes: [{ id: -1, label: "100ml" }],
+    colors: [{ id: -2, hex: "#FFFFFF" }, { id: -3, hex: "#000000" }],
+    variants: [{ sizeId: -1, colorId: -2, price: 20, stock: 1 }]
+  } as any), /complete size and color matrix/i);
+
+  const rows = await db.select({ id: products.id }).from(products).where(eq(products.sku, sku));
+  assert.equal(rows.length, 0);
 });

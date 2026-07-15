@@ -69,6 +69,19 @@ test("normalizeAdminProductInput defaults missing fields", () => {
   assert.deepEqual(result.variants, []);
 });
 
+test("normalizeAdminProductInput canonicalizes product options and combination references", () => {
+  const result = normalizeAdminProductInput({
+    status: "inactive",
+    sizes: [{ id: -1, label: "  100   ml  " }],
+    colors: [{ id: -2, hex: "#fff" }],
+    variants: [{ sizeId: -1, colorId: -2, price: 50, stock: 3 }]
+  } as never);
+
+  assert.deepEqual(result.sizes, [{ id: -1, label: "100 ml" }]);
+  assert.deepEqual(result.colors, [{ id: -2, hex: "#FFFFFF" }]);
+  assert.deepEqual(result.variants, [{ sizeId: -1, colorId: -2, sellingPrice: 50, stockQty: 3 }]);
+});
+
 test("canActivateAdminProduct requires the core sellable fields", () => {
   const base = {
     arName: "اسم",
@@ -83,4 +96,19 @@ test("canActivateAdminProduct requires the core sellable fields", () => {
   assert.equal(canActivateAdminProduct(base), true);
   assert.equal(canActivateAdminProduct({ ...base, imagePath: undefined }), false);
   assert.equal(canActivateAdminProduct({ ...base, variants: [] }), false);
+});
+
+test("canActivateAdminProduct rejects combinations without a positive selling price", () => {
+  const input = normalizeAdminProductInput({
+    name: { ar: "اسم", en: "Name" },
+    keywords: ["k"],
+    imagePath: "/img.png",
+    categoryId: 1,
+    status: "active",
+    sizes: [{ id: -1, label: "100ml" }],
+    colors: [{ id: -2, hex: "#fff" }],
+    variants: [{ sizeId: -1, colorId: -2, price: 0, stock: 1 }]
+  } as never);
+
+  assert.equal(canActivateAdminProduct(input), false);
 });

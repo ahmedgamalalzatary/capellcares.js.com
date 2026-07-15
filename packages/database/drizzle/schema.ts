@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   datetime,
   decimal,
+  foreignKey,
   int,
   mysqlEnum,
   mysqlTable,
@@ -98,20 +100,14 @@ export const products = mysqlTable("products", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-export const productVariants = mysqlTable(
-  "product_variants",
+export const productSizes = mysqlTable(
+  "product_sizes",
   {
     id: int("id").autoincrement().primaryKey(),
     productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
     sizeLabel: varchar("size_label", { length: 64 }).notNull(),
-    sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
-    stockQty: int("stock_qty").notNull().default(0),
     sortOrder: int("sort_order").notNull().default(0),
     deletedAt: datetime("deleted_at"),
-    // Uniqueness must ignore soft-deleted rows: a deleted 100ml variant must not
-    // block creating a new 100ml variant for the same product. MySQL has no
-    // partial unique index, so we key uniqueness off a generated column that is
-    // NULL for soft-deleted rows (multiple NULLs are allowed in a unique index).
     activeSizeLabel: varchar("active_size_label", { length: 64 }).generatedAlwaysAs(
       sql`(case when \`deleted_at\` is null then \`size_label\` else null end)`,
       { mode: "stored" }
@@ -120,9 +116,87 @@ export const productVariants = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
   },
   (table) => ({
-    productActiveSizeUnique: unique("product_variants_active_size_unique").on(
+    productSizeIdentityUnique: unique("product_sizes_id_product_unique").on(table.id, table.productId),
+    productActiveSizeUnique: unique("product_sizes_active_label_unique").on(
       table.productId,
       table.activeSizeLabel
+    )
+  })
+);
+
+export const productColors = mysqlTable(
+  "product_colors",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    colorHex: varchar("color_hex", { length: 7 }).notNull(),
+    sortOrder: int("sort_order").notNull().default(0),
+    deletedAt: datetime("deleted_at"),
+    activeColorHex: varchar("active_color_hex", { length: 7 }).generatedAlwaysAs(
+      sql`(case when \`deleted_at\` is null then \`color_hex\` else null end)`,
+      { mode: "stored" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    productColorIdentityUnique: unique("product_colors_id_product_unique").on(table.id, table.productId),
+    productActiveColorUnique: unique("product_colors_active_hex_unique").on(
+      table.productId,
+      table.activeColorHex
+    ),
+    productColorCanonicalHex: check(
+      "product_colors_canonical_hex_check",
+      sql`BINARY ${table.colorHex} = BINARY UPPER(${table.colorHex}) AND ${table.colorHex} REGEXP '^#[0-9A-F]{6}$'`
+    )
+  })
+);
+
+export const productVariants = mysqlTable(
+  "product_variants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    sizeId: int("size_id").notNull(),
+    colorId: int("color_id"),
+    sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
+    stockQty: int("stock_qty").notNull().default(0),
+    sortOrder: int("sort_order").notNull().default(0),
+    deletedAt: datetime("deleted_at"),
+    activeSizeId: int("active_size_id").generatedAlwaysAs(
+      sql`(case when \`deleted_at\` is null then \`size_id\` else null end)`,
+      { mode: "stored" }
+    ),
+    activeColorScopeId: int("active_color_scope_id").generatedAlwaysAs(
+      sql`(case when \`deleted_at\` is null then coalesce(\`color_id\`, 0) else null end)`,
+      { mode: "stored" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    productActiveCombinationUnique: unique("product_variants_active_combination_unique").on(
+      table.productId,
+      table.activeSizeId,
+      table.activeColorScopeId
+    ),
+    variantSizeProductFk: foreignKey({
+      columns: [table.sizeId, table.productId],
+      foreignColumns: [productSizes.id, productSizes.productId],
+      name: "product_variants_size_product_fk"
+    }).onDelete("restrict"),
+    variantColorProductFk: foreignKey({
+      columns: [table.colorId, table.productId],
+      foreignColumns: [productColors.id, productColors.productId],
+      name: "product_variants_color_product_fk"
+    }).onDelete("restrict"),
+    variantStockNonnegative: check(
+      "product_variants_stock_nonnegative_check",
+      sql`${table.stockQty} >= 0`
+    ),
+    variantPriceNonnegative: check(
+      "product_variants_price_nonnegative_check",
+      sql`${table.sellingPrice} >= 0`
     )
   })
 );
@@ -365,6 +439,7 @@ export const orderItems = mysqlTable("order_items", {
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
   snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 }),
+  snapshotColorHex: varchar("snapshot_color_hex", { length: 7 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });

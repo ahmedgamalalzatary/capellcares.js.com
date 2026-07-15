@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore } from "@/lib/store";
 import { formatPrice } from "@minikoshk/shared";
 import { Icon } from "@/components/ui/icons";
+import { getVariantLabel } from "@/lib/product-options";
 
 export default function DashboardPage() {
   const products = useStore((s) => s.products);
@@ -50,7 +51,7 @@ export default function DashboardPage() {
                   <tr key={v.id}>
                     <td>
                       <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
-                      <div className="table-subtitle">{v.size}</div>
+                      <div className="table-subtitle">{getVariantLabel(p, v)}</div>
                     </td>
                     <td style={{ textAlign: "end" }}><span className="status status--deleted">نفد</span></td>
                   </tr>
@@ -59,7 +60,7 @@ export default function DashboardPage() {
                   <tr key={v.id}>
                     <td>
                       <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
-                      <div className="table-subtitle">{v.size}</div>
+                      <div className="table-subtitle">{getVariantLabel(p, v)}</div>
                     </td>
                     <td style={{ textAlign: "end" }}><span className="status status--draft">{v.stock}</span></td>
                   </tr>

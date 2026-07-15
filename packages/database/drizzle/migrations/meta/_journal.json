@@ -113,6 +113,41 @@
       "when": 1782439200000,
       "tag": "0015_category_image_path",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1784120400000,
+      "tag": "0016_product_options",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1784124000000,
+      "tag": "0017_variant_option_references",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1784127600000,
+      "tag": "0018_variant_stock_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1784131200000,
+      "tag": "0019_variant_price_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1784134800000,
+      "tag": "0020_canonical_color_hex",
+      "breakpoints": true
     }
   ]
 }

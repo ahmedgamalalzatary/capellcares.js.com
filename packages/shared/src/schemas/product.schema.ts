@@ -1,11 +1,37 @@
 import { z } from "zod";
 
+export function normalizeColorHex(value: string): string {
+  const normalized = value.trim();
+  if (/^#[0-9a-fA-F]{3}$/.test(normalized)) {
+    return `#${normalized.slice(1).split("").map((character) => character.repeat(2)).join("")}`.toUpperCase();
+  }
+  if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+  throw new Error("Color must be a 3-digit or 6-digit hexadecimal value");
+}
+
+export const productSizeSchema = z.object({
+  id: z.number().int().positive(),
+  productId: z.number().int().positive(),
+  label: z.string().trim().min(1),
+  sortOrder: z.number().int()
+});
+
+export const productColorSchema = z.object({
+  id: z.number().int().positive(),
+  productId: z.number().int().positive(),
+  hex: z.string().transform(normalizeColorHex),
+  sortOrder: z.number().int()
+});
+
 export const productVariantSchema = z.object({
   id: z.number().int().positive(),
   productId: z.number().int().positive(),
-  sizeLabel: z.string().min(1),
-  sellingPrice: z.number().nonnegative(),
-  stockQty: z.number().int().nonnegative(),
+  sizeId: z.number().int().positive(),
+  colorId: z.number().int().positive().nullable(),
+  price: z.number().nonnegative(),
+  stock: z.number().int().nonnegative(),
   sortOrder: z.number().int()
 });
 
@@ -39,5 +65,7 @@ export const productSchema = z.object({
   isBestseller: z.boolean(),
   categoryId: z.number().int().positive(),
   deletedAt: z.string().nullable(),
+  sizes: z.array(productSizeSchema),
+  colors: z.array(productColorSchema),
   variants: z.array(productVariantSchema)
 });

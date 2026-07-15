@@ -1,6 +1,6 @@
 import type { Dict, Language } from "@minikoshk/shared";
 import { CreditCardIcon, HeartIcon, SearchIcon, TruckIcon } from "../icons";
-import { productPrice, type StorefrontProduct } from "@/lib/products";
+import { firstInStockVariant, productPrice, type StorefrontProduct } from "@/lib/products";
 
 /** Share of the cash price paid when checking out with a card (15% off). */
 const CARD_DISCOUNT = 0.15;
@@ -8,13 +8,6 @@ const CARD_DISCOUNT = 0.15;
 function formatPrice(amount: number, lang: Language, currency: string) {
   const locale = lang === "ar" ? "ar-EG" : "en-US";
   return `${new Intl.NumberFormat(locale).format(amount)} ${currency}`;
-}
-
-/** Up to four image thumbnails used as colour-swatch dots, mirroring the design. */
-function swatchImages(product: StorefrontProduct): string[] {
-  const fromMedia = (product.media ?? []).filter((m) => m.type === "image").map((m) => m.url);
-  const all = fromMedia.length > 0 ? fromMedia : [product.imagePath];
-  return all.filter(Boolean);
 }
 
 /**
@@ -45,10 +38,14 @@ export function ProductCard({
   const originalPrice = hasDiscount ? formatPrice(original, lang, t.currency) : null;
   const savePercent = hasDiscount ? Math.round((1 - cashAmount / original) * 100) : 0;
 
-  const swatches = swatchImages(product);
+  const swatches = product.colors ?? [];
   const visibleSwatches = swatches.slice(0, 4);
   const extraSwatches = swatches.length - visibleSwatches.length;
   const productHref = `/${lang}/shop?product=${product.slug}`;
+  const selectedVariant = firstInStockVariant(product);
+  const addToCartHref = selectedVariant
+    ? `${productHref}&size=${selectedVariant.sizeId}${selectedVariant.colorId == null ? "" : `&color=${selectedVariant.colorId}`}&variant=${selectedVariant.id}`
+    : productHref;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-transparent bg-white transition-all duration-200 hover:border-gray-200 hover:shadow-[0_12px_30px_-12px_rgba(0,0,0,0.25)]">
@@ -128,15 +125,17 @@ export function ProductCard({
         </div>
 
         {/* Colour swatches */}
-        {swatches.length > 1 && (
+        {swatches.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-            {visibleSwatches.map((src, index) => (
-              <span
-                key={`${src}-${index}`}
-                className="h-7 w-7 overflow-hidden rounded-full border border-gray-200 bg-white"
-              >
-                <img src={src} alt="" aria-hidden className="h-full w-full object-cover" />
-              </span>
+            {visibleSwatches.map((color) => (
+              <a
+                key={color.id}
+                href={`${productHref}&color=${color.id}`}
+                aria-label={`Color ${color.hex}`}
+                title={color.hex}
+                className="h-7 w-7 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,.45)] transition-transform hover:scale-110"
+                style={{ backgroundColor: color.hex }}
+              />
             ))}
             {extraSwatches > 0 && (
               <span className="text-sm font-semibold text-gray-800">+{extraSwatches}</span>
@@ -150,7 +149,7 @@ export function ProductCard({
         <div className="mt-3 h-11 overflow-hidden">
           <div className="flex h-11 translate-y-[calc(100%+0.75rem)] items-center gap-2 opacity-0 transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100">
             <a
-              href={productHref}
+              href={addToCartHref}
               className="flex h-11 flex-1 items-center justify-center rounded-full bg-brand-dark text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black"
             >
               {t.addToCart}

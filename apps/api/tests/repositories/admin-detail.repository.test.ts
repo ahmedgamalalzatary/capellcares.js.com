@@ -22,6 +22,10 @@ test("findAdminProductByIdRepo returns a single hydrated product by id", async (
   assert.equal(product.id, ids.productOneId);
   assert.ok(Array.isArray(product.keywords));
   assert.ok(Array.isArray(product.variants));
+  assert.deepEqual(product.sizes.map((size) => size.label), ["100ml"]);
+  assert.deepEqual(product.colors, []);
+  assert.equal(product.variants[0]?.sizeId, product.sizes[0]?.id);
+  assert.equal(product.variants[0]?.colorId, null);
 });
 
 test("findOfferByIdRepo returns a single hydrated offer by id", async () => {

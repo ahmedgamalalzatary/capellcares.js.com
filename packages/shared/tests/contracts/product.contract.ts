@@ -29,14 +29,31 @@ export const storefrontProductContract = z.object({
   isNew: z.boolean(),
   isBestseller: z.boolean(),
   categoryId: z.number(),
+  sizes: z.array(
+    z.object({
+      id: z.number(),
+      productId: z.number(),
+      label: z.string(),
+      sortOrder: z.number()
+    })
+  ),
+  colors: z.array(
+    z.object({
+      id: z.number(),
+      productId: z.number(),
+      hex: z.string().regex(/^#[0-9A-F]{6}$/),
+      sortOrder: z.number()
+    })
+  ),
   variants: z.array(
     z.object({
       id: z.number(),
       productId: z.number(),
-      size: z.string(),
+      sizeId: z.number(),
+      colorId: z.number().nullable(),
       price: z.number(),
       stock: z.number(),
-      sortOrder: z.number().optional()
+      sortOrder: z.number()
     })
   )
 });

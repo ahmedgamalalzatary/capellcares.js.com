@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useProductForm } from "../../hooks/forms/use-product-form";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
+import { ColorSwatchField } from "./color-swatch-field";
 import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./editor-form-parts";
 import { ProductHoverImageUpload } from "./product-hover-image-upload";
 import { ProductMediaUpload } from "./product-media-upload";
@@ -33,26 +34,25 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     status, setStatus,
     isNew, setIsNew,
     isBestseller, setIsBestseller,
+    sizes,
+    colors,
     variants,
     relatedItems,
     setRelatedItems,
     errors,
     relatedSelectableOptions,
     updateVariant,
-    addVariant,
-    removeVariant,
+    updateSize,
+    addSize,
+    removeSize,
+    updateColor,
+    addColor,
+    removeColor,
     completedCount,
     totalCount,
-    missing,
     canActivate,
     save
   } = useProductForm({ initial, relatedOptions });
-
-  const scrollTo = (id: string) => {
-    if (typeof document === "undefined") return;
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   const heroTitle = nameAr.trim() || nameEn.trim();
   const eyebrow = mode === "new" ? "منتج جديد · مسودة" : "تعديل منتج";
@@ -71,6 +71,17 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
           <div className="editor-hero__sub">{sub}</div>
         </div>
         <div className="editor-hero__meta">
+          <div className="editor-hero__actions">
+            <button type="button" className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
+            <button type="button" className="btn btn--primary" onClick={async () => {
+              const saved = await save();
+              if (saved) {
+                router.push("/products");
+              }
+            }}>
+              {mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}
+            </button>
+          </div>
           <span className={`status status--${status}`}>{status === "active" ? "نشط" : "غير نشط"}</span>
           <div className={`completion-meter${canActivate ? " completion-meter--done" : ""}`}>
             <div className="completion-meter__head">
@@ -150,18 +161,72 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               <div className="section-num">
                 <span className="section-num__digit">03</span>
                 <span className="section-num__rule" />
-                <h3 className="card__title">المقاسات والمخزون</h3>
+                <h3 className="card__title">خيارات البيع والمخزون</h3>
               </div>
-              <button className="btn btn--soft btn--sm" onClick={addVariant}><Icon.Plus /> إضافة مقاس</button>
             </div>
-            <div className="card__body">
+            <div className="card__body stack stack--lg">
               {errors.variants && <div className="field-error" style={{ marginBottom: 10 }}>{errors.variants}</div>}
-              <div className="variant-rows">
-                {variants.map((v) => (
-                  <div className="variant-row" key={v.id}>
-                    <div className="field">
-                      <label htmlFor={`variant-size-${v.id}`}>المقاس</label>
-                      <input id={`variant-size-${v.id}`} className="input" value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
+              <div className="product-options-grid">
+                <div className="product-option-panel">
+                  <div className="product-option-panel__head">
+                    <div>
+                      <strong>المقاسات</strong>
+                      <span>نص حر مثل 100ml أو XL</span>
+                    </div>
+                    <button type="button" className="btn btn--soft btn--sm" onClick={addSize}><Icon.Plus /> إضافة</button>
+                  </div>
+                  <div className="product-option-list">
+                    {sizes.map((size, index) => (
+                      <div className="product-option-row" key={size.id}>
+                        <span className="product-option-row__index">{String(index + 1).padStart(2, "0")}</span>
+                        <input className="input" value={size.label} onChange={(event) => updateSize(size.id, event.target.value)} placeholder="100ml" />
+                        <button type="button" className="variant-row__remove" disabled={sizes.length === 1} onClick={() => removeSize(size.id)} aria-label="حذف المقاس"><Icon.Trash /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="product-option-panel">
+                  <div className="product-option-panel__head">
+                    <div>
+                      <strong>الألوان</strong>
+                      <span>القيمة المحفوظة Hex فقط</span>
+                    </div>
+                    <button type="button" className="btn btn--soft btn--sm" onClick={addColor}><Icon.Plus /> إضافة</button>
+                  </div>
+                  {colors.length === 0 ? (
+                    <div className="product-option-empty">بدون ألوان — المنتج يعمل بالمقاسات فقط.</div>
+                  ) : (
+                    <div className="product-option-list">
+                      {colors.map((color, index) => (
+                        <div className="product-option-row product-option-row--color" key={color.id}>
+                          <span className="product-option-row__index">{String(index + 1).padStart(2, "0")}</span>
+                          <ColorSwatchField hex={color.hex} label={`لون ${index + 1}`} onChange={(hex) => updateColor(color.id, hex)} />
+                          <button type="button" className="variant-row__remove" onClick={() => removeColor(color.id)} aria-label="حذف اللون"><Icon.Trash /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="variant-matrix">
+                <div className="variant-matrix__head">
+                  <div>
+                    <strong>مصفوفة التركيبات</strong>
+                    <span>{sizes.length} مقاس × {Math.max(colors.length, 1)} {colors.length ? "لون" : "خيار"}</span>
+                  </div>
+                  <span className="variant-matrix__count">{variants.length} تركيبة قابلة للبيع</span>
+                </div>
+                <div className="variant-rows">
+                  {variants.map((v) => {
+                    const size = sizes.find((option) => option.id === v.sizeId);
+                    const color = colors.find((option) => option.id === v.colorId);
+                    return (
+                  <div className="variant-row variant-row--matrix" key={v.id}>
+                    <div className="variant-combination">
+                      <strong>{size?.label || "مقاس غير مسمى"}</strong>
+                      {color ? <span className="variant-color"><i style={{ backgroundColor: color.hex }} /> <code dir="ltr">{color.hex}</code></span> : <span className="variant-color variant-color--empty">بدون لون</span>}
                     </div>
                     <div className="field">
                       <label htmlFor={`variant-price-${v.id}`}>السعر</label>
@@ -171,17 +236,10 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                       <label htmlFor={`variant-stock-${v.id}`}>المخزون</label>
                       <input id={`variant-stock-${v.id}`} className="input" type="number" min="0" value={v.stock} onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })} />
                     </div>
-                    <button
-                      type="button"
-                      className="variant-row__remove"
-                      disabled={variants.length === 1}
-                      onClick={() => removeVariant(v.id)}
-                      aria-label="حذف المقاس"
-                    >
-                      <Icon.Trash />
-                    </button>
                   </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </section>
@@ -277,38 +335,6 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
         </aside>
       </div>
 
-      <div className="save-bar">
-        <div className="save-bar__hints">
-          {canActivate ? (
-            <span className="save-bar__hints--ready">جاهز للتفعيل · جميع البيانات مكتملة.</span>
-          ) : (
-            <>
-              <span className="save-bar__hints-lead">المتبقي للتفعيل</span>
-              {missing.map((m) => (
-                <button
-                  type="button"
-                  key={m.key}
-                  className="save-bar__hint"
-                  onClick={() => scrollTo(m.target)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-        <div className="save-bar__actions">
-          <button type="button" className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
-          <button type="button" className="btn btn--primary" onClick={async () => {
-            const saved = await save();
-            if (saved) {
-              router.push("/products");
-            }
-          }}>
-            {mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

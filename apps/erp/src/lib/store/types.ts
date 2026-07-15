@@ -69,11 +69,27 @@ export type ProductApiShape = {
   youtubeUrl?: string | null;
   status?: "active" | "inactive";
   categoryId?: number | string;
+  sizes?: Array<{
+    id?: number | string;
+    productId?: number | string;
+    label?: string;
+    sizeLabel?: string;
+    sortOrder?: number | string;
+  }>;
+  colors?: Array<{
+    id?: number | string;
+    productId?: number | string;
+    hex?: string;
+    colorHex?: string;
+    sortOrder?: number | string;
+  }>;
   variants?: Array<{
     id?: number | string;
     productId?: number | string;
     size?: string;
     sizeLabel?: string;
+    sizeId?: number | string;
+    colorId?: number | string | null;
     price?: number | string;
     sellingPrice?: number | string;
     stock?: number | string;
