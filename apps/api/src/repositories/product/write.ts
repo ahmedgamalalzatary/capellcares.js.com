@@ -20,7 +20,7 @@ function invalidProductOptions(message: string) {
 function validateProductOptions(
   sizes: Array<{ id: number; label: string }>,
   colors: Array<{ id: number; hex: string }>,
-  variants: Array<{ sellingPrice: number; stockQty: number }>
+  variants: Array<{ id?: number; sellingPrice: number; stockQty: number }>
 ) {
   const normalizedSizes = sizes.map((size) => normalizeVariantSizeLabel(size.label));
   if (
@@ -42,6 +42,10 @@ function validateProductOptions(
     !Number.isInteger(variant.stockQty) || variant.stockQty < 0
   )) {
     throw invalidProductOptions("Variant prices and stock must be nonnegative numbers");
+  }
+  const variantIds = variants.map((variant) => variant.id).filter((id): id is number => id != null);
+  if (new Set(variantIds).size !== variantIds.length) {
+    throw invalidProductOptions("Product variant ids must be unique");
   }
 }
 
@@ -262,12 +266,44 @@ export async function replaceProductOptionsAndVariantsRepo(
       }
     }
 
-    const existingVariants = await tx.select({ id: productVariants.id }).from(productVariants)
+    const existingVariants = await tx.select({
+      id: productVariants.id,
+      sizeId: productVariants.sizeId,
+      colorId: productVariants.colorId,
+      deletedAt: productVariants.deletedAt
+    }).from(productVariants)
       .where(eq(productVariants.productId, productId));
     const existingVariantIds = new Set(existingVariants.map((row) => row.id));
-    const requestedExistingVariantIds = variants
+    const claimedExistingVariantIds = new Set(
+      variants
+        .map((variant) => variant.id)
+        .filter((id): id is number => id != null && existingVariantIds.has(id))
+    );
+    const resolvedVariants = variants.map((variant) => {
+      const sizeId = sizeIds.get(variant.sizeId);
+      const colorId = variant.colorId == null ? null : colorIds.get(variant.colorId);
+      if (!sizeId || (variant.colorId != null && !colorId)) {
+        throw new Error("Variant references an unknown product option");
+      }
+      if (variant.id != null) {
+        return { ...variant, sizeId, colorId };
+      }
+      const matched = existingVariants.find((row) =>
+        row.deletedAt == null &&
+        !claimedExistingVariantIds.has(row.id) &&
+        row.sizeId === sizeId &&
+        row.colorId === colorId
+      );
+      if (matched) claimedExistingVariantIds.add(matched.id);
+      return { ...variant, id: matched?.id, sizeId, colorId };
+    });
+    const resolvedVariantIds = resolvedVariants
       .map((variant) => variant.id)
-      .filter((id): id is number => id != null && existingVariantIds.has(id));
+      .filter((id): id is number => id != null);
+    if (new Set(resolvedVariantIds).size !== resolvedVariantIds.length) {
+      throw invalidProductOptions("Resolved product variant ids must be unique");
+    }
+    const requestedExistingVariantIds = [...claimedExistingVariantIds];
     const removedVariantIds = existingVariants
       .map((row) => row.id)
       .filter((id) => !requestedExistingVariantIds.includes(id));
@@ -299,26 +335,25 @@ export async function replaceProductOptionsAndVariantsRepo(
       }
     }
 
-    for (let index = 0; index < variants.length; index += 1) {
-      const variant = variants[index]!;
-      const sizeId = sizeIds.get(variant.sizeId);
-      const colorId = variant.colorId == null ? null : colorIds.get(variant.colorId);
-      if (!sizeId || (variant.colorId != null && !colorId)) {
-        throw new Error("Variant references an unknown product option");
-      }
-      const values = {
-        sizeId,
-        colorId,
+    const variantValues = (variant: typeof resolvedVariants[number], index: number) => ({
+        sizeId: variant.sizeId,
+        colorId: variant.colorId,
         sellingPrice: sql`${variant.sellingPrice}`,
         stockQty: variant.stockQty,
         sortOrder: index + 1,
         deletedAt: null
-      };
+    });
+    for (let index = 0; index < resolvedVariants.length; index += 1) {
+      const variant = resolvedVariants[index]!;
       if (variant.id != null && existingVariantIds.has(variant.id)) {
-        await tx.update(productVariants).set(values)
+        await tx.update(productVariants).set(variantValues(variant, index))
           .where(and(eq(productVariants.id, variant.id), eq(productVariants.productId, productId)));
-      } else {
-        await tx.insert(productVariants).values({ productId, ...values });
+      }
+    }
+    for (let index = 0; index < resolvedVariants.length; index += 1) {
+      const variant = resolvedVariants[index]!;
+      if (variant.id == null || !existingVariantIds.has(variant.id)) {
+        await tx.insert(productVariants).values({ productId, ...variantValues(variant, index) });
       }
     }
 

@@ -13,6 +13,13 @@ function toSlug(input: string) {
 
 export async function createAdminProduct(input: AdminProductInput) {
   const normalized: NormalizedProductInput = normalizeAdminProductInput(input);
+  const sizeMode = normalized.sizes.length > 0;
+  const matchesRepresentation = normalized.variants.every((variant) =>
+    sizeMode ? "sizeId" in variant : "sizeLabel" in variant
+  );
+  if (!matchesRepresentation) {
+    throw new Error("Product variants do not match the selected representation");
+  }
   const slugBase = normalized.enName || normalized.arName || normalized.sku || "product";
   const slug = toSlug(slugBase);
   if (normalized.status === "active" && !canActivateAdminProduct(normalized)) {
@@ -39,18 +46,18 @@ export async function createAdminProduct(input: AdminProductInput) {
       categoryId: normalized.categoryId || 1,
       status: normalized.status
     }, tx);
-    if (normalized.sizes.length > 0) {
+    if (sizeMode) {
       await replaceProductOptionsAndVariantsRepo(
         created.id,
         normalized.sizes,
         normalized.colors,
-        normalized.variants.flatMap((variant) => "sizeId" in variant ? [variant] : []),
+        normalized.variants as Array<Extract<NormalizedProductInput["variants"][number], { sizeId: number }>>,
         tx
       );
     } else {
       await replaceVariantsRepo(
         created.id,
-        normalized.variants.flatMap((variant) => "sizeLabel" in variant ? [variant] : []),
+        normalized.variants as Array<Extract<NormalizedProductInput["variants"][number], { sizeLabel: string }>>,
         tx
       );
     }

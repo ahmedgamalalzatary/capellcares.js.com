@@ -46,7 +46,13 @@ export function ProductVariantSelector({ product, ...initial }: Props) {
     let cart: Array<{ variantId: number; qty: number }> = [];
     try {
       const stored = JSON.parse(localStorage.getItem(key) ?? "[]");
-      if (Array.isArray(stored)) cart = stored;
+      if (Array.isArray(stored)) {
+        cart = stored.filter((item): item is { variantId: number; qty: number } =>
+          item != null && typeof item === "object" &&
+          typeof item.variantId === "number" && Number.isInteger(item.variantId) && item.variantId > 0 &&
+          typeof item.qty === "number" && Number.isInteger(item.qty) && item.qty > 0
+        );
+      }
     } catch {
       cart = [];
     }

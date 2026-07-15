@@ -1062,6 +1062,7 @@ html[lang="ar"] .editor-hero__eyebrow { letter-spacing: 0.08em; text-transform: 
   color: var(--ink-3);
   letter-spacing: 0.01em;
 }
+.editor-hero__actions { display: flex; gap: 10px; }
 .editor-hero__meta {
   display: grid;
   gap: 12px;

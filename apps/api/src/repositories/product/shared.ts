@@ -224,19 +224,21 @@ export async function addVariantRepo(input: {
   sellingPrice: number;
   stockQty: number;
 }) {
-  const [row] = await db.select({ maxSortOrder: sql<number | null>`max(${productSizes.sortOrder})` })
-    .from(productSizes).where(eq(productSizes.productId, input.productId));
-  const sortOrder = Number(row?.maxSortOrder ?? 0) + 1;
-  const [size] = await db.insert(productSizes).values({
-    productId: input.productId,
-    sizeLabel: normalizeVariantSizeLabel(input.sizeLabel),
-    sortOrder
-  }).$returningId();
-  await db.insert(productVariants).values({
-    productId: input.productId,
-    sizeId: size.id,
-    sellingPrice: sql`${input.sellingPrice}`,
-    stockQty: input.stockQty,
-    sortOrder
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select({ maxSortOrder: sql<number | null>`max(${productSizes.sortOrder})` })
+      .from(productSizes).where(eq(productSizes.productId, input.productId));
+    const sortOrder = Number(row?.maxSortOrder ?? 0) + 1;
+    const [size] = await tx.insert(productSizes).values({
+      productId: input.productId,
+      sizeLabel: normalizeVariantSizeLabel(input.sizeLabel),
+      sortOrder
+    }).$returningId();
+    await tx.insert(productVariants).values({
+      productId: input.productId,
+      sizeId: size.id,
+      sellingPrice: sql`${input.sellingPrice}`,
+      stockQty: input.stockQty,
+      sortOrder
+    });
   });
 }

@@ -95,7 +95,7 @@ export function CollectionForm({
               <thead>
                 <tr>
                   <th>المنتج</th>
-                  <th>المقاس</th>
+                  <th>الخيار (المقاس / اللون)</th>
                   <th>الكمية</th>
                   <th>السعر الفردي</th>
                   <th>المجموع</th>
@@ -121,7 +121,7 @@ export function CollectionForm({
                       </td>
                       <td>
                         <select className="select" disabled={!product} value={row.variantId} onChange={(e) => updateRow(index, { variantId: Number(e.target.value) })}>
-                          <option value="0">— مقاس —</option>
+                          <option value="0">— اختاري خيارًا —</option>
                           {variants.map((candidate) => (
                             <option key={candidate.id} value={candidate.id}>{product ? getVariantLabel(product, candidate) : "—"}</option>
                           ))}

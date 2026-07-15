@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Product, ProductVariant, RelatedItemRef } from "@minikoshk/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
@@ -60,6 +60,7 @@ export function useProductForm({
       newTempId
     )
   );
+  const variantsRef = useRef(variants);
   const [relatedItems, setRelatedItems] = useState<RelatedItemRef[] | undefined>(initial?.relatedItems);
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const optionValidationError = validateProductOptionValues(sizes, colors);
@@ -69,8 +70,18 @@ export function useProductForm({
   );
 
   const updateVariant = (id: number, patch: Partial<ProductVariant>) => {
-    setVariants((vs) => vs.map((v) => v.id === id ? { ...v, ...patch } : v));
+    setVariants((current) => {
+      const next = current.map((variant) => variant.id === id ? { ...variant, ...patch } : variant);
+      variantsRef.current = next;
+      return next;
+    });
   };
+
+  useEffect(() => {
+    const next = buildVariantMatrix(sizes, colors, variantsRef.current, newTempId);
+    variantsRef.current = next;
+    setVariants(next);
+  }, [sizes, colors]);
 
   const updateSize = (id: number, label: string) => {
     setSizes((current) => current.map((size) => size.id === id ? { ...size, label } : size));
@@ -78,29 +89,16 @@ export function useProductForm({
 
   const addSize = () => {
     const size = { id: newTempId(), label: "" };
-    setSizes((current) => {
-      const next = [...current, size];
-      setVariants((existing) => buildVariantMatrix(next, colors, existing, newTempId));
-      return next;
-    });
+    setSizes((current) => [...current, size]);
   };
 
   const removeSize = (id: number) => {
-    setSizes((current) => {
-      if (current.length === 1) return current;
-      const next = current.filter((size) => size.id !== id);
-      setVariants((existing) => buildVariantMatrix(next, colors, existing, newTempId));
-      return next;
-    });
+    setSizes((current) => current.length === 1 ? current : current.filter((size) => size.id !== id));
   };
 
   const addColor = () => {
     const color = { id: newTempId(), hex: "#000000" };
-    setColors((current) => {
-      const next = [...current, color];
-      setVariants((existing) => buildVariantMatrix(sizes, next, existing, newTempId));
-      return next;
-    });
+    setColors((current) => [...current, color]);
   };
 
   const updateColor = (id: number, hex: string) => {
@@ -108,11 +106,7 @@ export function useProductForm({
   };
 
   const removeColor = (id: number) => {
-    setColors((current) => {
-      const next = current.filter((color) => color.id !== id);
-      setVariants((existing) => buildVariantMatrix(sizes, next, existing, newTempId));
-      return next;
-    });
+    setColors((current) => current.filter((color) => color.id !== id));
   };
 
   const requirements: Requirement[] = useMemo(() => [

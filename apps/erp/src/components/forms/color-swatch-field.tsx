@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const POP_WIDTH = 232;
-const POP_HEIGHT = 268;
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -89,15 +88,18 @@ export function ColorSwatchField({ hex, label, onChange }: ColorSwatchFieldProps
   const rootRef = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const hueRef = useRef<HTMLInputElement>(null);
 
   const placePopover = useCallback(() => {
     const anchor = rootRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
+    const height = popRef.current?.getBoundingClientRect().height ?? 0;
     const width = Math.min(POP_WIDTH, window.innerWidth - 24);
-    const up = rect.bottom + 8 + POP_HEIGHT > window.innerHeight && rect.top - 8 - POP_HEIGHT > 0;
+    const up = rect.bottom + 8 + height > window.innerHeight && rect.top - 8 - height > 0;
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
-    const top = up ? rect.top - 8 - POP_HEIGHT : rect.bottom + 8;
+    const top = up ? rect.top - 8 - height : rect.bottom + 8;
     setPopPos({ top, left, up });
   }, []);
 
@@ -110,13 +112,17 @@ export function ColorSwatchField({ hex, label, onChange }: ColorSwatchFieldProps
   useEffect(() => {
     if (!open) return;
     placePopover();
+    hueRef.current?.focus();
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (rootRef.current?.contains(target) || popRef.current?.contains(target)) return;
       setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     const onReflow = () => placePopover();
     document.addEventListener("pointerdown", onPointerDown);
@@ -180,6 +186,8 @@ export function ColorSwatchField({ hex, label, onChange }: ColorSwatchFieldProps
         className="color-swatch-field__coin"
         aria-label={label}
         aria-expanded={open}
+        aria-haspopup="dialog"
+        ref={triggerRef}
         onClick={() => setOpen((value) => !value)}
       >
         <i style={{ backgroundColor: hex }} />
@@ -231,6 +239,7 @@ export function ColorSwatchField({ hex, label, onChange }: ColorSwatchFieldProps
             />
           </div>
           <input
+            ref={hueRef}
             className="color-pop__hue"
             type="range"
             min={0}

@@ -21,7 +21,7 @@ export const productSizeSchema = z.object({
 export const productColorSchema = z.object({
   id: z.number().int().positive(),
   productId: z.number().int().positive(),
-  hex: z.string().transform(normalizeColorHex),
+  hex: z.string().regex(/^\s*#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\s*$/).transform(normalizeColorHex),
   sortOrder: z.number().int()
 });
 

@@ -38,10 +38,13 @@ export function ProductCard({
   const originalPrice = hasDiscount ? formatPrice(original, lang, t.currency) : null;
   const savePercent = hasDiscount ? Math.round((1 - cashAmount / original) * 100) : 0;
 
-  const swatches = product.colors ?? [];
+  const productHref = `/${lang}/shop?product=${product.slug}`;
+  const swatches = (product.colors ?? []).flatMap((color) => {
+    const variant = product.variants.find((candidate) => candidate.colorId === color.id && candidate.stock > 0);
+    return variant ? [{ color, variant }] : [];
+  });
   const visibleSwatches = swatches.slice(0, 4);
   const extraSwatches = swatches.length - visibleSwatches.length;
-  const productHref = `/${lang}/shop?product=${product.slug}`;
   const selectedVariant = firstInStockVariant(product);
   const addToCartHref = selectedVariant
     ? `${productHref}&size=${selectedVariant.sizeId}${selectedVariant.colorId == null ? "" : `&color=${selectedVariant.colorId}`}&variant=${selectedVariant.id}`
@@ -127,10 +130,10 @@ export function ProductCard({
         {/* Colour swatches */}
         {swatches.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-            {visibleSwatches.map((color) => (
+            {visibleSwatches.map(({ color, variant }) => (
               <a
                 key={color.id}
-                href={`${productHref}&color=${color.id}`}
+                href={`${productHref}&size=${variant.sizeId}&color=${color.id}&variant=${variant.id}`}
                 aria-label={`Color ${color.hex}`}
                 title={color.hex}
                 className="h-7 w-7 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,.45)] transition-transform hover:scale-110"

@@ -75,7 +75,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
               <thead>
                 <tr>
                   <th>المنتج</th>
-                  <th>المقاس</th>
+                  <th>الخيار (المقاس / اللون)</th>
                   <th>الكمية</th>
                   <th>السعر الفردي</th>
                   <th>المجموع</th>
@@ -101,7 +101,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                       </td>
                       <td>
                         <select className="select" disabled={!product} value={r.variantId} onChange={(e) => updateRow(i, { variantId: Number(e.target.value) })}>
-                          <option value="0">— مقاس —</option>
+                          <option value="0">— اختاري خيارًا —</option>
                           {variants.map((v) => <option key={v.id} value={v.id}>{product ? getVariantLabel(product, v) : "—"}</option>)}
                         </select>
                       </td>

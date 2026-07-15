@@ -1,5 +1,21 @@
+CREATE TEMPORARY TABLE `migration_0017_null_size_collision_guard` (
+  `invalid` tinyint NOT NULL,
+  CONSTRAINT `migration_0017_null_size_collision_guard_check` CHECK (`invalid` = 0)
+);
+--> statement-breakpoint
+INSERT INTO `migration_0017_null_size_collision_guard` (`invalid`)
+SELECT 1
+FROM `product_variants` AS `null_variant`
+INNER JOIN `product_variants` AS `labeled_variant`
+  ON `labeled_variant`.`product_id` = `null_variant`.`product_id`
+ AND `labeled_variant`.`size_label` = '__UNSPECIFIED__'
+WHERE `null_variant`.`size_label` IS NULL
+LIMIT 1;
+--> statement-breakpoint
+DROP TEMPORARY TABLE `migration_0017_null_size_collision_guard`;
+--> statement-breakpoint
 INSERT INTO `product_sizes` (`product_id`, `size_label`, `sort_order`)
-SELECT `product_id`, `size_label`, MIN(`sort_order`)
+SELECT `product_id`, COALESCE(`size_label`, '__UNSPECIFIED__'), MIN(`sort_order`)
 FROM `product_variants`
 GROUP BY `product_id`, `size_label`;
 --> statement-breakpoint
@@ -10,7 +26,7 @@ ALTER TABLE `product_variants`
 UPDATE `product_variants` AS `variant`
 INNER JOIN `product_sizes` AS `size`
   ON `size`.`product_id` = `variant`.`product_id`
- AND `size`.`size_label` = `variant`.`size_label`
+ AND `size`.`size_label` <=> COALESCE(`variant`.`size_label`, '__UNSPECIFIED__')
 SET `variant`.`size_id` = `size`.`id`;
 --> statement-breakpoint
 ALTER TABLE `product_variants`

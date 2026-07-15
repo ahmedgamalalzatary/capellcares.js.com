@@ -45,6 +45,10 @@ describe("NewArrivals", () => {
           colors: [
             { id: 10, hex: "#FFFFFF", sortOrder: 1 },
             { id: 11, hex: "#000000", sortOrder: 2 }
+          ],
+          variants: [
+            { id: 10, sizeId: 1, colorId: 10, price: 199, stock: 3 },
+            { id: 11, sizeId: 1, colorId: 11, price: 199, stock: 3 }
           ]
         })]} variant="grid" />
       </LocaleProvider>

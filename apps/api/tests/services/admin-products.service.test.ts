@@ -97,3 +97,30 @@ test("createAdminProduct rolls back the product when its option matrix is invali
   const rows = await db.select({ id: products.id }).from(products).where(eq(products.sku, sku));
   assert.equal(rows.length, 0);
 });
+
+test("createAdminProduct rejects mixed variant representations", async () => {
+  const { eq } = await import("drizzle-orm");
+  const { products } = await import("@minikoshk/database/drizzle/schema");
+  const { db } = await import("@minikoshk/database/src/db");
+  const { createAdminProduct } = await import("../../src/modules/admin/products/admin-products.service.js");
+
+  await resetApiTestDatabase();
+  const ids = await getBaselineIds();
+  const sku = `ERP-MIXED-${Date.now()}`;
+
+  await assert.rejects(() => createAdminProduct({
+    sku,
+    name: { ar: "اختبار", en: "Mixed variants" },
+    buyingPrice: 10,
+    status: "inactive",
+    categoryId: ids.leafCategoryId,
+    sizes: [{ id: -1, label: "S" }],
+    variants: [
+      { sizeId: -1, colorId: null, price: 20, stock: 1 },
+      { size: "M", price: 25, stock: 1 }
+    ]
+  } as any), /representation/i);
+
+  const rows = await db.select({ id: products.id }).from(products).where(eq(products.sku, sku));
+  assert.equal(rows.length, 0);
+});

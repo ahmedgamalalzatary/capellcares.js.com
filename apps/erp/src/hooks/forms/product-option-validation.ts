@@ -6,7 +6,7 @@ export function validateProductOptionValues(
   sizes: ProductSizeOption[],
   colors: ProductColorOption[]
 ): ProductOptionValidationError | null {
-  const normalizedSizes = sizes.map((size) => size.label.trim().replace(/\s+/g, " ").toLocaleLowerCase());
+  const normalizedSizes = sizes.map((size) => size.label.trim().replace(/\s+/g, " ").toLowerCase());
   if (normalizedSizes.some((label) => label.length === 0)) return "blank-size";
   if (new Set(normalizedSizes).size !== normalizedSizes.length) return "duplicate-size";
 

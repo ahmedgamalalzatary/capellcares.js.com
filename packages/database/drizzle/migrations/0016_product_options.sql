@@ -30,5 +30,8 @@ CREATE TABLE `product_colors` (
   CONSTRAINT `product_colors_product_id_fk` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   CONSTRAINT `product_colors_id_product_unique` UNIQUE (`id`, `product_id`),
   CONSTRAINT `product_colors_active_hex_unique` UNIQUE (`product_id`, `active_color_hex`),
-  CONSTRAINT `product_colors_canonical_hex_check` CHECK (`color_hex` REGEXP '^#[0-9A-F]{6}$')
+  CONSTRAINT `product_colors_canonical_hex_check` CHECK (
+    BINARY `color_hex` = BINARY UPPER(`color_hex`)
+    AND `color_hex` REGEXP '^#[0-9A-F]{6}$'
+  )
 );

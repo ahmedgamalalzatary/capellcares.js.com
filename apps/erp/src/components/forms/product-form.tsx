@@ -179,8 +179,8 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                     {sizes.map((size, index) => (
                       <div className="product-option-row" key={size.id}>
                         <span className="product-option-row__index">{String(index + 1).padStart(2, "0")}</span>
-                        <input className="input" value={size.label} onChange={(event) => updateSize(size.id, event.target.value)} placeholder="100ml" />
-                        <button type="button" className="variant-row__remove" disabled={sizes.length === 1} onClick={() => removeSize(size.id)} aria-label="حذف المقاس"><Icon.Trash /></button>
+                        <input className="input" value={size.label} onChange={(event) => updateSize(size.id, event.target.value)} placeholder="100ml" aria-label={`المقاس ${index + 1}`} />
+                        <button type="button" className="btn btn--ghost btn--sm product-option-row__remove" disabled={sizes.length === 1} onClick={() => removeSize(size.id)} aria-label="حذف المقاس"><Icon.Trash /></button>
                       </div>
                     ))}
                   </div>
@@ -202,7 +202,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                         <div className="product-option-row product-option-row--color" key={color.id}>
                           <span className="product-option-row__index">{String(index + 1).padStart(2, "0")}</span>
                           <ColorSwatchField hex={color.hex} label={`لون ${index + 1}`} onChange={(hex) => updateColor(color.id, hex)} />
-                          <button type="button" className="variant-row__remove" onClick={() => removeColor(color.id)} aria-label="حذف اللون"><Icon.Trash /></button>
+                          <button type="button" className="btn btn--ghost btn--sm product-option-row__remove" onClick={() => removeColor(color.id)} aria-label="حذف اللون"><Icon.Trash /></button>
                         </div>
                       ))}
                     </div>

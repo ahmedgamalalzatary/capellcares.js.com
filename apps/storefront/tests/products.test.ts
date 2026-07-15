@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { productPrice, selectBestSellers, selectNewArrivals, type StorefrontProduct } from "@/lib/products";
-import * as productModule from "@/lib/products";
+import { firstInStockVariant, getProductBySlug, productPrice, resolveVariant, selectBestSellers, selectNewArrivals, type StorefrontProduct } from "@/lib/products";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -41,10 +40,6 @@ describe("productPrice", () => {
 
 describe("variant selection", () => {
   it("resolves the exact size and color to the sellable variant id", () => {
-    const resolveVariant = (productModule as unknown as {
-      resolveVariant?: (product: StorefrontProduct, sizeId: number, colorId: number | null) => { id?: number } | undefined;
-    }).resolveVariant;
-    expect(typeof resolveVariant).toBe("function");
     const product = makeProduct({
       id: 8,
       sizes: [{ id: 1, label: "100ml", sortOrder: 1 }],
@@ -52,14 +47,10 @@ describe("variant selection", () => {
       variants: [{ id: 30, sizeId: 1, colorId: 2, price: 100, stock: 4 }]
     } as never);
 
-    expect(resolveVariant!(product, 1, 2)?.id).toBe(30);
+    expect(resolveVariant(product, 1, 2)?.id).toBe(30);
   });
 
   it("chooses the first in-stock combination by default", () => {
-    const firstInStockVariant = (productModule as unknown as {
-      firstInStockVariant?: (product: StorefrontProduct) => { id: number } | undefined;
-    }).firstInStockVariant;
-    expect(typeof firstInStockVariant).toBe("function");
     const product = makeProduct({
       id: 9,
       variants: [
@@ -67,7 +58,7 @@ describe("variant selection", () => {
         { id: 2, sizeId: 1, colorId: null, price: 100, stock: 3 }
       ]
     });
-    expect(firstInStockVariant!(product)?.id).toBe(2);
+    expect(firstInStockVariant(product)?.id).toBe(2);
   });
 });
 
@@ -77,7 +68,7 @@ describe("product detail", () => {
     const fetchMock = vi.fn(async () => ({ ok: true, json: async () => detail }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await productModule.getProductBySlug("matrix-product");
+    const result = await getProductBySlug("matrix-product");
 
     expect(result).toEqual(detail);
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/products/matrix-product"), { cache: "no-store" });

@@ -41,4 +41,18 @@ describe("ProductVariantSelector", () => {
     fireEvent.click(screen.getByRole("button", { name: "ADD TO CART" }));
     expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([{ variantId: 102, qty: 1 }]);
   });
+
+  it("drops malformed stored cart entries before adding a variant", () => {
+    localStorage.setItem("minikoshk_cart", JSON.stringify([
+      null,
+      { variantId: 101, qty: "2" },
+      { variantId: 102, qty: 2 },
+      { variantId: "104", qty: 1 }
+    ]));
+    render(<LocaleProvider lang="en"><ProductVariantSelector product={product} initialVariantId={102} /></LocaleProvider>);
+
+    fireEvent.click(screen.getByRole("button", { name: "ADD TO CART" }));
+
+    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([{ variantId: 102, qty: 3 }]);
+  });
 });

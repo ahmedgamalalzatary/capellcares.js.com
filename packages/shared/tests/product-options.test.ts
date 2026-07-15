@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { ZodError } from "zod";
 
 import * as productSchemas from "../src/schemas/product.schema.js";
 
@@ -57,4 +58,13 @@ test("product schemas model options separately from sellable combinations", () =
 test("product schema includes size and color option collections", () => {
   assert.equal("sizes" in productSchemas.productSchema.shape, true);
   assert.equal("colors" in productSchemas.productSchema.shape, true);
+});
+
+test("productColorSchema reports malformed colors as Zod errors", () => {
+  assert.throws(() => productSchemas.productColorSchema.parse({
+    id: 2,
+    productId: 10,
+    hex: "white",
+    sortOrder: 1
+  }), ZodError);
 });

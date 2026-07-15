@@ -16,6 +16,7 @@ type ErpProductInput = {
   sizes?: Array<{ id: number; label: string }>;
   colors?: Array<{ id: number; hex: string }>;
   variants?: Array<{
+    id?: number;
     size?: string;
     sizeId?: number;
     colorId?: number | null;
@@ -50,6 +51,7 @@ type ApiProductInput = {
   sizes?: Array<{ id: number; label: string }>;
   colors?: Array<{ id: number; hex: string }>;
   variants?: Array<{
+    id?: number;
     sizeLabel?: string;
     sellingPrice?: number;
     stockQty?: number;
@@ -61,6 +63,7 @@ type ApiProductInput = {
 export type AdminProductInput = ErpProductInput | ApiProductInput;
 
 type RawVariant = {
+  id?: number;
   size?: string;
   price?: number;
   stock?: number;
@@ -97,6 +100,7 @@ export type NormalizedProductInput = {
   } | {
     sizeLabel: string;
   }) & {
+    id?: number;
     sellingPrice: number;
     stockQty: number;
   }>;
@@ -107,6 +111,7 @@ export function normalizeAdminProductInput(input: AdminProductInput): Normalized
   const api = input as ApiProductInput;
 
   const variants = ((input.variants ?? []) as RawVariant[]).map((variant) => ({
+    ...(variant.id == null ? {} : { id: Number(variant.id) }),
     ...(variant.sizeId == null
       ? { sizeLabel: variant.sizeLabel ?? variant.size ?? "" }
       : { sizeId: Number(variant.sizeId), colorId: variant.colorId == null ? null : Number(variant.colorId) }),
