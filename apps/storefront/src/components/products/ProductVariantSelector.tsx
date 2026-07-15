@@ -49,8 +49,8 @@ export function ProductVariantSelector({ product, ...initial }: Props) {
       if (Array.isArray(stored)) {
         cart = stored.filter((item): item is { variantId: number; qty: number } =>
           item != null && typeof item === "object" &&
-          typeof item.variantId === "number" && Number.isInteger(item.variantId) && item.variantId > 0 &&
-          typeof item.qty === "number" && Number.isInteger(item.qty) && item.qty > 0
+          typeof item.variantId === "number" && Number.isSafeInteger(item.variantId) && item.variantId > 0 &&
+          typeof item.qty === "number" && Number.isSafeInteger(item.qty) && item.qty > 0
         );
       }
     } catch {

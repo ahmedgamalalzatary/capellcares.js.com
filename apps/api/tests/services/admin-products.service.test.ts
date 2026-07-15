@@ -29,7 +29,7 @@ test("createAdminProduct accepts the ERP product payload shape", async () => {
     youtubeUrl: "https://youtube.com/watch?v=test",
     status: "inactive",
     categoryId: ids.leafCategoryId,
-    variants: [{ id: 1111, productId: 0, size: "100ml", price: 45, stock: 7 }],
+    variants: [{ id: -1111, productId: 0, size: "100ml", price: 45, stock: 7 }],
     offerIds: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -108,18 +108,23 @@ test("createAdminProduct rejects mixed variant representations", async () => {
   const ids = await getBaselineIds();
   const sku = `ERP-MIXED-${Date.now()}`;
 
-  await assert.rejects(() => createAdminProduct({
-    sku,
-    name: { ar: "اختبار", en: "Mixed variants" },
-    buyingPrice: 10,
-    status: "inactive",
-    categoryId: ids.leafCategoryId,
-    sizes: [{ id: -1, label: "S" }],
-    variants: [
-      { sizeId: -1, colorId: null, price: 20, stock: 1 },
-      { size: "M", price: 25, stock: 1 }
-    ]
-  } as any), /representation/i);
+  await assert.rejects(
+    () => createAdminProduct({
+      sku,
+      name: { ar: "اختبار", en: "Mixed variants" },
+      buyingPrice: 10,
+      status: "inactive",
+      categoryId: ids.leafCategoryId,
+      sizes: [{ id: -1, label: "S" }],
+      variants: [
+        { sizeId: -1, colorId: null, price: 20, stock: 1 },
+        { size: "M", price: 25, stock: 1 }
+      ]
+    } as any),
+    (error: any) =>
+      error?.message === "Product variants do not match the selected representation" &&
+      error?.code === "INVALID_PRODUCT_OPTIONS"
+  );
 
   const rows = await db.select({ id: products.id }).from(products).where(eq(products.sku, sku));
   assert.equal(rows.length, 0);

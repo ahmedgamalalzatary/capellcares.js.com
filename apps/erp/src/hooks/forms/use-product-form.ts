@@ -70,12 +70,14 @@ export function useProductForm({
   );
 
   const updateVariant = (id: number, patch: Partial<ProductVariant>) => {
-    setVariants((current) => {
-      const next = current.map((variant) => variant.id === id ? { ...variant, ...patch } : variant);
-      variantsRef.current = next;
-      return next;
-    });
+    setVariants((current) =>
+      current.map((variant) => variant.id === id ? { ...variant, ...patch } : variant)
+    );
   };
+
+  useEffect(() => {
+    variantsRef.current = variants;
+  }, [variants]);
 
   useEffect(() => {
     const next = buildVariantMatrix(sizes, colors, variantsRef.current, newTempId);

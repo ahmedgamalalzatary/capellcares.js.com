@@ -285,7 +285,11 @@ export async function replaceProductOptionsAndVariantsRepo(
       if (!sizeId || (variant.colorId != null && !colorId)) {
         throw new Error("Variant references an unknown product option");
       }
-      if (variant.id != null) {
+      if (variant.id != null && variant.id > 0) {
+        const existingVariant = existingVariants.find((row) => row.id === variant.id);
+        if (!existingVariant || existingVariant.deletedAt != null) {
+          throw invalidProductOptions("Product variant id is invalid");
+        }
         return { ...variant, sizeId, colorId };
       }
       const matched = existingVariants.find((row) =>

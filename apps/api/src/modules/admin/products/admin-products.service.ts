@@ -18,7 +18,9 @@ export async function createAdminProduct(input: AdminProductInput) {
     sizeMode ? "sizeId" in variant : "sizeLabel" in variant
   );
   if (!matchesRepresentation) {
-    throw new Error("Product variants do not match the selected representation");
+    const error = new Error("Product variants do not match the selected representation") as Error & { code?: string };
+    error.code = "INVALID_PRODUCT_OPTIONS";
+    throw error;
   }
   const slugBase = normalized.enName || normalized.arName || normalized.sku || "product";
   const slug = toSlug(slugBase);

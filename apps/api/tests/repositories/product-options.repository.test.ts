@@ -160,6 +160,30 @@ test("rejects duplicate variant ids before synchronizing the matrix", async () =
   );
 });
 
+test("rejects an explicit variant id that does not belong to the product", async () => {
+  const { leafCategoryId } = await getBaselineIds();
+  const product = await productRepository.createAdminProductRepo({
+    sku: `FOREIGN-VARIANT-ID-${Date.now()}`,
+    slug: `foreign-variant-id-${Date.now()}`,
+    arName: "غير تابع",
+    enName: "Foreign variant id",
+    buyingPrice: 10,
+    keywords: "validation",
+    categoryId: leafCategoryId,
+    status: "inactive"
+  });
+
+  await assert.rejects(
+    productRepository.replaceProductOptionsAndVariantsRepo(
+      product.id,
+      [{ id: -1, label: "S" }],
+      [],
+      [{ id: 999999, sizeId: -1, colorId: null, sellingPrice: 10, stockQty: 1 }]
+    ),
+    (error: any) => error?.code === "INVALID_PRODUCT_OPTIONS"
+  );
+});
+
 test("reuses existing variant ids when an unchanged matrix omits them", async () => {
   const { leafCategoryId } = await getBaselineIds();
   const product = await productRepository.createAdminProductRepo({
@@ -237,6 +261,41 @@ test("does not implicitly reuse a soft-deleted variant when its id is omitted", 
     .filter((variant) => variant.deletedAt == null);
   assert.equal(activeVariants.length, 1);
   assert.notEqual(activeVariants[0]!.id, historicalVariant!.id);
+});
+
+test("rejects an explicit soft-deleted variant id", async () => {
+  const { leafCategoryId } = await getBaselineIds();
+  const product = await productRepository.createAdminProductRepo({
+    sku: `EXPLICIT-DELETED-VARIANT-${Date.now()}`,
+    slug: `explicit-deleted-variant-${Date.now()}`,
+    arName: "محذوف صريح",
+    enName: "Explicit deleted variant",
+    buyingPrice: 10,
+    keywords: "validation",
+    categoryId: leafCategoryId,
+    status: "inactive"
+  });
+  await productRepository.replaceProductOptionsAndVariantsRepo(
+    product.id,
+    [{ id: -1, label: "S" }],
+    [],
+    [{ sizeId: -1, colorId: null, sellingPrice: 10, stockQty: 1 }]
+  );
+  const [size] = await db.select().from(productSizes).where(eq(productSizes.productId, product.id));
+  const [historicalVariant] = await db.select().from(productVariants)
+    .where(eq(productVariants.productId, product.id));
+  await db.update(productVariants).set({ deletedAt: new Date() })
+    .where(eq(productVariants.id, historicalVariant!.id));
+
+  await assert.rejects(
+    productRepository.replaceProductOptionsAndVariantsRepo(
+      product.id,
+      [{ id: size!.id, label: size!.sizeLabel }],
+      [],
+      [{ id: historicalVariant!.id, sizeId: size!.id, colorId: null, sellingPrice: 11, stockQty: 2 }]
+    ),
+    (error: any) => error?.code === "INVALID_PRODUCT_OPTIONS"
+  );
 });
 
 test("does not let an id-less variant claim an id reserved explicitly later in the matrix", async () => {
