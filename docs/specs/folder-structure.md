@@ -665,7 +665,7 @@ minikoshk/
 │  │     ├─ 05a-playwright-local.md
 │  │     ├─ 06-ci-and-regression.md
 │  │     └─ playwright-vitest-implementation.md
-│  └─ deploy.md
+│  └─ docker.md
 ├─ .dockerignore
 ├─ .env.example
 ├─ .gitignore

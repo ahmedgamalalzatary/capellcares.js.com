@@ -71,7 +71,7 @@ Use this only when the VPS database has no valuable data. `down -v` deletes the 
 Start on the VPS:
 
 ```bash
-cd ~/capellcares.js.com
+cd ~/minikoshk
 git pull
 ```
 
@@ -122,9 +122,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.minikoshkcares.com/health
-curl -I https://minikoshkcares.com
-curl -I https://erp.minikoshkcares.com
+curl https://api.minikoshk.com/health
+curl -I https://minikoshk.com
+curl -I https://erp.minikoshk.com
 ```
 
 ## Production Existing DB Flow
@@ -134,7 +134,7 @@ Use this once production may contain valuable data. Do not use `down -v`.
 Start on the VPS:
 
 ```bash
-cd ~/capellcares.js.com
+cd ~/minikoshk
 git pull
 ```
 
@@ -178,9 +178,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.minikoshkcares.com/health
-curl -I https://minikoshkcares.com
-curl -I https://erp.minikoshkcares.com
+curl https://api.minikoshk.com/health
+curl -I https://minikoshk.com
+curl -I https://erp.minikoshk.com
 ```
 
 ## Local Docker Fresh DB Flow
@@ -383,10 +383,10 @@ For local Docker, replace `.env.production` with `.env.docker`.
 
 Production:
 
-- Storefront: `https://minikoshkcares.com`
-- ERP: `https://erp.minikoshkcares.com`
-- API: `https://api.minikoshkcares.com`
-- API health: `https://api.minikoshkcares.com/health`
+- Storefront: `https://minikoshk.com`
+- ERP: `https://erp.minikoshk.com`
+- API: `https://api.minikoshk.com`
+- API health: `https://api.minikoshk.com/health`
 
 Local Docker:
 
@@ -395,11 +395,50 @@ Local Docker:
 - API: `http://localhost:4000`
 - API health: `http://localhost:4000/health`
 
+## Public DNS and Proxy Checks
+
+Confirm that public resolvers point every production hostname at the VPS. Query
+explicit resolvers because `/etc/hosts` or a stale local resolver can make a
+normal `curl` misleading:
+
+```bash
+for host in minikoshk.com www.minikoshk.com api.minikoshk.com erp.minikoshk.com; do
+  echo "=== $host ==="
+  dig @1.1.1.1 +short A "$host"
+  dig @8.8.8.8 +short A "$host"
+  dig @1.1.1.1 +short AAAA "$host"
+done
+```
+
+Test the application path on the VPS independently of public DNS:
+
+```bash
+curl -I http://127.0.0.1:3000
+curl http://127.0.0.1:4000/health
+curl -I http://127.0.0.1:3001
+curl -I --resolve erp.minikoshk.com:443:127.0.0.1 https://erp.minikoshk.com
+```
+
+For public verification, run these without `--resolve` from a machine outside
+the VPS:
+
+```bash
+curl -I https://minikoshk.com
+curl https://api.minikoshk.com/health
+curl -I https://erp.minikoshk.com
+```
+
+If authoritative DNS has the correct VPS address but clients still resolve an
+old address, wait for the previous record's TTL and flush the client DNS cache.
+Domain reactivation after registrar verification can also take time to reach
+recursive resolvers.
+
 ## Rules
 
 - Use `db:migrate` everywhere: local non-Docker, local Docker, staging, and production.
 - `docker compose up -d` runs the one-shot `migrate` service automatically before `api`.
 - Schema change workflow: edit `drizzle/schema.ts` → `db:generate` (commit the new migration file) → `db:migrate`.
+- Separate multiple SQL commands in a hand-authored Drizzle migration with `--> statement-breakpoint`.
 - If a local DB was ever bootstrapped with `drizzle-kit push`, reset it once with `down -v` before adopting migrate-only.
 - `down -v` deletes Docker volumes, including MySQL data.
 - `docker-compose.yml` reads deployment values from the `--env-file` argument.

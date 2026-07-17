@@ -9,7 +9,7 @@ async function readMigration(name: string) {
 test("repairs historical negative stock before adding the stock constraint", async () => {
   const migration = await readMigration("0018_variant_stock_integrity.sql");
   assert.match(migration, /UPDATE `product_variants` SET `stock_qty` = 0 WHERE `stock_qty` < 0/i);
-  assert.ok(migration.indexOf("UPDATE") < migration.indexOf("ALTER TABLE"));
+  assert.match(migration, /UPDATE[\s\S]*--> statement-breakpoint[\s\S]*ALTER TABLE/i);
 });
 
 test("allows the price constraint to reject historical negative prices", async () => {
