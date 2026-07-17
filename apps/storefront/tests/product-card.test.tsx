@@ -44,6 +44,13 @@ describe("ProductCard", () => {
     expect(screen.getByRole("button", { name: "Added" })).toBeInTheDocument();
   });
 
+  it("reveals and unclamps quick actions when a child has focus", () => {
+    render(<ProductCard product={product} lang="en" dict={dictionaries.en} />);
+    const button = screen.getByRole("button", { name: "ADD TO CART" });
+    expect(button.parentElement).toHaveClass("group-focus-within:translate-y-0", "group-focus-within:opacity-100");
+    expect(button.parentElement?.parentElement).toHaveClass("group-focus-within:overflow-visible");
+  });
+
   it("disables add-to-cart when no variant is in stock", () => {
     const soldOut: StorefrontProduct = {
       ...product,

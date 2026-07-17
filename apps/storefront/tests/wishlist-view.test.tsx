@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { WishlistView } from "@/components/wishlist/WishlistView";
@@ -46,5 +46,16 @@ describe("WishlistView", () => {
 
     expect(await screen.findByText("Your wishlist is empty.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute("href", "/en/products");
+  });
+
+  it("does not show the empty state when the catalog request fails", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("down"));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LocaleProvider lang="en"><WishlistView /></LocaleProvider>);
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      await Promise.allSettled(fetchMock.mock.results.map(({ value }) => value));
+    });
+    expect(screen.queryByText("Your wishlist is empty.")).not.toBeInTheDocument();
   });
 });

@@ -34,6 +34,32 @@ describe("POST /api/revalidate", () => {
     expect(response.status).toBe(400);
   });
 
+  it.each([null, [], "product", 7])("rejects a non-object payload: %j", async (body) => {
+    const response = await POST(request(body));
+    expect(response.status).toBe(400);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("rejects inherited entity names", async () => {
+    const response = await POST(request({ entity: "toString" }));
+    expect(response.status).toBe(400);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("accepts an expanded path of exactly 1024 characters", async () => {
+    const slug = "x".repeat(1024 - "/en/products/".length);
+    const response = await POST(request({ entity: "product", slug }));
+    expect(response.status).toBe(200);
+    expect(revalidatePath).toHaveBeenCalledWith(`/en/products/${slug}`);
+  });
+
+  it("rejects an expanded path over 1024 characters before revalidating anything", async () => {
+    const slug = "x".repeat(1025 - "/en/products/".length);
+    const response = await POST(request({ entity: "product", slug }));
+    expect(response.status).toBe(400);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
   it("revalidates product list pages and the changed slugs in both locales", async () => {
     const response = await POST(request({ entity: "product", slug: "new-slug", previousSlug: "old-slug" }));
     expect(response.status).toBe(200);

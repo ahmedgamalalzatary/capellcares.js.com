@@ -42,7 +42,7 @@ export function BundleDetail({ bundle, kind }: { bundle: StorefrontBundleDetail;
         <h1 className="text-3xl font-extrabold uppercase tracking-wide text-brand-dark">{name}</h1>
         {description && <p className="mt-4 whitespace-pre-line leading-relaxed text-gray-600">{description}</p>}
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          {dict.bundle.includes} {bundle.items.length} {dict.bundle.itemsCount}
+          {dict.bundle.includes} {bundle.items.reduce((total, item) => total + item.qty, 0)} {dict.bundle.itemsCount}
         </p>
 
         <div className="mt-6 flex flex-wrap items-baseline gap-2">

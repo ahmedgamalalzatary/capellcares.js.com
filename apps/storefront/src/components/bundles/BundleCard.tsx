@@ -46,7 +46,7 @@ export function BundleCard({ bundle, kind }: { bundle: StorefrontBundle; kind: B
           <h3 className="text-lg font-bold uppercase leading-[1.4] tracking-wide text-brand-dark">{name}</h3>
         </a>
         <p className="mt-0.5 text-md text-gray-400">
-          {dict.bundle.includes} {bundle.items.length} {dict.bundle.itemsCount}
+          {dict.bundle.includes} {bundle.items.reduce((total, item) => total + item.qty, 0)} {dict.bundle.itemsCount}
         </p>
 
         <div className="mt-2 flex flex-wrap items-baseline gap-1.5">

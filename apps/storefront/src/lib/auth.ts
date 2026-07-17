@@ -9,7 +9,7 @@ import { ApiError, apiSend } from "./api/client";
  * the user snapshot are kept client-side.
  */
 
-const AUTH_KEY = "minikoshk_auth";
+export const AUTH_KEY = "minikoshk_auth";
 export const AUTH_UPDATED_EVENT = "minikoshk:auth-updated";
 
 export interface AuthState {
@@ -66,9 +66,12 @@ export async function refreshSession(): Promise<AuthState | null> {
     const state: AuthState = { ...current, accessToken: result.accessToken };
     writeAuth(state);
     return state;
-  } catch {
-    writeAuth(null);
-    return null;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      writeAuth(null);
+      return null;
+    }
+    throw error;
   }
 }
 

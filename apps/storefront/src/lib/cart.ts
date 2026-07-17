@@ -11,7 +11,7 @@ export type CartLine =
   | { type: "offer"; offerId: number; qty: number }
   | { type: "collection"; collectionId: number; qty: number };
 
-const CART_KEY = "minikoshk_cart";
+export const CART_KEY = "minikoshk_cart";
 export const CART_UPDATED_EVENT = "minikoshk:cart-updated";
 
 function isPositiveInt(value: unknown): value is number {

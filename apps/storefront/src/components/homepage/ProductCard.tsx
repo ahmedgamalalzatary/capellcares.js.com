@@ -159,8 +159,8 @@ export function ProductCard({
         {/* Hover actions: the slot is always reserved (so hovering never changes
             the card height or pushes the row down); the buttons sit clipped below
             the edge and slide up into view from the bottom on hover. */}
-        <div className="mt-3 h-11 overflow-hidden">
-          <div className="flex h-11 translate-y-[calc(100%+0.75rem)] items-center gap-2 opacity-0 transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+        <div className="mt-3 h-11 overflow-hidden group-focus-within:overflow-visible">
+          <div className="flex h-11 translate-y-[calc(100%+0.75rem)] items-center gap-2 opacity-0 transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <button
               type="button"
               disabled={!selectedVariant}

@@ -67,37 +67,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid secret" }, { status: 401 });
   }
 
-  let payload: RevalidatePayload;
+  let payload: unknown;
   try {
-    payload = (await request.json()) as RevalidatePayload;
+    payload = await request.json();
   } catch {
     return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
-  const entity = payload.entity;
-  if (!entity || !(entity in LIST_PATHS)) {
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload) || !Object.hasOwn(payload, "entity")) {
+    return NextResponse.json({ message: "Unknown entity" }, { status: 400 });
+  }
+  const body = payload as RevalidatePayload;
+  const entity = body.entity;
+  if (!entity || !Object.hasOwn(LIST_PATHS, entity)) {
     return NextResponse.json({ message: "Unknown entity" }, { status: 400 });
   }
 
   const relativePaths = new Set(LIST_PATHS[entity]);
   const detailBase = DETAIL_PATHS[entity];
   if (detailBase) {
-    for (const slug of cleanSlugs(payload.slug, payload.previousSlug)) {
+    for (const slug of cleanSlugs(body.slug, body.previousSlug)) {
       relativePaths.add(`${detailBase}/${slug}`);
     }
   }
   // Product pages embed related-item cards, so a change to this entity must
   // also refresh the products that reference it.
-  for (const slug of cleanSlugs(payload.relatedProductSlugs)) {
+  for (const slug of cleanSlugs(body.relatedProductSlugs)) {
     relativePaths.add(`products/${slug}`);
   }
 
+  const expandedPaths = languages.flatMap((lang) =>
+    [...relativePaths].map((relative) => relative ? `/${lang}/${relative}` : `/${lang}`)
+  );
+  if (expandedPaths.some((path) => path.length > 1024)) {
+    return NextResponse.json({ message: "Revalidation path too long" }, { status: 400 });
+  }
+
   const revalidated: string[] = [];
-  for (const lang of languages) {
-    for (const relative of relativePaths) {
-      const path = relative ? `/${lang}/${relative}` : `/${lang}`;
-      revalidatePath(path);
-      revalidated.push(path);
-    }
+  for (const path of expandedPaths) {
+    revalidatePath(path);
+    revalidated.push(path);
   }
 
   return NextResponse.json({ revalidated });

@@ -49,13 +49,18 @@ describe("bundle API calls", () => {
     expect(offers.map((offer) => offer.id)).toEqual([1]);
   });
 
-  it("returns an empty list when the API is unreachable", async () => {
+  it("propagates an unreachable API error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
-    expect(await getOffers()).toEqual([]);
+    await expect(getOffers()).rejects.toThrow("down");
   });
 
   it("returns null for a missing offer slug", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ message: "Offer not found" }, 404)));
     expect(await getOfferBySlug("nope")).toBeNull();
+  });
+
+  it("propagates non-404 offer detail failures", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ message: "broken" }, 500)));
+    await expect(getOfferBySlug("broken")).rejects.toThrow("broken");
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { firstInStockVariant, getProductBySlug, productPrice, resolveVariant, selectBestSellers, selectNewArrivals, type StorefrontProduct } from "@/lib/products";
+import { firstInStockVariant, getProductBySlug, getProducts, productPrice, resolveVariant, selectBestSellers, selectNewArrivals, type StorefrontProduct } from "@/lib/products";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -72,6 +72,17 @@ describe("product detail", () => {
 
     expect(result).toEqual(detail);
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/products/matrix-product"), { cache: "no-store" });
+  });
+
+  it("returns null only for a missing product", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 404 })));
+    expect(await getProductBySlug("missing")).toBeNull();
+  });
+
+  it("propagates list and non-404 detail failures", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+    await expect(getProducts()).rejects.toThrow("down");
+    await expect(getProductBySlug("broken")).rejects.toThrow("down");
   });
 });
 

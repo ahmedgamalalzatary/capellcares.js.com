@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ProductCard } from "@/components/homepage/ProductCard";
 import { useWishlist } from "@/hooks/useWishlist";
-import { apiGetOr } from "@/lib/api/client";
+import { apiGet } from "@/lib/api/client";
 import type { StorefrontProduct } from "@/lib/products";
 
 /**
@@ -16,12 +16,17 @@ export function WishlistView() {
   const { lang, dict } = useLocale();
   const { ids } = useWishlist();
   const [catalog, setCatalog] = useState<StorefrontProduct[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     let cancelled = false;
-    apiGetOr<{ items: StorefrontProduct[] }>("/products", { items: [] }).then((payload) => {
-      if (!cancelled) setCatalog(payload.items);
-    });
+    apiGet<{ items: StorefrontProduct[] }>("/products")
+      .then((payload) => {
+        if (!cancelled) setCatalog(payload?.items ?? []);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) setError(reason);
+      });
     return () => {
       cancelled = true;
     };
@@ -29,7 +34,7 @@ export function WishlistView() {
 
   const products = (catalog ?? []).filter((product) => ids.includes(product.id));
 
-  if (catalog !== null && products.length === 0) {
+  if (!error && catalog !== null && products.length === 0) {
     return (
       <div className="mx-auto max-w-3xl py-16 text-center">
         <p className="text-lg text-gray-500">{dict.wishlistPage.empty}</p>

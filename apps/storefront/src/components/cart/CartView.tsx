@@ -8,7 +8,9 @@ import { cartCount, clearCart, removeLine, setLineQty } from "@/lib/cart";
 /** Cart page body: resolved lines with qty steppers (capped at stock), removal, total, and a checkout link. */
 export function CartView() {
   const { lang, dict } = useLocale();
-  const { lines, resolved, total, loading } = useResolvedCart();
+  const { lines, resolved, total, loading, error } = useResolvedCart();
+  const canCheckout = !loading && !error && resolved.length === lines.length &&
+    resolved.every((item) => item.available && item.line.qty <= item.maxQty);
 
   if (lines.length === 0) {
     return (
@@ -52,7 +54,7 @@ export function CartView() {
                 className="h-9 w-9 cursor-pointer font-bold text-brand-dark">−</button>
               <span className="min-w-8 text-center text-sm font-bold">{item.line.qty}</span>
               <button type="button" aria-label="+"
-                disabled={item.available && item.line.qty >= item.maxQty}
+                disabled={!item.available || item.line.qty >= item.maxQty}
                 onClick={() => setLineQty(item.line, item.line.qty + 1)}
                 className="h-9 w-9 cursor-pointer font-bold text-brand-dark disabled:cursor-not-allowed disabled:opacity-30">+</button>
             </div>
@@ -74,14 +76,15 @@ export function CartView() {
         <div className="text-end">
           <p className="text-sm uppercase tracking-wide text-gray-500">{dict.cart.total}</p>
           <p className="text-2xl font-extrabold text-brand-dark">
-            {loading ? "…" : formatPrice(total, lang, dict.product.currency)}
+            {loading || error ? "…" : formatPrice(total, lang, dict.product.currency)}
           </p>
         </div>
       </div>
 
       <a
-        href={`/${lang}/checkout`}
-        className="mt-6 block rounded-full bg-brand-dark py-4 text-center text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black"
+        href={canCheckout ? `/${lang}/checkout` : undefined}
+        aria-disabled={!canCheckout}
+        className="mt-6 block rounded-full bg-brand-dark py-4 text-center text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40"
       >
         {dict.cart.checkout}
       </a>

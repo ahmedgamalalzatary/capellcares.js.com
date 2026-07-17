@@ -118,6 +118,52 @@ describe("wishlist storage", () => {
     expect(readWishlist()).toEqual([]);
   });
 
+  it("discards a sync completion after the auth session changes", async () => {
+    logIn(20);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => gate.then(() => jsonResponse({ items: [{ productId: 8 }] }))));
+
+    const staleSync = syncWishlist();
+    localStorage.setItem("minikoshk_auth", JSON.stringify({ accessToken: "token-2", user: { id: 21, name: "Other", email: "o@example.com" } }));
+    localStorage.setItem("minikoshk_wishlist", JSON.stringify([9]));
+    release();
+
+    expect(await staleSync).toEqual([9]);
+    expect(readWishlist()).toEqual([9]);
+  });
+
+  it("synchronizes the same account again after logout and login", async () => {
+    logIn(30);
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ items: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    await syncWishlist();
+
+    localStorage.removeItem("minikoshk_auth");
+    await syncWishlist();
+    localStorage.setItem("minikoshk_auth", JSON.stringify({ accessToken: "new-token", user: { id: 30, name: "Ahmed", email: "a@example.com" } }));
+    await syncWishlist();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not merge the previous account's wishlist into a different account", async () => {
+    logIn(40);
+    localStorage.setItem("minikoshk_wishlist", JSON.stringify([4]));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ items: [{ productId: 4 }] }))
+      .mockResolvedValueOnce(jsonResponse({ items: [{ productId: 5 }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    await syncWishlist();
+
+    localStorage.setItem("minikoshk_auth", JSON.stringify({ accessToken: "token-2", user: { id: 41, name: "Other", email: "o@example.com" } }));
+    const merged = await syncWishlist();
+
+    expect(merged).toEqual([5]);
+    expect(readWishlist()).toEqual([5]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("leaves the local wishlist untouched for guests on sync", async () => {
     localStorage.setItem("minikoshk_wishlist", JSON.stringify([4]));
     const fetchMock = vi.fn();

@@ -32,6 +32,11 @@ describe("BundleCard", () => {
     expect(screen.getByText(/-25%/)).toBeInTheDocument();
   });
 
+  it("shows the total included units", () => {
+    render(<LocaleProvider lang="en"><BundleCard bundle={{ ...offer, items: [{ variantId: 1, qty: 3 }, { variantId: 2, qty: 1 }] }} kind="offer" /></LocaleProvider>);
+    expect(screen.getByText(/Includes 4 items/)).toBeInTheDocument();
+  });
+
   it("adds an offer line to the cart", () => {
     render(<LocaleProvider lang="en"><BundleCard bundle={offer} kind="offer" /></LocaleProvider>);
 

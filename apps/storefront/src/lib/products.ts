@@ -1,4 +1,4 @@
-import { apiGet, apiGetOr } from "./api/client";
+import { apiGet } from "./api/client";
 import type { RelatedItemCard } from "@minikoshk/shared";
 
 /** Variant fields the storefront card actually uses (see `toStorefrontProduct`). */
@@ -119,8 +119,8 @@ export async function getProducts(filters: { q?: string; category?: string } = {
   if (filters.q) params.set("q", filters.q);
   if (filters.category) params.set("category", filters.category);
   const query = params.toString();
-  const payload = await apiGetOr<{ items: StorefrontProduct[] }>(`/products${query ? `?${query}` : ""}`, { items: [] });
-  return Array.isArray(payload.items) ? payload.items : [];
+  const payload = await apiGet<{ items: StorefrontProduct[] }>(`/products${query ? `?${query}` : ""}`);
+  return Array.isArray(payload?.items) ? payload.items : [];
 }
 
 export async function getNewArrivals(): Promise<StorefrontProduct[]> {
@@ -132,9 +132,5 @@ export async function getBestSellers(): Promise<StorefrontProduct[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<StorefrontProductDetail | null> {
-  try {
-    return await apiGet<StorefrontProductDetail>(`/products/${encodeURIComponent(slug)}`);
-  } catch {
-    return null;
-  }
+  return apiGet<StorefrontProductDetail>(`/products/${encodeURIComponent(slug)}`);
 }

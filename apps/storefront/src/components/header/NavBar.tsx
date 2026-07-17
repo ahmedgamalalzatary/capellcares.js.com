@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { CartIcon, CloseIcon, MenuIcon, UserIcon } from "../icons";
 import { useLocale } from "../i18n/LocaleProvider";
 import { LangSwitcher } from "./LangSwitcher";
-import { AUTH_UPDATED_EVENT, logout, readAuth, type AuthState } from "@/lib/auth";
-import { CART_UPDATED_EVENT, cartCount, readCart } from "@/lib/cart";
+import { AUTH_KEY, AUTH_UPDATED_EVENT, logout, readAuth, type AuthState } from "@/lib/auth";
+import { CART_KEY, CART_UPDATED_EVENT, cartCount, readCart } from "@/lib/cart";
 
 type NavItem = { label: string; href: string };
 
@@ -23,14 +23,18 @@ export function NavBar() {
   useEffect(() => {
     const updateCart = () => setCount(cartCount(readCart()));
     const updateAuth = () => setAuth(readAuth());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === CART_KEY) updateCart();
+      if (event.key === null || event.key === AUTH_KEY) updateAuth();
+    };
     updateCart();
     updateAuth();
     window.addEventListener(CART_UPDATED_EVENT, updateCart);
-    window.addEventListener("storage", updateCart);
+    window.addEventListener("storage", onStorage);
     window.addEventListener(AUTH_UPDATED_EVENT, updateAuth);
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, updateCart);
-      window.removeEventListener("storage", updateCart);
+      window.removeEventListener("storage", onStorage);
       window.removeEventListener(AUTH_UPDATED_EVENT, updateAuth);
     };
   }, []);

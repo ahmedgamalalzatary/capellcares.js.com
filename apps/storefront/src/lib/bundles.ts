@@ -1,4 +1,4 @@
-import { apiGet, apiGetOr } from "./api/client";
+import { apiGet } from "./api/client";
 import type { RelatedItemCard } from "@minikoshk/shared";
 
 /**
@@ -36,16 +36,12 @@ export function bundleSavePercent(bundle: StorefrontBundle): number {
 }
 
 async function listBundles(resource: "offers" | "collections"): Promise<StorefrontBundle[]> {
-  const payload = await apiGetOr<{ items: StorefrontBundle[] }>(`/${resource}`, { items: [] });
-  return Array.isArray(payload.items) ? payload.items.filter((bundle) => bundle.status === "active") : [];
+  const payload = await apiGet<{ items: StorefrontBundle[] }>(`/${resource}`);
+  return Array.isArray(payload?.items) ? payload.items.filter((bundle) => bundle.status === "active") : [];
 }
 
 async function getBundleBySlug(resource: "offers" | "collections", slug: string): Promise<StorefrontBundleDetail | null> {
-  try {
-    return await apiGet<StorefrontBundleDetail>(`/${resource}/${encodeURIComponent(slug)}`);
-  } catch {
-    return null;
-  }
+  return apiGet<StorefrontBundleDetail>(`/${resource}/${encodeURIComponent(slug)}`);
 }
 
 export const getOffers = () => listBundles("offers");

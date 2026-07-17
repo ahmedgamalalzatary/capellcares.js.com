@@ -57,4 +57,17 @@ describe("apiSendAuthed", () => {
     await expect(apiSendAuthed("/wishlist", { method: "GET" })).rejects.toThrow("Unauthorized");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("preserves auth and propagates transient refresh failures", async () => {
+    const stored = { accessToken: "stale-token", user: { id: 1, name: "Ahmed", email: "a@example.com" } };
+    localStorage.setItem("minikoshk_auth", JSON.stringify(stored));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ message: "Unauthorized" }, 401))
+      .mockResolvedValueOnce(jsonResponse({ message: "Unavailable" }, 503));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiSendAuthed("/wishlist", { method: "GET" })).rejects.toThrow("Unavailable");
+    expect(JSON.parse(localStorage.getItem("minikoshk_auth")!)).toEqual(stored);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

@@ -10,6 +10,7 @@ import { apiSendAuthed, readAuth } from "./auth";
  */
 
 const WISHLIST_KEY = "minikoshk_wishlist";
+const WISHLIST_OWNER_KEY = "minikoshk_wishlist_owner";
 export const WISHLIST_UPDATED_EVENT = "minikoshk:wishlist-updated";
 
 /**
@@ -18,11 +19,38 @@ export const WISHLIST_UPDATED_EVENT = "minikoshk:wishlist-updated";
  * in-flight GET may carry an older snapshot that still contains the id, so
  * tombstones persist until the product is wishlisted again.
  */
-const pendingRemovals = new Set<number>();
+let pendingRemovals = new Set<number>();
 
 /** Sync bookkeeping: one in-flight request at a time, one sync per user per page load. */
 let inFlightSync: Promise<number[]> | null = null;
-let syncedUserId: number | null = null;
+let syncedSessionKey: string | null = null;
+let activeSessionKey: string | null | undefined;
+
+function sessionKey(): string | null {
+  const auth = readAuth();
+  return auth ? `${auth.user.id}:${auth.accessToken}` : null;
+}
+
+function refreshSessionState(): string | null {
+  const currentUserId = readAuth()?.user.id ?? null;
+  const current = sessionKey();
+  if (current !== activeSessionKey) {
+    const owner = localStorage.getItem(WISHLIST_OWNER_KEY);
+    if (owner !== null && owner !== String(currentUserId)) {
+      writeWishlist([]);
+    }
+    if (currentUserId === null) {
+      localStorage.removeItem(WISHLIST_OWNER_KEY);
+    } else {
+      localStorage.setItem(WISHLIST_OWNER_KEY, String(currentUserId));
+    }
+    activeSessionKey = current;
+    pendingRemovals = new Set<number>();
+    inFlightSync = null;
+    syncedSessionKey = null;
+  }
+  return current;
+}
 
 export function readWishlist(): number[] {
   if (typeof window === "undefined") return [];
@@ -47,7 +75,7 @@ export function isWishlisted(productId: number): boolean {
 
 /** Mirror a change to the API for logged-in customers; local state already updated, so failures are non-fatal. */
 async function mirrorToServer(productId: number, wishlisted: boolean): Promise<void> {
-  if (!readAuth()) return;
+  if (!refreshSessionState()) return;
   try {
     if (wishlisted) {
       await apiSendAuthed("/wishlist", { body: { productId } });
@@ -61,6 +89,7 @@ async function mirrorToServer(productId: number, wishlisted: boolean): Promise<v
 
 /** Toggle a product and return the new wishlist. Fires the server mirror without blocking the UI. */
 export function toggleWishlist(productId: number): number[] {
+  refreshSessionState();
   const current = readWishlist();
   const wishlisted = !current.includes(productId);
   if (wishlisted) {
@@ -81,13 +110,16 @@ export function toggleWishlist(productId: number): number[] {
  */
 export async function syncWishlist(): Promise<number[]> {
   const auth = readAuth();
-  if (!auth) return readWishlist();
-  if (syncedUserId === auth.user.id) return readWishlist();
+  const currentSessionKey = refreshSessionState();
+  if (!auth || !currentSessionKey) return readWishlist();
+  if (syncedSessionKey === currentSessionKey) return readWishlist();
   if (inFlightSync) return inFlightSync;
 
-  inFlightSync = (async () => {
+  let sync!: Promise<number[]>;
+  sync = (async () => {
     try {
       const payload = await apiSendAuthed<{ items?: Array<{ productId: number }> }>("/wishlist", { method: "GET" });
+      if (sessionKey() !== currentSessionKey) return readWishlist();
       // Drop server ids the user removed locally while this request was in
       // flight, and re-read local state at merge time for the same reason.
       const serverIds = (payload.items ?? [])
@@ -98,13 +130,15 @@ export async function syncWishlist(): Promise<number[]> {
       for (const id of local.filter((candidate) => !serverIds.includes(candidate))) {
         void mirrorToServer(id, true);
       }
-      syncedUserId = auth.user.id;
+      if (sessionKey() !== currentSessionKey) return readWishlist();
+      syncedSessionKey = currentSessionKey;
       return writeWishlist(merged);
     } catch {
       return readWishlist();
     } finally {
-      inFlightSync = null;
+      if (inFlightSync === sync) inFlightSync = null;
     }
   })();
-  return inFlightSync;
+  inFlightSync = sync;
+  return sync;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
-import { apiGetOr } from "@/lib/api/client";
+import { apiGet } from "@/lib/api/client";
 import type { StorefrontBundle } from "@/lib/bundles";
 import type { StorefrontProduct } from "@/lib/products";
 import { CART_UPDATED_EVENT, readCart, type CartLine } from "@/lib/cart";
@@ -73,6 +73,7 @@ export function useResolvedCart() {
   const { lang, dict } = useLocale();
   const [lines, setLines] = useState<CartLine[]>([]);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLines(readCart());
@@ -84,13 +85,15 @@ export function useResolvedCart() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      apiGetOr<{ items: StorefrontProduct[] }>("/products", { items: [] }),
-      apiGetOr<{ items: StorefrontBundle[] }>("/offers", { items: [] }),
-      apiGetOr<{ items: StorefrontBundle[] }>("/collections", { items: [] })
+      apiGet<{ items: StorefrontProduct[] }>("/products"),
+      apiGet<{ items: StorefrontBundle[] }>("/offers"),
+      apiGet<{ items: StorefrontBundle[] }>("/collections")
     ]).then(([products, offers, collections]) => {
       if (!cancelled) {
-        setCatalog({ products: products.items, offers: offers.items, collections: collections.items });
+        setCatalog({ products: products?.items ?? [], offers: offers?.items ?? [], collections: collections?.items ?? [] });
       }
+    }).catch((reason: unknown) => {
+      if (!cancelled) setError(reason);
     });
     return () => {
       cancelled = true;
@@ -106,5 +109,5 @@ export function useResolvedCart() {
     0
   );
 
-  return { lines, resolved, total, loading: catalog === null };
+  return { lines, resolved, total, loading: catalog === null && error === null, error };
 }
