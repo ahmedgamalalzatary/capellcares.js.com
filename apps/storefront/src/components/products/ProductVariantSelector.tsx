@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
+import { addToCart as addLineToCart } from "@/lib/cart";
 import { firstInStockVariant, resolveVariant, type StorefrontProduct, type StorefrontVariant } from "@/lib/products";
 
 type Props = {
@@ -42,25 +43,7 @@ export function ProductVariantSelector({ product, ...initial }: Props) {
   };
   const addToCart = () => {
     if (!selected || selected.stock <= 0) return;
-    const key = "minikoshk_cart";
-    let cart: Array<{ variantId: number; qty: number }> = [];
-    try {
-      const stored = JSON.parse(localStorage.getItem(key) ?? "[]");
-      if (Array.isArray(stored)) {
-        cart = stored.filter((item): item is { variantId: number; qty: number } =>
-          item != null && typeof item === "object" &&
-          typeof item.variantId === "number" && Number.isSafeInteger(item.variantId) && item.variantId > 0 &&
-          typeof item.qty === "number" && Number.isSafeInteger(item.qty) && item.qty > 0
-        );
-      }
-    } catch {
-      cart = [];
-    }
-    const existing = cart.find((item) => item.variantId === selected.id);
-    if (existing) existing.qty += 1;
-    else cart.push({ variantId: selected.id, qty: 1 });
-    localStorage.setItem(key, JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("minikoshk:cart-updated", { detail: cart }));
+    addLineToCart({ type: "product", variantId: selected.id, qty: 1 });
     setAdded(true);
   };
 

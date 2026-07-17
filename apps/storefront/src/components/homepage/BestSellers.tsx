@@ -82,7 +82,7 @@ export function BestSellers({
       )}
       <div className="mt-5 flex justify-center">
         <a
-          href={`/${lang}/bestseller`}
+          href={`/${lang}/bestsellers`}
           className="rounded-full border border-brand-dark px-7 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-brand-dark transition-colors hover:bg-brand-dark hover:text-white"
         >
           {dict.shop.viewAll}

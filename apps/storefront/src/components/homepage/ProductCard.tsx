@@ -1,14 +1,15 @@
+"use client";
+
 import type { Dict, Language } from "@minikoshk/shared";
 import { CreditCardIcon, HeartIcon, SearchIcon, TruckIcon } from "../icons";
+import { useTransientFlag } from "@/hooks/useTransientFlag";
+import { useWishlist } from "@/hooks/useWishlist";
+import { addToCart } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
 import { firstInStockVariant, productPrice, type StorefrontProduct } from "@/lib/products";
 
 /** Share of the cash price paid when checking out with a card (15% off). */
 const CARD_DISCOUNT = 0.15;
-
-function formatPrice(amount: number, lang: Language, currency: string) {
-  const locale = lang === "ar" ? "ar-EG" : "en-US";
-  return `${new Intl.NumberFormat(locale).format(amount)} ${currency}`;
-}
 
 /**
  * Storefront product card replicating the Zee reference design: image with
@@ -27,6 +28,9 @@ export function ProductCard({
   dict: Dict;
 }) {
   const t = dict.product;
+  const { has: hasInWishlist, toggle: toggleWishlisted } = useWishlist();
+  const [added, flashAdded] = useTransientFlag();
+  const wishlisted = hasInWishlist(product.id);
   const name = product.name[lang];
   const subtitle = product.keywords?.[0] ?? "";
   const cashAmount = productPrice(product);
@@ -38,7 +42,7 @@ export function ProductCard({
   const originalPrice = hasDiscount ? formatPrice(original, lang, t.currency) : null;
   const savePercent = hasDiscount ? Math.round((1 - cashAmount / original) * 100) : 0;
 
-  const productHref = `/${lang}/shop?product=${product.slug}`;
+  const productHref = `/${lang}/products/${product.slug}`;
   const swatches = (product.colors ?? []).flatMap((color) => {
     const variant = product.variants.find((candidate) => candidate.colorId === color.id && candidate.stock > 0);
     return variant ? [{ color, variant }] : [];
@@ -46,9 +50,11 @@ export function ProductCard({
   const visibleSwatches = swatches.slice(0, 4);
   const extraSwatches = swatches.length - visibleSwatches.length;
   const selectedVariant = firstInStockVariant(product);
-  const addToCartHref = selectedVariant
-    ? `${productHref}&size=${selectedVariant.sizeId}${selectedVariant.colorId == null ? "" : `&color=${selectedVariant.colorId}`}&variant=${selectedVariant.id}`
-    : productHref;
+  const addSelectedToCart = () => {
+    if (!selectedVariant) return;
+    addToCart({ type: "product", variantId: selectedVariant.id, qty: 1 });
+    flashAdded();
+  };
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-transparent bg-white transition-all duration-200 hover:border-gray-200 hover:shadow-[0_12px_30px_-12px_rgba(0,0,0,0.25)]">
@@ -61,9 +67,13 @@ export function ProductCard({
         <button
           type="button"
           aria-label={t.wishlist}
-          className="absolute inset-e-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-brand-dark backdrop-blur transition hover:text-brand-red"
+          aria-pressed={wishlisted}
+          onClick={() => toggleWishlisted(product.id)}
+          className={`absolute inset-e-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full backdrop-blur transition hover:text-brand-red ${
+            wishlisted ? "text-brand-red" : "text-brand-dark"
+          }`}
         >
-          <HeartIcon className="h-4 w-4" />
+          <HeartIcon className="h-4 w-4" fill={wishlisted ? "currentColor" : "none"} />
         </button>
         <a href={productHref} className="block">
           <div className="relative aspect-square overflow-hidden rounded-xl bg-[#f5f5f5]">
@@ -133,7 +143,7 @@ export function ProductCard({
             {visibleSwatches.map(({ color, variant }) => (
               <a
                 key={color.id}
-                href={`${productHref}&size=${variant.sizeId}&color=${color.id}&variant=${variant.id}`}
+                href={`${productHref}?size=${variant.sizeId}&color=${color.id}&variant=${variant.id}`}
                 aria-label={`Color ${color.hex}`}
                 title={color.hex}
                 className="h-7 w-7 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,.45)] transition-transform hover:scale-110"
@@ -151,12 +161,14 @@ export function ProductCard({
             the edge and slide up into view from the bottom on hover. */}
         <div className="mt-3 h-11 overflow-hidden">
           <div className="flex h-11 translate-y-[calc(100%+0.75rem)] items-center gap-2 opacity-0 transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100">
-            <a
-              href={addToCartHref}
-              className="flex h-11 flex-1 items-center justify-center rounded-full bg-brand-dark text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black"
+            <button
+              type="button"
+              disabled={!selectedVariant}
+              onClick={addSelectedToCart}
+              className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-full bg-brand-dark text-sm font-bold uppercase tracking-wide text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {t.addToCart}
-            </a>
+              {added ? dict.bundle.added : t.addToCart}
+            </button>
             <a
               href={productHref}
               aria-label={name}

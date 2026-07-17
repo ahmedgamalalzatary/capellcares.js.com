@@ -39,10 +39,12 @@ describe("ProductVariantSelector", () => {
   it("adds the resolved sellable variant to the local cart", () => {
     render(<LocaleProvider lang="en"><ProductVariantSelector product={product} initialVariantId={102} /></LocaleProvider>);
     fireEvent.click(screen.getByRole("button", { name: "ADD TO CART" }));
-    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([{ variantId: 102, qty: 1 }]);
+    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([
+      { type: "product", variantId: 102, qty: 1 }
+    ]);
   });
 
-  it("drops malformed stored cart entries before adding a variant", () => {
+  it("drops malformed stored cart entries and upgrades legacy lines before adding a variant", () => {
     localStorage.setItem("minikoshk_cart", JSON.stringify([
       null,
       { variantId: 101, qty: "2" },
@@ -53,6 +55,8 @@ describe("ProductVariantSelector", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "ADD TO CART" }));
 
-    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([{ variantId: 102, qty: 3 }]);
+    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([
+      { type: "product", variantId: 102, qty: 3 }
+    ]);
   });
 });

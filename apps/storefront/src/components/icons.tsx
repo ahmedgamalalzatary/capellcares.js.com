@@ -104,6 +104,16 @@ export function ChevronDown(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function CartIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="17" cy="20" r="1.5" />
+      <path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.47 1.18h7.86a1.5 1.5 0 0 0 1.46-1.16L20 8H6" />
+    </svg>
+  );
+}
+
 export function CreditCardIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>

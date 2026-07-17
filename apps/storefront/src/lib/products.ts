@@ -1,6 +1,5 @@
-import { resolveApiBase } from "@minikoshk/shared/api/base";
-
-const API_BASE = resolveApiBase(process.env, { isServer: true });
+import { apiGet, apiGetOr } from "./api/client";
+import type { RelatedItemCard } from "@minikoshk/shared";
 
 /** Variant fields the storefront card actually uses (see `toStorefrontProduct`). */
 export interface StorefrontVariant {
@@ -48,6 +47,19 @@ export interface StorefrontProduct {
   sizes: StorefrontSize[];
   colors: StorefrontColor[];
   variants: StorefrontVariant[];
+}
+
+/**
+ * Shape returned by `GET /api/v1/products/:slug` — the list shape plus the
+ * long-form bilingual copy and the resolved related-item cards.
+ */
+export interface StorefrontProductDetail extends StorefrontProduct {
+  description: { ar: string; en: string };
+  ingredients: { ar: string; en: string };
+  howToUse: { ar: string; en: string };
+  warnings: { ar: string; en: string };
+  youtubeUrl?: string;
+  relatedItems?: RelatedItemCard[];
 }
 
 export function resolveVariant(
@@ -101,36 +113,27 @@ export function selectBestSellers(products: StorefrontProduct[]): StorefrontProd
   );
 }
 
+/** Full catalog listing; `q` and `category` map to the API's search filters. */
+export async function getProducts(filters: { q?: string; category?: string } = {}): Promise<StorefrontProduct[]> {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.category) params.set("category", filters.category);
+  const query = params.toString();
+  const payload = await apiGetOr<{ items: StorefrontProduct[] }>(`/products${query ? `?${query}` : ""}`, { items: [] });
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
 export async function getNewArrivals(): Promise<StorefrontProduct[]> {
-  try {
-    const response = await fetch(`${API_BASE}/api/v1/products`, { cache: "no-store" });
-    if (!response.ok) {
-      return [];
-    }
-    const payload = (await response.json()) as { items?: StorefrontProduct[] };
-    return Array.isArray(payload.items) ? selectNewArrivals(payload.items) : [];
-  } catch {
-    return [];
-  }
+  return selectNewArrivals(await getProducts());
 }
 
 export async function getBestSellers(): Promise<StorefrontProduct[]> {
-  try {
-    const response = await fetch(`${API_BASE}/api/v1/products`, { cache: "no-store" });
-    if (!response.ok) {
-      return [];
-    }
-    const payload = (await response.json()) as { items?: StorefrontProduct[] };
-    return Array.isArray(payload.items) ? selectBestSellers(payload.items) : [];
-  } catch {
-    return [];
-  }
+  return selectBestSellers(await getProducts());
 }
 
-export async function getProductBySlug(slug: string): Promise<StorefrontProduct | null> {
+export async function getProductBySlug(slug: string): Promise<StorefrontProductDetail | null> {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/products/${encodeURIComponent(slug)}`, { cache: "no-store" });
-    return response.ok ? await response.json() as StorefrontProduct : null;
+    return await apiGet<StorefrontProductDetail>(`/products/${encodeURIComponent(slug)}`);
   } catch {
     return null;
   }

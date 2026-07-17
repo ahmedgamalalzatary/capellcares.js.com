@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { NewArrivals } from "@/components/homepage/NewArrivals";
@@ -25,6 +25,7 @@ function makeProduct(overrides: Partial<StorefrontProduct> & { id: number }): St
 describe("NewArrivals", () => {
   afterEach(() => {
     cleanup();
+    localStorage.clear();
   });
 
   it("uses the menu translation key for its region label", () => {
@@ -58,7 +59,7 @@ describe("NewArrivals", () => {
     expect(screen.getByLabelText("Color #000000")).toHaveStyle({ backgroundColor: "#000000" });
   });
 
-  it("links add to cart with the selected in-stock combination variant id", () => {
+  it("adds the first in-stock combination variant to the cart", () => {
     render(
       <LocaleProvider lang="en">
         <NewArrivals products={[makeProduct({
@@ -75,6 +76,10 @@ describe("NewArrivals", () => {
       </LocaleProvider>
     );
 
-    expect(screen.getByRole("link", { name: "ADD TO CART" })).toHaveAttribute("href", expect.stringContaining("variant=31"));
+    fireEvent.click(screen.getByRole("button", { name: "ADD TO CART" }));
+
+    expect(JSON.parse(localStorage.getItem("minikoshk_cart") ?? "[]")).toEqual([
+      { type: "product", variantId: 31, qty: 1 }
+    ]);
   });
 });

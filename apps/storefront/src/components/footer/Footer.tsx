@@ -11,16 +11,22 @@ const SOCIALS = [
   { label: "TikTok", Icon: TikTokIcon }
 ];
 
-function LinkColumn({ title, links }: { title: string; links: readonly string[] }) {
+type FooterLink = { label: string; href?: string };
+
+function LinkColumn({ title, links }: { title: string; links: readonly FooterLink[] }) {
   return (
     <div>
       <h3 className="mb-5 text-lg font-bold">{title}</h3>
       <ul className="space-y-3 text-sm text-footer-text">
         {links.map((link) => (
-          <li key={link}>
-            <a href="#" className="transition hover:text-brand-red">
-              {link}
-            </a>
+          <li key={link.label}>
+            {link.href ? (
+              <a href={link.href} className="transition hover:text-brand-red">
+                {link.label}
+              </a>
+            ) : (
+              <span>{link.label}</span>
+            )}
           </li>
         ))}
       </ul>
@@ -28,10 +34,27 @@ function LinkColumn({ title, links }: { title: string; links: readonly string[] 
   );
 }
 
-/** Site footer: about/social, link columns, and bottom bar. */
+/** Site footer: about/social, link columns (real storefront routes), and bottom bar. */
 export function Footer() {
-  const { dict } = useLocale();
+  const { lang, dict } = useLocale();
   const f = dict.footer;
+
+  const href = (path: string) => `/${lang}${path}`;
+  const shopLinks: FooterLink[] = [
+    { label: dict.pages.products, href: href("/products") },
+    { label: dict.pages.newArrivals, href: href("/newarrivals") },
+    { label: dict.pages.bestSellers, href: href("/bestsellers") },
+    { label: dict.pages.offers, href: href("/offers") },
+    { label: dict.pages.collections, href: href("/collections") }
+  ];
+  const accountLinks: FooterLink[] = [
+    { label: dict.cart.title, href: href("/cart") },
+    { label: dict.wishlistPage.title, href: href("/wishlist") },
+    { label: dict.checkout.title, href: href("/checkout") },
+    { label: dict.auth.loginTitle, href: href("/login") }
+  ];
+  // Policy pages don't exist yet, so these render as plain text until they do.
+  const policyLinks: FooterLink[] = f.policies.map((label) => ({ label }));
 
   return (
     <footer className="bg-footer-bg text-white">
@@ -57,10 +80,10 @@ export function Footer() {
             </div>
           </div>
 
-          <LinkColumn title={f.categoriesTitle} links={f.categories} />
-          <LinkColumn title={f.usefulLinksTitle} links={f.usefulLinks} />
+          <LinkColumn title={f.shopTitle} links={shopLinks} />
+          <LinkColumn title={f.accountTitle} links={accountLinks} />
 
-          <LinkColumn title={f.policiesTitle} links={f.policies} />
+          <LinkColumn title={f.policiesTitle} links={policyLinks} />
         </div>
       </div>
 
