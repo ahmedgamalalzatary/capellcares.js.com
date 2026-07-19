@@ -93,6 +93,7 @@ services:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
       API_INTERNAL_URL: http://api:4000
+      STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
     depends_on:
       api:
         condition: service_healthy
