@@ -118,6 +118,6 @@ describe("HomepageBannersPage", () => {
     render(createElement(HomepageBannersPage));
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى بنرات الصفحة الرئيسية.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية الوصول إلى بنرات الصفحة الرئيسية.")).toBeInTheDocument();
   });
 });

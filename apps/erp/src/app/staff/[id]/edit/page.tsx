@@ -114,7 +114,7 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
         <div style={{ marginBottom: 16 }}>
           <h2 style={{ margin: 0 }}>تعديل عضو</h2>
           <p className="muted" style={{ margin: "6px 0 0" }}>
-            حددي بيانات العضو وصلاحياته ثم احفظي التعديلات.
+            حدد بيانات العضو وصلاحياته ثم احفظ التعديلات.
           </p>
         </div>
         <StaffEditorForm

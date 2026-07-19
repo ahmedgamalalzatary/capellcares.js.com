@@ -104,7 +104,7 @@ export function CollectionForm({
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 20, textAlign: "center", color: "var(--ink-3)" }}>أضيفي منتجين مختلفين على الأقل.</td></tr>
+                  <tr><td colSpan={6} style={{ padding: 20, textAlign: "center", color: "var(--ink-3)" }}>أضف منتجين مختلفين على الأقل.</td></tr>
                 ) : rows.map((row, index) => {
                   const product = products.find((candidate) => candidate.id === row.productId);
                   const variants = product?.variants ?? [];
@@ -113,7 +113,7 @@ export function CollectionForm({
                     <tr key={index}>
                       <td style={{ minWidth: 220 }}>
                         <select className="select" value={row.productId} onChange={(e) => updateRow(index, { productId: Number(e.target.value) })}>
-                          <option value="0">— اختاري منتجًا —</option>
+                          <option value="0">— اختر منتجًا —</option>
                           {categoryProducts.map((candidate) => (
                             <option key={candidate.id} value={candidate.id}>{candidate.name.ar}</option>
                           ))}
@@ -121,7 +121,7 @@ export function CollectionForm({
                       </td>
                       <td>
                         <select className="select" disabled={!product} value={row.variantId} onChange={(e) => updateRow(index, { variantId: Number(e.target.value) })}>
-                          <option value="0">— اختاري خيارًا —</option>
+                          <option value="0">— اختر خيارًا —</option>
                           {variants.map((candidate) => (
                             <option key={candidate.id} value={candidate.id}>{product ? getVariantLabel(product, candidate) : "—"}</option>
                           ))}

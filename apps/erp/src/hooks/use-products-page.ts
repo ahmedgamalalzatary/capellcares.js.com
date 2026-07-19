@@ -78,7 +78,7 @@ export function useProductsPage() {
       setPendingDelete(null);
     } catch (error) {
       console.error(error);
-      showErrorToast(error, "تعذر حذف المنتج. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر حذف المنتج. حاول مرة أخرى.");
     }
   };
 
@@ -101,8 +101,8 @@ export function useProductsPage() {
       setPendingToggle(null);
     } catch (error) {
       console.error(error);
-      showErrorToast(error, "تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
-      setToggleError("تعذر تحديث حالة المنتج. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر تحديث حالة المنتج. حاول مرة أخرى.");
+      setToggleError("تعذر تحديث حالة المنتج. حاول مرة أخرى.");
     } finally {
       setIsToggling(false);
     }

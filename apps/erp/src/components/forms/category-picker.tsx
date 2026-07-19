@@ -60,7 +60,7 @@ export function CategoryPicker({ categories, value, onChange, id }: Props) {
                 onChange(id);
               }}
             >
-              <option value="">— اختاري —</option>
+              <option value="">— اختر —</option>
               {level.map((c) => (
                 <option key={c.id} value={c.id}>{c.name.ar}</option>
               ))}

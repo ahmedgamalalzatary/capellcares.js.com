@@ -46,7 +46,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   if (!canReadErpModule(user, "offers")) {
     return (
       <AdminShell title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى العروض." />
       </AdminShell>
     );
   }
@@ -54,7 +54,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   if (!canUpdateErpModule(user, "offers")) {
     return (
       <AdminShell title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل العروض." />
+        <ErpForbiddenState message="لا تملك صلاحية تعديل العروض." />
       </AdminShell>
     );
   }

@@ -34,7 +34,7 @@ export default function AdvicesPage() {
   if (!canReadErpModule(user, "advices")) {
     return (
       <AdminShell title="نصائح مينى كشك" crumbs={[{ label: "نصائح مينى كشك" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى النصائح." />
       </AdminShell>
     );
   }
@@ -136,8 +136,8 @@ export default function AdvicesPage() {
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
-            ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريدين المتابعة؟"
-            : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريدين المتابعة؟"}
+            ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريد المتابعة؟"
+            : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريد المتابعة؟"}
         </p>
       </AdminConfirmModal>
 
@@ -153,7 +153,7 @@ export default function AdvicesPage() {
           setPendingDelete(null);
         }}
       >
-        <p style={{ margin: 0 }}>سيتم حذف هذه النصيحة نهائيًا. هل تريدين المتابعة؟</p>
+        <p style={{ margin: 0 }}>سيتم حذف هذه النصيحة نهائيًا. هل تريد المتابعة؟</p>
       </AdminConfirmModal>
     </AdminShell>
   );

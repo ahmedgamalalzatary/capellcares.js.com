@@ -13,7 +13,7 @@ export default function NewCategoryPage() {
   if (!canCreateErpModule(user, "categories")) {
     return (
       <AdminShell title="قسم جديد" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء الأقسام." />
+        <ErpForbiddenState message="لا تملك صلاحية إنشاء الأقسام." />
       </AdminShell>
     );
   }

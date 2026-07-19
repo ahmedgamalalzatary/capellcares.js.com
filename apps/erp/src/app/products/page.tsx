@@ -37,7 +37,7 @@ export default function ProductsListPage() {
   if (!canReadErpModule(user, "products")) {
     return (
       <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى المنتجات." />
       </AdminShell>
     );
   }
@@ -102,8 +102,8 @@ export default function ProductsListPage() {
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
-            ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريدين المتابعة؟"
-            : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
+            ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريد المتابعة؟"
+            : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريد المتابعة؟"}
         </p>
         {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
       </AdminConfirmModal>

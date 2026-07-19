@@ -136,7 +136,7 @@ export default function CategoriesPage() {
       }
       toast.success("تم حفظ ترتيب الأقسام.");
     } catch (error) {
-      showErrorToast(error, "تعذر حفظ ترتيب الأقسام. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر حفظ ترتيب الأقسام. حاول مرة أخرى.");
     } finally {
       setSavingOrder(false);
     }
@@ -145,7 +145,7 @@ export default function CategoriesPage() {
   if (!canReadErpModule(user, "categories")) {
     return (
       <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى الأقسام." />
       </AdminShell>
     );
   }
@@ -207,7 +207,7 @@ export default function CategoriesPage() {
         }
       >
         {pendingDelete?.blocked ? (
-          <p style={{ margin: 0 }}>هذا القسم يحتوي على منتجات مرتبطة. الرجاء نقل المنتجات إلى قسم آخر أولًا ثم أعيدي المحاولة.</p>
+          <p style={{ margin: 0 }}>هذا القسم يحتوي على منتجات مرتبطة. الرجاء نقل المنتجات إلى قسم آخر أولًا ثم أعد المحاولة.</p>
         ) : (
           <p style={{ margin: 0 }}>سيتم نقل القسم إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
         )}

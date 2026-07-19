@@ -132,16 +132,16 @@ export function useProductForm({
     if (optionValidationError === "duplicate-size") next.variants = "لا يمكن تكرار نفس المقاس";
     if (optionValidationError === "duplicate-color") next.variants = "لا يمكن تكرار نفس اللون";
     if (wantActive) {
-      if (optionValidationError === "blank-size") next.variants = "أدخلي قيمة لكل مقاس";
+      if (optionValidationError === "blank-size") next.variants = "أدخل قيمة لكل مقاس";
       if (!nameAr.trim()) next.nameAr = "مطلوب لتفعيل المنتج";
       if (!nameEn.trim()) next.nameEn = "مطلوب لتفعيل المنتج";
-      if (!buyingPrice || buyingPrice <= 0) next.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
-      if (!next.variants && (sizes.length === 0 || variants.length === 0 || variants.some((v) => v.price <= 0))) next.variants = "أضيفي المقاسات وأدخلي سعرًا صحيحًا لكل تركيبة";
-      if (!categoryId) next.categoryId = "اختاري قسمًا";
-      if (!keywords.trim()) next.keywords = "أضيفي كلمات مفتاحية";
-      if (!media.some((item) => item.type === "image")) next.image = "أضيفي صورة المنتج";
+      if (!buyingPrice || buyingPrice <= 0) next.buyingPrice = "أدخل سعر شراء أكبر من صفر";
+      if (!next.variants && (sizes.length === 0 || variants.length === 0 || variants.some((v) => v.price <= 0))) next.variants = "أضف المقاسات وأدخل سعرًا صحيحًا لكل تركيبة";
+      if (!categoryId) next.categoryId = "اختر قسمًا";
+      if (!keywords.trim()) next.keywords = "أضف كلمات مفتاحية";
+      if (!media.some((item) => item.type === "image")) next.image = "أضف صورة المنتج";
     } else if (!nameAr.trim() && !nameEn.trim()) {
-      next.nameAr = "أدخلي اسم المنتج بالعربية أو الإنجليزية على الأقل";
+      next.nameAr = "أدخل اسم المنتج بالعربية أو الإنجليزية على الأقل";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -207,7 +207,7 @@ export function useProductForm({
       await getStore().upsertProduct(buildProduct());
       return true;
     } catch (error) {
-      showErrorToast(error, "تعذر حفظ المنتج. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر حفظ المنتج. حاول مرة أخرى.");
       return false;
     }
   };

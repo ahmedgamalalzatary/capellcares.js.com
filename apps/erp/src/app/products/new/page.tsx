@@ -17,7 +17,7 @@ export default function NewProductPage() {
   if (!canCreateErpModule(user, "products")) {
     return (
       <AdminShell title="منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء المنتجات." />
+        <ErpForbiddenState message="لا تملك صلاحية إنشاء المنتجات." />
       </AdminShell>
     );
   }

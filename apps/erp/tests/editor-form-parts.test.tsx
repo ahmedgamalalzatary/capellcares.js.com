@@ -71,12 +71,12 @@ describe("editor form parts", () => {
   it("renders a shared image field card with upload control and error state", () => {
     render(createElement(ImageFieldCard, {
       title: "صورة المنتج",
-      error: "أضيفي صورة المنتج",
+      error: "أضف صورة المنتج",
       uploadSlot: createElement("div", null, "image-upload-slot")
     }));
 
     expect(screen.getByText("صورة المنتج")).toBeInTheDocument();
     expect(screen.getByText("image-upload-slot")).toBeInTheDocument();
-    expect(screen.getByText("أضيفي صورة المنتج")).toBeInTheDocument();
+    expect(screen.getByText("أضف صورة المنتج")).toBeInTheDocument();
   });
 });

@@ -20,7 +20,7 @@ export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
   const handleFile = async (file?: File | null) => {
     if (!file) return;
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setError("نوع الصورة غير مدعوم. استخدمي PNG/JPG/WEBP.");
+      setError("نوع الصورة غير مدعوم. استخدم PNG/JPG/WEBP.");
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
@@ -84,7 +84,7 @@ export function ImageUpload({ value, onChange, hint, uploadContext }: Props) {
             <Icon.Upload />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>اسحب الصورة هنا أو اضغط للاختيار</div>
             <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
           </div>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>

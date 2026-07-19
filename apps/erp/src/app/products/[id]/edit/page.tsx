@@ -17,7 +17,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   if (!canReadErpModule(user, "products")) {
     return (
       <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى المنتجات." />
       </AdminShell>
     );
   }
@@ -25,7 +25,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   if (!canUpdateErpModule(user, "products")) {
     return (
       <AdminShell title="تعديل المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل المنتجات." />
+        <ErpForbiddenState message="لا تملك صلاحية تعديل المنتجات." />
       </AdminShell>
     );
   }

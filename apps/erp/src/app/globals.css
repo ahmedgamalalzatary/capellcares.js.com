@@ -1457,7 +1457,7 @@ html[lang="ar"] .variant-row .field > label { letter-spacing: 0.02em; text-trans
 
   /* ── Tables scroll horizontally inside their wrapper ── */
   .table-outer { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table { min-width: 520px; width: max-content; }
+  .table { width: max-content; min-width: 100%; }
 
   /* ── Toolbar / search ── */
   .search { min-width: 0; flex: 1; }

@@ -69,10 +69,10 @@ export function useOfferForm({
     const nextErrors: Record<string, string> = {};
     if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
     if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
-    if (price <= 0) nextErrors.price = "أدخلي سعرًا للعرض";
-    if (!image) nextErrors.image = "أضيفي صورة";
-    if (rows.length === 0) nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
-    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) nextErrors.rows = "أكملي بيانات كل عنصر";
+    if (price <= 0) nextErrors.price = "أدخل سعرًا للعرض";
+    if (!image) nextErrors.image = "أضف صورة";
+    if (rows.length === 0) nextErrors.rows = "أضف منتجًا واحدًا على الأقل";
+    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) nextErrors.rows = "أكمل بيانات كل عنصر";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       return false;
@@ -103,7 +103,7 @@ export function useOfferForm({
       await getStore().upsertOffer(offer);
       return true;
     } catch (error) {
-      showErrorToast(error, "تعذر حفظ العرض. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر حفظ العرض. حاول مرة أخرى.");
       return false;
     }
   };

@@ -47,7 +47,7 @@ describe("CategoryForm toast errors", () => {
     });
 
     await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.");
+      expect(toastError).toHaveBeenCalledWith("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّر الاسم أو اختر قسمًا أبًا مختلفًا.");
     });
 
     expect(push).not.toHaveBeenCalled();

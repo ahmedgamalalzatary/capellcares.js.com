@@ -148,7 +148,7 @@ describe("OrderDetailsPage", () => {
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
 
     await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
-    expect(await screen.findByText("تعذر تحميل تفاصيل الطلب. حاولي مرة أخرى.")).toBeInTheDocument();
+    expect(await screen.findByText("تعذر تحميل تفاصيل الطلب. حاول مرة أخرى.")).toBeInTheDocument();
     expect(screen.queryByText("جارٍ التحميل…")).not.toBeInTheDocument();
   });
 });

@@ -76,7 +76,7 @@ describe("CollectionsListPage", () => {
     render(createElement(CollectionsListPage));
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
     expect(mockedUseStore).not.toHaveBeenCalled();
   });
 
@@ -139,7 +139,7 @@ describe("NewCollectionPage", () => {
     render(createElement(NewCollectionPage));
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية إنشاء المجموعات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية إنشاء المجموعات.")).toBeInTheDocument();
     expect(mockedUseStore).not.toHaveBeenCalled();
   });
 });

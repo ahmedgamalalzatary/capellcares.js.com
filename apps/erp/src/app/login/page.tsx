@@ -41,11 +41,11 @@ export default function LoginPage() {
         <div className="login-aside__lead">
           <span className="login-aside__eyebrow">إدارة المتجر</span>
           <h2>
-            أهلاً بعودتكِ<br />
+            أهلاً بعودتك<br />
             <em>إلى لوحة ميني كشك.</em>
           </h2>
           <p>
-            تحكّمي في الكتالوج، تابعي المخزون، وحدّثي العروض من مكان واحد.
+            تحكّم في الكتالوج، تابع المخزون، وحدّث العروض من مكان واحد.
             صُممت لإيقاع عملك اليومي — لا أكثر، لا أقل.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function LoginPage() {
         <form onSubmit={submit} className="login-form">
           <span className="eyebrow" style={{ color: "var(--accent)" }}>ميني كشك</span>
           <h1>تسجيل الدخول</h1>
-          <p className="muted login-form__sub">أدخلي بيانات حساب المسؤول لمتابعة العمل.</p>
+          <p className="muted login-form__sub">أدخل بيانات حساب المسؤول لمتابعة العمل.</p>
 
           <div className="stack" style={{ marginTop: 28, gap: 16 }}>
             <div className="field">
@@ -97,7 +97,7 @@ export default function LoginPage() {
           </div>
 
           <p className="login-form__foot">
-            مشكلة في الدخول؟ <span style={{ color: "var(--accent)" }}>تواصلي مع الدعم</span>
+            مشكلة في الدخول؟ <span style={{ color: "var(--accent)" }}>تواصل مع الدعم</span>
           </p>
         </form>
       </section>

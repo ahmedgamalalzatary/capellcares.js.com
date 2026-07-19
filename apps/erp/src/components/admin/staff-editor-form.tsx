@@ -273,7 +273,7 @@ export function StaffEditorForm({
             type="password"
             value={form.password}
             onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            placeholder={mode === "create" ? "" : "اتركيه فارغًا للإبقاء عليها كما هي"}
+            placeholder={mode === "create" ? "" : "اتركه فارغًا للإبقاء عليها كما هي"}
           />
         </label>
       </div>

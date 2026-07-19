@@ -30,12 +30,14 @@ vi.mock("@/lib/api/client", async () => {
 });
 
 import StaffManagementPage from "@/app/staff/page";
+import { setAdminAuthHydrated } from "@/lib/api/client";
 
 describe("StaffManagementPage", () => {
   beforeEach(() => {
     mockedFetch.mockReset();
     mockedUseAdminAuth.mockReset();
     vi.stubGlobal("fetch", mockedFetch);
+    setAdminAuthHydrated(true);
   });
 
   it("shows a 403 state for non-admin ERP users", () => {

@@ -27,7 +27,7 @@ export default function CollectionsListPage() {
   if (!user || !canReadErpModule(user, "collections")) {
     return (
       <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى المجموعات." />
       </AdminShell>
     );
   }
@@ -172,14 +172,14 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
             await getStore().toggleCollectionStatus(pendingToggle.id);
             setPendingToggle(null);
           } catch (error) {
-            showErrorToast(error, "تعذر تحديث حالة المجموعة. حاولي مرة أخرى.");
+            showErrorToast(error, "تعذر تحديث حالة المجموعة. حاول مرة أخرى.");
           }
         }}
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
-            ? "سيتم إيقاف هذه المجموعة ولن تظهر في المتجر. هل تريدين المتابعة؟"
-            : "سيتم تفعيل هذه المجموعة لتظهر في المتجر. هل تريدين المتابعة؟"}
+            ? "سيتم إيقاف هذه المجموعة ولن تظهر في المتجر. هل تريد المتابعة؟"
+            : "سيتم تفعيل هذه المجموعة لتظهر في المتجر. هل تريد المتابعة؟"}
         </p>
       </AdminConfirmModal>
     </AdminShell>

@@ -70,7 +70,7 @@ describe("OrdersPage", () => {
     render(createElement(OrdersPage));
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الطلبات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية الوصول إلى الطلبات.")).toBeInTheDocument();
     expect(mockedUseStore).not.toHaveBeenCalled();
   });
 

@@ -203,7 +203,7 @@ describe("ProductsListPage", () => {
     render(createElement(ProductsListPage));
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى المنتجات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية الوصول إلى المنتجات.")).toBeInTheDocument();
   });
 
   it("hides create and mutation actions for staff without the matching product action permissions", () => {
@@ -234,7 +234,7 @@ describe("ProductsListPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     expect(toggleProductStatus).toHaveBeenCalledWith(1);
-    expect(await screen.findByText("تعذر تحديث حالة المنتج. حاولي مرة أخرى.")).toBeInTheDocument();
+    expect(await screen.findByText("تعذر تحديث حالة المنتج. حاول مرة أخرى.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "تأكيد" })).not.toBeDisabled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });

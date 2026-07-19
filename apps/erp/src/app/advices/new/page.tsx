@@ -11,7 +11,7 @@ export default function NewAdvicePage() {
   if (!canCreateErpModule(user, "advices")) {
     return (
       <AdminShell title="نصيحة جديدة" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء النصائح." />
+        <ErpForbiddenState message="لا تملك صلاحية إنشاء النصائح." />
       </AdminShell>
     );
   }

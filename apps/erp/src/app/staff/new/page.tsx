@@ -28,7 +28,7 @@ export default function StaffNewPage() {
         <div style={{ marginBottom: 16 }}>
           <h2 style={{ margin: 0 }}>إضافة عضو</h2>
           <p className="muted" style={{ margin: "6px 0 0" }}>
-            أنشئي حسابات الموظفين وحددي الصلاحيات المطلوبة لكل عضو.
+            أنشئ حسابات الموظفين وحدد الصلاحيات المطلوبة لكل عضو.
           </p>
         </div>
         <StaffEditorForm initialValues={createEmptyStaffForm()} mode="create" />

@@ -11,16 +11,16 @@ type AppError = Error & {
 };
 
 const apiReasonMessages: Record<string, string> = {
-  "slug-conflict": "اسم القسم الإنجليزي مستخدم بالفعل. غيّري الاسم ثم أعيدي المحاولة.",
-  "category-name-conflict": "اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.",
+  "slug-conflict": "اسم القسم الإنجليزي مستخدم بالفعل. غيّر الاسم ثم أعد المحاولة.",
+  "category-name-conflict": "اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّر الاسم أو اختر قسمًا أبًا مختلفًا.",
   "category-image-depth-invalid": "صورة القسم مسموحة فقط للأقسام في المستوى الأول تحت القسم الرئيسي.",
   "has-products": "لا يمكن حذف القسم لأنه يحتوي على منتجات مرتبطة.",
   "has-active-children": "لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية نشطة.",
   "cannot-activate-incomplete-product": "لا يمكن تفعيل المنتج قبل استكمال كل البيانات المطلوبة.",
-  "linked-to-offers": "لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّلي العرض أولًا ثم أعيدي المحاولة."
+  "linked-to-offers": "لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّل العرض أولًا ثم أعد المحاولة."
 };
 
-export function getErrorMessage(error: unknown, fallback = "حدث خطأ غير متوقع. حاولي مرة أخرى."): string {
+export function getErrorMessage(error: unknown, fallback = "حدث خطأ غير متوقع. حاول مرة أخرى."): string {
   const appError = error as AppError | null | undefined;
   const reason = appError?.body?.reason;
 
@@ -37,7 +37,7 @@ export function getErrorMessage(error: unknown, fallback = "حدث خطأ غير
   }
 
   if (appError?.status === 401) {
-    return "انتهت صلاحية الجلسة. سجّلي الدخول مرة أخرى.";
+    return "انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى.";
   }
 
   if (appError instanceof Error && appError.message.trim()) {

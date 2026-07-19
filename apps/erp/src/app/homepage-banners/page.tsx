@@ -39,7 +39,7 @@ export default function HomepageBannersPage() {
   if (!hasErpPermission(user, "homepage_banners.read")) {
     return (
       <AdminShell title="بنرات الصفحة الرئيسية" crumbs={[{ label: "بنرات الصفحة الرئيسية" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى بنرات الصفحة الرئيسية." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى بنرات الصفحة الرئيسية." />
       </AdminShell>
     );
   }
@@ -48,7 +48,7 @@ export default function HomepageBannersPage() {
 
   useEffect(() => {
     void getStore().fetchHomepageBanners().catch((loadError) => {
-      setError(showErrorToast(loadError, "تعذر تحميل بنرات الصفحة الرئيسية. حاولي مرة أخرى."));
+      setError(showErrorToast(loadError, "تعذر تحميل بنرات الصفحة الرئيسية. حاول مرة أخرى."));
     });
   }, []);
 
@@ -108,7 +108,7 @@ export default function HomepageBannersPage() {
                             .updateHomepageBannerItem(item.id, { href })
                             .catch((updateError) => {
                               event.currentTarget.value = item.href;
-                              setError(showErrorToast(updateError, "تعذر تحديث رابط البنر. حاولي مرة أخرى."));
+                              setError(showErrorToast(updateError, "تعذر تحديث رابط البنر. حاول مرة أخرى."));
                             })
                             .finally(() => setSavingKey(null));
                         }}
@@ -123,7 +123,7 @@ export default function HomepageBannersPage() {
                             void getStore()
                               .deleteHomepageBannerItem(item.id)
                               .catch((deleteError) => {
-                                setError(showErrorToast(deleteError, "تعذر حذف صورة البنر. حاولي مرة أخرى."));
+                                setError(showErrorToast(deleteError, "تعذر حذف صورة البنر. حاول مرة أخرى."));
                               })
                               .finally(() => setSavingKey(null));
                           }}
@@ -174,7 +174,7 @@ export default function HomepageBannersPage() {
                             }));
                           })
                           .catch((createError) => {
-                            setError(showErrorToast(createError, "تعذر إضافة صورة البنر. حاولي مرة أخرى."));
+                            setError(showErrorToast(createError, "تعذر إضافة صورة البنر. حاول مرة أخرى."));
                           })
                           .finally(() => setSavingKey(null));
                       }}

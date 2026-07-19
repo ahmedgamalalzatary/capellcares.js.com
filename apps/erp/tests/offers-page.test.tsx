@@ -50,7 +50,7 @@ describe("OffersListPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
 
     expect(toggleOfferStatus).toHaveBeenCalledWith(1);
-    expect(await screen.findByText("تعذر تحديث حالة العرض. حاولي مرة أخرى.")).toBeInTheDocument();
+    expect(await screen.findByText("تعذر تحديث حالة العرض. حاول مرة أخرى.")).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

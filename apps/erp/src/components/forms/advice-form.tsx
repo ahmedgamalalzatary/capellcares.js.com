@@ -57,7 +57,7 @@ export function AdviceForm({ mode, initial }: Props) {
       await getStore().upsertAdvice({ id: initial?.id, ...form });
       router.push("/advices");
     } catch {
-      setError("حدث خطأ أثناء الحفظ. حاولي مرة أخرى.");
+      setError("حدث خطأ أثناء الحفظ. حاول مرة أخرى.");
     } finally {
       setSaving(false);
     }

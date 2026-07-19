@@ -64,14 +64,14 @@ export function useCollectionForm({
 
     if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
     if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
-    if (!categoryId) nextErrors.categoryId = "اختاري القسم";
-    if (price <= 0) nextErrors.price = "أدخلي سعر المجموعة";
-    if (!image) nextErrors.image = "أضيفي صورة";
+    if (!categoryId) nextErrors.categoryId = "اختر القسم";
+    if (price <= 0) nextErrors.price = "أدخل سعر المجموعة";
+    if (!image) nextErrors.image = "أضف صورة";
     const rowsComplete = !rows.some((row) => !row.productId || !row.variantId || row.qty <= 0);
     if (rows.length < 2 || distinctVariantIds.size < 2) {
-      nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
+      nextErrors.rows = "أضف منتجين مختلفين على الأقل";
     } else if (!rowsComplete) {
-      nextErrors.rows = "أكملي بيانات كل عنصر";
+      nextErrors.rows = "أكمل بيانات كل عنصر";
     } else if (distinctVariantIds.size !== rows.length) {
       nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
     } else if (rows.some((row) => {
@@ -112,7 +112,7 @@ export function useCollectionForm({
       await getStore().upsertCollection(collection);
       return true;
     } catch (error) {
-      showErrorToast(error, "تعذر حفظ المجموعة. حاولي مرة أخرى.");
+      showErrorToast(error, "تعذر حفظ المجموعة. حاول مرة أخرى.");
       return false;
     }
   };

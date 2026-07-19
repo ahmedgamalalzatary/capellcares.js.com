@@ -71,7 +71,7 @@ export function RelatedItemsField({ value, options, onChange, disabled = false }
           if (event.target.value) add(event.target.value);
         }}
       >
-        <option value="">أضيفي عنصرًا مرتبطًا…</option>
+        <option value="">أضف عنصرًا مرتبطًا…</option>
         {available.map((option) => (
           <option key={refKey(option)} value={refKey(option)}>
             {TYPE_LABEL[option.type]} · {option.name.ar || option.name.en}

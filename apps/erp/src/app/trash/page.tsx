@@ -31,7 +31,7 @@ export default function TrashPage() {
   if (!hasErpPermission(user, "trash.read")) {
     return (
       <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المحذوفات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى المحذوفات." />
       </AdminShell>
     );
   }

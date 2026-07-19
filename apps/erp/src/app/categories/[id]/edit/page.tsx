@@ -20,7 +20,7 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
   if (!canReadErpModule(user, "categories")) {
     return (
       <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى الأقسام." />
       </AdminShell>
     );
   }
@@ -28,7 +28,7 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
   if (!canUpdateErpModule(user, "categories")) {
     return (
       <AdminShell title="تعديل القسم" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل الأقسام." />
+        <ErpForbiddenState message="لا تملك صلاحية تعديل الأقسام." />
       </AdminShell>
     );
   }

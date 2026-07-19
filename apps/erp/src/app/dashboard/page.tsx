@@ -32,9 +32,9 @@ export default function DashboardPage() {
             <h3 className="card__title">إجراءات سريعة</h3>
           </div>
           <div className="card__body action-grid">
-            <Action href="/products/new" icon={<Icon.Plus />} title="منتج جديد" desc="ابدئي بإنشاء منتج جديد." />
-            <Action href="/offers/new" icon={<Icon.Tag />} title="عرض جديد" desc="جمّعي منتجات في باقة." />
-            <Action href="/categories/new" icon={<Icon.Folder />} title="قسم جديد" desc="أضيفي قسمًا فرعيًا." />
+            <Action href="/products/new" icon={<Icon.Plus />} title="منتج جديد" desc="ابدأ بإنشاء منتج جديد." />
+            <Action href="/offers/new" icon={<Icon.Tag />} title="عرض جديد" desc="جمّع منتجات في باقة." />
+            <Action href="/categories/new" icon={<Icon.Folder />} title="قسم جديد" desc="أضف قسمًا فرعيًا." />
             <Action href="/products" icon={<Icon.Box />} title="إدارة المنتجات" desc="تحديث المخزون والحالة." />
           </div>
         </section>

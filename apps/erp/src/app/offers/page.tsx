@@ -44,7 +44,7 @@ export default function OffersListPage() {
   if (!canReadErpModule(user, "offers")) {
     return (
       <AdminShell title="العروض" crumbs={[{ label: "العروض" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى العروض." />
       </AdminShell>
     );
   }
@@ -146,15 +146,15 @@ export default function OffersListPage() {
             await getStore().toggleOfferStatus(pendingToggle.id);
             setPendingToggle(null);
           } catch (error) {
-            showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
-            setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+            showErrorToast(error, "تعذر تحديث حالة العرض. حاول مرة أخرى.");
+            setToggleError("تعذر تحديث حالة العرض. حاول مرة أخرى.");
           }
         }}
       >
         <p style={{ margin: 0 }}>
           {pendingToggle?.status === "active"
-            ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريدين المتابعة؟"
-            : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
+            ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريد المتابعة؟"
+            : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريد المتابعة؟"}
         </p>
         {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
       </AdminConfirmModal>

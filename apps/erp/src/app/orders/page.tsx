@@ -23,7 +23,7 @@ export default function OrdersPage() {
   if (!canReadErpModule(user, "orders")) {
     return (
       <AdminShell title="الطلبات" crumbs={[{ label: "الطلبات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى الطلبات." />
       </AdminShell>
     );
   }

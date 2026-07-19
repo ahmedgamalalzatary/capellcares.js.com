@@ -30,7 +30,7 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
         crumbs={[{ label: "الطلبات", href: "/orders" }, { label: "غير مصرح" }]}
         actions={<Link href="/orders" className="btn btn--ghost btn--sm">رجوع للطلبات</Link>}
       >
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى الطلبات." />
       </AdminShell>
     );
   }
@@ -47,7 +47,7 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
       setLoading(false);
     }).catch(() => {
       if (cancelled) return;
-      setError("تعذر تحميل تفاصيل الطلب. حاولي مرة أخرى.");
+      setError("تعذر تحميل تفاصيل الطلب. حاول مرة أخرى.");
       setLoading(false);
     });
 

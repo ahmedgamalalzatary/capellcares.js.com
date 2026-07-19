@@ -48,7 +48,7 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
   if (!canReadErpModule(user, "collections")) {
     return (
       <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى المجموعات." />
       </AdminShell>
     );
   }
@@ -56,7 +56,7 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
   if (!canUpdateErpModule(user, "collections")) {
     return (
       <AdminShell title="تعديل المجموعة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل المجموعات." />
+        <ErpForbiddenState message="لا تملك صلاحية تعديل المجموعات." />
       </AdminShell>
     );
   }

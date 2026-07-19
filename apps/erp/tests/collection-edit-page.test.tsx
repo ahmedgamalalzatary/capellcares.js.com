@@ -116,7 +116,7 @@ describe("EditCollectionPage data plumbing", () => {
     });
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية تعديل المجموعات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية تعديل المجموعات.")).toBeInTheDocument();
   });
 
   it("fetches existing related links and passes them plus options to the form", async () => {

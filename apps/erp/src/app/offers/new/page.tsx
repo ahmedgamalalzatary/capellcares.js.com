@@ -15,7 +15,7 @@ export default function NewOfferPage() {
   if (!canCreateErpModule(user, "offers")) {
     return (
       <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء العروض." />
+        <ErpForbiddenState message="لا تملك صلاحية إنشاء العروض." />
       </AdminShell>
     );
   }

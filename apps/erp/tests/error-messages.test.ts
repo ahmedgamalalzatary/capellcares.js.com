@@ -9,7 +9,7 @@ describe("getErrorMessage", () => {
       body: { reason: "slug-conflict" }
     });
 
-    expect(getErrorMessage(error)).toBe("اسم القسم الإنجليزي مستخدم بالفعل. غيّري الاسم ثم أعيدي المحاولة.");
+    expect(getErrorMessage(error)).toBe("اسم القسم الإنجليزي مستخدم بالفعل. غيّر الاسم ثم أعد المحاولة.");
   });
 
   it("maps duplicate same-parent grandchild names to a human-readable message", () => {
@@ -18,7 +18,7 @@ describe("getErrorMessage", () => {
       body: { reason: "category-name-conflict" }
     });
 
-    expect(getErrorMessage(error)).toBe("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّري الاسم أو اختاري قسمًا أبًا مختلفًا.");
+    expect(getErrorMessage(error)).toBe("اسم القسم مستخدم بالفعل داخل القسم الأب الحالي. غيّر الاسم أو اختر قسمًا أبًا مختلفًا.");
   });
 
   it("maps linked offer conflicts to a human-readable message", () => {
@@ -27,7 +27,7 @@ describe("getErrorMessage", () => {
       body: { reason: "linked-to-offers" }
     });
 
-    expect(getErrorMessage(error)).toBe("لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّلي العرض أولًا ثم أعيدي المحاولة.");
+    expect(getErrorMessage(error)).toBe("لا يمكن حذف المنتج أو حذف أحد مقاساته لأنه مستخدم داخل عرض. عدّل العرض أولًا ثم أعد المحاولة.");
   });
 
   it("falls back to the original error message when there is no known mapping", () => {

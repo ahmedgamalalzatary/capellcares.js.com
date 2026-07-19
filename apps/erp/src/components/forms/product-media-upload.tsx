@@ -86,7 +86,7 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
       />
 
       {value.length === 0 ? (
-        <div className="muted" style={{ fontSize: 12 }}>ارفعي صور المنتج وفيديوه إن وجد.</div>
+        <div className="muted" style={{ fontSize: 12 }}>ارفع صور المنتج وفيديوه إن وجد.</div>
       ) : (
         <div className="stack">
           {value.map((item, index) => (

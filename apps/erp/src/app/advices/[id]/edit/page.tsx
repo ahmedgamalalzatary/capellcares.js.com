@@ -19,7 +19,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
   if (!canReadErpModule(user, "advices")) {
     return (
       <AdminShell title="نصائح مينى كشك" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
+        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى النصائح." />
       </AdminShell>
     );
   }
@@ -27,7 +27,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
   if (!canUpdateErpModule(user, "advices")) {
     return (
       <AdminShell title="تعديل النصيحة" crumbs={[{ label: "نصائح مينى كشك", href: "/advices" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل النصائح." />
+        <ErpForbiddenState message="لا تملك صلاحية تعديل النصائح." />
       </AdminShell>
     );
   }

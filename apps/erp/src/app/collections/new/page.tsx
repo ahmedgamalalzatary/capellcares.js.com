@@ -14,7 +14,7 @@ export default function NewCollectionPage() {
   if (!canCreateErpModule(user, "collections")) {
     return (
       <AdminShell title="مجموعة جديدة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء المجموعات." />
+        <ErpForbiddenState message="لا تملك صلاحية إنشاء المجموعات." />
       </AdminShell>
     );
   }

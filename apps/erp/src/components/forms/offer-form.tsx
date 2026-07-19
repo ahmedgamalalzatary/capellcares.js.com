@@ -84,7 +84,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 20, textAlign: "center", color: "var(--ink-3)" }}>أضيفي منتجًا للبدء.</td></tr>
+                  <tr><td colSpan={6} style={{ padding: 20, textAlign: "center", color: "var(--ink-3)" }}>أضف منتجًا للبدء.</td></tr>
                 ) : rows.map((r, i) => {
                   const product = products.find((p) => p.id === r.productId);
                   const variants = product?.variants ?? [];
@@ -93,7 +93,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                     <tr key={i}>
                       <td style={{ minWidth: 220 }}>
                         <select className="select" value={r.productId} onChange={(e) => updateRow(i, { productId: Number(e.target.value) })}>
-                          <option value="0">— اختاري منتجًا —</option>
+                          <option value="0">— اختر منتجًا —</option>
                           {products.filter((p) => !p.deletedAt).map((p) => (
                             <option key={p.id} value={p.id}>{p.name.ar}</option>
                           ))}
@@ -101,7 +101,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                       </td>
                       <td>
                         <select className="select" disabled={!product} value={r.variantId} onChange={(e) => updateRow(i, { variantId: Number(e.target.value) })}>
-                          <option value="0">— اختاري خيارًا —</option>
+                          <option value="0">— اختر خيارًا —</option>
                           {variants.map((v) => <option key={v.id} value={v.id}>{product ? getVariantLabel(product, v) : "—"}</option>)}
                         </select>
                       </td>

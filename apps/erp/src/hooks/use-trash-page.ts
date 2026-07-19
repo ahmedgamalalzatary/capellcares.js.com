@@ -80,7 +80,7 @@ export function useTrashPage() {
       setPendingHardDelete(null);
     } catch (error) {
       console.error(error);
-      const message = "تعذر حذف المنتج نهائياً. حاولي مرة أخرى.";
+      const message = "تعذر حذف المنتج نهائياً. حاول مرة أخرى.";
       showErrorToast(error, message);
       setDeleteError(message);
     } finally {

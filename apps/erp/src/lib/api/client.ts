@@ -161,7 +161,27 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+/**
+ * On a hard refresh the user profile is restored from sessionStorage before the
+ * auth provider's refresh call returns an access token, so early requests would
+ * otherwise go out unauthenticated and fail with 401 "Admin auth required".
+ */
+function waitForAdminAuthHydration(): Promise<void> {
+  if (adminAuthHydrated) return Promise.resolve();
+  return new Promise((resolvePromise) => {
+    const unsubscribe = subscribeAdminAuthHydration((hydrated) => {
+      if (hydrated) {
+        unsubscribe();
+        resolvePromise();
+      }
+    });
+  });
+}
+
 async function request<T>(path: string, init?: RequestInit, allowRefresh = true): Promise<T> {
+  if (!adminAccessToken) {
+    await waitForAdminAuthHydration();
+  }
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (adminAccessToken) headers.set("authorization", `Bearer ${adminAccessToken}`);
@@ -175,7 +195,7 @@ async function request<T>(path: string, init?: RequestInit, allowRefresh = true)
     let body: unknown = null;
     try { body = await res.json(); } catch {}
     const message = body && typeof body === "object" && "message" in body ? (body as { message?: unknown }).message : undefined;
-    if (res.status === 401 && message === "Invalid admin token") {
+    if (res.status === 401 && (message === "Invalid admin token" || message === "Admin auth required")) {
       if (allowRefresh) {
         const refreshedToken = await refreshAdminSession();
         if (refreshedToken) {

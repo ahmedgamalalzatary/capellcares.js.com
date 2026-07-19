@@ -114,7 +114,7 @@ describe("EditProductPage data plumbing", () => {
     });
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية تعديل المنتجات.")).toBeInTheDocument();
     expect(mockedUseStore).not.toHaveBeenCalled();
     expect(apiGet).not.toHaveBeenCalled();
   });
@@ -138,7 +138,7 @@ describe("EditProductPage data plumbing", () => {
     });
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
+    expect(screen.getByText("لا تملك صلاحية تعديل المنتجات.")).toBeInTheDocument();
   });
 
   it("fetches existing related links and passes them plus options to the form", async () => {
