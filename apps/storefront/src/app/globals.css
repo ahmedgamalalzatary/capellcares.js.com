@@ -18,13 +18,30 @@
   --animate-marquee: marquee 30s linear infinite;
 }
 
+/* `--marquee-shift` is one copy's share of the track width, set by the marquee
+   component once it knows how many copies it took to fill the viewport. Shifting
+   by exactly one copy lands the next copy where the previous one started, so the
+   loop point is invisible. */
 @keyframes marquee {
   from {
     transform: translateX(0);
   }
   to {
-    /* The track holds two copies of the list; shift by exactly half. */
-    transform: translateX(-50%);
+    transform: translateX(calc(-1 * var(--marquee-shift, 50%)));
+  }
+}
+
+/* RTL mirror of the above. The flex track is anchored to the container's right
+   edge and overflows leftward, so the shift has to be positive: the next copy
+   slides into the slot the previous one vacates. Reversing the LTR animation
+   instead would move the track the right way but through the wrong range,
+   leaving the right half of the bar blank. */
+@keyframes marquee-rtl {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--marquee-shift, 50%));
   }
 }
 
@@ -60,5 +77,5 @@ body {
 /* The announcement marquee scrolls toward the reading edge: leftward in LTR,
    rightward in RTL. */
 [dir="rtl"] .animate-marquee {
-  animation-direction: reverse;
+  animation-name: marquee-rtl;
 }
