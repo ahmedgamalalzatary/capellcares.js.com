@@ -19,13 +19,7 @@ export const ar = {
     cart: "السلة",
     account: "حسابي",
     search: "بحث",
-    searchPlaceholder: "عمّا تبحث؟",
-    announcements: [
-      "اشترِ ٣ زنوبة بـ ١١٩٩ جنيه",
-      "أي ٣ قطع EVA بـ ٩٩٩ جنيه فقط",
-      "القطعة الثانية -١٥٪ | الثالثة -٣٠٪ | شحن مجاني فوق ٨٠٠ جنيه | +١٥٪ بالبطاقة",
-      "اشترِ ٣ كلاسيك بـ ١١٩٩ جنيه"
-    ]
+    searchPlaceholder: "عمّا تبحث؟"
   },
   shop: {
     shopByCategoryTop: "تسوّق حسب",

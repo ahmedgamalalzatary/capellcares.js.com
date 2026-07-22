@@ -82,6 +82,18 @@ describe("AdminShell", () => {
     expect(collectionLinks.length).toBeGreaterThan(0);
   });
 
+  it("shows announcement bar navigation to admins and authorized staff", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@minikoshk.test", role: "staff", permissionKeys: ["announcement_bar.read"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    expect(screen.getAllByText("شريط الإعلانات").length).toBeGreaterThan(0);
+  });
+
   it("shows only authorized module navigation items for staff users", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: {

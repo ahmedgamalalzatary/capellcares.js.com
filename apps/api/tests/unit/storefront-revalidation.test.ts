@@ -71,3 +71,47 @@ test("triggerStorefrontRevalidation posts a universal offer payload with related
     relatedProductSlugs: ["body-lotion-250", "argan-mask"]
   });
 });
+
+test("triggerStorefrontRevalidation rejects unsuccessful storefront responses", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  globalThis.fetch = (async () => new Response(null, { status: 503 })) as typeof fetch;
+  process.env.NODE_ENV = "development";
+
+  try {
+    await assert.rejects(
+      triggerStorefrontRevalidation({ entity: "announcement-bar" }, {
+        storefrontBaseUrl: "http://localhost:3000",
+        secret: "dev-revalidate-secret"
+      }),
+      /status 503/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+});
+
+test("triggerStorefrontRevalidation times out a stalled storefront request", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  globalThis.fetch = (async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return new Response(null, { status: 200 });
+  }) as typeof fetch;
+  process.env.NODE_ENV = "development";
+
+  try {
+    await assert.rejects(
+      triggerStorefrontRevalidation({ entity: "announcement-bar" }, {
+        storefrontBaseUrl: "http://localhost:3000",
+        secret: "dev-revalidate-secret",
+        timeoutMs: 1
+      }),
+      /timed out/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+});

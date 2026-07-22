@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const apiGet = vi.fn();
 const apiPost = vi.fn();
+const apiPut = vi.fn();
 const apiDel = vi.fn();
 const authTokenListeners: Array<(token: string | null) => void> = [];
 const authHydrationListeners: Array<(hydrated: boolean) => void> = [];
@@ -51,6 +52,7 @@ vi.mock("@/lib/api/client", () => ({
   api: {
     get: apiGet,
     post: apiPost,
+    put: apiPut,
     del: apiDel
   }
 }));
@@ -85,6 +87,182 @@ afterEach(() => {
 });
 
 describe("ERP store", () => {
+  it("starts with an empty disabled announcement bar", async () => {
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    expect((store as any).announcementBar).toEqual({ enabled: false, items: [] });
+  });
+
+  it("loads and mutates announcement bar configuration through focused ERP endpoints", async () => {
+    const config = {
+      enabled: true,
+      items: [{ id: 1, text: { ar: "عرض", en: "Offer" }, isActive: true, sortOrder: 0 }]
+    };
+    apiGet.mockResolvedValue(config);
+    const originalItem = config.items[0];
+    const createdItem = {
+      id: 2,
+      text: { ar: "New Arabic", en: "New" },
+      isActive: true,
+      sortOrder: 1
+    };
+    apiPut
+      .mockResolvedValueOnce({ enabled: false, items: [originalItem] })
+      .mockResolvedValueOnce({
+        item: { ...originalItem, isActive: false },
+        announcementBar: { enabled: false, items: [{ ...originalItem, isActive: false }, createdItem] }
+      });
+    apiPost
+      .mockResolvedValueOnce({
+        item: createdItem,
+        announcementBar: { enabled: false, items: [originalItem, createdItem] }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        announcementBar: { enabled: false, items: [createdItem, { ...originalItem, isActive: false }] }
+      });
+    apiDel.mockResolvedValue({
+      ok: true,
+      announcementBar: { enabled: false, items: [{ ...createdItem, sortOrder: 0 }] }
+    });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+
+    expect(typeof store.fetchAnnouncementBar).toBe("function");
+    expect(typeof store.setAnnouncementBarEnabled).toBe("function");
+    expect(typeof store.createAnnouncementItem).toBe("function");
+    expect(typeof store.updateAnnouncementItem).toBe("function");
+    expect(typeof store.deleteAnnouncementItem).toBe("function");
+    expect(typeof store.reorderAnnouncementItems).toBe("function");
+
+    await store.fetchAnnouncementBar();
+    await store.setAnnouncementBarEnabled(false);
+    await store.createAnnouncementItem({ ar: "جديد", en: "New" });
+    await store.updateAnnouncementItem(1, { isActive: false });
+    await store.reorderAnnouncementItems([2, 1]);
+    await store.deleteAnnouncementItem(1);
+
+    expect(store.announcementBar).toEqual({
+      enabled: false,
+      items: [{ ...createdItem, sortOrder: 0 }]
+    });
+    expect(apiGet).toHaveBeenCalledWith("/api/erp/announcement-bar");
+    expect(apiGet).toHaveBeenCalledTimes(1);
+    expect(apiPut).toHaveBeenCalledWith("/api/erp/announcement-bar/settings", { enabled: false });
+    expect(apiPost).toHaveBeenCalledWith("/api/erp/announcement-bar/items", { text: { ar: "جديد", en: "New" } });
+    expect(apiPut).toHaveBeenCalledWith("/api/erp/announcement-bar/items/1", { isActive: false });
+    expect(apiDel).toHaveBeenCalledWith("/api/erp/announcement-bar/items/1");
+    expect(apiPost).toHaveBeenCalledWith("/api/erp/announcement-bar/reorder", { ids: [2, 1] });
+    expect(store.announcementBarWarning).toBeNull();
+  });
+
+  it("surfaces delayed storefront refreshes without treating a committed mutation as failed", async () => {
+    apiPut.mockResolvedValue({
+      enabled: false,
+      items: [],
+      revalidationWarning: "Changes were saved, but the storefront refresh is delayed."
+    });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+
+    await expect(store.setAnnouncementBarEnabled(false)).resolves.toBeUndefined();
+    expect(store.announcementBar).toEqual({ enabled: false, items: [] });
+    expect(store.announcementBarWarning).toMatch(/saved/i);
+    expect(apiGet).not.toHaveBeenCalled();
+  });
+
+  it("does not let an older announcement read overwrite a newer mutation snapshot or warning", async () => {
+    let resolveRead!: (value: unknown) => void;
+    apiGet.mockReturnValue(new Promise((resolve) => {
+      resolveRead = resolve;
+    }));
+    apiPut.mockResolvedValue({
+      enabled: false,
+      items: [],
+      revalidationWarning: "Changes were saved, but storefront refresh is delayed."
+    });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+    const oldRead = store.fetchAnnouncementBar();
+    await store.setAnnouncementBarEnabled(false);
+    resolveRead({
+      enabled: true,
+      items: [{ id: 1, text: { ar: "Old", en: "Old" }, isActive: true, sortOrder: 0 }]
+    });
+    await oldRead;
+
+    expect(store.announcementBar).toEqual({ enabled: false, items: [] });
+    expect(store.announcementBarWarning).toMatch(/delayed/i);
+  });
+
+  it("does not let an older announcement read overwrite a newer announcement read", async () => {
+    let resolveOlderRead!: (value: unknown) => void;
+    let resolveNewerRead!: (value: unknown) => void;
+    apiGet
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveOlderRead = resolve;
+      }))
+      .mockReturnValueOnce(new Promise((resolve) => {
+        resolveNewerRead = resolve;
+      }));
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+    const olderRead = store.fetchAnnouncementBar();
+    const newerRead = store.fetchAnnouncementBar();
+
+    const newerAnnouncementBar = {
+      enabled: true,
+      items: [{ id: 2, text: { ar: "New", en: "New" }, isActive: true, sortOrder: 0 }]
+    };
+    resolveNewerRead(newerAnnouncementBar);
+    await newerRead;
+    resolveOlderRead({
+      enabled: false,
+      items: [{ id: 1, text: { ar: "Old", en: "Old" }, isActive: true, sortOrder: 0 }]
+    });
+    await olderRead;
+
+    expect(store.announcementBar).toEqual(newerAnnouncementBar);
+  });
+
+  it("preserves storefront refresh warnings across ordinary successful admin reads", async () => {
+    apiPut.mockResolvedValue({
+      enabled: false,
+      items: [],
+      revalidationWarning: "Changes were saved, but storefront refresh is delayed."
+    });
+    apiGet.mockResolvedValue({ enabled: false, items: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+    await store.setAnnouncementBarEnabled(false);
+    await store.fetchAnnouncementBar();
+
+    expect(store.announcementBarWarning).toMatch(/delayed/i);
+  });
+
+  it("preloads announcement state for staff with announcement read access", async () => {
+    adminAuthUser = {
+      name: "Announcement Staff",
+      email: "announcement-staff@minikoshk.test",
+      role: "staff",
+      permissionKeys: ["announcement_bar.read"]
+    };
+    apiGet.mockResolvedValue({ enabled: true, items: [] });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore() as any;
+    await store.refetch();
+
+    expect(apiGet.mock.calls.map(([path]) => path)).toEqual(["/api/erp/announcement-bar"]);
+    expect(store.announcementBar).toEqual({ enabled: true, items: [] });
+  });
+
   it("hydrates advices and orders during refetch", async () => {
     apiGet
       .mockResolvedValueOnce({ items: [] })
@@ -123,7 +301,9 @@ describe("ERP store", () => {
           totalAmount: 150,
           createdAt: new Date().toISOString()
         }]
-      });
+      })
+      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] })
+      .mockResolvedValueOnce({ enabled: true, items: [] });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -161,7 +341,9 @@ describe("ERP store", () => {
       })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] });
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] })
+      .mockResolvedValueOnce({ enabled: true, items: [] });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -184,6 +366,7 @@ describe("ERP store", () => {
           variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }]
         }]
       })
+      .mockResolvedValueOnce({ enabled: true, items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
@@ -206,7 +389,8 @@ describe("ERP store", () => {
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ enabled: true, items: [] });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -220,7 +404,7 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    expect(apiGet).toHaveBeenCalledTimes(14);
+    expect(apiGet).toHaveBeenCalledTimes(16);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {
@@ -232,6 +416,7 @@ describe("ERP store", () => {
       .mockRejectedValueOnce(new Error("API 401 /api/erp/advices"))
       .mockRejectedValueOnce(new Error("API 401 /api/erp/orders"))
       .mockRejectedValueOnce(new Error("API 401 /api/erp/sales"))
+      .mockRejectedValueOnce(new Error("API 401 /api/erp/announcement-bar"))
       .mockResolvedValueOnce({
         items: [{
           id: 1,
@@ -248,7 +433,8 @@ describe("ERP store", () => {
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ enabled: true, items: [] });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -264,7 +450,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(14);
+    expect(apiGet).toHaveBeenCalledTimes(16);
   });
 
   it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {
@@ -287,7 +473,8 @@ describe("ERP store", () => {
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [] });
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ enabled: true, items: [] });
 
     const { getStore } = await import("@/lib/store");
     const store = getStore();
@@ -309,7 +496,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(7);
+    expect(apiGet).toHaveBeenCalledTimes(8);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {

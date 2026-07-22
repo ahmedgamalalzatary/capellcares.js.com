@@ -38,6 +38,14 @@ import {
   listAdminHomepageBannersController,
   updateHomepageBannerItemController
 } from "../homepage-banners/homepage-banners.controller.js";
+import {
+  createAnnouncementItemController,
+  deleteAnnouncementItemController,
+  listAdminAnnouncementBarController,
+  reorderAnnouncementItemsController,
+  updateAnnouncementBarSettingsController,
+  updateAnnouncementItemController
+} from "../announcement-bar/announcement-bar.controller.js";
 
 export const adminRoutes = Router();
 
@@ -74,6 +82,12 @@ adminRoutes.get("/homepage-banners", requireErpPermission("homepage_banners.read
 adminRoutes.post("/homepage-banners/sections/:sectionKey/items", requireErpPermission("homepage_banners.update"), wrapAsync(createHomepageBannerItemController));
 adminRoutes.post("/homepage-banners/items/:id", requireErpPermission("homepage_banners.update"), wrapAsync(updateHomepageBannerItemController));
 adminRoutes.delete("/homepage-banners/items/:id", requireErpPermission("homepage_banners.update"), wrapAsync(deleteHomepageBannerItemController));
+adminRoutes.get("/announcement-bar", requireErpPermission("announcement_bar.read"), wrapAsync(listAdminAnnouncementBarController));
+adminRoutes.put("/announcement-bar/settings", requireErpPermission("announcement_bar.update"), wrapAsync(updateAnnouncementBarSettingsController));
+adminRoutes.post("/announcement-bar/items", requireErpPermission("announcement_bar.update"), wrapAsync(createAnnouncementItemController));
+adminRoutes.put("/announcement-bar/items/:id", requireErpPermission("announcement_bar.update"), wrapAsync(updateAnnouncementItemController));
+adminRoutes.delete("/announcement-bar/items/:id", requireErpPermission("announcement_bar.update"), wrapAsync(deleteAnnouncementItemController));
+adminRoutes.post("/announcement-bar/reorder", requireErpPermission("announcement_bar.update"), wrapAsync(reorderAnnouncementItemsController));
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);

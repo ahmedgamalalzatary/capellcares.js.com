@@ -2,6 +2,7 @@
 
 import type {
   Advice,
+  AnnouncementBarDto,
   Category,
   Collection,
   HomepageBannersDto,
@@ -30,7 +31,14 @@ import type {
   SalesAnalytics
 } from "./types";
 
+type AnnouncementMutationResponse = {
+  announcementBar: AnnouncementBarDto;
+  revalidationWarning?: string;
+};
+
 export class ErpStore {
+  announcementBar: AnnouncementBarDto = { enabled: false, items: [] };
+  announcementBarWarning: string | null = null;
   products: Product[] = [];
   categories: Category[] = [];
   collections: Collection[] = [];
@@ -49,6 +57,7 @@ export class ErpStore {
   error: string | null = null;
   private listeners = new Set<Listener>();
   private latestRefetchId = 0;
+  private announcementBarGeneration = 0;
   private browserRefreshBound = false;
   private authRefreshBound = false;
   private authHydrationBound = false;
@@ -61,6 +70,8 @@ export class ErpStore {
 
   getSnapshot(): ErpStoreSnapshot {
     return {
+      announcementBar: this.announcementBar,
+      announcementBarWarning: this.announcementBarWarning,
       products: this.products,
       categories: this.categories,
       collections: this.collections,
@@ -216,6 +227,7 @@ export class ErpStore {
   }
 
   private getPreloadRequests(authUser: AdminAuthUser | null) {
+    const announcementBarGeneration = this.announcementBarGeneration;
     const canRead = authUser?.role === "admin"
       ? () => true
       : (permissionKey: string) => authUser?.permissionKeys.includes(permissionKey) ?? false;
@@ -268,6 +280,13 @@ export class ErpStore {
             orders: result.orders ?? emptySales.orders
           };
         }
+      },
+      canRead("announcement_bar.read") && {
+        load: () => api.get<AnnouncementBarDto>("/api/erp/announcement-bar"),
+        assign: (result: AnnouncementBarDto, store: ErpStore) => {
+          if (store.announcementBarGeneration !== announcementBarGeneration) return;
+          store.announcementBar = result;
+        }
       }
     ].filter(Boolean) as Array<{
       load: () => Promise<unknown>;
@@ -279,6 +298,63 @@ export class ErpStore {
     const result = await api.get<HomepageBannersDto>("/api/erp/homepage-banners");
     this.homepageSections = result.sections;
     this.emit();
+  }
+
+  async fetchAnnouncementBar() {
+    const generation = ++this.announcementBarGeneration;
+    const result = await api.get<AnnouncementBarDto>("/api/erp/announcement-bar");
+    if (generation !== this.announcementBarGeneration) return;
+    this.announcementBar = result;
+    this.emit();
+  }
+
+  private async applyAnnouncementMutation(request: () => Promise<AnnouncementMutationResponse>) {
+    const generation = ++this.announcementBarGeneration;
+    const result = await request();
+    if (generation !== this.announcementBarGeneration) return;
+    this.announcementBar = result.announcementBar;
+    this.announcementBarWarning = result.revalidationWarning ?? null;
+    this.emit();
+  }
+
+  async setAnnouncementBarEnabled(enabled: boolean) {
+    const generation = ++this.announcementBarGeneration;
+    const result = await api.put<AnnouncementBarDto & { revalidationWarning?: string }>(
+      "/api/erp/announcement-bar/settings",
+      { enabled }
+    );
+    if (generation !== this.announcementBarGeneration) return;
+    const { revalidationWarning, ...announcementBar } = result;
+    this.announcementBar = announcementBar;
+    this.announcementBarWarning = revalidationWarning ?? null;
+    this.emit();
+  }
+
+  async createAnnouncementItem(text: { ar: string; en: string }) {
+    await this.applyAnnouncementMutation(() => (
+      api.post<AnnouncementMutationResponse>("/api/erp/announcement-bar/items", { text })
+    ));
+  }
+
+  async updateAnnouncementItem(
+    id: number,
+    input: { text?: { ar: string; en: string }; isActive?: boolean }
+  ) {
+    await this.applyAnnouncementMutation(() => (
+      api.put<AnnouncementMutationResponse>(`/api/erp/announcement-bar/items/${id}`, input)
+    ));
+  }
+
+  async deleteAnnouncementItem(id: number) {
+    await this.applyAnnouncementMutation(() => (
+      api.del<AnnouncementMutationResponse>(`/api/erp/announcement-bar/items/${id}`)
+    ));
+  }
+
+  async reorderAnnouncementItems(ids: number[]) {
+    await this.applyAnnouncementMutation(() => (
+      api.post<AnnouncementMutationResponse>("/api/erp/announcement-bar/reorder", { ids })
+    ));
   }
 
   async upsertProduct(p: Product) {

@@ -12,7 +12,7 @@ import { languages } from "@minikoshk/shared";
 const DEFAULT_DEV_SECRET = "dev-revalidate-secret";
 
 type RevalidatePayload = {
-  entity?: "product" | "offer" | "collection" | "advice" | "homepage-banners";
+  entity?: "product" | "offer" | "collection" | "advice" | "homepage-banners" | "announcement-bar";
   slug?: string;
   previousSlug?: string;
   categorySlugs?: string[];
@@ -25,7 +25,8 @@ const LIST_PATHS: Record<NonNullable<RevalidatePayload["entity"]>, string[]> = {
   offer: ["", "shop", "offers"],
   collection: ["", "shop", "collections"],
   advice: ["", "shop"],
-  "homepage-banners": ["", "shop"]
+  "homepage-banners": ["", "shop"],
+  "announcement-bar": []
 };
 
 const DETAIL_PATHS: Partial<Record<NonNullable<RevalidatePayload["entity"]>, string>> = {
@@ -80,6 +81,14 @@ export async function POST(request: NextRequest) {
   const entity = body.entity;
   if (!entity || !Object.hasOwn(LIST_PATHS, entity)) {
     return NextResponse.json({ message: "Unknown entity" }, { status: 400 });
+  }
+
+  if (entity === "announcement-bar") {
+    const revalidated = languages.map((lang) => `/${lang}`);
+    for (const path of revalidated) {
+      revalidatePath(path, "layout");
+    }
+    return NextResponse.json({ revalidated });
   }
 
   const relativePaths = new Set(LIST_PATHS[entity]);

@@ -270,6 +270,35 @@ export const homepageBannerItems = mysqlTable("homepage_banner_items", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const announcementBarSettings = mysqlTable(
+  "announcement_bar_settings",
+  {
+    id: int("id").primaryKey(),
+    isEnabled: boolean("is_enabled").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => [
+    check("announcement_bar_settings_singleton_check", sql`${table.id} = 1`)
+  ]
+);
+
+export const announcementItems = mysqlTable(
+  "announcement_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    arText: varchar("ar_text", { length: 500 }).notNull(),
+    enText: varchar("en_text", { length: 500 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => [
+    check("announcement_items_sort_order_check", sql`${table.sortOrder} >= 0`)
+  ]
+);
+
 export const offerItems = mysqlTable(
   "offer_items",
   {

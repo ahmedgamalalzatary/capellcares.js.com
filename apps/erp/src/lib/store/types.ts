@@ -1,5 +1,6 @@
 import type {
   Advice,
+  AnnouncementBarDto,
   Category,
   Collection,
   HomepageBannerSectionDto,
@@ -116,6 +117,8 @@ export type CategoryApiShape = {
 };
 
 export type ErpStoreSnapshot = {
+  announcementBar: AnnouncementBarDto;
+  announcementBarWarning: string | null;
   products: Product[];
   categories: Category[];
   collections: Collection[];

@@ -1,4 +1,5 @@
 export * from "./auth.dto.js";
+export * from "./announcement-bar.dto.js";
 export * from "./advice.dto.js";
 export * from "./category.dto.js";
 export * from "./collection.dto.js";

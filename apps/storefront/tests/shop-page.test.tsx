@@ -7,6 +7,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams()
 }));
 
+vi.mock("@/components/header", () => ({ Header: () => <div data-testid="header" /> }));
+
 vi.mock("@/lib/categories", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/categories")>()),
   getCategories: vi.fn(async () => [

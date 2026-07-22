@@ -30,6 +30,8 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "advices.read",
     "advices.toggle_status",
     "advices.update",
+    "announcement_bar.read",
+    "announcement_bar.update",
     "categories.create",
     "categories.read",
     "categories.restore",
@@ -67,6 +69,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
 
 test("normalizePermissionKeys adds required read dependencies", () => {
   const normalized = normalizePermissionKeys([
+    "announcement_bar.update",
     "products.update",
     "orders.update_payment_status",
     "trash.read",
@@ -74,6 +77,8 @@ test("normalizePermissionKeys adds required read dependencies", () => {
   ]);
 
   assert.deepEqual(normalized, [
+    "announcement_bar.read",
+    "announcement_bar.update",
     "orders.read",
     "orders.update_payment_status",
     "products.read",

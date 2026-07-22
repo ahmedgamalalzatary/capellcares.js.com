@@ -19,13 +19,7 @@ export const en = {
     cart: "Cart",
     account: "Account",
     search: "Search",
-    searchPlaceholder: "What are you looking for?",
-    announcements: [
-      "Get 3 Zanooba for 1199 EGP",
-      "Any 3 EVA Pieces for only 999 EGP",
-      "2nd item -15% | 3rd item -30% | Free Shipping 800+ EGP | +15% with Card",
-      "Get 3 Classics for 1199 EGP"
-    ]
+    searchPlaceholder: "What are you looking for?"
   },
   shop: {
     shopByCategoryTop: "Shop by",

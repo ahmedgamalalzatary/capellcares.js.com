@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { AnnouncementBarDto } from "@minikoshk/shared";
 
 import { useLocale } from "../i18n/LocaleProvider";
 
@@ -15,9 +16,12 @@ const MIN_COPIES = 2;
  * Top promo bar: a continuously scrolling marquee of offers on the navy
  * background, matching the Minikoshk storefront announcement strip.
  */
-export function AnnouncementBar() {
-  const { dict } = useLocale();
-  const messages = dict.header.announcements;
+export function AnnouncementBar({ config }: { config: AnnouncementBarDto }) {
+  const { lang } = useLocale();
+  const messages = useMemo(
+    () => config.items.map((item) => item.text[lang]),
+    [config.items, lang]
+  );
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
@@ -28,6 +32,7 @@ export function AnnouncementBar() {
   // before it loops. How many that takes depends on the viewport width, the
   // translated copy, and the loaded font, so measure instead of guessing.
   useEffect(() => {
+    if (!config.enabled || messages.length === 0) return;
     const viewport = viewportRef.current;
     const copy = copyRef.current;
     if (!viewport || !copy) return;
@@ -47,7 +52,11 @@ export function AnnouncementBar() {
     observer.observe(viewport);
     observer.observe(copy);
     return () => observer.disconnect();
-  }, [messages]);
+  }, [config.enabled, messages]);
+
+  if (!config.enabled || messages.length === 0) {
+    return null;
+  }
 
   return (
     <div ref={viewportRef} className="overflow-hidden bg-navy-dark text-white">

@@ -16,6 +16,10 @@ export class ApiError extends Error {
   }
 }
 
+type StorefrontRequestInit = RequestInit & {
+  next?: { revalidate?: number };
+};
+
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { message?: unknown };
@@ -36,7 +40,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
  * invalidated by `/api/revalidate` when the admin changes the catalog; in the
  * browser (cart/wishlist resolution) it's always fetched fresh.
  */
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T | null> {
+export async function apiGet<T>(path: string, init?: StorefrontRequestInit): Promise<T | null> {
   const cache: RequestCache = typeof window === "undefined" ? "force-cache" : "no-store";
   const response = await fetch(`${apiBase()}/api/v1${path}`, { cache, ...init });
   if (response.status === 404) {
@@ -49,9 +53,9 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T | n
 }
 
 /** Like `apiGet` but swallows every failure into a fallback — for list pages that should render empty rather than crash. */
-export async function apiGetOr<T>(path: string, fallback: T): Promise<T> {
+export async function apiGetOr<T>(path: string, fallback: T, init?: StorefrontRequestInit): Promise<T> {
   try {
-    return (await apiGet<T>(path)) ?? fallback;
+    return (await apiGet<T>(path, init)) ?? fallback;
   } catch {
     return fallback;
   }

@@ -89,6 +89,15 @@ describe("POST /api/revalidate", () => {
     expect(paths).toContain("/ar/products/shoe-b");
   });
 
+  it("revalidates both localized layouts for announcement bar changes", async () => {
+    const response = await POST(request({ entity: "announcement-bar" }));
+
+    expect(response.status).toBe(200);
+    expect(revalidatePath).toHaveBeenCalledWith("/ar", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/en", "layout");
+    expect(revalidatePath).toHaveBeenCalledTimes(2);
+  });
+
   it("refuses to run in production without a configured secret", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const response = await POST(request({ entity: "product" }));

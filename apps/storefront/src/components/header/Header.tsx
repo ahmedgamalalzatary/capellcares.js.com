@@ -1,13 +1,21 @@
+import type { AnnouncementBarDto } from "@minikoshk/shared";
+import { apiGetOr } from "@/lib/api/client";
 import { AnnouncementBar } from "./AnnouncementBar";
 import { SearchBar } from "./SearchBar";
 import { NavBar } from "./NavBar";
 
 /** Full site header: announcement bar, search row, and navigation row. */
-export function Header() {
+export async function Header() {
+  const announcementBar = await apiGetOr<AnnouncementBarDto>(
+    "/announcement-bar",
+    { enabled: false, items: [] },
+    { next: { revalidate: 10 } }
+  );
+
   return (
     <>
       {/* Announcement bar scrolls away with the page. */}
-      <AnnouncementBar />
+      <AnnouncementBar config={announcementBar} />
       {/* The header itself is the sticky element. Because it's a direct child
           of the page flow (not nested in a short wrapper), its containing block
           is the body, so it stays pinned for the whole scroll. */}
