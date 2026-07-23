@@ -150,11 +150,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
             </FooterCol>
             <FooterCol title={dict.footer.legal} isAr={isAr}>
-              <FooterLink href="">{dict.footer.terms}</FooterLink>
-              <FooterLink href="">{dict.footer.promotionTerms}</FooterLink>
-              <FooterLink href="">{dict.footer.privacy}</FooterLink>
-              <FooterLink href="">{dict.footer.returnsRefunds}</FooterLink>
-              <FooterLink href="">{dict.footer.shippingHandling}</FooterLink>
+              <FooterLink href={`/${lang}/terms-of-sale`}>{dict.footer.terms}</FooterLink>
+              <FooterLink href={`/${lang}/terms-conditions`}>{dict.footer.promotionTerms}</FooterLink>
+              <FooterLink href={`/${lang}/privacy-policy`}>{dict.footer.privacy}</FooterLink>
+              <FooterLink href={`/${lang}/returns-refunds`}>{dict.footer.returnsRefunds}</FooterLink>
+              <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
             </FooterCol>
           </div>
         </div>

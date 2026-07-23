@@ -1,15 +1,10 @@
-import type { Category, Language, Product } from "@capella/shared";
+import type { Category, Dict, Language, Product } from "@capella/shared";
 
 export interface ProductGridProps {
   products: Product[];
   categories: Category[];
   lang: Language;
-  dict: Record<
-    string,
-    | string
-    | readonly string[]
-    | Record<string, string | readonly string[] | Record<string, string>>
-  >;
+  dict: Dict;
   initialSearch?: string;
   initialCategory?: number;
   initialCols?: 1 | 2;

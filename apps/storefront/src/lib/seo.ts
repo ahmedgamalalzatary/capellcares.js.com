@@ -309,6 +309,31 @@ export function buildContactMetadata(lang: Language): Metadata {
   };
 }
 
+export function buildStaticPageMetadata(
+  lang: Language,
+  opts: { path: string; titleEn: string; titleAr: string; descEn: string; descAr: string }
+): Metadata {
+  const isAr = lang === "ar";
+  const title = isAr ? opts.titleAr : opts.titleEn;
+  const description = trimText(isAr ? opts.descAr : opts.descEn);
+
+  return {
+    title,
+    description,
+    alternates: buildLocalizedAlternates(lang, opts.path),
+    openGraph: {
+      title: joinTitle([title, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, opts.path))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([title, BRAND_NAME]),
+      description
+    }
+  };
+}
+
 export function noIndexMetadata(): Metadata {
   return {
     robots: {
