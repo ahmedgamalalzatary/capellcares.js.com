@@ -65,7 +65,7 @@ services:
       migrate:
         condition: service_completed_successfully
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:4020:4000"
     volumes:
       - api-uploads:/app/apps/api/uploads
     healthcheck:
@@ -97,7 +97,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3020:3000"
 
   erp:
     build:
@@ -116,7 +116,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3021:3001"
 
 volumes:
   mysql-data:
