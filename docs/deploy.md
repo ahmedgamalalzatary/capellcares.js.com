@@ -109,8 +109,13 @@ docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USE
 Optional seed data:
 
 ```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.production --profile tools run --rm seed
 ```
+
+The seed service loads the Disp​​acito catalog and copies the tracked files from
+`packages/database/src/seeds/assets/` into the persistent API uploads volume.
+Run it only for a fresh database; the catalog seed is not intended to be
+replayed over existing production data.
 
 Verify seed data if you ran seed:
 
@@ -225,7 +230,7 @@ docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\"
 Optional seed data:
 
 ```cmd
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.docker --profile tools run --rm seed
 ```
 
 Verify seed data if you ran seed:

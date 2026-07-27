@@ -1,8 +1,10 @@
 import { mysqlPool } from "../db.js";
-import { seedCategories } from "./categories.seed.js";
+import { seedDespacito } from "./despacito.seed.js";
+import { copySeedAssets } from "./seed-assets.js";
 
 async function main() {
-  await seedCategories();
+  await copySeedAssets();
+  await seedDespacito();
 }
 
 main()

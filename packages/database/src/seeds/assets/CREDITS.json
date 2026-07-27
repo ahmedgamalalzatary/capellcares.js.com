@@ -1,0 +1,24 @@
+{
+  "note": "Development placeholder photography for the Đespacito Delight storefront. Replace with the shop's own product shots before launch.",
+  "licences": {
+    "unsplash": "https://unsplash.com/license — free for commercial and non-commercial use, no permission or attribution required",
+    "pexels": "https://www.pexels.com/license/ — free for commercial and non-commercial use, attribution not required"
+  },
+  "files": [
+    { "file": "milk-chocolate-bon-bons.jpg", "source": "unsplash", "id": "photo-1549007994-cb92caebd54b" },
+    { "file": "almond-dark-bon-bons.jpg", "source": "unsplash", "id": "photo-1511381939415-e44015466834" },
+    { "file": "almond-dark-bon-bons-2.jpg", "source": "unsplash", "id": "photo-1606313564200-e75d5e30476c" },
+    { "file": "pistachio-milk-bar.jpg", "source": "unsplash", "id": "photo-1622484212850-eb596d769edc" },
+    { "file": "despacito-bon-gift-box.jpg", "source": "unsplash", "id": "photo-1481391319762-47dff72954d9" },
+    { "file": "despacito-bon-gift-box-2.jpg", "source": "unsplash", "id": "photo-1599599810769-bcde5a160d32" },
+    { "file": "belgian-chocolate-cake.jpg", "source": "unsplash", "id": "photo-1578985545062-69928b1d9587" },
+    { "file": "belgian-chocolate-cake-2.jpg", "source": "unsplash", "id": "photo-1571115177098-24ec42ed204d" },
+    { "file": "butter-croissant.jpg", "source": "unsplash", "id": "photo-1555507036-ab1f4038808a" },
+    { "file": "butter-croissant-2.jpg", "source": "unsplash", "id": "photo-1530610476181-d83430b64dcd" },
+    { "file": "house-espresso-beans.jpg", "source": "unsplash", "id": "photo-1447933601403-0c6688de566e" },
+    { "file": "iced-spanish-latte.jpg", "source": "unsplash", "id": "photo-1517701550927-30cf4ba1dba5" },
+    { "file": "iced-spanish-latte-2.jpg", "source": "unsplash", "id": "photo-1461023058943-07fcbe16d735" },
+    { "file": "roasted-mixed-nuts.jpg", "source": "unsplash", "id": "photo-1508061253366-f7da158b6d46" },
+    { "file": "dried-apricot.jpg", "source": "pexels", "id": "10111994" }
+  ]
+}

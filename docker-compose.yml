@@ -37,6 +37,25 @@ services:
         condition: service_healthy
     command: ["pnpm", "db:migrate"]
 
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: builder
+    container_name: capella-seed
+    profiles: ["tools"]
+    restart: "no"
+    working_dir: /app/packages/database
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-capella}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-capella}
+      UPLOADS_DIR: /app/apps/api/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["pnpm", "db:seed"]
+    volumes:
+      - api-uploads:/app/apps/api/uploads
+
   api:
     build:
       context: .
