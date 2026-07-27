@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icons";
+import { Wordmark } from "@/components/ui/wordmark";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -59,13 +59,13 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
       <header
         className={[
-          // bg-surface matches the white page body: it fills the notches outside
-          // the nav row's rounded top corners so scrolling content can't peek
-          // through them while the header is stuck.
-          "container sticky top-0 z-30 bg-surface transition-[background,box-shadow] duration-200"
+          // bg-paper matches the page body: it fills the notches outside the nav
+          // row's rounded top corners so scrolling content can't peek through
+          // them while the header is stuck.
+          "container sticky top-0 z-30 bg-paper transition-[background,box-shadow] duration-200"
         ].join(" ")}
       >
-      <div className="grid items-center bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
+      <div className="grid items-center gap-2 bg-paper px-3 py-4 grid-cols-[1fr_auto_1fr] sm:gap-4">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
           <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
@@ -112,15 +112,12 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 
         <Link
           href={`/${lang}`}
-          className="group flex items-center justify-self-center scale-130"
+          className="group flex items-center justify-self-center px-2"
           aria-label={dict.brand}
         >
-          <Image
-            src="/logoblack.jpg"
-            alt={dict.brand}
-            width={400}
-            height={100}
-            className=" w-auto object-contain transition-transform duration-200 h-10 sm:h-14 "
+          <Wordmark
+            size="md"
+            className="transition-opacity duration-200 group-hover:opacity-80"
           />
         </Link>
 

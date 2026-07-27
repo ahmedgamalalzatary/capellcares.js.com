@@ -45,31 +45,31 @@ export function buildRootMetadata(): Metadata {
     metadataBase: getMetadataBase(),
     applicationName: BRAND_NAME,
     title: {
-      default: `${BRAND_NAME} | Egyptian beauty and self-care`,
+      default: `${BRAND_NAME} | Chocolate, bakery & café in Cairo`,
       template: `%s | ${BRAND_NAME}`
     },
-    description: "Bilingual Egyptian beauty storefront for skincare, body care, hair care, makeup, fragrances, and curated bundles.",
+    description: "Order chocolate, bon-bons, cakes, coffee, and nuts from Đespacito Delight in Cairo. Arabic and English, cash on delivery.",
     openGraph: {
       type: "website",
       siteName: BRAND_NAME,
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers.",
+      title: `${BRAND_NAME} | Chocolate, bakery & café in Cairo`,
+      description: "Order chocolate, bon-bons, cakes, coffee, and nuts from Đespacito Delight in Cairo.",
       url: absoluteUrl("/")
     },
     twitter: {
       card: "summary_large_image",
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers."
+      title: `${BRAND_NAME} | Chocolate, bakery & café in Cairo`,
+      description: "Order chocolate, bon-bons, cakes, coffee, and nuts from Đespacito Delight in Cairo."
     }
   };
 }
 
 export function buildLocaleMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "كابيلا كير | منتجات العناية والجمال" : `${BRAND_NAME} | Beauty and self-care products`;
+  const title = isAr ? "ديسباسيتو ديلايت | شوكولاتة ومخبوزات وقهوة" : `${BRAND_NAME} | Chocolate, bakery, café and nuts`;
   const description = isAr
-    ? "متجر كابيلا كير للعناية بالبشرة والجسم والشعر والمكياج والعطور، مع صفحات عربية وإنجليزية قابلة للفهرسة."
-    : "Capella Care storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
+    ? "اطلب الشوكولاتة والبونبون والتورت والقهوة والمكسرات من ديسباسيتو ديلايت في القاهرة. صفحات عربية وإنجليزية."
+    : "Đespacito Delight storefront for chocolate, bon-bons, bakery, café and nuts, with indexable Arabic and English pages.";
 
   return {
     title,
@@ -92,10 +92,10 @@ export function buildLocaleMetadata(lang: Language): Metadata {
 
 export function buildProductsMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "تسوقي منتجات العناية والجمال" : "Shop beauty and self-care products";
+  const title = isAr ? "تسوق الشوكولاتة والمخبوزات والقهوة" : "Shop chocolate, bakery, café and nuts";
   const description = isAr
-    ? "اكتشفي منتجات العناية بالبشرة والجسم والشعر والمكياج من كابيلا كير مع تصفح عربي وإنجليزي منظم."
-    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Capella Care.";
+    ? "تصفح الشوكولاتة والبونبون والمخبوزات والقهوة والمكسرات من ديسباسيتو ديلايت، بالعربية والإنجليزية."
+    : "Browse chocolate, bon-bons, bakery, café and nuts from Đespacito Delight.";
 
   return {
     title,
@@ -119,10 +119,10 @@ export function buildCategoryMetadata(lang: Language, category: Category, path: 
   const trail = path.map((item) => pickLang(item.name, lang)).join(" / ");
   const description = trimText(
     lang === "ar"
-      ? `تسوقي ${label} من كابيلا كير. تصفحي منتجات ${trail || label} مع صفحات فئات واضحة وسهلة الفهرسة.`
-      : `Shop ${label} at Capella Care. Browse ${trail || label} products on a category page built for clear search discovery.`
+      ? `تسوق ${label} من ديسباسيتو ديلايت. تصفح ${trail || label} في صفحة قسم واضحة وسهلة الفهرسة.`
+      : `Shop ${label} at Đespacito Delight. Browse ${trail || label} on a category page built for clear search discovery.`
   );
-  const title = lang === "ar" ? `${label} | منتجات كابيلا كير` : `${label} | ${count} products`;
+  const title = lang === "ar" ? `${label} | ديسباسيتو ديلايت` : `${label} | ${count} products`;
 
   return {
     title,
@@ -173,10 +173,10 @@ export function buildProductMetadata(lang: Language, product: Product, category?
 
 export function buildShopMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "متجر كابيلا | العروض والمنتجات المميزة" : "Capella Shop | Offers & featured products";
+  const title = isAr ? "المتجر | العروض وما على الفاترينة" : "Shop | Offers and what's on the counter";
   const description = isAr
-    ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
-    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Care.";
+    ? "العروض الحالية والوصول الجديد والأكثر مبيعًا من ديسباسيتو ديلايت، ونصائح من وراء الفاترينة."
+    : "Current offers, new arrivals, bestsellers, and tips from the counter at Đespacito Delight.";
 
   return {
     title,
@@ -196,10 +196,10 @@ export function buildShopMetadata(lang: Language): Metadata {
 }
 
 export function buildOffersMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Care offers and bundles";
+  const title = lang === "ar" ? "عروض ديسباسيتو ديلايت" : "Đespacito Delight offers";
   const description = lang === "ar"
-    ? "اكتشفي باقات كابيلا كير المختارة بعناية لتسوق أوفر وروتين متكامل."
-    : "Discover curated Capella Care bundles for better-value routines and gifting.";
+    ? "عروض ديسباسيتو ديلايت للطلبات الأكبر والهدايا."
+    : "Đespacito Delight offers for bigger orders and gifting.";
 
   return {
     title,
@@ -219,10 +219,10 @@ export function buildOffersMetadata(lang: Language): Metadata {
 }
 
 export function buildCollectionsMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "مجموعات كابيلا كير" : "Capella Care collections";
+  const title = lang === "ar" ? "علب ديسباسيتو ديلايت" : "Đespacito Delight boxes";
   const description = lang === "ar"
-    ? "اكتشفي مجموعات كابيلا كير المجمعة حسب القسم لروتين متكامل وسعر أوفر."
-    : "Discover Capella Care collections grouped by category for complete routines at a better price.";
+    ? "علب ديسباسيتو ديلايت الجاهزة، مجمّعة حسب القسم وبسعر أوفر."
+    : "Đespacito Delight boxes, grouped by category and priced better than buying separately.";
 
   return {
     title,
@@ -287,10 +287,10 @@ export function buildCollectionMetadata(lang: Language, collection: Collection):
 
 export function buildContactMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "تواصلي معنا | مركز مساعدة كابيلا كير" : "Contact Us | Capella Care Help Center";
+  const title = isAr ? "تواصل معنا | مركز مساعدة ديسباسيتو ديلايت" : "Contact Us | Đespacito Delight Help Center";
   const description = isAr
-    ? "تواصلي مع فريق كابيلا كير للاستفسار عن الطلبات والمنتجات أو لإرسال ملاحظاتك. نرد خلال يومي عمل."
-    : "Reach the Capella Care team for help with orders, product questions, and feedback. We reply within 2 business days.";
+    ? "تواصل مع فريق ديسباسيتو ديلايت بخصوص طلب أو علبة مخصصة أو طلب لمناسبة. نرد خلال يومي عمل."
+    : "Reach the Đespacito Delight team about an order, a custom box, or an event order. We reply within 2 business days.";
 
   return {
     title,

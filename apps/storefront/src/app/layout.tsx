@@ -15,8 +15,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Bodoni Moda — the Didone that matches the printed ĐESPACITO
+            wordmark. Karla — body/UI. Cairo — Arabic. Three families,
+            no more; the "Delight" script in the logo is set as italic
+            Bodoni rather than dragging in a fourth face. */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Lobster&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Roboto:ital,wght@0,100..900;1,100..900&family=Tajawal:wght@300;400;500;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Karla:ital,wght@0,300..800;1,300..700&family=Cairo:wght@300..900&display=swap"
           rel="stylesheet"
         />
       </head>

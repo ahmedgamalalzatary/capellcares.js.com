@@ -68,7 +68,9 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+      {/* The product sits in a lit recess — the same warm bloom as the niche,
+          scaled down to a single shelf. */}
+      <div className="pcard__img relative aspect-8/9 overflow-hidden rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-glow)">
         {/* The whole card is the image; everything else floats on top of it. */}
       <Link
         href={href}
@@ -77,19 +79,26 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         onMouseEnter={() => setPreviewImage(hoverImage)}
         onMouseLeave={() => setPreviewImage(primaryImage)}
       >
+        {/* Photography fills the card edge to edge and crops to fit; the SVG
+            placeholder is inset instead (see .pcard__img svg) so a drawn box
+            does not stretch across the whole tile. */}
         <ProductIllustration
           product={{ ...product, imagePath: previewImage }}
-          className="object-contain transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
+          className="h-full w-full object-cover transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
         />
       </Link>
 
+        {/* inset-s-0 pins the tag to the reading-start corner: top-left in
+            English, top-right in Arabic. Without an explicit inline inset an
+            absolutely positioned box falls back to its static position, which
+            does not follow the writing direction. */}
         {leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-0 z-10 rounded-ss-lg" />
+          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
         ) : null}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
-            className="absolute top-0 z-10 rounded-ss-lg"
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
         ) : null}
 
@@ -105,57 +114,54 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
       </div>
 
-      {/* Details: image → name → category → price, stacked beneath the image. */}
-      <div className="mt-3 grid gap-1 text-start">
+      {/* Details: category → name → price. Category leads as a small label so
+          the eye lands on the product name set at full weight beneath it. */}
+      <div className="mt-3.5 grid gap-1 text-start">
+        {categoryName ? (
+          <p className={`eyebrow m-0 ${isAr ? "font-(family-name:--font-ar)" : ""}`}>
+            {categoryName}
+          </p>
+        ) : null}
+
         <Link href={href} className="block">
           <h3
-            className={`m-0 leading-tight text-ink ${
+            className={`m-0 leading-snug text-ink ${
               isAr
-                ? "text-sm font-bold font-(family-name:--font-ar)"
-                : "text-sm font-bold uppercase tracking-[0.06em]"
+                ? "text-base font-bold font-(family-name:--font-ar)"
+                : "text-[15px] font-semibold"
             }`}
           >
             {pickLang(product.name, lang)}
           </h3>
         </Link>
 
-        {categoryName ? (
-          <p
-            className={`m-0 ${
-              isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
-            }`}
-          >
-            {categoryName}
-          </p>
-        ) : null}
-
-        <span
-          className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
-        >
-          {prices.length > 1
-            ? formatPriceRange(minPrice, maxPrice, lang)
-            : formatPrice(minPrice, lang)}
-        </span>
-        {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
-          <span className="text-sm text-(--ink-3) line-through">
-            {basePrices.length > 1
-              ? formatPriceRange(minBasePrice, maxBasePrice, lang)
-              : formatPrice(minBasePrice, lang)}
+        <div className="mt-0.5 flex items-baseline gap-2">
+          <span className={`price ${isAr ? "text-lg" : "text-xl"}`}>
+            {prices.length > 1
+              ? formatPriceRange(minPrice, maxPrice, lang)
+              : formatPrice(minPrice, lang)}
           </span>
-        ) : null}
+          {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
+            <span className="text-sm text-(--ink-3) line-through">
+              {basePrices.length > 1
+                ? formatPriceRange(minBasePrice, maxBasePrice, lang)
+                : formatPrice(minBasePrice, lang)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {!isOutOfStock ? (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3.5 flex gap-2">
           <Link
             href={href}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            className="btn btn--ghost btn--sm flex-1"
           >
             {dict.common.view}
           </Link>
           <button
             onClick={onAdd}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            className="btn btn--primary btn--sm flex-1"
           >
             {added ? <Icon.Check size={16} /> : null}
             <span>{added ? dict.common.added : dict.common.addToCart}</span>

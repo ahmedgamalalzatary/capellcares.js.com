@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
 import { SOCIAL_LINKS } from "../../constants/socials";
 import { Icon } from "@/components/ui/icons";
+import { Wordmark } from "@/components/ui/wordmark";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
@@ -51,7 +52,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         }}
       />
 
-      {/* Hero brand mark — oversized rounded lowercase wordmark */}
+      {/* Hero brand mark — the full lockup at poster scale, set in Bodoni so it
+          matches the printed logo instead of a generic script face. */}
       <div className="relative px-2 py-10 text-center sm:py-20">
         <div
           ref={brandRef}
@@ -60,9 +62,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             transition: "transform 700ms var(--ease-out-expo)"
           }}
         >
-          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full text-center">
-            Capella Care
-          </span>
+          {/* No w-full: the lockup shrink-wraps so "Delight" lands on the
+              wordmark's own end shoulder rather than the page edge. The
+              parent's text-center then centres the whole mark. */}
+          <Wordmark size="xl" />
+          <span className="sr-only">{dict.brand}</span>
         </div>
       </div>
 
@@ -109,12 +113,12 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           {/* Link columns */}
           <div className="grid grid-cols-1 justify-items-center text-center gap-y-8 min-[380px]:grid-cols-2 min-[380px]:justify-items-start min-[380px]:text-start min-[380px]:gap-x-4 min-[380px]:gap-y-10 sm:grid-cols-4 sm:gap-x-8 sm:gap-y-12 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
             <FooterCol title={dict.footer.navigate} isAr={isAr}>
-              <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
-              <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
-              <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skincare}</FooterLink>
-              <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.haircare}</FooterLink>
-              <FooterLink href={`/${lang}/category/makeup`}>{dict.footer.makeup}</FooterLink>
-              <FooterLink href={`/${lang}/category/accessories`}>{dict.footer.accessories}</FooterLink>
+              <FooterLink href={`/${lang}/products`}>{dict.footer.shop}</FooterLink>
+              <FooterLink href={`/${lang}/category/chocolate`}>{dict.footer.chocolate}</FooterLink>
+              <FooterLink href={`/${lang}/category/bakery`}>{dict.footer.bakery}</FooterLink>
+              <FooterLink href={`/${lang}/category/cafe`}>{dict.footer.cafe}</FooterLink>
+              <FooterLink href={`/${lang}/category/nuts`}>{dict.footer.nuts}</FooterLink>
+              <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
               <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
             </FooterCol>
 

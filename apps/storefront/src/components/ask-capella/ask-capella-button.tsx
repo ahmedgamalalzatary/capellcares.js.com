@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { type Language, getDict } from "@capella/shared";
 import { AskCapellaOverlay } from "./ask-capella-overlay";
@@ -19,18 +18,18 @@ export function AskCapellaButton({ lang }: Props) {
         <button
           onClick={() => setOpen(true)}
           aria-label={dict.ask.button}
-          className="fixed bottom-6 inset-e-6 z-50 flex items-center gap-2.5 rounded-(--radius-pill) bg-white px-3 py-3 text-brown shadow-[0_4px_20px_color-mix(in_oklch,var(--accent)_45%,transparent)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#f1f0ed] hover:shadow-[0_8px_28px_color-mix(in_oklch,var(--accent)_50%,transparent)] sm:px-5"
+          className="fixed bottom-6 inset-e-6 z-50 flex items-center gap-2.5 rounded-(--radius-pill) bg-surface px-3 py-3 text-ink shadow-(--shadow-glow) transition-all duration-200 hover:-translate-y-0.5 hover:bg-blush-pale hover:shadow-(--shadow-2) sm:px-5"
           style={{ animation: "ask-fab-in 500ms 600ms cubic-bezier(0.16,1,0.3,1) both" }}
         >
-          {/* Capella logo */}
-          <Image
-            src="/capella logo2.png"
-            alt={dict.brand}
-            width={400}
-            height={100}
-            className="h-5 w-auto object-contain"
-          />
-          <span className="font-(--font-display) text-base leading-none">{dict.ask.button}</span>
+          {/* The crossed Đ — the one glyph nobody else's logo has. Replaces a
+              raster logo file that is no longer in public/. */}
+          <span
+            aria-hidden
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-deep font-(--font-display) text-sm leading-none text-paper-hi"
+          >
+            Đ
+          </span>
+          <span className="text-base font-semibold leading-none">{dict.ask.button}</span>
         </button>
       )}
 

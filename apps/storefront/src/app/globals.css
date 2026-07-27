@@ -5,213 +5,570 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Care — Parchment palette, OKLCH everywhere.
-   Canvas #f1f0ed · Ink black · Surface white
-   All tones are degrees between these three anchors.
+   Đespacito Delight — chocolate · bakery · café · nuts
+
+   Every colour below was sampled from the brand's own assets,
+   not invented:
+
+     ink     #2a1f1c  the ĐESPACITO wordmark in actual-logo.jpeg
+     paper   #e7e4e1  the textured ground of actual-logo.jpeg
+     blush   #f6cdd1  the dominant pink of easter-egg.png
+     rose    #c69796  easter-egg mid-tone (hairlines, quiet marks)
+     deep    #a04552  the storefront sign in actual-store.png
+
+   Paper is the page. Blush is where the shop happens. Deep is
+   spent only on the thing you should touch — price, primary
+   action, live state. If deep shows up twice in one viewport,
+   one of them is wrong.
    ============================================================ */
 :root {
-  /* Source palette: #f1f0ed (canvas) · black (ink) · white (surface) */
-  --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
-  --ink-2:        oklch(0.28 0.012 85);      /* body copy */
-  --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
-  --accent:       oklch(0.32 0.018 85);      /* dark interactive — buttons, links */
-  --accent-deep:  oklch(0.18 0.012 85);      /* pressed state */
-  --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
-  --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
-  --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
-  --canvas:       oklch(0.955 0.004 90);     /* #f1f0ed — primary background */
-  --surface:      oklch(1 0 0);              /* white — card background */
-  --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
-  --text:         oklch(0.12 0.010 85);      /* body copy */
-  --hairline:     oklch(0.78 0.028 90);      /* border */
-  --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
-  --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
-  --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
-  --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
+  /* --- Ink ramp: one hue, three jobs --------------------- */
+  --ink:            oklch(0.2515 0.0181 35.8);  /* #2a1f1c — headings */
+  --ink-2:          oklch(0.4000 0.0160 34.0);  /* body copy */
+  --ink-3:          oklch(0.5600 0.0130 32.0);  /* meta, captions */
 
-  /* Aliases kept for code that still references the old names. */
-  --bg:           var(--canvas);
-  --bg-elev:      var(--surface);
-  --bg-tint:      var(--warm-soft);
+  /* --- Grounds ------------------------------------------- */
+  --paper:          oklch(0.9204 0.0052 67.8);  /* #e7e4e1 — the page */
+  --paper-hi:       oklch(0.9536 0.0052 67.8);  /* raised paper */
+  --surface:        oklch(0.9850 0.0040 68.0);  /* card face */
+  --surface-2:      oklch(0.9680 0.0060 40.0);  /* inset / nested */
+
+  /* --- Blush: the shop floor ----------------------------- */
+  --blush:          oklch(0.8845 0.0465 11.4);  /* #f6cdd1 */
+  --blush-pale:     oklch(0.9607 0.0119 17.4);  /* hover tint, chip bg */
+  --blush-mid:      oklch(0.8498 0.0576 14.3);  /* pressed blush */
+
+  /* --- Accent: the storefront sign ----------------------- */
+  --deep:           oklch(0.5130 0.1212 13.6);  /* #a04552 */
+  --deep-press:     oklch(0.4200 0.1150 14.0);
+  --rose:           oklch(0.7203 0.0567 20.0);  /* #c69796 */
+
+  /* --- Lines --------------------------------------------- */
+  --hairline:        oklch(0.8250 0.0180 22.0);
+  --hairline-strong: oklch(0.6900 0.0300 20.0);
+
+  /* --- Semantic. Error is pushed to a hotter, higher-chroma
+         red so it never reads as the rose accent. ---------- */
+  --error:          oklch(0.5200 0.2000 27.0);
+  --success:        oklch(0.5300 0.1050 150.0);
+
+  /* --- The niche glow: the warm LED behind the cutouts in
+         the café's real wall (real-place.png). ------------- */
+  --glow:           oklch(0.9300 0.0620 78.0);
+
+  /* Aliases kept so existing component code keeps resolving. */
+  --accent:       var(--deep);
+  --accent-deep:  var(--deep-press);
+  --accent-soft:  var(--blush-pale);
   --accent-2:     var(--success);
-  --gold:         var(--warm);
+  --canvas:       var(--paper);
+  --text:         var(--ink-2);
+  --warm:         var(--rose);
+  --warm-soft:    var(--blush-pale);
+  --gold:         var(--rose);
   --danger:       var(--error);
+  --bg:           var(--paper);
+  --bg-elev:      var(--surface);
+  --bg-tint:      var(--blush-pale);
+  --footer-bg:    var(--blush);
 
-  --radius-sm: 6px;
-  --radius:    10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* --- Radii: soft, never pill-round on structure. The brand's
+         own boxes are square-cornered with a soft die-cut. --- */
+  --radius-sm: 4px;
+  --radius:    8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
   --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
-  --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
+  --shadow-1: 0 1px 2px oklch(0.2515 0.018 36 / 0.07),
+              0 6px 18px oklch(0.2515 0.018 36 / 0.07);
+  --shadow-2: 0 14px 38px oklch(0.2515 0.018 36 / 0.16);
+  /* Warm cast, as if lit from inside the niche. */
+  --shadow-glow: 0 8px 30px oklch(0.5130 0.1212 13.6 / 0.16);
 
-  --font-display:   "Roboto", "Helvetica Neue", Arial, sans-serif;
-  --font-sans: "Roboto", "Helvetica Neue", Arial, sans-serif;
-  --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-rounded:   "Lobster", "Pacifico", "Brush Script MT", cursive;
+  /* --- Type ----------------------------------------------
+     Display is a Didone because the client's wordmark already
+     is one — flat unbracketed serifs, hairline thins, wide
+     round bowls. Body is Karla: a slightly narrow grotesque
+     with real quirks, so it does not read as system default
+     next to the serif. Arabic is Cairo — geometric, warm, and
+     built for exactly this market. */
+  --font-display: "Bodoni Moda", "Didot", Georgia, serif;
+  --font-sans:    "Karla", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-ar:      "Cairo", "Tajawal", "Noto Sans Arabic", sans-serif;
 
   --container: 1600px;
 
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --motion-fast: 160ms;
-  --motion: 220ms;
+  --motion: 240ms;
+  --motion-slow: 620ms;
 
   /* shadcn aliases — kept so v4 component classes still resolve. */
-  --background:         var(--canvas);
-  --foreground:         var(--text);
-  --card:               var(--surface);
-  --card-foreground:    var(--text);
-  --popover:            var(--surface);
-  --popover-foreground: var(--text);
-  --primary:            var(--ink);
-  --primary-foreground: var(--canvas);
-  --secondary:          var(--warm-soft);
+  --background:           var(--paper);
+  --foreground:           var(--ink-2);
+  --card:                 var(--surface);
+  --card-foreground:      var(--ink-2);
+  --popover:              var(--surface);
+  --popover-foreground:   var(--ink-2);
+  --primary:              var(--ink);
+  --primary-foreground:   var(--paper-hi);
+  --secondary:            var(--blush-pale);
   --secondary-foreground: var(--ink);
-  --muted:              var(--surface);
-  --muted-foreground:   var(--ink-3);
-  --accent-foreground:  var(--canvas);
-  --destructive:        var(--error);
-  --border:             var(--hairline);
-  --input:              var(--hairline);
-  --ring:               var(--accent);
-  --chart-1: oklch(0.32 0.018 85);
-  --chart-2: oklch(0.48 0.015 85);
-  --chart-3: oklch(0.62 0.020 90);
-  --chart-4: oklch(0.75 0.025 90);
-  --chart-5: oklch(0.955 0.004 90);
+  --muted:                var(--surface);
+  --muted-foreground:     var(--ink-3);
+  --accent-foreground:    var(--paper-hi);
+  --destructive:          var(--error);
+  --border:               var(--hairline);
+  --input:                var(--hairline);
+  --ring:                 var(--deep);
+  --chart-1: oklch(0.5130 0.1212 13.6);
+  --chart-2: oklch(0.7203 0.0567 20.0);
+  --chart-3: oklch(0.8498 0.0576 14.3);
+  --chart-4: oklch(0.8845 0.0465 11.4);
+  --chart-5: oklch(0.9204 0.0052 67.8);
   --sidebar: var(--ink);
-  --sidebar-foreground: var(--canvas);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--canvas);
-  --sidebar-accent: oklch(0.22 0.012 85);
-  --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border: oklch(0.22 0.012 85);
-  --sidebar-ring: var(--warm);
+  --sidebar-foreground: var(--paper);
+  --sidebar-primary: var(--deep);
+  --sidebar-primary-foreground: var(--paper-hi);
+  --sidebar-accent: oklch(0.32 0.020 34);
+  --sidebar-accent-foreground: var(--paper);
+  --sidebar-border: oklch(0.32 0.020 34);
+  --sidebar-ring: var(--rose);
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  color: var(--text);
+  background: var(--paper);
+  color: var(--ink-2);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
 }
-.shell[lang="ar"] { font-family: var(--font-ar); }
+.shell[lang="ar"] { font-family: var(--font-ar); line-height: 1.75; }
 
-::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
+::selection { background: oklch(0.5130 0.1212 13.6 / 0.16); color: var(--ink); }
 
-/* Element resets live in @layer base so Tailwind utilities (e.g. hover:underline)
-   can override them — unlayered rules otherwise win over layered utilities in v4. */
-
-.container { max-width: var(--container); margin-inline: auto; padding-inline: 24px; }
+.container { max-width: var(--container); margin-inline: auto; padding-inline: 28px; }
 @media (max-width: 640px) {
   .container { padding-inline: 16px; }
 }
-.eyebrow {
-  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--ink); opacity: 0.65; font-weight: 600;
-}
-.shell[lang="ar"] .eyebrow { letter-spacing: 0.08em; text-transform: none; font-weight: 700; }
-@media (max-width: 640px) {
-  .eyebrow { letter-spacing: 0.14em; font-size: 10.5px; }
-  .shell[lang="ar"] .eyebrow { letter-spacing: 0.06em; }
-}
-.display {
-  font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em;
-}
-.shell[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
-.muted { color: var(--ink-2); }
 
-/* Oversized cursive footer wordmark (Lobster). */
-.brand-wordmark {
-  font-family: var(--font-rounded);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 0.9;
-  color: #6e390b;
-  font-size: clamp(3.5rem, 17vw, 15rem);
+/* ============================================================
+   Type
+
+   These live in @layer components, NOT unlayered. Tailwind v4 sorts
+   utilities into a later layer, and an unlayered rule beats every
+   layered one regardless of specificity — so an unlayered
+   `.section-title { margin: 0 }` silently defeats `mx-auto`, and an
+   unlayered `font-size` defeats `text-[clamp(...)]`. Layering these
+   keeps utilities able to override, which is what callers expect.
+   ============================================================ */
+@layer components {
+
+/* The wordmark. Bodoni's caps at wide tracking are the closest
+   type equivalent of the printed logo, so the header, the footer
+   and the niche all speak with one voice. */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-feature-settings: "kern" 1;
 }
+/* At poster scale the tracking tightens — wide tracking that reads as
+   elegant at 24px reads as loose at 140px. */
+.wordmark--xl { letter-spacing: 0.04em; }
+
+/* "Delight" — the script half of the lockup, set as a small
+   italic Bodoni riding above the wordmark's shoulder. No fourth
+   font family for one word. */
+.wordmark__delight {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--deep);
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+.shell[lang="ar"] .eyebrow {
+  font-family: var(--font-ar);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: 12.5px;
+}
+@media (max-width: 640px) {
+  .eyebrow { letter-spacing: 0.16em; font-size: 10.5px; }
+  .shell[lang="ar"] .eyebrow { letter-spacing: 0.02em; }
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.shell[lang="ar"] .display {
+  font-family: var(--font-ar);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Section heading used across shop rows. */
+.section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(26px, 2.6vw, 40px);
+  line-height: 1.06;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+}
+.shell[lang="ar"] .section-title {
+  font-family: var(--font-ar);
+  font-weight: 700;
+  font-size: clamp(23px, 2.3vw, 34px);
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.muted { color: var(--ink-3); }
+
+} /* @layer components — type */
+
 .sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
 /* ============================================================
-   Buttons — accent is rare; ghost & soft do most of the work.
+   The niche — this page's signature.
+
+   The café's real wall (real-place.png) is a cream organic form
+   cut into a pink wall, with warm LED hidden behind its lip so
+   the recesses glow. Here that same form is the shop's ground:
+   product rows sit *inside* it, not on top of a decorative
+   swoosh. The curve is deliberately asymmetric — the real wall
+   is not a sine wave.
    ============================================================ */
+.niche {
+  position: relative;
+  background: var(--blush);
+  isolation: isolate;
+  /* The pink wall above the cut. Without real height here the blush
+     reads as a stripe rather than a wall the form is carved into. */
+  padding-top: clamp(1.25rem, 3vw, 2.5rem);
+}
+/* The cream form itself, cut with an asymmetric top edge. */
+.niche__form {
+  /* Wave depth is a LENGTH, not a percentage of the panel.
+     A percentage cut gets deeper as the panel grows, so on narrow screens —
+     where the copy and shelf stack and the panel doubles in height — the same
+     "8%" reached far below the first line and sliced through the eyebrow.
+     Anchoring the curve to --wave makes the silhouette identical at every
+     breakpoint, and lets padding-top provably clear it. */
+  --wave: clamp(26px, 4.5vw, 62px);
+
+  position: relative;
+  background: var(--paper-hi);
+  /* Deepest point of the polygon below is 0.66 × --wave. */
+  padding-top: calc(var(--wave) + clamp(1.75rem, 3.5vw, 3.25rem));
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  padding-inline: clamp(1.25rem, 4vw, 3.5rem);
+  /* Traced from the wall: high shoulder left, dip centre-right, small rise
+     before the right edge. Shallower than the recesses on purpose — the
+     alcoves are the feature, this is only the wall's silhouette. */
+  clip-path: polygon(
+    0%   calc(var(--wave) * 0.52),
+    6%   calc(var(--wave) * 0.34),
+    14%  calc(var(--wave) * 0.20),
+    24%  calc(var(--wave) * 0.11),
+    34%  calc(var(--wave) * 0.14),
+    43%  calc(var(--wave) * 0.29),
+    51%  calc(var(--wave) * 0.46),
+    58%  calc(var(--wave) * 0.57),
+    66%  calc(var(--wave) * 0.66),
+    74%  calc(var(--wave) * 0.61),
+    82%  calc(var(--wave) * 0.48),
+    90%  calc(var(--wave) * 0.37),
+    96%  calc(var(--wave) * 0.32),
+    100% calc(var(--wave) * 0.28),
+    100% 100%, 0% 100%
+  );
+}
+
+/* ---- Wall layout: copy on the start side, shelf on the end side ---- */
+.niche__layout {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .niche__layout {
+    /* minmax(0,…) on both tracks, or the headline's long unbreakable measure
+       forces the copy column past its share and overlaps the shelf. */
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+  }
+}
+.niche__copy { display: grid; gap: 1.1rem; min-width: 0; }
+.niche__copy > * { min-width: 0; }
+
+/* ---- The shelf of recesses ---- */
+.niche__shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(0.6rem, 1.8vw, 1.6rem);
+}
+@media (min-width: 900px) {
+  .niche__shelf { justify-content: flex-end; }
+}
+
+.alcove { flex: 0 0 auto; }
+.alcove__link {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+}
+
+/* The recess: an organic hole in the plaster.
+   Three cues do the work of "cut into", and all three are needed —
+     1. a hard dark shadow raking down from the top lip (depth),
+     2. a bright hairline on the OUTER bottom edge, where the plaza of the
+        wall catches light as it turns into the hole,
+     3. a soft contact shadow inside the base.
+   Without (2) the shape reads as a photograph lying on the surface. */
+.alcove__recess {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--blush-pale);
+  box-shadow:
+    inset 0 14px 22px -8px oklch(0.2515 0.018 36 / 0.62),
+    inset 0 6px 10px -6px oklch(0.2515 0.018 36 / 0.55),
+    inset 0 -10px 16px -10px oklch(0.2515 0.018 36 / 0.34),
+    0 2px 1px -1px oklch(1 0 0 / 0.9),
+    0 3px 6px -3px oklch(0.2515 0.018 36 / 0.14);
+  transition: box-shadow var(--motion) var(--ease-out-expo);
+}
+.alcove__img {
+  object-fit: cover;
+  transform: scale(1.02);
+  transition: transform var(--motion-slow) var(--ease-out-expo);
+}
+
+/* Warm light washing down from the recess lip onto the object. `screen` so it
+   brightens the photograph instead of veiling it with a flat film. */
+.alcove__light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    to bottom,
+    oklch(0.93 0.062 78 / 0.62) 0%,
+    oklch(0.93 0.055 78 / 0.20) 34%,
+    transparent 62%
+  );
+  transition: opacity var(--motion) var(--ease-out-quart);
+}
+
+.alcove__label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: center;
+  transition: color var(--motion-fast);
+}
+.shell[lang="ar"] .alcove__label {
+  font-family: var(--font-ar);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 12.5px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .alcove__link:hover .alcove__img { transform: scale(1.1); }
+  .alcove__link:hover .alcove__light { opacity: 0.6; }
+  /* Hover reads as the recess lighting up, not as the tile lifting: the rake
+     shadow softens and the warm cast deepens. It stays a hole. */
+  .alcove__link:hover .alcove__recess {
+    box-shadow:
+      inset 0 14px 22px -8px oklch(0.2515 0.018 36 / 0.42),
+      inset 0 6px 10px -6px oklch(0.2515 0.018 36 / 0.34),
+      inset 0 -10px 16px -10px oklch(0.2515 0.018 36 / 0.22),
+      0 2px 1px -1px oklch(1 0 0 / 0.9),
+      0 8px 22px -6px oklch(0.5130 0.1212 13.6 / 0.34);
+  }
+  .alcove__link:hover .alcove__label { color: var(--deep); }
+}
+.alcove__link:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 6px;
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 560px) {
+  /* Four recesses at phone width would be thumbnails. Two rows of two keeps
+     each one big enough to read as an object on a shelf. */
+  .niche__shelf { flex-wrap: wrap; justify-content: center; }
+  .alcove { width: 40% !important; }
+  .alcove:nth-child(3) { margin-block-start: 0 !important; }
+  .alcove:nth-child(4) { margin-block-start: 8% !important; }
+  .alcove__label { font-size: 10px; letter-spacing: 0.1em; }
+}
+/* The LED behind the lip.
+
+   This sits INSIDE .niche__form, so the form's clip-path cuts it to
+   the wave. The light therefore stops exactly at the cut and fades
+   downward — light spilling from behind the lip, which is what the
+   real wall does. Placed outside the clip it just reads as a gradient
+   smudge floating over the page. */
+.niche__glow {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  /* Short and low-opacity: an LED strip throws a thin band of light just
+     under the lip. Tall and strong, it reads as a beige gradient wash across
+     the whole panel, which is what it looked like before. */
+  height: calc(var(--wave) + clamp(18px, 2.5vw, 34px));
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    oklch(0.93 0.062 78 / 0.62) 0%,
+    oklch(0.93 0.055 78 / 0.18) 52%,
+    transparent 100%
+  );
+}
+.niche__content { position: relative; z-index: 1; }
+/* No breakpoint override needed: --wave is a length, so the curve is the same
+   depth on a phone as on a desktop. */
+@supports not (clip-path: polygon(0 0)) {
+  .niche__form { clip-path: none; border-radius: var(--radius-xl); }
+}
+
+/* Quiet echo of the same edge, for dividing later sections. One
+   full niche per page; everything after it gets just the line. */
+.niche-rule {
+  height: 2px;
+  border: 0;
+  margin: clamp(2rem, 5vw, 3.5rem) 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--rose) 12%,
+    var(--rose) 88%,
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+/* ============================================================
+   Buttons — filled ink for structure, deep only for commerce.
+   Layered, so `btn btn--sm flex-1` lets flex-1 actually win.
+   ============================================================ */
+@layer components {
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 44px; padding: 0 22px; border-radius: var(--radius);
-  border: 1px solid transparent; background: var(--ink); color: var(--canvas);
-  font-weight: 600; letter-spacing: 0.01em;
+  height: 46px; padding: 0 24px; border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: var(--ink); color: var(--paper-hi);
+  font-family: var(--font-sans);
+  font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
   transition: transform var(--motion-fast) var(--ease-out-quart),
               background var(--motion-fast) var(--ease-out-quart),
               color var(--motion-fast) var(--ease-out-quart),
               border-color var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart);
 }
+.shell[lang="ar"] .btn { font-family: var(--font-ar); }
 .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
 .btn:active { transform: translateY(0); box-shadow: none; }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid var(--deep); outline-offset: 2px; }
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
 
-.btn--primary { background: var(--accent); color: var(--canvas); }
-.btn--primary:hover { background: var(--accent-deep); }
+.btn--primary { background: var(--deep); color: var(--paper-hi); }
+.btn--primary:hover { background: var(--deep-press); box-shadow: var(--shadow-glow); }
 
 .btn--ghost {
   background: transparent; color: var(--ink);
   border-color: var(--hairline-strong);
 }
-.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); }
+.btn--ghost:hover { background: var(--blush-pale); border-color: var(--deep); color: var(--deep); }
 
-.btn--soft {
-  background: var(--warm-soft); color: var(--ink);
-}
-.btn--soft:hover { background: var(--warm); color: var(--canvas); }
+.btn--soft { background: var(--blush); color: var(--ink); }
+.btn--soft:hover { background: var(--blush-mid); }
 
 .btn--outline-accent {
-  background: transparent; color: var(--accent); border-color: var(--accent);
+  background: transparent; color: var(--deep); border-color: var(--deep);
 }
-.btn--outline-accent:hover { background: var(--accent); color: var(--canvas); }
+.btn--outline-accent:hover { background: var(--deep); color: var(--paper-hi); }
 
-.btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
-.btn--lg { height: 52px; padding: 0 26px; font-size: 15px; }
+.btn--sm { height: 38px; padding: 0 15px; font-size: 13px; border-radius: var(--radius-sm); }
+.btn--lg { height: 54px; padding: 0 28px; font-size: 15px; }
 .btn--block { width: 100%; }
+} /* @layer components — buttons */
 
 /* ============================================================
-   Fields — cream surface, warm hairline, accent focus ring.
+   Fields
    ============================================================ */
 .field { display: grid; gap: 6px; }
-.field > label { font-size: 12px; color: var(--ink-2); font-weight: 600; letter-spacing: 0.02em; }
+.field > label {
+  font-size: 12px; color: var(--ink-2);
+  font-weight: 700; letter-spacing: 0.04em;
+}
 .input, .select, .textarea {
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
-  padding: 10px 14px; min-height: 44px;
+  padding: 11px 14px; min-height: 46px;
   outline: none;
-  transition: border var(--motion-fast) var(--ease-out-quart),
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--ink);
+  transition: border-color var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart),
               background var(--motion-fast) var(--ease-out-quart);
-  font-size: 14px;
-  color: var(--text);
 }
+.shell[lang="ar"] .input,
+.shell[lang="ar"] .select,
+.shell[lang="ar"] .textarea { font-family: var(--font-ar); }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
-.textarea { min-height: 96px; padding-top: 12px; resize: vertical; }
+.textarea { min-height: 104px; padding-top: 13px; resize: vertical; }
 .input:hover, .select:hover, .textarea:hover { border-color: var(--hairline-strong); }
 .input:focus, .select:focus, .textarea:focus {
-  border-color: var(--accent);
-  background: var(--surface-2);
+  border-color: var(--deep);
+  box-shadow: 0 0 0 3px oklch(0.5130 0.1212 13.6 / 0.14);
 }
-.field-error { color: var(--error); font-size: 12px; font-weight: 500; }
+.field-error { color: var(--error); font-size: 12px; font-weight: 600; }
 
-/* Floating-label field — label rests inside the control and floats onto the
-   border on focus or when the control holds a value (data-filled="true"). */
+/* Floating-label field — label rests inside the control and floats
+   onto the border on focus or when the control holds a value. */
 .field--float { position: relative; display: block; }
 .field--float > .input,
 .field--float > .select,
@@ -219,7 +576,7 @@ body {
 .field--float > label {
   position: absolute;
   inset-inline-start: 10px;
-  top: 22px;
+  top: 23px;
   transform: translateY(-50%);
   margin: 0;
   padding: 0 5px;
@@ -227,20 +584,29 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
+  letter-spacing: 0;
   color: var(--ink-3);
   background: var(--surface);
   pointer-events: none;
   transition: top var(--motion-fast) var(--ease-out-quart),
               font-size var(--motion-fast) var(--ease-out-quart),
-              color var(--motion-fast) var(--ease-out-quart);
+              color var(--motion-fast) var(--ease-out-quart),
+              letter-spacing var(--motion-fast) var(--ease-out-quart);
 }
 .field--float:focus-within > label,
 .field--float[data-filled="true"] > label {
   top: 0;
-  font-size: 12px;
-  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--deep);
+}
+.shell[lang="ar"] .field--float:focus-within > label,
+.shell[lang="ar"] .field--float[data-filled="true"] > label {
+  text-transform: none; letter-spacing: 0.02em; font-size: 12px;
 }
 
 /* ============================================================
@@ -258,63 +624,69 @@ body {
    ============================================================ */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 30px; padding: 0 14px; border-radius: .4rem;
-  background: var(--warm-soft); color: var(--ink);
-  font-size: 12px; font-weight: 500;
+  height: 32px; padding: 0 14px; border-radius: var(--radius-sm);
+  background: var(--blush-pale); color: var(--ink);
+  font-size: 13px; font-weight: 600;
   border: 1px solid transparent;
-  transition: background var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast);
+  transition: background var(--motion-fast), color var(--motion-fast),
+              border-color var(--motion-fast);
 }
-.chip:hover { background: var(--warm); color: var(--canvas); }
-.chip--active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
-.chip--accent { background: var(--accent); color: var(--canvas); }
-.chip--gold   { background: var(--warm); color: var(--ink); }
-.chip--sage   { background: var(--canvas); color: var(--error); }
+.chip:hover { background: var(--blush); }
+.chip--active { background: var(--ink); color: var(--paper-hi); border-color: var(--ink); }
+.chip--accent { background: var(--deep); color: var(--paper-hi); }
+.chip--gold   { background: var(--rose); color: var(--ink); }
+.chip--sage   { background: var(--blush-pale); color: var(--error); }
 
-/* Bath & Body Works–style outlined filter pills (category sub-nav row). */
 .filter-pill {
   display: inline-flex; align-items: center; justify-content: center;
-  height: 38px; padding: 0 12px; border-radius: 6px;
-  font-size: 14px; font-weight: 500; white-space: nowrap;
+  height: 40px; padding: 0 14px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  color: var(--ink);
+  background: transparent;
   border: 1px solid var(--hairline-strong);
-
+  transition: border-color var(--motion-fast), background var(--motion-fast),
+              color var(--motion-fast);
 }
-.filter-pill:hover { border-color: var(--ink); }
-.filter-pill--active { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
-.filter-pill__x {
-  margin-inline-start: 12px; font-size: 16px; line-height: 1;
+.filter-pill:hover { border-color: var(--deep); color: var(--deep); background: var(--blush-pale); }
+.filter-pill--active {
+  background: var(--ink); border-color: var(--ink); color: var(--paper-hi);
 }
+.filter-pill--active:hover { background: var(--ink); color: var(--paper-hi); }
+.filter-pill__x { margin-inline-start: 12px; font-size: 16px; line-height: 1; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-  padding: 5px 9px; border-radius: 4px; font-weight: 700;
-  background: var(--ink); color: var(--canvas);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 5px 9px; border-radius: var(--radius-sm); font-weight: 800;
+  background: var(--ink); color: var(--paper-hi);
 }
-.shell[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
+.shell[lang="ar"] .badge {
+  letter-spacing: 0.02em; text-transform: none; font-size: 11.5px;
+}
 @media (max-width: 640px) {
-  .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
+  .badge { letter-spacing: 0.12em; font-size: 9.5px; padding: 4px 7px; }
 }
-.badge--offer { background: var(--accent); }
-.badge--new   { background: var(--warm); color: var(--ink); }
-.badge--gold  { background: var(--ink); color: var(--warm); }
+.badge--offer { background: var(--deep); }
+.badge--new   { background: var(--blush); color: var(--ink); }
+.badge--gold  { background: var(--rose); color: var(--ink); }
 
 /* ============================================================
    Divider
    ============================================================ */
-.hr { height: 1px; background: var(--hairline); border: 0; margin: 24px 0; }
+.hr { height: 1px; background: var(--hairline); border: 0; margin: 28px 0; }
 
 /* ============================================================
    Layout helpers
    ============================================================ */
-.grid { display: grid; gap: 24px; }
+.grid { display: grid; gap: 26px; }
 .grid--products { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
-.grid--offers { grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
+.grid--offers   { grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
 @media (max-width: 640px) {
   .grid { gap: 16px; }
 }
 
 /* ============================================================
-   Product card — corner ribbons, no AI-slop card.
+   Product card
    ============================================================ */
 .pcard {
   position: relative; display: flex; flex-direction: column;
@@ -329,39 +701,45 @@ body {
 .pcard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-2);
-  border-color: var(--warm);
+  border-color: var(--rose);
 }
+/* Product sits in a lit recess, echoing the niche. */
 .pcard__img {
   aspect-ratio: 4/5;
-  background:
-    radial-gradient(140% 100% at 50% 0%, oklch(0.96 0.05 80), oklch(0.92 0.05 75));
   display: grid; place-items: center; overflow: hidden;
   position: relative;
+  background:
+    radial-gradient(120% 78% at 50% 108%, var(--glow) 0%, transparent 58%),
+    var(--blush-pale);
 }
 .pcard__img::after {
   content: "";
-  position: absolute; inset: auto 0 0 0; height: 40%;
-  background: linear-gradient(to top, oklch(0.422 0.149 41 / 0.05), transparent);
+  position: absolute; inset: auto 0 0 0; height: 38%;
+  background: linear-gradient(to top, oklch(0.5130 0.1212 13.6 / 0.07), transparent);
   pointer-events: none;
 }
-.pcard__img img, .pcard__img svg { width: 72%; height: 72%; object-fit: contain; }
+/* Only the drawn placeholder is inset. Real photography is sized by the
+   card's own utilities (h-full w-full object-cover) and must not be
+   constrained here — an unlayered rule would beat those utilities. */
+.pcard__img svg { width: 74%; height: 74%; object-fit: contain; }
 .pcard__body {
   padding: 16px 18px 20px;
   display: grid; gap: 8px;
   background: var(--surface);
 }
 .pcard__name {
-  font-size: 14px; line-height: 1.35;
+  font-size: 14px; line-height: 1.4;
   min-height: 38px;
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
 }
 .pcard__price {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 20px;
-  color: var(--accent);
+  font-size: 21px;
+  color: var(--deep);
   letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .shell[lang="ar"] .pcard__price { font-family: var(--font-ar); font-weight: 700; }
 .pcard__badges {
@@ -371,53 +749,66 @@ body {
 .pcard__wish {
   position: absolute; top: 14px; inset-inline-end: 14px;
   width: 38px; height: 38px; border-radius: 50%;
-  background: var(--canvas); border: 1px solid var(--hairline);
+  background: var(--surface); border: 1px solid var(--hairline);
   color: var(--ink);
   display: grid; place-items: center;
   transition: background var(--motion-fast), color var(--motion-fast),
               border-color var(--motion-fast), transform var(--motion-fast);
   z-index: 2;
 }
-.pcard__wish:hover { background: var(--warm-soft); transform: scale(1.05); }
+.pcard__wish:hover { background: var(--blush-pale); transform: scale(1.05); }
 .pcard__wish[data-active="true"] {
-  background: var(--accent); color: var(--canvas); border-color: var(--accent);
+  background: var(--deep); color: var(--paper-hi); border-color: var(--deep);
+}
+
+/* Prices anywhere carry the Didone + tabular figures. */
+@layer components {
+.price {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--deep);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.01em;
+}
+.shell[lang="ar"] .price { font-family: var(--font-ar); font-weight: 700; }
 }
 
 /* ============================================================
    Page heading
    ============================================================ */
-.page-head { display: grid; gap: 14px; padding: 42px 0 24px; }
-.page-head .eyebrow { color: var(--accent); opacity: 1; }
+.page-head { display: grid; gap: 14px; padding: 46px 0 26px; }
+.page-head .eyebrow { color: var(--deep); }
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(20px, 5.2vw, 48px);
-  letter-spacing: -0.018em;
+  font-size: clamp(30px, 5.4vw, 60px);
+  letter-spacing: 0;
   line-height: 1.02;
   color: var(--ink);
-  max-width: 22ch;
+  max-width: 20ch;
 }
 .shell[lang="ar"] .page-head h1 {
   font-family: var(--font-ar); font-weight: 700; font-style: normal;
-  letter-spacing: -0.005em; line-height: 1.2;
+  letter-spacing: 0; line-height: 1.28;
+  font-size: clamp(26px, 4.6vw, 48px);
 }
-.page-head p { color: var(--ink-2); font-size: 16px; line-height: 1.7; max-width: 62ch; }
+.page-head p { color: var(--ink-2); font-size: 16.5px; line-height: 1.7; max-width: 60ch; }
 @media (max-width: 640px) {
-  .page-head { padding: 20px 0 20px; gap: 10px; }
-  .page-head p { font-size: 14.5px; line-height: 1.65; }
+  .page-head { padding: 22px 0 20px; gap: 10px; }
+  .page-head p { font-size: 15px; line-height: 1.65; }
 }
 
 /* ============================================================
    Shell
+
+   Flex column, NOT grid: a grid item's containing block is its own
+   grid area, so a sticky header in an auto row has zero room to
+   travel and never sticks. Flex items' containing block is the whole
+   container, letting the header stick for the full page height. The
+   main-content div carries flex-1 in the locale layout to keep the
+   footer pinned on short pages.
    ============================================================ */
-/* Flex column, NOT grid: a grid item's containing block is its own grid area,
-   so a sticky header in an auto row has zero room to travel and never sticks.
-   Flex items' containing block is the whole container, letting the header stick
-   for the full page height. (Width blowout isn't a concern here the way it was
-   with grid's content-sized tracks: the flex container's width comes from body,
-   and wide nowrap children just overflow and get clipped.) The main-content div
-   carries flex-1 in the locale layout to keep the footer pinned on short pages. */
 .shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 /* ============================================================
@@ -432,21 +823,22 @@ body {
 .table th, .table td {
   padding: 16px 18px;
   border-bottom: 1px solid var(--hairline);
-  text-align: start; font-size: 14px;
-  color: var(--text);
+  text-align: start; font-size: 14.5px;
+  color: var(--ink-2);
 }
 .table th {
-  background: var(--warm-soft);
-  color: var(--ink); font-weight: 600;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  background: var(--blush-pale);
+  color: var(--ink); font-weight: 800;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
 }
-.shell[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
+.shell[lang="ar"] .table th {
+  text-transform: none; letter-spacing: 0.02em; font-size: 12.5px;
+}
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background var(--motion-fast); }
-.table tbody tr:hover { background: oklch(0.96 0.04 80 / 0.6); }
-
+.table tbody tr:hover { background: oklch(0.9607 0.0119 17.4 / 0.7); }
 @media (max-width: 640px) {
-  .table th, .table td { padding: 12px 12px; font-size: 13px; }
+  .table th, .table td { padding: 12px; font-size: 13.5px; }
   .table th { font-size: 10.5px; }
 }
 
@@ -457,58 +849,62 @@ body {
 .row--between { justify-content: space-between; }
 .stack { display: grid; gap: 12px; }
 .stack--lg { gap: 24px; }
+
 .pill-group {
   display: flex;
   flex-wrap: nowrap;
   gap: 12px;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
 }
-.pill-group::-webkit-scrollbar { display: none; } /* WebKit */
-.pill-group > * { flex: 0 0 auto; } /* keep chips on one row, never shrink */
+.pill-group::-webkit-scrollbar { display: none; }
+.pill-group > * { flex: 0 0 auto; }
 
-/* Row wrapper that hosts the scrollable pill track between prev/next arrows. */
-.pill-group-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.pill-group-wrap { display: flex; align-items: center; gap: 8px; }
 .pill-group-wrap .pill-group { flex: 1 1 auto; min-width: 0; }
 
-/* Prev/next arrows — desktop only; mobile relies on touch/trackpad scroll. */
 .pill-nav {
   display: none;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  font-size: 20px;
-  line-height: 1;
-  margin-bottom: 1rem; /* align with .pill-group's own bottom spacing */
-  transition: border-color 0.15s ease, opacity 0.15s ease;
+  align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  font-size: 20px; line-height: 1;
+  color: var(--ink);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  margin-bottom: 1rem;
+  transition: border-color var(--motion-fast), color var(--motion-fast),
+              opacity var(--motion-fast);
 }
-.pill-nav:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-@media (min-width: 768px) {
-  .pill-nav { display: inline-flex; }
-}
+.pill-nav:hover { border-color: var(--deep); color: var(--deep); }
+.pill-nav:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+@media (min-width: 768px) { .pill-nav { display: inline-flex; } }
 
 .skel {
-  background: linear-gradient(90deg, var(--warm-soft) 0%, oklch(0.94 0.05 80) 50%, var(--warm-soft) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--blush-pale) 0%,
+    oklch(0.9850 0.004 68) 50%,
+    var(--blush-pale) 100%
+  );
   background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
+  animation: shimmer 1.25s linear infinite;
 }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
 
-/* Announcement — one sentence rushes in from the right, holds centered,
-   then rushes out to the left. (Reversed for RTL via animation-direction.) */
+/* Announcement — one sentence rushes in from the right, holds
+   centred, then rushes out to the left. */
 @keyframes marquee-cross {
   0%   { transform: translateX(110%); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  10%  { transform: translateX(0); animation-timing-function: linear; }   /* fast in (~0.6s) */
-  93%  { transform: translateX(0); animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0); } /* hold centered (~5s) */
-  100% { transform: translateX(-110%); }                                  /* fast out (~0.4s) */
+  10%  { transform: translateX(0); animation-timing-function: linear; }
+  93%  { transform: translateX(0); animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0); }
+  100% { transform: translateX(-110%); }
 }
 .marquee-cross { animation: marquee-cross; will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .marquee-cross { animation: none; } }
@@ -517,42 +913,37 @@ body {
 
 /* ============================================================
    Product card — caption ⇄ actions cross-fade on hover.
-   The name/price and the buy/add bar share one cell; hovering the
-   card lifts the caption away and rises the actions up from below.
    ============================================================ */
 @keyframes pcard-caption-out {
-  from { transform: translateY(0);     opacity: 1; }
-  to   { transform: translateY(-8px);  opacity: 0; }
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(-8px); opacity: 0; }
 }
 @keyframes pcard-caption-in {
-  from { transform: translateY(-8px);  opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 @keyframes pcard-actions-in {
-  from { transform: translateY(28px);  opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+  from { transform: translateY(28px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 @keyframes pcard-actions-out {
-  from { transform: translateY(0);     opacity: 1; }
-  to   { transform: translateY(28px);  opacity: 0; }
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(28px); opacity: 0; }
 }
-
 .pcard-caption,
 .pcard-actions {
-  animation-duration: 480ms;
+  animation-duration: 460ms;
   animation-fill-mode: both;
   animation-timing-function: var(--ease-out-expo);
 }
-/* Rest state */
 .pcard-caption { animation-name: pcard-caption-in; }
 .pcard-actions { animation-name: pcard-actions-out; pointer-events: none; }
-/* Hover state — only on devices that truly hover, so a tap on touch
-   screens (which emulates a sticky :hover) never hides the price. */
+/* Only on devices that truly hover, so a tap on touch screens
+   (which emulates a sticky :hover) never hides the price. */
 @media (hover: hover) and (pointer: fine) {
   .group:hover .pcard-caption { animation-name: pcard-caption-out; pointer-events: none; }
   .group:hover .pcard-actions { animation-name: pcard-actions-in;  pointer-events: auto; }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .pcard-caption, .pcard-actions { animation: none; }
   .pcard-actions { opacity: 0; }
@@ -561,16 +952,51 @@ body {
 }
 
 /* ============================================================
-   Mobile niceties — prevent layout overflow & soften horizontal
-   scroll on tablet/phone breakpoints.
+   Page-load: the niche lights up once, then stays lit. One
+   orchestrated moment rather than effects scattered down the page.
    ============================================================ */
-/* `clip`, NOT `hidden`: overflow-x hidden forces overflow-y to compute to auto,
-   turning <body> into a scroll container. The sticky header then tracks body's
-   scrollport — which never scrolls (the viewport does) — so sticky silently
-   never engages. `clip` cuts horizontal overflow without creating a scroller. */
+@keyframes niche-warm {
+  from { opacity: 0; transform: translateY(10px) scaleY(0.86); }
+  to   { opacity: 1; transform: translateY(0)    scaleY(1); }
+}
+@keyframes niche-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* The strip warms first, then the copy rises, then each object settles into its
+   recess in turn (delays set per-alcove in the component). One sequence, then
+   the page is still. */
+@keyframes alcove-settle {
+  from { opacity: 0; transform: translateY(22px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.niche__glow { animation: niche-warm 900ms var(--ease-out-expo) 120ms both; }
+.niche__copy > * { animation: niche-rise var(--motion-slow) var(--ease-out-expo) both; }
+.niche__copy > *:nth-child(1) { animation-delay: 180ms; }
+.niche__copy > *:nth-child(2) { animation-delay: 260ms; }
+.niche__copy > *:nth-child(3) { animation-delay: 340ms; }
+.niche__copy > *:nth-child(4) { animation-delay: 420ms; }
+.alcove { animation: alcove-settle 700ms var(--ease-out-expo) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .niche__glow,
+  .niche__copy > *,
+  .alcove { animation: none; opacity: 1; transform: none; }
+  .alcove__img { transition: none; }
+}
+
+/* ============================================================
+   Mobile niceties
+
+   `clip`, NOT `hidden`: overflow-x hidden forces overflow-y to
+   compute to auto, turning <body> into a scroll container. The
+   sticky header then tracks body's scrollport — which never
+   scrolls (the viewport does) — so sticky silently never engages.
+   `clip` cuts horizontal overflow without creating a scroller.
+   ============================================================ */
 html, body { overflow-x: clip; }
 @media (max-width: 640px) {
-  .hr { margin: 16px 0; }
+  .hr { margin: 18px 0; }
   .row { gap: 8px; }
 }
 
@@ -616,35 +1042,44 @@ html, body { overflow-x: clip; }
   --color-canvas: var(--canvas);
   --color-warm: var(--warm);
   --color-surface: var(--surface);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
+  --color-paper: var(--paper);
+  --color-paper-hi: var(--paper-hi);
+  --color-blush: var(--blush);
+  --color-blush-pale: var(--blush-pale);
+  --color-blush-mid: var(--blush-mid);
+  --color-rose: var(--rose);
+  --color-deep: var(--deep);
+  --color-deep-press: var(--deep-press);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
   --radius-3xl: 40px;
   --radius-4xl: 56px;
 }
 
-/* dark mode — inverted parchment palette */
+/* dark mode — the shop after closing: cocoa walls, the niche
+   still lit. */
 .dark {
-  --background: oklch(0.12 0.010 85);
-  --foreground: var(--canvas);
-  --card: oklch(0.18 0.012 85);
-  --card-foreground: var(--canvas);
-  --popover: oklch(0.18 0.012 85);
-  --popover-foreground: var(--canvas);
-  --primary: var(--canvas);
-  --primary-foreground: oklch(0.12 0.010 85);
-  --secondary: oklch(0.28 0.014 85);
-  --secondary-foreground: var(--canvas);
-  --muted: oklch(0.28 0.014 85);
-  --muted-foreground: oklch(0.65 0.020 90);
-  --accent: var(--accent);
-  --accent-foreground: var(--canvas);
-  --destructive: var(--error);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: var(--warm);
+  --background: oklch(0.1900 0.0150 34);
+  --foreground: var(--paper);
+  --card: oklch(0.2500 0.0170 34);
+  --card-foreground: var(--paper);
+  --popover: oklch(0.2500 0.0170 34);
+  --popover-foreground: var(--paper);
+  --primary: var(--paper);
+  --primary-foreground: oklch(0.1900 0.0150 34);
+  --secondary: oklch(0.3200 0.0200 30);
+  --secondary-foreground: var(--paper);
+  --muted: oklch(0.3200 0.0200 30);
+  --muted-foreground: oklch(0.7000 0.0180 28);
+  --accent: oklch(0.6600 0.1350 12);
+  --accent-foreground: oklch(0.1900 0.0150 34);
+  --destructive: oklch(0.6200 0.1900 27);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.6600 0.1350 12);
 }
 
 @layer base {

@@ -59,11 +59,15 @@ const dict = {
 };
 
 describe("Header layout stability", () => {
-  it("keeps the logo link scaling class on the link container", () => {
+  // The wordmark is set in type (Bodoni), not shipped as a raster, so there is
+  // no longer a transform scaling an image up. What matters is that the mark
+  // renders, is labelled with the brand, and routes home for the locale.
+  it("renders the wordmark as a home link labelled with the brand", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} />);
 
     const logoLink = screen.getByRole("link", { name: "Capella" });
-    expect(logoLink.className).toContain("scale-130");
+    expect(logoLink).toHaveAttribute("href", "/en");
+    expect(logoLink.textContent).toContain("Đespacito");
   });
 
   it("keeps the mobile menu button scaling class on the button", () => {
