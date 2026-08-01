@@ -64,7 +64,6 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
         >
           <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-md bg-(--warm-soft)">
             {item.imagePath ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={item.imagePath} alt={pickLang(item.name, lang)} className="h-full w-full object-cover" />
             ) : (
               <Icon.Heart size={24} />

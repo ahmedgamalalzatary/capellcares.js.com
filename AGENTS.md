@@ -23,7 +23,7 @@ These instructions apply to the entire repository. Follow the user's explicit in
 
 For a medium-to-high complexity fix or feature:
 
-1. Establish a green baseline by running all applicable validation commands, including build, lint, typecheck, and tests. Fix baseline failures before feature work.
+1. Establish a baseline by running all applicable validation commands, including build, lint, typecheck, and tests. Record unrelated baseline failures. Fix failures caused by the change or required to validate it before feature work.
 2. Implement the requested change.
 3. Spawn a sub-agent to perform a strict, deep review of the changes. Address every valid reported issue.
 4. Run the complete applicable validation suite again and restore a green baseline.

@@ -745,6 +745,11 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 /* ============================================================
    Shop media — slot editor (gallery tiles per storefront slot)
    ============================================================ */
+.shop-media-sections {
+  display: grid;
+  gap: 20px;
+}
+
 .shop-media-head {
   padding: 16px 22px;
   border-bottom: 1px solid var(--hairline);
@@ -752,7 +757,8 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   gap: 16px; flex-wrap: wrap;
 }
 .shop-media-head__main-flex{
-  display: flex; align-items: center; gap: 16px;
+  display: flex; align-items: center; gap: 14px;
+  min-width: 0;
 }
 .shop-media-head__main { display: grid; gap: 2px; min-width: 0; }
 .shop-media-head__sub { font-size: 12px; color: var(--ink-3); }
@@ -762,22 +768,39 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 .shop-media-dirty {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  white-space: nowrap;
 }
 .shop-media-dirty::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%;
   background: var(--warm); box-shadow: 0 0 0 3px color-mix(in oklch, var(--warm) 30%, transparent);
 }
 
-/* One row per image: image + its destination/link. */
-.shop-media-table { min-width: 720px; }
-.shop-media-table td { vertical-align: middle; }
-.shop-media-table .field { gap: 6px; }
+/* Glanceable filmstrip of the section's current images — visible even
+   while the section body is collapsed, so content is recognizable at
+   a glance instead of requiring every row to be expanded. */
+.shop-media-preview-strip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 22px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+.shop-media-preview-strip__thumb {
+  flex-shrink: 0;
+  width: 64px; height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
 .shop-media-tile__index {
   display: inline-grid; place-items: center;
   width: 26px; height: 26px; border-radius: var(--radius-sm);
   background: var(--warm-soft);
   font-family: var(--font-mono);
   font-weight: 700; font-size: 12.5px; color: var(--ink);
+  flex-shrink: 0;
 }
 
 .shop-media-empty {
@@ -791,6 +814,78 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   width: 48px; height: 48px; border-radius: 12px;
   background: var(--warm-soft); color: var(--accent);
   display: grid; place-items: center;
+}
+
+/* Item list — one self-contained card per image, replacing the old
+   cramped table so every field sits directly under its label. */
+.shop-media-list {
+  display: grid;
+  gap: 12px;
+}
+.shop-media-item {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.shop-media-item__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.shop-media-item__bar-start {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 0;
+}
+.shop-media-item__bar-end {
+  display: flex; align-items: center; gap: 2px;
+  flex-shrink: 0;
+}
+.shop-media-item__thumb {
+  width: 44px; height: 26px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+.shop-media-item__summary {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shop-media-item__body {
+  padding: 16px;
+  display: grid; gap: 16px;
+}
+.shop-media-item__images {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.shop-media-item__no-target {
+  display: flex; align-items: center;
+  min-height: 38px; padding: 8px 12px;
+  border: 1px dashed var(--hairline);
+  border-radius: var(--radius);
+  color: var(--ink-3); font-size: 12.5px;
+}
+
+.shop-media-add {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 1.5px dashed var(--hairline);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 600; font-size: 13.5px;
+  transition: border-color var(--motion-fast) var(--ease-out-expo),
+              background var(--motion-fast) var(--ease-out-expo),
+              color var(--motion-fast) var(--ease-out-expo);
+}
+.shop-media-add:hover {
+  border-color: var(--hairline-strong);
+  background: var(--warm-soft);
+  color: var(--ink);
 }
 
 /* ============================================================
@@ -811,6 +906,11 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   .editor-grid,
   .action-grid  { grid-template-columns: 1fr; }
   .editor-fields-2 { grid-template-columns: 1fr; }
+
+  /* ── Shop media item cards ── */
+  .shop-media-item__images { grid-template-columns: 1fr; }
+  .shop-media-item__bar-start { flex-wrap: wrap; }
+  .shop-media-head__tools { width: 100%; justify-content: space-between; }
 
   /* ── Avatars ── */
   .avatar-tile,

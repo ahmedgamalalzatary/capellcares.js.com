@@ -79,14 +79,19 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     if (navigator.share) {
       try {
         await navigator.share({ title: pickLang(product.name, lang), url });
-      } catch {
-        // user dismissed the native share sheet
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
       }
-      return;
     }
-    await navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 1600);
+    if (!navigator.clipboard?.writeText) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1600);
+    } catch {
+      // clipboard write failed; nothing more we can do
+    }
   };
 
   const onWish = () => {

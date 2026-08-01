@@ -9,6 +9,7 @@ import { ImageUpload } from "@/components/forms/image-upload";
 import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
+import { API_BASE } from "@/lib/api/client";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
@@ -70,6 +71,13 @@ function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 
 
 function isDetailTargetType(targetType: ShopMediaTargetType) {
   return targetType === "product" || targetType === "offer" || targetType === "collection" || targetType === "category";
+}
+
+function resolvePreviewSrc(value: string) {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/uploads/")) return `${API_BASE}${value}`;
+  return value;
 }
 
 function buildCategoryTargetOptions(categories: Array<{ id: number; parentId: number | null; name: { ar: string } }>) {
@@ -180,14 +188,30 @@ export default function ShopMediaPage() {
     ]
   }));
 
+  const moveItem = (slot: 1 | 2 | 3 | 4 | 5, itemId: string, direction: -1 | 1) => setSection(slot, (current) => {
+    const index = current.items.findIndex((entry) => entry.id === itemId);
+    const targetIndex = index + direction;
+    if (index === -1 || targetIndex < 0 || targetIndex >= current.items.length) {
+      return current;
+    }
+    const items = [...current.items];
+    const [moved] = items.splice(index, 1);
+    items.splice(targetIndex, 0, moved);
+    return { ...current, items };
+  });
+
   return (
     <AdminShell title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]}>
-      <div className="form-stack">
+      <div className="shop-media-sections">
         {sections.map((section) => {
           const isActive = section.status === "active";
           const isDirty = dirtySlots.has(section.slot);
           const isSaving = savingSlot === section.slot;
           const isCollapsed = collapsedSlots.has(section.slot);
+          const previewItems = section.items
+            .map((item) => resolvePreviewSrc(item.imagePath || item.mobileImagePath))
+            .filter((src): src is string => Boolean(src));
+
           return (
             <div key={section.slot} className="card">
               <div className="shop-media-head">
@@ -201,8 +225,10 @@ export default function ShopMediaPage() {
                   >
                     <Icon.Chevron size={14} className={isCollapsed ? "rotate-180" : undefined} />
                   </button>
-                  <h3 className="card__title">القسم {section.slot}</h3>
-                  <span className="shop-media-head__sub">{slotPositionLabel[section.slot]}</span>
+                  <div className="shop-media-head__main">
+                    <h3 className="card__title">القسم {section.slot}</h3>
+                    <span className="shop-media-head__sub">{slotPositionLabel[section.slot]}</span>
+                  </div>
                 </div>
                 <div className="shop-media-head__tools">
                   <span className="tag">{section.items.length} صورة</span>
@@ -229,6 +255,7 @@ export default function ShopMediaPage() {
                   )}
                   {canEdit ? (
                     <>
+                      {isDirty ? <span className="shop-media-dirty">تغييرات غير محفوظة</span> : null}
                       <button
                         type="button"
                         className="btn btn--primary"
@@ -241,6 +268,14 @@ export default function ShopMediaPage() {
                   ) : null}
                 </div>
               </div>
+
+              {previewItems.length > 0 ? (
+                <div className="shop-media-preview-strip" aria-hidden="true">
+                  {previewItems.map((src, index) => (
+                    <img key={index} src={src} alt="" className="shop-media-preview-strip__thumb" />
+                  ))}
+                </div>
+              ) : null}
 
               <div className="card__body form-stack" hidden={isCollapsed}>
                 {section.items.length === 0 ? (
@@ -255,82 +290,79 @@ export default function ShopMediaPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="table-outer">
-                      <table className="table shop-media-table">
-                        <thead>
-                          <tr>
-                            <th style={{ width: 56 }}>#</th>
-                            <th style={{ width: 320 }}>الصور</th>
-                            <th>نوع الوجهة</th>
-                            <th>العنصر / الرابط</th>
-                            {canEdit ? <th style={{ width: 80 }} aria-label="إجراءات" /> : null}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {section.items.map((item, index) => {
-                            const detailOptions = isDetailTargetType(item.targetType)
-                              ? targetOptionsByType[item.targetType]
-                              : [];
-                            const isDetail = isDetailTargetType(item.targetType);
-                            const itemKey = `${section.slot}:${item.id}`;
-                            const isItemCollapsed = collapsedItems.has(itemKey);
-                            const typeLabel = [...listingTargetOptions, ...detailTargetOptions]
-                              .find((option) => option.value === item.targetType)?.label ?? item.targetType;
-                            const targetSummary = isDetail
-                              ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? "— بدون عنصر")
-                              : typeLabel;
+                    <div className="shop-media-list">
+                      {section.items.map((item, index) => {
+                        const detailOptions = isDetailTargetType(item.targetType)
+                          ? targetOptionsByType[item.targetType]
+                          : [];
+                        const isDetail = isDetailTargetType(item.targetType);
+                        const itemKey = `${section.slot}:${item.id}`;
+                        const isItemCollapsed = collapsedItems.has(itemKey);
+                        const typeLabel = [...listingTargetOptions, ...detailTargetOptions]
+                          .find((option) => option.value === item.targetType)?.label ?? item.targetType;
+                        const targetSummary = isDetail
+                          ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? "بدون عنصر")
+                          : typeLabel;
+                        const thumbSrc = resolvePreviewSrc(item.imagePath || item.mobileImagePath);
 
-                            const foldButton = (
-                              <button
-                                type="button"
-                                className="btn btn--ghost btn--sm"
-                                onClick={() => toggleCollapsedItem(itemKey)}
-                                aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
-                                aria-expanded={!isItemCollapsed}
-                              >
-                                <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
-                              </button>
-                            );
+                        return (
+                          <div key={item.id} className="shop-media-item">
+                            <div className="shop-media-item__bar">
+                              <div className="shop-media-item__bar-start">
+                                <button
+                                  type="button"
+                                  className="btn btn--ghost btn--sm"
+                                  onClick={() => toggleCollapsedItem(itemKey)}
+                                  aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
+                                  aria-expanded={!isItemCollapsed}
+                                >
+                                  <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
+                                </button>
+                                <span className="shop-media-tile__index">{index + 1}</span>
+                                {thumbSrc ? (
+                                  <img src={thumbSrc} alt="" className="shop-media-item__thumb" />
+                                ) : null}
+                                {isItemCollapsed ? (
+                                  <span className="faint shop-media-item__summary">{typeLabel} · {targetSummary}</span>
+                                ) : null}
+                              </div>
+                              {canEdit ? (
+                                <div className="shop-media-item__bar-end">
+                                  <button
+                                    type="button"
+                                    className="btn btn--ghost btn--sm"
+                                    onClick={() => moveItem(section.slot, item.id, -1)}
+                                    aria-label="تحريك لأعلى"
+                                    disabled={index === 0}
+                                  >
+                                    <Icon.Chevron size={14} className="rotate-180" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn--ghost btn--sm"
+                                    onClick={() => moveItem(section.slot, item.id, 1)}
+                                    aria-label="تحريك لأسفل"
+                                    disabled={index === section.items.length - 1}
+                                  >
+                                    <Icon.Chevron size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn--ghost btn--sm"
+                                    onClick={() => setSection(section.slot, (current) => ({
+                                      ...current,
+                                      items: current.items.filter((entry) => entry.id !== item.id)
+                                    }))}
+                                  >
+                                    <Icon.Trash size={14} /> إزالة
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
 
-                            if (isItemCollapsed) {
-                              return (
-                                <tr key={item.id}>
-                                  <td>
-                                    <span className="row" style={{ gap: 6, alignItems: "center" }}>
-                                      {foldButton}
-                                      <span className="shop-media-tile__index">{index + 1}</span>
-                                    </span>
-                                  </td>
-                                  <td colSpan={3}>
-                                    <span className="faint">{typeLabel} · {targetSummary}</span>
-                                  </td>
-                                  {canEdit ? (
-                                    <td>
-                                      <button
-                                        type="button"
-                                        className="btn btn--ghost btn--sm"
-                                        onClick={() => setSection(section.slot, (current) => ({
-                                          ...current,
-                                          items: current.items.filter((entry) => entry.id !== item.id)
-                                        }))}
-                                      >
-                                        <Icon.Trash size={14} /> إزالة
-                                      </button>
-                                    </td>
-                                  ) : null}
-                                </tr>
-                              );
-                            }
-
-                            return (
-                              <tr key={item.id}>
-                                <td>
-                                  <span className="row" style={{ gap: 6, alignItems: "center" }}>
-                                    {foldButton}
-                                    <span className="shop-media-tile__index">{index + 1}</span>
-                                  </span>
-                                </td>
-                                <td>
+                            {isItemCollapsed ? null : (
+                              <div className="shop-media-item__body">
+                                <div className="shop-media-item__images">
                                   <ImageUpload
                                     label="صورة سطح المكتب"
                                     value={item.imagePath || null}
@@ -340,7 +372,6 @@ export default function ShopMediaPage() {
                                     }))}
                                     uploadContext="shop_media.update"
                                   />
-                                  <div style={{ height: 10 }} />
                                   <ImageUpload
                                     label="صورة الموبايل"
                                     value={item.mobileImagePath || null}
@@ -350,8 +381,9 @@ export default function ShopMediaPage() {
                                     }))}
                                     uploadContext="shop_media.update"
                                   />
-                                </td>
-                                <td>
+                                </div>
+
+                                <div className="editor-fields-2">
                                   <div className="field">
                                     <label htmlFor={`target-type-${section.slot}-${item.id}`}>نوع الوجهة</label>
                                     <select
@@ -379,8 +411,7 @@ export default function ShopMediaPage() {
                                       ))}
                                     </select>
                                   </div>
-                                </td>
-                                <td>
+
                                   {isDetail ? (
                                     <div className="field">
                                       <label htmlFor={`target-id-${section.slot}-${item.id}`}>العنصر</label>
@@ -404,36 +435,23 @@ export default function ShopMediaPage() {
                                       </select>
                                     </div>
                                   ) : (
-                                    <span className="faint">صفحة قائمة — بدون عنصر محدد</span>
+                                    <div className="field">
+                                      <label>الرابط</label>
+                                      <div className="shop-media-item__no-target">صفحة قائمة — بدون عنصر محدد</div>
+                                    </div>
                                   )}
-                                </td>
-                                {canEdit ? (
-                                  <td>
-                                    <button
-                                      type="button"
-                                      className="btn btn--ghost btn--sm"
-                                      onClick={() => setSection(section.slot, (current) => ({
-                                        ...current,
-                                        items: current.items.filter((entry) => entry.id !== item.id)
-                                      }))}
-                                    >
-                                      <Icon.Trash size={14} /> إزالة
-                                    </button>
-                                  </td>
-                                ) : null}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {canEdit ? (
-                      <div>
-                        <button type="button" className="btn btn--ghost btn--sm" style={{ margin: " 40px 20px" }} onClick={() => addItem(section.slot)}>
-                          <Icon.Plus /> إضافة صورة
-                        </button>
-                      </div>
+                      <button type="button" className="shop-media-add" onClick={() => addItem(section.slot)}>
+                        <Icon.Plus /> إضافة صورة
+                      </button>
                     ) : null}
                   </>
                 )}
