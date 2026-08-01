@@ -26,7 +26,8 @@ function normalizeShopMediaImageSrc(imagePath: string) {
 function buildShopMediaHref(
   lang: Language,
   targetType: ShopMediaSection["items"][number]["targetType"],
-  targetSlug?: string | null
+  targetSlug?: string | null,
+  targetId?: number | null
 ) {
   switch (targetType) {
     case "shop":
@@ -48,7 +49,9 @@ function buildShopMediaHref(
     case "collection":
       return targetSlug ? `/${lang}/collections/${targetSlug}` : null;
     case "category":
-      return targetSlug ? `/${lang}/category/${targetSlug}` : null;
+      return targetSlug
+        ? `/${lang}/category/${targetSlug}${targetId == null ? "" : `?categoryId=${targetId}`}`
+        : null;
     default:
       return null;
   }
@@ -66,7 +69,7 @@ function pickSlidesForViewport(
         return null;
       }
 
-      const href = buildShopMediaHref(lang, item.targetType, item.targetSlug);
+      const href = buildShopMediaHref(lang, item.targetType, item.targetSlug, item.targetId);
       if (!href) {
         return null;
       }

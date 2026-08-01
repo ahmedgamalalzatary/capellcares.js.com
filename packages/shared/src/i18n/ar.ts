@@ -38,6 +38,8 @@ export const ar = {
     addToCart: " السلة",
     addToWishlist: "أضف إلى المفضلة",
     removeFromWishlist: "إزالة",
+    share: "مشاركة",
+    linkCopied: "تم نسخ الرابط",
     buyNow: "اشتري الآن",
     view: "عرض",
     outOfStock: "غير متوفر",

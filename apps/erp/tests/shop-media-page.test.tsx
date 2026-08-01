@@ -28,7 +28,7 @@ const makeMockState = () => ({
   collections: []
 });
 
-let mockState = makeMockState();
+let mockState: any = makeMockState();
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
@@ -180,6 +180,36 @@ describe("ShopMediaPage", () => {
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       status: "inactive"
     }));
+  });
+
+  it("shows every child category with its direct parent name", () => {
+    mockState = {
+      ...makeMockState(),
+      shopMediaSections: [{
+        id: 1,
+        slot: 1,
+        status: "active",
+        items: [{
+          id: 11,
+          imagePath: "/uploads/original.jpg",
+          mobileImagePath: "/uploads/original-mobile.jpg",
+          targetType: "category",
+          targetId: 2,
+          sortOrder: 1
+        }]
+      }],
+      categories: [
+        { id: 1, parentId: null, slug: "body", name: { ar: "Body", en: "Body" }, isLeaf: false },
+        { id: 2, parentId: 1, slug: "body-lotion", name: { ar: "Body Lotion", en: "Body Lotion" }, isLeaf: true },
+        { id: 3, parentId: 1, slug: "body-oil", name: { ar: "Body Oil", en: "Body Oil" }, isLeaf: true }
+      ]
+    };
+
+    render(createElement(ShopMediaPage));
+
+    expect(screen.getByRole("option", { name: "Body" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Body — Body Lotion" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Body — Body Oil" })).toBeInTheDocument();
   });
 
 });

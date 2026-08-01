@@ -72,6 +72,18 @@ function isDetailTargetType(targetType: ShopMediaTargetType) {
   return targetType === "product" || targetType === "offer" || targetType === "collection" || targetType === "category";
 }
 
+function buildCategoryTargetOptions(categories: Array<{ id: number; parentId: number | null; name: { ar: string } }>) {
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+
+  return categories.map((category) => {
+    const parent = category.parentId === null ? undefined : categoryById.get(category.parentId);
+    return {
+      id: category.id,
+      label: parent ? `${parent.name.ar} — ${category.name.ar} ` : category.name.ar
+    };
+  });
+}
+
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
   const shopMediaSections = useStore((store) => store.shopMediaSections);
@@ -102,7 +114,7 @@ export default function ShopMediaPage() {
     product: products.map((product) => ({ id: product.id, label: product.name.ar })),
     offer: offers.map((offer) => ({ id: offer.id, label: offer.name.ar })),
     collection: collections.map((collection) => ({ id: collection.id, label: collection.name.ar })),
-    category: categories.map((category) => ({ id: category.id, label: category.name.ar }))
+    category: buildCategoryTargetOptions(categories)
   }), [categories, collections, offers, products]);
 
   if (!canReadErpModule(user, "shop_media")) {

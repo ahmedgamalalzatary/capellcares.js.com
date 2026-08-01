@@ -97,6 +97,21 @@ describe("ShopMediaStrip carousel", () => {
     expect(image).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
   });
 
+  it("includes the category id in category target links", () => {
+    const section = makeSection(1);
+    section.items[0] = {
+      ...section.items[0],
+      targetType: "category",
+      targetId: 2,
+      targetSlug: "body-lotion"
+    };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+
+    expect(getDesktopStrip(container).querySelector('[aria-label="Media 1"]'))
+      .toHaveAttribute("href", "/en/category/body-lotion?categoryId=2");
+  });
+
   it("mounts only one responsive strip instead of separate desktop and mobile strips", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
 

@@ -465,6 +465,130 @@ describe("ProductDetail", () => {
     expect(rows[2]).toHaveTextContent("60");
   });
 
+  it("shares the product link via the Web Share API when supported", () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { share });
+
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist",
+        share: "Share",
+        linkCopied: "Link copied"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+
+    expect(share).toHaveBeenCalledWith({ title: "Product", url: `${window.location.origin}/en/products/product-1` });
+
+    delete (navigator as any).share;
+  });
+
+  it("falls back to copying the link when the Web Share API is unavailable", async () => {
+    delete (navigator as any).share;
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist",
+        share: "Share",
+        linkCopied: "Link copied"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/legacy.jpg",
+        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/en/products/product-1`);
+    expect(await screen.findByText("Link copied")).toBeInTheDocument();
+  });
+
   it("renders an unavailable state instead of crashing when the product has no variants", () => {
     const dict = {
       product: {

@@ -42,6 +42,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; pointerType: string } | null>(null);
   const activeMediaPointerTargetRef = useRef<HTMLElement | null>(null);
   const activeMediaIndexRef = useRef(0);
@@ -71,6 +72,21 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     if (!variant) return;
     cart.add({ type: "product", productId: product.id, variantId: variant.id, qty });
     router.push(`/${lang}/checkout`);
+  };
+
+  const onShare = async () => {
+    const url = `${window.location.origin}/${lang}/products/${product.slug}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: pickLang(product.name, lang), url });
+      } catch {
+        // user dismissed the native share sheet
+      }
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1600);
   };
 
   const onWish = () => {
@@ -292,13 +308,28 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <div className="grid sm:grid-cols-[1fr_1fr_auto_auto]">
             <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
               {added ? dict.common.added : dict.common.addToCart}
             </button>
             <button className="btn btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}
             </button>
+            <div className="relative grid">
+              <button className="btn btn--soft" onClick={onShare} aria-label={dict.common.share}>
+                <Icon.Share />
+              </button>
+              {linkCopied && (
+                <div className="pointer-events-none absolute -top-9 inset-x-0 flex justify-center">
+                  <span
+                    role="status"
+                    className="whitespace-nowrap rounded-(--radius-pill) bg-ink px-3 py-1.5 text-xs font-medium text-canvas"
+                  >
+                    {dict.common.linkCopied}
+                  </span>
+                </div>
+              )}
+            </div>
             <button className="btn btn--soft" onClick={onWish} aria-label={dict.common.addToWishlist}>
               {wishlist.has("product", product.id) ? <Icon.HeartFill /> : <Icon.Heart />}
             </button>
