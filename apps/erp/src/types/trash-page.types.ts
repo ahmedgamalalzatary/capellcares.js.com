@@ -1,4 +1,4 @@
-type TrashTab = "products" | "categories" | "offers";
+type TrashTab = "products" | "categories" | "offers" | "reviews";
 
 export interface TrashListRow {
   id: number;

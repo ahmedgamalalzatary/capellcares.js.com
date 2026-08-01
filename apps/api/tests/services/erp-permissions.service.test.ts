@@ -61,6 +61,11 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "products.stock_update",
     "products.toggle_status",
     "products.update",
+    "reviews.permanent_delete",
+    "reviews.read",
+    "reviews.restore",
+    "reviews.soft_delete",
+    "reviews.toggle_status",
     "sales.read",
     "shop_media.read",
     "shop_media.update",
@@ -139,5 +144,13 @@ test("normalizePermissionKeys adds read dependency for products.discount", () =>
   assert.deepEqual(normalized, [
     "products.discount",
     "products.read"
+  ]);
+});
+
+test("normalizePermissionKeys adds review and trash dependencies for review restoration", () => {
+  assert.deepEqual(normalizePermissionKeys(["reviews.restore"]), [
+    "reviews.read",
+    "reviews.restore",
+    "trash.read"
   ]);
 });

@@ -14,7 +14,10 @@ export type StorefrontRevalidatePayload = {
 type TriggerStorefrontRevalidationOptions = {
   storefrontBaseUrl?: string;
   secret?: string;
+  timeoutMs?: number;
 };
+
+const DEFAULT_REVALIDATION_TIMEOUT_MS = 2_000;
 
 function resolveStorefrontBaseUrl(): string {
   return (process.env.STOREFRONT_BASE_URL ?? DEFAULT_STOREFRONT_BASE_URL).trim().replace(/\/+$/, "");
@@ -42,12 +45,17 @@ export async function triggerStorefrontRevalidation(
   const storefrontBaseUrl = (options.storefrontBaseUrl ?? resolveStorefrontBaseUrl()).replace(/\/+$/, "");
   const secret = options.secret ?? resolveRevalidateSecret();
 
-  await fetch(`${storefrontBaseUrl}/api/revalidate`, {
+  const response = await fetch(`${storefrontBaseUrl}/api/revalidate`, {
     method: "POST",
+    signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_REVALIDATION_TIMEOUT_MS),
     headers: {
       "content-type": "application/json",
       "x-revalidate-secret": secret
     },
     body: JSON.stringify(payload)
   });
+
+  if (!response.ok) {
+    throw new Error(`Storefront revalidation failed with status ${response.status}`);
+  }
 }

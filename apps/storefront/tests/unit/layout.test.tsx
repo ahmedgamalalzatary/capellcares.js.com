@@ -57,6 +57,9 @@ describe("storefront root layout", () => {
     vi.doMock("@/components/providers/auth-provider", () => ({
       AuthProvider: ({ children }: { children: React.ReactNode }) => createElement("div", null, children)
     }));
+    vi.doMock("@/components/providers/review-prompt-provider", () => ({
+      ReviewPromptProvider: ({ children }: { children: React.ReactNode }) => createElement("div", { "data-review-prompt-provider": true }, children)
+    }));
     vi.doMock("@/components/layout/header", () => ({
       Header: () => createElement("header", null, "header")
     }));
@@ -74,5 +77,6 @@ describe("storefront root layout", () => {
     }));
 
     expect(markup).toContain('<div class="shell" lang="ar" dir="rtl"');
+    expect(markup).toContain('data-review-prompt-provider="true"');
   });
 });

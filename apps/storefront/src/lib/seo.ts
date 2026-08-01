@@ -1,5 +1,5 @@
 import type { Metadata, MetadataRoute } from "next";
-import { defaultLanguage, getEffectiveVariantPrice, pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
+import { defaultLanguage, getEffectiveVariantPrice, pickLang, type Category, type Collection, type Language, type Offer, type Product, type ReviewPage } from "@capella/shared";
 import { BRAND_NAME, FALLBACK_SITE_URL } from "@/constants/brand";
 
 function getSiteUrl(): string {
@@ -356,7 +356,15 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url?: string }>) {
   };
 }
 
-export function productJsonLd(lang: Language, product: Product, category?: Category) {
+function aggregateRating(reviewData?: ReviewPage | null) {
+  return reviewData && reviewData.summary.reviewCount > 0 ? {
+    "@type": "AggregateRating",
+    ratingValue: reviewData.summary.averageRating,
+    reviewCount: reviewData.summary.reviewCount
+  } : undefined;
+}
+
+export function productJsonLd(lang: Language, product: Product & { reviewData?: ReviewPage | null }, category?: Category) {
   const productName = pickLang(product.name, lang);
   const firstVariant = [...product.variants].sort(
     (a, b) => getEffectiveVariantPrice(a) - getEffectiveVariantPrice(b)
@@ -369,6 +377,7 @@ export function productJsonLd(lang: Language, product: Product, category?: Categ
     category: category ? pickLang(category.name, lang) : undefined,
     sku: product.sku,
     image: [absoluteUrl(product.imagePath)],
+    aggregateRating: aggregateRating(product.reviewData),
     offers: firstVariant ? {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/products/${product.slug}`)),
@@ -379,13 +388,14 @@ export function productJsonLd(lang: Language, product: Product, category?: Categ
   };
 }
 
-export function offerJsonLd(lang: Language, offer: Offer) {
+export function offerJsonLd(lang: Language, offer: Offer & { reviewData?: ReviewPage | null }) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: pickLang(offer.name, lang),
     description: pickLang(offer.description, lang),
     image: [absoluteUrl(offer.imagePath)],
+    aggregateRating: aggregateRating(offer.reviewData),
     offers: {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/offers/${offer.slug}`)),
@@ -396,13 +406,14 @@ export function offerJsonLd(lang: Language, offer: Offer) {
   };
 }
 
-export function collectionJsonLd(lang: Language, collection: Collection) {
+export function collectionJsonLd(lang: Language, collection: Collection & { reviewData?: ReviewPage | null }) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: pickLang(collection.name, lang),
     description: pickLang(collection.description, lang),
     image: [absoluteUrl(collection.imagePath)],
+    aggregateRating: aggregateRating(collection.reviewData),
     offers: {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/collections/${collection.slug}`)),

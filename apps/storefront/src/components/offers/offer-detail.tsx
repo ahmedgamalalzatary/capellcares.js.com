@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, type Language, type Offer, type Product, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, type Language, type Offer, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill } from "@/components/ui/item-tags";
@@ -12,6 +12,7 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { RelatedItems } from "@/components/products/related-items";
+import { ReviewSummary } from "@/components/reviews/review-summary";
 
 interface ItemEntry {
   qty: number;
@@ -23,7 +24,7 @@ interface ItemEntry {
 }
 
 interface Props {
-  offer: Offer;
+  offer: Offer & { reviewData?: ReviewPage | null };
   items: ItemEntry[];
   lang: Language;
   dict: any;
@@ -78,6 +79,9 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
             : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(offer.name, lang)}
           </h1>
+          {offer.reviewData !== undefined && dict.reviews ? (
+            <ReviewSummary entityType="offer" entityId={offer.id} reviewData={offer.reviewData} lang={lang} dict={dict} />
+          ) : null}
           <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(offer.description, lang)}</p>
 
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">

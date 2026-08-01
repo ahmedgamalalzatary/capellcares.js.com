@@ -39,6 +39,7 @@ import { adminShopMediaRoutes } from "./shop-media/admin-shop-media.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
 import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
+import { adminReviewsRoutes } from "./reviews/admin-reviews.routes.js";
 
 export const adminRoutes = Router();
 
@@ -81,3 +82,4 @@ adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/shop-media-sections", adminShopMediaRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);
+adminRoutes.use("/reviews", adminReviewsRoutes);

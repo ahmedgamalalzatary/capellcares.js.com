@@ -10,6 +10,8 @@ import { useTrashPage } from "../../hooks/use-trash-page";
 
 export default function TrashPage() {
   const { user } = useAdminAuth();
+  const trashReadable = hasErpPermission(user, "trash.read");
+  const reviewsReadable = trashReadable && hasErpPermission(user, "reviews.read");
   const {
     tab,
     setTab,
@@ -17,6 +19,9 @@ export default function TrashPage() {
     deletedProducts,
     deletedCategories,
     deletedOffers,
+    deletedReviews,
+    reviewsLoading,
+    reviewsError,
     pendingHardDelete,
     setPendingHardDelete,
     isDeleting,
@@ -25,10 +30,11 @@ export default function TrashPage() {
     confirmHardDelete,
     restoreProduct,
     restoreCategory,
-    restoreOffer
-  } = useTrashPage();
+    restoreOffer,
+    restoreReview
+  } = useTrashPage({ reviewsReadable });
 
-  if (!hasErpPermission(user, "trash.read")) {
+  if (!trashReadable) {
     return (
       <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
         <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المحذوفات." />
@@ -92,6 +98,20 @@ export default function TrashPage() {
             onRestore={canRestoreErpModule(user, "offers") ? restoreOffer : undefined}
             onHardDelete={hasErpPermission(user, "offers.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "offers", id, title }) : undefined}
           />
+        )}
+        {tab === "reviews" && (
+          reviewsLoading ? (
+            <p role="status" className="muted" style={{ padding: 40, textAlign: "center" }}>جارٍ التحميل…</p>
+          ) : reviewsError ? (
+            <p role="alert" style={{ padding: 40, textAlign: "center", color: "var(--danger)" }}>{reviewsError}</p>
+          ) : (
+            <DeletedList
+              empty="لا توجد تقييمات محذوفة."
+              rows={deletedReviews}
+              onRestore={hasErpPermission(user, "reviews.restore") ? restoreReview : undefined}
+              onHardDelete={hasErpPermission(user, "reviews.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "reviews", id, title }) : undefined}
+            />
+          )
         )}
       </div>
 

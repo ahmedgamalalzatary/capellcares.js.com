@@ -8,6 +8,7 @@ import {
   updateOrderPaymentStatusRepo
 } from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
+import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
 
@@ -79,5 +80,5 @@ export async function getCustomerOrderController(req: AuthenticatedRequest, res:
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
   }
-  return res.json(order);
+  return res.json(await attachReviewEligibilityToOrder(order, req.user.id));
 }

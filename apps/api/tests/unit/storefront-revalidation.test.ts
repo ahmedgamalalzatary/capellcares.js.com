@@ -71,3 +71,49 @@ test("triggerStorefrontRevalidation posts a universal offer payload with related
     relatedProductSlugs: ["body-lotion-250", "argan-mask"]
   });
 });
+
+test("triggerStorefrontRevalidation rejects a non-success response", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  globalThis.fetch = (async () => new Response(null, { status: 503 })) as typeof fetch;
+  process.env.NODE_ENV = "development";
+
+  try {
+    await assert.rejects(
+      triggerStorefrontRevalidation(
+        { entity: "product", slug: "cleanser" },
+        { storefrontBaseUrl: "http://localhost:3000", secret: "secret" }
+      ),
+      /503/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+});
+
+test("triggerStorefrontRevalidation aborts a stalled request after its timeout", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalNodeEnv = process.env.NODE_ENV;
+  globalThis.fetch = ((_: RequestInfo | URL, init?: RequestInit) => new Promise((_, reject) => {
+    const keepAlive = setTimeout(() => reject(new Error("test request remained pending")), 1_000);
+    init?.signal?.addEventListener("abort", () => {
+      clearTimeout(keepAlive);
+      reject(init.signal?.reason);
+    });
+  })) as typeof fetch;
+  process.env.NODE_ENV = "development";
+
+  try {
+    await assert.rejects(
+      triggerStorefrontRevalidation(
+        { entity: "offer", slug: "bundle" },
+        { storefrontBaseUrl: "http://localhost:3000", secret: "secret", timeoutMs: 5 }
+      ),
+      /timeout|abort/i
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NODE_ENV = originalNodeEnv;
+  }
+});

@@ -82,6 +82,19 @@ describe("AdminShell", () => {
     expect(collectionLinks.length).toBeGreaterThan(0);
   });
 
+  it("shows reviews navigation only when the reviews module is readable", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["reviews.read"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    expect(screen.getAllByText("التقييمات").length).toBeGreaterThan(0);
+    expect(screen.queryByText("الطلبات")).not.toBeInTheDocument();
+  });
+
   it("shows only authorized module navigation items for staff users", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: {

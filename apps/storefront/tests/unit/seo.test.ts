@@ -63,10 +63,16 @@ describe("SEO metadata", () => {
           }
         }
       ],
+      reviewData: {
+        summary: { averageRating: 4.5, reviewCount: 12, distribution: { "1": 0, "2": 0, "3": 2, "4": 2, "5": 8 } },
+        items: [],
+        pagination: { page: 1, pageSize: 10, total: 12, totalPages: 2 }
+      },
       createdAt: "",
       updatedAt: ""
     });
 
     expect(jsonLd.offers?.price).toBe(100);
+    expect(jsonLd.aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: 4.5, reviewCount: 12 });
   });
 });

@@ -12,6 +12,9 @@ import {
   productVariants,
   products,
   relatedItems,
+  reviewPromptStates,
+  reviewSubmissionHistory,
+  reviews,
   shopMediaSectionItems,
   shopMediaSections,
   wishlists
@@ -20,6 +23,9 @@ import { db } from "@capella/database/src/db";
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
+  await db.delete(reviewPromptStates);
+  await db.delete(reviewSubmissionHistory);
+  await db.delete(reviews);
   await db.delete(relatedItems);
   await db.delete(authSessions);
   await db.delete(wishlists);

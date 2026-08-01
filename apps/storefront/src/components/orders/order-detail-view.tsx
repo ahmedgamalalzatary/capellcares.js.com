@@ -5,11 +5,13 @@ import Link from "next/link";
 import { type Language, type Order } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { fetchCustomerOrderById } from "@/lib/api/client";
+import { ReviewFormModal } from "@/components/reviews/review-form-modal";
 
 export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict: any; orderId: number }) {
   const { accessToken } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewingItemId, setReviewingItemId] = useState<number | null>(null);
   const isAr = lang === "ar";
 
   useEffect(() => {
@@ -26,11 +28,13 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
   if (loading) return <p className="py-12 text-center text-(--ink-3)">{dict.common.loading}</p>;
   if (!order) return <p className="py-12 text-center text-(--ink-3)">{dict.common.empty}</p>;
 
+  const reviewingItem = order.items.find((item) => item.id === reviewingItemId) ?? null;
+
   const statusChip = (status: string) => {
     const s = status.toLowerCase();
-    if (s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
+    if (s.includes("accepted") || s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
     if (s.includes("pending") || s.includes("processing")) return "chip--gold";
-    if (s.includes("cancel") || s.includes("fail")) return "chip--accent";
+    if (s.includes("denied") || s.includes("cancel") || s.includes("fail")) return "chip--accent";
     return "";
   };
 
@@ -65,6 +69,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                 <th className="w-20 text-center">{dict.cart.qty}</th>
                 <th className="w-32 text-end">{dict.cart.price}</th>
                 <th className="w-32 text-end">{dict.common.total}</th>
+                <th className="w-44 text-end">{dict.reviews.rating}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,12 +79,43 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                   <td className="text-center text-(--ink-2)">×{item.qty}</td>
                   <td className="text-end text-(--ink-2)">{item.unitPrice}</td>
                   <td className="text-end font-semibold text-ink">{item.lineTotal}</td>
+                  <td className="text-end">
+                    {item.review?.state === "eligible" ? (
+                      <button type="button" className="btn btn--ghost" onClick={() => setReviewingItemId(item.id)}>{dict.reviews.writeReview}</button>
+                    ) : item.review?.state === "submitted" ? (
+                      <span className="text-sm font-medium text-(--success)">{dict.reviews.submitted}</span>
+                    ) : item.review?.state === "unavailable" ? (
+                      <span className="text-sm text-(--ink-3)">{dict.reviews.unavailable}</span>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+      {reviewingItem?.review && accessToken ? (
+        <ReviewFormModal
+          open
+          accessToken={accessToken}
+          itemName={isAr ? reviewingItem.snapshotNameAr ?? reviewingItem.snapshotNameEn ?? "" : reviewingItem.snapshotNameEn ?? reviewingItem.snapshotNameAr ?? ""}
+          target={reviewingItem.review}
+          dict={dict}
+          onClose={() => setReviewingItemId(null)}
+          onSubmitted={() => {
+            const submittedTarget = reviewingItem.review!;
+            setOrder((current) => current ? {
+              ...current,
+              items: current.items.map((item) => item.review &&
+                item.review.entityType === submittedTarget.entityType &&
+                item.review.entityId === submittedTarget.entityId
+                ? { ...item, review: { ...item.review, state: "submitted" } }
+                : item)
+            } : current);
+            setReviewingItemId(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

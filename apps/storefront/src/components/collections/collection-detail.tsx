@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatPrice, pickLang, type Category, type Collection, type Language, type Product, type RelatedItemCard } from "@capella/shared";
+import { formatPrice, pickLang, type Category, type Collection, type Language, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill } from "@/components/ui/item-tags";
@@ -12,6 +12,7 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { RelatedItems } from "@/components/products/related-items";
+import { ReviewSummary } from "@/components/reviews/review-summary";
 
 interface ItemEntry {
   qty: number;
@@ -30,7 +31,7 @@ export function CollectionDetail({
   dict,
   relatedItems = []
 }: {
-  collection: Collection;
+  collection: Collection & { reviewData?: ReviewPage | null };
   category?: Category;
   items: ItemEntry[];
   lang: Language;
@@ -84,6 +85,9 @@ export function CollectionDetail({
             : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(collection.name, lang)}
           </h1>
+          {collection.reviewData !== undefined && dict.reviews ? (
+            <ReviewSummary entityType="collection" entityId={collection.id} reviewData={collection.reviewData} lang={lang} dict={dict} />
+          ) : null}
           <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(collection.description, lang)}</p>
           {category && (
             <div className="text-sm text-(--ink-3)">{dict.collections.categoryLabel}: {pickLang(category.name, lang)}</div>

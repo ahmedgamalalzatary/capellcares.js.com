@@ -6,12 +6,16 @@ import type {
   Order,
   OrderSummary,
   Product,
+  ReviewEntityType,
+  ReviewCreateInput,
+  ReviewPrompt,
+  ReviewPage,
   ShopMediaSection,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
-import { authedGetJSON, getJSON } from "./client/http";
+import { authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
 import { normalizeCategory, normalizeProduct } from "./client/normalizers";
 import {
   getCategoryById,
@@ -116,6 +120,25 @@ export async function fetchCustomerOrders(accessToken: string): Promise<OrderSum
 
 export async function fetchCustomerOrderById(id: number, accessToken: string): Promise<Order | null> {
   return authedGetJSON<Order>(`/api/v1/orders/${id}`, accessToken);
+}
+
+export async function fetchPublicReviews(
+  entityType: ReviewEntityType,
+  entityId: number,
+  page: number,
+  pageSize: number
+): Promise<ReviewPage | null> {
+  return getJSON<ReviewPage>(
+    `/api/v1/reviews/${entityType}/${entityId}?page=${page}&pageSize=${pageSize}`
+  );
+}
+
+export async function submitReview(accessToken: string, input: ReviewCreateInput) {
+  return authedMutationJSON<{ id: number }>("/api/v1/reviews", accessToken, { method: "POST", body: input });
+}
+
+export async function claimReviewPrompt(accessToken: string) {
+  return authedMutationJSON<ReviewPrompt>("/api/v1/reviews/prompt/claim", accessToken, { method: "POST" });
 }
 
 export {

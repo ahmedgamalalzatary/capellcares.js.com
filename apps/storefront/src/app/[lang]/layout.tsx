@@ -4,6 +4,7 @@ import { dir, getDict } from "@capella/shared";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { ReviewPromptProvider } from "@/components/providers/review-prompt-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
@@ -50,8 +51,9 @@ export default async function LocaleLayout({
 
   return (
     <AuthProvider>
-      <WishlistProvider>
-        <CartProvider>
+      <ReviewPromptProvider lang={lang} dict={dict}>
+        <WishlistProvider>
+          <CartProvider>
           <div className="shell" lang={lang} dir={dir(lang)}>
             <script
               type="application/ld+json"
@@ -69,8 +71,9 @@ export default async function LocaleLayout({
             <BackToTop label={dict.common.backToTop} />
             <AskCapellaButton lang={lang} />
           </div>
-        </CartProvider>
-      </WishlistProvider>
+          </CartProvider>
+        </WishlistProvider>
+      </ReviewPromptProvider>
     </AuthProvider>
   );
 }

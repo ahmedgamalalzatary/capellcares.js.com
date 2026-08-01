@@ -66,4 +66,17 @@ describe("CollectionDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save collection" }));
     expect(toggle).toHaveBeenCalledWith("collection", 2);
   });
+
+  it("shows the collection rating summary on the detail page", () => {
+    const reviewData = {
+      summary: { averageRating: 4, reviewCount: 3, distribution: { "1": 0, "2": 0, "3": 1, "4": 1, "5": 1 } },
+      items: [],
+      pagination: { page: 1, pageSize: 10, total: 3, totalPages: 1 }
+    };
+    const reviews = { title: "Customer reviews", outOfFive: "{rating} out of 5", reviewCount: "{count} reviews", verifiedPurchase: "Verified purchase", close: "Close", noReviews: "No reviews yet" };
+
+    render(createElement(CollectionDetail, { collection: { ...collection, reviewData }, items: [], lang: "en", dict: { ...dict, reviews } }));
+
+    expect(screen.getByRole("button", { name: "4.0 out of 5, 3 reviews" })).toBeInTheDocument();
+  });
 });

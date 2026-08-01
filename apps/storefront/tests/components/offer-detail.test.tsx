@@ -96,4 +96,17 @@ describe("OfferDetail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
     expect(toggle).toHaveBeenCalledWith("offer", 1);
   });
+
+  it("shows the offer rating summary on the detail page", () => {
+    const reviewData = {
+      summary: { averageRating: 5, reviewCount: 1, distribution: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 1 } },
+      items: [],
+      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1 }
+    };
+    const reviews = { title: "Customer reviews", outOfFive: "{rating} out of 5", reviewCount: "{count} reviews", verifiedPurchase: "Verified purchase", close: "Close", noReviews: "No reviews yet" };
+
+    render(createElement(OfferDetail, { offer: { ...offer, reviewData }, items: [], lang: "en", dict: { ...dict, reviews } }));
+
+    expect(screen.getByRole("button", { name: "5.0 out of 5, 1 reviews" })).toBeInTheDocument();
+  });
 });

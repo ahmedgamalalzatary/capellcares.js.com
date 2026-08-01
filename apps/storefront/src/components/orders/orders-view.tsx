@@ -83,9 +83,9 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   const statusChip = (status: string) => {
     const s = status.toLowerCase();
-    if (s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
+    if (s.includes("accepted") || s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
     if (s.includes("pending") || s.includes("processing")) return "chip--gold";
-    if (s.includes("cancel") || s.includes("fail")) return "chip--accent";
+    if (s.includes("denied") || s.includes("cancel") || s.includes("fail")) return "chip--accent";
     return "";
   };
 
@@ -122,4 +122,3 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
     </div>
   );
 }
-

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type Offer, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
@@ -10,11 +10,12 @@ import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ReviewSummary } from "@/components/reviews/review-summary";
 
 type Tab = "description" | "ingredients" | "howToUse" | "warnings";
 
 interface Props {
-  product: Product;
+  product: Product & { reviewData?: ReviewPage | null };
   offers: Offer[];
   lang: Language;
   dict: any;
@@ -244,6 +245,9 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               </p>
             ) : null}
             <ItemTags tags={badgeTags} variant="badge" />
+            {product.reviewData !== undefined && dict.reviews ? (
+              <ReviewSummary entityType="product" entityId={product.id} reviewData={product.reviewData} lang={lang} dict={dict} />
+            ) : null}
           </div>
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
             <span className={lang === "ar"

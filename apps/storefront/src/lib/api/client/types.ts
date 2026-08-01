@@ -2,6 +2,8 @@ import type {
   Offer,
   Product,
   StorefrontCollectionDetail,
+  StorefrontOfferDetail,
+  StorefrontProductDetail,
   RelatedItemCard
 } from "@capella/shared";
 
@@ -15,10 +17,12 @@ export type ProductApiShape = Product & {
 
 export type ProductDetailApiShape = Omit<ProductApiShape, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
+  reviewData: StorefrontProductDetail["reviewData"];
 };
 
 export type OfferDetailApiShape = Omit<Offer, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
+  reviewData: StorefrontOfferDetail["reviewData"];
 };
 
 export type CollectionDetailApiShape = Omit<StorefrontCollectionDetail, "relatedItems"> & {

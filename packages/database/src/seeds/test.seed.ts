@@ -14,6 +14,9 @@ import {
   productVariants,
   products,
   relatedItems,
+  reviewPromptStates,
+  reviewSubmissionHistory,
+  reviews,
   variantDiscounts
 } from "../../drizzle/schema.js";
 import { db } from "../db.js";
@@ -33,6 +36,9 @@ export async function clearTestSeed() {
   await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
 
   try {
+    await db.delete(reviewPromptStates);
+    await db.delete(reviewSubmissionHistory);
+    await db.delete(reviews);
     await db.delete(relatedItems);
     await db.delete(orderItems);
     await db.delete(collectionItems);

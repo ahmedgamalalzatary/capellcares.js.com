@@ -45,6 +45,11 @@ const ERP_PERMISSION_KEYS = [
   "shop_media.update",
   "orders.read",
   "orders.update_payment_status",
+  "reviews.read",
+  "reviews.toggle_status",
+  "reviews.soft_delete",
+  "reviews.restore",
+  "reviews.permanent_delete",
   "sales.read",
   "trash.read"
 ] as const;
@@ -84,7 +89,11 @@ const ERP_PERMISSION_DEPENDENCIES: Partial<Record<ErpPermissionKey, ErpPermissio
   "advices.delete": ["advices.read"],
   "advices.toggle_status": ["advices.read"],
   "shop_media.update": ["shop_media.read"],
-  "orders.update_payment_status": ["orders.read"]
+  "orders.update_payment_status": ["orders.read"],
+  "reviews.toggle_status": ["reviews.read"],
+  "reviews.soft_delete": ["reviews.read"],
+  "reviews.restore": ["reviews.read", "trash.read"],
+  "reviews.permanent_delete": ["reviews.read", "trash.read"]
 };
 
 export function normalizePermissionKeys(keys: string[]) {

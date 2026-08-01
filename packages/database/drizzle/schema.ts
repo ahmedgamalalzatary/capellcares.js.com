@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   datetime,
   decimal,
+  index,
   int,
   mysqlEnum,
   mysqlTable,
@@ -13,6 +15,8 @@ import {
 } from "drizzle-orm/mysql-core";
 
 export const relatedItemEntityTypes = ["product", "offer", "collection"] as const;
+
+export const reviewEntityTypes = ["product", "offer", "collection"] as const;
 
 export const relatedItemTargetTypes = ["product", "offer", "collection"] as const;
 
@@ -439,3 +443,100 @@ export const orderItems = mysqlTable("order_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
+
+export const reviews = mysqlTable(
+  "reviews",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    customerId: int("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    orderItemId: int("order_item_id")
+      .notNull()
+      .references(() => orderItems.id, { onDelete: "restrict" }),
+    entityType: mysqlEnum("entity_type", reviewEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
+    rating: int("rating").notNull(),
+    comment: text("comment").notNull(),
+    status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+    deletedAt: datetime("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    customerEntityUnique: unique("reviews_customer_entity_unique").on(
+      table.customerId,
+      table.entityType,
+      table.entityId
+    ),
+    publicTargetIndex: index("reviews_public_target_idx").on(
+      table.entityType,
+      table.entityId,
+      table.status,
+      table.deletedAt,
+      table.createdAt
+    ),
+    ratingCheck: check("reviews_rating_check", sql`${table.rating} between 1 and 5`),
+    commentLengthCheck: check(
+      "reviews_comment_length_check",
+      sql`char_length(trim(${table.comment})) between 3 and 1000`
+    )
+  })
+);
+
+export const reviewSubmissionHistory = mysqlTable(
+  "review_submission_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    customerId: int("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    orderItemId: int("order_item_id")
+      .notNull()
+      .references(() => orderItems.id, { onDelete: "restrict" }),
+    entityType: mysqlEnum("entity_type", reviewEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
+    submittedAt: timestamp("submitted_at").defaultNow().notNull()
+  },
+  (table) => ({
+    customerEntityUnique: unique("review_submission_history_customer_entity_unique").on(
+      table.customerId,
+      table.entityType,
+      table.entityId
+    )
+  })
+);
+
+export const reviewPromptStates = mysqlTable(
+  "review_prompt_states",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    customerId: int("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    orderId: int("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "restrict" }),
+    orderItemId: int("order_item_id")
+      .notNull()
+      .references(() => orderItems.id, { onDelete: "restrict" }),
+    entityType: mysqlEnum("entity_type", reviewEntityTypes).notNull(),
+    entityId: int("entity_id").notNull(),
+    shownAt: timestamp("shown_at").defaultNow().notNull()
+  },
+  (table) => ({
+    customerEntityUnique: unique("review_prompt_states_customer_entity_unique").on(
+      table.customerId,
+      table.entityType,
+      table.entityId
+    ),
+    customerOrderUnique: unique("review_prompt_states_customer_order_unique").on(
+      table.customerId,
+      table.orderId
+    ),
+    customerShownIndex: index("review_prompt_states_customer_shown_idx").on(
+      table.customerId,
+      table.shownAt
+    )
+  })
+);

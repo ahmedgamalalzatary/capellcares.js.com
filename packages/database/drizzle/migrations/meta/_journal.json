@@ -162,6 +162,34 @@
       "when": 1783296000000,
       "tag": "0022_advices_entity_ordering",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1785542400000,
+      "tag": "0023_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1785542401000,
+      "tag": "0024_review_prompt_states",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1785542402000,
+      "tag": "0025_review_prompt_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1785542403000,
+      "tag": "0026_review_submission_history",
+      "breakpoints": true
     }
   ]
 }

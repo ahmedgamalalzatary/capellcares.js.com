@@ -769,4 +769,60 @@ describe("ProductDetail", () => {
     const primaryPrice = document.querySelector(".text-3xl, .sm\\:text-\\[40px\\]");
     expect(primaryPrice).toHaveTextContent("Out of stock");
   });
+
+  it("opens the full verified reviews and loads the remaining pages", async () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" },
+      reviews: { title: "Customer reviews", outOfFive: "{rating} out of 5", reviewCount: "{count} reviews", verifiedPurchase: "Verified purchase", close: "Close", noReviews: "No reviews yet", loadMore: "Load more", loading: "Loading…", loadError: "Could not load reviews" }
+    };
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2 }],
+      createdAt: "",
+      updatedAt: "",
+      reviewData: {
+        summary: { averageRating: 4.5, reviewCount: 2, distribution: { "1": 0, "2": 0, "3": 0, "4": 1, "5": 1 } },
+        items: [{ id: 7, firstName: "Sara", rating: 5, comment: "Wonderful product", createdAt: "2026-08-01T00:00:00.000Z", verifiedPurchase: true as const }],
+        pagination: { page: 1, pageSize: 1, total: 2, totalPages: 2 }
+      }
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...product.reviewData,
+        items: [{ id: 8, firstName: "Mona", rating: 4, comment: "Second comment", createdAt: "2026-08-02T00:00:00.000Z", verifiedPurchase: true }],
+        pagination: { page: 2, pageSize: 1, total: 2, totalPages: 2 }
+      })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(createElement(ProductDetail, { product, offers: [], lang: "en", dict }));
+    fireEvent.click(screen.getByRole("button", { name: "4.5 out of 5, 2 reviews" }));
+
+    expect(screen.getByRole("dialog", { name: "Customer reviews" })).toBeInTheDocument();
+    expect(screen.getByText("Wonderful product")).toBeInTheDocument();
+    expect(screen.getByText("Sara")).toBeInTheDocument();
+    expect(screen.getByText("Verified purchase")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Load more" }));
+    expect(await screen.findByText("Second comment")).toBeInTheDocument();
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("/api/v1/reviews/product/1?page=2&pageSize=1");
+    vi.unstubAllGlobals();
+  });
 });

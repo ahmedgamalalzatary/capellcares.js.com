@@ -82,6 +82,76 @@ export interface Product {
 
 export type RelatedItemType = "product" | "offer" | "collection";
 export type WishlistEntityType = RelatedItemType;
+export type ReviewEntityType = RelatedItemType;
+export type ReviewStatus = "active" | "inactive";
+
+export interface ReviewSummary {
+  averageRating: number;
+  reviewCount: number;
+  distribution: Record<"1" | "2" | "3" | "4" | "5", number>;
+}
+
+export interface PublicReview {
+  id: number;
+  firstName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  verifiedPurchase: true;
+}
+
+export interface ReviewPage {
+  summary: ReviewSummary;
+  items: PublicReview[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ReviewCreateInput {
+  entityType: ReviewEntityType;
+  entityId: number;
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewPrompt {
+  entityType: ReviewEntityType;
+  entityId: number;
+  name: Bilingual;
+  imagePath: string | null;
+  href: string;
+}
+
+export interface OrderItemReview {
+  entityType: ReviewEntityType;
+  entityId: number;
+  state: "eligible" | "submitted" | "unavailable";
+}
+
+export interface AdminReview {
+  id: number;
+  customerName: string;
+  customerEmail: string;
+  entityType: ReviewEntityType;
+  entityId: number;
+  entityName: Bilingual;
+  orderId: number;
+  orderCode: string;
+  rating: number;
+  comment: string;
+  status: ReviewStatus;
+  deletedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminReviewPage {
+  items: AdminReview[];
+  pagination: ReviewPage["pagination"];
+}
 
 export interface WishlistEntry {
   entityType: WishlistEntityType;
@@ -134,14 +204,17 @@ export interface Collection {
 
 export type StorefrontProductDetail = Omit<Product, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
+  reviewData: ReviewPage | null;
 };
 
 export type StorefrontOfferDetail = Omit<Offer, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
+  reviewData: ReviewPage | null;
 };
 
 export type StorefrontCollectionDetail = Omit<Collection, "relatedItems"> & {
   relatedItems?: RelatedItemCard[];
+  reviewData: ReviewPage | null;
 };
 
 export interface OfferItem {
@@ -239,6 +312,7 @@ export interface OrderItem {
   snapshotDiscountEndsAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  review?: OrderItemReview | null;
 }
 
 export interface OrderSummary {
