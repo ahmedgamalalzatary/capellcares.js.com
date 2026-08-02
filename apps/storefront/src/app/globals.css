@@ -14,7 +14,11 @@
   --color-footer-muted: #9ca3af;
   --color-footer-heading: #e5e7eb;
   --color-footer-border: #1f2937;
-  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  /* Both faces are self-hosted and loaded by next/font in the root layout,
+     which sets these two variables on <html>. The var() fallbacks keep the
+     declaration valid if a subtree ever renders outside that layout. */
+  --font-sans: var(--font-poppins, ui-sans-serif), system-ui, sans-serif;
+  --font-heading: var(--font-chakra-petch, ui-sans-serif), system-ui, sans-serif;
   --animate-marquee: marquee 30s linear infinite;
 }
 
@@ -54,6 +58,18 @@ body {
 body {
   font-family: var(--font-sans);
   color: var(--color-navy);
+}
+
+/* Headings carry Chakra Petch; everything else inherits Poppins from <body>.
+   Element selectors (0,0,1) sit below Tailwind's utilities (0,1,0), so an
+   explicit `font-sans` on a heading still wins. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
 }
 
 /* Shared centered page wrapper used by the header, footer, and sections. */
