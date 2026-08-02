@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
-import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -19,6 +19,7 @@ export default function AdvicesPage() {
   const { user } = useAdminAuth();
   const advices = useStore((s) => s.advices);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Advice | null>(null);
   const reorder = useListReorder({
@@ -27,17 +28,19 @@ export default function AdvicesPage() {
     successMessage: "تم حفظ ترتيب النصائح.",
     errorMessage: "تعذر حفظ ترتيب النصائح. حاولي مرة أخرى."
   });
-  const canReorder = !search.trim() && canUpdateErpModule(user, "advices");
+  // Reordering needs the complete list, so it is hidden while a filter hides part of it.
+  const canReorder = !search.trim() && statusFilter === "all" && canUpdateErpModule(user, "advices");
 
   const filtered = useMemo(() => {
-    const ordered = sortByIdOrder(advices, reorder.orderedIds);
+    const ordered = sortByIdOrder(advices, reorder.orderedIds)
+      .filter((a) => statusFilter === "all" || a.status === statusFilter);
     if (!search.trim()) return ordered;
     const term = search.trim().toLowerCase();
     return ordered.filter((a) =>
       a.title.ar.toLowerCase().includes(term) ||
       a.title.en.toLowerCase().includes(term)
     );
-  }, [advices, reorder.orderedIds, search]);
+  }, [advices, reorder.orderedIds, search, statusFilter]);
 
   if (!canReadErpModule(user, "advices")) {
     return (
@@ -73,11 +76,20 @@ export default function AdvicesPage() {
         </>
       }
     >
-      <AdminListToolbar
+      <AdminListHeader
         searchPlaceholder="ابحثي عن نصيحة…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filtered.length} نصيحة`}
+        filters={[
+          {
+            key: "status",
+            label: "حالة النصيحة",
+            value: statusFilter,
+            onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
+            options: ACTIVE_STATUS_FILTER_OPTIONS
+          }
+        ]}
       />
 
       <div className="card">

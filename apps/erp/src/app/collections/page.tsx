@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { compareByScopedOrdering, formatPrice, type Category, type Collection } from "@capella/shared";
+import { formatPrice, type Category, type Collection } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
-import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { RowMenu } from "@/components/ui/row-menu";
@@ -19,33 +19,11 @@ import {
 } from "@/lib/erp-permissions";
 import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
+import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import { Icon } from "@/components/ui/icons";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 
 type CollectionStatusFilter = "all" | "active" | "inactive";
-
-function buildCategoryOptions(categories: Category[]) {
-  const active = categories
-    .filter((category) => !category.deletedAt)
-    .slice()
-    .sort(compareByScopedOrdering.bind(null, "erp"));
-  const childrenByParent = new Map<number | null, Category[]>();
-  for (const category of active) {
-    const siblings = childrenByParent.get(category.parentId) ?? [];
-    siblings.push(category);
-    childrenByParent.set(category.parentId, siblings);
-  }
-
-  const options: Array<{ id: number; label: string; depth: number }> = [];
-  const visit = (parentId: number | null, depth: number) => {
-    for (const category of childrenByParent.get(parentId) ?? []) {
-      options.push({ id: category.id, label: category.name.ar, depth });
-      visit(category.id, depth + 1);
-    }
-  };
-  visit(null, 0);
-  return options;
-}
 
 function isInCategoryTree(categories: Category[], categoryId: number, selectedCategoryId: number) {
   let current = categories.find((category) => category.id === categoryId);
@@ -93,7 +71,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
     successMessage: "تم حفظ ترتيب المجموعات.",
     errorMessage: "تعذر حفظ ترتيب المجموعات. حاولي مرة أخرى."
   });
-  const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);
+  const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
   // Reordering saves one global collection order, so it is hidden whenever the visible list is partial.
   const canReorder = !search.trim() && statusFilter === "all" && categoryFilter === "" && canUpdateErpModule(user, "collections");
 
@@ -136,43 +114,33 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
         </>
       }
     >
-      <AdminListToolbar
-        stacked
+      <AdminListHeader
         searchPlaceholder="ابحثي عن مجموعة…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filtered.length} مجموعة`}
-        extraControls={(
-          <>
-            <div className="toolbar__filter1">
-              <select
-                aria-label="حالة المجموعة"
-                className="select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as CollectionStatusFilter)}
-              >
-                <option value="all">كل الحالات</option>
-                <option value="active">نشط</option>
-                <option value="inactive">غير نشط</option>
-              </select>
-            </div>
-            <div className="toolbar__filter2">
-              <select
-                aria-label="قسم المجموعة"
-                className="select"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}
-              >
-                <option value="">كل الأقسام</option>
-                {categoryOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {`${"— ".repeat(option.depth)}${option.label}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
+        filters={[
+          {
+            key: "status",
+            label: "حالة المجموعة",
+            value: statusFilter,
+            onChange: (value) => setStatusFilter(value as CollectionStatusFilter),
+            options: ACTIVE_STATUS_FILTER_OPTIONS
+          },
+          {
+            key: "category",
+            label: "قسم المجموعة",
+            value: String(categoryFilter),
+            onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
+            options: [
+              { value: "", label: "كل الأقسام" },
+              ...categoryOptions.map((option) => ({
+                value: String(option.id),
+                label: `${"— ".repeat(option.depth)}${option.label}`
+              }))
+            ]
+          }
+        ]}
       />
 
       <div className="card">

@@ -23,12 +23,19 @@ function normalizeShopMediaImageSrc(imagePath: string) {
   return resolveMediaUrl(imagePath);
 }
 
+/**
+ * A banner whose target was deleted has no slug to link to. Rather than dropping the
+ * banner (which made it vanish from the storefront) or linking to a dead page, every
+ * unresolvable target falls back to the home page.
+ */
 function buildShopMediaHref(
   lang: Language,
   targetType: ShopMediaSection["items"][number]["targetType"],
   targetSlug?: string | null,
   targetId?: number | null
-) {
+): string {
+  const home = `/${lang}`;
+
   switch (targetType) {
     case "shop":
       return `/${lang}/shop`;
@@ -39,21 +46,21 @@ function buildShopMediaHref(
     case "products":
       return `/${lang}/products`;
     case "product":
-      return targetSlug ? `/${lang}/products/${targetSlug}` : null;
+      return targetSlug ? `/${lang}/products/${targetSlug}` : home;
     case "offers":
       return `/${lang}/offers`;
     case "offer":
-      return targetSlug ? `/${lang}/offers/${targetSlug}` : null;
+      return targetSlug ? `/${lang}/offers/${targetSlug}` : home;
     case "collections":
       return `/${lang}/collections`;
     case "collection":
-      return targetSlug ? `/${lang}/collections/${targetSlug}` : null;
+      return targetSlug ? `/${lang}/collections/${targetSlug}` : home;
     case "category":
       return targetSlug
         ? `/${lang}/category/${targetSlug}${targetId == null ? "" : `?categoryId=${targetId}`}`
-        : null;
+        : home;
     default:
-      return null;
+      return home;
   }
 }
 
@@ -69,14 +76,9 @@ function pickSlidesForViewport(
         return null;
       }
 
-      const href = buildShopMediaHref(lang, item.targetType, item.targetSlug, item.targetId);
-      if (!href) {
-        return null;
-      }
-
       return {
         id: item.id,
-        href,
+        href: buildShopMediaHref(lang, item.targetType, item.targetSlug, item.targetId),
         imagePath: normalizeShopMediaImageSrc(imagePath)
       };
     })

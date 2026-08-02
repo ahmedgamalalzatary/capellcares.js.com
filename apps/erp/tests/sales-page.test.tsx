@@ -1,6 +1,7 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { formatPrice } from "@capella/shared";
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
@@ -32,7 +33,36 @@ vi.mock("@/lib/store", () => ({
 
 import SalesPage from "@/app/sales/page";
 
+// formatPrice emits a non-breaking space that testing-library normalizes away on the
+// DOM side only, so compare with all whitespace stripped from both sides.
+function money(value: number) {
+  const expected = formatPrice(value, "ar").replace(/\s+/gu, "");
+  return (_content: string, element: Element | null) =>
+    element?.textContent?.replace(/\s+/gu, "") === expected;
+}
+
 describe("SalesPage", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("formats every money figure with the shared price formatter", () => {
+    render(createElement(SalesPage));
+
+    expect(screen.getAllByText(money(140)).length).toBe(1);
+    expect(screen.getAllByText(money(105)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(money(70)).length).toBe(2);
+  });
+
+  it("renders payment status in Arabic instead of the raw enum", () => {
+    render(createElement(SalesPage));
+
+    expect(screen.getByText("مرفوض")).toBeInTheDocument();
+    expect(screen.getByText("مقبول")).toBeInTheDocument();
+    expect(screen.queryByText("denied")).not.toBeInTheDocument();
+    expect(screen.queryByText("accepted")).not.toBeInTheDocument();
+  });
+
   it("renders summary metrics and per-order breakdown", () => {
     render(createElement(SalesPage));
 

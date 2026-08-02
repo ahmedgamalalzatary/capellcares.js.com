@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
-import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
 import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { RowMenu } from "@/components/ui/row-menu";
@@ -21,6 +21,7 @@ export default function OffersListPage() {
   const { user } = useAdminAuth();
   const offers = useStore((s) => s.offers);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Offer | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
@@ -32,18 +33,19 @@ export default function OffersListPage() {
     successMessage: "تم حفظ ترتيب العروض.",
     errorMessage: "تعذر حفظ ترتيب العروض. حاولي مرة أخرى."
   });
-  // Reordering needs the complete list, so it is hidden while searching.
-  const canReorder = !search.trim() && canUpdateErpModule(user, "offers");
+  // Reordering needs the complete list, so it is hidden while a filter hides part of it.
+  const canReorder = !search.trim() && statusFilter === "all" && canUpdateErpModule(user, "offers");
 
   const filtered = useMemo(() => {
-    const ordered = sortByIdOrder(visibleOffers, reorder.orderedIds);
+    const ordered = sortByIdOrder(visibleOffers, reorder.orderedIds)
+      .filter((o) => statusFilter === "all" || o.status === statusFilter);
     if (!search.trim()) return ordered;
     const s = search.trim().toLowerCase();
     return ordered.filter((o) =>
       o.name.ar.toLowerCase().includes(s) ||
       o.name.en.toLowerCase().includes(s)
     );
-  }, [visibleOffers, search, reorder.orderedIds]);
+  }, [visibleOffers, search, statusFilter, reorder.orderedIds]);
 
   const onDelete = () => {
     if (pendingDelete == null) return;
@@ -81,11 +83,20 @@ export default function OffersListPage() {
         </>
       }
     >
-      <AdminListToolbar
+      <AdminListHeader
         searchPlaceholder="ابحثي عن عرض…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filtered.length} عرض`}
+        filters={[
+          {
+            key: "status",
+            label: "حالة العرض",
+            value: statusFilter,
+            onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
+            options: ACTIVE_STATUS_FILTER_OPTIONS
+          }
+        ]}
       />
 
       <div className="card">

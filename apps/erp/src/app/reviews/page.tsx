@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AdminReviewPage, ReviewEntityType, ReviewStatus } from "@capella/shared";
+import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -79,23 +80,38 @@ export default function ReviewsPage() {
 
   return (
     <AdminShell title="التقييمات" crumbs={[{ label: "التقييمات" }]}>
-      <div className="toolbar" style={{ flexWrap: "wrap" }}>
-        <div className="search">
-          <input aria-label="البحث في التقييمات" placeholder="ابحث بالعميل، الطلب، العنصر أو التعليق…" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
-        </div>
-        <select aria-label="حالة التقييم" value={status} onChange={(event) => { setStatus(event.target.value as ReviewStatus | ""); setPage(1); }}>
-          <option value="">كل الحالات</option>
-          <option value="active">نشط</option>
-          <option value="inactive">معطّل</option>
-        </select>
-        <select aria-label="نوع العنصر" value={entityType} onChange={(event) => { setEntityType(event.target.value as ReviewEntityType | ""); setPage(1); }}>
-          <option value="">كل الأنواع</option>
-          <option value="product">المنتجات</option>
-          <option value="offer">العروض</option>
-          <option value="collection">المجموعات</option>
-        </select>
-        <span className="muted" style={{ marginInlineStart: "auto" }}>{data.pagination.total} تقييم</span>
-      </div>
+      <AdminListHeader
+        searchLabel="البحث في التقييمات"
+        searchPlaceholder="ابحث بالعميل، الطلب، العنصر أو التعليق…"
+        searchValue={search}
+        onSearchChange={(value) => { setSearch(value); setPage(1); }}
+        countLabel={`${data.pagination.total} تقييم`}
+        filters={[
+          {
+            key: "status",
+            label: "حالة التقييم",
+            value: status,
+            onChange: (value) => { setStatus(value as ReviewStatus | ""); setPage(1); },
+            options: [
+              { value: "", label: "كل الحالات" },
+              { value: "active", label: "نشط" },
+              { value: "inactive", label: "معطّل" }
+            ]
+          },
+          {
+            key: "entityType",
+            label: "نوع العنصر",
+            value: entityType,
+            onChange: (value) => { setEntityType(value as ReviewEntityType | ""); setPage(1); },
+            options: [
+              { value: "", label: "كل الأنواع" },
+              { value: "product", label: "المنتجات" },
+              { value: "offer", label: "العروض" },
+              { value: "collection", label: "المجموعات" }
+            ]
+          }
+        ]}
+      />
 
       <div className="card">
         <div className="table-outer">

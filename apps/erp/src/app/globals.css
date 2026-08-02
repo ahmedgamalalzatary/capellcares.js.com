@@ -290,34 +290,32 @@ html[lang="ar"] .page-title { letter-spacing: 0; }
 }
 .search input { background: transparent; border: 0; outline: 0; width: 100%; color: var(--ink); }
 
-/* Stacked toolbar variant — search on top, filters below on mobile */
-.toolbar--stacked {
-  display: grid;
+/* Shared list header — search on top, filters below, count trailing on mobile.
+   Laid out with flex so it holds any number of filters, unlike the fixed
+   two-slot grid it replaced. */
+.list-header {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  grid-template-areas:
-    "search  search count"
-    "filter1 filter2 filter2";
-  grid-template-columns: 1fr 1fr auto;
   align-items: center;
 }
-.toolbar__search  { grid-area: search;  display: flex; align-items: center; }
-.toolbar__search .search { flex: 1; min-width: 0; }
-.toolbar__count   { grid-area: count;   white-space: nowrap; font-size: 12px; justify-self: end; }
-.toolbar__filter1 { grid-area: filter1; }
-.toolbar__filter2 { grid-area: filter2; }
-.toolbar__filter1 .select,
-.toolbar__filter2 .select { width: 100%; }
+.list-header__search { flex: 1 1 100%; display: flex; align-items: center; min-width: 0; }
+.list-header__search .search { flex: 1; min-width: 0; }
+.list-header__filters { display: flex; flex: 1 1 auto; gap: 10px; min-width: 0; }
+.list-header__filters .select { flex: 1; min-width: 0; width: 100%; }
+.list-header__count {
+  white-space: nowrap;
+  font-size: 12px;
+  margin-inline-start: auto;
+}
 
 /* Desktop: collapse into a single row */
 @media (min-width: 881px) {
-  .toolbar--stacked {
-    grid-template-areas: "search filter1 filter2 count";
-    grid-template-columns: minmax(220px, 1fr) auto auto auto;
-    gap: 12px;
-  }
-  .toolbar__search .search { min-width: 220px; }
-  .toolbar__filter1 .select,
-  .toolbar__filter2 .select { width: auto; }
+  .list-header { flex-wrap: nowrap; gap: 12px; }
+  .list-header__search { flex: 1 1 auto; }
+  .list-header__search .search { min-width: 220px; }
+  .list-header__filters { flex: 0 0 auto; }
+  .list-header__filters .select { flex: 0 0 auto; width: auto; }
 }
 
 /* checkbox */
@@ -867,6 +865,12 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   border: 1px dashed var(--hairline);
   border-radius: var(--radius);
   color: var(--ink-3); font-size: 12.5px;
+}
+.shop-media-item__missing-target {
+  margin: 6px 0 0;
+  color: var(--error);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .shop-media-add {

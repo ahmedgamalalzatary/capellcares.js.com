@@ -1,6 +1,8 @@
 "use client";
 
+import { formatPrice } from "@capella/shared";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { paymentStatusChip, paymentStatusLabel } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 
 function formatDate(value: string) {
@@ -32,7 +34,7 @@ export default function SalesPage() {
         <div className="card">
           <div className="card__body">
             <div className="muted">إجمالي الإيراد</div>
-            <div className="page-title" style={{ marginTop: 8 }}>{sales.summary.totalRevenue}</div>
+            <div className="page-title" style={{ marginTop: 8 }}>{formatPrice(sales.summary.totalRevenue, "ar")}</div>
           </div>
         </div>
       </div>
@@ -54,7 +56,7 @@ export default function SalesPage() {
                   <tr key={item.productId}>
                     <td>{item.productName}</td>
                     <td>{item.unitsSold}</td>
-                    <td>{item.revenue}</td>
+                    <td>{formatPrice(item.revenue, "ar")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -78,7 +80,7 @@ export default function SalesPage() {
                   <tr key={item.variantId}>
                     <td>{item.productName} / {item.variantLabel}</td>
                     <td>{item.unitsSold}</td>
-                    <td>{item.revenue}</td>
+                    <td>{formatPrice(item.revenue, "ar")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -105,8 +107,8 @@ export default function SalesPage() {
               {sales.orders.map((order) => (
                 <tr key={order.orderId}>
                   <td>{order.orderCode}</td>
-                  <td>{order.paymentStatus}</td>
-                  <td>{order.totalAmount}</td>
+                  <td><span className={paymentStatusChip[order.paymentStatus]}>{paymentStatusLabel[order.paymentStatus]}</span></td>
+                  <td>{formatPrice(order.totalAmount, "ar")}</td>
                   <td>{order.unitsSold}</td>
                   <td>
                     <div className="stack">

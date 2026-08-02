@@ -13,6 +13,7 @@ import { API_BASE } from "@/lib/api/client";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
+import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import type { ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 
 type EditableItem = {
@@ -80,18 +81,6 @@ function resolvePreviewSrc(value: string) {
   return value;
 }
 
-function buildCategoryTargetOptions(categories: Array<{ id: number; parentId: number | null; name: { ar: string } }>) {
-  const categoryById = new Map(categories.map((category) => [category.id, category]));
-
-  return categories.map((category) => {
-    const parent = category.parentId === null ? undefined : categoryById.get(category.parentId);
-    return {
-      id: category.id,
-      label: parent ? `${parent.name.ar} — ${category.name.ar} ` : category.name.ar
-    };
-  });
-}
-
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
   const shopMediaSections = useStore((store) => store.shopMediaSections);
@@ -118,11 +107,13 @@ export default function ShopMediaPage() {
     }));
   }, [shopMediaSections]);
 
+  // Soft-deleted entities still live in the store (the trash page reads them from
+  // these same slices), so every target picker has to exclude them itself.
   const targetOptionsByType = useMemo(() => ({
-    product: products.map((product) => ({ id: product.id, label: product.name.ar })),
-    offer: offers.map((offer) => ({ id: offer.id, label: offer.name.ar })),
-    collection: collections.map((collection) => ({ id: collection.id, label: collection.name.ar })),
-    category: buildCategoryTargetOptions(categories)
+    product: products.filter((product) => !product.deletedAt).map((product) => ({ id: product.id, label: product.name.ar, depth: 0 })),
+    offer: offers.filter((offer) => !offer.deletedAt).map((offer) => ({ id: offer.id, label: offer.name.ar, depth: 0 })),
+    collection: collections.filter((collection) => !collection.deletedAt).map((collection) => ({ id: collection.id, label: collection.name.ar, depth: 0 })),
+    category: buildCategoryTreeOptions(categories)
   }), [categories, collections, offers, products]);
 
   if (!canReadErpModule(user, "shop_media")) {
@@ -135,6 +126,14 @@ export default function ShopMediaPage() {
 
   const canEdit = canUpdateErpModule(user, "shop_media");
 
+  // A target deleted after the banner was set no longer resolves to an option. The
+  // storefront falls back to the home page meanwhile, and the API refuses to store a
+  // deleted target, so saving stays blocked until a live one is chosen.
+  const hasMissingTarget = (item: EditableItem) =>
+    isDetailTargetType(item.targetType)
+    && item.targetId !== null
+    && !targetOptionsByType[item.targetType].some((option) => option.id === item.targetId);
+
   const setSection = (slot: 1 | 2 | 3 | 4 | 5, updater: (current: EditableSection) => EditableSection) => {
     dirtySlotsRef.current.add(slot);
     setDirtySlots(new Set(dirtySlotsRef.current));
@@ -146,6 +145,13 @@ export default function ShopMediaPage() {
       const validationError = new Error("أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
+      return;
+    }
+
+    if (section.items.some(hasMissingTarget)) {
+      const missingTargetError = new Error("العنصر المرتبط بإحدى الصور محذوف. اختاري عنصرًا جديدًا قبل الحفظ.");
+      setError(missingTargetError.message);
+      showErrorToast(missingTargetError, missingTargetError.message);
       return;
     }
 
@@ -300,8 +306,10 @@ export default function ShopMediaPage() {
                         const isItemCollapsed = collapsedItems.has(itemKey);
                         const typeLabel = [...listingTargetOptions, ...detailTargetOptions]
                           .find((option) => option.value === item.targetType)?.label ?? item.targetType;
+                        const targetMissing = hasMissingTarget(item);
                         const targetSummary = isDetail
-                          ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? "بدون عنصر")
+                          ? (detailOptions.find((option) => option.id === item.targetId)?.label
+                            ?? (targetMissing ? "العنصر محذوف — الصفحة الرئيسية" : "بدون عنصر"))
                           : typeLabel;
                         const thumbSrc = resolvePreviewSrc(item.imagePath || item.mobileImagePath);
 
@@ -430,9 +438,16 @@ export default function ShopMediaPage() {
                                       >
                                         <option value="">اختاري عنصرًا</option>
                                         {detailOptions.map((option) => (
-                                          <option key={option.id} value={option.id}>{option.label}</option>
+                                          <option key={option.id} value={option.id}>
+                                            {`${"— ".repeat(option.depth)}${option.label}`}
+                                          </option>
                                         ))}
                                       </select>
+                                      {targetMissing ? (
+                                        <p className="shop-media-item__missing-target">
+                                          العنصر المرتبط محذوف — تفتح هذه الصورة الصفحة الرئيسية حتى تختاري عنصرًا جديدًا.
+                                        </p>
+                                      ) : null}
                                     </div>
                                   ) : (
                                     <div className="field">

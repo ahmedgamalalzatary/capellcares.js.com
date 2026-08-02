@@ -2,20 +2,15 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatPrice, type PaymentStatus } from "@capella/shared";
+import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canReadErpModule } from "@/lib/erp-permissions";
+import { paymentStatusChip, paymentStatusFilterOptions, paymentStatusLabel } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
-import { Icon } from "@/components/ui/icons";
 
-function statusChip(status: string) {
-  const s = status.toLowerCase();
-  if (s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "status status--active";
-  if (s.includes("pending") || s.includes("processing")) return "status status--draft";
-  if (s.includes("cancel") || s.includes("fail")) return "status status--deleted";
-  return "status";
-}
 
 export default function OrdersPage() {
   const { user } = useAdminAuth();
@@ -34,30 +29,38 @@ export default function OrdersPage() {
 function OrdersPageContent() {
   const orders = useStore((s) => s.orders);
   const [search, setSearch] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | "all">("all");
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return orders;
+    const byStatus = paymentStatusFilter === "all"
+      ? orders
+      : orders.filter((o) => o.paymentStatus === paymentStatusFilter);
+    if (!search.trim()) return byStatus;
     const term = search.trim().toLowerCase();
-    return orders.filter((o) =>
+    return byStatus.filter((o) =>
       o.orderCode.toLowerCase().includes(term) ||
       o.fullName.toLowerCase().includes(term) ||
       o.phone.includes(term)
     );
-  }, [orders, search]);
+  }, [orders, paymentStatusFilter, search]);
 
   return (
     <AdminShell title="الطلبات" crumbs={[{ label: "الطلبات" }]}>
-      <div className="toolbar">
-        <div className="search">
-          <Icon.Search />
-          <input
-            placeholder="ابحثي بكود الطلب، الاسم، أو رقم الهاتف…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div style={{ marginInlineStart: "auto" }} className="muted">{filtered.length} طلب</div>
-      </div>
+      <AdminListHeader
+        searchPlaceholder="ابحثي بكود الطلب، الاسم، أو رقم الهاتف…"
+        searchValue={search}
+        onSearchChange={setSearch}
+        countLabel={`${filtered.length} طلب`}
+        filters={[
+          {
+            key: "paymentStatus",
+            label: "حالة الدفع",
+            value: paymentStatusFilter,
+            onChange: (value) => setPaymentStatusFilter(value as PaymentStatus | "all"),
+            options: paymentStatusFilterOptions
+          }
+        ]}
+      />
 
       <div className="card">
         <div className="table-outer">
@@ -84,8 +87,8 @@ function OrdersPageContent() {
                   <div style={{ fontWeight: 600 }}>{order.fullName}</div>
                   <div className="faint" style={{ fontSize: 11.5, marginTop: 2 }}>{order.phone}</div>
                 </td>
-                <td style={{ fontWeight: 600, color: "var(--accent)" }}>{order.totalAmount}</td>
-                <td><span className={statusChip(order.paymentStatus)}>{order.paymentStatus}</span></td>
+                <td style={{ fontWeight: 600, color: "var(--accent)" }}>{formatPrice(order.totalAmount, "ar")}</td>
+                <td><span className={paymentStatusChip[order.paymentStatus]}>{paymentStatusLabel[order.paymentStatus]}</span></td>
                 <td className="muted">{new Date(order.createdAt).toLocaleDateString("ar-EG", { day: "2-digit", month: "short", year: "numeric" })}</td>
                 <td>
                   <Link href={`/orders/${order.id}`} className="btn btn--ghost btn--sm">

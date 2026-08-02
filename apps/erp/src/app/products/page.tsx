@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
-import { AdminListToolbar } from "@/components/admin/admin-list-toolbar";
+import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Icon } from "@/components/ui/icons";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
@@ -73,38 +73,34 @@ export default function ProductsListPage() {
         </>
       }
     >
-      <AdminListToolbar
-        stacked
+      <AdminListHeader
         searchPlaceholder="ابحثي بالاسم أو SKU…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filteredProducts.length} منتج`}
-        extraControls={(
-          <>
-            <div className="toolbar__filter1">
-              <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
-                <option value="all">كل الحالات</option>
-                <option value="active">نشط</option>
-                <option value="inactive">غير نشط</option>
-              </select>
-            </div>
-            <div className="toolbar__filter2">
-              <select
-                className="select"
-                data-testid="products-category-filter"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value ? Number(e.target.value) : "")}
-              >
-                <option value="">كل الأقسام</option>
-                {categoryOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {`${"— ".repeat(option.depth)}${option.label}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
+        filters={[
+          {
+            key: "status",
+            label: "حالة المنتج",
+            value: statusFilter,
+            onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
+            options: ACTIVE_STATUS_FILTER_OPTIONS
+          },
+          {
+            key: "category",
+            label: "قسم المنتج",
+            testId: "products-category-filter",
+            value: String(categoryFilter),
+            onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
+            options: [
+              { value: "", label: "كل الأقسام" },
+              ...categoryOptions.map((option) => ({
+                value: String(option.id),
+                label: `${"— ".repeat(option.depth)}${option.label}`
+              }))
+            ]
+          }
+        ]}
       />
 
       <ProductsTable

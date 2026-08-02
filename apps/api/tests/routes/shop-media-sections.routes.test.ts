@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
+import { eq } from "drizzle-orm";
 
+import { products } from "@capella/database/drizzle/schema";
+import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
-import { resetApiTestDatabase } from "../helpers/database.js";
+import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { withTestServer } from "../helpers/request.js";
 
@@ -75,6 +78,46 @@ test("erp shop media sections can be listed and updated, and storefront returns 
       storefrontResponse.json.items.map((section: any) => section.slot),
       [2]
     );
+  });
+});
+
+test("shop media stops resolving a target once it is soft deleted", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const { productOneId } = await getBaselineIds();
+
+    const saveResponse = await request("/api/erp/shop-media-sections/3", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        status: "active",
+        items: [makeItem({ targetType: "product", targetId: productOneId })]
+      })
+    });
+    assert.equal(saveResponse.status, 200);
+
+    const beforeDelete = await request("/api/v1/shop-media-sections");
+    const sectionBefore = beforeDelete.json.items.find((section: any) => section.slot === 3);
+    assert.ok(sectionBefore.items[0].targetSlug, "expected a live product to resolve to a slug");
+
+    await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, productOneId));
+
+    // The storefront reads a null slug as "link to the home page" instead of routing
+    // shoppers to a product page that no longer exists.
+    const afterDelete = await request("/api/v1/shop-media-sections");
+    const sectionAfter = afterDelete.json.items.find((section: any) => section.slot === 3);
+    assert.equal(sectionAfter.items[0].targetSlug, null);
+
+    const resaveResponse = await request("/api/erp/shop-media-sections/3", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        status: "active",
+        items: [makeItem({ targetType: "product", targetId: productOneId })]
+      })
+    });
+    assert.equal(resaveResponse.status, 400);
+    assert.equal(resaveResponse.json.error, "Invalid shop media section payload");
   });
 });
 

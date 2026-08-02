@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   categories,
   collections,
@@ -43,18 +43,20 @@ async function loadTargetSlugMap(items: Array<{ targetType: ShopMediaTargetType;
   const collectionIds = items.filter((item) => item.targetType === "collection" && item.targetId != null).map((item) => item.targetId!);
   const categoryIds = items.filter((item) => item.targetType === "category" && item.targetId != null).map((item) => item.targetId!);
 
+  // Soft-deleted targets must not resolve to a slug: the storefront treats a missing
+  // slug as "link to home" instead of sending shoppers to a page that no longer exists.
   const [productRows, offerRows, collectionRows, categoryRows] = await Promise.all([
     productIds.length > 0
-      ? db.select({ id: products.id, slug: products.slug }).from(products).where(inArray(products.id, productIds))
+      ? db.select({ id: products.id, slug: products.slug }).from(products).where(and(inArray(products.id, productIds), isNull(products.deletedAt)))
       : Promise.resolve([]),
     offerIds.length > 0
-      ? db.select({ id: offers.id, slug: offers.slug }).from(offers).where(inArray(offers.id, offerIds))
+      ? db.select({ id: offers.id, slug: offers.slug }).from(offers).where(and(inArray(offers.id, offerIds), isNull(offers.deletedAt)))
       : Promise.resolve([]),
     collectionIds.length > 0
-      ? db.select({ id: collections.id, slug: collections.slug }).from(collections).where(inArray(collections.id, collectionIds))
+      ? db.select({ id: collections.id, slug: collections.slug }).from(collections).where(and(inArray(collections.id, collectionIds), isNull(collections.deletedAt)))
       : Promise.resolve([]),
     categoryIds.length > 0
-      ? db.select({ id: categories.id, slug: categories.slug }).from(categories).where(inArray(categories.id, categoryIds))
+      ? db.select({ id: categories.id, slug: categories.slug }).from(categories).where(and(inArray(categories.id, categoryIds), isNull(categories.deletedAt)))
       : Promise.resolve([])
   ]);
 
@@ -146,21 +148,23 @@ export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3 | 4 | 5, statu
   });
 }
 
+// A trashed entity is not a valid banner target, so saving one is rejected the same
+// way a non-existent id is.
 export async function shopMediaTargetExists(targetType: ShopMediaTargetType, targetId: number) {
   if (targetType === "product") {
-    const [row] = await db.select({ id: products.id }).from(products).where(eq(products.id, targetId)).limit(1);
+    const [row] = await db.select({ id: products.id }).from(products).where(and(eq(products.id, targetId), isNull(products.deletedAt))).limit(1);
     return Boolean(row);
   }
   if (targetType === "offer") {
-    const [row] = await db.select({ id: offers.id }).from(offers).where(eq(offers.id, targetId)).limit(1);
+    const [row] = await db.select({ id: offers.id }).from(offers).where(and(eq(offers.id, targetId), isNull(offers.deletedAt))).limit(1);
     return Boolean(row);
   }
   if (targetType === "collection") {
-    const [row] = await db.select({ id: collections.id }).from(collections).where(eq(collections.id, targetId)).limit(1);
+    const [row] = await db.select({ id: collections.id }).from(collections).where(and(eq(collections.id, targetId), isNull(collections.deletedAt))).limit(1);
     return Boolean(row);
   }
   if (targetType === "category") {
-    const [row] = await db.select({ id: categories.id }).from(categories).where(eq(categories.id, targetId)).limit(1);
+    const [row] = await db.select({ id: categories.id }).from(categories).where(and(eq(categories.id, targetId), isNull(categories.deletedAt))).limit(1);
     return Boolean(row);
   }
   // Listing target types (shop, new, bestsellers, products, offers, collections) don't have target IDs

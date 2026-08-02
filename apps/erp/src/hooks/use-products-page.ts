@@ -2,32 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { compareByScopedOrdering, type Category, type Product } from "@capella/shared";
+import { compareByScopedOrdering, type Product } from "@capella/shared";
 import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
-
-function buildCategoryOptions(categories: Category[]) {
-  const active = categories
-    .filter((category) => !category.deletedAt)
-    .slice()
-    .sort(compareByScopedOrdering.bind(null, "erp"));
-  const childrenByParent = new Map<number | null, Category[]>();
-  for (const category of active) {
-    const siblings = childrenByParent.get(category.parentId) ?? [];
-    siblings.push(category);
-    childrenByParent.set(category.parentId, siblings);
-  }
-
-  const options: Array<{ id: number; label: string; depth: number }> = [];
-  const visit = (parentId: number | null, depth: number) => {
-    for (const category of childrenByParent.get(parentId) ?? []) {
-      options.push({ id: category.id, label: category.name.ar, depth });
-      visit(category.id, depth + 1);
-    }
-  };
-  visit(null, 0);
-  return options;
-}
+import { buildCategoryTreeOptions } from "@/lib/category-tree";
 
 function scopeRank(product: Product, scopeCategoryId: number | null) {
   return product.orderings?.find((entry) =>
@@ -50,7 +28,7 @@ export function useProductsPage() {
   const [draftOrder, setDraftOrder] = useState<number[] | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
 
-  const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);
+  const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
 
   const filteredProducts = useMemo(() => {
     return products

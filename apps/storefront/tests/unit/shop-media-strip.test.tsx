@@ -112,6 +112,37 @@ describe("ShopMediaStrip carousel", () => {
       .toHaveAttribute("href", "/en/category/body-lotion?categoryId=2");
   });
 
+  it("falls back to the home page when a target no longer resolves", () => {
+    const section = makeSection(1);
+    section.items[0] = {
+      ...section.items[0],
+      targetType: "product",
+      targetId: 7,
+      targetSlug: null
+    };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+
+    expect(getDesktopStrip(container).querySelector('[aria-label="Media 1"]'))
+      .toHaveAttribute("href", "/en");
+  });
+
+  it("keeps showing a banner whose target was deleted instead of dropping the slide", () => {
+    const section = makeSection(3);
+    section.items[1] = {
+      ...section.items[1],
+      targetType: "collection",
+      targetId: 4,
+      targetSlug: null
+    };
+
+    const { container } = render(<ShopMediaStrip lang="ar" section={section} label="Media" />);
+    const desktopStrip = getDesktopStrip(container);
+
+    expect(desktopStrip.querySelector('[aria-label="Media 2"]')).not.toBeNull();
+    expect(desktopStrip.querySelector('[aria-label="Media 2"]')).toHaveAttribute("href", "/ar");
+  });
+
   it("mounts only one responsive strip instead of separate desktop and mobile strips", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
 

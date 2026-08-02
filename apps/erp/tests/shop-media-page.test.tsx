@@ -182,7 +182,105 @@ describe("ShopMediaPage", () => {
     }));
   });
 
-  it("shows every child category with its direct parent name", () => {
+  it("warns that a banner whose target was deleted now falls back to the home page", () => {
+    mockState = {
+      ...makeMockState(),
+      shopMediaSections: [{
+        id: 1,
+        slot: 1,
+        status: "active",
+        items: [{
+          id: 11,
+          imagePath: "/uploads/original.jpg",
+          mobileImagePath: null,
+          targetType: "product",
+          targetId: 2,
+          sortOrder: 1
+        }]
+      }],
+      products: [
+        { id: 1, name: { ar: "منتج حي", en: "Live" } },
+        { id: 2, name: { ar: "لوشن للجسم", en: "Body Lotion" }, deletedAt: "2026-01-01T00:00:00.000Z" }
+      ]
+    };
+
+    render(createElement(ShopMediaPage));
+
+    expect(screen.getByText(/الصفحة الرئيسية/)).toBeInTheDocument();
+  });
+
+  it("blocks saving a section whose target was deleted, with a specific reason", async () => {
+    mockState = {
+      ...makeMockState(),
+      shopMediaSections: [{
+        id: 1,
+        slot: 1,
+        status: "active",
+        items: [{
+          id: 11,
+          imagePath: "/uploads/original.jpg",
+          mobileImagePath: null,
+          targetType: "product",
+          targetId: 2,
+          sortOrder: 1
+        }]
+      }],
+      products: [{ id: 2, name: { ar: "لوشن للجسم", en: "Body Lotion" }, deletedAt: "2026-01-01T00:00:00.000Z" }]
+    };
+
+    render(createElement(ShopMediaPage));
+
+    fireEvent.click(screen.getAllByText("صورة الموبايل")[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+
+    expect(updateShopMediaSection).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(showErrorToast).toHaveBeenCalledWith(
+        expect.any(Error),
+        "العنصر المرتبط بإحدى الصور محذوف. اختاري عنصرًا جديدًا قبل الحفظ."
+      );
+    });
+  });
+
+  it("never offers soft-deleted products, offers, or collections as targets", () => {
+    mockState = {
+      ...makeMockState(),
+      shopMediaSections: [{
+        id: 1,
+        slot: 1,
+        status: "active",
+        items: [
+          { id: 11, imagePath: "/uploads/a.jpg", mobileImagePath: null, targetType: "product", targetId: 1, sortOrder: 1 },
+          { id: 12, imagePath: "/uploads/b.jpg", mobileImagePath: null, targetType: "offer", targetId: 1, sortOrder: 2 },
+          { id: 13, imagePath: "/uploads/c.jpg", mobileImagePath: null, targetType: "collection", targetId: 1, sortOrder: 3 }
+        ]
+      }],
+      products: [
+        { id: 1, name: { ar: "منتج حي", en: "Live" } },
+        { id: 2, name: { ar: "منتج محذوف", en: "Deleted" }, deletedAt: "2026-01-01T00:00:00.000Z" }
+      ],
+      offers: [
+        { id: 1, name: { ar: "عرض حي", en: "Live" } },
+        { id: 2, name: { ar: "عرض محذوف", en: "Deleted" }, deletedAt: "2026-01-01T00:00:00.000Z" }
+      ],
+      collections: [
+        { id: 1, name: { ar: "مجموعة حية", en: "Live" } },
+        { id: 2, name: { ar: "مجموعة محذوفة", en: "Deleted" }, deletedAt: "2026-01-01T00:00:00.000Z" }
+      ]
+    };
+
+    render(createElement(ShopMediaPage));
+
+    const [productSelect, offerSelect, collectionSelect] = screen.getAllByLabelText("العنصر") as HTMLSelectElement[];
+    const optionLabels = (select: HTMLSelectElement) =>
+      Array.from(select.querySelectorAll("option")).map((option) => option.textContent);
+
+    expect(optionLabels(productSelect!)).toEqual(["اختاري عنصرًا", "منتج حي"]);
+    expect(optionLabels(offerSelect!)).toEqual(["اختاري عنصرًا", "عرض حي"]);
+    expect(optionLabels(collectionSelect!)).toEqual(["اختاري عنصرًا", "مجموعة حية"]);
+  });
+
+  it("lists category targets in the same tree order as the products filter", () => {
     mockState = {
       ...makeMockState(),
       shopMediaSections: [{
@@ -199,17 +297,28 @@ describe("ShopMediaPage", () => {
         }]
       }],
       categories: [
-        { id: 1, parentId: null, slug: "body", name: { ar: "Body", en: "Body" }, isLeaf: false },
-        { id: 2, parentId: 1, slug: "body-lotion", name: { ar: "Body Lotion", en: "Body Lotion" }, isLeaf: true },
-        { id: 3, parentId: 1, slug: "body-oil", name: { ar: "Body Oil", en: "Body Oil" }, isLeaf: true }
+        { id: 3, parentId: 1, slug: "body-oil", name: { ar: "Body Oil", en: "Body Oil" }, isLeaf: true, sortOrder: 2 },
+        { id: 1, parentId: null, slug: "body", name: { ar: "Body", en: "Body" }, isLeaf: false, sortOrder: 1 },
+        { id: 5, parentId: 2, slug: "oily-skin", name: { ar: "Oily Skin", en: "Oily Skin" }, isLeaf: true, sortOrder: 1 },
+        { id: 2, parentId: null, slug: "skin", name: { ar: "Skin", en: "Skin" }, isLeaf: false, sortOrder: 2 },
+        { id: 4, parentId: 1, slug: "body-lotion", name: { ar: "Body Lotion", en: "Body Lotion" }, isLeaf: true, sortOrder: 1 },
+        { id: 6, parentId: null, slug: "removed", name: { ar: "Removed", en: "Removed" }, isLeaf: true, sortOrder: 3, deletedAt: "2026-01-01T00:00:00.000Z" }
       ]
     };
 
     render(createElement(ShopMediaPage));
 
-    expect(screen.getByRole("option", { name: "Body" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Body — Body Lotion" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Body — Body Oil" })).toBeInTheDocument();
+    const select = screen.getByLabelText("العنصر") as HTMLSelectElement;
+    const options = Array.from(select.querySelectorAll("option")).map((option) => option.textContent);
+
+    expect(options).toEqual([
+      "اختاري عنصرًا",
+      "Body",
+      "— Body Lotion",
+      "— Body Oil",
+      "Skin",
+      "— Oily Skin"
+    ]);
   });
 
 });
