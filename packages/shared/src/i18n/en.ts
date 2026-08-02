@@ -126,8 +126,6 @@ export const en = {
     shopTitle: "Shop",
     accountTitle: "Your Account",
     policiesTitle: "Policies",
-    policies: ["Privacy Policy", "Shipping Policy", "Return & Exchange"],
-    copyright: "© 2026 MINIKOSHK · CRAFTED BY",
-    craftedByName: "ZENITH WEAVE"
+    policies: ["Privacy Policy", "Shipping Policy", "Return & Exchange"]
   }
 } as const;

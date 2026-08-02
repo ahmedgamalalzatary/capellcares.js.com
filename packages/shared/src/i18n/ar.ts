@@ -126,8 +126,6 @@ export const ar = {
     shopTitle: "تسوّق",
     accountTitle: "حسابك",
     policiesTitle: "السياسات",
-    policies: ["سياسة الخصوصية", "سياسة الشحن", "الإرجاع والاستبدال"],
-    copyright: "© ٢٠٢٦ ميني كشك · من إبداع",
-    craftedByName: "ZENITH WEAVE"
+    policies: ["سياسة الخصوصية", "سياسة الشحن", "الإرجاع والاستبدال"]
   }
 } as const;

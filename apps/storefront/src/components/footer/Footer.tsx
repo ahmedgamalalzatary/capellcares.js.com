@@ -90,10 +90,6 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-footer-border">
         <div className="container flex flex-col items-center gap-6 py-6 text-xs tracking-widest text-footer-muted lg:flex-row lg:justify-between">
-          <span>
-            {f.copyright} <span className="font-semibold text-footer-heading">{f.craftedByName}</span>
-          </span>
-
           <Logo size={64} />
 
           <PaymentMethods />
