@@ -51,10 +51,13 @@ export const productVariantSchema = z.object({
   }
 });
 
-export const productMediaSchema = z.object({
+export const entityMediaSchema = z.object({
   type: z.enum(["image", "video"]),
   url: z.string().min(1)
 });
+
+/** @deprecated Use entityMediaSchema. */
+export const productMediaSchema = entityMediaSchema;
 
 export const productSchema = z.object({
   id: z.number().int().positive(),
@@ -75,7 +78,7 @@ export const productSchema = z.object({
   youtubeUrl: z.string().nullable(),
   imagePath: z.string().nullable(),
   hoverImagePath: z.string().nullable(),
-  media: z.array(productMediaSchema),
+  media: z.array(entityMediaSchema),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),
   isBestseller: z.boolean(),

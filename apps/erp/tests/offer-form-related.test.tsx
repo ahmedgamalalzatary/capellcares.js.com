@@ -20,6 +20,22 @@ vi.mock("@/lib/store", () => ({
   getStore: () => ({ upsertOffer })
 }));
 
+vi.mock("@/components/forms/entity-media-upload", () => ({
+  EntityMediaUpload: ({ value, onChange }: any) => createElement(
+    "button",
+    {
+      type: "button",
+      "data-testid": "offer-media-upload",
+      onClick: () => onChange([
+        ...value,
+        { type: "image", url: "/uploads/offer-detail.png" },
+        { type: "video", url: "/uploads/offer-demo.mp4" }
+      ])
+    },
+    "add offer media"
+  )
+}));
+
 import { OfferForm } from "@/components/forms/offer-form";
 
 const products = [
@@ -59,6 +75,7 @@ function completeOffer(id: number) {
     name: { ar: "عرض", en: "Offer" },
     description: { ar: "وصف", en: "Description" },
     imagePath: "/uploads/offer.png",
+    media: [{ type: "image" as const, url: "/uploads/offer.png" }],
     price: 80,
     originalTotal: 100,
     items: [{ variantId: 1, qty: 1 }],
@@ -70,6 +87,28 @@ function completeOffer(id: number) {
 }
 
 describe("OfferForm related items", () => {
+  it("saves the ordered offer media gallery", async () => {
+    upsertOffer.mockClear();
+    const view = render(
+      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, relatedOptions })
+    );
+    const form = within(view.container);
+
+    fireEvent.click(form.getByTestId("offer-media-upload"));
+    fireEvent.click(form.getByRole("button", { name: /حفظ التعديلات/ }));
+
+    await waitFor(() => {
+      expect(upsertOffer).toHaveBeenCalledWith(expect.objectContaining({
+        imagePath: "/uploads/offer.png",
+        media: [
+          { type: "image", url: "/uploads/offer.png" },
+          { type: "image", url: "/uploads/offer-detail.png" },
+          { type: "video", url: "/uploads/offer-demo.mp4" }
+        ]
+      }));
+    });
+  });
+
   it("renders the related-items selector", () => {
     const view = render(createElement(OfferForm, { mode: "new", products, relatedOptions }));
     const form = within(view.container);

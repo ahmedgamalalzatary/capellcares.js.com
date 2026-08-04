@@ -10,7 +10,7 @@ import {
   offers,
   orderItems,
   orders,
-  productMedia,
+  entityMedia,
   productVariants,
   products,
   relatedItems,
@@ -48,7 +48,7 @@ export async function clearTestSeed() {
     await db.delete(categoryPaths);
     await db.delete(entityOrderings);
     await db.delete(variantDiscounts);
-    await db.delete(productMedia);
+    await db.delete(entityMedia);
     await db.delete(productVariants);
     await db.delete(offers);
     await db.delete(products);
@@ -293,15 +293,15 @@ async function ensureVariant(input: {
 async function ensureProductImageMedia(productId: number, url: string) {
   const [existing] = await db
     .select()
-    .from(productMedia)
-    .where(eq(productMedia.productId, productId))
+    .from(entityMedia)
+    .where(eq(entityMedia.productId, productId))
     .limit(1);
   if (existing) {
     return existing.id;
   }
 
   const [created] = await db
-    .insert(productMedia)
+    .insert(entityMedia)
     .values({
       productId,
       mediaType: "image",

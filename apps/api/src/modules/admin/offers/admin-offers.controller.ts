@@ -21,6 +21,7 @@ import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
 
 async function findOfferRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
   const [offer] = await db.select({ slug: offers.slug }).from(offers).where(eq(offers.id, id)).limit(1);
@@ -139,6 +140,7 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       imagePath: incoming.imagePath ?? null,
+      media: parseEntityMediaInput(incoming.media),
       fixedPrice,
       status: incoming.status ?? "inactive",
       visibility: incoming.visibility ?? "visible",
@@ -154,6 +156,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     await safeTriggerOfferRevalidation(revalidation ?? { slug });
     res.json({ ok: true });
   } catch (error) {
+    if ((error as { code?: string })?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
+      return res.status(400).json({ ok: false, reason: "media-video-limit" });
+    }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
     }
@@ -181,10 +186,12 @@ export async function adminRestoreOffer(req: Request, res: Response) {
 
 export async function adminHardDeleteOffer(req: Request, res: Response) {
   const revalidation = await findOfferRevalidationData(Number(req.params.id));
-  const deleted = await hardDeleteOfferRepo(Number(req.params.id));
-  if (!deleted) {
+  const result = await hardDeleteOfferRepo(Number(req.params.id));
+  if (!result) {
     return res.status(404).json({ ok: false, reason: "not-in-trash" });
   }
+  const { deleteLocalUploadUrls } = await import("../../uploads/uploads.service.js");
+  await deleteLocalUploadUrls(result.mediaUrls);
   if (revalidation) {
     await safeTriggerOfferRevalidation(revalidation);
   }

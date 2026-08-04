@@ -1,5 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import { collectionItems, entityOrderings, offerItems, orderItems, productMedia, products, productVariants, relatedItems, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
+import { collectionItems, entityMedia, entityOrderings, offerItems, orderItems, products, productVariants, relatedItems, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   normalizeMedia,
@@ -36,8 +36,13 @@ export async function createAdminProductRepo(input: {
   isNew?: boolean;
   isBestseller?: boolean;
 }, executor?: DbTransaction) {
-  const media = input.media ?? normalizeMedia(undefined, input.imagePath ?? null);
-  const primaryImagePath = resolvePrimaryImagePath(media, input.imagePath ?? null);
+  const shouldReplaceMedia = input.media !== undefined || !input.id;
+  const mediaUpdate = shouldReplaceMedia
+    ? input.media ?? normalizeMedia(undefined, input.imagePath ?? null)
+    : undefined;
+  const primaryImagePath = mediaUpdate
+    ? resolvePrimaryImagePath(mediaUpdate, input.imagePath ?? null)
+    : null;
   const repo = executor ?? db;
 
   if (input.id) {
@@ -67,7 +72,7 @@ export async function createAdminProductRepo(input: {
           arWarnings: input.arWarnings ?? null,
           enWarnings: input.enWarnings ?? null,
           youtubeUrl: input.youtubeUrl ?? null,
-          imagePath: primaryImagePath,
+          ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
           hoverImagePath: input.hoverImagePath ?? null,
           categoryId: input.categoryId,
           status: input.status,
@@ -75,7 +80,9 @@ export async function createAdminProductRepo(input: {
           isBestseller: input.isBestseller ?? false
         })
         .where(eq(products.id, id));
-      await replaceProductMediaRepo(id, media, executor);
+      if (mediaUpdate) {
+        await replaceProductMediaRepo(id, mediaUpdate, executor);
+      }
       return { id };
     }
   }
@@ -103,7 +110,7 @@ export async function createAdminProductRepo(input: {
       isNew: input.isNew ?? false,
       isBestseller: input.isBestseller ?? false
     }).$returningId();
-  await replaceProductMediaRepo(created.id, media, executor);
+  await replaceProductMediaRepo(created.id, mediaUpdate ?? [], executor);
   return created;
 }
 
@@ -245,7 +252,7 @@ export async function restoreProductRepo(id: number) {
   await db.update(products).set({ deletedAt: null }).where(eq(products.id, id));
 }
 
-export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: string | null } | null> {
+export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
   return db.transaction(async (tx) => {
     const linked = await tx
       .select({ variantId: offerItems.variantId })
@@ -278,6 +285,11 @@ export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: st
       .limit(1);
     if (!row || row.deletedAt == null) return null;
 
+    const mediaRows = await tx
+      .select({ url: entityMedia.url })
+      .from(entityMedia)
+      .where(eq(entityMedia.productId, id));
+
     const variantRows = await tx
       .select({ id: productVariants.id })
       .from(productVariants)
@@ -301,10 +313,10 @@ export async function hardDeleteProductRepo(id: number): Promise<{ imagePath: st
     if (variantIds.length > 0) {
       await tx.delete(collectionItems).where(inArray(collectionItems.variantId, variantIds));
     }
-    await tx.delete(productMedia).where(eq(productMedia.productId, id));
+    await tx.delete(entityMedia).where(eq(entityMedia.productId, id));
     await tx.delete(productVariants).where(eq(productVariants.productId, id));
     await tx.delete(products).where(eq(products.id, id));
-    return { imagePath: row.imagePath ?? null };
+    return { mediaUrls: [row.imagePath, ...mediaRows.map((item) => item.url)].filter((url): url is string => Boolean(url)) };
   });
 }
 

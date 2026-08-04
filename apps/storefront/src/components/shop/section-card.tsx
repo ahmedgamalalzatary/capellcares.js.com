@@ -313,7 +313,7 @@ export function SectionCard(props: SectionCardProps) {
           <h3 className={nameClass}>{title}</h3>
         )}
 
-        <CardRating rating={rating} dict={dict} />
+        <CardRating rating={rating} dict={dict} lang={lang} />
 
         {price != null ? (
           <span className={priceClass}>

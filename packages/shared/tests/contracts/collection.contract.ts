@@ -13,6 +13,12 @@ export const storefrontCollectionContract = z.object({
   name: bilingualSchema,
   description: bilingualSchema,
   imagePath: z.string(),
+  media: z.array(
+    z.object({
+      type: z.enum(["image", "video"]),
+      url: z.string()
+    })
+  ),
   price: z.number(),
   originalTotal: z.number(),
   categoryId: z.number(),

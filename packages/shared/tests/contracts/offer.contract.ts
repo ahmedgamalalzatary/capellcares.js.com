@@ -13,6 +13,12 @@ export const storefrontOfferContract = z.object({
   name: bilingualSchema,
   description: bilingualSchema,
   imagePath: z.string().nullable(),
+  media: z.array(
+    z.object({
+      type: z.enum(["image", "video"]),
+      url: z.string()
+    })
+  ),
   price: z.number(),
   originalTotal: z.number(),
   stock: z.number().int().nonnegative(),

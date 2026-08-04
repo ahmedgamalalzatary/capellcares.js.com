@@ -9,6 +9,21 @@ import {
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
 } from "./entity-ordering.repository.js";
+import {
+  loadEntityMediaRows,
+  normalizeEntityMedia,
+  replaceEntityMediaRepo,
+  resolvePrimaryEntityImagePath,
+  type EntityMediaItem
+} from "./entity-media.repository.js";
+
+async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[]) {
+  const mediaByCollection = await loadEntityMediaRows("collection", rows.map((row) => row.id));
+  return rows.map((row) => {
+    const media = normalizeEntityMedia(mediaByCollection.get(row.id), row.imagePath);
+    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath) };
+  });
+}
 
 async function withCollectionRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
   const rankByCollectionId = await loadScopedRanksRepo({
@@ -151,7 +166,7 @@ async function assertRootCollectionCategory(categoryId: number) {
 
 export async function listCollectionsRepo(includeDeleted = false) {
   const rows = await db.select().from(collections).where(includeDeleted ? undefined : isNull(collections.deletedAt));
-  const ranked = await withCollectionRanks(rows, "erp");
+  const ranked = await withCollectionRanks(await withCollectionMedia(rows), "erp");
   return Promise.all(
     ranked.map(async (row) => {
       const items = await listOrderedCollectionItemsRepo(row.id);
@@ -167,7 +182,7 @@ export async function listVisibleCollectionsRepo() {
     .where(
       sql`${collections.visibility} = 'visible' and ${collections.status} = 'active' and ${collections.deletedAt} is null`
     );
-  const ranked = await withCollectionRanks(rows, "storefront");
+  const ranked = await withCollectionRanks(await withCollectionMedia(rows), "storefront");
   const itemsByCollectionId = await listOrderedItemsByCollectionRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByCollectionId.get(row.id) ?? [] }));
 }
@@ -177,14 +192,16 @@ export async function findCollectionBySlugRepo(slug: string) {
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedCollectionItemsRepo(row.id);
-  return { ...row, items };
+  const [withMedia] = await withCollectionMedia([row]);
+  return { ...withMedia!, items };
 }
 
 export async function findCollectionByIdRepo(id: number) {
   const [row] = await db.select().from(collections).where(eq(collections.id, id)).limit(1);
   if (!row) return null;
   const items = await listOrderedCollectionItemsRepo(row.id);
-  return { ...row, items };
+  const [withMedia] = await withCollectionMedia([row]);
+  return { ...withMedia!, items };
 }
 
 export async function upsertCollectionRepo(input: {
@@ -195,6 +212,7 @@ export async function upsertCollectionRepo(input: {
   arDescription?: string | null;
   enDescription?: string | null;
   imagePath?: string | null;
+  media?: EntityMediaItem[];
   fixedPrice: number;
   categoryId: number;
   status: "active" | "inactive";
@@ -203,6 +221,13 @@ export async function upsertCollectionRepo(input: {
 }) {
   await assertRootCollectionCategory(input.categoryId);
   const mergedItems = mergeCollectionItems(input.items);
+  const shouldReplaceMedia = input.media !== undefined || !input.id;
+  const mediaUpdate = shouldReplaceMedia
+    ? input.media ?? (input.imagePath ? [{ type: "image", url: input.imagePath }] : [])
+    : undefined;
+  const primaryImagePath = mediaUpdate
+    ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
+    : null;
   return db.transaction(async (tx) => {
   let collectionId = input.id;
   if (collectionId) {
@@ -214,7 +239,7 @@ export async function upsertCollectionRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
-        imagePath: input.imagePath ?? null,
+        ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
@@ -230,7 +255,7 @@ export async function upsertCollectionRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
-        imagePath: input.imagePath ?? null,
+        imagePath: primaryImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
@@ -238,6 +263,9 @@ export async function upsertCollectionRepo(input: {
       })
       .$returningId();
     collectionId = created.id;
+  }
+  if (mediaUpdate !== undefined) {
+    await replaceEntityMediaRepo({ type: "collection", id: collectionId! }, mediaUpdate, tx);
   }
 
   const existingItems = await tx

@@ -8,6 +8,7 @@ type OfferMapperRow = {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
   stock: number;
   status: "active" | "inactive";
@@ -36,6 +37,7 @@ export function toOfferBase(
       en: offer.enDescription ?? ""
     },
     imagePath: offer.imagePath ?? "",
+    media: offer.media ?? (offer.imagePath ? [{ type: "image", url: offer.imagePath }] : []),
     price,
     originalTotal,
     stock: offer.stock,

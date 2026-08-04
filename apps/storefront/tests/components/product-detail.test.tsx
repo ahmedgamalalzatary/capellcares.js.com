@@ -85,9 +85,10 @@ describe("ProductDetail", () => {
     }));
 
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/primary.jpg");
-    expect(screen.getByRole("button", { name: "view 3" })).toBeInTheDocument();
+    const videoThumbnail = screen.getByTestId("product-media-thumbs").querySelectorAll("button")[2]!;
+    expect(videoThumbnail).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "view 3" }));
+    fireEvent.click(videoThumbnail);
     expect(document.querySelector("video[controls]")).toHaveAttribute("src", "/uploads/demo.mp4");
 
     rerender(createElement(ProductDetail, {
@@ -103,7 +104,45 @@ describe("ProductDetail", () => {
     expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/legacy.jpg");
   });
 
-  it("switches product media when the user drags on the main media area or thumbnail row", () => {
+  it("uses the selected language for video accessibility labels", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out", lowStock: "Low", inStock: "In stock", quantity: "Quantity", addToCart: "Add", added: "Added", buyNow: "Buy", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "" },
+      ingredients: { ar: "", en: "" },
+      howToUse: { ar: "", en: "" },
+      warnings: { ar: "", en: "" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/main.jpg",
+      media: [
+        { type: "image" as const, url: "/uploads/main.jpg" },
+        { type: "video" as const, url: "/uploads/demo.mp4" }
+      ],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    render(createElement(ProductDetail, { product, offers: [], lang: "ar", dict }));
+    const videoThumbnail = screen.getByTestId("product-media-thumbs").querySelectorAll("button")[1] as HTMLButtonElement;
+    fireEvent.click(videoThumbnail);
+    expect(screen.getByTestId("product-media-main").querySelector("video")).toHaveAttribute("aria-label", product.name.ar);
+  });
+
+  it("switches product media only when the user drags on the main media area", () => {
     const dict = {
       product: {
         description: "Description",
@@ -181,7 +220,7 @@ describe("ProductDetail", () => {
 
     fireEvent.pointerDown(screen.getByTestId("product-media-thumbs"), { clientX: 120, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
     fireEvent.pointerUp(screen.getByTestId("product-media-thumbs"), { clientX: 260, clientY: 105, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
-    expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/secondary.jpg");
+    expect(document.querySelector("video[controls]")).toHaveAttribute("src", "/uploads/demo.mp4");
   });
 
   it("localizes media dot labels from the product dictionary", () => {
@@ -240,6 +279,8 @@ describe("ProductDetail", () => {
 
     expect(screen.getByRole("button", { name: "انتقل إلى الوسائط 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "انتقل إلى الوسائط 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "اختر الوسائط 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "اختر الوسائط 2" })).toBeInTheDocument();
   });
 
   it("shows pagination dots and switches media on click when there are 2+ media", () => {

@@ -13,7 +13,7 @@ export const storefrontRatingContract = z
   // A card hides its stars on a zero count, so an average alongside one would
   // never be seen — and would mean the payload counted and averaged different
   // sets of reviews.
-  .refine((rating) => rating.count > 0 || rating.average === 0, {
+  .refine((rating) => rating.count > 0 ? rating.average >= 1 : rating.average === 0, {
     message: "An unreviewed entity must report a zero average",
     path: ["average"]
   });

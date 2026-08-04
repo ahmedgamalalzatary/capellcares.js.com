@@ -182,7 +182,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
           </p>
         ) : null}
 
-        <CardRating rating={item.rating} dict={dict} />
+        <CardRating rating={item.rating} dict={dict} lang={lang} />
 
         <span className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}>
           {formatPrice(item.price, lang)}

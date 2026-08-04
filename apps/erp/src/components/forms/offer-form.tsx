@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { formatPrice } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
-import { ImageUpload } from "./image-upload";
+import { EntityMediaUpload } from "./entity-media-upload";
 import { RelatedItemsField } from "./related-items-field";
 import { useOfferForm } from "../../hooks/forms/use-offer-form";
 import type { OfferFormProps } from "../../types/forms/offer-form.types";
@@ -22,8 +22,8 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
     setDescEn,
     price,
     setPrice,
-    image,
-    setImage,
+    media,
+    setMedia,
     rows,
     relatedItems,
     setRelatedItems,
@@ -148,9 +148,9 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
 
       <aside className="stack stack--lg">
         <ImageFieldCard
-          title="صورة العرض"
+          title="وسائط العرض"
           error={errors.image}
-          uploadSlot={<ImageUpload value={image} onChange={setImage} uploadContext={mode === "edit" ? "offers.update" : "offers.create"} />}
+          uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "offers.update" : "offers.create"} entityLabel="عرض" testIdPrefix="offer" />}
         />
 
         <section className="card">

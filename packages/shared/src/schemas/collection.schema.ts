@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { entityMediaSchema } from "./product.schema.js";
 
 export const collectionItemSchema = z.object({
   id: z.number().int().positive(),
@@ -15,6 +16,7 @@ export const collectionSchema = z.object({
   arDescription: z.string().nullable(),
   enDescription: z.string().nullable(),
   imagePath: z.string().nullable(),
+  media: z.array(entityMediaSchema),
   fixedPrice: z.number().nonnegative(),
   categoryId: z.number().int().positive(),
   status: z.enum(["active", "inactive"]),

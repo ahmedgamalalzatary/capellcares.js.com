@@ -13,6 +13,7 @@ export interface CollectionDto {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media: EntityMediaDto[];
   fixedPrice: number;
   categoryId: number;
   status: "active" | "inactive";
@@ -20,3 +21,4 @@ export interface CollectionDto {
   deletedAt: string | null;
   items: CollectionItemDto[];
 }
+import type { EntityMediaDto } from "./product.dto.js";

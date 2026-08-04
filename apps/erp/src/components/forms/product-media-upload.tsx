@@ -1,17 +1,25 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { ProductMedia } from "@capella/shared";
+import type { EntityMedia } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { api, type ErpUploadContext } from "@/lib/api/client";
 
 interface Props {
-  value: ProductMedia[];
-  onChange: (media: ProductMedia[]) => void;
+  value: EntityMedia[];
+  onChange: (media: EntityMedia[]) => void;
   uploadContext?: ErpUploadContext;
+  entityLabel?: string;
+  testIdPrefix?: "product" | "offer" | "collection";
 }
 
-export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
+export function EntityMediaUpload({
+  value,
+  onChange,
+  uploadContext,
+  entityLabel = "منتج",
+  testIdPrefix = "product"
+}: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +43,7 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
     const hasExistingVideo = value.some((item) => item.type === "video");
     const incomingVideoCount = Array.from(files).filter((file) => file.type.startsWith("video/")).length;
     if ((hasExistingVideo ? 1 : 0) + incomingVideoCount > 1) {
-      setError("يمكن رفع فيديو واحد فقط لكل منتج.");
+      setError(`يمكن رفع فيديو واحد فقط لكل ${entityLabel}.`);
       return;
     }
     if (!uploadContext) {
@@ -68,7 +76,7 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
     <div className="stack">
       <div className="row row--between">
         <div className="muted fs-12">
-          أول صورة هي الأساسية في المتجر. باقي الصور والفيديوهات تظهر داخل معرض صفحة المنتج.
+          أول صورة هي الأساسية في المتجر. باقي الصور والفيديوهات تظهر داخل معرض صفحة {entityLabel}.
         </div>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
           <Icon.Upload size={14} /> إضافة وسائط
@@ -77,7 +85,7 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
 
       <input
         ref={ref}
-        data-testid="product-media-input"
+        data-testid={`${testIdPrefix}-media-input`}
         type="file"
         accept="image/png,image/jpeg,image/webp,video/mp4,video/webm"
         multiple
@@ -86,13 +94,13 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
       />
 
       {value.length === 0 ? (
-        <div className="muted fs-12">ارفعي صور المنتج وفيديوه إن وجد.</div>
+        <div className="muted fs-12">ارفعي صور {entityLabel} وفيديوه إن وجد.</div>
       ) : (
         <div className="stack">
           {value.map((item, index) => (
             <div
               key={`${item.type}-${item.url}-${index}`}
-              data-testid="product-media-item"
+              data-testid={`${testIdPrefix}-media-item`}
               className="row row--between media-tile"
             >
               <div className="row">
@@ -129,8 +137,12 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
       )}
 
       {uploading ? <div className="muted fs-12">جارِ رفع الوسائط...</div> : null}
-      {!uploadContext ? <div className="muted fs-12">رفع الوسائط متاح فقط أثناء تعديل منتج موجود.</div> : null}
+      {!uploadContext ? <div className="muted fs-12">رفع الوسائط متاح فقط أثناء تعديل عنصر موجود.</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>
   );
+}
+
+export function ProductMediaUpload(props: Props) {
+  return <EntityMediaUpload {...props} entityLabel="منتج" testIdPrefix="product" />;
 }

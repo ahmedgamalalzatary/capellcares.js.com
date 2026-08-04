@@ -76,11 +76,11 @@ test("listRatingSummaries averages the visible ratings of each requested entity"
 
 test("listRatingSummaries rounds the average to one decimal", async () => {
   const ids = await getBaselineIds();
-  await seedRatings("product", ids.productOneId, [{ rating: 5 }, { rating: 4 }]);
+  await seedRatings("product", ids.productOneId, [{ rating: 5 }, { rating: 4 }, { rating: 4 }]);
 
   const summaries = await listRatingSummaries("product", [ids.productOneId]);
 
-  assert.deepEqual(summaries.get(ids.productOneId), { average: 4.5, count: 2 });
+  assert.deepEqual(summaries.get(ids.productOneId), { average: 4.3, count: 3 });
 });
 
 test("listRatingSummaries ignores hidden and soft-deleted reviews", async () => {

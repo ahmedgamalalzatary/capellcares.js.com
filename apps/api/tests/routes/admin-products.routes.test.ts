@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
-import { mkdir, writeFile, access } from "node:fs/promises";
+import { mkdir, writeFile, access, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { and, asc, eq, or } from "drizzle-orm";
@@ -9,7 +9,7 @@ import {
   categories,
   collectionItems,
   offerItems,
-  productMedia,
+  entityMedia,
   products,
   productVariants,
   relatedItems,
@@ -120,6 +120,80 @@ serialTest("admin product upsert rejects activating a product with no image", as
 
     assert.equal(response.status, 400);
     assert.equal(response.json.reason, "cannot-activate-incomplete-product");
+  });
+});
+
+serialTest("admin product upsert derives an active product image from normalized media", async () => {
+  const ids = await getBaselineIds();
+  const payload = makeCompleteProduct(ids.leafCategoryId);
+  delete (payload as { imagePath?: string }).imagePath;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        sku: "ROUTE-ACTIVE-MEDIA-IMAGE",
+        media: [{ type: "image", url: "/uploads/from-media.jpg" }]
+      })
+    });
+    assert.equal(response.status, 200);
+  });
+
+  const [created] = await db
+    .select({ imagePath: products.imagePath })
+    .from(products)
+    .where(eq(products.sku, "ROUTE-ACTIVE-MEDIA-IMAGE"));
+  assert.equal(created?.imagePath, "/uploads/from-media.jpg");
+});
+
+serialTest("admin product upsert preserves an active product image when image fields are omitted", async () => {
+  const ids = await getBaselineIds();
+  const payload = {
+    ...makeCompleteProduct(ids.leafCategoryId),
+    media: [
+      { type: "image" as const, url: "/uploads/primary.jpg" },
+      { type: "image" as const, url: "/uploads/secondary.jpg" },
+      { type: "video" as const, url: "/uploads/demo.mp4" }
+    ]
+  };
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    assert.equal(createResponse.status, 200);
+
+    const [created] = await db
+      .select({ id: products.id, imagePath: products.imagePath })
+      .from(products)
+      .where(eq(products.sku, payload.sku));
+    assert.ok(created);
+
+    const updateResponse = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...payload, id: created.id, imagePath: undefined, media: undefined })
+    });
+    assert.equal(updateResponse.status, 200);
+
+    const [updated] = await db
+      .select({ imagePath: products.imagePath })
+      .from(products)
+      .where(eq(products.id, created.id));
+    assert.equal(updated?.imagePath, created.imagePath);
+
+    const mediaRows = await db
+      .select({ type: entityMedia.mediaType, url: entityMedia.url })
+      .from(entityMedia)
+      .where(eq(entityMedia.productId, created.id))
+      .orderBy(asc(entityMedia.sortOrder));
+    assert.deepEqual(mediaRows, payload.media);
   });
 });
 
@@ -445,12 +519,13 @@ serialTest("admin product upsert persists ordered media and a dedicated hover im
 
   const mediaRows = await db
     .select({
-      mediaType: productMedia.mediaType,
-      url: productMedia.url,
-      sortOrder: productMedia.sortOrder
+      mediaType: entityMedia.mediaType,
+      url: entityMedia.url,
+      sortOrder: entityMedia.sortOrder
     })
-    .from(productMedia)
-    .where(eq(productMedia.productId, created.id));
+    .from(entityMedia)
+    .where(eq(entityMedia.productId, created.id))
+    .orderBy(asc(entityMedia.sortOrder));
 
   assert.deepEqual(mediaRows, [
     { mediaType: "image", url: "/uploads/route-primary.jpg", sortOrder: 1 },
@@ -856,10 +931,27 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
   const uploadsDir = resolve(process.cwd(), "uploads");
   const fileName = `test-hard-delete-${ids.productOneId}.jpg`;
   const absolutePath = resolve(uploadsDir, fileName);
+  const secondaryFileName = `test-hard-delete-secondary-${ids.productOneId}.jpg`;
+  const secondaryAbsolutePath = resolve(uploadsDir, secondaryFileName);
+  const sharedMediaFileName = `test-hard-delete-shared-media-${ids.productOneId}.jpg`;
+  const sharedMediaAbsolutePath = resolve(uploadsDir, sharedMediaFileName);
+  const sharedLegacyFileName = `test-hard-delete-shared-legacy-${ids.productOneId}.jpg`;
+  const sharedLegacyAbsolutePath = resolve(uploadsDir, sharedLegacyFileName);
   await mkdir(uploadsDir, { recursive: true });
   await writeFile(absolutePath, "fake-image-bytes");
+  await writeFile(secondaryAbsolutePath, "fake-secondary-image-bytes");
+  await writeFile(sharedMediaAbsolutePath, "fake-shared-media-bytes");
+  await writeFile(sharedLegacyAbsolutePath, "fake-shared-legacy-bytes");
 
   await db.update(products).set({ deletedAt: new Date(), imagePath: `/uploads/${fileName}` }).where(eq(products.id, ids.productOneId));
+  await db.insert(entityMedia).values([
+    { productId: ids.productOneId, mediaType: "image", url: `/uploads/${fileName}`, sortOrder: 1 },
+    { productId: ids.productOneId, mediaType: "image", url: `http://localhost:4000/uploads/${secondaryFileName}`, sortOrder: 2 },
+    { productId: ids.productOneId, mediaType: "image", url: `/uploads/${sharedMediaFileName}`, sortOrder: 3 },
+    { productId: ids.productOneId, mediaType: "image", url: `/uploads/${sharedLegacyFileName}`, sortOrder: 4 },
+    { productId: ids.productTwoId, mediaType: "image", url: `http://localhost:4000/uploads/${sharedMediaFileName}`, sortOrder: 99 }
+  ]);
+  await db.update(products).set({ imagePath: `/uploads/${sharedLegacyFileName}` }).where(eq(products.id, ids.productTwoId));
   await db.insert(wishlists).values({ customerId: ids.customerId, entityType: "product", entityId: ids.productOneId });
 
   await withTestServer(app, async (request) => {
@@ -887,6 +979,11 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
   assert.equal(remainingWishlists.length, 0, "expected wishlist rows to be removed");
 
   await assert.rejects(access(absolutePath), "expected image file to be unlinked");
+  await assert.rejects(access(secondaryAbsolutePath), "expected secondary media file to be unlinked");
+  await access(sharedMediaAbsolutePath);
+  await access(sharedLegacyAbsolutePath);
+  await unlink(sharedMediaAbsolutePath);
+  await unlink(sharedLegacyAbsolutePath);
 });
 
 serialTest("admin soft-delete rejects products whose variants are used by offers", async () => {

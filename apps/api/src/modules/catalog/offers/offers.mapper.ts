@@ -9,6 +9,7 @@ type OfferRow = {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
   stock: number;
   status: "active" | "inactive";

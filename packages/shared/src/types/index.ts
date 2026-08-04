@@ -46,10 +46,13 @@ export interface VariantDiscount {
   status: "active" | "inactive";
 }
 
-export interface ProductMedia {
+export interface EntityMedia {
   type: "image" | "video";
   url: string;
 }
+
+/** @deprecated Use EntityMedia. */
+export type ProductMedia = EntityMedia;
 
 export interface Product {
   id: number;
@@ -64,7 +67,7 @@ export interface Product {
   buyingPrice: number;
   imagePath: string;
   hoverImagePath?: string;
-  media?: ProductMedia[];
+  media?: EntityMedia[];
   youtubeUrl?: string;
   status: ProductStatus;
   isNew: boolean;
@@ -217,6 +220,7 @@ export interface Collection {
   name: Bilingual;
   description: Bilingual;
   imagePath: string;
+  media?: EntityMedia[];
   price: number;
   originalTotal: number;
   categoryId: number;
@@ -260,6 +264,7 @@ export interface Offer {
   name: Bilingual;
   description: Bilingual;
   imagePath: string;
+  media?: EntityMedia[];
   price: number;
   originalTotal: number;
   items: OfferItem[];

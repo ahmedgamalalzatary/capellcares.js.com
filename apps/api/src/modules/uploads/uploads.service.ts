@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { inArray } from "drizzle-orm";
+import { collections, entityMedia, offers, products } from "@capella/database/drizzle/schema";
+import { db } from "@capella/database/src/db";
 import type { UploadMediaPayload } from "./uploads.schemas.js";
 
 type AllowedMimeType = "image/png" | "image/jpeg" | "image/webp" | "video/mp4" | "video/webm";
@@ -94,4 +97,49 @@ export async function uploadBase64Media(
     buffer,
     publicBaseUrl
   });
+}
+
+function localUploadPath(url: string): string | null {
+  if (url.startsWith("/uploads/")) return url;
+  const publicBase = resolvePublicBaseUrl().replace(/\/+$/, "");
+  if (!url.startsWith(`${publicBase}/`)) return null;
+  return `/uploads/${url.slice(publicBase.length + 1)}`;
+}
+
+export async function deleteLocalUploadUrls(urls: Array<string | null | undefined>) {
+  const uploadsDir = resolve(process.cwd(), "uploads");
+  const urlsByPath = new Map<string, Set<string>>();
+  for (const url of urls) {
+    if (!url) continue;
+    const uploadPath = localUploadPath(url);
+    if (!uploadPath) continue;
+    const matchingUrls = urlsByPath.get(uploadPath) ?? new Set<string>();
+    matchingUrls.add(url);
+    urlsByPath.set(uploadPath, matchingUrls);
+  }
+
+  for (const [uploadPath, originalUrls] of urlsByPath) {
+    const absolutePath = resolve(uploadsDir, uploadPath.slice("/uploads/".length));
+    const relativePath = relative(uploadsDir, absolutePath);
+    if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+      console.warn(`Skipped unlink outside uploads directory: ${absolutePath}`);
+      continue;
+    }
+    const publicUrl = `${resolvePublicBaseUrl().replace(/\/+$/, "")}/${uploadPath.slice("/uploads/".length)}`;
+    const referenceUrls = [...new Set([uploadPath, publicUrl, ...originalUrls])];
+    const references = await Promise.all([
+      db.select({ id: entityMedia.id }).from(entityMedia).where(inArray(entityMedia.url, referenceUrls)).limit(1),
+      db.select({ id: products.id }).from(products).where(inArray(products.imagePath, referenceUrls)).limit(1),
+      db.select({ id: offers.id }).from(offers).where(inArray(offers.imagePath, referenceUrls)).limit(1),
+      db.select({ id: collections.id }).from(collections).where(inArray(collections.imagePath, referenceUrls)).limit(1)
+    ]);
+    if (references.some((rows) => rows.length > 0)) continue;
+    try {
+      await unlink(absolutePath);
+    } catch (error: any) {
+      if (error?.code !== "ENOENT") {
+        console.warn(`Failed to unlink uploaded media ${absolutePath}:`, error?.message ?? error);
+      }
+    }
+  }
 }

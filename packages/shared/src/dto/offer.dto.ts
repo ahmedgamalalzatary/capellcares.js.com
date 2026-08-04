@@ -13,9 +13,11 @@ export interface OfferDto {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media: EntityMediaDto[];
   fixedPrice: number;
   status: "active" | "inactive";
   visibility: "visible" | "hidden";
   deletedAt: string | null;
   items: OfferItemDto[];
 }
+import type { EntityMediaDto } from "./product.dto.js";

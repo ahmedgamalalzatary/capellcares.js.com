@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
+import { entityMedia, entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksForScopesRepo,
@@ -9,6 +9,21 @@ import {
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
 } from "./entity-ordering.repository.js";
+import {
+  loadEntityMediaRows,
+  normalizeEntityMedia,
+  replaceEntityMediaRepo,
+  resolvePrimaryEntityImagePath,
+  type EntityMediaItem
+} from "./entity-media.repository.js";
+
+async function withOfferMedia<T extends { id: number; imagePath: string | null }>(rows: T[]) {
+  const mediaByOffer = await loadEntityMediaRows("offer", rows.map((row) => row.id));
+  return rows.map((row) => {
+    const media = normalizeEntityMedia(mediaByOffer.get(row.id), row.imagePath);
+    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath) };
+  });
+}
 
 async function withOfferRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
   const rankByOfferId = await loadScopedRanksRepo({
@@ -134,7 +149,7 @@ function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: num
 
 export async function listOffersRepo(includeDeleted = false) {
   const rows = await db.select().from(offers).where(includeDeleted ? undefined : isNull(offers.deletedAt));
-  const ranked = await withOfferRanks(rows, "erp");
+  const ranked = await withOfferRanks(await withOfferMedia(rows), "erp");
   return Promise.all(
     ranked.map(async (row) => {
       const items = await listOrderedOfferItemsRepo(row.id);
@@ -148,7 +163,7 @@ export async function listVisibleOffersRepo() {
     .select()
     .from(offers)
     .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
-  const ranked = await withOfferRanks(rows, "storefront");
+  const ranked = await withOfferRanks(await withOfferMedia(rows), "storefront");
   const itemsByOfferId = await listOrderedItemsByOfferRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByOfferId.get(row.id) ?? [] }));
 }
@@ -158,14 +173,16 @@ export async function findOfferBySlugRepo(slug: string) {
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedOfferItemsRepo(row.id);
-  return { ...row, items };
+  const [withMedia] = await withOfferMedia([row]);
+  return { ...withMedia!, items };
 }
 
 export async function findOfferByIdRepo(id: number) {
   const [row] = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
   if (!row) return null;
   const items = await listOrderedOfferItemsRepo(row.id);
-  return { ...row, items };
+  const [withMedia] = await withOfferMedia([row]);
+  return { ...withMedia!, items };
 }
 
 export async function upsertOfferRepo(input: {
@@ -176,12 +193,20 @@ export async function upsertOfferRepo(input: {
   arDescription?: string | null;
   enDescription?: string | null;
   imagePath?: string | null;
+  media?: EntityMediaItem[];
   fixedPrice: number;
   status: "active" | "inactive";
   visibility?: "visible" | "hidden";
   items: Array<{ id?: number; variantId: number; qty: number }>;
 }) {
   const mergedItems = mergeOfferItems(input.items);
+  const shouldReplaceMedia = input.media !== undefined || !input.id;
+  const mediaUpdate = shouldReplaceMedia
+    ? input.media ?? (input.imagePath ? [{ type: "image", url: input.imagePath }] : [])
+    : undefined;
+  const primaryImagePath = mediaUpdate
+    ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
+    : null;
   return db.transaction(async (tx) => {
   let offerId = input.id;
   if (offerId) {
@@ -193,7 +218,7 @@ export async function upsertOfferRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
-        imagePath: input.imagePath ?? null,
+        ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
         status: input.status,
         visibility: input.visibility ?? "visible"
@@ -208,13 +233,16 @@ export async function upsertOfferRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
-        imagePath: input.imagePath ?? null,
+        imagePath: primaryImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
         status: input.status,
         visibility: input.visibility ?? "visible"
       })
       .$returningId();
     offerId = created.id;
+  }
+  if (mediaUpdate !== undefined) {
+    await replaceEntityMediaRepo({ type: "offer", id: offerId! }, mediaUpdate, tx);
   }
   const existingItems = await tx
     .select({ id: offerItems.id })
@@ -264,17 +292,22 @@ export async function restoreOfferRepo(id: number) {
   await db.update(offers).set({ deletedAt: null }).where(eq(offers.id, id));
 }
 
-export async function hardDeleteOfferRepo(id: number): Promise<boolean> {
+export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ deletedAt: offers.deletedAt })
+      .select({ deletedAt: offers.deletedAt, imagePath: offers.imagePath })
       .from(offers)
       .where(eq(offers.id, id))
       .limit(1);
 
     if (!existing || existing.deletedAt == null) {
-      return false;
+      return null;
     }
+
+    const mediaRows = await tx
+      .select({ url: entityMedia.url })
+      .from(entityMedia)
+      .where(eq(entityMedia.offerId, id));
 
     await tx
       .delete(relatedItems)
@@ -294,7 +327,9 @@ export async function hardDeleteOfferRepo(id: number): Promise<boolean> {
         )
       );
     await tx.delete(offers).where(eq(offers.id, id));
-    return true;
+    return {
+      mediaUrls: [existing.imagePath, ...mediaRows.map((item) => item.url)].filter((url): url is string => Boolean(url))
+    };
   });
 }
 

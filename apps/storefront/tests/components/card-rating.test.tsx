@@ -199,6 +199,20 @@ describe("card ratings", () => {
     const arDict = { ...dict, reviews: { outOfFive: "{rating} من 5", reviewCount: "{count} تقييم" } };
     render(createElement(ProductCard, { lang: "ar", dict: arDict, product: productWith({ average: 4.5, count: 12 }) }));
 
-    expect(screen.getByRole("img", { name: "4.5 من 5, 12 تقييم" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "٤٫٥ من 5, ١٢ تقييم" })).toBeInTheDocument();
+    expect(screen.getByText("٤٫٥")).toBeInTheDocument();
+    expect(screen.getByText("(١٢)")).toBeInTheDocument();
+  });
+
+  it("passes the active locale through related cards", () => {
+    const arDict = { ...dict, reviews: { outOfFive: "{rating} من 5", reviewCount: "{count} تقييم" } };
+    render(createElement(RelatedItems, {
+      items: [relatedProductWith({ average: 2.5, count: 8 })],
+      lang: "ar",
+      dict: arDict,
+      title: "Related"
+    }));
+
+    expect(screen.getByRole("img", { name: "٢٫٥ من 5, ٨ تقييم" })).toBeInTheDocument();
   });
 });

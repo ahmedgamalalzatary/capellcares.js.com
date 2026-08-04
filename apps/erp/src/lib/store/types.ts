@@ -1,4 +1,4 @@
-import type { Advice, Category, Collection, Offer, OrderSummary, Product, ProductMedia, ShopMediaSection } from "@capella/shared";
+import type { Advice, Category, Collection, EntityMedia, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -55,7 +55,7 @@ export type ProductApiShape = {
   buyingPrice?: number | string;
   imagePath?: string | null;
   hoverImagePath?: string | null;
-  media?: ProductMedia[];
+  media?: EntityMedia[];
   youtubeUrl?: string | null;
   status?: "active" | "inactive";
   categoryId?: number | string;

@@ -17,6 +17,7 @@ import {
 } from "../../../repositories/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 
 type NormalizedVariantDiscount = {
@@ -81,9 +82,9 @@ function buildCategorySlugsFromMap(
 async function findProductRevalidationData(
   id: number,
   categoryById?: Map<number, { id: number; slug: string; parentId: number | null }>
-): Promise<{ slug: string; categorySlugs: string[] } | null> {
+): Promise<{ slug: string; imagePath: string | null; categorySlugs: string[] } | null> {
   const [product] = await db
-    .select({ slug: products.slug, categoryId: products.categoryId })
+    .select({ slug: products.slug, imagePath: products.imagePath, categoryId: products.categoryId })
     .from(products)
     .where(eq(products.id, id))
     .limit(1);
@@ -93,6 +94,7 @@ async function findProductRevalidationData(
 
   return {
     slug: product.slug,
+    imagePath: product.imagePath,
     categorySlugs: categoryById
       ? buildCategorySlugsFromMap(product.categoryId, categoryById)
       : await buildCategorySlugs(product.categoryId)
@@ -145,13 +147,28 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     const productVariants = incoming.variants ?? [];
     const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
     const productStatus = incoming.status ?? "inactive";
+    const normalizedMedia = parseEntityMediaInput(incoming.media);
+    const hasImagePathInput = Object.prototype.hasOwnProperty.call(incoming, "imagePath");
+    const hasMediaInput = Object.prototype.hasOwnProperty.call(incoming, "media");
+    const productImagePath = hasImagePathInput
+      ? incoming.imagePath
+      : hasMediaInput
+        ? normalizedMedia?.find((item) => item.type === "image")?.url ?? null
+        : existingRevalidation?.imagePath ?? null;
+    const mediaUpdate = hasMediaInput
+      ? normalizedMedia
+      : hasImagePathInput
+        ? productImagePath
+          ? [{ type: "image" as const, url: productImagePath }]
+          : []
+        : undefined;
     if (
       productStatus === "active" &&
       (
         !productNameAr ||
         !productNameEn ||
         productKeywords.length === 0 ||
-        !incoming.imagePath ||
+        !productImagePath ||
         !incoming.categoryId ||
         productVariants.length === 0
       )
@@ -183,16 +200,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         arWarnings: incoming.warnings?.ar ?? incoming.arWarnings ?? null,
         enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
         youtubeUrl: incoming.youtubeUrl ?? null,
-        imagePath: incoming.imagePath ?? null,
+        imagePath: productImagePath,
         hoverImagePath: incoming.hoverImagePath ?? null,
-        media: Array.isArray(incoming.media)
-          ? incoming.media
-            .map((item: any) => ({
-              type: item?.type === "video" ? "video" : "image",
-              url: String(item?.url ?? "").trim()
-            }))
-            .filter((item: any) => item.url)
-          : undefined,
+        media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
         status: productStatus,
         isNew: incoming.isNew ?? false,
@@ -232,6 +242,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     });
     res.json({ ok: true });
   } catch (error: any) {
+    if (error?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
+      return res.status(400).json({ ok: false, reason: "media-video-limit" });
+    }
     if (error?.code === "PRODUCT_VARIANT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });
     }
@@ -312,25 +325,8 @@ export async function adminHardDeleteProduct(req: Request, res: Response, next: 
   if (!result) {
     return res.status(404).json({ ok: false, reason: "not-in-trash" });
   }
-  if (result.imagePath && result.imagePath.startsWith("/uploads/")) {
-    const fs = await import("node:fs/promises");
-    const path = await import("node:path");
-    const uploadsDir = path.resolve(process.cwd(), "uploads");
-    const fileName = result.imagePath.slice("/uploads/".length);
-    const absolutePath = path.resolve(uploadsDir, fileName);
-    const relativePath = path.relative(uploadsDir, absolutePath);
-    try {
-      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-        console.warn(`Skipped unlink outside uploads directory: ${absolutePath}`);
-      } else {
-        await fs.unlink(absolutePath);
-      }
-    } catch (err: any) {
-      if (err?.code !== "ENOENT") {
-        console.warn(`Failed to unlink product image ${absolutePath}:`, err?.message ?? err);
-      }
-    }
-  }
+  const { deleteLocalUploadUrls } = await import("../../uploads/uploads.service.js");
+  await deleteLocalUploadUrls(result.mediaUrls);
   if (revalidation) {
     await safeTriggerProductRevalidation(revalidation);
   }

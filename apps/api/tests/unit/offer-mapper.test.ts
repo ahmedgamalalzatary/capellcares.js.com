@@ -24,6 +24,7 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     name: { ar: "باقة الربيع", en: "Spring Bundle" },
     description: { ar: "", en: "Fresh picks" },
     imagePath: "",
+    media: [],
     price: 125.5,
     originalTotal: 180,
     stock: 4,

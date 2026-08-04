@@ -27,6 +27,13 @@ vi.mock("@/components/forms/image-upload", () => ({
   ImageUpload: () => createElement("div")
 }));
 
+vi.mock("@/components/forms/entity-media-upload", () => ({
+  EntityMediaUpload: ({ value }: any) => createElement("div", {
+    "data-testid": "collection-media-upload",
+    "data-count": String(value.length)
+  })
+}));
+
 vi.mock("@/components/forms/related-items-field", () => ({
   RelatedItemsField: () => createElement("div")
 }));
@@ -47,6 +54,37 @@ afterEach(() => {
 });
 
 describe("CollectionForm", () => {
+  it("loads the collection media gallery into the shared uploader", () => {
+    render(createElement(CollectionForm, {
+      mode: "edit",
+      initial: {
+        id: 1,
+        slug: "media-collection",
+        name: { ar: "مجموعة", en: "Collection" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/collection.png",
+        media: [
+          { type: "image", url: "/uploads/collection.png" },
+          { type: "image", url: "/uploads/collection-detail.png" },
+          { type: "video", url: "/uploads/collection-demo.mp4" }
+        ],
+        price: 100,
+        originalTotal: 0,
+        categoryId: 1,
+        items: [],
+        stock: 0,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: ""
+      },
+      categories: [{ id: 1, parentId: null, slug: "root", name: { ar: "قسم", en: "Root" }, isLeaf: false }],
+      products: []
+    }));
+
+    expect(screen.getByTestId("collection-media-upload")).toHaveAttribute("data-count", "3");
+  });
+
   it("only offers root categories for the collection category", () => {
     render(createElement(CollectionForm, {
       mode: "new",

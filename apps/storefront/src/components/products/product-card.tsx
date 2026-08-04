@@ -131,7 +131,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           </p>
         ) : null}
 
-        <CardRating rating={product.rating} dict={dict} />
+        <CardRating rating={product.rating} dict={dict} lang={lang} />
 
         <span
           className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}

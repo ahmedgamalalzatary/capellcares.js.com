@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
@@ -11,6 +11,7 @@ import { ShareButton } from "@/components/ui/share-button";
 import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
 import { ReviewSummary } from "@/components/reviews/review-summary";
+import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
 
 type Tab = "description" | "ingredients" | "howToUse" | "warnings";
 
@@ -41,17 +42,6 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; pointerType: string } | null>(null);
-  const activeMediaPointerTargetRef = useRef<HTMLElement | null>(null);
-  const activeMediaIndexRef = useRef(0);
-  const media = useMemo(
-    () => (product.media?.length ? product.media : product.imagePath ? [{ type: "image" as const, url: product.imagePath }] : []),
-    [product.media, product.imagePath]
-  );
-  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const activeMedia = media[activeMediaIndex] ?? media[0] ?? null;
-  activeMediaIndexRef.current = activeMediaIndex;
-
   const variant = useMemo(
     () => product.variants.find((item) => item.id === variantId) ?? null,
     [variantId, product.variants]
@@ -78,137 +68,27 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     { key: "howToUse", label: dict.product.howToUse, content: pickLang(product.howToUse, lang) },
     { key: "warnings", label: dict.product.warnings, content: pickLang(product.warnings, lang) }
   ];
-  const mediaDotLabelTemplate = dict.product?.mediaDotLabel ?? (lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}");
-
-  const clearMediaPointer = (pointerId: number) => {
-    dragStartRef.current = null;
-    const target = activeMediaPointerTargetRef.current;
-    activeMediaPointerTargetRef.current = null;
-    if (target && "hasPointerCapture" in target && target.hasPointerCapture(pointerId) && "releasePointerCapture" in target) {
-      target.releasePointerCapture(pointerId);
-    }
-  };
-
-  const completeMediaSwipe = ({ clientX, clientY, isPrimary, pointerId }: Pick<globalThis.PointerEvent, "clientX" | "clientY" | "isPrimary" | "pointerId">) => {
-    const dragStart = dragStartRef.current;
-    clearMediaPointer(pointerId);
-    if (media.length <= 1 || !isPrimary || !dragStart) return;
-    const deltaX = clientX - dragStart.x;
-    const deltaY = clientY - dragStart.y;
-    if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
-    const direction = deltaX < 0 ? 1 : -1;
-    const nextIndex = Math.max(0, Math.min(media.length - 1, activeMediaIndexRef.current + direction));
-    if (nextIndex === activeMediaIndexRef.current) return;
-    setActiveMediaIndex(nextIndex);
-  };
-
-  useEffect(() => {
-    const handlePointerUp = (event: globalThis.PointerEvent) => {
-      if (!dragStartRef.current) return;
-      completeMediaSwipe(event);
-    };
-    const handlePointerCancel = (event: globalThis.PointerEvent) => {
-      if (!dragStartRef.current) return;
-      clearMediaPointer(event.pointerId);
-    };
-
-    document.addEventListener("pointerup", handlePointerUp);
-    document.addEventListener("pointercancel", handlePointerCancel);
-    return () => {
-      document.removeEventListener("pointerup", handlePointerUp);
-      document.removeEventListener("pointercancel", handlePointerCancel);
-    };
-  }, [media.length]);
-
-  const onMediaPointerDown = (event: PointerEvent<HTMLElement>) => {
-    if (media.length <= 1 || !event.isPrimary) return;
-    dragStartRef.current = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
-    activeMediaPointerTargetRef.current = event.currentTarget;
-    if ("setPointerCapture" in event.currentTarget) {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-  };
-
-  const onMediaPointerUp = (event: PointerEvent<HTMLElement>) => {
-    completeMediaSwipe(event.nativeEvent);
-  };
-
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-          {/* The wishlist toggle sits beside the swipe surface, not inside it:
-              pointer capture on the media frame would swallow its click. */}
-          <div className="relative">
-            <div
-              className="relative grid place-items-center lg:place-items-start overflow-hidden rounded-md sm:rounded-md"
-              data-testid="product-media-main"
-              onPointerDown={onMediaPointerDown}
-              onPointerUp={onMediaPointerUp}
-              onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
-            >
-              {activeMedia?.type === "video" ? (
-                <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
-                  <track kind="captions" />
-                </video>
-              ) : (
-                <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} />
-              )}
-            </div>
-            <WishlistButton
-              entityType="product"
-              entityId={product.id}
-              lang={lang}
-              label={dict.common.addToWishlist}
-            />
-          </div>
-
-          {media.length > 1 && (
-            <div
-              className="flex items-center justify-center gap-2"
-              data-testid="product-media-dots"
-            >
-              {media.map((item, index) => (
-                <button
-                  key={`dot-${item.type}-${item.url}-${index}`}
-                  type="button"
-                  onClick={() => setActiveMediaIndex(index)}
-                  aria-label={mediaDotLabelTemplate.replace("{index}", String(index + 1))}
-                  aria-current={activeMediaIndex === index}
-                  className={`size-2.5 rounded-full border border-accent transition-colors duration-300 ${
-                    activeMediaIndex === index ? "bg-accent" : "bg-transparent"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          <div
-            className="grid grid-cols-4 gap-4 sm:gap-4"
-            data-testid="product-media-thumbs"
-            onPointerDown={onMediaPointerDown}
-            onPointerUp={onMediaPointerUp}
-            onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
-          >
-            {(media.length ? media : [{ type: "image" as const, url: product.imagePath }]).map((item, index) => (
-              <button
-                key={`${item.type}-${item.url}-${index}`}
-                type="button"
-                className="bg-surface transition-transform hover:border-warm data-[active=true]:scale-105"
-                data-active={activeMediaIndex === index}
-                aria-label={`view ${index + 1}`}
-                onClick={() => setActiveMediaIndex(index)}
-              >
-                {item.type === "video" ? (
-                  <video src={item.url} aria-label={`${product.name.en} video ${index + 1}`}>
-                    <track kind="captions" />
-                  </video>
-                ) : (
-                  <ProductIllustration product={{ ...product, imagePath: item.url }} />
-                )}
-              </button>
-            ))}
-          </div>
+          <EntityMediaGallery
+            media={product.media}
+            imagePath={product.imagePath}
+            label={pickLang(product.name, lang)}
+            testIdPrefix="product"
+            dotLabelTemplate={dict.product?.mediaDotLabel ?? (lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}")}
+            thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
+            renderImage={(url) => <ProductIllustration product={{ ...product, imagePath: url }} />}
+            overlay={(
+              <WishlistButton
+                entityType="product"
+                entityId={product.id}
+                lang={lang}
+                label={dict.common.addToWishlist}
+              />
+            )}
+          />
         </div>
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">

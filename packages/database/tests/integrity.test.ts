@@ -7,6 +7,7 @@ import {
   authSessions,
   entityOrderings,
   customers,
+  entityMedia,
   offerItems,
   offers,
   orderItems,
@@ -159,6 +160,56 @@ serialTest("rejects offer_items with a non-existent variant_id", async () => {
   await assert.rejects(
     db.insert(offerItems).values({ offerId: base.offerId, variantId: MISSING_ID, qty: 1 })
   );
+});
+
+serialTest("entity_media requires exactly one valid owner", async () => {
+  await assert.rejects(
+    db.insert(entityMedia).values({
+      mediaType: "image",
+      url: "/uploads/no-owner.jpg",
+      sortOrder: 1
+    })
+  );
+
+  await assert.rejects(
+    db.insert(entityMedia).values({
+      productId: base.productId,
+      offerId: base.offerId,
+      mediaType: "image",
+      url: "/uploads/two-owners.jpg",
+      sortOrder: 1
+    })
+  );
+
+  await db.insert(entityMedia).values({
+    productId: base.productId,
+    mediaType: "image",
+    url: "/uploads/valid-owner.jpg",
+    sortOrder: 1
+  });
+});
+
+serialTest("deleting an entity cascades its entity_media rows", async () => {
+  const [offer] = await db
+    .insert(offers)
+    .values({
+      slug: `media-cascade-${Date.now()}`,
+      arName: "x",
+      enName: "x",
+      fixedPrice: "10.00"
+    })
+    .$returningId();
+
+  await db.insert(entityMedia).values({
+    offerId: offer.id,
+    mediaType: "image",
+    url: "/uploads/cascade.jpg",
+    sortOrder: 1
+  });
+  await db.delete(offers).where(eq(offers.id, offer.id));
+
+  const rows = await db.select({ id: entityMedia.id }).from(entityMedia).where(eq(entityMedia.offerId, offer.id));
+  assert.equal(rows.length, 0);
 });
 
 serialTest("rejects offer_items with a non-existent offer_id", async () => {

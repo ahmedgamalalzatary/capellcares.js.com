@@ -71,7 +71,12 @@ const offerBoundaryPayload = {
     ar: "منتجان بسعر خاص",
     en: "Two products at a bundle price"
   },
-  imagePath: null,
+  imagePath: "http://localhost:4000/uploads/hydration-duo-primary.jpg",
+  media: [
+    { type: "image" as const, url: "http://localhost:4000/uploads/hydration-duo-primary.jpg" },
+    { type: "image" as const, url: "http://localhost:4000/uploads/hydration-duo-secondary.jpg" },
+    { type: "video" as const, url: "http://localhost:4000/uploads/hydration-duo-demo.mp4" }
+  ],
   price: 399.5,
   originalTotal: 480,
   stock: 4,
@@ -146,6 +151,7 @@ describe("storefront client contracts", () => {
 
     const result = await fetchOffers({ lang: "ar" });
     assertConformsTo(result[0], storefrontOfferContract);
+    expect(result[0]?.media).toEqual(offerBoundaryPayload.media);
   });
 
   it("categories conform to the shared category contract and normalize legacy API fields", async () => {

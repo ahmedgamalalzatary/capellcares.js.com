@@ -19,7 +19,9 @@ export function useCollectionForm({
   const [descAr, setDescAr] = useState(initial?.description.ar ?? "");
   const [descEn, setDescEn] = useState(initial?.description.en ?? "");
   const [price, setPrice] = useState(initial?.price ?? 0);
-  const [image, setImage] = useState<string | null>(initial?.imagePath ?? null);
+  const [media, setMedia] = useState(
+    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
+  );
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<CollectionFormRow[]>(() => {
     if (!initial) return [];
@@ -81,7 +83,7 @@ export function useCollectionForm({
     if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
     if (!categoryId) nextErrors.categoryId = "اختاري القسم";
     if (price <= 0) nextErrors.price = "أدخلي سعر المجموعة";
-    if (!image) nextErrors.image = "أضيفي صورة";
+    if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
     const rowsComplete = !rows.some((row) => !row.productId || !row.variantId || row.qty <= 0);
     if (rows.length < 2 || distinctVariantIds.size < 2) {
       nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
@@ -107,7 +109,8 @@ export function useCollectionForm({
       slug: initial?.slug ?? slugifyFormName(nameEn),
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },
-      imagePath: image ?? "",
+      imagePath: media.find((item) => item.type === "image")?.url ?? "",
+      media,
       price: Number(price),
       originalTotal,
       categoryId: safeCategoryId,
@@ -143,8 +146,8 @@ export function useCollectionForm({
     setDescEn,
     price,
     setPrice,
-    image,
-    setImage,
+    media,
+    setMedia,
     categoryId,
     setCategoryId: (value) => {
       setCategoryId(value);

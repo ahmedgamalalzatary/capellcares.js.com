@@ -9,6 +9,7 @@ type CollectionRow = {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
   categoryId: number;
   stock: number;

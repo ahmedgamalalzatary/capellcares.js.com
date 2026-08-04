@@ -186,16 +186,6 @@ export const variantDiscounts = mysqlTable(
   }
 );
 
-export const productMedia = mysqlTable("product_media", {
-  id: int("id").autoincrement().primaryKey(),
-  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
-  mediaType: mysqlEnum("media_type", ["image", "video"]).notNull(),
-  url: varchar("url", { length: 1024 }).notNull(),
-  sortOrder: int("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
-});
-
 export const offers = mysqlTable("offers", {
   id: int("id").autoincrement().primaryKey(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),
@@ -230,6 +220,31 @@ export const collections = mysqlTable("collections", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
+
+export const entityMedia = mysqlTable(
+  "entity_media",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("product_id").references(() => products.id, { onDelete: "cascade" }),
+    offerId: int("offer_id").references(() => offers.id, { onDelete: "cascade" }),
+    collectionId: int("collection_id").references(() => collections.id, { onDelete: "cascade" }),
+    mediaType: mysqlEnum("media_type", ["image", "video"]).notNull(),
+    url: varchar("url", { length: 1024 }).notNull(),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    productIndex: index("entity_media_product_idx").on(table.productId, table.sortOrder),
+    offerIndex: index("entity_media_offer_idx").on(table.offerId, table.sortOrder),
+    collectionIndex: index("entity_media_collection_idx").on(table.collectionId, table.sortOrder),
+    exactlyOneOwnerCheck: check(
+      "entity_media_exactly_one_owner_check",
+      sql`((${table.productId} is not null) + (${table.offerId} is not null) + (${table.collectionId} is not null)) = 1`
+    )
+  })
+);
+
 
 export const advices = mysqlTable("advices", {
   id: int("id").autoincrement().primaryKey(),

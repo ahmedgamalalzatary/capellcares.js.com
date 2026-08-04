@@ -60,6 +60,27 @@ const collection = {
 };
 
 describe("CollectionDetail", () => {
+  it("renders the ordered collection media gallery", () => {
+    render(createElement(CollectionDetail, {
+      collection: {
+        ...collection,
+        imagePath: "/uploads/collection-main.jpg",
+        media: [
+          { type: "image", url: "/uploads/collection-main.jpg" },
+          { type: "image", url: "/uploads/collection-detail.jpg" }
+        ]
+      },
+      items: [],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByTestId("collection-media-dots").children).toHaveLength(2);
+    fireEvent.click(screen.getByTestId("collection-media-thumbs").querySelectorAll("button")[1]!);
+    expect(screen.getByTestId("collection-media-main").querySelector("img")).toHaveAttribute("src", "/uploads/collection-detail.jpg");
+  });
+
   it("adds the collection to wishlist", () => {
     render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
 

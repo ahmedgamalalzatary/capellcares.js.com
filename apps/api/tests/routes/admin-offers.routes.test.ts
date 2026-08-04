@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
+import { access, mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { and, asc, eq, or } from "drizzle-orm";
-import { entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
+import { entityMedia, entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -34,6 +36,11 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
         name: { ar: "عرض اختبار", en: "Route Offer Test" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
+        media: [
+          { type: "image", url: "/uploads/test-offer.png" },
+          { type: "image", url: "/uploads/test-offer-detail.png" },
+          { type: "video", url: "/uploads/test-offer-demo.mp4" }
+        ],
         price: 120,
         status: "active",
         visibility: "visible",
@@ -51,17 +58,17 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
       headers: { ...authHeaders }
     });
     assert.equal(adminOffersResponse.status, 200);
-    assert.equal(
-      adminOffersResponse.json.items.some((offer: any) => offer.slug === slug),
-      true
-    );
+    const adminOffer = adminOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.deepEqual(adminOffer.media, [
+      { type: "image", url: "http://localhost:4000/uploads/test-offer.png" },
+      { type: "image", url: "http://localhost:4000/uploads/test-offer-detail.png" },
+      { type: "video", url: "http://localhost:4000/uploads/test-offer-demo.mp4" }
+    ]);
 
     const storefrontOffersResponse = await request("/api/v1/offers");
     assert.equal(storefrontOffersResponse.status, 200);
-    assert.equal(
-      storefrontOffersResponse.json.items.some((offer: any) => offer.slug === slug),
-      true
-    );
+    const storefrontOffer = storefrontOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.deepEqual(storefrontOffer.media, adminOffer.media);
   });
 
   const [createdOffer] = await db
@@ -314,6 +321,46 @@ serialTest("admin offer upsert preserves existing related links when relatedItem
   assert.deepEqual(after, before);
 });
 
+serialTest("admin offer upsert preserves an existing media gallery when media is omitted", async () => {
+  const ids = await getBaselineIds();
+  const existingMedia = [
+    { offerId: ids.offerId, mediaType: "image" as const, url: "/uploads/existing-offer.jpg", sortOrder: 1 },
+    { offerId: ids.offerId, mediaType: "video" as const, url: "/uploads/existing-offer.mp4", sortOrder: 2 }
+  ];
+  await db.delete(entityMedia).where(eq(entityMedia.offerId, ids.offerId));
+  await db.insert(entityMedia).values(existingMedia);
+  await db.update(offers).set({ imagePath: existingMedia[0].url }).where(eq(offers.id, ids.offerId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: ids.offerId,
+        slug: "test-offer-baseline",
+        name: { ar: "عرض محدث", en: "Updated Offer" },
+        description: { ar: "", en: "Updated" },
+        price: 30,
+        status: "active",
+        visibility: "visible",
+        items: [{ variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+    assert.equal(response.status, 200);
+  });
+
+  const rows = await db
+    .select({ mediaType: entityMedia.mediaType, url: entityMedia.url, sortOrder: entityMedia.sortOrder })
+    .from(entityMedia)
+    .where(eq(entityMedia.offerId, ids.offerId))
+    .orderBy(asc(entityMedia.sortOrder));
+  const [offer] = await db.select({ imagePath: offers.imagePath }).from(offers).where(eq(offers.id, ids.offerId));
+
+  assert.deepEqual(rows, existingMedia.map(({ mediaType, url, sortOrder }) => ({ mediaType, url, sortOrder })));
+  assert.equal(offer?.imagePath, existingMedia[0].url);
+});
+
 serialTest("admin offer upsert updates existing offer items in place when ids are provided", async () => {
   const ids = await getBaselineIds();
 
@@ -538,8 +585,19 @@ serialTest("admin offer toggle-status flips the persisted DB status", async () =
 
 serialTest("admin offer permanent delete removes a soft-deleted offer and its items", async () => {
   const ids = await getBaselineIds();
+  const uploadsDir = resolve(process.cwd(), "uploads");
+  const fileName = `test-hard-delete-offer-${ids.offerId}.jpg`;
+  const absolutePath = resolve(uploadsDir, fileName);
+  await mkdir(uploadsDir, { recursive: true });
+  await writeFile(absolutePath, "fake-offer-image-bytes");
 
   await db.update(offers).set({ deletedAt: new Date() }).where(eq(offers.id, ids.offerId));
+  await db.insert(entityMedia).values({
+    offerId: ids.offerId,
+    mediaType: "image",
+    url: `http://localhost:4000/uploads/${fileName}`,
+    sortOrder: 1
+  });
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -584,6 +642,7 @@ serialTest("admin offer permanent delete removes a soft-deleted offer and its it
       )
     );
   assert.equal(remainingEntityOrderings.length, 0);
+  await assert.rejects(access(absolutePath), "expected offer media file to be unlinked");
 });
 
 serialTest("admin offer permanent delete returns not-in-trash for active offers", async () => {

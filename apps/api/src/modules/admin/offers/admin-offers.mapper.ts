@@ -9,6 +9,7 @@ type AdminOfferRow = {
   arDescription: string | null;
   enDescription: string | null;
   imagePath: string | null;
+  media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
   status: "active" | "inactive";
   createdAt: Date | string;

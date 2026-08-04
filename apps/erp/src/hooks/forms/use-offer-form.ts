@@ -17,7 +17,9 @@ export function useOfferForm({
   const [descAr, setDescAr] = useState(initial?.description.ar ?? "");
   const [descEn, setDescEn] = useState(initial?.description.en ?? "");
   const [price, setPrice] = useState(initial?.price ?? 0);
-  const [image, setImage] = useState<string | null>(initial?.imagePath ?? null);
+  const [media, setMedia] = useState(
+    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
+  );
   const [rows, setRows] = useState<OfferFormRow[]>(() => {
     if (!initial) {
       return [];
@@ -83,7 +85,7 @@ export function useOfferForm({
     if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
     if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
     if (price <= 0) nextErrors.price = "أدخلي سعرًا للعرض";
-    if (!image) nextErrors.image = "أضيفي صورة";
+    if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
     if (rows.length === 0) nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
     if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) nextErrors.rows = "أكملي بيانات كل عنصر";
     setErrors(nextErrors);
@@ -99,7 +101,8 @@ export function useOfferForm({
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },
-      imagePath: image ?? "",
+      imagePath: media.find((item) => item.type === "image")?.url ?? "",
+      media,
       price: Number(price),
       originalTotal: computed.originalTotal,
       stock: initial?.stock ?? 0,
@@ -132,8 +135,8 @@ export function useOfferForm({
     setDescEn,
     price,
     setPrice,
-    image,
-    setImage,
+    media,
+    setMedia,
     rows,
     relatedItems,
     setRelatedItems,

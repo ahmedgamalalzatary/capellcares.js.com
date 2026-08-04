@@ -12,6 +12,7 @@ import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
 import { RelatedItems } from "@/components/products/related-items";
 import { ReviewSummary } from "@/components/reviews/review-summary";
+import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
 
 interface ItemEntry {
   qty: number;
@@ -53,20 +54,29 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-          <div className="relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start">
-            {/* Badge moves to the trailing corner so the wishlist toggle owns the leading one. */}
-            <ItemTagPill
-              tag={{ kind: "offer", label: dict.offers.badge, star: true }}
-              className="absolute inset-e-0 top-0"
-            />
-            <WishlistButton
-              entityType="offer"
-              entityId={offer.id}
-              lang={lang}
-              label={dict.offers.saveToWishlist ?? dict.common.addToWishlist}
-            />
-            <OfferIllustration offer={offer} className="w-140 object-contain rounded-lg" />
-          </div>
+          <EntityMediaGallery
+            media={offer.media}
+            imagePath={offer.imagePath}
+            label={pickLang(offer.name, lang)}
+            testIdPrefix="offer"
+            dotLabelTemplate={lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}"}
+            thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
+            renderImage={(url) => <OfferIllustration offer={{ ...offer, imagePath: url }} className="w-140 object-contain rounded-lg" />}
+            overlay={(
+              <>
+                <ItemTagPill
+                  tag={{ kind: "offer", label: dict.offers.badge, star: true }}
+                  className="absolute inset-e-0 top-0"
+                />
+                <WishlistButton
+                  entityType="offer"
+                  entityId={offer.id}
+                  lang={lang}
+                  label={dict.offers.saveToWishlist ?? dict.common.addToWishlist}
+                />
+              </>
+            )}
+          />
         </div>
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">

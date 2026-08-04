@@ -62,6 +62,50 @@ const offer = {
 };
 
 describe("OfferDetail", () => {
+  it("renders and navigates the ordered offer media gallery", () => {
+    render(createElement(OfferDetail, {
+      offer: {
+        ...offer,
+        imagePath: "/uploads/offer-main.jpg",
+        media: [
+          { type: "image", url: "/uploads/offer-main.jpg" },
+          { type: "image", url: "/uploads/offer-detail.jpg" },
+          { type: "video", url: "/uploads/offer-demo.mp4" }
+        ]
+      },
+      items: [],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByTestId("offer-media-dots").children).toHaveLength(3);
+    fireEvent.click(screen.getByTestId("offer-media-thumbs").querySelectorAll("button")[1]!);
+    expect(screen.getByTestId("offer-media-main").querySelector("img")).toHaveAttribute("src", "/uploads/offer-detail.jpg");
+    fireEvent.click(screen.getByTestId("offer-media-thumbs").querySelectorAll("button")[2]!);
+    expect(screen.getByTestId("offer-media-main").querySelector("video")).toHaveAttribute("src", "/uploads/offer-demo.mp4");
+  });
+
+  it("uses the selected language for video accessibility labels", () => {
+    render(createElement(OfferDetail, {
+      offer: {
+        ...offer,
+        media: [
+          { type: "image", url: "/uploads/offer-main.jpg" },
+          { type: "video", url: "/uploads/offer-demo.mp4" }
+        ]
+      },
+      items: [],
+      lang: "ar",
+      dict,
+      relatedItems: []
+    }));
+
+    const videoThumbnail = screen.getByTestId("offer-media-thumbs").querySelectorAll("button")[1] as HTMLButtonElement;
+    fireEvent.click(videoThumbnail);
+    expect(screen.getByTestId("offer-media-main").querySelector("video")).toHaveAttribute("aria-label", offer.name.ar);
+  });
+
   it("renders related items in order with links to their detail pages", () => {
     render(createElement(OfferDetail, {
       offer,

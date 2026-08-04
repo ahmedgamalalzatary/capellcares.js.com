@@ -6,6 +6,7 @@ import {
   categories,
   collectionItems,
   collections,
+  entityMedia,
   products,
   relatedItems
 } from "@capella/database/drizzle/schema";
@@ -40,6 +41,11 @@ serialTest("admin collection upsert creates a new collection when the payload ha
         name: { ar: "مجموعة اختبار", en: "Route Collection Test" },
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-collection.png",
+        media: [
+          { type: "image", url: "/uploads/test-collection.png" },
+          { type: "image", url: "/uploads/test-collection-detail.png" },
+          { type: "video", url: "/uploads/test-collection-demo.mp4" }
+        ],
         price: 120,
         categoryId: ids.rootCategoryId,
         status: "active",
@@ -58,17 +64,17 @@ serialTest("admin collection upsert creates a new collection when the payload ha
       headers: { ...authHeaders }
     });
     assert.equal(adminCollectionsResponse.status, 200);
-    assert.equal(
-      adminCollectionsResponse.json.items.some((collection: any) => collection.slug === slug),
-      true
-    );
+    const adminCollection = adminCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.deepEqual(adminCollection.media, [
+      { type: "image", url: "http://localhost:4000/uploads/test-collection.png" },
+      { type: "image", url: "http://localhost:4000/uploads/test-collection-detail.png" },
+      { type: "video", url: "http://localhost:4000/uploads/test-collection-demo.mp4" }
+    ]);
 
     const storefrontCollectionsResponse = await request("/api/v1/collections");
     assert.equal(storefrontCollectionsResponse.status, 200);
-    assert.equal(
-      storefrontCollectionsResponse.json.items.some((collection: any) => collection.slug === slug),
-      true
-    );
+    const storefrontCollection = storefrontCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.deepEqual(storefrontCollection.media, adminCollection.media);
   });
 
   const [createdCollection] = await db
@@ -359,6 +365,53 @@ serialTest("admin collection detail returns a related-items array for editing", 
     assert.equal(response.json.id, created.id);
     assert.ok(Array.isArray(response.json.relatedItems));
   });
+});
+
+serialTest("admin collection upsert preserves an existing media gallery when media is omitted", async () => {
+  const ids = await getBaselineIds();
+  const existingMedia = [
+    { collectionId: ids.collectionId, mediaType: "image" as const, url: "/uploads/existing-collection.jpg", sortOrder: 1 },
+    { collectionId: ids.collectionId, mediaType: "video" as const, url: "/uploads/existing-collection.mp4", sortOrder: 2 }
+  ];
+  await db.delete(entityMedia).where(eq(entityMedia.collectionId, ids.collectionId));
+  await db.insert(entityMedia).values(existingMedia);
+  await db.update(collections).set({ imagePath: existingMedia[0].url }).where(eq(collections.id, ids.collectionId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: ids.collectionId,
+        slug: "test-collection-baseline",
+        name: { ar: "مجموعة محدثة", en: "Updated Collection" },
+        description: { ar: "", en: "Updated" },
+        price: 80,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+    assert.equal(response.status, 200);
+  });
+
+  const rows = await db
+    .select({ mediaType: entityMedia.mediaType, url: entityMedia.url, sortOrder: entityMedia.sortOrder })
+    .from(entityMedia)
+    .where(eq(entityMedia.collectionId, ids.collectionId))
+    .orderBy(asc(entityMedia.sortOrder));
+  const [collection] = await db
+    .select({ imagePath: collections.imagePath })
+    .from(collections)
+    .where(eq(collections.id, ids.collectionId));
+
+  assert.deepEqual(rows, existingMedia.map(({ mediaType, url, sortOrder }) => ({ mediaType, url, sortOrder })));
+  assert.equal(collection?.imagePath, existingMedia[0].url);
 });
 
 serialTest("admin collection revalidation includes related product slugs for collection members", async () => {

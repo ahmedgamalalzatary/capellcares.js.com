@@ -1,4 +1,4 @@
-import type { Category, Collection, Product, RelatedItemRef } from "@capella/shared";
+import type { Category, Collection, EntityMedia, Product, RelatedItemRef } from "@capella/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface CollectionFormProps {
@@ -28,8 +28,8 @@ export interface UseCollectionFormResult {
   setDescEn: (value: string) => void;
   price: number;
   setPrice: (value: number) => void;
-  image: string | null;
-  setImage: (value: string | null) => void;
+  media: EntityMedia[];
+  setMedia: (value: EntityMedia[]) => void;
   categoryId: number | null;
   setCategoryId: (value: number | null) => void;
   rows: CollectionFormRow[];

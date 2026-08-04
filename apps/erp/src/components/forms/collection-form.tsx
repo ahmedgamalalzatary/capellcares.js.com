@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { formatPrice } from "@capella/shared";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
-import { ImageUpload } from "./image-upload";
+import { EntityMediaUpload } from "./entity-media-upload";
 import { useCollectionForm } from "../../hooks/forms/use-collection-form";
 import { RelatedItemsField } from "./related-items-field";
 import type { CollectionFormProps } from "../../types/forms/collection-form.types";
@@ -31,8 +31,8 @@ export function CollectionForm({
     setDescEn,
     price,
     setPrice,
-    image,
-    setImage,
+    media,
+    setMedia,
     categoryId,
     setCategoryId,
     rows,
@@ -177,9 +177,9 @@ export function CollectionForm({
 
       <aside className="stack stack--lg">
         <ImageFieldCard
-          title="صورة المجموعة"
+          title="وسائط المجموعة"
           error={errors.image}
-          uploadSlot={<ImageUpload value={image} onChange={setImage} uploadContext={mode === "edit" ? "collections.update" : "collections.create"} />}
+          uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "collections.update" : "collections.create"} entityLabel="مجموعة" testIdPrefix="collection" />}
         />
 
         <section className="card">

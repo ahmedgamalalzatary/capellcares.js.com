@@ -22,6 +22,7 @@ import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
 
 async function findCollectionRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
   const [collection] = await db.select({ slug: collections.slug }).from(collections).where(eq(collections.id, id)).limit(1);
@@ -207,6 +208,7 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       imagePath: incoming.imagePath ?? null,
+      media: parseEntityMediaInput(incoming.media),
       fixedPrice,
       categoryId,
       status: incoming.status ?? "inactive",
@@ -223,6 +225,9 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
     await safeTriggerCollectionRevalidation(revalidation ?? { slug });
     res.json({ ok: true });
   } catch (error) {
+    if ((error as { code?: string })?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
+      return res.status(400).json({ ok: false, reason: "media-video-limit" });
+    }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
     }
