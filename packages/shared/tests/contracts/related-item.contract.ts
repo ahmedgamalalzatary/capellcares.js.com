@@ -12,7 +12,12 @@ export const storefrontRelatedItemContract = z.object({
   slug: z.string(),
   name: bilingualSchema,
   imagePath: z.string().nullable(),
-  price: z.number()
+  price: z.number(),
+  // The card renders the same controls as ProductCard/SectionCard, so it needs
+  // a variant to add, the pre-saving price, and a classification line.
+  variantId: z.number().nullable(),
+  originalTotal: z.number().nullable(),
+  categoryName: bilingualSchema.nullable()
 });
 
 export { assertConformsTo, assertForbiddenFieldsAbsent };

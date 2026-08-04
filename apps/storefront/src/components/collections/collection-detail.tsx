@@ -147,7 +147,7 @@ export function CollectionDetail({
           )}
         </div>
       </div>
-      <RelatedItems items={relatedItems} lang={lang} title={dict.collections.related} />
+      <RelatedItems items={relatedItems} lang={lang} dict={dict} title={dict.collections.related} />
     </>
   );
 }

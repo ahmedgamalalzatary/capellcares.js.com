@@ -7,6 +7,25 @@ import type { HeaderMenuEntry } from "@/lib/header-menu";
 
 const menuEntries: HeaderMenuEntry[] = [
   {
+    type: "offers",
+    key: "offers",
+    slug: "offers",
+    label: "Offers",
+    offers: [
+      { id: 200, slug: "duo-kit", label: "Duo Kit", name: { en: "Duo Kit", ar: "طقم" }, imagePath: "/uploads/duo-kit.jpg" }
+    ]
+  },
+  {
+    type: "collections",
+    key: "collections",
+    slug: "collections",
+    label: "Sets",
+    collections: [
+      { id: 300, slug: "starter", label: "Starter Set", name: { en: "Starter Set", ar: "مجموعة" }, imagePath: "" }
+    ]
+  },
+  // New/Bestsellers still exist in the header menu data; the drawer must not surface them.
+  {
     type: "products",
     key: "new",
     slug: "new",
@@ -57,7 +76,7 @@ beforeAll(() => {
 });
 
 describe("HeaderMobileDrawer", () => {
-  it("shows New and Bestsellers tabs before categories", () => {
+  it("shows Offers and Sets tabs before categories, and no New/Bestsellers tab", () => {
     render(createElement(HeaderMobileDrawer, {
       lang: "en",
       dict: {
@@ -82,17 +101,16 @@ describe("HeaderMobileDrawer", () => {
     }));
 
     expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
-      "New",
-      "Bestsellers",
+      "Offers",
+      "Sets",
       "الجسم",
       "العناية"
     ]);
-    expect(screen.getByRole("link", { name: "Fresh Serum" })).toHaveAttribute("href", "/en/products/fresh-serum");
-    // Product tabs lead with an "All" card pointing at the dedicated /new page
-    expect(screen.getByRole("link", { name: "All New →" })).toHaveAttribute("href", "/en/new");
+    expect(screen.queryByRole("button", { name: "New" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Bestsellers" })).toBeNull();
   });
 
-  it("shows a Collections quick link beside Products and Offers", () => {
+  it("lists each offer under the Offers tab behind an 'All Offers' card", () => {
     render(createElement(HeaderMobileDrawer, {
       lang: "en",
       dict: {
@@ -102,7 +120,6 @@ describe("HeaderMobileDrawer", () => {
           viewAllCategory: "All {name} →",
           products: "Products",
           offers: "Offers",
-          collections: "Collections",
           orders: "Orders",
           followUs: "Follow us"
         },
@@ -117,7 +134,76 @@ describe("HeaderMobileDrawer", () => {
       onOpenSearch: vi.fn()
     }));
 
-    expect(screen.getByRole("link", { name: "Collections" })).toHaveAttribute("href", "/en/collections");
+    expect(screen.getByRole("link", { name: "All Offers →" })).toHaveAttribute("href", "/en/offers");
+    expect(screen.getByRole("link", { name: "Duo Kit" })).toHaveAttribute("href", "/en/offers/duo-kit");
+    expect(screen.getByAltText("Duo Kit")).toHaveAttribute("src", "/uploads/duo-kit.jpg");
+  });
+
+  it("lists each set under the Sets tab behind an 'All Sets' card", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "ar",
+      dict: {
+        nav: {
+          search: "بحث",
+          viewAll: "عرض الكل",
+          viewAllCategory: "كل {name} ←",
+          products: "المنتجات",
+          offers: "العروض",
+          orders: "الطلبات",
+          followUs: "تابعنا"
+        },
+        langSwitch: { ar: "العربية", en: "English" }
+      },
+      menuEntries,
+      isAr: true,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Sets" }));
+
+    expect(screen.getByRole("link", { name: "كل Sets ←" })).toHaveAttribute("href", "/ar/collections");
+    expect(screen.getByRole("link", { name: "Starter Set" })).toHaveAttribute("href", "/ar/collections/starter");
+    // No image path on this set, so no <img> is rendered at all.
+    expect(screen.queryByAltText("Starter Set")).toBeNull();
+  });
+
+  it("offers New and Bestseller as quick links, since Offers and Sets are now tabs", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "en",
+      dict: {
+        nav: {
+          search: "Search",
+          viewAll: "View all",
+          viewAllCategory: "All {name} →",
+          products: "Products",
+          offers: "Offers",
+          collections: "Collections",
+          new: "New",
+          bestsellers: "Bestseller",
+          orders: "Orders",
+          followUs: "Follow us"
+        },
+        langSwitch: { ar: "Arabic", en: "English" }
+      },
+      menuEntries,
+      isAr: false,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn()
+    }));
+
+    expect(screen.getByRole("link", { name: "Products" })).toHaveAttribute("href", "/en/shop");
+    expect(screen.getByRole("link", { name: "New" })).toHaveAttribute("href", "/en/new");
+    expect(screen.getByRole("link", { name: "Bestseller" })).toHaveAttribute("href", "/en/bestsellers");
+    // Offers/Sets live in the tab strip now, so they are not repeated down here.
+    expect(screen.queryByRole("link", { name: "Collections" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Offers" })).toBeNull();
   });
 
   it("uses the provided lang for nested category links", () => {
@@ -240,8 +326,8 @@ describe("HeaderMobileDrawer", () => {
     }));
 
     expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
-      "New",
-      "Bestsellers",
+      "Offers",
+      "Sets",
       "الجسم",
       "العناية"
     ]);

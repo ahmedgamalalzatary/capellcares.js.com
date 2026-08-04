@@ -1,12 +1,38 @@
 import { createElement } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const push = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push })
+}));
+
+const add = vi.fn();
+vi.mock("@/components/providers/cart-provider", () => ({
+  useCart: () => ({ add })
+}));
+
+const has = vi.fn(() => false);
+const toggle = vi.fn();
+vi.mock("@/components/providers/wishlist-provider", () => ({
+  useWishlist: () => ({ has, toggle })
+}));
+
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: { id: 1 } })
+}));
+
 import { RelatedItems } from "@/components/products/related-items";
+
+const dict = {
+  common: { addToCart: "Add to cart", added: "Added", addToWishlist: "Wishlist" },
+  offers: { badge: "Offer" },
+  collections: { badge: "Set" }
+};
 
 describe("RelatedItems", () => {
   const items = [
@@ -16,14 +42,157 @@ describe("RelatedItems", () => {
       slug: "serum",
       name: { ar: "سيروم", en: "Serum" },
       imagePath: "/uploads/serum.jpg",
-      price: 100
+      price: 100,
+      variantId: 11,
+      originalTotal: 130,
+      categoryName: { ar: "عناية", en: "Fine Fragrance Mist" }
     }
   ];
 
-  it("keeps the selected one-column and two-column layouts across breakpoints", () => {
-    render(createElement(RelatedItems, { items, lang: "en", title: "Related" }));
+  beforeEach(() => {
+    add.mockClear();
+    toggle.mockClear();
+  });
+
+  it("adds a related product to the cart using its cheapest in-stock variant", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+    expect(add).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 11, qty: 1 });
+  });
+
+  it("adds a related offer to the cart by its own id and badges it", () => {
+    render(createElement(RelatedItems, {
+      items: [{
+        type: "offer" as const,
+        id: 7,
+        slug: "duo",
+        name: { ar: "عرض", en: "Duo" },
+        imagePath: "/uploads/duo.jpg",
+        price: 70,
+        variantId: null,
+        originalTotal: 90,
+        categoryName: null
+      }],
+      lang: "en",
+      dict,
+      title: "Related"
+    }));
+
+    expect(screen.getByText("Offer")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+    expect(add).toHaveBeenCalledWith({ type: "offer", offerId: 7, qty: 1 });
+  });
+
+  it("shows the product's category as the classification line under its name", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    expect(screen.getByText("Fine Fragrance Mist")).toBeInTheDocument();
+  });
+
+  it("shows no classification line for a bundle, matching SectionCard", () => {
+    render(createElement(RelatedItems, {
+      items: [{
+        type: "collection" as const,
+        id: 8,
+        slug: "glow",
+        name: { ar: "مجموعة", en: "Glow Set" },
+        imagePath: "/uploads/glow.jpg",
+        price: 65,
+        variantId: null,
+        originalTotal: 90,
+        categoryName: null
+      }],
+      lang: "en",
+      dict,
+      title: "Related"
+    }));
+
+    expect(screen.getByText("Set")).toBeInTheDocument();
+    expect(screen.queryByText("Fine Fragrance Mist")).toBeNull();
+  });
+
+  it("withholds the action row from a product with nothing purchasable, like ProductCard does when out of stock", () => {
+    render(createElement(RelatedItems, {
+      items: [{ ...items[0]!, variantId: null }],
+      lang: "en",
+      dict,
+      title: "Related"
+    }));
+
+    expect(screen.queryByRole("button", { name: "Add to cart" })).toBeNull();
+    // The card itself still renders and still links through.
+    expect(screen.getByRole("heading", { name: "Serum" })).toBeInTheDocument();
+  });
+
+  it("shows the original price struck through beside the discounted one", () => {
+    const { container } = render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    expect(container.querySelector(".line-through")).toHaveTextContent(/130/);
+  });
+
+  it("hides the struck-through original when it is not a genuine saving, like the detail views", () => {
+    const { container } = render(createElement(RelatedItems, {
+      items: [{ ...items[0]!, price: 130, originalTotal: 130 }],
+      lang: "en",
+      dict,
+      title: "Related"
+    }));
+
+    expect(container.querySelector(".line-through")).toBeNull();
+  });
+
+  it("toggles the wishlist from the heart floating on the image", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("product", 1);
+  });
+
+  it("builds each card with the same anatomy as ProductCard", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    const card = screen.getByTestId("related-item");
+
+    // Same media frame: a fixed-ratio surface box holding an absolutely
+    // positioned link, exactly like ProductCard/SectionCard.
+    const media = card.querySelector(".aspect-8\\/9") as HTMLElement;
+    expect(media).not.toBeNull();
+    expect(media.className).toContain("rounded-t-lg");
+    expect(media.className).toContain("bg-surface");
+    expect(media.querySelector("a")).toHaveClass("absolute", "inset-0");
+
+    // Same title typography: small, bold, uppercase — not the display serif.
+    const heading = screen.getByRole("heading", { name: "Serum" });
+    expect(heading.className).toContain("uppercase");
+    expect(heading.className).toContain("font-bold");
+    expect(heading.className).not.toContain("font-(--font-display)");
+
+    // Image and heading are separate links to the detail page.
+    const links = card.querySelectorAll("a");
+    expect(links.length).toBe(2);
+    links.forEach((link) => expect(link).toHaveAttribute("href", "/en/products/serum"));
+  });
+
+  it("opens on the one-column layout", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
 
     const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
+    expect(grid.className).toContain("grid-cols-1");
+    expect(grid.className).toContain("md:grid-cols-2");
+    expect(grid.className).toContain("lg:grid-cols-3");
+  });
+
+  it("keeps the selected one-column and two-column layouts across breakpoints", () => {
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
+
+    fireEvent.click(screen.getByRole("button", { name: /2 per row/i }));
+
     expect(grid.className).toContain("grid-cols-2");
     expect(grid.className).toContain("md:grid-cols-3");
     expect(grid.className).toContain("lg:grid-cols-4");

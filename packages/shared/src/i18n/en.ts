@@ -35,13 +35,12 @@ export const en = {
     language: "Language"
   },
   common: {
-    addToCart: "Cart",
+    addToCart: "Add to cart",
     addToWishlist: "Add to wishlist",
     removeFromWishlist: "Remove",
     share: "Share",
     linkCopied: "Link copied",
     buyNow: "Buy now",
-    view: "View",
     outOfStock: "Out of stock",
     inStock: "In stock",
     lowStock: "Only {n} left",

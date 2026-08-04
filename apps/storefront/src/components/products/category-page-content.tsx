@@ -117,7 +117,7 @@ export function CategoryPageContent({
         lang={lang}
         dict={dict}
         initialCategory={category.id}
-        initialCols={2}
+        initialCols={1}
         lockCategory={false}
         headerCategoryIds={headerCategoryIds}
         onHeaderCategoryIdsChange={setHeaderCategoryIds}

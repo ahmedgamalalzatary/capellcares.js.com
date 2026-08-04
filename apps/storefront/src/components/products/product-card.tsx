@@ -83,13 +83,14 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         />
       </Link>
 
+        {/* inset-s-0 so the badge mirrors in RTL, matching SectionCard. */}
         {leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-0 z-10 rounded-ss-lg" />
+          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
         ) : null}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
-            className="absolute top-0 z-10 rounded-ss-lg"
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
         ) : null}
 
@@ -147,12 +148,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
       {!isOutOfStock ? (
         <div className="mt-3 flex gap-2">
-          <Link
-            href={href}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
-          >
-            {dict.common.view}
-          </Link>
           <button
             onClick={onAdd}
             className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"

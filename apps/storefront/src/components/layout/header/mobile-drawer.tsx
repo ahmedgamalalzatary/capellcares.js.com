@@ -5,9 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
 import { compareHeaderCategoryEntries } from "@/lib/header-menu";
 import { buildCategoryHref } from "@/lib/category-links";
-import type { NavNode } from "@/lib/nav";
 import { Icon } from "@/components/ui/icons";
-import { ProductIllustration } from "@/components/ui/product-illustration";
 import { SOCIAL_LINKS } from "../../../constants/socials";
 import { DESKTOP_BREAKPOINT } from "@/constants/ui";
 import type { HeaderProps } from "../../../types/header.types";
@@ -21,9 +19,12 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
   onOpenSearch: () => void;
 };
 
+// Tab order: Offers, Sets, then the category roots. The New/Bestsellers entries
+// the header menu also carries are deliberately not surfaced here.
 function sortMenuEntries(entries: HeaderMenuEntry[]): HeaderMenuEntry[] {
   return [
-    ...entries.filter((entry) => entry.type === "products"),
+    ...entries.filter((entry) => entry.type === "offers"),
+    ...entries.filter((entry) => entry.type === "collections"),
     ...entries
       .filter((entry) => entry.type === "category")
       .slice()
@@ -92,32 +93,36 @@ export function HeaderMobileDrawer({
   // Mirror the direction in RTL.
   const fromRight = dir === 1 ? !isAr : isAr;
 
-  const renderCards = (group: NonNullable<typeof activeGroup>) =>
-    group.type === "products" ? (
-      [
+  // Offers and Sets share one shape: a media link list under a dedicated index
+  // page, so they render through the same branch.
+  const renderMediaCards = (
+    group: Extract<NonNullable<typeof activeGroup>, { type: "offers" | "collections" }>
+  ) => {
+    const items = group.type === "offers" ? group.offers : group.collections;
+    return [
+      <CategoryCard
+        key="all"
+        href={`/${lang}/${group.slug}`}
+        title={dict.nav.viewAllCategory.replace("{name}", group.label)}
+        isAr={isAr}
+        onClick={onClose}
+      />,
+      ...items.map((item) => (
         <CategoryCard
-          key="all"
-          href={`/${lang}/${group.slug}`}
-          title={dict.nav.viewAllCategory.replace("{name}", group.label)}
+          key={item.id}
+          href={`/${lang}/${group.slug}/${item.slug}`}
+          title={item.label}
+          imagePath={item.imagePath || null}
           isAr={isAr}
           onClick={onClose}
-        />,
-        ...group.products.map((product) => (
-          <CategoryCard
-            key={product.id}
-            href={`/${lang}/products/${product.slug}`}
-            title={product.label}
-            image={
-              <ProductIllustration
-                product={{ slug: product.slug, name: product.name, imagePath: product.imagePath }}
-                className="h-full w-full object-cover"
-              />
-            }
-            isAr={isAr}
-            onClick={onClose}
-          />
-        ))
-      ]
+        />
+      ))
+    ];
+  };
+
+  const renderCards = (group: NonNullable<typeof activeGroup>) =>
+    group.type === "offers" || group.type === "collections" ? (
+      renderMediaCards(group)
     ) : group.type !== "category" ? null : group.children.length > 0 ? (
       [
         <CategoryCard
@@ -133,13 +138,6 @@ export function HeaderMobileDrawer({
           href={buildCategoryHref(lang, child)}
           title={child.label}
           imagePath={child.imagePath ?? null}
-          subtitle={
-            child.children.length
-              ? child.children.map((g) => g.label).join(" · ")
-              : group.label
-          }
-          count={child.children.length}
-          children={child.children}
           isAr={isAr}
           onClick={onClose}
         />
@@ -149,9 +147,6 @@ export function HeaderMobileDrawer({
       <CategoryCard
         href={buildCategoryHref(lang, { id: group.id, slug: group.slug })}
         title={group.label}
-        subtitle={dict.nav.viewAll}
-        count={0}
-        children={[]}
         isAr={isAr}
         onClick={onClose}
       />
@@ -242,16 +237,17 @@ export function HeaderMobileDrawer({
               </div>
             )}
 
-            {/* Quick links */}
+            {/* Quick links — Offers and Sets are tabs above, so this row carries
+                the two listings that have no tab of their own. */}
             <div className="mt-6 flex flex-col">
               <DrawerLink href={`/${lang}/shop`} isAr={isAr} onClick={onClose}>
                 {dict.nav.products}
               </DrawerLink>
-              <DrawerLink href={`/${lang}/offers`} isAr={isAr} onClick={onClose} accent>
-                {dict.nav.offers}
+              <DrawerLink href={`/${lang}/new`} isAr={isAr} onClick={onClose} accent>
+                {dict.nav.new}
               </DrawerLink>
-              <DrawerLink href={`/${lang}/collections`} isAr={isAr} onClick={onClose}>
-                {dict.nav.collections}
+              <DrawerLink href={`/${lang}/bestsellers`} isAr={isAr} onClick={onClose}>
+                {dict.nav.bestsellers}
               </DrawerLink>
               {user && (
                 <DrawerLink href={`/${lang}/orders`} isAr={isAr} onClick={onClose}>
@@ -315,23 +311,18 @@ function CategoryCard({
   href,
   title,
   imagePath,
-  image,
   isAr,
   onClick
 }: {
   href: string;
   title: string;
-  subtitle?: string;
-  count?: number;
-  children?: NavNode[];
   imagePath?: string | null;
-  image?: React.ReactNode;
   isAr: boolean;
   onClick: () => void;
 }) {
-  const visual = image ?? (imagePath ? (
+  const visual = imagePath ? (
     <img src={imagePath} alt={title} className="h-full w-full object-cover" />
-  ) : null);
+  ) : null;
 
   return (
     <div className="rounded-md bg-surface p-3 shadow-(--shadow-1)">

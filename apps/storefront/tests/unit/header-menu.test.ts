@@ -87,7 +87,7 @@ const dict = {
 };
 
 describe("buildHeaderMenu", () => {
-  it("orders entries as New, Bestsellers, Offers, categories, Collections", () => {
+  it("leads with Offers and Collections — the two tabs the mobile drawer shows", () => {
     const menu = buildHeaderMenu({
       navGroups,
       products: [
@@ -102,32 +102,32 @@ describe("buildHeaderMenu", () => {
     });
 
     expect(menu.map((entry) => entry.label)).toEqual([
+      "Offers",
+      "Collections",
       "New",
       "Best Seller",
-      "Offers",
       "Skin Care",
-      "Body Care",
-      "Collections"
+      "Body Care"
     ]);
     expect(menu[0]).toMatchObject({
-      type: "products",
-      slug: "new",
-      products: [{ slug: "new-product", name: { ar: "منتج", en: "Product" }, imagePath: "/product.jpg" }]
-    });
-    expect(menu[1]).toMatchObject({
-      type: "products",
-      slug: "bestsellers",
-      products: [{ slug: "best-product" }]
-    });
-    expect(menu[2]).toMatchObject({
       type: "offers",
       slug: "offers",
       offers: [{ slug: "bundle", label: "Offer", name: { ar: "عرض", en: "Offer" }, imagePath: "/offer.jpg" }]
     });
-    expect(menu[5]).toMatchObject({
+    expect(menu[1]).toMatchObject({
       type: "collections",
       slug: "collections",
       collections: [{ slug: "starter", label: "Collection", imagePath: "/collection.jpg" }]
+    });
+    expect(menu[2]).toMatchObject({
+      type: "products",
+      slug: "new",
+      products: [{ slug: "new-product", name: { ar: "منتج", en: "Product" }, imagePath: "/product.jpg" }]
+    });
+    expect(menu[3]).toMatchObject({
+      type: "products",
+      slug: "bestsellers",
+      products: [{ slug: "best-product" }]
     });
   });
 

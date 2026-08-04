@@ -142,7 +142,7 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
           )}
         </div>
       </div>
-      <RelatedItems items={relatedItems} lang={lang} title={dict.offers?.related} />
+      <RelatedItems items={relatedItems} lang={lang} dict={dict} title={dict.offers?.related} />
     </>
   );
 }

@@ -1,8 +1,55 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { collectionItems, collections, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
+import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { getEffectiveVariantPrice } from "@capella/shared";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
+
+type VariantPricingRow = {
+  sellingPrice: unknown;
+  discountType: "percentage" | "fixed" | null;
+  discountValue: unknown;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  discountStatus: "active" | "inactive" | null;
+};
+
+function effectivePriceOf(variant: VariantPricingRow): number {
+  return getEffectiveVariantPrice({
+    price: Number(variant.sellingPrice),
+    discount: variant.discountStatus
+      ? {
+          type: variant.discountType!,
+          value: Number(variant.discountValue),
+          startsAt: variant.discountStartsAt!.toISOString(),
+          endsAt: variant.discountEndsAt!.toISOString(),
+          status: variant.discountStatus
+        }
+      : null
+  });
+}
+
+/** A saving is only worth showing when the original is genuinely higher. */
+function savingOrNull(original: number, price: number): number | null {
+  return original > price ? original : null;
+}
+
+function sumBundleParts(items: { qty: number; sellingPrice: unknown }[]): number {
+  return items.reduce((total, item) => total + Number(item.sellingPrice) * item.qty, 0);
+}
+
+/**
+ * How many whole bundles the scarcest part allows. Zero when there are none.
+ * A soft-deleted part counts as unavailable rather than being skipped: dropping
+ * it would let the surviving parts make an unshippable bundle look in stock.
+ */
+function availableBundles(items: { qty: number; stockQty: number; deletedAt: Date | null }[]): number {
+  const stock = items.reduce((minAvailable, item) => {
+    const onHand = item.deletedAt ? 0 : item.stockQty;
+    const available = item.qty > 0 ? Math.floor(onHand / item.qty) : 0;
+    return Math.min(minAvailable, available);
+  }, Number.POSITIVE_INFINITY);
+  return Number.isFinite(stock) ? stock : 0;
+}
 
 /**
  * Returns a source entity's related targets in its own rank order.
@@ -44,14 +91,20 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
         slug: products.slug,
         arName: products.arName,
         enName: products.enName,
-        imagePath: products.imagePath
+        imagePath: products.imagePath,
+        categoryArName: categories.arName,
+        categoryEnName: categories.enName
       })
       .from(products)
+      // A product can point at a soft-deleted category; the shop grid resolves
+      // names from active categories only, so the card must not name a dead one.
+      .leftJoin(categories, and(eq(categories.id, products.categoryId), isNull(categories.deletedAt)))
       .where(and(inArray(products.id, productIds), eq(products.status, "active"), isNull(products.deletedAt)));
 
     const variantRows = rows.length
       ? await db
           .select({
+            id: productVariants.id,
             productId: productVariants.productId,
             sellingPrice: productVariants.sellingPrice,
             stockQty: productVariants.stockQty,
@@ -63,41 +116,44 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
           })
           .from(productVariants)
           .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
-          .where(inArray(productVariants.productId, rows.map((row) => row.id)))
+          .where(
+            and(
+              inArray(productVariants.productId, rows.map((row) => row.id)),
+              // Soft delete leaves stock_qty untouched, so a deleted variant
+              // still looks purchasable here — and checkout would reject it.
+              isNull(productVariants.deletedAt)
+            )
+          )
+          // Deterministic tie-break: equal-priced variants must always yield the
+          // same card, or the SKU being added would vary between requests.
+          .orderBy(asc(productVariants.sortOrder), asc(productVariants.id))
       : [];
 
     for (const row of rows) {
-      const variants = variantRows.filter((variant) => variant.productId === row.id);
-      const inStock = variants.some((variant) => variant.stockQty > 0);
-      if (!inStock) {
+      const inStockVariants = variantRows
+        .filter((variant) => variant.productId === row.id && variant.stockQty > 0)
+        .map((variant) => ({ variant, price: effectivePriceOf(variant) }));
+      if (inStockVariants.length === 0) {
         continue;
       }
-      const inStockVariants = variants.filter((variant) => variant.stockQty > 0);
-      const price = inStockVariants.length
-        ? Math.min(
-            ...inStockVariants.map((variant) =>
-              getEffectiveVariantPrice({
-                price: Number(variant.sellingPrice),
-                discount: variant.discountStatus
-                  ? {
-                      type: variant.discountType!,
-                      value: Number(variant.discountValue),
-                      startsAt: variant.discountStartsAt!.toISOString(),
-                      endsAt: variant.discountEndsAt!.toISOString(),
-                      status: variant.discountStatus
-                    }
-                  : null
-              })
-            )
-          )
-        : 0;
+      // The card transacts on the cheapest in-stock variant, so that variant's
+      // effective price is the card price and its selling price the original.
+      const cheapest = inStockVariants.reduce((lowest, candidate) =>
+        candidate.price < lowest.price ? candidate : lowest
+      ).variant;
+      const price = effectivePriceOf(cheapest);
       productCards.set(row.id, {
         type: "product",
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
         imagePath: row.imagePath ?? null,
-        price
+        price,
+        variantId: cheapest.id,
+        originalTotal: savingOrNull(Number(cheapest.sellingPrice), price),
+        categoryName: row.categoryArName != null && row.categoryEnName != null
+          ? { ar: row.categoryArName, en: row.categoryEnName }
+          : null
       });
     }
   }
@@ -123,14 +179,38 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
         )
       );
 
+    const itemRows = rows.length
+      ? await db
+          .select({
+            offerId: offerItems.offerId,
+            qty: offerItems.qty,
+            stockQty: productVariants.stockQty,
+            deletedAt: productVariants.deletedAt,
+            sellingPrice: productVariants.sellingPrice
+          })
+          .from(offerItems)
+          .innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+          .where(inArray(offerItems.offerId, rows.map((row) => row.id)))
+      : [];
+
     for (const row of rows) {
+      const items = itemRows.filter((item) => item.offerId === row.id);
+      // A sold-out bundle must not reach a card that can add it to the cart.
+      if (availableBundles(items) <= 0) {
+        continue;
+      }
+      const price = Number(row.fixedPrice);
+      const parts = sumBundleParts(items);
       offerCards.set(row.id, {
         type: "offer",
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
         imagePath: row.imagePath ?? null,
-        price: Number(row.fixedPrice)
+        price,
+        variantId: null,
+        originalTotal: savingOrNull(parts, price),
+        categoryName: null
       });
     }
   }
@@ -162,7 +242,9 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
             collectionId: collectionItems.collectionId,
             variantId: collectionItems.variantId,
             qty: collectionItems.qty,
-            stockQty: productVariants.stockQty
+            stockQty: productVariants.stockQty,
+            deletedAt: productVariants.deletedAt,
+            sellingPrice: productVariants.sellingPrice
           })
           .from(collectionItems)
           .innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
@@ -171,20 +253,20 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
 
     for (const row of rows) {
       const items = itemRows.filter((item) => item.collectionId === row.id);
-      const stock = items.reduce((minAvailable, item) => {
-        const availableBundles = item.qty > 0 ? Math.floor(item.stockQty / item.qty) : 0;
-        return Math.min(minAvailable, availableBundles);
-      }, Number.POSITIVE_INFINITY);
-      if (!Number.isFinite(stock) || stock <= 0) {
+      if (availableBundles(items) <= 0) {
         continue;
       }
+      const price = Number(row.fixedPrice);
       collectionCards.set(row.id, {
         type: "collection",
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
         imagePath: row.imagePath ?? null,
-        price: Number(row.fixedPrice)
+        price,
+        variantId: null,
+        originalTotal: savingOrNull(sumBundleParts(items), price),
+        categoryName: null
       });
     }
   }

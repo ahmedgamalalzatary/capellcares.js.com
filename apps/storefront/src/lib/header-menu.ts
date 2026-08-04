@@ -82,7 +82,27 @@ export function buildHeaderMenu({
 }): HeaderMenuEntry[] {
   const activeProducts = products.filter((product) => product.status === "active" && !product.deletedAt);
 
+  // Offers and Collections lead: they are the two entries the mobile drawer
+  // surfaces as its first tabs. New/Bestsellers follow, then the category roots.
   return [
+    {
+      type: "offers",
+      key: "offers",
+      slug: "offers",
+      label: dict.nav.offers,
+      offers: offers
+        .filter((offer) => offer.status === "active" && !offer.deletedAt)
+        .map((offer) => toMediaLink(offer, lang))
+    },
+    {
+      type: "collections",
+      key: "collections",
+      slug: "collections",
+      label: dict.nav.collections,
+      collections: collections
+        .filter((collection) => collection.status === "active" && collection.visibility === "visible" && !collection.deletedAt)
+        .map((collection) => toMediaLink(collection, lang))
+    },
     {
       type: "products",
       key: "new",
@@ -97,15 +117,6 @@ export function buildHeaderMenu({
       label: dict.nav.bestsellers,
       products: activeProducts.filter((product) => product.isBestseller).map((product) => toMediaLink(product, lang))
     },
-    {
-      type: "offers",
-      key: "offers",
-      slug: "offers",
-      label: dict.nav.offers,
-      offers: offers
-        .filter((offer) => offer.status === "active" && !offer.deletedAt)
-        .map((offer) => toMediaLink(offer, lang))
-    },
     ...navGroups.map((group) => ({
       type: "category" as const,
       key: `category-${group.root.id}`,
@@ -115,16 +126,7 @@ export function buildHeaderMenu({
       sortOrder: group.root.sortOrder,
       createdAt: group.root.createdAt,
       children: group.children
-    })),
-    {
-      type: "collections",
-      key: "collections",
-      slug: "collections",
-      label: dict.nav.collections,
-      collections: collections
-        .filter((collection) => collection.status === "active" && collection.visibility === "visible" && !collection.deletedAt)
-        .map((collection) => toMediaLink(collection, lang))
-    }
+    }))
   ];
 }
 

@@ -337,7 +337,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
         </div>
       </div>
-      <RelatedItems items={relatedItems} lang={lang} title={dict.product?.related} />
+      <RelatedItems items={relatedItems} lang={lang} dict={dict} title={dict.product?.related} />
     </>
   );
 }

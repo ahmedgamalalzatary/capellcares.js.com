@@ -35,13 +35,12 @@ export const ar = {
     language: "اللغة"
   },
   common: {
-    addToCart: " السلة",
+    addToCart: "أضف إلى السلة",
     addToWishlist: "أضف إلى المفضلة",
     removeFromWishlist: "إزالة",
     share: "مشاركة",
     linkCopied: "تم نسخ الرابط",
     buyNow: "اشتري الآن",
-    view: "عرض",
     outOfStock: "غير متوفر",
     inStock: "متوفر",
     lowStock: "تبقى {n} فقط",
@@ -216,7 +215,7 @@ export const ar = {
     badge: "عرض",
     save: "وفر {amount}",
     includes: "تتضمن",
-    addBundleToCart: "أضف الباقة إلى السلة",
+    addBundleToCart: "أضف إلى السلة",
     listEmpty: "لا توجد عروض حاليًا.",
     bundleEyebrow: "باقة كابيلا",
     added: "أُضيف ✓",
@@ -232,7 +231,7 @@ export const ar = {
     categoryFilterLabel: "قسم المجموعة",
     searchPlaceholder: "ابحثي عن مجموعة",
     itemsLabel: "العناصر المضمنة",
-    addCollectionToCart: "أضف المجموعة إلى السلة",
+    addCollectionToCart: "أضف إلى السلة",
     added: "أُضيف ✓",
     unavailable: "أحد المنتجات داخل هذه المجموعة غير متوفر حاليًا.",
     collectionEyebrow: "مجموعة كابيلا"

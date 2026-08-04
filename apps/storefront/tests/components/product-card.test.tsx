@@ -36,7 +36,6 @@ const dict = {
     addToCart: "Add to cart",
     added: "Added",
     buyNow: "Buy now",
-    view: "View"
   },
   nav: { cart: "Cart" }
 };
@@ -214,6 +213,45 @@ describe("ProductCard", () => {
     }));
 
     expect(screen.getByText("Offer")).toBeInTheDocument();
+  });
+
+  it("gives the whole action row to Add to cart, with no View button", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "" },
+        ingredients: { ar: "", en: "" },
+        howToUse: { ar: "", en: "" },
+        warnings: { ar: "", en: "" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active",
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      }
+    }));
+
+    // Counted, not queried by name: a restored View link would render an empty
+    // accessible name now that common.view is gone, and slip past a name query.
+    const actionRow = document.querySelector(".mt-3.flex.gap-2") as HTMLElement;
+    expect(actionRow.children).toHaveLength(1);
+    expect(actionRow.querySelector("a")).toBeNull();
+    expect(actionRow.querySelector("button")).toHaveTextContent("Add to cart");
+
+    // The image and the heading still link to the detail page.
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(2);
+    links.forEach((link) => expect(link).toHaveAttribute("href", "/en/products/product-1"));
   });
 
   it("uses the shared common.added label after adding to cart", () => {

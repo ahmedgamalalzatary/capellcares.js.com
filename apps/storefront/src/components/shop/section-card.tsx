@@ -323,9 +323,6 @@ export function SectionCard(props: SectionCardProps) {
 
       {href && onAdd ? (
         <div className="mt-3 flex gap-2">
-          <Link href={href} className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-5.5 border border-ink font-semibold tracking-[0.01em] text-ink transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
-            {dict.common.view}
-          </Link>
           <button onClick={onAdd} className={addClass}>
             {added ? <Icon.Check size={16} /> : null}
             <span>{added ? dict.common.added : dict.common.addToCart}</span>

@@ -37,7 +37,7 @@ const dict = {
   offers: { badge: "Bundle" },
   collections: { badge: "Set" },
   advices: { tipBadge: "Tip", readMore: "Read more", close: "Close" },
-  common: { save: "Save", view: "View", addToCart: "Add to cart", added: "Added", cancel: "Cancel", addToWishlist: "Wishlist" }
+  common: { save: "Save", addToCart: "Add to cart", added: "Added", cancel: "Cancel", addToWishlist: "Wishlist" }
 };
 
 const baseOffer = {
@@ -114,10 +114,17 @@ describe("SectionCard", () => {
     expect(struckOriginal).not.toBeNull();
     expect(struckOriginal).toHaveTextContent(/80/); // original total (formatPrice 80) shown struck-through
 
-    // The card links to the detail page from the image, the heading, and the View button.
+    // The card links to the detail page from the image and the heading; the
+    // action row is the Add to cart button alone, with no View link. Counted
+    // rather than queried by name — a restored View link would have an empty
+    // accessible name now that common.view is gone.
     const links = screen.getAllByRole("link");
-    expect(links.length).toBeGreaterThan(0);
+    expect(links).toHaveLength(2);
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/offers/rose"));
+
+    const actionRow = container.querySelector(".mt-3.flex.gap-2") as HTMLElement;
+    expect(actionRow.children).toHaveLength(1);
+    expect(actionRow.querySelector("a")).toBeNull();
   });
 
   it("renders a collection linking to the collection detail page", () => {

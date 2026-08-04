@@ -15,10 +15,10 @@ vi.mock("@/components/layout/breadcrumb", () => ({
 }));
 
 vi.mock("@/components/products/grid/product-grid", () => ({
-  ProductGrid: ({ categories, initialCategory, lockCategory, headerCategoryIds }: any) =>
+  ProductGrid: ({ categories, initialCategory, initialCols, lockCategory, headerCategoryIds }: any) =>
     createElement(
       "div",
-      { "data-testid": "product-grid" },
+      { "data-testid": "product-grid", "data-initial-cols": String(initialCols) },
       `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"}`
     )
 }));
@@ -119,6 +119,15 @@ describe("category page", () => {
     }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Curly Hair" })).toBeInTheDocument();
+  });
+
+  it("opens the grid on the one-column layout, like every other product view", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "hair-care" }),
+      searchParams: Promise.resolve({ categoryId: "8" })
+    }));
+
+    expect(screen.getByTestId("product-grid")).toHaveAttribute("data-initial-cols", "1");
   });
 
   it("toggles header filter pills as a multi-select source for the grid", async () => {
