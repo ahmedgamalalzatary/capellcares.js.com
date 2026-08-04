@@ -8,6 +8,7 @@ import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
+import { CardRating } from "@/components/reviews/card-rating";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
@@ -180,6 +181,8 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
             {pickLang(item.categoryName, lang)}
           </p>
         ) : null}
+
+        <CardRating rating={item.rating} dict={dict} />
 
         <span className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}>
           {formatPrice(item.price, lang)}

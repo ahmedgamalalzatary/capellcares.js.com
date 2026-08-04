@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assertConformsTo, assertForbiddenFieldsAbsent } from "./helpers.js";
+import { storefrontRatingContract } from "./rating.contract.js";
 
 const bilingualSchema = z.object({
   ar: z.string(),
@@ -15,6 +16,7 @@ export const storefrontOfferContract = z.object({
   price: z.number(),
   originalTotal: z.number(),
   stock: z.number().int().nonnegative(),
+  rating: storefrontRatingContract,
   status: z.enum(["active", "inactive"]),
   items: z.array(
     z.object({

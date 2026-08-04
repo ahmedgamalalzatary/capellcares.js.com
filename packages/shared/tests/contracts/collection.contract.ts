@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assertConformsTo, assertForbiddenFieldsAbsent } from "./helpers.js";
+import { storefrontRatingContract } from "./rating.contract.js";
 
 const bilingualSchema = z.object({
   ar: z.string(),
@@ -23,6 +24,7 @@ export const storefrontCollectionContract = z.object({
     })
   ),
   stock: z.number(),
+  rating: storefrontRatingContract,
   status: z.enum(["active", "inactive"]),
   visibility: z.enum(["visible", "hidden"])
 });

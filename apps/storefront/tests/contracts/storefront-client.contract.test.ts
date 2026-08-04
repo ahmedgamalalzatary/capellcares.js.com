@@ -47,6 +47,7 @@ const productBoundaryPayload = {
   isNew: true,
   isBestseller: false,
   categoryId: 9,
+  rating: { average: 4.5, count: 12 },
   variants: [
     {
       id: 501,
@@ -74,6 +75,7 @@ const offerBoundaryPayload = {
   price: 399.5,
   originalTotal: 480,
   stock: 4,
+  rating: { average: 0, count: 0 },
   status: "active" as const,
   items: [
     {

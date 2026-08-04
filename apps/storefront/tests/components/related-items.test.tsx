@@ -45,7 +45,8 @@ describe("RelatedItems", () => {
       price: 100,
       variantId: 11,
       originalTotal: 130,
-      categoryName: { ar: "عناية", en: "Fine Fragrance Mist" }
+      categoryName: { ar: "عناية", en: "Fine Fragrance Mist" },
+      rating: { average: 0, count: 0 }
     }
   ];
 
@@ -73,7 +74,8 @@ describe("RelatedItems", () => {
         price: 70,
         variantId: null,
         originalTotal: 90,
-        categoryName: null
+        categoryName: null,
+        rating: { average: 0, count: 0 }
       }],
       lang: "en",
       dict,
@@ -103,7 +105,8 @@ describe("RelatedItems", () => {
         price: 65,
         variantId: null,
         originalTotal: 90,
-        categoryName: null
+        categoryName: null,
+        rating: { average: 0, count: 0 }
       }],
       lang: "en",
       dict,

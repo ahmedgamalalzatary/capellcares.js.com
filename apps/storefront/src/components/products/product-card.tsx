@@ -6,6 +6,7 @@ import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getP
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
+import { CardRating } from "@/components/reviews/card-rating";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
@@ -129,6 +130,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
             {categoryName}
           </p>
         ) : null}
+
+        <CardRating rating={product.rating} dict={dict} />
 
         <span
           className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}

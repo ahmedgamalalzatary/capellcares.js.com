@@ -2,7 +2,11 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { getEffectiveVariantPrice } from "@capella/shared";
+import { EMPTY_RATING, safeRatingSummaries } from "../review.repository.js";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
+
+/** A card as the per-type queries build it; the rating lands at assembly. */
+type UnratedRelatedCard = Omit<StorefrontRelatedCard, "rating">;
 
 type VariantPricingRow = {
   sellingPrice: unknown;
@@ -83,7 +87,17 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
   const offerIds = ordered.filter((ref) => ref.type === "offer").map((ref) => ref.id);
   const collectionIds = ordered.filter((ref) => ref.type === "collection").map((ref) => ref.id);
 
-  const productCards = new Map<number, StorefrontRelatedCard>();
+  // A related card carries the same stars as the card it mirrors elsewhere.
+  // Started here but only awaited at assembly, so the ratings travel alongside
+  // the card queries instead of delaying them. Safe to leave floating: these
+  // never reject.
+  const ratingsPromise = Promise.all([
+    safeRatingSummaries("product", productIds),
+    safeRatingSummaries("offer", offerIds),
+    safeRatingSummaries("collection", collectionIds)
+  ]);
+
+  const productCards = new Map<number, UnratedRelatedCard>();
   if (productIds.length > 0) {
     const rows = await db
       .select({
@@ -158,7 +172,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
     }
   }
 
-  const offerCards = new Map<number, StorefrontRelatedCard>();
+  const offerCards = new Map<number, UnratedRelatedCard>();
   if (offerIds.length > 0) {
     const rows = await db
       .select({
@@ -215,7 +229,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
     }
   }
 
-  const collectionCards = new Map<number, StorefrontRelatedCard>();
+  const collectionCards = new Map<number, UnratedRelatedCard>();
   if (collectionIds.length > 0) {
     const rows = await db
       .select({
@@ -271,12 +285,22 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
     }
   }
 
+  const [productRatings, offerRatings, collectionRatings] = await ratingsPromise;
+
   return ordered.flatMap((ref) => {
     const card = ref.type === "product"
       ? productCards.get(ref.id)
       : ref.type === "offer"
         ? offerCards.get(ref.id)
         : collectionCards.get(ref.id);
-    return card ? [card] : [];
+    if (!card) {
+      return [];
+    }
+    const ratings = ref.type === "product"
+      ? productRatings
+      : ref.type === "offer"
+        ? offerRatings
+        : collectionRatings;
+    return [{ ...card, rating: ratings.get(ref.id) ?? EMPTY_RATING }];
   });
 }

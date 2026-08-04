@@ -64,6 +64,27 @@ export async function validateBundlePriceBelowParts(
   return null;
 }
 
+/**
+ * One pricing/stock read covering every bundle on a page, for use with
+ * `computeBundleInventoryFromMap` instead of a lookup per bundle.
+ */
+export async function loadBundleVariantMap(bundles: Array<{ items: BundleItem[] }>) {
+  const variantIds = [...new Set(bundles.flatMap((bundle) => bundle.items.map((item) => item.variantId)))];
+  if (variantIds.length === 0) {
+    return new Map<number, VariantPricing>();
+  }
+
+  const variantRows = await db
+    .select({
+      id: productVariants.id,
+      sellingPrice: productVariants.sellingPrice,
+      stockQty: productVariants.stockQty
+    })
+    .from(productVariants)
+    .where(inArray(productVariants.id, variantIds));
+  return new Map<number, VariantPricing>(variantRows.map((row) => [row.id, row] as const));
+}
+
 export function computeBundleInventoryFromMap(
   items: BundleItem[],
   variantMap: Map<number, VariantPricing>

@@ -1,17 +1,21 @@
 import { findCollectionBySlugRepo, listVisibleCollectionsRepo } from "../../../repositories/collection.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../../../repositories/related-item.repository.js";
-import { calculateBundleInventory } from "../../inventory/bundle-inventory.js";
-import { loadReviewData } from "../review-data.js";
+import {
+  calculateBundleInventory,
+  computeBundleInventoryFromMap,
+  loadBundleVariantMap
+} from "../../inventory/bundle-inventory.js";
+import { attachRatings, loadReviewData, ratingFromReviewData } from "../review-data.js";
 import { toStorefrontCollection } from "./collections.mapper.js";
 
 export async function listStorefrontCollections() {
   const collections = await listVisibleCollectionsRepo();
-  return Promise.all(
-    collections.map(async (collection) => {
-      const inventory = await calculateBundleInventory(collection.items);
-      return toStorefrontCollection({ ...collection, stock: inventory.stock }, inventory.originalTotal);
-    })
-  );
+  const variantMap = await loadBundleVariantMap(collections);
+  const items = collections.map((collection) => {
+    const inventory = computeBundleInventoryFromMap(collection.items, variantMap);
+    return toStorefrontCollection({ ...collection, stock: inventory.stock }, inventory.originalTotal);
+  });
+  return attachRatings("collection", items);
 }
 
 export async function getStorefrontCollectionBySlug(slug: string) {
@@ -26,6 +30,7 @@ export async function getStorefrontCollectionBySlug(slug: string) {
   ]);
   return {
     ...toStorefrontCollection({ ...collection, stock: inventory.stock }, inventory.originalTotal),
+    rating: ratingFromReviewData(reviewData),
     relatedItems,
     reviewData
   };

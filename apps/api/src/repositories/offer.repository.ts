@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
+  loadScopedRanksForScopesRepo,
   loadScopedRanksRepo,
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
@@ -24,8 +25,17 @@ async function withOfferRanks<T extends { id: number }>(rows: T[], surface: Orde
 // Items inside one offer must read identically on both surfaces, so the
 // erp fallback (older first) is used to keep legacy insertion order for
 // items created before in-offer product ordering existed.
-async function listOrderedOfferItemsRepo(offerId: number) {
-  const rows = await db
+type OfferItemRow = {
+  id: number;
+  offerId: number;
+  variantId: number;
+  qty: number;
+  createdAt: Date;
+  productId: number;
+};
+
+function selectOfferItemRows() {
+  return db
     .select({
       id: offerItems.id,
       offerId: offerItems.offerId,
@@ -35,16 +45,53 @@ async function listOrderedOfferItemsRepo(offerId: number) {
       productId: productVariants.productId
     })
     .from(offerItems)
-    .innerJoin(productVariants, eq(offerItems.variantId, productVariants.id))
-    .where(eq(offerItems.offerId, offerId));
+    .innerJoin(productVariants, eq(offerItems.variantId, productVariants.id));
+}
+
+function orderOfferItems(rows: OfferItemRow[], rankByProductId: Map<number, number>) {
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
+    .sort(compareByScopedOrdering.bind(null, "erp"));
+}
+
+async function listOrderedOfferItemsRepo(offerId: number) {
+  const rows = await selectOfferItemRows().where(eq(offerItems.offerId, offerId));
   const rankByProductId = await loadScopedRanksRepo({
     scopeType: "offer",
     scopeId: offerId,
     entityType: "product"
   });
-  return rows
-    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
-    .sort(compareByScopedOrdering.bind(null, "erp"));
+  return orderOfferItems(rows, rankByProductId);
+}
+
+/**
+ * The same ordered items as `listOrderedOfferItemsRepo`, for a whole page of
+ * offers in two reads rather than two per offer.
+ */
+async function listOrderedItemsByOfferRepo(offerIds: number[]) {
+  const itemsByOfferId = new Map<number, ReturnType<typeof orderOfferItems>>();
+  if (offerIds.length === 0) {
+    return itemsByOfferId;
+  }
+
+  const [rows, ranksByOfferId] = await Promise.all([
+    selectOfferItemRows().where(inArray(offerItems.offerId, offerIds)),
+    loadScopedRanksForScopesRepo({ scopeType: "offer", scopeIds: offerIds, entityType: "product" })
+  ]);
+
+  const rowsByOfferId = new Map<number, OfferItemRow[]>();
+  for (const row of rows) {
+    const offerRows = rowsByOfferId.get(row.offerId) ?? [];
+    offerRows.push(row);
+    rowsByOfferId.set(row.offerId, offerRows);
+  }
+  for (const offerId of offerIds) {
+    itemsByOfferId.set(
+      offerId,
+      orderOfferItems(rowsByOfferId.get(offerId) ?? [], ranksByOfferId.get(offerId) ?? new Map())
+    );
+  }
+  return itemsByOfferId;
 }
 
 export async function reorderOffersRepo(input: { ids: number[] }) {
@@ -102,12 +149,8 @@ export async function listVisibleOffersRepo() {
     .from(offers)
     .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
   const ranked = await withOfferRanks(rows, "storefront");
-  return Promise.all(
-    ranked.map(async (row) => {
-      const items = await listOrderedOfferItemsRepo(row.id);
-      return { ...row, items };
-    })
-  );
+  const itemsByOfferId = await listOrderedItemsByOfferRepo(ranked.map((row) => row.id));
+  return ranked.map((row) => ({ ...row, items: itemsByOfferId.get(row.id) ?? [] }));
 }
 
 export async function findOfferBySlugRepo(slug: string) {

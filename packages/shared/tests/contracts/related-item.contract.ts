@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assertConformsTo, assertForbiddenFieldsAbsent } from "./helpers.js";
+import { storefrontRatingContract } from "./rating.contract.js";
 
 const bilingualSchema = z.object({
   ar: z.string(),
@@ -17,7 +18,8 @@ export const storefrontRelatedItemContract = z.object({
   // a variant to add, the pre-saving price, and a classification line.
   variantId: z.number().nullable(),
   originalTotal: z.number().nullable(),
-  categoryName: bilingualSchema.nullable()
+  categoryName: bilingualSchema.nullable(),
+  rating: storefrontRatingContract
 });
 
 export { assertConformsTo, assertForbiddenFieldsAbsent };

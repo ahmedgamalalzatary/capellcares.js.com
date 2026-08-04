@@ -71,6 +71,8 @@ export interface Product {
   isBestseller: boolean;
   categoryId: number;
   variants: ProductVariant[];
+  /** Present on storefront payloads only; the ERP never reads reviews here. */
+  rating?: RatingSummary;
   offerIds?: number[];
   relatedItems?: RelatedItemRef[];
   sortOrder?: number;
@@ -89,6 +91,16 @@ export interface ReviewSummary {
   averageRating: number;
   reviewCount: number;
   distribution: Record<"1" | "2" | "3" | "4" | "5", number>;
+}
+
+/**
+ * The compact rating a card shows: just enough to draw the stars and the
+ * count. Listing endpoints carry it for every item, so a grid never has to
+ * fetch reviews per card; `count: 0` means nothing is shown.
+ */
+export interface RatingSummary {
+  average: number;
+  count: number;
 }
 
 export interface PublicReview {
@@ -189,6 +201,8 @@ export interface RelatedItemCard {
    * collections, whose cards carry no category line.
    */
   categoryName: Bilingual | null;
+  /** Average stars and review count for the card; zeroed when unreviewed. */
+  rating: RatingSummary;
 }
 
 export interface CollectionItem {
@@ -208,6 +222,8 @@ export interface Collection {
   categoryId: number;
   items: CollectionItem[];
   stock: number;
+  /** Present on storefront payloads only; the ERP never reads reviews here. */
+  rating?: RatingSummary;
   status: "active" | "inactive";
   visibility: "visible" | "hidden";
   relatedItems?: RelatedItemRef[];
@@ -248,6 +264,8 @@ export interface Offer {
   originalTotal: number;
   items: OfferItem[];
   stock: number;
+  /** Present on storefront payloads only; the ERP never reads reviews here. */
+  rating?: RatingSummary;
   status: "active" | "inactive";
   relatedItems?: RelatedItemRef[];
   sortOrder?: number;

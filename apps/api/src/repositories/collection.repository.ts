@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { categories, collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
+  loadScopedRanksForScopesRepo,
   loadScopedRanksRepo,
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
@@ -24,8 +25,17 @@ async function withCollectionRanks<T extends { id: number }>(rows: T[], surface:
 // Items inside one collection must read identically on both surfaces, so the
 // erp fallback (older first) is used to keep legacy insertion order for
 // items created before in-collection product ordering existed.
-async function listOrderedCollectionItemsRepo(collectionId: number) {
-  const rows = await db
+type CollectionItemRow = {
+  id: number;
+  collectionId: number;
+  variantId: number;
+  qty: number;
+  createdAt: Date;
+  productId: number;
+};
+
+function selectCollectionItemRows() {
+  return db
     .select({
       id: collectionItems.id,
       collectionId: collectionItems.collectionId,
@@ -35,16 +45,56 @@ async function listOrderedCollectionItemsRepo(collectionId: number) {
       productId: productVariants.productId
     })
     .from(collectionItems)
-    .innerJoin(productVariants, eq(collectionItems.variantId, productVariants.id))
-    .where(eq(collectionItems.collectionId, collectionId));
+    .innerJoin(productVariants, eq(collectionItems.variantId, productVariants.id));
+}
+
+function orderCollectionItems(rows: CollectionItemRow[], rankByProductId: Map<number, number>) {
+  return rows
+    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
+    .sort(compareByScopedOrdering.bind(null, "erp"));
+}
+
+async function listOrderedCollectionItemsRepo(collectionId: number) {
+  const rows = await selectCollectionItemRows().where(eq(collectionItems.collectionId, collectionId));
   const rankByProductId = await loadScopedRanksRepo({
     scopeType: "collection",
     scopeId: collectionId,
     entityType: "product"
   });
-  return rows
-    .map((row) => ({ ...row, sortOrder: rankByProductId.get(row.productId) }))
-    .sort(compareByScopedOrdering.bind(null, "erp"));
+  return orderCollectionItems(rows, rankByProductId);
+}
+
+/**
+ * The same ordered items as `listOrderedCollectionItemsRepo`, for a whole page
+ * of collections in two reads rather than two per collection.
+ */
+async function listOrderedItemsByCollectionRepo(collectionIds: number[]) {
+  const itemsByCollectionId = new Map<number, ReturnType<typeof orderCollectionItems>>();
+  if (collectionIds.length === 0) {
+    return itemsByCollectionId;
+  }
+
+  const [rows, ranksByCollectionId] = await Promise.all([
+    selectCollectionItemRows().where(inArray(collectionItems.collectionId, collectionIds)),
+    loadScopedRanksForScopesRepo({ scopeType: "collection", scopeIds: collectionIds, entityType: "product" })
+  ]);
+
+  const rowsByCollectionId = new Map<number, CollectionItemRow[]>();
+  for (const row of rows) {
+    const collectionRows = rowsByCollectionId.get(row.collectionId) ?? [];
+    collectionRows.push(row);
+    rowsByCollectionId.set(row.collectionId, collectionRows);
+  }
+  for (const collectionId of collectionIds) {
+    itemsByCollectionId.set(
+      collectionId,
+      orderCollectionItems(
+        rowsByCollectionId.get(collectionId) ?? [],
+        ranksByCollectionId.get(collectionId) ?? new Map()
+      )
+    );
+  }
+  return itemsByCollectionId;
 }
 
 export async function reorderCollectionsRepo(input: { ids: number[] }) {
@@ -118,12 +168,8 @@ export async function listVisibleCollectionsRepo() {
       sql`${collections.visibility} = 'visible' and ${collections.status} = 'active' and ${collections.deletedAt} is null`
     );
   const ranked = await withCollectionRanks(rows, "storefront");
-  return Promise.all(
-    ranked.map(async (row) => {
-      const items = await listOrderedCollectionItemsRepo(row.id);
-      return { ...row, items };
-    })
-  );
+  const itemsByCollectionId = await listOrderedItemsByCollectionRepo(ranked.map((row) => row.id));
+  return ranked.map((row) => ({ ...row, items: itemsByCollectionId.get(row.id) ?? [] }));
 }
 
 export async function findCollectionBySlugRepo(slug: string) {

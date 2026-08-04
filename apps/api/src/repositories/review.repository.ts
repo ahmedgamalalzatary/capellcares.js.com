@@ -14,6 +14,7 @@ import {
   type reviewEntityTypes
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import type { RatingSummary } from "@capella/shared";
 
 export type ReviewEntityType = (typeof reviewEntityTypes)[number];
 
@@ -200,6 +201,59 @@ export async function listPublicReviews(input: {
       totalPages: reviewCount === 0 ? 0 : Math.ceil(reviewCount / input.pageSize)
     }
   };
+}
+
+/** What an unreviewed entity reports; frozen because every card shares it. */
+export const EMPTY_RATING: RatingSummary = Object.freeze({ average: 0, count: 0 });
+
+/**
+ * Batch rating summaries for a grid of cards: one grouped read per entity
+ * type, covering only publicly visible reviews. Entities without one are left
+ * out of the map so callers can fall back to an empty rating.
+ */
+export async function listRatingSummaries(
+  entityType: ReviewEntityType,
+  entityIds: number[]
+): Promise<Map<number, RatingSummary>> {
+  const summaries = new Map<number, RatingSummary>();
+  const uniqueIds = [...new Set(entityIds)];
+  if (uniqueIds.length === 0) return summaries;
+
+  const rows = await db
+    .select({ entityId: reviews.entityId, averageRating: avg(reviews.rating), reviewCount: count() })
+    .from(reviews)
+    .where(and(
+      eq(reviews.entityType, entityType),
+      inArray(reviews.entityId, uniqueIds),
+      eq(reviews.status, "active"),
+      isNull(reviews.deletedAt)
+    ))
+    .groupBy(reviews.entityId);
+
+  for (const row of rows) {
+    summaries.set(row.entityId, {
+      average: Number(Number(row.averageRating ?? 0).toFixed(1)),
+      count: Number(row.reviewCount)
+    });
+  }
+  return summaries;
+}
+
+/**
+ * Stars are decoration on a catalog listing, so a reviews outage must not empty
+ * the shop. Mirrors what `loadReviewData` does for the detail widget: warn, and
+ * let every card fall back to no rating.
+ */
+export async function safeRatingSummaries(
+  entityType: ReviewEntityType,
+  entityIds: number[]
+): Promise<Map<number, RatingSummary>> {
+  try {
+    return await listRatingSummaries(entityType, entityIds);
+  } catch (error) {
+    console.warn("Failed to load storefront rating summaries", entityType, error);
+    return new Map();
+  }
 }
 
 export async function claimReviewPrompt(customerId: number) {

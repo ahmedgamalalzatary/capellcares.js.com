@@ -48,6 +48,20 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, pending]);
 
+  // The field is disabled while Capella answers, and a browser drops focus
+  // from an element it disables — leaving the user to click back in before
+  // every follow-up question. Once an answer lands, put focus back.
+  // Only an answer qualifies: the user's own message renders first, and
+  // focusing then would pull focus off the send button they just tapped and
+  // raise the keyboard over the reply they are waiting for. That also leaves
+  // the deliberate touch-device behaviour above intact when the overlay opens.
+  useEffect(() => {
+    if (pending || messages[messages.length - 1]?.role !== "capella") {
+      return;
+    }
+    inputRef.current?.focus();
+  }, [messages, pending]);
+
   function send() {
     const query = input.trim();
     if (!query || pending) {

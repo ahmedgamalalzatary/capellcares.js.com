@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { pickLang, formatPrice, type Language, type Offer, type Collection, type Advice } from "@capella/shared";
+import { pickLang, formatPrice, type Language, type Offer, type Collection, type Advice, type RatingSummary } from "@capella/shared";
 import { SOCIAL_LINKS } from "@/constants/socials";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
+import { CardRating } from "@/components/reviews/card-rating";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -77,6 +78,8 @@ export function SectionCard(props: SectionCardProps) {
   let image: React.ReactNode = null;
   let price: number | null = null;
   let originalTotal: number | null = null;
+  // Advice carries no rating; only the two purchasable kinds set one.
+  let rating: RatingSummary | null = null;
   let onAdd: ((e: React.MouseEvent) => void) | null = null;
   let adviceVideo: ReturnType<typeof resolveAdviceVideo> = null;
   let adviceVideoUrl: string | null = null;
@@ -93,6 +96,7 @@ export function SectionCard(props: SectionCardProps) {
     image = <OfferIllustration offer={offer} className="absolute inset-0 h-full w-full object-cover" />;
     price = offer.price;
     originalTotal = offer.originalTotal;
+    rating = offer.rating ?? null;
     onAdd = (e) => {
       e.preventDefault();
       cart.add({ type: "offer", offerId: offer.id, qty: 1 });
@@ -123,6 +127,7 @@ export function SectionCard(props: SectionCardProps) {
     image = <CollectionIllustration collection={collection} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
     price = collection.price;
     originalTotal = collection.originalTotal;
+    rating = collection.rating ?? null;
     onAdd = (e) => {
       e.preventDefault();
       cart.add({ type: "collection", collectionId: collection.id, qty: 1 });
@@ -308,6 +313,7 @@ export function SectionCard(props: SectionCardProps) {
           <h3 className={nameClass}>{title}</h3>
         )}
 
+        <CardRating rating={rating} dict={dict} />
 
         {price != null ? (
           <span className={priceClass}>

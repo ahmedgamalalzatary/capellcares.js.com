@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import type { RatingSummary } from "@capella/shared";
 
 export type RelatedEntityType = "product" | "offer" | "collection";
 
@@ -12,6 +13,8 @@ export interface RelatedRef {
 export interface StorefrontRelatedCard {
   type: RelatedEntityType;
   id: number;
+  /** Average stars and review count for the card; zeroed when unreviewed. */
+  rating: RatingSummary;
   slug: string;
   name: { ar: string; en: string };
   imagePath: string | null;

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { wrapAsync } from "../lib/async-route.js";
 import { localeMiddleware } from "../middlewares/locale.middleware.js";
 import { checkoutRoutes } from "../modules/checkout/checkout.routes.js";
 import { catalogCollectionsRoutes } from "../modules/catalog/collections/collections.routes.js";
@@ -23,6 +24,9 @@ storefrontRoutes.use("/orders", storefrontOrdersRoutes);
 storefrontRoutes.use("/wishlist", wishlistRoutes);
 storefrontRoutes.use("/reviews", storefrontReviewsRoutes);
 storefrontRoutes.use("/shop-media-sections", storefrontShopMediaRoutes);
-storefrontRoutes.get("/categories", listCategories);
-storefrontRoutes.get("/offers", listOffers);
-storefrontRoutes.get("/offers/:slug", getOfferBySlug);
+// Wrapped like the product and collection routers: an unwrapped async handler
+// rejects into an unhandled rejection, which takes the process down rather than
+// returning a 500.
+storefrontRoutes.get("/categories", wrapAsync(listCategories));
+storefrontRoutes.get("/offers", wrapAsync(listOffers));
+storefrontRoutes.get("/offers/:slug", wrapAsync(getOfferBySlug));

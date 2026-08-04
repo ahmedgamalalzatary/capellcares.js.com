@@ -99,6 +99,45 @@ export async function orderedProductIdsForVariants(
   return orderedProductIds;
 }
 
+/**
+ * Ranks for many scopes at once, keyed by scope id. Listing endpoints use this
+ * instead of one `loadScopedRanksRepo` call per row, which grows with the page.
+ */
+export async function loadScopedRanksForScopesRepo(input: {
+  scopeType: ScopeType;
+  scopeIds: number[];
+  entityType: EntityType;
+}) {
+  const { scopeType, scopeIds, entityType } = input;
+  const ranksByScopeId = new Map<number, Map<number, number>>();
+  if (scopeIds.length === 0) {
+    return ranksByScopeId;
+  }
+
+  const rows = await db
+    .select({
+      scopeId: entityOrderings.scopeId,
+      entityId: entityOrderings.entityId,
+      rank: entityOrderings.rank
+    })
+    .from(entityOrderings)
+    .where(
+      and(
+        eq(entityOrderings.scopeType, scopeType),
+        inArray(entityOrderings.scopeId, [...new Set(scopeIds)]),
+        eq(entityOrderings.entityType, entityType)
+      )
+    );
+
+  for (const row of rows) {
+    if (row.scopeId == null) continue;
+    const scopeRanks = ranksByScopeId.get(row.scopeId) ?? new Map<number, number>();
+    scopeRanks.set(row.entityId, row.rank);
+    ranksByScopeId.set(row.scopeId, scopeRanks);
+  }
+  return ranksByScopeId;
+}
+
 export async function loadScopedRanksRepo(input: {
   scopeType: ScopeType;
   scopeId: number | null;

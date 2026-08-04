@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import type { Language, ReviewEntityType, ReviewPage } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { fetchPublicReviews } from "@/lib/api/client";
+import { Stars, template } from "./stars";
 import { useModalAccessibility } from "./use-modal-accessibility";
 
 interface Props {
@@ -12,23 +13,6 @@ interface Props {
   reviewData: ReviewPage | null;
   lang: Language;
   dict: any;
-}
-
-function template(value: string, replacements: Record<string, string>) {
-  return Object.entries(replacements).reduce(
-    (result, [key, replacement]) => result.replace(`{${key}}`, replacement),
-    value
-  );
-}
-
-function Stars({ rating, label }: { rating: number; label?: string }) {
-  return (
-    <span className="inline-flex gap-0.5 text-lg text-gold" role="img" aria-label={label}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} aria-hidden className={star <= Math.round(rating) ? "text-gold" : "text-(--hairline)"}>★</span>
-      ))}
-    </span>
-  );
 }
 
 export function ReviewSummary({ entityType, entityId, reviewData, lang, dict }: Props) {

@@ -2,9 +2,13 @@ import type { Request, Response } from "express";
 import { listCategoriesRepo } from "../../repositories/category.repository.js";
 import { findOfferBySlugRepo, listVisibleOffersRepo } from "../../repositories/offer.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../../repositories/related-item.repository.js";
-import { calculateBundleInventory } from "../inventory/bundle-inventory.js";
+import {
+  calculateBundleInventory,
+  computeBundleInventoryFromMap,
+  loadBundleVariantMap
+} from "../inventory/bundle-inventory.js";
 import { toStorefrontOffer } from "./offers/offers.mapper.js";
-import { loadReviewData } from "./review-data.js";
+import { attachRatings, loadReviewData, ratingFromReviewData } from "./review-data.js";
 
 export async function listCategories(_req: Request, res: Response) {
   // Categories mirror the ERP tree (oldest unranked first); the storefront
@@ -29,16 +33,15 @@ export async function listCategories(_req: Request, res: Response) {
 
 export async function listOffers(_req: Request, res: Response) {
   const offers = await listVisibleOffersRepo();
-  const items = await Promise.all(
-    offers.map(async (offer) => {
-      const inventory = await calculateBundleInventory(offer.items);
-      return toStorefrontOffer(
-        { ...offer, stock: inventory.stock },
-        inventory.originalTotal
-      );
-    })
-  );
-  res.json({ items });
+  const variantMap = await loadBundleVariantMap(offers);
+  const items = offers.map((offer) => {
+    const inventory = computeBundleInventoryFromMap(offer.items, variantMap);
+    return toStorefrontOffer(
+      { ...offer, stock: inventory.stock },
+      inventory.originalTotal
+    );
+  });
+  res.json({ items: await attachRatings("offer", items) });
 }
 
 export async function getOfferBySlug(req: Request, res: Response) {
@@ -49,5 +52,10 @@ export async function getOfferBySlug(req: Request, res: Response) {
     getStorefrontRelatedCardsRepo({ type: "offer", id: offer.id }),
     loadReviewData("offer", offer.id)
   ]);
-  res.json({ ...toStorefrontOffer({ ...offer, stock: inventory.stock }, inventory.originalTotal), relatedItems, reviewData });
+  res.json({
+    ...toStorefrontOffer({ ...offer, stock: inventory.stock }, inventory.originalTotal),
+    rating: ratingFromReviewData(reviewData),
+    relatedItems,
+    reviewData
+  });
 }
