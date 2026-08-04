@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
@@ -96,15 +96,13 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
       <div
         className={[
           "mr-6 ml-6 absolute inset-x-0 top-full z-40 overflow-hidden rounded-b-2xl bg-canvas shadow-(--shadow-2)",
-          open ? "pointer-events-auto" : "pointer-events-none"
+          "max-h-(--mega-panel-height) [transition:max-height_1000ms_cubic-bezier(0.76,0,0.24,1),opacity_220ms_ease]",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         ].join(" ")}
         role="menu"
-        style={{
-          maxHeight: open ? (panelH ? `${panelH}px` : "80vh") : 0,
-          opacity: open ? 1 : 0,
-          transition:
-            "max-height 1000ms cubic-bezier(0.76,0,0.24,1), opacity 220ms ease"
-        }}
+        // The open height is measured from the panel content, so it rides along
+        // as a custom property.
+        style={{ "--mega-panel-height": open ? (panelH ? `${panelH}px` : "80vh") : "0px" } as CSSProperties}
       >
         <div ref={panelRef} className="container">
           {/* Father tabs */}

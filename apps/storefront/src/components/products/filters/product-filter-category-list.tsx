@@ -1,8 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { pickLang, type Category, type Language } from "@capella/shared";
 
+import { cn } from "@/lib/utils";
 import { CategoryPill } from "../category-pill";
 import type { CategoryTreeNode } from "../../../types/product-grid.types";
 
@@ -18,17 +18,9 @@ interface ProductFilterCategoryListProps {
   toggleParent: (id: number) => void;
 }
 
-const mobileListStyle = { display: "flex", flexDirection: "column", gap: 6 } as const;
-const desktopListStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  maxHeight: "260px",
-  overflowY: "auto",
-  paddingInlineEnd: "2px",
-  scrollbarWidth: "thin",
-  scrollbarColor: "var(--hairline) transparent"
-} as const;
+const mobileListClass = "flex flex-col gap-1.5";
+const desktopListClass =
+  "flex max-h-[260px] flex-col gap-1 overflow-y-auto pe-[2px] [scrollbar-color:var(--hairline)_transparent] [scrollbar-width:thin]";
 
 function ParentToggle({
   isOpen,
@@ -47,20 +39,11 @@ function ParentToggle({
       aria-label={label}
       aria-expanded={isOpen}
       onClick={onClick}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: compact ? 20 : 24,
-        height: compact ? 20 : 24,
-        borderRadius: "50%",
-        border: "1px solid var(--hairline)",
-        background: isOpen ? "oklch(0 0 0 / 0.06)" : "transparent",
-        color: "var(--ink-3)",
-        cursor: "pointer",
-        flexShrink: 0,
-        transition: "background 160ms"
-      }}
+      className={cn(
+        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--hairline) text-(--ink-3) transition-[background] duration-[160ms]",
+        compact ? "size-5" : "size-6",
+        isOpen ? "bg-[oklch(0_0_0_/_0.06)]" : "bg-transparent"
+      )}
     >
       <svg
         width="8"
@@ -70,10 +53,10 @@ function ParentToggle({
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        style={{
-          transition: "transform 260ms cubic-bezier(0.16,1,0.3,1)",
-          transform: isOpen ? "rotate(90deg)" : "rotate(0deg)"
-        }}
+        className={cn(
+          "transition-transform duration-[260ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isOpen ? "rotate-90" : "rotate-0"
+        )}
       >
         <path d="M3 2l4 3-4 3" />
       </svg>
@@ -90,14 +73,12 @@ function getIsOpen(node: CategoryTreeNode, category: number | undefined, openPar
   return openParents[node.category.id] ?? Boolean(category && branchContains(node, category));
 }
 
-function getBranchStyles(isMobile: boolean) {
+function getBranchClasses(isMobile: boolean) {
   return {
-    branch: ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties),
-    row: isMobile
-      ? ({ display: "inline-flex", alignItems: "center", gap: 3 } satisfies CSSProperties)
-      : ({ display: "flex", alignItems: "center", gap: 4 } satisfies CSSProperties),
-    parentPillWrapper: isMobile ? undefined : ({ flex: 1, minWidth: 0 } satisfies CSSProperties),
-    children: ({ display: "flex", flexDirection: "column", gap: 2 } satisfies CSSProperties)
+    branch: "flex flex-col gap-[2px]",
+    row: isMobile ? "inline-flex items-center gap-[3px]" : "flex items-center gap-1",
+    parentPillWrapper: isMobile ? undefined : "min-w-0 flex-1",
+    children: "flex flex-col gap-[2px]"
   } as const;
 }
 
@@ -115,7 +96,7 @@ export function ProductFilterCategoryList({
   const isMobile = mode === "mobile";
   const name = isMobile ? "cat-mobile" : "cat";
   const fallbackCategories = categories.slice(0, 14);
-  const styles = getBranchStyles(isMobile);
+  const classes = getBranchClasses(isMobile);
 
   const renderPill = (item: Category, indent = false) => (
     <CategoryPill key={item.id} name={name} checked={category === item.id} onChange={() => setCategory(item.id)} indent={indent}>
@@ -128,10 +109,10 @@ export function ProductFilterCategoryList({
     const childContent = node.children.map((child) => renderNode(child, depth + 1));
 
     return (
-      <div key={node.category.id} style={styles.branch}>
-        <div style={styles.row}>
-          {styles.parentPillWrapper ? (
-            <div style={styles.parentPillWrapper}>{renderPill(node.category, depth > 0)}</div>
+      <div key={node.category.id} className={classes.branch}>
+        <div className={classes.row}>
+          {classes.parentPillWrapper ? (
+            <div className={classes.parentPillWrapper}>{renderPill(node.category, depth > 0)}</div>
           ) : (
             renderPill(node.category, depth > 0)
           )}
@@ -144,7 +125,7 @@ export function ProductFilterCategoryList({
             />
           )}
         </div>
-        {node.children.length > 0 && isOpen && (styles.children ? <div style={styles.children}>{childContent}</div> : childContent)}
+        {node.children.length > 0 && isOpen && (classes.children ? <div className={classes.children}>{childContent}</div> : childContent)}
       </div>
     );
   };
@@ -152,7 +133,7 @@ export function ProductFilterCategoryList({
   const renderedTree = categoryTree.map((node) => renderNode(node));
 
   return (
-    <div style={isMobile ? mobileListStyle : desktopListStyle}>
+    <div className={isMobile ? mobileListClass : desktopListClass}>
       <CategoryPill name={name} checked={!category} onChange={() => setCategory(undefined)}>
         {dict.nav.allCategories}
       </CategoryPill>

@@ -64,7 +64,7 @@ export function ProductsTable({
                     <Link href={`/products/${product.id}/edit`} className="table-title">{product.name.ar}</Link>
                     <div className="table-subtitle">{product.name.en}</div>
                     {(product.offerIds?.length ?? 0) > 0 ? (
-                      <div style={{ marginTop: 6 }}>
+                      <div className="cell-badge-row">
                         <span className="status status--active">ضمن عرض</span>
                       </div>
                     ) : null}
@@ -79,7 +79,7 @@ export function ProductsTable({
                   </td>
                   <td><AdminStatusBadge active={product.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
-                    <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                    <div className="row row--actions">
                     {canReorder && onMove && products.length > 1 && (
                       <>
                         <button
@@ -137,7 +137,7 @@ export function ProductsTable({
               );
             })}
             {products.length === 0 && (
-              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد منتجات تطابق الفلتر.</td></tr>
+              <tr><td colSpan={8} className="state-note state-note--muted">لا توجد منتجات تطابق الفلتر.</td></tr>
             )}
           </tbody>
         </table>

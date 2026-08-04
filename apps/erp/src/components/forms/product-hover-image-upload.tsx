@@ -55,11 +55,11 @@ export function ProductHoverImageUpload({ value, onChange, uploadContext }: Prop
 
   return (
     <div className="stack">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="muted" style={{ fontSize: 12 }}>
+      <div className="row row--between">
+        <div className="muted fs-12">
           هذه الصورة تظهر فقط عند تمرير بطاقة المنتج في المتجر. تركها فارغة يعني عدم وجود صورة hover.
         </div>
-        <div className="row" style={{ gap: 8 }}>
+        <div className="row row--gap-md">
           {value ? (
             <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange("")} disabled={uploading}>
               <Icon.Trash size={14} /> إزالة الصورة
@@ -76,28 +76,25 @@ export function ProductHoverImageUpload({ value, onChange, uploadContext }: Prop
         data-testid="product-hover-image-input"
         type="file"
         accept="image/png,image/jpeg,image/webp"
-        style={{ display: "none" }}
+        className="file-input-hidden"
         onChange={(event) => { void handleFiles(event.target.files); }}
       />
 
       {value ? (
-        <div
-          className="row"
-          style={{ justifyContent: "space-between", gap: 12, padding: 10, border: "1px solid var(--hairline)", borderRadius: 8 }}
-        >
-          <div className="row" style={{ gap: 12, alignItems: "center" }}>
-            <img src={previewSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
-            <div className="stack" style={{ gap: 4 }}>
-              <strong style={{ fontSize: 13 }}>صورة hover</strong>
+        <div className="row row--between media-tile">
+          <div className="row">
+            <img src={previewSrc} alt="" className="media-tile__preview" />
+            <div className="stack stack--xs">
+              <strong className="fs-13">صورة hover</strong>
             </div>
           </div>
         </div>
       ) : (
-        <div className="muted" style={{ fontSize: 12 }}>لا توجد صورة hover لهذا المنتج.</div>
+        <div className="muted fs-12">لا توجد صورة hover لهذا المنتج.</div>
       )}
 
-      {!uploadContext ? <div className="muted" style={{ fontSize: 12 }}>رفع صورة hover متاح فقط أثناء تعديل منتج موجود.</div> : null}
-      {uploading ? <div className="muted" style={{ fontSize: 12 }}>جارِ رفع صورة hover...</div> : null}
+      {!uploadContext ? <div className="muted fs-12">رفع صورة hover متاح فقط أثناء تعديل منتج موجود.</div> : null}
+      {uploading ? <div className="muted fs-12">جارِ رفع صورة hover...</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>
   );

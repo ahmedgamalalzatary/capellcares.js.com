@@ -43,7 +43,7 @@ const dict = {
     related: "You may also like",
     saveToWishlist: "Save offer"
   },
-  common: { buyNow: "Buy now", addToWishlist: "Wishlist" }
+  common: { buyNow: "Buy now", addToWishlist: "Wishlist", share: "Share", linkCopied: "Link copied" }
 };
 
 const offer = {

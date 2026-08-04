@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent,
   type TransitionEvent
@@ -240,8 +241,8 @@ function ShopMediaViewportStrip({
   const slides = [items[count - 1], ...items, items[0]];
   const renderedActive = pos + 1;
   const offset = (isRtl ? 1 : -1) * (pos + 1) * 100;
-  const trackTransform =
-    dragging && dragOffsetX !== 0 ? `translateX(calc(${offset}% + ${dragOffsetX}px))` : `translateX(${offset}%)`;
+  const trackOffset =
+    dragging && dragOffsetX !== 0 ? `calc(${offset}% + ${dragOffsetX}px)` : `${offset}%`;
 
   const handleTrackTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -273,8 +274,9 @@ function ShopMediaViewportStrip({
       >
         <div
           data-slide-track
-          className={`flex ${animate && !dragging ? "transition-transform duration-500 ease-out" : ""}`}
-          style={{ transform: trackTransform }}
+          className={`flex [transform:translateX(var(--track-x))] ${animate && !dragging ? "transition-transform duration-500 ease-out" : ""}`}
+          // Track offset follows the active slide and the live drag distance.
+          style={{ "--track-x": trackOffset } as CSSProperties}
           onTransitionEnd={handleTrackTransitionEnd}
         >
           {slides.map((item, renderedIndex) => {

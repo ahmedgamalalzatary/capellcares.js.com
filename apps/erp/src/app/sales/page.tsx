@@ -18,28 +18,28 @@ export default function SalesPage() {
 
   return (
     <AdminShell title="المبيعات" crumbs={[{ label: "المبيعات" }]}>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+      <div className="grid sales-grid sales-grid--3">
         <div className="card">
           <div className="card__body">
             <div className="muted">إجمالي الطلبات</div>
-            <div className="page-title" style={{ marginTop: 8 }}>{sales.summary.totalOrders}</div>
+            <div className="page-title sales-metric">{sales.summary.totalOrders}</div>
           </div>
         </div>
         <div className="card">
           <div className="card__body">
             <div className="muted">إجمالي الوحدات</div>
-            <div className="page-title" style={{ marginTop: 8 }}>{sales.summary.totalUnitsSold}</div>
+            <div className="page-title sales-metric">{sales.summary.totalUnitsSold}</div>
           </div>
         </div>
         <div className="card">
           <div className="card__body">
             <div className="muted">إجمالي الإيراد</div>
-            <div className="page-title" style={{ marginTop: 8 }}>{formatPrice(sales.summary.totalRevenue, "ar")}</div>
+            <div className="page-title sales-metric">{formatPrice(sales.summary.totalRevenue, "ar")}</div>
           </div>
         </div>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16, marginTop: 16 }}>
+      <div className="grid sales-grid sales-grid--2 sales-grid--spaced">
         <div className="card">
           <div className="card__head"><h3 className="card__title">أفضل المنتجات</h3></div>
           <div className="table-outer">
@@ -89,7 +89,7 @@ export default function SalesPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card card--spaced-top">
         <div className="card__head"><h3 className="card__title">تفصيل الطلبات</h3></div>
         <div className="table-outer">
           <table className="table">

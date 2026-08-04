@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import { ProductFiltersContent } from "./product-filters-content";
 import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 
@@ -66,95 +67,44 @@ export function MobileFilterDrawer({
       <button
         type="button"
         onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          border: 0,
-          padding: 0,
-          background: "oklch(0.22 0.04 45 / 0.45)",
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
-          zIndex: 50,
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? "auto" : "none",
-          cursor: "pointer",
-          transition: "opacity 280ms cubic-bezier(0.16,1,0.3,1)"
-        }}
+        className={cn(
+          "fixed inset-0 z-50 cursor-pointer border-0 p-0 bg-[oklch(0.22_0.04_45_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        )}
       />
 
       <div
-        style={{
-          position: "fixed",
-          insetBlockStart: 0,
-          insetBlockEnd: 0,
-          insetInlineStart: 0,
-          width: "min(340px, 90vw)",
-          background: "var(--canvas)",
-          zIndex: 51,
-          display: "flex",
-          flexDirection: "column",
-          transform: open ? "translateX(0)" : isAr ? "translateX(100%)" : "translateX(-100%)",
-          transition: "transform 320ms cubic-bezier(0.16,1,0.3,1)",
-          overflowY: "auto"
-        }}
+        className={cn(
+          "fixed inset-y-0 start-0 z-[51] flex w-[min(340px,90vw)] flex-col overflow-y-auto bg-canvas transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          open ? "translate-x-0" : isAr ? "translate-x-full" : "-translate-x-full"
+        )}
       >
-        <div
-          style={{
-            padding: "20px 20px 16px",
-            borderBottom: "1px solid var(--hairline)",
-            background: "var(--canvas)",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: 12,
-            flexShrink: 0,
-            position: "sticky",
-            top: 0,
-            zIndex: 2
-          }}
-        >
+        <div className="sticky top-0 z-[2] flex shrink-0 items-end justify-between gap-3 border-b border-(--hairline) bg-canvas px-5 pt-5 pb-4">
           <div>
-            <p style={{ margin: "0 0 1px", fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 700, opacity: 0.8 }}>
+            <p className="mx-0 mt-0 mb-px text-[9px] font-bold tracking-[0.22em] uppercase text-(--ink-3) opacity-80">
               {dict.brand}
             </p>
             <span
-              style={{
-                fontFamily: isAr ? "var(--font-ar)" : "var(--font-display)",
-                fontWeight: isAr ? 700 : 400,
-                fontSize: isAr ? "20px" : "24px",
-                color: "var(--ink)",
-                letterSpacing: isAr ? "-0.01em" : "-0.02em",
-                lineHeight: 1.05,
-                display: "block"
-              }}
+              className={cn(
+                "block leading-[1.05] text-ink",
+                isAr
+                  ? "font-(family-name:--font-ar) text-[20px] font-bold tracking-[-0.01em]"
+                  : "font-(family-name:--font-display) text-[24px] font-normal tracking-[-0.02em]"
+              )}
             >
               {dict.filters.title}
             </span>
           </div>
           <button
             onClick={onClose}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              border: "1px solid var(--hairline)",
-              background: "var(--surface)",
-              color: "var(--ink-3)",
-              cursor: "pointer",
-              transition: "background 160ms",
-              flexShrink: 0,
-              marginBottom: "2px"
-            }}
+            className="mb-[2px] inline-flex size-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--hairline) bg-surface text-(--ink-3) transition-[background] duration-[160ms]"
             aria-label={dict.filters.closeFilters ?? "Close filters"}
           >
             <Icon.Close size={13} />
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px", background: "var(--canvas)" }}>
+        <div className="flex-1 overflow-y-auto bg-canvas px-5">
           <ProductFiltersContent
             lang={lang}
             dict={dict}
@@ -175,23 +125,11 @@ export function MobileFilterDrawer({
           />
         </div>
 
-        <div
-          style={{
-            padding: "16px 20px",
-            borderTop: "1px solid var(--hairline)",
-            display: "flex",
-            gap: 10,
-            flexShrink: 0,
-            position: "sticky",
-            bottom: 0,
-            background: "var(--canvas)",
-            zIndex: 2
-          }}
-        >
-          <button onClick={onClear} className="btn btn--sm" style={{ flex: 1 }}>
+        <div className="sticky bottom-0 z-[2] flex shrink-0 gap-[10px] border-t border-(--hairline) bg-canvas px-5 py-4">
+          <button onClick={onClear} className="btn btn--sm flex-1">
             {dict.common.clear}
           </button>
-          <button onClick={onClose} className="btn btn--primary btn--sm" style={{ flex: 2 }}>
+          <button onClick={onClose} className="btn btn--primary btn--sm flex-[2]">
             {dict.filters.showResults ?? "Show results"}
           </button>
         </div>

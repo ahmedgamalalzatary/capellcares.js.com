@@ -45,30 +45,19 @@ export default function TrashPage() {
   return (
     <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
       <div className="card">
-        <div className="card__head" style={{ padding: 0, borderBottom: "1px solid var(--hairline)" }}>
-          <div style={{ display: "flex" }}>
+        <div className="card__head trash-tabs__head">
+          <div className="trash-tabs">
             {tabs.map((tabConfig) => {
               const active = tab === tabConfig.id;
               return (
                 <button
                   key={tabConfig.id}
                   onClick={() => setTab(tabConfig.id)}
-                  style={{
-                    background: active ? "var(--surface)" : "transparent",
-                    color: active ? "var(--ink)" : "var(--ink-3)",
-                    border: 0,
-                    borderBottom: `2px solid ${active ? "var(--accent)" : "transparent"}`,
-                    padding: "16px 22px",
-                    fontWeight: active ? 700 : 600,
-                    fontSize: 13.5,
-                    transition: "color 140ms, background 140ms",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8
-                  }}
+                  className="trash-tab"
+                  data-active={active}
                 >
                   {tabConfig.label}
-                  <span className="tag" style={{ background: active ? "var(--accent-soft)" : "var(--warm-soft)", color: active ? "var(--accent)" : "var(--ink-3)", fontWeight: 700 }}>{tabConfig.count}</span>
+                  <span className="tag trash-tab__count">{tabConfig.count}</span>
                 </button>
               );
             })}
@@ -101,9 +90,9 @@ export default function TrashPage() {
         )}
         {tab === "reviews" && (
           reviewsLoading ? (
-            <p role="status" className="muted" style={{ padding: 40, textAlign: "center" }}>جارٍ التحميل…</p>
+            <p role="status" className="muted state-note">جارٍ التحميل…</p>
           ) : reviewsError ? (
-            <p role="alert" style={{ padding: 40, textAlign: "center", color: "var(--danger)" }}>{reviewsError}</p>
+            <p role="alert" className="state-note state-note--danger">{reviewsError}</p>
           ) : (
             <DeletedList
               empty="لا توجد تقييمات محذوفة."
@@ -132,10 +121,10 @@ export default function TrashPage() {
           </>
         }
       >
-        <p style={{ margin: 0 }}>
+        <p className="modal-note">
           سيتم حذف "{pendingHardDelete?.title}" نهائياً مع كل بياناته. لا يمكن التراجع عن هذا الإجراء.
         </p>
-        {deleteError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{deleteError}</p> : null}
+        {deleteError ? <p className="modal-note modal-note--error">{deleteError}</p> : null}
       </Modal>
     </AdminShell>
   );

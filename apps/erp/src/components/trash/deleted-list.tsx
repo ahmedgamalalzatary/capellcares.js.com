@@ -15,7 +15,7 @@ export function DeletedList({
   empty: string;
 }) {
   if (rows.length === 0) {
-    return <div style={{ padding: 60, textAlign: "center", color: "var(--ink-3)" }}>{empty}</div>;
+    return <div className="state-note state-note--lg state-note--muted">{empty}</div>;
   }
 
   return (
@@ -32,12 +32,12 @@ export function DeletedList({
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <div style={{ fontWeight: 600 }}>{row.title}</div>
-                <div className="faint" style={{ fontSize: 11 }}>{row.subtitle}</div>
+                <div className="fw-600">{row.title}</div>
+                <div className="faint fs-11">{row.subtitle}</div>
               </td>
               <td className="muted">{row.meta}</td>
               <td>
-                <div style={{ display: "inline-flex", gap: 8 }}>
+                <div className="inline-row">
                   {onRestore && (
                     <button className="btn btn--ghost btn--sm" onClick={() => onRestore(row.id)}>
                       <Icon.Check /> استعادة
@@ -45,8 +45,7 @@ export function DeletedList({
                   )}
                   {onHardDelete && (
                     <button
-                      className="btn btn--ghost btn--sm"
-                      style={{ color: "var(--danger, #c0392b)" }}
+                      className="btn btn--ghost btn--sm c-error"
                       onClick={() => onHardDelete(row.id, row.title)}
                     >
                       <Icon.Trash /> حذف نهائي

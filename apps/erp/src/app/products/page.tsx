@@ -127,12 +127,12 @@ export default function ProductsListPage() {
         disableConfirm={isToggling}
         onConfirm={confirmToggle}
       >
-        <p style={{ margin: 0 }}>
+        <p className="modal-note">
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
-        {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
+        {toggleError ? <p className="modal-note modal-note--error">{toggleError}</p> : null}
       </AdminConfirmModal>
 
       <AdminConfirmModal
@@ -143,7 +143,7 @@ export default function ProductsListPage() {
         confirmClassName="btn btn--danger btn--sm"
         onConfirm={confirmDelete}
       >
-        <p style={{ margin: 0 }}>سيتم نقل المنتج إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
+        <p className="modal-note">سيتم نقل المنتج إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

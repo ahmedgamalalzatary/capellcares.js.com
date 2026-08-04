@@ -69,7 +69,7 @@ export function CategoryPageContent({
   return (
     <>
       {subCats.length > 0 && (
-        <div className="pill-group-wrap" style={{ marginTop: 12 }}>
+        <div className="pill-group-wrap mt-3">
           <button
             type="button"
             className="pill-nav pill-nav--prev"
@@ -77,7 +77,7 @@ export function CategoryPageContent({
             onClick={() => scrollPills("prev")}
             disabled={!canScrollPrev}
           >
-            <Icon.Chevron size={26} style={{ transform: "rotate(180deg)" }} />
+            <Icon.Chevron size={26} className="rotate-180" />
           </button>
           <div className="pill-group" ref={pillGroupRef}>
             {subCats.map((item) => {

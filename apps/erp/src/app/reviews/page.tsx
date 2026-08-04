@@ -123,25 +123,25 @@ export default function ReviewsPage() {
                   <td><div className="table-title">{review.customerName}</div><div className="faint">{review.customerEmail}</div></td>
                   <td><div>{review.entityName.ar || review.entityName.en}</div><div className="faint">{entityLabel(review.entityType)} #{review.entityId}</div></td>
                   <td><Link href={`/orders/${review.orderId}`} className="table-title">{review.orderCode}</Link></td>
-                  <td><span aria-label={`${review.rating} من 5 نجوم`} style={{ color: "var(--gold)", whiteSpace: "nowrap" }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></td>
-                  <td style={{ minWidth: 220, maxWidth: 380, whiteSpace: "normal" }}>{review.comment}</td>
+                  <td><span aria-label={`${review.rating} من 5 نجوم`} className="review-stars">{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></td>
+                  <td className="review-comment">{review.comment}</td>
                   <td><span className={review.status === "active" ? "status status--active" : "status status--draft"}>{review.status === "active" ? "نشط" : "معطّل"}</span></td>
                   <td className="muted">{new Date(review.createdAt).toLocaleDateString("ar-EG")}</td>
-                  <td><div className="row" style={{ flexWrap: "nowrap" }}>
+                  <td><div className="row row--nowrap">
                     {hasErpPermission(user, "reviews.toggle_status") ? <button className="btn btn--ghost btn--sm" onClick={() => void mutate("toggle", review.id)}>{review.status === "active" ? "تعطيل" : "تفعيل"}</button> : null}
-                    {hasErpPermission(user, "reviews.soft_delete") ? <button className="btn btn--ghost btn--sm" style={{ color: "var(--danger)" }} onClick={() => void mutate("delete", review.id)}>حذف</button> : null}
+                    {hasErpPermission(user, "reviews.soft_delete") ? <button className="btn btn--ghost btn--sm c-error" onClick={() => void mutate("delete", review.id)}>حذف</button> : null}
                   </div></td>
                 </tr>
               ))}
-              {!loading && !error && data.items.length === 0 ? <tr><td colSpan={8} style={{ padding: 60, textAlign: "center" }} className="muted">لا توجد تقييمات.</td></tr> : null}
-              {loading ? <tr><td colSpan={8} style={{ padding: 40, textAlign: "center" }} className="muted">جارٍ التحميل…</td></tr> : null}
-              {error ? <tr><td colSpan={8} style={{ padding: 40, textAlign: "center" }}><button className="btn btn--ghost" onClick={() => void load()}>إعادة المحاولة</button></td></tr> : null}
+              {!loading && !error && data.items.length === 0 ? <tr><td colSpan={8} className="muted state-note state-note--lg">لا توجد تقييمات.</td></tr> : null}
+              {loading ? <tr><td colSpan={8} className="muted state-note">جارٍ التحميل…</td></tr> : null}
+              {error ? <tr><td colSpan={8} className="state-note"><button className="btn btn--ghost" onClick={() => void load()}>إعادة المحاولة</button></td></tr> : null}
             </tbody>
           </table>
         </div>
       </div>
 
-      {data.pagination.totalPages > 1 ? <div className="row" style={{ justifyContent: "center", marginTop: 16 }}>
+      {data.pagination.totalPages > 1 ? <div className="row row--center pager">
         <button className="btn btn--ghost btn--sm" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>السابق</button>
         <span className="muted">{page} / {data.pagination.totalPages}</span>
         <button className="btn btn--ghost btn--sm" disabled={page >= data.pagination.totalPages} onClick={() => setPage((value) => value + 1)}>التالي</button>

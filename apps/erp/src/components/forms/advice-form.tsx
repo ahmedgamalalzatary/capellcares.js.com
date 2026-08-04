@@ -125,7 +125,7 @@ export function AdviceForm({ mode, initial }: Props) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
+      <div className="editor-rail-grid">
         <div className="card">
           <div className="card__head"><h3 className="card__title">الإعدادات</h3></div>
           <div className="card__body form-stack">
@@ -144,7 +144,7 @@ export function AdviceForm({ mode, initial }: Props) {
           </div>
         </div>
 
-        {error && <p style={{ margin: 0, color: "var(--error)", fontSize: 13 }}>{error}</p>}
+        {error && <p className="form-error-note form-error-note--sm">{error}</p>}
 
         <div className="editor-actions">
           <button className="btn btn--ghost" onClick={() => router.push("/advices")} disabled={saving}>

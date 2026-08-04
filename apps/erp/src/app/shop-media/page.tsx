@@ -475,7 +475,7 @@ export default function ShopMediaPage() {
           );
         })}
 
-        {error ? <p style={{ margin: 0, color: "var(--error)" }}>{error}</p> : null}
+        {error ? <p className="form-error-note">{error}</p> : null}
       </div>
     </AdminShell>
   );

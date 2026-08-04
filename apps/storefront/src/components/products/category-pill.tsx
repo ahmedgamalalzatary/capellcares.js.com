@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 export function CategoryPill({
   name,
   checked,
@@ -14,41 +16,19 @@ export function CategoryPill({
   indent?: boolean;
 }) {
   return (
-    <label
-      style={{
-        display: "flex",
-        cursor: "pointer",
-        marginInlineStart: indent ? "16px" : "0"
-      }}
-    >
+    <label className={cn("flex cursor-pointer", indent ? "ms-4" : "ms-0")}>
       <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
       <span
-        style={{
-          display: "flex",
-          alignItems: "center",
-          width: "100%",
-          height: indent ? 30 : 34,
-          paddingInline: "14px",
-          borderRadius: "var(--radius)",
-          fontSize: indent ? "12px" : "13px",
-          fontWeight: checked ? 600 : 400,
-          border: checked ? "1px solid var(--accent)" : "1px solid transparent",
-          background: checked ? "oklch(0.32 0.018 85 / 0.08)" : "transparent",
-          color: checked ? "var(--accent)" : "var(--ink-3)",
-          transition: "background 180ms, border-color 180ms, color 180ms"
-        }}
+        className={cn(
+          "flex w-full items-center rounded-(--radius) border px-[14px] transition-[background,border-color,color] duration-[180ms]",
+          indent ? "h-[30px] text-[12px]" : "h-[34px] text-[13px]",
+          checked
+            ? "border-(--accent) bg-[oklch(0.32_0.018_85_/_0.08)] font-semibold text-(--accent)"
+            : "border-transparent bg-transparent font-normal text-(--ink-3)"
+        )}
       >
         {checked && (
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: "50%",
-              background: "var(--accent)",
-              marginInlineEnd: 10,
-              flexShrink: 0
-            }}
-          />
+          <span className="me-[10px] size-[5px] shrink-0 rounded-full bg-(--accent)" />
         )}
         {children}
       </span>

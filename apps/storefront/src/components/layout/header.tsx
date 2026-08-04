@@ -185,6 +185,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
 // gesture. Reverses on close.
 function MenuToggle({ open }: { open: boolean }) {
   const bar = "transition-opacity duration-500 ease-[cubic-bezier(0.76,0,0.24,1)]";
+  const barOpacity = open ? "opacity-0" : "opacity-100";
   return (
     <svg
       width={20}
@@ -195,12 +196,11 @@ function MenuToggle({ open }: { open: boolean }) {
       strokeWidth={2}
       strokeLinecap="round"
       aria-hidden="true"
-      className="transition-transform duration-700 ease-[cubic-bezier(0.76,0,0.24,1)]"
-      style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+      className={`transition-transform duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] ${open ? "rotate-180" : "rotate-0"}`}
     >
-      <line x1="4" y1="7" x2="20" y2="7" className={bar} style={{ opacity: open ? 0 : 1 }} />
+      <line x1="4" y1="7" x2="20" y2="7" className={`${bar} ${barOpacity}`} />
       <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="17" x2="20" y2="17" className={bar} style={{ opacity: open ? 0 : 1 }} />
+      <line x1="4" y1="17" x2="20" y2="17" className={`${bar} ${barOpacity}`} />
     </svg>
   );
 }

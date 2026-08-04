@@ -250,7 +250,7 @@ export function StaffEditorForm({
   }
 
   return (
-    <form onSubmit={submitForm} style={{ display: "grid", gap: 18 }}>
+    <form onSubmit={submitForm} className="staff-form">
       <div className="staff-fields">
         <label className="field">
           <span>الاسم</span>
@@ -295,10 +295,10 @@ export function StaffEditorForm({
         </span>
       </label>
 
-      <div style={{ display: "grid", gap: 12 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-          <h3 style={{ margin: 0 }}>الصلاحيات</h3>
-          <span className="muted" style={{ fontSize: 12 }}>{form.permissionKeys.length} مفعّلة</span>
+      <div className="stack">
+        <div className="row row--between row--baseline">
+          <h3 className="staff-form__heading">الصلاحيات</h3>
+          <span className="muted fs-12">{form.permissionKeys.length} مفعّلة</span>
         </div>
 
         {loadingPermissions ? <p className="muted">جارٍ تحميل الصلاحيات...</p> : null}
@@ -352,9 +352,9 @@ export function StaffEditorForm({
         })}
       </div>
 
-      {error ? <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p> : null}
+      {error ? <p className="form-error-note">{error}</p> : null}
 
-      <div className="row" style={{ gap: 10 }}>
+      <div className="row row--gap-lg">
         <button className="btn btn--primary btn--sm" type="submit" disabled={saving || loadingPermissions}>
           {saving ? "جارٍ الحفظ..." : submitLabel ?? (mode === "create" ? "إنشاء العضو" : "حفظ التعديلات")}
         </button>

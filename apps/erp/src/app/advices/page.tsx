@@ -110,12 +110,12 @@ export default function AdvicesPage() {
                     <Link href={`/advices/${advice.id}/edit`} className="table-title">{advice.title.ar}</Link>
                     <div className="table-subtitle">{advice.title.en}</div>
                   </td>
-                  <td className="muted" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <td className="muted cell-clamp">
                     {advice.videoUrl}
                   </td>
                   <td><AdminStatusBadge active={advice.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                   <td>
-                    <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                    <div className="row row--actions">
                       {canReorder && filtered.length > 1 && (
                         <>
                           <button
@@ -167,7 +167,7 @@ export default function AdvicesPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد نصائح بعد.</td></tr>
+                <tr><td colSpan={4} className="state-note state-note--muted">لا توجد نصائح بعد.</td></tr>
               )}
             </tbody>
           </table>
@@ -185,7 +185,7 @@ export default function AdvicesPage() {
           setPendingToggle(null);
         }}
       >
-        <p style={{ margin: 0 }}>
+        <p className="modal-note">
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريدين المتابعة؟"}
@@ -204,7 +204,7 @@ export default function AdvicesPage() {
           setPendingDelete(null);
         }}
       >
-        <p style={{ margin: 0 }}>سيتم حذف هذه النصيحة نهائيًا. هل تريدين المتابعة؟</p>
+        <p className="modal-note">سيتم حذف هذه النصيحة نهائيًا. هل تريدين المتابعة؟</p>
       </AdminConfirmModal>
     </AdminShell>
   );

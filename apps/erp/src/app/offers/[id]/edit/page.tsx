@@ -89,7 +89,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   return (
     <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
       {relatedItemsError && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card card--spaced-bottom">
           تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات العرض، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
         </div>
       )}

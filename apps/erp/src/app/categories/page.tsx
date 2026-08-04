@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { compareByScopedOrdering } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -182,9 +182,9 @@ export default function CategoriesPage() {
       <div className="card">
         <div className="card__head">
           <h3 className="card__title">شجرة الأقسام</h3>
-          <span className="muted" style={{ fontSize: 12 }}>{categories.filter((c) => !c.deletedAt).length} قسم</span>
+          <span className="muted fs-12">{categories.filter((c) => !c.deletedAt).length} قسم</span>
         </div>
-        <div style={{ padding: 16 }}>
+        <div className="card__pad">
           <Tree
             children={tree.get(null) ?? []}
             depth={0}
@@ -214,9 +214,9 @@ export default function CategoriesPage() {
         }
       >
         {pendingDelete?.blocked ? (
-          <p style={{ margin: 0 }}>هذا القسم يحتوي على منتجات مرتبطة. الرجاء نقل المنتجات إلى قسم آخر أولًا ثم أعيدي المحاولة.</p>
+          <p className="modal-note">هذا القسم يحتوي على منتجات مرتبطة. الرجاء نقل المنتجات إلى قسم آخر أولًا ثم أعيدي المحاولة.</p>
         ) : (
-          <p style={{ margin: 0 }}>سيتم نقل القسم إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
+          <p className="modal-note">سيتم نقل القسم إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
         )}
       </Modal>
     </AdminShell>
@@ -253,7 +253,9 @@ function Tree({
               className="tree__row"
               data-root={isRoot ? "true" : "false"}
               data-testid={`category-row-${c.id}`}
-              style={{ paddingInlineStart: 12 + depth * 20 }}
+              // Indentation grows with tree depth, so the level rides along as a
+              // custom property the stylesheet turns into padding.
+              style={{ "--depth": depth } as CSSProperties}
             >
               {hasKids ? (
                 <button
@@ -267,15 +269,15 @@ function Tree({
                   <Icon.Chevron size={14} className={isCollapsed ? "rotate-180" : undefined} />
                 </button>
               ) : (
-                <span style={{ display: "inline-block", width: 28 }} />
+                <span className="tree__fold-spacer" />
               )}
               <Icon.Folder size={16} />
               <Link href={`/categories/${c.id}/edit`} className="tree__title">
                 {c.name.ar} <span className="tree__meta">· {c.name.en}</span>
               </Link>
               {count > 0 && <span className="tag">{count} منتج</span>}
-              {kids.length > 0 && <span className="tag" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>{kids.length} فرعي</span>}
-              <div className="row" style={{ gap: 4 }}>
+              {kids.length > 0 && <span className="tag tag--accent">{kids.length} فرعي</span>}
+              <div className="row row--gap-xs">
                 {canEdit && siblingIds.length > 1 && (
                   <>
                     <button

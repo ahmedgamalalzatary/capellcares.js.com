@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
 import { SOCIAL_LINKS } from "../../constants/socials";
 import { Icon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
@@ -38,27 +39,19 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
     <footer className="container">
       <div
       dir={isAr ? "rtl" : "ltr"}
-      style={{ background: "var(--footer-bg)" }}
-      className="relative rounded-xl mt-8 mb-10 overflow-hidden pb-0 text-ink"
+      className="relative rounded-xl mt-8 mb-10 overflow-hidden pb-0 bg-(--footer-bg) text-ink"
     >
       {/* Noise grain overlay */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundSize: "256px 256px",
-        }}
-      />
+      <div aria-hidden className="footer-noise pointer-events-none absolute inset-0 opacity-[0.03]" />
 
       {/* Hero brand mark — oversized rounded lowercase wordmark */}
       <div className="relative px-2 py-10 text-center sm:py-20">
         <div
           ref={brandRef}
-          style={{
-            transform: brandInView ? "scale(1)" : "scale(1.04)",
-            transition: "transform 700ms var(--ease-out-expo)"
-          }}
+          className={cn(
+            "transition-transform duration-700 ease-(--ease-out-expo)",
+            brandInView ? "[transform:scale(1)]" : "[transform:scale(1.04)]"
+          )}
         >
           <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full text-center">
             Capella Care
@@ -67,10 +60,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       </div>
 
       {/* Main content grid */}
-      <div
-        className="relative border-t"
-        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
-      >
+      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
         <div className="container grid grid-cols-1 gap-12 py-10 lg:grid-cols-[1.1fr_2fr]">
 
           {/* Newsletter / intro */}
@@ -161,10 +151,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       </div>
 
       {/* Payment methods + app download */}
-      <div
-        className="relative border-t"
-        style={{ borderColor: "color-mix(in oklch, var(--ink) 12%, transparent)" }}
-      >
+      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
         <div className="container flex flex-col gap-10 py-10 sm:flex-row sm:items-start sm:justify-between">
           {/* Payment methods */}
           <div>
@@ -211,10 +198,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
       </div>
 
       {/* Bottom bar */}
-      <div
-        className="relative"
-        style={{ borderTop: "1px solid color-mix(in oklch, var(--ink) 12%, transparent)" }}
-      >
+      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
         <div className="container flex flex-col items-center justify-between gap-4 py-6 text-xs tracking-[0.12em] text-ink/35 sm:flex-row">
           <span className={isAr ? "" : "uppercase"}>
             © {year} {dict.footer.creator}.{" "}
@@ -222,10 +206,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           </span>
 
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
-            <div
-              className="flex items-center rounded-(--radius-pill) border p-0.5"
-              style={{ borderColor: "color-mix(in oklch, var(--ink) 18%, transparent)" }}
-            >
+            <div className="flex items-center rounded-(--radius-pill) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] p-0.5">
               {(["en", "ar"] as const).map((code) => {
                 const active = lang === code;
                 return (
@@ -332,8 +313,7 @@ function StoreBadge({
     <a
       href={href}
       onClick={href ? undefined : (e) => e.preventDefault()}
-      style={{ color: "#fff" }}
-      className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 transition-opacity duration-200 hover:opacity-85 cursor-pointer"
+      className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 text-white transition-opacity duration-200 hover:opacity-85 cursor-pointer"
     >
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col leading-none">
@@ -348,14 +328,7 @@ function Dot() {
   return (
     <span
       aria-hidden
-      style={{
-        display: "inline-block",
-        width: 3,
-        height: 3,
-        borderRadius: "50%",
-        background: "color-mix(in oklch, var(--ink) 40%, transparent)",
-        verticalAlign: "middle",
-      }}
+      className="inline-block size-[3px] rounded-full bg-[color-mix(in_oklch,var(--ink)_40%,transparent)] align-middle"
     />
   );
 }

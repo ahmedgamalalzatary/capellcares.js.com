@@ -95,7 +95,7 @@ export function CollectionForm({
             </button>
           </div>
           <div className="card__body">
-            {errors.rows && <div className="field-error" style={{ marginBottom: 10 }}>{errors.rows}</div>}
+            {errors.rows && <div className="field-error field-error--spaced">{errors.rows}</div>}
             <table className="table">
               <thead>
                 <tr>
@@ -109,14 +109,14 @@ export function CollectionForm({
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 20, textAlign: "center", color: "var(--ink-3)" }}>أضيفي منتجين مختلفين على الأقل.</td></tr>
+                  <tr><td colSpan={6} className="state-note state-note--sm state-note--muted">أضيفي منتجين مختلفين على الأقل.</td></tr>
                 ) : rows.map((row, index) => {
                   const product = products.find((candidate) => candidate.id === row.productId);
                   const variants = product?.variants ?? [];
                   const variant = variants.find((candidate) => candidate.id === row.variantId);
                   return (
                     <tr key={index} data-testid="bundle-item-row">
-                      <td style={{ minWidth: 220 }}>
+                      <td className="cell-min-220">
                         <select className="select" value={row.productId} onChange={(e) => updateRow(index, { productId: Number(e.target.value) })}>
                           <option value="0">— اختاري منتجًا —</option>
                           {categoryProducts.map((candidate) => (
@@ -132,13 +132,13 @@ export function CollectionForm({
                           ))}
                         </select>
                       </td>
-                      <td style={{ width: 100 }}>
+                      <td className="cell-w-100">
                         <input className="input" type="number" min="1" value={row.qty} onChange={(e) => updateRow(index, { qty: Number(e.target.value) })} />
                       </td>
                       <td>{variant ? formatPrice(variant.price, "ar") : "—"}</td>
-                      <td style={{ fontWeight: 600 }}>{variant ? formatPrice(variant.price * row.qty, "ar") : "—"}</td>
+                      <td className="fw-600">{variant ? formatPrice(variant.price * row.qty, "ar") : "—"}</td>
                       <td>
-                        <div className="row" style={{ gap: 4 }}>
+                        <div className="row row--gap-xs">
                           {rows.length > 1 && (
                             <>
                               <button
@@ -161,7 +161,7 @@ export function CollectionForm({
                               </button>
                             </>
                           )}
-                          <button className="btn btn--ghost btn--sm" onClick={() => removeRow(index)} style={{ color: "var(--danger)" }} type="button">
+                          <button className="btn btn--ghost btn--sm c-error" onClick={() => removeRow(index)} type="button">
                             <Icon.Trash />
                           </button>
                         </div>
@@ -186,11 +186,11 @@ export function CollectionForm({
           <div className="card__head"><h3 className="card__title">حسابات المجموعة</h3></div>
           <div className="card__body stack">
             <div className="row row--between"><span className="muted">السعر الأصلي</span><span>{formatPrice(originalTotal, "ar")}</span></div>
-            <div className="row row--between"><span className="muted">سعر المجموعة</span><span style={{ fontWeight: 600 }}>{formatPrice(Number(price || 0), "ar")}</span></div>
+            <div className="row row--between"><span className="muted">سعر المجموعة</span><span className="fw-600">{formatPrice(Number(price || 0), "ar")}</span></div>
             <hr className="hr" />
-            <div className="row row--between" style={{ fontWeight: 700 }}>
+            <div className="row row--between fw-700">
               <span>التوفير</span>
-              <span style={{ color: savings > 0 ? "var(--success)" : "var(--ink)" }}>
+              <span className="savings-amount" data-positive={savings > 0}>
                 {formatPrice(Math.max(0, savings), "ar")}
               </span>
             </div>
@@ -202,7 +202,7 @@ export function CollectionForm({
           <div className="card__head"><h3 className="card__title">العناصر المرتبطة</h3></div>
           <div className="card__body">
             {!relatedItemsAvailable && (
-              <div className="field-error" style={{ marginBottom: 10 }}>
+              <div className="field-error field-error--spaced">
                 تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي البيانات، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية.
               </div>
             )}

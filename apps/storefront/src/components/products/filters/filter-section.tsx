@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { cn } from "@/lib/utils";
 
 export function FilterSection({
   label,
@@ -49,37 +50,17 @@ export function FilterSection({
     };
   }, [open]);
 
-  const lineColor = "var(--hairline)";
-  const labelColor = "var(--ink-3)";
   const chevronColor = "var(--ink-3)";
 
   return (
-    <div style={{ borderBottom: `1px solid ${lineColor}` }}>
+    <div className="border-b border-(--hairline)">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        style={{
-          display: "flex",
-          width: "100%",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 0",
-          background: "transparent",
-          border: 0,
-          cursor: "pointer",
-          textAlign: "start"
-        }}
+        className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-[14px] text-start"
         aria-expanded={open}
       >
-        <span
-          style={{
-            fontSize: "10px",
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
-            fontWeight: 700,
-            color: labelColor
-          }}
-        >
+        <span className="text-[10px] font-bold tracking-[0.22em] uppercase text-(--ink-3)">
           {label}
         </span>
         <svg
@@ -90,11 +71,10 @@ export function FilterSection({
           stroke={chevronColor}
           strokeWidth="1.8"
           strokeLinecap="round"
-          style={{
-            transition: "transform 280ms cubic-bezier(0.16, 1, 0.3, 1)",
-            transform: open ? "rotate(0deg)" : "rotate(-90deg)",
-            flexShrink: 0
-          }}
+          className={cn(
+            "shrink-0 transition-transform duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+            open ? "rotate-0" : "-rotate-90"
+          )}
         >
           <path d="M2 4l3 3 3-3" />
         </svg>
@@ -102,14 +82,16 @@ export function FilterSection({
 
       <div
         ref={contentRef}
-        style={{
-          height: height === "auto" ? "auto" : `${height}px`,
-          overflow: isAnimating || height === 0 ? "hidden" : "visible",
-          transition: "height 280ms cubic-bezier(0.16, 1, 0.3, 1)",
-          willChange: isAnimating ? "height" : "auto"
-        }}
+        // The panel height is measured from content, so it travels as a custom
+        // property that the height utility below reads.
+        style={{ "--filter-height": height === "auto" ? "auto" : `${height}px` } as CSSProperties}
+        className={cn(
+          "h-(--filter-height) transition-[height] duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isAnimating || height === 0 ? "overflow-hidden" : "overflow-visible",
+          isAnimating ? "will-change-[height]" : "will-change-auto"
+        )}
       >
-        <div style={{ paddingBottom: "16px" }}>{children}</div>
+        <div className="pb-4">{children}</div>
       </div>
     </div>
   );

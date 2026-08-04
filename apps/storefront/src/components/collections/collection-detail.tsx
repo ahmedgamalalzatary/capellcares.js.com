@@ -7,10 +7,9 @@ import { formatPrice, pickLang, type Category, type Collection, type Language, t
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill } from "@/components/ui/item-tags";
-import { Icon } from "@/components/ui/icons";
+import { ShareButton } from "@/components/ui/share-button";
+import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
-import { useWishlist } from "@/components/providers/wishlist-provider";
-import { useAuth } from "@/components/providers/auth-provider";
 import { RelatedItems } from "@/components/products/related-items";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 
@@ -40,8 +39,6 @@ export function CollectionDetail({
 }) {
   const router = useRouter();
   const cart = useCart();
-  const wishlist = useWishlist();
-  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const savings = collection.originalTotal - collection.price;
   const inStock = items.every((item) => item.available >= item.qty);
@@ -58,22 +55,21 @@ export function CollectionDetail({
     router.push(`/${lang}/checkout`);
   };
 
-  const onWish = () => {
-    if (!user) {
-      router.push(`/${lang}/wishlist`);
-      return;
-    }
-    wishlist.toggle("collection", collection.id);
-  };
-
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <div className="relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start">
+            {/* Badge moves to the trailing corner so the wishlist toggle owns the leading one. */}
             <ItemTagPill
               tag={{ kind: "collection", label: dict.collections.badge, star: true }}
-              className="absolute inset-s-0 top-0 sm:inset-s-0 sm:top-0"
+              className="absolute inset-e-0 top-0"
+            />
+            <WishlistButton
+              entityType="collection"
+              entityId={collection.id}
+              lang={lang}
+              label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}
             />
             <CollectionIllustration collection={collection} lang={lang} className="h-full w-full object-contain rounded-lg" />
           </div>
@@ -136,9 +132,12 @@ export function CollectionDetail({
             <button className="btn btn--ghost btn--lg btn--block" onClick={buyNow} disabled={!inStock}>
               {dict.common.buyNow}
             </button>
-            <button className="btn btn--soft" onClick={onWish} aria-label={dict.collections.saveToWishlist ?? dict.common.addToWishlist}>
-              {wishlist.has("collection", collection.id) ? <Icon.HeartFill /> : <Icon.Heart />}
-            </button>
+            <ShareButton
+              path={`/${lang}/collections/${collection.slug}`}
+              title={pickLang(collection.name, lang)}
+              dict={dict}
+              className="btn--lg"
+            />
           </div>
 
           {!inStock && (

@@ -182,7 +182,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                     <td>{category?.name.ar ?? "—"}</td>
                     <td>{collection.items.reduce((sum, item) => sum + item.qty, 0)} عنصر</td>
                     <td>{formatPrice(collection.price, "ar")}</td>
-                    <td className="faint" style={{ textDecoration: "line-through" }}>
+                    <td className="faint cell-strike">
                       {formatPrice(collection.originalTotal, "ar")}
                     </td>
                     <td>
@@ -193,7 +193,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                       />
                     </td>
                     <td>
-                      <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      <div className="row row--actions">
                       {canReorder && filtered.length > 1 && (
                         <>
                           <button
@@ -243,7 +243,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>
+                  <td colSpan={8} className="state-note state-note--muted">
                     لا توجد مجموعات بعد.
                   </td>
                 </tr>
@@ -268,7 +268,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
           }
         }}
       >
-        <p style={{ margin: 0 }}>
+        <p className="modal-note">
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذه المجموعة ولن تظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذه المجموعة لتظهر في المتجر. هل تريدين المتابعة؟"}

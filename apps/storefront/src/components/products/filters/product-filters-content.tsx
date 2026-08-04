@@ -3,6 +3,7 @@
 import type { Category, Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import { FilterSection } from "./filter-section";
 import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 import { ProductFilterCategoryList } from "./product-filter-category-list";
@@ -51,48 +52,21 @@ export function ProductFiltersContent({
     <>
       {showSearch && (
       <FilterSection label={dict.nav.search} defaultOpen>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            background: "var(--surface)",
-            border: "1px solid var(--hairline)",
-            borderRadius: "var(--radius)",
-            padding: "9px 14px"
-          }}
-        >
-          <Icon.Search size={14} style={{ flexShrink: 0, color: "var(--ink-3)" }} />
+        <div className="flex items-center gap-[10px] rounded-(--radius) border border-(--hairline) bg-surface px-[14px] py-[9px]">
+          <Icon.Search size={14} className="shrink-0 text-(--ink-3)" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={dict.nav.search}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              border: 0,
-              background: "transparent",
-              outline: "none",
-              fontSize: isMobile ? "14px" : "13.5px",
-              color: "var(--text)"
-            }}
+            className={cn(
+              "min-w-0 flex-1 border-0 bg-transparent text-(--text) outline-none",
+              isMobile ? "text-[14px]" : "text-[13.5px]"
+            )}
           />
           {q && (
             <button
               onClick={() => setQ("")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                background: "oklch(0 0 0 / 0.08)",
-                border: 0,
-                color: "var(--ink-3)",
-                cursor: "pointer",
-                flexShrink: 0
-              }}
+              className="inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[oklch(0_0_0_/_0.08)] text-(--ink-3)"
             >
               <Icon.Close size={9} />
             </button>
@@ -119,14 +93,16 @@ export function ProductFiltersContent({
 
       {showPrice && (
       <FilterSection label={dict.filters.price} defaultOpen={false}>
-        <div style={{ display: "grid", gap: 8 }}>
+        {/* `[display:grid]`, not `grid`: the global `.grid` class carries its own
+            24px gap that would override the utility below. */}
+        <div className="[display:grid] gap-2">
           <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: "1px", background: "var(--hairline)" }} />
-            <span style={{ fontSize: "10px", color: "var(--ink-3)", letterSpacing: "0.1em", fontWeight: 600 }}>
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-(--hairline)" />
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-(--ink-3)">
               {dict.filters.to}
             </span>
-            <div style={{ flex: 1, height: "1px", background: "var(--hairline)" }} />
+            <div className="h-px flex-1 bg-(--hairline)" />
           </div>
           <PriceInput value={priceRange.max} onChange={(value) => setPriceRange((state) => ({ ...state, max: value }))} placeholder={dict.filters.priceMax} lang={lang} />
         </div>

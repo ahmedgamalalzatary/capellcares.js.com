@@ -6,6 +6,13 @@ import { AskCapellaReplyContent } from "./ask-capella-results";
 import { useAskCapella } from "../../hooks/use-ask-capella";
 import type { AskCapellaOverlayProps } from "../../types/ask-capella.types";
 
+// One class per dot so each keeps its own stagger delay (0s / 0.2s / 0.4s).
+const DOT_ANIMATIONS = [
+  "animate-[ask-dot_1.2s_0s_ease-in-out_infinite]",
+  "animate-[ask-dot_1.2s_0.2s_ease-in-out_infinite]",
+  "animate-[ask-dot_1.2s_0.4s_ease-in-out_infinite]"
+];
+
 export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
   const {
     bottomRef,
@@ -22,8 +29,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
   return (
     <div className="fixed inset-0 z-60 flex items-end justify-end p-4 sm:p-6 pointer-events-none">
       <div
-        className="pointer-events-auto flex w-72 max-w-[calc(100vw-2rem)] h-112 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-2) sm:w-96 sm:h-144 sm:max-h-[calc(100dvh-3rem)]"
-        style={{ animation: "ask-slide-up 260ms cubic-bezier(0.16,1,0.3,1) both" }}
+        className="pointer-events-auto flex w-72 max-w-[calc(100vw-2rem)] h-112 max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-2) animate-[ask-slide-up_260ms_cubic-bezier(0.16,1,0.3,1)_both] sm:w-96 sm:h-144 sm:max-h-[calc(100dvh-3rem)]"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
@@ -67,11 +73,10 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
           {pending && (
             <CapellaBubble>
               <div className="flex items-center gap-1.5 py-1">
-                {[0, 1, 2].map((i) => (
+                {DOT_ANIMATIONS.map((animation, i) => (
                   <span
                     key={i}
-                    className="h-2 w-2 rounded-full bg-(--ink-3)"
-                    style={{ animation: `ask-dot 1.2s ${i * 0.2}s ease-in-out infinite` }}
+                    className={`h-2 w-2 rounded-full bg-(--ink-3) ${animation}`}
                   />
                 ))}
               </div>
@@ -108,27 +113,13 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         </div>
       </div>
 
-      <style>{`
-        @keyframes ask-slide-up {
-          from { opacity: 0; transform: translateY(20px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes ask-dot {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes ask-bubble-in {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
 
 function UserBubble({ text }: { text: string }) {
   return (
-    <div className="flex justify-end" style={{ animation: "ask-bubble-in 180ms ease both" }}>
+    <div className="flex justify-end animate-[ask-bubble-in_180ms_ease_both]">
       <div className="max-w-[75%] rounded-[18px_18px_4px_18px] bg-accent px-4 py-2.5 text-sm leading-[1.6] text-white">
         {text}
       </div>
@@ -138,7 +129,7 @@ function UserBubble({ text }: { text: string }) {
 
 function CapellaBubble({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-end gap-2" style={{ animation: "ask-bubble-in 180ms ease both" }}>
+    <div className="flex items-end gap-2 animate-[ask-bubble-in_180ms_ease_both]">
       <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
         <Image src="/capella logo2.png" alt="" fill sizes="28px" className="object-cover" />
       </div>

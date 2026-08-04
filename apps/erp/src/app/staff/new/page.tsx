@@ -14,9 +14,9 @@ export default function StaffNewPage() {
   if (user.role !== "admin") {
     return (
       <AdminShell title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]}>
-        <section className="card" style={{ padding: 24 }}>
-          <h2 style={{ marginTop: 0 }}>غير مصرح</h2>
-          <p style={{ marginBottom: 0 }}>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
+        <section className="card card--pad-lg forbidden-state">
+          <h2>غير مصرح</h2>
+          <p>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
         </section>
       </AdminShell>
     );
@@ -24,10 +24,10 @@ export default function StaffNewPage() {
 
   return (
     <AdminShell title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "إضافة عضو" }]}>
-      <section className="card" style={{ padding: 20 }}>
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ margin: 0 }}>إضافة عضو</h2>
-          <p className="muted" style={{ margin: "6px 0 0" }}>
+      <section className="card card--pad">
+        <div className="staff-form__head">
+          <h2 className="staff-form__heading">إضافة عضو</h2>
+          <p className="muted staff-form__sub">
             أنشئي حسابات الموظفين وحددي الصلاحيات المطلوبة لكل عضو.
           </p>
         </div>

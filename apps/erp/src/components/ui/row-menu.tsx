@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/ui/icons";
 
@@ -92,13 +92,14 @@ export function RowMenu({ label = "إجراءات", children }: { label?: string
             ref={dropdownRef}
             className="row-menu__dropdown"
             role="menu"
+            // Measured coordinates are the only truly dynamic values here, so they
+            // travel as custom properties; `data-positioned` keeps the menu hidden
+            // until it is measured/clamped, avoiding a one-frame jump.
+            data-positioned={position ? "true" : "false"}
             style={{
-              position: "fixed",
-              top: position?.top ?? 0,
-              left: position?.left ?? 0,
-              // Hide until measured/clamped to avoid a one-frame jump.
-              visibility: position ? "visible" : "hidden"
-            }}
+              "--row-menu-top": `${position?.top ?? 0}px`,
+              "--row-menu-left": `${position?.left ?? 0}px`
+            } as CSSProperties}
             onClick={() => setOpen(false)}
           >
             {children}

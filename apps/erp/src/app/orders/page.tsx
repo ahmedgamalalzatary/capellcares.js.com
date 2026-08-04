@@ -80,14 +80,14 @@ function OrdersPageContent() {
               <tr key={order.id}>
                 <td>
                   <Link href={`/orders/${order.id}`} className="table-title">
-                    <code className="mono" style={{ fontSize: 12.5 }}>{order.orderCode}</code>
+                    <code className="mono fs-12-5">{order.orderCode}</code>
                   </Link>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 600 }}>{order.fullName}</div>
-                  <div className="faint" style={{ fontSize: 11.5, marginTop: 2 }}>{order.phone}</div>
+                  <div className="fw-600">{order.fullName}</div>
+                  <div className="faint cell-subline">{order.phone}</div>
                 </td>
-                <td style={{ fontWeight: 600, color: "var(--accent)" }}>{formatPrice(order.totalAmount, "ar")}</td>
+                <td className="fw-600 c-accent">{formatPrice(order.totalAmount, "ar")}</td>
                 <td><span className={paymentStatusChip[order.paymentStatus]}>{paymentStatusLabel[order.paymentStatus]}</span></td>
                 <td className="muted">{new Date(order.createdAt).toLocaleDateString("ar-EG", { day: "2-digit", month: "short", year: "numeric" })}</td>
                 <td>
@@ -98,7 +98,7 @@ function OrdersPageContent() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: 60, textAlign: "center", color: "var(--ink-3)" }}>
+              <tr><td colSpan={6} className="state-note state-note--lg state-note--muted">
                 {orders.length === 0 ? "لا توجد طلبات بعد." : "لا توجد طلبات تطابق البحث."}
               </td></tr>
             )}

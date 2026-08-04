@@ -114,7 +114,7 @@ export function ImageFieldCard({ title, uploadSlot, error }: ImageFieldCardProps
       <div className="card__head"><h3 className="card__title">{title}</h3></div>
       <div className="card__body">
         {uploadSlot}
-        {error ? <div className="field-error" style={{ marginTop: 6 }}>{error}</div> : null}
+        {error ? <div className="field-error field-error--offset">{error}</div> : null}
       </div>
     </section>
   );

@@ -114,7 +114,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   };
 
   return (
-    <div style={{ maxWidth: 640 }} className="card">
+    <div className="card card--narrow">
       <div className="card__head">
         <h3 className="card__title">{mode === "new" ? "إنشاء قسم جديد" : "تعديل القسم"}</h3>
       </div>
@@ -147,7 +147,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           ) : (
             <div className="stack">
               <div>صورة القسم غير متاحة إلا للأقسام الفرعية المباشرة تحت القسم الرئيسي.</div>
-              <div className="faint" style={{ fontSize: 12 }}>رفع الصور غير متاح لهذا المستوى من الأقسام.</div>
+              <div className="faint fs-12">رفع الصور غير متاح لهذا المستوى من الأقسام.</div>
             </div>
           )}
         />

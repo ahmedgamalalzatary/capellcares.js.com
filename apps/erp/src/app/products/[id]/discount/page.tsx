@@ -148,7 +148,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
                 <div className="card__body stack">
                   <div className="row row--between">
                     <div>
-                      <div style={{ fontWeight: 700 }}>{variant.size}</div>
+                      <div className="fw-700">{variant.size}</div>
                       <div className="muted">السعر الأصلي: {formatPrice(variant.price, "ar")}</div>
                       <div className="muted">المخزون: {variant.stock}</div>
                       <div className="muted">السعر بعد الخصم: {formatPrice(effectivePrice, "ar")}</div>

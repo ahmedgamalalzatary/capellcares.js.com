@@ -59,11 +59,11 @@ export default function LoginPage() {
 
       <section className="login-form-wrap">
         <form onSubmit={submit} className="login-form">
-          <span className="eyebrow" style={{ color: "var(--accent)" }}>كابيلا كيرز</span>
+          <span className="eyebrow login-form__brand">كابيلا كيرز</span>
           <h1>تسجيل الدخول</h1>
           <p className="muted login-form__sub">أدخلي بيانات حساب المسؤول لمتابعة العمل.</p>
 
-          <div className="stack" style={{ marginTop: 28, gap: 16 }}>
+          <div className="stack login-form__fields">
             <div className="field">
               <label htmlFor="login-email">البريد الإلكتروني</label>
               <input
@@ -91,13 +91,13 @@ export default function LoginPage() {
               />
             </div>
             {error && <div className="field-error">{error}</div>}
-            <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy} style={{ marginTop: 8 }}>
+            <button type="submit" className="btn btn--primary btn--lg btn--block login-form__submit" disabled={busy}>
               {busy ? "جارٍ التحقق…" : "تسجيل الدخول"}
             </button>
           </div>
 
           <p className="login-form__foot">
-            مشكلة في الدخول؟ <span style={{ color: "var(--accent)" }}>تواصلي مع الدعم</span>
+            مشكلة في الدخول؟ <span className="c-accent">تواصلي مع الدعم</span>
           </p>
         </form>
       </section>

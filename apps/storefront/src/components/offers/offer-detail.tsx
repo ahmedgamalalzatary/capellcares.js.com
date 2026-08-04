@@ -7,10 +7,9 @@ import { pickLang, formatPrice, type Language, type Offer, type Product, type Re
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill } from "@/components/ui/item-tags";
-import { Icon } from "@/components/ui/icons";
+import { ShareButton } from "@/components/ui/share-button";
+import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
-import { useWishlist } from "@/components/providers/wishlist-provider";
-import { useAuth } from "@/components/providers/auth-provider";
 import { RelatedItems } from "@/components/products/related-items";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 
@@ -34,8 +33,6 @@ interface Props {
 export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  const wishlist = useWishlist();
-  const { user } = useAuth();
   const [added, setAdded] = useState(false);
   const savings = offer.originalTotal - offer.price;
   const inStock = items.every((item) => item.available >= item.qty);
@@ -51,23 +48,22 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
     router.push(`/${lang}/checkout`);
   };
 
-  const onWish = () => {
-    if (!user) {
-      router.push(`/${lang}/wishlist`);
-      return;
-    }
-    wishlist.toggle("offer", offer.id);
-  };
-
   const isAr = lang === "ar";
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <div className="relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start">
+            {/* Badge moves to the trailing corner so the wishlist toggle owns the leading one. */}
             <ItemTagPill
               tag={{ kind: "offer", label: dict.offers.badge, star: true }}
-              className="absolute inset-s-0 top-0 sm:inset-s-0 sm:top-0"
+              className="absolute inset-e-0 top-0"
+            />
+            <WishlistButton
+              entityType="offer"
+              entityId={offer.id}
+              lang={lang}
+              label={dict.offers.saveToWishlist ?? dict.common.addToWishlist}
             />
             <OfferIllustration offer={offer} className="w-140 object-contain rounded-lg" />
           </div>
@@ -131,9 +127,12 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
             <button className="btn btn--ghost btn--lg btn--block" onClick={buyNow} disabled={!inStock}>
               {dict.common.buyNow}
             </button>
-            <button className="btn btn--soft" onClick={onWish} aria-label={dict.offers.saveToWishlist ?? dict.common.addToWishlist}>
-              {wishlist.has("offer", offer.id) ? <Icon.HeartFill /> : <Icon.Heart />}
-            </button>
+            <ShareButton
+              path={`/${lang}/offers/${offer.slug}`}
+              title={pickLang(offer.name, lang)}
+              dict={dict}
+              className="btn--lg"
+            />
           </div>
 
           {!inStock && (

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
 import { compareHeaderCategoryEntries } from "@/lib/header-menu";
 import { buildCategoryHref } from "@/lib/category-links";
@@ -175,8 +175,9 @@ export function HeaderMobileDrawer({
           height + scroll so it never reflows mid-animation. */}
       <div
         ref={wrapRef}
-        style={{ maxHeight: mobileOpen ? (maxH ? `${maxH}px` : "100vh") : 0 }}
-        className={`absolute inset-x-0 top-full overflow-hidden rounded-b-lg mx-4 min-[640px]:max-[877px]:mx-6 transition-[max-height] duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${
+        // Measured panel height — the only value that cannot live in a class.
+        style={{ "--drawer-height": mobileOpen ? (maxH ? `${maxH}px` : "100vh") : "0px" } as CSSProperties}
+        className={`absolute inset-x-0 top-full max-h-(--drawer-height) overflow-hidden rounded-b-lg mx-4 min-[640px]:max-[877px]:mx-6 transition-[max-height] duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${
           mobileOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
@@ -185,8 +186,8 @@ export function HeaderMobileDrawer({
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
-          style={{ maxHeight: maxH ? `${maxH}px` : "calc(100dvh - 2rem)" }}
-          className="flex flex-col overflow-y-auto bg-canvas"
+          style={{ "--drawer-panel-height": maxH ? `${maxH}px` : "calc(100dvh - 2rem)" } as CSSProperties}
+          className="flex max-h-(--drawer-panel-height) flex-col overflow-y-auto bg-canvas"
         >
           <div className="px-4 sm:px-6 pb-8 pt-4">
             {/* Search */}
@@ -200,7 +201,7 @@ export function HeaderMobileDrawer({
             </button>
 
             {/* Category tabs */}
-            <div className="-mx-4 mt-5 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+            <div className="-mx-4 mt-5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max gap-7">
                 {orderedMenuEntries.map((group, index) => {
                   const active = index === activeTab;

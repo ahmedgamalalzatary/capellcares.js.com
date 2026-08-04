@@ -173,16 +173,16 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
             type="button"
             aria-label="إغلاق"
             onClick={() => setDrawerOpen(false)}
-            style={{ position: "absolute", inset: 0, border: 0, padding: 0, background: "transparent", cursor: "default" }}
+            className="overlay-dismiss"
           />
-          <div className="mobile-drawer" style={{ position: "relative" }}>
+          <div className="mobile-drawer">
             <div className="mobile-drawer__handle" />
 
             <div className="mobile-drawer__user">
-              <div className="sidebar__avatar" style={{ width: 40, height: 40 }}>{user.name[0]}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{user.name}</div>
-                <div style={{ fontSize: 12, color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+              <div className="sidebar__avatar mobile-drawer__avatar">{user.name[0]}</div>
+              <div className="mobile-drawer__identity">
+                <div className="mobile-drawer__name">{user.name}</div>
+                <div className="mobile-drawer__email">{user.email}</div>
               </div>
             </div>
 

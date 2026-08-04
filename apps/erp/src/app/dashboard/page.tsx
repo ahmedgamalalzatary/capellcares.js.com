@@ -19,10 +19,10 @@ export default function DashboardPage() {
   return (
     <AdminShell title="لوحة التحكم" crumbs={[{ label: "نظرة عامة" }]}>
       <div className="stats-grid">
-        <Stat label="المنتجات النشطة" value={activeProducts.length} hint={`من إجمالي ${products.length}`} accent="var(--accent)" />
-        <Stat label="المتغيرات" value={totalVariants} hint="مقاسات وأحجام" accent="var(--ink)" />
-        <Stat label="العروض النشطة" value={offers.filter((o) => !o.deletedAt).length} hint={`من إجمالي ${offers.length}`} accent="var(--warm)" />
-        <Stat label="الأقسام" value={categories.filter((c) => !c.deletedAt).length} hint="تشمل الأقسام الفرعية" accent="var(--ink-2)" />
+        <Stat label="المنتجات النشطة" value={activeProducts.length} hint={`من إجمالي ${products.length}`} tone="accent" />
+        <Stat label="المتغيرات" value={totalVariants} hint="مقاسات وأحجام" tone="ink" />
+        <Stat label="العروض النشطة" value={offers.filter((o) => !o.deletedAt).length} hint={`من إجمالي ${offers.length}`} tone="warm" />
+        <Stat label="الأقسام" value={categories.filter((c) => !c.deletedAt).length} hint="تشمل الأقسام الفرعية" tone="ink-2" />
       </div>
 
       <div className="split-grid">
@@ -41,7 +41,7 @@ export default function DashboardPage() {
         <section className="card">
           <div className="card__head">
             <h3 className="card__title">تنبيهات المخزون</h3>
-            <span className="muted" style={{ fontSize: 12 }}>{lowStock.length + outOfStock.length} عنصر</span>
+            <span className="muted fs-12">{lowStock.length + outOfStock.length} عنصر</span>
           </div>
           <div className="panel-scroll">
             <table className="table">
@@ -52,7 +52,7 @@ export default function DashboardPage() {
                       <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
                       <div className="table-subtitle">{v.size}</div>
                     </td>
-                    <td style={{ textAlign: "end" }}><span className="status status--deleted">نفد</span></td>
+                    <td className="cell-end"><span className="status status--deleted">نفد</span></td>
                   </tr>
                 ))}
                 {lowStock.slice(0, 6).map(({ p, v }) => (
@@ -61,11 +61,11 @@ export default function DashboardPage() {
                       <Link href={`/products/${p.id}/edit`} className="table-title">{p.name.ar}</Link>
                       <div className="table-subtitle">{v.size}</div>
                     </td>
-                    <td style={{ textAlign: "end" }}><span className="status status--draft">{v.stock}</span></td>
+                    <td className="cell-end"><span className="status status--draft">{v.stock}</span></td>
                   </tr>
                 ))}
                 {lowStock.length === 0 && outOfStock.length === 0 && (
-                  <tr><td className="muted" style={{ padding: 20, textAlign: "center" }}>كل المخزون بحالة جيدة.</td></tr>
+                  <tr><td className="muted state-note state-note--sm">كل المخزون بحالة جيدة.</td></tr>
                 )}
               </tbody>
             </table>
@@ -123,11 +123,11 @@ export default function DashboardPage() {
   );
 }
 
-function Stat({ label, value, hint, accent }: { label: string; value: number; hint: string; accent: string }) {
+function Stat({ label, value, hint, tone }: { label: string; value: number; hint: string; tone: "accent" | "ink" | "warm" | "ink-2" }) {
   return (
     <div className="stat">
       <div className="stat__label">{label}</div>
-      <div className="stat__value" style={{ color: accent }}>{value}</div>
+      <div className="stat__value" data-tone={tone}>{value}</div>
       <div className="stat__meta">{hint}</div>
     </div>
   );

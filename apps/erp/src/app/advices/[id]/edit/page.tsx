@@ -35,7 +35,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
   if (!loaded) {
     return (
       <AdminShell title="تحميل…" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "تحميل" }]}>
-        <div className="card" style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>جارٍ تحميل البيانات…</div>
+        <div className="card state-note state-note--muted">جارٍ تحميل البيانات…</div>
       </AdminShell>
     );
   }

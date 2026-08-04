@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import type { Category } from "@capella/shared";
 
 interface Props {
@@ -45,8 +45,10 @@ export function CategoryPicker({ categories, value, onChange, id }: Props) {
   }, [path, childrenOf]);
 
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${levels.length}, minmax(0, 1fr))`, gap: 8 }}>
+    <div className="stack stack--sm">
+      {/* The column count follows the depth of the selected path, so it rides
+          along as a custom property instead of a literal inline grid. */}
+      <div className="category-picker__levels" style={{ "--levels": levels.length } as CSSProperties}>
         {levels.map((level, depth) => {
           const selectedAtDepth = path[depth]?.id ?? "";
           return (
@@ -71,7 +73,7 @@ export function CategoryPicker({ categories, value, onChange, id }: Props) {
       {value != null && (() => {
         const cur = byId.get(value);
         if (!cur) return null;
-        return <div className="muted" style={{ fontSize: 12 }}>القسم المختار: {path.map((p) => p.name.ar).join(" › ")}</div>;
+        return <div className="muted fs-12">القسم المختار: {path.map((p) => p.name.ar).join(" › ")}</div>;
       })()}
     </div>
   );

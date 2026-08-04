@@ -72,23 +72,14 @@ export function ImageUpload({ value, onChange, label, hint, uploadContext }: Pro
         setDragOver(false);
         void handleFile(e.dataTransfer.files?.[0]);
       }}
-      style={{
-        border: `1.5px dashed ${dragOver ? "var(--accent)" : "var(--hairline)"}`,
-        background: dragOver ? "var(--accent-soft)" : "var(--surface)",
-        borderRadius: "var(--radius-lg)",
-        padding: 22,
-        display: "grid",
-        gap: 12,
-        placeItems: "center",
-        textAlign: "center",
-        transition: "border-color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo)"
-      }}
+      className="dropzone"
+      data-drag-over={dragOver}
     >
-      {label ? <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div> : null}
+      {label ? <div className="dropzone__label">{label}</div> : null}
       {previewSrc ? (
         <>
-          <img src={previewSrc} alt="" style={{ maxHeight: 160, borderRadius: 8 }} />
-          <div className="row" style={{ gap: 8 }}>
+          <img src={previewSrc} alt="" className="dropzone__preview" />
+          <div className="row row--gap-md">
             <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
               <Icon.Upload size={14} /> استبدال الصورة
             </button>
@@ -99,12 +90,12 @@ export function ImageUpload({ value, onChange, label, hint, uploadContext }: Pro
         </>
       ) : (
         <>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--warm-soft)", color: "var(--accent)", display: "grid", placeItems: "center" }}>
+          <div className="dropzone__icon">
             <Icon.Upload />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>اسحبي الصورة هنا أو اضغطي للاختيار</div>
-            <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
+            <div className="dropzone__title">اسحبي الصورة هنا أو اضغطي للاختيار</div>
+            <div className="faint dropzone__hint">{hint ?? "PNG / JPG / WEBP — حتى 4MB"}</div>
           </div>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
             <Icon.Upload size={14} /> اختيار صورة
@@ -115,12 +106,12 @@ export function ImageUpload({ value, onChange, label, hint, uploadContext }: Pro
         type="file"
         accept="image/*"
         ref={ref}
-        style={{ display: "none" }}
+        className="file-input-hidden"
         onChange={(e) => { void handleFile(e.target.files?.[0]); }}
       />
-      {!uploadContext && <div className="faint" style={{ fontSize: 12 }}>رفع الصور متاح فقط أثناء تعديل عنصر موجود.</div>}
-      {uploading && <div className="faint" style={{ fontSize: 12 }}>جارِ رفع الصورة...</div>}
-      {error && <div className="field-error" style={{ marginTop: 4 }}>{error}</div>}
+      {!uploadContext && <div className="faint fs-12">رفع الصور متاح فقط أثناء تعديل عنصر موجود.</div>}
+      {uploading && <div className="faint fs-12">جارِ رفع الصورة...</div>}
+      {error && <div className="field-error field-error--offset-sm">{error}</div>}
     </div>
   );
 }

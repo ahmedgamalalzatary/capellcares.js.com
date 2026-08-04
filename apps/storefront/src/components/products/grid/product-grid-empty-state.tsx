@@ -3,6 +3,7 @@
 import type { Language } from "@capella/shared";
 
 import { Icon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 interface ProductGridEmptyStateProps {
   lang: Language;
@@ -20,56 +21,27 @@ export function ProductGridEmptyState({
   const isAr = lang === "ar";
 
   return (
-    <div
-      style={{
-        maxWidth: "420px",
-        margin: "0 auto",
-        display: "grid",
-        gap: 16,
-        background: "var(--surface)",
-        border: "1px solid var(--hairline)",
-        borderRadius: "var(--radius-xl)",
-        padding: "48px 32px",
-        textAlign: "center"
-      }}
-    >
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "var(--warm-soft)",
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}
-      >
+    // `[display:grid]`, not `grid`: the global `.grid` class carries its own
+    // 24px gap that would override the gap utility here.
+    <div className="mx-auto max-w-[420px] [display:grid] gap-4 rounded-(--radius-xl) border border-(--hairline) bg-surface px-8 py-12 text-center">
+      <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-(--warm-soft)">
         <Icon.Search size={22} className="text-warm" />
       </div>
       <span
-        style={{
-          fontFamily: isAr ? "var(--font-ar)" : "var(--font-display)",
-          fontWeight: isAr ? 700 : 500,
-          fontSize: "24px",
-          color: "var(--ink)",
-          letterSpacing: isAr ? "-0.01em" : "-0.02em"
-        }}
+        className={cn(
+          "text-[24px] text-ink",
+          isAr
+            ? "font-(family-name:--font-ar) font-bold tracking-[-0.01em]"
+            : "font-(family-name:--font-display) font-medium tracking-[-0.02em]"
+        )}
       >
         {dict.common.empty}
       </span>
-      <p
-        style={{
-          fontSize: "13.5px",
-          lineHeight: 1.7,
-          color: "var(--ink-2)",
-          margin: 0
-        }}
-      >
+      <p className="m-0 text-[13.5px] leading-[1.7] text-(--ink-2)">
         {dict.filters?.emptyDesc ?? "Try adjusting your filters or search for something else."}
       </p>
       {hasActiveFilters && (
-        <button onClick={onClear} className="btn btn--ghost btn--sm" style={{ justifySelf: "center" }}>
+        <button onClick={onClear} className="btn btn--ghost btn--sm justify-self-center">
           {dict.common.clear}
         </button>
       )}

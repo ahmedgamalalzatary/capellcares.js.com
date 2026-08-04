@@ -88,6 +88,8 @@ html[lang="ar"] .completion-meter__head { letter-spacing: 0.04em; text-transform
 }
 .completion-meter__fill {
   position: absolute; inset-block: 0; inset-inline-start: 0;
+  /* Filled ratio is computed per render and handed over as a custom property. */
+  width: var(--completion, 0%);
   background: linear-gradient(90deg, var(--warm), var(--ink));
   border-radius: var(--radius-pill);
   transition: width var(--motion) var(--ease-out-expo);

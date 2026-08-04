@@ -113,6 +113,9 @@ body {
 @media (max-width: 640px) {
   .container { padding-inline: 16px; }
 }
+/* 404 page. Written here rather than as utilities because the padding
+   shorthand also has to clear `.container`'s inline padding. */
+.not-found { padding: 120px 0; text-align: center; }
 .eyebrow {
   font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--ink); opacity: 0.65; font-weight: 600;
@@ -129,6 +132,13 @@ body {
 .muted { color: var(--ink-2); }
 
 /* Oversized cursive footer wordmark (Lobster). */
+/* Footer grain overlay — an inline SVG data URI, kept here so the markup
+   stays readable. */
+.footer-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
 .brand-wordmark {
   font-family: var(--font-rounded);
   font-weight: 400;
@@ -510,10 +520,39 @@ body {
   93%  { transform: translateX(0); animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0); } /* hold centered (~5s) */
   100% { transform: translateX(-110%); }                                  /* fast out (~0.4s) */
 }
-.marquee-cross { animation: marquee-cross; will-change: transform; }
+/* Duration comes from a shared constant and direction/play-state follow the
+   locale and the pause button, so all three arrive as custom properties. */
+.marquee-cross {
+  animation: marquee-cross;
+  animation-duration: var(--marquee-duration, 0s);
+  animation-direction: var(--marquee-direction, normal);
+  animation-play-state: var(--marquee-play-state, running);
+  will-change: transform;
+}
 @media (prefers-reduced-motion: reduce) { .marquee-cross { animation: none; } }
 
 [dir="rtl"] .arrow-flip { transform: scaleX(-1); }
+
+/* ============================================================
+   Ask Capella — floating assistant (referenced from the
+   `animate-[…]` utilities on the button, panel and bubbles).
+   ============================================================ */
+@keyframes ask-fab-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.88); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ask-slide-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ask-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@keyframes ask-bubble-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ============================================================
    Product card — caption ⇄ actions cross-fade on hover.

@@ -127,11 +127,11 @@ export default function OffersListPage() {
                   </td>
                   <td>{o.items.reduce((acc, it) => acc + it.qty, 0)} عنصر</td>
                    <td>{formatPrice(o.price, "ar")}</td>
-                   <td className="faint" style={{ textDecoration: "line-through" }}>{formatPrice(o.originalTotal, "ar")}</td>
+                   <td className="faint cell-strike">{formatPrice(o.originalTotal, "ar")}</td>
                    <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
                    <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
                    <td>
-                     <div className="row" style={{ gap: 4, justifyContent: "flex-end" }}>
+                     <div className="row row--actions">
                      {canReorder && filtered.length > 1 && (
                        <>
                          <button
@@ -185,7 +185,7 @@ export default function OffersListPage() {
               );
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--ink-3)" }}>لا توجد عروض.</td></tr>
+              <tr><td colSpan={8} className="state-note state-note--muted">لا توجد عروض.</td></tr>
             )}
           </tbody>
         </table>
@@ -212,12 +212,12 @@ export default function OffersListPage() {
           }
         }}
       >
-        <p style={{ margin: 0 }}>
+        <p className="modal-note">
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
-        {toggleError ? <p style={{ margin: "12px 0 0", color: "var(--danger)" }}>{toggleError}</p> : null}
+        {toggleError ? <p className="modal-note modal-note--error">{toggleError}</p> : null}
       </AdminConfirmModal>
 
       <AdminConfirmModal
@@ -228,7 +228,7 @@ export default function OffersListPage() {
         confirmClassName="btn btn--danger btn--sm"
         onConfirm={onDelete}
       >
-        <p style={{ margin: 0 }}>سيتم نقل العرض إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
+        <p className="modal-note">سيتم نقل العرض إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

@@ -96,7 +96,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
       crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}
     >
       {relatedItemsError && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card card--spaced-bottom">
           تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المنتج، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
         </div>
       )}

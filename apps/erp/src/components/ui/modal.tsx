@@ -21,7 +21,6 @@ export function Modal({ open, title, onClose, footer, children, size = "md" }: P
   }, [open, onClose]);
 
   if (!open) return null;
-  const maxWidth = size === "sm" ? 380 : size === "lg" ? 720 : 480;
 
   return (
     <div className="modal-overlay">
@@ -29,12 +28,12 @@ export function Modal({ open, title, onClose, footer, children, size = "md" }: P
         type="button"
         aria-label="إغلاق"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, border: 0, padding: 0, background: "transparent", cursor: "default" }}
+        className="overlay-dismiss"
       />
-      <div className="modal" style={{ maxWidth, position: "relative" }} role="dialog" aria-modal="true">
+      <div className={`modal modal--${size}`} role="dialog" aria-modal="true">
         <div className="modal__head">
-          <h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3>
-          <button onClick={onClose} aria-label="إغلاق" style={{ background: "transparent", border: 0, padding: 6, color: "var(--ink-3)" }}>
+          <h3>{title}</h3>
+          <button onClick={onClose} aria-label="إغلاق" className="modal__close">
             <Icon.X />
           </button>
         </div>

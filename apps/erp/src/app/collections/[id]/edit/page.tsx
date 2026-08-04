@@ -90,7 +90,7 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
   return (
     <AdminShell title={`تعديل: ${collection.name.ar}`} crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "تعديل" }]}>
       {relatedItemsError && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card card--spaced-bottom">
           تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المجموعة، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
         </div>
       )}

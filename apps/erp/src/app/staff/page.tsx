@@ -39,9 +39,9 @@ export default function StaffManagementPage() {
   if (user.role !== "admin") {
     return (
       <AdminShell title="فريق العمل" crumbs={[{ label: "فريق العمل" }]}>
-        <section className="card" style={{ padding: 24 }}>
-          <h2 style={{ marginTop: 0 }}>غير مصرح</h2>
-          <p style={{ marginBottom: 0 }}>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
+        <section className="card card--pad-lg forbidden-state">
+          <h2>غير مصرح</h2>
+          <p>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
         </section>
       </AdminShell>
     );
@@ -53,10 +53,10 @@ export default function StaffManagementPage() {
       crumbs={[{ label: "فريق العمل" }]}
       actions={<Link href="/staff/new" className="btn btn--primary btn--sm"><Icon.Plus /> إضافة عضو</Link>}
     >
-      <div className="staff-page" style={{ display: "grid", gap: 20 }}>
-        <section className="card" style={{ padding: 20 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ margin: 0 }}>أعضاء الفريق</h2>
+      <div className="staff-page staff-page__stack">
+        <section className="card card--pad">
+          <div className="row row--between staff-section__head">
+            <h2 className="staff-form__heading">أعضاء الفريق</h2>
             <span className="muted">{staffUsers.length} عضو</span>
           </div>
 
@@ -78,7 +78,7 @@ export default function StaffManagementPage() {
               <tbody>
                 {staffUsers.map((staffUser) => (
                   <tr key={staffUser.id}>
-                    <td style={{ fontWeight: 700, color: "var(--ink)" }}>{staffUser.name}</td>
+                    <td className="fw-700 c-ink">{staffUser.name}</td>
                     <td className="mono">{staffUser.email}</td>
                     <td>
                       <span className={`status ${staffUser.isActive ? "status--active" : "status--inactive"}`}>

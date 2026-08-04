@@ -66,8 +66,8 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
 
   return (
     <div className="stack">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <div className="muted" style={{ fontSize: 12 }}>
+      <div className="row row--between">
+        <div className="muted fs-12">
           أول صورة هي الأساسية في المتجر. باقي الصور والفيديوهات تظهر داخل معرض صفحة المنتج.
         </div>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => ref.current?.click()} disabled={uploading || !uploadContext}>
@@ -81,39 +81,38 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
         type="file"
         accept="image/png,image/jpeg,image/webp,video/mp4,video/webm"
         multiple
-        style={{ display: "none" }}
+        className="file-input-hidden"
         onChange={(event) => { void handleFiles(event.target.files); }}
       />
 
       {value.length === 0 ? (
-        <div className="muted" style={{ fontSize: 12 }}>ارفعي صور المنتج وفيديوه إن وجد.</div>
+        <div className="muted fs-12">ارفعي صور المنتج وفيديوه إن وجد.</div>
       ) : (
         <div className="stack">
           {value.map((item, index) => (
             <div
               key={`${item.type}-${item.url}-${index}`}
               data-testid="product-media-item"
-              className="row"
-              style={{ justifyContent: "space-between", gap: 12, padding: 10, border: "1px solid var(--hairline)", borderRadius: 8 }}
+              className="row row--between media-tile"
             >
-              <div className="row" style={{ gap: 12, alignItems: "center" }}>
+              <div className="row">
                 {item.type === "image" ? (
-                  <img src={item.url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
+                  <img src={item.url} alt="" className="media-tile__preview" />
                 ) : (
-                  <video src={item.url} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }}>
+                  <video src={item.url} className="media-tile__preview">
                     <track kind="captions" />
                   </video>
                 )}
-                <div className="stack" style={{ gap: 4 }}>
-                  <strong style={{ fontSize: 13 }}>{item.type === "image" ? "صورة" : "فيديو"}</strong>
+                <div className="stack stack--xs">
+                  <strong className="fs-13">{item.type === "image" ? "صورة" : "فيديو"}</strong>
                   {index === 0 && item.type === "image" ? (
-                    <span className="muted" style={{ fontSize: 12 }}>الصورة الأساسية</span>
+                    <span className="muted fs-12">الصورة الأساسية</span>
                   ) : null}
                 </div>
               </div>
-              <div className="row" style={{ gap: 6 }}>
+              <div className="row row--gap-sm">
                 <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={index === 0}>
-                  <span style={{ display: "inline-block", transform: "rotate(180deg)" }}>
+                  <span className="icon-flip">
                     <Icon.Chevron size={14} />
                   </span>
                 </button>
@@ -129,8 +128,8 @@ export function ProductMediaUpload({ value, onChange, uploadContext }: Props) {
         </div>
       )}
 
-      {uploading ? <div className="muted" style={{ fontSize: 12 }}>جارِ رفع الوسائط...</div> : null}
-      {!uploadContext ? <div className="muted" style={{ fontSize: 12 }}>رفع الوسائط متاح فقط أثناء تعديل منتج موجود.</div> : null}
+      {uploading ? <div className="muted fs-12">جارِ رفع الوسائط...</div> : null}
+      {!uploadContext ? <div className="muted fs-12">رفع الوسائط متاح فقط أثناء تعديل منتج موجود.</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>
   );

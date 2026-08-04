@@ -15,28 +15,8 @@ export function PriceInput({
 }) {
   const dict = getDict(lang);
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        background: "var(--surface)",
-        border: "1px solid var(--hairline)",
-        borderRadius: "var(--radius)",
-        overflow: "hidden",
-        transition: "border-color 180ms, box-shadow 180ms"
-      }}
-    >
-      <span
-        style={{
-          paddingInlineStart: "12px",
-          fontSize: "10.5px",
-          letterSpacing: "0.06em",
-          color: "var(--ink-3)",
-          fontWeight: 600,
-          flexShrink: 0,
-          userSelect: "none"
-        }}
-      >
+    <div className="flex items-center overflow-hidden rounded-(--radius) border border-(--hairline) bg-surface transition-[border-color,box-shadow] duration-[180ms]">
+      <span className="shrink-0 select-none ps-3 text-[10.5px] font-semibold tracking-[0.06em] text-(--ink-3)">
         {dict.common.currency}
       </span>
       <input
@@ -45,16 +25,7 @@ export function PriceInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          border: 0,
-          background: "transparent",
-          outline: "none",
-          padding: "9px 12px",
-          fontSize: "13px",
-          color: "var(--text)"
-        }}
+        className="min-w-0 flex-1 border-0 bg-transparent px-3 py-[9px] text-[13px] text-(--text) outline-none"
       />
     </div>
   );

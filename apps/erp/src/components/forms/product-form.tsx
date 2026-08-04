@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
 import { useProductForm } from "../../hooks/forms/use-product-form";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
@@ -81,7 +82,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
             <div className="completion-meter__bar">
               <div
                 className="completion-meter__fill"
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                style={{ "--completion": `${(completedCount / totalCount) * 100}%` } as CSSProperties}
               />
             </div>
           </div>
@@ -117,12 +118,12 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                   <input id="product-buying-price" className="input" type="number" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(Number(e.target.value))} />
                   {errors.buyingPrice && <span className="field-error">{errors.buyingPrice}</span>}
                 </div>
-                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <div className="field field--full">
                   <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل)</label>
                   <input id="product-keywords" className="input" value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
                   {errors.keywords && <span className="field-error">{errors.keywords}</span>}
                 </div>
-                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <div className="field field--full">
                   <label htmlFor="product-youtube">رابط فيديو يوتيوب (اختياري)</label>
                   <input id="product-youtube" className="input" dir="ltr" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/…" />
                 </div>
@@ -156,7 +157,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               <button className="btn btn--soft btn--sm" onClick={addVariant}><Icon.Plus /> إضافة مقاس</button>
             </div>
             <div className="card__body">
-              {errors.variants && <div className="field-error" style={{ marginBottom: 10 }}>{errors.variants}</div>}
+              {errors.variants && <div className="field-error field-error--spaced">{errors.variants}</div>}
               <div className="variant-rows">
                 {variants.map((v) => (
                   <div className="variant-row" key={v.id}>
@@ -219,7 +220,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                 </label>
               </div>
 
-              <div className="stack" style={{ gap: 8 }}>
+              <div className="stack stack--sm">
                 <label className="check">
                   <input type="checkbox" checked={isNew} onChange={(e) => setIsNew(e.target.checked)} />
                   شارة «جديد»
@@ -233,7 +234,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               <div className="field">
                 <label htmlFor="product-category">القسم</label>
                 <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
-                {errors.categoryId && <div className="field-error" style={{ marginTop: 6 }}>{errors.categoryId}</div>}
+                {errors.categoryId && <div className="field-error field-error--offset">{errors.categoryId}</div>}
               </div>
             </div>
           </section>
@@ -248,7 +249,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
             </div>
             <div className="card__body">
               {!relatedItemsAvailable && (
-                <div className="field-error" style={{ marginBottom: 10 }}>
+                <div className="field-error field-error--spaced">
                   تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي البيانات، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية.
                 </div>
               )}

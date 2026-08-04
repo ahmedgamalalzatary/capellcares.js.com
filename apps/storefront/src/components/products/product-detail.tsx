@@ -7,9 +7,9 @@ import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
+import { ShareButton } from "@/components/ui/share-button";
+import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
-import { useWishlist } from "@/components/providers/wishlist-provider";
-import { useAuth } from "@/components/providers/auth-provider";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 
 type Tab = "description" | "ingredients" | "howToUse" | "warnings";
@@ -26,8 +26,6 @@ interface Props {
 export function ProductDetail({ product, offers, lang, dict, categoryName, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  const wishlist = useWishlist();
-  const auth = useAuth();
   const badgeTags: ItemTag[] = [
     ...getProductTags(product, dict),
     ...offers.map((offer): ItemTag => ({
@@ -43,7 +41,6 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const [added, setAdded] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; pointerType: string } | null>(null);
   const activeMediaPointerTargetRef = useRef<HTMLElement | null>(null);
   const activeMediaIndexRef = useRef(0);
@@ -73,34 +70,6 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     if (!variant) return;
     cart.add({ type: "product", productId: product.id, variantId: variant.id, qty });
     router.push(`/${lang}/checkout`);
-  };
-
-  const onShare = async () => {
-    const url = `${window.location.origin}/${lang}/products/${product.slug}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: pickLang(product.name, lang), url });
-        return;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") return;
-      }
-    }
-    if (!navigator.clipboard?.writeText) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 1600);
-    } catch {
-      // clipboard write failed; nothing more we can do
-    }
-  };
-
-  const onWish = () => {
-    if (!auth.user) {
-      router.push(`/${lang}/wishlist`);
-      return;
-    }
-    wishlist.toggle("product", product.id);
   };
 
   const tabs: { key: Tab; label: string; content: string }[] = [
@@ -168,20 +137,30 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
-          <div
-            className="relative grid place-items-center lg:place-items-start overflow-hidden rounded-md sm:rounded-md"
-            data-testid="product-media-main"
-            onPointerDown={onMediaPointerDown}
-            onPointerUp={onMediaPointerUp}
-            onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
-          >
-            {activeMedia?.type === "video" ? (
-              <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
-                <track kind="captions" />
-              </video>
-            ) : (
-              <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} />
-            )}
+          {/* The wishlist toggle sits beside the swipe surface, not inside it:
+              pointer capture on the media frame would swallow its click. */}
+          <div className="relative">
+            <div
+              className="relative grid place-items-center lg:place-items-start overflow-hidden rounded-md sm:rounded-md"
+              data-testid="product-media-main"
+              onPointerDown={onMediaPointerDown}
+              onPointerUp={onMediaPointerUp}
+              onPointerCancel={(event) => clearMediaPointer(event.pointerId)}
+            >
+              {activeMedia?.type === "video" ? (
+                <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={product.name.en}>
+                  <track kind="captions" />
+                </video>
+              ) : (
+                <ProductIllustration product={{ ...product, imagePath: activeMedia?.url ?? product.imagePath }} />
+              )}
+            </div>
+            <WishlistButton
+              entityType="product"
+              entityId={product.id}
+              lang={lang}
+              label={dict.common.addToWishlist}
+            />
           </div>
 
           {media.length > 1 && (
@@ -317,31 +296,18 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-[1fr_1fr_auto_auto]">
+          <div className="grid sm:grid-cols-[1fr_1fr_auto]">
             <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
               {added ? dict.common.added : dict.common.addToCart}
             </button>
             <button className="btn btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}
             </button>
-            <div className="relative grid">
-              <button className="btn btn--soft" onClick={onShare} aria-label={dict.common.share}>
-                <Icon.Share />
-              </button>
-              {linkCopied && (
-                <div className="pointer-events-none absolute -top-9 inset-x-0 flex justify-center">
-                  <span
-                    role="status"
-                    className="whitespace-nowrap rounded-(--radius-pill) bg-ink px-3 py-1.5 text-xs font-medium text-canvas"
-                  >
-                    {dict.common.linkCopied}
-                  </span>
-                </div>
-              )}
-            </div>
-            <button className="btn btn--soft" onClick={onWish} aria-label={dict.common.addToWishlist}>
-              {wishlist.has("product", product.id) ? <Icon.HeartFill /> : <Icon.Heart />}
-            </button>
+            <ShareButton
+              path={`/${lang}/products/${product.slug}`}
+              title={pickLang(product.name, lang)}
+              dict={dict}
+            />
           </div>
 
           <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 scrollbar-none sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">

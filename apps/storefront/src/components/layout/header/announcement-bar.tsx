@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   ANNOUNCEMENT_CROSS_S as CROSS_S,
   ANNOUNCEMENT_REDUCED_HOLD_MS as REDUCED_HOLD_MS
@@ -47,10 +47,10 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
             onAnimationEnd={advance}
               className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold tracking-[0.04em] sm:text-md"
             style={{
-              animationDuration: `${CROSS_S}s`,
-              animationDirection: isAr ? "reverse" : "normal",
-              animationPlayState: paused ? "paused" : "running"
-            }}
+              "--marquee-duration": `${CROSS_S}s`,
+              "--marquee-direction": isAr ? "reverse" : "normal",
+              "--marquee-play-state": paused ? "paused" : "running"
+            } as CSSProperties}
           >
             {slides[index]}
           </p>
