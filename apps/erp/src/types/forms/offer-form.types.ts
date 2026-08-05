@@ -1,10 +1,11 @@
-import type { EntityMedia, Offer, Product, RelatedItemRef } from "@capella/shared";
+import type { Category, EntityMedia, Offer, Product, RelatedItemRef } from "@capella/shared";
 import type { RelatedOption } from "../../components/forms/related-items-field";
 
 export interface OfferFormProps {
   mode: "new" | "edit";
   initial?: Offer;
   products: Product[];
+  categories: Category[];
   relatedOptions?: RelatedOption[];
   relatedItemsAvailable?: boolean;
 }
@@ -29,6 +30,8 @@ export interface UseOfferFormResult {
   setPrice: (value: number) => void;
   media: EntityMedia[];
   setMedia: (value: EntityMedia[]) => void;
+  categoryId: number | null;
+  setCategoryId: (value: number | null) => void;
   rows: OfferFormRow[];
   relatedItems: RelatedItemRef[] | undefined;
   setRelatedItems: (value: RelatedItemRef[] | undefined) => void;

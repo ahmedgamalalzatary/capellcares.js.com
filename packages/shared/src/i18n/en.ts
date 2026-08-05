@@ -218,7 +218,9 @@ export const en = {
     bundleEyebrow: "Capella bundle",
     added: "Added ✓",
     unavailable: "One of the products in this bundle is currently unavailable.",
-    related: "You may also like"
+    related: "You may also like",
+    categoryLabel: "Category",
+    categoryFilterLabel: "Offer category"
   },
   collections: {
     title: "SETS",

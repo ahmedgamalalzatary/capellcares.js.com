@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, type Language, type Offer, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
+import { pickLang, formatPrice, type Category, type Language, type Offer, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill } from "@/components/ui/item-tags";
@@ -25,13 +25,14 @@ interface ItemEntry {
 
 interface Props {
   offer: Offer & { reviewData?: ReviewPage | null };
+  category?: Category;
   items: ItemEntry[];
   lang: Language;
   dict: any;
   relatedItems?: RelatedItemCard[];
 }
 
-export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Props) {
+export function OfferDetail({ offer, category, items, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
   const [added, setAdded] = useState(false);
@@ -89,6 +90,9 @@ export function OfferDetail({ offer, items, lang, dict, relatedItems = [] }: Pro
             <ReviewSummary entityType="offer" entityId={offer.id} reviewData={offer.reviewData} lang={lang} dict={dict} />
           ) : null}
           <p className="max-w-[60ch] text-base leading-[1.75] text-(--ink-2)">{pickLang(offer.description, lang)}</p>
+          {category && (
+            <div className="text-sm text-(--ink-3)">{dict.offers.categoryLabel}: {pickLang(category.name, lang)}</div>
+          )}
 
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
             <span className={`leading-none text-accent ${isAr

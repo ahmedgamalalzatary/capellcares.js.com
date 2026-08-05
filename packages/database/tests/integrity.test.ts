@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import {
   adminUsers,
   authSessions,
+  categories,
   entityOrderings,
   customers,
   entityMedia,
@@ -154,6 +155,22 @@ serialTest("clearTestSeed removes unified ordering rows", async () => {
 
   const rows = await db.select({ id: entityOrderings.id }).from(entityOrderings);
   assert.equal(rows.length, 0);
+});
+
+serialTest("seeds the baseline offer under a root category", async () => {
+  const [offer] = await db
+    .select({ categoryId: offers.categoryId })
+    .from(offers)
+    .where(eq(offers.id, base.offerId))
+    .limit(1);
+  assert.ok(offer?.categoryId, "baseline offer should be classified");
+
+  const [category] = await db
+    .select({ parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.id, offer!.categoryId!))
+    .limit(1);
+  assert.equal(category?.parentId, null, "offers may only be classified under a root category");
 });
 
 serialTest("rejects offer_items with a non-existent variant_id", async () => {

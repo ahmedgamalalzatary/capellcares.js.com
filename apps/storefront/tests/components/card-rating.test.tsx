@@ -70,6 +70,8 @@ function offerWith(rating?: { average: number; count: number }) {
     items: [{ variantId: 11, qty: 1 }],
     stock: 3,
     status: "active" as const,
+    categoryId: 5,
+    visibility: "visible" as const,
     rating,
     createdAt: "",
     updatedAt: ""

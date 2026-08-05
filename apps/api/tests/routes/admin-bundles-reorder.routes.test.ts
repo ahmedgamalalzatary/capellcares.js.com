@@ -223,6 +223,7 @@ test("offer upsert persists product ordering inside the offer from item order", 
         slug,
         name: { ar: "عرض مرتب", en: "Ordered Offer" },
         price: 80,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -266,6 +267,7 @@ test("storefront offer detail returns items following the offer's product order"
         slug,
         name: { ar: "عرض", en: "Offer" },
         price: 80,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -287,6 +289,7 @@ test("storefront offer detail returns items following the offer's product order"
         slug,
         name: { ar: "عرض", en: "Offer" },
         price: 80,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [

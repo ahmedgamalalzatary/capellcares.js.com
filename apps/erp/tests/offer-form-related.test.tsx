@@ -81,16 +81,22 @@ function completeOffer(id: number) {
     items: [{ variantId: 1, qty: 1 }],
     stock: 3,
     status: "active" as const,
+    categoryId: 5,
+    visibility: "visible" as const,
     createdAt: "",
     updatedAt: ""
   };
 }
 
+const categories = [
+  { id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }
+];
+
 describe("OfferForm related items", () => {
   it("saves the ordered offer media gallery", async () => {
     upsertOffer.mockClear();
     const view = render(
-      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, relatedOptions })
+      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions })
     );
     const form = within(view.container);
 
@@ -110,7 +116,7 @@ describe("OfferForm related items", () => {
   });
 
   it("renders the related-items selector", () => {
-    const view = render(createElement(OfferForm, { mode: "new", products, relatedOptions }));
+    const view = render(createElement(OfferForm, { mode: "new", products, categories, relatedOptions }));
     const form = within(view.container);
     expect(form.getByTestId("related-items-field")).toBeInTheDocument();
     expect(form.getByTestId("related-items-add")).toBeInTheDocument();
@@ -118,7 +124,7 @@ describe("OfferForm related items", () => {
 
   it("excludes the current offer from its own related options", () => {
     const view = render(
-      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, relatedOptions })
+      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions })
     );
     const select = within(view.container).getByTestId("related-items-add") as HTMLSelectElement;
     const values = Array.from(select.querySelectorAll("option")).map((option) => option.value);
@@ -129,7 +135,7 @@ describe("OfferForm related items", () => {
 
   it("saves the selected related items in the chosen order", async () => {
     const view = render(
-      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, relatedOptions })
+      createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions })
     );
     const form = within(view.container);
 
@@ -160,6 +166,7 @@ describe("OfferForm related items", () => {
           items: [{ id: 77, variantId: 1, qty: 1 }]
         } as any,
         products,
+        categories,
         relatedOptions
       })
     );

@@ -12,16 +12,34 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useStore, getStore } from "@/lib/store";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
-import { formatPrice, type Offer } from "@capella/shared";
+import { formatPrice, type Category, type Offer } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { showErrorToast } from "@/lib/errors";
+import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
+
+function isInCategoryTree(categories: Category[], categoryId: number | null, selectedCategoryId: number) {
+  if (categoryId == null) return false;
+  let current = categories.find((category) => category.id === categoryId);
+  const visited = new Set<number>();
+  while (current) {
+    if (visited.has(current.id)) return false;
+    if (current.id === selectedCategoryId) return true;
+    visited.add(current.id);
+    current = current.parentId != null
+      ? categories.find((category) => category.id === current!.parentId)
+      : undefined;
+  }
+  return false;
+}
 
 export default function OffersListPage() {
   const { user } = useAdminAuth();
   const offers = useStore((s) => s.offers);
+  const categories = useStore((s) => s.categories);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [categoryFilter, setCategoryFilter] = useState<number | "">("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Offer | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
@@ -33,19 +51,21 @@ export default function OffersListPage() {
     successMessage: "تم حفظ ترتيب العروض.",
     errorMessage: "تعذر حفظ ترتيب العروض. حاولي مرة أخرى."
   });
+  const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
   // Reordering needs the complete list, so it is hidden while a filter hides part of it.
-  const canReorder = !search.trim() && statusFilter === "all" && canUpdateErpModule(user, "offers");
+  const canReorder = !search.trim() && statusFilter === "all" && categoryFilter === "" && canUpdateErpModule(user, "offers");
 
   const filtered = useMemo(() => {
     const ordered = sortByIdOrder(visibleOffers, reorder.orderedIds)
-      .filter((o) => statusFilter === "all" || o.status === statusFilter);
+      .filter((o) => statusFilter === "all" || o.status === statusFilter)
+      .filter((o) => categoryFilter === "" || isInCategoryTree(categories, o.categoryId, categoryFilter));
     if (!search.trim()) return ordered;
     const s = search.trim().toLowerCase();
     return ordered.filter((o) =>
       o.name.ar.toLowerCase().includes(s) ||
       o.name.en.toLowerCase().includes(s)
     );
-  }, [visibleOffers, search, statusFilter, reorder.orderedIds]);
+  }, [visibleOffers, search, statusFilter, categories, categoryFilter, reorder.orderedIds]);
 
   const onDelete = () => {
     if (pendingDelete == null) return;
@@ -95,6 +115,19 @@ export default function OffersListPage() {
             value: statusFilter,
             onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
             options: ACTIVE_STATUS_FILTER_OPTIONS
+          },
+          {
+            key: "category",
+            label: "قسم العرض",
+            value: String(categoryFilter),
+            onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
+            options: [
+              { value: "", label: "كل الأقسام" },
+              ...categoryOptions.map((option) => ({
+                value: String(option.id),
+                label: `${"— ".repeat(option.depth)}${option.label}`
+              }))
+            ]
           }
         ]}
       />
@@ -105,6 +138,7 @@ export default function OffersListPage() {
             <tr>
               <th>الصورة</th>
               <th>الاسم</th>
+              <th>القسم</th>
               <th>عدد المنتجات</th>
               <th>سعر الباقة</th>
               <th>السعر الأصلي</th>
@@ -116,6 +150,7 @@ export default function OffersListPage() {
           <tbody>
             {filtered.map((o, index) => {
               const savings = o.originalTotal - o.price;
+              const category = categories.find((item) => item.id === o.categoryId);
               return (
                 <tr key={o.id} data-testid={`offer-row-${o.id}`}>
                   <td>
@@ -125,6 +160,7 @@ export default function OffersListPage() {
                     <Link href={`/offers/${o.id}/edit`} className="table-title">{o.name.ar}</Link>
                     <div className="table-subtitle">{o.name.en}</div>
                   </td>
+                  <td>{category ? category.name.ar : "—"}</td>
                   <td>{o.items.reduce((acc, it) => acc + it.qty, 0)} عنصر</td>
                    <td>{formatPrice(o.price, "ar")}</td>
                    <td className="faint cell-strike">{formatPrice(o.originalTotal, "ar")}</td>
@@ -157,17 +193,26 @@ export default function OffersListPage() {
                      {(canToggleErpModule(user, "offers") || canUpdateErpModule(user, "offers") || canSoftDeleteErpModule(user, "offers")) && (
                        <RowMenu>
                          {canToggleErpModule(user, "offers") && (
-                           <button
-                             type="button"
-                             className="row-menu__item"
-                             onClick={() => {
-                               setToggleError(null);
-                               setPendingToggle(o);
-                             }}
-                             title={o.status === "active" ? "إيقاف" : "تفعيل"}
-                           >
-                             {o.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
-                           </button>
+                           // An offer with no category predates classification and has to be
+                           // completed in the editor before it can go live. The API rejects the
+                           // activation anyway, so the action is not offered here at all.
+                           o.status !== "active" && o.categoryId == null ? (
+                             <span className="row-menu__item row-menu__item--disabled">
+                               اختاري قسمًا للعرض قبل تفعيله
+                             </span>
+                           ) : (
+                             <button
+                               type="button"
+                               className="row-menu__item"
+                               onClick={() => {
+                                 setToggleError(null);
+                                 setPendingToggle(o);
+                               }}
+                               title={o.status === "active" ? "إيقاف" : "تفعيل"}
+                             >
+                               {o.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
+                             </button>
+                           )
                          )}
                          {canUpdateErpModule(user, "offers") && (
                            <Link href={`/offers/${o.id}/edit`} className="row-menu__item"><Icon.Edit /> تعديل</Link>
@@ -185,7 +230,7 @@ export default function OffersListPage() {
               );
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} className="state-note state-note--muted">لا توجد عروض.</td></tr>
+              <tr><td colSpan={9} className="state-note state-note--muted">لا توجد عروض.</td></tr>
             )}
           </tbody>
         </table>

@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { entityMedia, entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
+import { categories, entityMedia, entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksForScopesRepo,
@@ -128,6 +128,26 @@ export async function reorderOffersRepo(input: { ids: number[] }) {
   });
 }
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Runs inside the offer write transaction and locks the category row, so a
+// concurrent soft-delete or reparent cannot commit between the check and the
+// insert and leave the offer classified under a non-root category.
+async function assertRootOfferCategory(tx: DbTransaction, categoryId: number) {
+  const [category] = await tx
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), isNull(categories.deletedAt)))
+    .limit(1)
+    .for("update");
+
+  if (!category || category.parentId != null) {
+    const error = new Error("Offer category must be a root category");
+    (error as Error & { code?: string }).code = "OFFER_CATEGORY_MUST_BE_ROOT";
+    throw error;
+  }
+}
+
 function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: number }>) {
   const merged = new Map<number, { id?: number; variantId: number; qty: number }>();
 
@@ -195,6 +215,7 @@ export async function upsertOfferRepo(input: {
   imagePath?: string | null;
   media?: EntityMediaItem[];
   fixedPrice: number;
+  categoryId: number;
   status: "active" | "inactive";
   visibility?: "visible" | "hidden";
   items: Array<{ id?: number; variantId: number; qty: number }>;
@@ -208,6 +229,7 @@ export async function upsertOfferRepo(input: {
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
     : null;
   return db.transaction(async (tx) => {
+  await assertRootOfferCategory(tx, input.categoryId);
   let offerId = input.id;
   if (offerId) {
     await tx
@@ -220,8 +242,11 @@ export async function upsertOfferRepo(input: {
         enDescription: input.enDescription ?? null,
         ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
+        categoryId: input.categoryId,
         status: input.status,
-        visibility: input.visibility ?? "visible"
+        // Omitting visibility on an edit leaves it alone; defaulting here would
+        // silently republish an offer the admin had deliberately hidden.
+        ...(input.visibility !== undefined ? { visibility: input.visibility } : {})
       })
       .where(eq(offers.id, offerId));
   } else {
@@ -235,6 +260,7 @@ export async function upsertOfferRepo(input: {
         enDescription: input.enDescription ?? null,
         imagePath: primaryImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
+        categoryId: input.categoryId,
         status: input.status,
         visibility: input.visibility ?? "visible"
       })
@@ -289,7 +315,18 @@ export async function softDeleteOfferRepo(id: number) {
 }
 
 export async function restoreOfferRepo(id: number) {
-  await db.update(offers).set({ deletedAt: null }).where(eq(offers.id, id));
+  // An offer with no category predates classification. Restoring it must never
+  // put it back on the storefront, so it always comes back parked as inactive.
+  const [existing] = await db
+    .select({ categoryId: offers.categoryId })
+    .from(offers)
+    .where(eq(offers.id, id))
+    .limit(1);
+
+  await db
+    .update(offers)
+    .set(existing && existing.categoryId == null ? { deletedAt: null, status: "inactive" } : { deletedAt: null })
+    .where(eq(offers.id, id));
 }
 
 export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
@@ -334,10 +371,21 @@ export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: stri
 }
 
 export async function toggleOfferStatusRepo(id: number) {
-  const [current] = await db.select({ status: offers.status }).from(offers).where(eq(offers.id, id)).limit(1);
+  const [current] = await db
+    .select({ status: offers.status, categoryId: offers.categoryId })
+    .from(offers)
+    .where(eq(offers.id, id))
+    .limit(1);
   if (!current) return;
-  await db
-    .update(offers)
-    .set({ status: current.status === "active" ? "inactive" : "active" })
-    .where(eq(offers.id, id));
+
+  const nextStatus = current.status === "active" ? "inactive" : "active";
+  // This path bypasses the upsert validation, so it is the last place that can
+  // stop an uncategorised legacy offer from being switched on to the storefront.
+  if (nextStatus === "active" && current.categoryId == null) {
+    const error = new Error("Offer must have a category before it can be activated");
+    (error as Error & { code?: string }).code = "OFFER_CATEGORY_REQUIRED";
+    throw error;
+  }
+
+  await db.update(offers).set({ status: nextStatus }).where(eq(offers.id, id));
 }

@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import type { Offer, OfferItem, RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
+import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
 import type { OfferFormProps, OfferFormRow, UseOfferFormResult } from "../../types/forms/offer-form.types";
 
 export function useOfferForm({
   initial,
   products,
+  categories,
   relatedOptions = []
 }: OfferFormProps): UseOfferFormResult {
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
@@ -20,6 +22,7 @@ export function useOfferForm({
   const [media, setMedia] = useState(
     initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
   );
+  const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<OfferFormRow[]>(() => {
     if (!initial) {
       return [];
@@ -84,10 +87,19 @@ export function useOfferForm({
     const nextErrors: Record<string, string> = {};
     if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
     if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
+    if (!categoryId) nextErrors.categoryId = "اختاري القسم";
     if (price <= 0) nextErrors.price = "أدخلي سعرًا للعرض";
     if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
-    if (rows.length === 0) nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
-    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) nextErrors.rows = "أكملي بيانات كل عنصر";
+    if (rows.length === 0) {
+      nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
+    } else if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) {
+      nextErrors.rows = "أكملي بيانات كل عنصر";
+    } else if (categoryId && rows.some((row) => {
+      const product = products.find((candidate) => candidate.id === row.productId);
+      return !product || !getDescendantCategoryIds(categories, categoryId).has(product.categoryId);
+    })) {
+      nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       return false;
@@ -105,9 +117,11 @@ export function useOfferForm({
       media,
       price: Number(price),
       originalTotal: computed.originalTotal,
+      categoryId: categoryId as number,
       stock: initial?.stock ?? 0,
       items,
-      status: "active",
+      status: initial?.status ?? "active",
+      visibility: initial?.visibility ?? "visible",
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null
@@ -137,6 +151,18 @@ export function useOfferForm({
     setPrice,
     media,
     setMedia,
+    categoryId,
+    // Changing the category clears any row whose product falls outside the new
+    // subtree, so an offer can never keep a member from another category.
+    setCategoryId: (value) => {
+      setCategoryId(value);
+      const allowedCategoryIds = value != null ? getDescendantCategoryIds(categories, value) : null;
+      setRows((state) => state.map((row) => {
+        const product = products.find((candidate) => candidate.id === row.productId);
+        if (!value || !product || allowedCategoryIds?.has(product.categoryId)) return row;
+        return { ...row, id: undefined, productId: 0, variantId: 0 };
+      }));
+    },
     rows,
     relatedItems,
     setRelatedItems,

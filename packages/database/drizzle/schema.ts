@@ -195,6 +195,10 @@ export const offers = mysqlTable("offers", {
   enDescription: text("en_description"),
   imagePath: varchar("image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
+  // Nullable only for offers created before classification existed; the
+  // migration deactivates those so an uncategorised offer never reaches the
+  // storefront. Every write through the admin API requires a root category.
+  categoryId: int("category_id").references(() => categories.id, { onDelete: "restrict" }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   visibility: mysqlEnum("visibility", ["visible", "hidden"]).notNull().default("visible"),
   deletedAt: datetime("deleted_at"),

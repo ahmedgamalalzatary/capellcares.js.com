@@ -11,6 +11,7 @@ import { useStore } from "@/lib/store";
 export default function NewOfferPage() {
   const { user } = useAdminAuth();
   const products = useStore((s) => s.products);
+  const categories = useStore((s) => s.categories);
   const offers = useStore((s) => s.offers);
   const collections = useStore((s) => s.collections);
   if (!canCreateErpModule(user, "offers")) {
@@ -22,7 +23,7 @@ export default function NewOfferPage() {
   }
   return (
     <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "عرض جديد" }]}>
-      <OfferForm mode="new" products={products} relatedOptions={buildRelatedOptions(products, offers, collections)} />
+      <OfferForm mode="new" products={products} categories={categories} relatedOptions={buildRelatedOptions(products, offers, collections)} />
     </AdminShell>
   );
 }

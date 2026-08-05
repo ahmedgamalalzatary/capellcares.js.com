@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getDict } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { SectionCard } from "@/components/shop/section-card";
-import { fetchOffers } from "@/lib/api/client";
+import { OfferGrid } from "@/components/offers/offer-grid";
+import { fetchCategories, fetchOffers } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { buildOffersMetadata, breadcrumbJsonLd } from "@/lib/seo";
 
@@ -19,6 +19,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
   const offers = await fetchOffers({ lang });
+  const categories = await fetchCategories({ lang }).catch(() => []);
 
   return (
     <main className="container">
@@ -43,15 +44,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
         <h1>{dict.offers.title}</h1>
       </header>
 
-      {offers.length === 0 ? (
-        <p className="py-12 text-center text-(--ink-3)">{dict.offers.listEmpty}</p>
-      ) : (
-        <div className="grid gap-5 pb-8 sm:grid-cols-2 sm:gap-6 sm:pb-8 lg:grid-cols-3 lg:gap-7">
-          {offers.map((offer) => (
-            <SectionCard key={offer.id} kind="offer" data={offer} lang={lang} dict={dict} />
-          ))}
-        </div>
-      )}
+      <OfferGrid offers={offers} categories={categories.filter((category) => !category.deletedAt)} lang={lang} dict={dict} />
     </main>
   );
 }

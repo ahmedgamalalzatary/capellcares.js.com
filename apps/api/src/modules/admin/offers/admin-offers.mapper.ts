@@ -11,7 +11,9 @@ type AdminOfferRow = {
   imagePath: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
+  categoryId: number | null;
   status: "active" | "inactive";
+  visibility: "visible" | "hidden";
   createdAt: Date | string;
   updatedAt: Date | string;
   deletedAt: Date | string | null;

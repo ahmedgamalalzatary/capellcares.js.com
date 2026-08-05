@@ -13,8 +13,10 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     enDescription: "Fresh picks",
     imagePath: null,
     fixedPrice: "125.50",
+    categoryId: 3,
     stock: 4,
     status: "active",
+    visibility: "visible",
     items: [{ variantId: 11, qty: 2 }]
   }, 180);
 
@@ -27,8 +29,31 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     media: [],
     price: 125.5,
     originalTotal: 180,
+    categoryId: 3,
     stock: 4,
     items: [{ id: undefined, variantId: 11, qty: 2 }],
-    status: "active"
+    status: "active",
+    visibility: "visible"
   });
+});
+
+test("toOfferBase keeps a legacy offer's missing category as null", () => {
+  const offer = toOfferBase({
+    id: 8,
+    slug: "legacy-bundle",
+    arName: "باقة قديمة",
+    enName: "Legacy Bundle",
+    arDescription: null,
+    enDescription: null,
+    imagePath: null,
+    fixedPrice: "90.00",
+    categoryId: null,
+    stock: 1,
+    status: "inactive",
+    visibility: "hidden",
+    items: [{ variantId: 12, qty: 1 }]
+  }, 120);
+
+  assert.equal(offer.categoryId, null);
+  assert.equal(offer.visibility, "hidden");
 });

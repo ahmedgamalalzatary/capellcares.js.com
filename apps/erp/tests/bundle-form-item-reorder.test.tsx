@@ -64,6 +64,8 @@ const offerInitial = {
   ],
   stock: 3,
   status: "active" as const,
+  categoryId: 5,
+  visibility: "visible" as const,
   createdAt: "",
   updatedAt: ""
 };
@@ -71,9 +73,7 @@ const offerInitial = {
 const collectionInitial = {
   ...offerInitial,
   slug: "collection-1",
-  name: { ar: "مجموعة", en: "Collection" },
-  categoryId: 5,
-  visibility: "visible" as const
+  name: { ar: "مجموعة", en: "Collection" }
 };
 
 const categories = [
@@ -82,7 +82,7 @@ const categories = [
 
 describe("bundle form item ordering", () => {
   it("moves an offer item up and saves items in the new order", async () => {
-    const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products }));
+    const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products, categories }));
     const form = within(view.container);
 
     const rows = form.getAllByTestId("bundle-item-row");

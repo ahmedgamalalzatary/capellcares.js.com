@@ -79,9 +79,11 @@ const offerBoundaryPayload = {
   ],
   price: 399.5,
   originalTotal: 480,
+  categoryId: 3,
   stock: 4,
   rating: { average: 0, count: 0 },
   status: "active" as const,
+  visibility: "visible" as const,
   items: [
     {
       variantId: 501,

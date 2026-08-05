@@ -15,6 +15,7 @@ export interface OfferDto {
   imagePath: string | null;
   media: EntityMediaDto[];
   fixedPrice: number;
+  categoryId: number | null;
   status: "active" | "inactive";
   visibility: "visible" | "hidden";
   deletedAt: string | null;

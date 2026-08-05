@@ -220,7 +220,9 @@ export const ar = {
     bundleEyebrow: "باقة كابيلا",
     added: "أُضيف ✓",
     unavailable: "أحد المنتجات بالباقة غير متوفر حاليًا.",
-    related: "قد يعجبك أيضًا"
+    related: "قد يعجبك أيضًا",
+    categoryLabel: "القسم",
+    categoryFilterLabel: "قسم العرض"
   },
   collections: {
     title: "المجموعات",

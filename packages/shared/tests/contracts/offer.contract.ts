@@ -21,9 +21,11 @@ export const storefrontOfferContract = z.object({
   ),
   price: z.number(),
   originalTotal: z.number(),
+  categoryId: z.number().nullable(),
   stock: z.number().int().nonnegative(),
   rating: storefrontRatingContract,
   status: z.enum(["active", "inactive"]),
+  visibility: z.enum(["visible", "hidden"]),
   items: z.array(
     z.object({
       variantId: z.number(),

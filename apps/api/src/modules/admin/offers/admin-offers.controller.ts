@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
+import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
 import {
   findOfferByIdRepo,
   hardDeleteOfferRepo,
@@ -58,6 +59,56 @@ async function safeTriggerOfferRevalidation(payload: { slug: string; relatedProd
   } catch (error) {
     console.warn("Failed to trigger storefront revalidation for offer", payload.slug, error);
   }
+}
+
+async function validateOfferItems(categoryId: number, items: Array<{ variantId: number; qty: number }>) {
+  if (items.length === 0) {
+    return "offer-min-one-variant";
+  }
+
+  for (const item of items) {
+    if (!Number.isInteger(item.variantId) || item.variantId < 1) {
+      return "offer-item-invalid-variant";
+    }
+    if (!Number.isInteger(item.qty) || item.qty < 1) {
+      return "offer-item-invalid-qty";
+    }
+  }
+
+  const variantIdsDistinct = [...new Set(items.map((item) => item.variantId))];
+
+  const rows = await db
+    .select({
+      variantId: productVariants.id,
+      categoryId: products.categoryId
+    })
+    .from(productVariants)
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(and(inArray(productVariants.id, variantIdsDistinct), isNull(productVariants.deletedAt), isNull(products.deletedAt)));
+
+  if (rows.length !== variantIdsDistinct.length) {
+    return "offer-item-not-found";
+  }
+
+  const allowedCategoryIds = new Set(await listDescendantCategoryIdsRepo(categoryId));
+  if (rows.some((row) => !allowedCategoryIds.has(row.categoryId))) {
+    return "offer-item-category-mismatch";
+  }
+
+  return null;
+}
+
+async function validateOfferCategory(categoryId: number) {
+  if (!Number.isInteger(categoryId) || categoryId < 1) {
+    return "offer-category-must-be-root";
+  }
+
+  const category = await getCategoryByIdRepo(categoryId);
+  if (!category || category.parentId != null) {
+    return "offer-category-must-be-root";
+  }
+
+  return null;
 }
 
 export async function adminReorderOffers(req: Request, res: Response, next: NextFunction) {
@@ -127,6 +178,17 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       qty: Number(item.qty)
     }));
 
+    const categoryId = Number(incoming.categoryId ?? 0);
+    const categoryError = await validateOfferCategory(categoryId);
+    if (categoryError) {
+      return res.status(400).json({ ok: false, reason: categoryError });
+    }
+
+    const validationError = await validateOfferItems(categoryId, items);
+    if (validationError) {
+      return res.status(400).json({ ok: false, reason: validationError });
+    }
+
     const priceError = await validateBundlePriceBelowParts(fixedPrice, items);
     if (priceError) {
       return res.status(400).json({ ok: false, reason: priceError });
@@ -142,8 +204,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       imagePath: incoming.imagePath ?? null,
       media: parseEntityMediaInput(incoming.media),
       fixedPrice,
+      categoryId,
       status: incoming.status ?? "inactive",
-      visibility: incoming.visibility ?? "visible",
+      visibility: incoming.visibility,
       items
     });
     if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
@@ -161,6 +224,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });
+    }
+    if ((error as { code?: string })?.code === "OFFER_CATEGORY_MUST_BE_ROOT") {
+      return res.status(400).json({ ok: false, reason: "offer-category-must-be-root" });
     }
     next(error);
   }
@@ -198,12 +264,19 @@ export async function adminHardDeleteOffer(req: Request, res: Response) {
   res.status(204).end();
 }
 
-export async function adminToggleOfferStatus(req: Request, res: Response) {
-  const { toggleOfferStatusRepo } = await import("../../../repositories/offer.repository.js");
-  const revalidation = await findOfferRevalidationData(Number(req.params.id));
-  await toggleOfferStatusRepo(Number(req.params.id));
-  if (revalidation) {
-    await safeTriggerOfferRevalidation(revalidation);
+export async function adminToggleOfferStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { toggleOfferStatusRepo } = await import("../../../repositories/offer.repository.js");
+    const revalidation = await findOfferRevalidationData(Number(req.params.id));
+    await toggleOfferStatusRepo(Number(req.params.id));
+    if (revalidation) {
+      await safeTriggerOfferRevalidation(revalidation);
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    if ((error as { code?: string })?.code === "OFFER_CATEGORY_REQUIRED") {
+      return res.status(400).json({ ok: false, reason: "offer-category-required" });
+    }
+    next(error);
   }
-  res.json({ ok: true });
 }

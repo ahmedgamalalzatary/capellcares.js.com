@@ -51,6 +51,8 @@ function makeOffer(overrides: Partial<Offer>): Offer {
     items: [],
     stock: 5,
     status: "active",
+    categoryId: 5,
+    visibility: "visible",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides

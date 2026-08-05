@@ -3,13 +3,15 @@
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
+import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { EntityMediaUpload } from "./entity-media-upload";
 import { RelatedItemsField } from "./related-items-field";
 import { useOfferForm } from "../../hooks/forms/use-offer-form";
 import type { OfferFormProps } from "../../types/forms/offer-form.types";
+import { getDescendantCategoryIds } from "@/lib/category-tree";
 
-export function OfferForm({ mode, initial, products, relatedOptions = [], relatedItemsAvailable = true }: OfferFormProps) {
+export function OfferForm({ mode, initial, products, categories, relatedOptions = [], relatedItemsAvailable = true }: OfferFormProps) {
   const router = useRouter();
   const {
     nameAr,
@@ -24,6 +26,8 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
     setPrice,
     media,
     setMedia,
+    categoryId,
+    setCategoryId,
     rows,
     relatedItems,
     setRelatedItems,
@@ -35,9 +39,17 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
     moveRow,
     updateRow,
     save
-  } = useOfferForm({ mode, initial, products, relatedOptions, relatedItemsAvailable });
+  } = useOfferForm({ mode, initial, products, categories, relatedOptions, relatedItemsAvailable });
 
   const savings = computed.originalTotal - Number(price || 0);
+  const rootCategories = categories.filter((category) => category.parentId == null);
+  const allowedCategoryIds = categoryId != null ? getDescendantCategoryIds(categories, categoryId) : null;
+  // A legacy offer opens with no category. Showing an empty product list there
+  // would make its existing rows read as "nothing selected", so until a category
+  // is picked every product stays listed; choosing one then prunes the rows.
+  const categoryProducts = products.filter(
+    (product) => !product.deletedAt && (allowedCategoryIds == null || allowedCategoryIds.has(product.categoryId))
+  );
 
   return (
     <div className="editor-grid">
@@ -60,6 +72,13 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                 {errors.price && <span className="field-error">{errors.price}</span>}
               </div>
             </div>
+
+            <div className="field">
+              <label htmlFor="offer-category">القسم</label>
+              <CategoryPicker id="offer-category" categories={rootCategories} value={categoryId} onChange={setCategoryId} />
+              {errors.categoryId && <span className="field-error">{errors.categoryId}</span>}
+            </div>
+
             <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
           </div>
         </section>
@@ -94,7 +113,7 @@ export function OfferForm({ mode, initial, products, relatedOptions = [], relate
                       <td className="cell-min-220">
                         <select className="select" value={r.productId} onChange={(e) => updateRow(i, { productId: Number(e.target.value) })}>
                           <option value="0">— اختاري منتجًا —</option>
-                          {products.filter((p) => !p.deletedAt).map((p) => (
+                          {categoryProducts.map((p) => (
                             <option key={p.id} value={p.id}>{p.name.ar}</option>
                           ))}
                         </select>

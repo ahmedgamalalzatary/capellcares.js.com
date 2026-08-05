@@ -20,6 +20,7 @@ test("offerSchema preserves an ordered media gallery", () => {
     imagePath: "/uploads/primary.jpg",
     media,
     fixedPrice: 100,
+    categoryId: 3,
     status: "active",
     visibility: "visible",
     deletedAt: null,

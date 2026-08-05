@@ -18,6 +18,7 @@ export const offerSchema = z.object({
   imagePath: z.string().nullable(),
   media: z.array(entityMediaSchema),
   fixedPrice: z.number().nonnegative(),
+  categoryId: z.number().int().positive().nullable(),
   status: z.enum(["active", "inactive"]),
   visibility: z.enum(["visible", "hidden"]),
   deletedAt: z.string().nullable(),

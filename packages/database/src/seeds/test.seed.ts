@@ -138,7 +138,10 @@ export async function seedTestData() {
     slug: seedOfferSlug,
     arName: "عرض تجريبي",
     enName: "Baseline Offer",
-    fixedPrice: "70.00"
+    fixedPrice: "70.00",
+    // Offers classify under a root category only; their items live anywhere in
+    // that root's subtree, which is where the seeded products sit.
+    categoryId: rootCategory.id
   });
 
   await ensureOfferItem({ offerId, variantId: firstVariantId, qty: 1 });
@@ -318,6 +321,7 @@ async function ensureOffer(input: {
   arName: string;
   enName: string;
   fixedPrice: string;
+  categoryId: number;
 }) {
   const [existing] = await db.select().from(offers).where(eq(offers.slug, input.slug)).limit(1);
   if (existing) {

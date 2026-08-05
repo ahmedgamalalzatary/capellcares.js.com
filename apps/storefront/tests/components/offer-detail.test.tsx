@@ -41,6 +41,7 @@ const dict = {
     addBundleToCart: "Add bundle",
     unavailable: "Unavailable",
     related: "You may also like",
+    categoryLabel: "Category",
     saveToWishlist: "Save offer"
   },
   common: { buyNow: "Buy now", addToWishlist: "Wishlist", share: "Share", linkCopied: "Link copied" }
@@ -57,6 +58,8 @@ const offer = {
   items: [],
   stock: 3,
   status: "active" as const,
+  categoryId: 5,
+  visibility: "visible" as const,
   createdAt: "",
   updatedAt: ""
 };
@@ -152,5 +155,26 @@ describe("OfferDetail", () => {
     render(createElement(OfferDetail, { offer: { ...offer, reviewData }, items: [], lang: "en", dict: { ...dict, reviews } }));
 
     expect(screen.getByRole("button", { name: "5.0 out of 5, 1 reviews" })).toBeInTheDocument();
+  });
+});
+
+describe("OfferDetail category", () => {
+  it("shows the offer category line when a category is supplied", () => {
+    render(createElement(OfferDetail, {
+      offer,
+      category: { id: 5, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false },
+      items: [],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByText("Category: Skin Care")).toBeInTheDocument();
+  });
+
+  it("omits the category line for an uncategorised legacy offer", () => {
+    render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
+
+    expect(screen.queryByText(/Category:/)).not.toBeInTheDocument();
   });
 });

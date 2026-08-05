@@ -10,8 +10,10 @@ type OfferMapperRow = {
   imagePath: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
+  categoryId: number | null;
   stock: number;
   status: "active" | "inactive";
+  visibility: "visible" | "hidden";
   items: Array<{ id?: number; variantId: number; qty: number }>;
 };
 
@@ -40,12 +42,14 @@ export function toOfferBase(
     media: offer.media ?? (offer.imagePath ? [{ type: "image", url: offer.imagePath }] : []),
     price,
     originalTotal,
+    categoryId: offer.categoryId,
     stock: offer.stock,
     items: offer.items.map((item) => ({
       id: item.id,
       variantId: item.variantId,
       qty: item.qty
     })),
-    status: offer.status
+    status: offer.status,
+    visibility: offer.visibility
   };
 }

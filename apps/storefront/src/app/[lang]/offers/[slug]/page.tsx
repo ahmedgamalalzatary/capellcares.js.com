@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
 import { OfferDetail } from "@/components/offers/offer-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { fetchOfferBySlug, fetchOfferDetailBySlug, fetchProducts } from "@/lib/api/client";
+import { fetchCategories, fetchOfferBySlug, fetchOfferDetailBySlug, fetchProducts } from "@/lib/api/client";
 import { requireStorefrontValue, resolveStorefrontSlugPageContext, StorefrontJsonLd } from "@/lib/storefront-detail-page";
 import { breadcrumbJsonLd, buildOfferMetadata, offerJsonLd } from "@/lib/seo";
 
@@ -19,7 +19,15 @@ export async function generateMetadata({
 export default async function OfferDetailsPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
   const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
   const offer = requireStorefrontValue(await fetchOfferDetailBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
-  const products = await fetchProducts({ lang });
+  // The category is only a label here, so a failed fetch must not take the whole
+  // page down with it — same handling as the offers index.
+  const [products, categories] = await Promise.all([
+    fetchProducts({ lang }),
+    fetchCategories({ lang }).catch(() => [])
+  ]);
+  const category = offer.categoryId != null
+    ? categories.find((item) => item.id === offer.categoryId && !item.deletedAt)
+    : undefined;
 
   const items = offer.items.map((it) => {
     const product = products.find((p) => p.variants.some((v) => v.id === it.variantId));
@@ -53,6 +61,7 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
       />
       <OfferDetail
         offer={offer}
+        category={category}
         items={items}
         lang={lang}
         dict={dict}

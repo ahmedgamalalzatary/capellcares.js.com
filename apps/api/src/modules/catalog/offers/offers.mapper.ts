@@ -11,8 +11,10 @@ type OfferRow = {
   imagePath: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
+  categoryId: number | null;
   stock: number;
   status: "active" | "inactive";
+  visibility: "visible" | "hidden";
   items: Array<{ variantId: number; qty: number }>;
 };
 

@@ -4,7 +4,7 @@ import test, { beforeEach } from "node:test";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { and, asc, eq, or } from "drizzle-orm";
-import { entityMedia, entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
+import { categories, entityMedia, entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -42,6 +42,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
           { type: "video", url: "/uploads/test-offer-demo.mp4" }
         ],
         price: 120,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -129,6 +130,7 @@ serialTest("admin offer upsert rejects a price at or above the sum of its parts"
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
         price: 90,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -151,6 +153,7 @@ serialTest("admin offer upsert rejects a price at or above the sum of its parts"
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
         price: 40,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }]
@@ -208,6 +211,7 @@ serialTest("admin offer upsert persists mirrored related links", async () => {
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
         price: 30,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }],
@@ -302,6 +306,7 @@ serialTest("admin offer upsert preserves existing related links when relatedItem
         description: { ar: "وصف", en: "Description" },
         imagePath: "/uploads/test-offer.png",
         price: 30,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }]
@@ -342,6 +347,7 @@ serialTest("admin offer upsert preserves an existing media gallery when media is
         name: { ar: "عرض محدث", en: "Updated Offer" },
         description: { ar: "", en: "Updated" },
         price: 30,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [{ variantId: ids.firstVariantId, qty: 1 }]
@@ -391,6 +397,7 @@ serialTest("admin offer upsert updates existing offer items in place when ids ar
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
         price: 88,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: existingItems.map((item, index) => ({
@@ -443,6 +450,7 @@ serialTest("admin offer upsert merges duplicate variant rows before persisting",
         description: { ar: "", en: "" },
         imagePath: "/uploads/test-offer.png",
         price: 88,
+        categoryId: ids.rootCategoryId,
         status: "active",
         visibility: "visible",
         items: [
@@ -702,4 +710,325 @@ serialTest("admin offer revalidation includes related product slugs for bundle m
   assert.equal(payload.entity, "offer");
   assert.equal(payload.slug, "test-offer-baseline");
   assert.deepEqual([...payload.relatedProductSlugs].sort(), productRows.map((row) => row.slug).sort());
+});
+
+serialTest("admin offer upsert persists the selected root category", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-category-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض بقسم", en: "Categorised Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 80,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+
+  const [created] = await db.select({ categoryId: offers.categoryId }).from(offers).where(eq(offers.slug, slug)).limit(1);
+  assert.equal(created?.categoryId, ids.rootCategoryId);
+});
+
+serialTest("admin offer upsert rejects non-root categories", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug: `route-offer-leaf-${Date.now()}`,
+        name: { ar: "عرض قسم فرعي", en: "Leaf Category Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 80,
+        categoryId: ids.leafCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "offer-category-must-be-root");
+  });
+});
+
+serialTest("admin offer upsert rejects variants outside the selected category", async () => {
+  const ids = await getBaselineIds();
+
+  const [hairCategory] = await db
+    .insert(categories)
+    .values({
+      slug: `offer-hair-care-${Date.now()}`,
+      arName: "العناية بالشعر",
+      enName: "Hair Care",
+      isLeaf: true
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug: `route-offer-invalid-${Date.now()}`,
+        name: { ar: "عرض خاطئ", en: "Invalid Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 149,
+        categoryId: hairCategory.id,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "offer-item-category-mismatch");
+  });
+});
+
+serialTest("admin offer upsert accepts variants from descendant categories when the selected category is a parent", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug: `route-offer-parent-${Date.now()}`,
+        name: { ar: "عرض قسم أب", en: "Parent Category Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 80,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+  });
+});
+
+serialTest("admin offer upsert persists an explicitly hidden offer as hidden", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-hidden-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض مخفي", en: "Hidden Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        price: 80,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "hidden",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ]
+      })
+    });
+
+    assert.equal(response.status, 200);
+
+    const listResponse = await request("/api/erp/offers", { headers: { ...authHeaders } });
+    const created = listResponse.json.items.find((item: { slug: string }) => item.slug === slug);
+    assert.equal(created.visibility, "hidden");
+    assert.equal(created.categoryId, ids.rootCategoryId);
+  });
+});
+
+serialTest("admin offer toggle-status refuses to activate an uncategorised offer", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-legacy-toggle-${Date.now()}`;
+
+  // A legacy row: no category, parked inactive by the classification migration.
+  const [legacy] = await db
+    .insert(offers)
+    .values({
+      slug,
+      arName: "عرض قديم",
+      enName: "Legacy Offer",
+      fixedPrice: "50.00",
+      categoryId: null,
+      status: "inactive",
+      visibility: "visible"
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${legacy.id}/toggle-status`, {
+      method: "POST",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "offer-category-required");
+  });
+
+  const [row] = await db.select({ status: offers.status }).from(offers).where(eq(offers.id, legacy.id)).limit(1);
+  assert.equal(row?.status, "inactive");
+
+  await db.delete(offers).where(eq(offers.id, legacy.id));
+  assert.ok(ids.rootCategoryId);
+});
+
+serialTest("admin offer restore keeps an uncategorised offer inactive", async () => {
+  const slug = `route-offer-legacy-restore-${Date.now()}`;
+
+  const [legacy] = await db
+    .insert(offers)
+    .values({
+      slug,
+      arName: "عرض قديم محذوف",
+      enName: "Legacy Trashed Offer",
+      fixedPrice: "50.00",
+      categoryId: null,
+      status: "active",
+      visibility: "visible",
+      deletedAt: new Date("2026-01-01T00:00:00Z")
+    })
+    .$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${legacy.id}/restore`, {
+      method: "POST",
+      headers: { ...authHeaders }
+    });
+    assert.equal(response.status, 200);
+  });
+
+  const [row] = await db
+    .select({ status: offers.status, deletedAt: offers.deletedAt })
+    .from(offers)
+    .where(eq(offers.id, legacy.id))
+    .limit(1);
+
+  assert.equal(row?.deletedAt, null);
+  assert.equal(row?.status, "inactive", "an uncategorised offer must not come back live");
+
+  await db.delete(offers).where(eq(offers.id, legacy.id));
+});
+
+serialTest("admin offer upsert rejects an offer with no items", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-empty-${Date.now()}`,
+        name: { ar: "عرض فارغ", en: "Empty Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/test-offer.png",
+        price: 999,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: []
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "offer-min-one-variant");
+  });
+});
+
+serialTest("admin offer upsert keeps a hidden offer hidden when visibility is omitted", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-keep-hidden-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const basePayload = {
+      slug,
+      name: { ar: "عرض مخفي", en: "Hidden Offer" },
+      description: { ar: "وصف", en: "Description" },
+      imagePath: "/uploads/test-offer.png",
+      price: 80,
+      categoryId: ids.rootCategoryId,
+      status: "active",
+      items: [
+        { variantId: ids.firstVariantId, qty: 1 },
+        { variantId: ids.secondVariantId, qty: 1 }
+      ]
+    };
+
+    const created = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...basePayload, visibility: "hidden" })
+    });
+    assert.equal(created.status, 200);
+
+    const [row] = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug)).limit(1);
+
+    // Re-save the same offer without a visibility field, as a partial edit would.
+    const updated = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...basePayload, id: row!.id })
+    });
+    assert.equal(updated.status, 200);
+  });
+
+  const [after] = await db.select({ visibility: offers.visibility }).from(offers).where(eq(offers.slug, slug)).limit(1);
+  assert.equal(after?.visibility, "hidden", "omitting visibility must not silently republish a hidden offer");
 });

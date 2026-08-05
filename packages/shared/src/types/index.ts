@@ -267,11 +267,18 @@ export interface Offer {
   media?: EntityMedia[];
   price: number;
   originalTotal: number;
+  /**
+   * The root category this offer is classified under, mirroring collections.
+   * Null only for offers created before classification existed; those are
+   * deactivated by the migration and must be given a category before saving.
+   */
+  categoryId: number | null;
   items: OfferItem[];
   stock: number;
   /** Present on storefront payloads only; the ERP never reads reviews here. */
   rating?: RatingSummary;
   status: "active" | "inactive";
+  visibility: "visible" | "hidden";
   relatedItems?: RelatedItemRef[];
   sortOrder?: number;
   createdAt: string;
