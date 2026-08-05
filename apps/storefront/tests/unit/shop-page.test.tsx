@@ -151,8 +151,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
         items: [
           {
             id: 20,
-            imagePath: "http://localhost:4000/uploads/section-1.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/section-1-mobile.jpg",
+            arImagePath: null,
+            arMobileImagePath: null,
+            enImagePath: "http://localhost:4000/uploads/section-1.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/section-1-mobile.jpg",
             targetType: "offers",
             targetId: null,
             href: "/en/offers",
@@ -167,8 +169,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
         items: [
           {
             id: 21,
-            imagePath: "http://localhost:4000/uploads/section-2.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/section-2-mobile.jpg",
+            arImagePath: null,
+            arMobileImagePath: null,
+            enImagePath: "http://localhost:4000/uploads/section-2.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/section-2-mobile.jpg",
             targetType: "new",
             targetId: null,
             href: "/en/new",
@@ -183,8 +187,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
         items: [
           {
             id: 22,
-            imagePath: "http://localhost:4000/uploads/section-3.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/section-3-mobile.jpg",
+            arImagePath: null,
+            arMobileImagePath: null,
+            enImagePath: "http://localhost:4000/uploads/section-3.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/section-3-mobile.jpg",
             targetType: "bestsellers",
             targetId: null,
             href: "/en/bestsellers",
@@ -199,8 +205,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
         items: [
           {
             id: 23,
-            imagePath: "http://localhost:4000/uploads/section-4.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/section-4-mobile.jpg",
+            arImagePath: null,
+            arMobileImagePath: null,
+            enImagePath: "http://localhost:4000/uploads/section-4.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/section-4-mobile.jpg",
             targetType: "products",
             targetId: null,
             href: "/en/products",
@@ -215,8 +223,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
         items: [
           {
             id: 24,
-            imagePath: "http://localhost:4000/uploads/section-5.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/section-5-mobile.jpg",
+            arImagePath: null,
+            arMobileImagePath: null,
+            enImagePath: "http://localhost:4000/uploads/section-5.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/section-5-mobile.jpg",
             targetType: "collections",
             targetId: null,
             href: "/en/collections",

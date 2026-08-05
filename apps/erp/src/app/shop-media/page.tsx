@@ -18,8 +18,10 @@ import type { ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 
 type EditableItem = {
   id: string;
-  imagePath: string;
-  mobileImagePath: string;
+  arImagePath: string;
+  arMobileImagePath: string;
+  enImagePath: string;
+  enMobileImagePath: string;
   targetType: ShopMediaTargetType;
   targetId: number | null;
 };
@@ -62,8 +64,10 @@ function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 
     status: section?.status ?? "inactive",
     items: (section?.items ?? []).map((item) => ({
       id: String(item.id),
-      imagePath: item.imagePath ?? "",
-      mobileImagePath: item.mobileImagePath ?? "",
+      arImagePath: item.arImagePath ?? "",
+      arMobileImagePath: item.arMobileImagePath ?? "",
+      enImagePath: item.enImagePath ?? "",
+      enMobileImagePath: item.enMobileImagePath ?? "",
       targetType: item.targetType,
       targetId: item.targetId
     }))
@@ -141,7 +145,12 @@ export default function ShopMediaPage() {
   };
 
   const saveSection = async (section: EditableSection) => {
-    if (section.items.some((item) => (!item.imagePath && !item.mobileImagePath) || (isDetailTargetType(item.targetType) && item.targetId === null))) {
+    if (section.items.some((item) => (
+      !item.arImagePath
+      && !item.arMobileImagePath
+      && !item.enImagePath
+      && !item.enMobileImagePath
+    ) || (isDetailTargetType(item.targetType) && item.targetId === null))) {
       const validationError = new Error("أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
@@ -161,8 +170,10 @@ export default function ShopMediaPage() {
       await getStore().updateShopMediaSection(section.slot, {
         status: section.status,
         items: section.items.map((item, index) => ({
-          imagePath: item.imagePath || null,
-          mobileImagePath: item.mobileImagePath || null,
+          arImagePath: item.arImagePath || null,
+          arMobileImagePath: item.arMobileImagePath || null,
+          enImagePath: item.enImagePath || null,
+          enMobileImagePath: item.enMobileImagePath || null,
           targetType: item.targetType,
           targetId: isDetailTargetType(item.targetType) ? item.targetId : null,
           sortOrder: index + 1
@@ -186,8 +197,10 @@ export default function ShopMediaPage() {
       ...current.items,
       {
         id: `new-${slot}-${current.items.length + 1}`,
-        imagePath: "",
-        mobileImagePath: "",
+        arImagePath: "",
+        arMobileImagePath: "",
+        enImagePath: "",
+        enMobileImagePath: "",
         targetType: "offers",
         targetId: null
       }
@@ -215,7 +228,9 @@ export default function ShopMediaPage() {
           const isSaving = savingSlot === section.slot;
           const isCollapsed = collapsedSlots.has(section.slot);
           const previewItems = section.items
-            .map((item) => resolvePreviewSrc(item.imagePath || item.mobileImagePath))
+            .map((item) => resolvePreviewSrc(
+              item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath
+            ))
             .filter((src): src is string => Boolean(src));
 
           return (
@@ -311,7 +326,9 @@ export default function ShopMediaPage() {
                           ? (detailOptions.find((option) => option.id === item.targetId)?.label
                             ?? (targetMissing ? "العنصر محذوف — الصفحة الرئيسية" : "بدون عنصر"))
                           : typeLabel;
-                        const thumbSrc = resolvePreviewSrc(item.imagePath || item.mobileImagePath);
+                        const thumbSrc = resolvePreviewSrc(
+                          item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath
+                        );
 
                         return (
                           <div key={item.id} className="shop-media-item">
@@ -372,20 +389,38 @@ export default function ShopMediaPage() {
                               <div className="shop-media-item__body">
                                 <div className="shop-media-item__images">
                                   <ImageUpload
-                                    label="صورة سطح المكتب"
-                                    value={item.imagePath || null}
+                                    label="صورة سطح المكتب — العربية"
+                                    value={item.arImagePath || null}
                                     onChange={(value) => setSection(section.slot, (current) => ({
                                       ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, imagePath: value ?? "" } : entry)
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, arImagePath: value ?? "" } : entry)
                                     }))}
                                     uploadContext="shop_media.update"
                                   />
                                   <ImageUpload
-                                    label="صورة الموبايل"
-                                    value={item.mobileImagePath || null}
+                                    label="صورة الموبايل — العربية"
+                                    value={item.arMobileImagePath || null}
                                     onChange={(value) => setSection(section.slot, (current) => ({
                                       ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, mobileImagePath: value ?? "" } : entry)
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, arMobileImagePath: value ?? "" } : entry)
+                                    }))}
+                                    uploadContext="shop_media.update"
+                                  />
+                                  <ImageUpload
+                                    label="صورة سطح المكتب — الإنجليزية"
+                                    value={item.enImagePath || null}
+                                    onChange={(value) => setSection(section.slot, (current) => ({
+                                      ...current,
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, enImagePath: value ?? "" } : entry)
+                                    }))}
+                                    uploadContext="shop_media.update"
+                                  />
+                                  <ImageUpload
+                                    label="صورة الموبايل — الإنجليزية"
+                                    value={item.enMobileImagePath || null}
+                                    onChange={(value) => setSection(section.slot, (current) => ({
+                                      ...current,
+                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, enMobileImagePath: value ?? "" } : entry)
                                     }))}
                                     uploadContext="shop_media.update"
                                   />

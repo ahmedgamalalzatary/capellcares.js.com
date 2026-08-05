@@ -53,7 +53,15 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
 
   const input = req.body as {
     status?: unknown;
-    items?: Array<{ imagePath?: unknown; mobileImagePath?: unknown; targetType?: unknown; targetId?: unknown; sortOrder?: unknown }>;
+    items?: Array<{
+      arImagePath?: unknown;
+      arMobileImagePath?: unknown;
+      enImagePath?: unknown;
+      enMobileImagePath?: unknown;
+      targetType?: unknown;
+      targetId?: unknown;
+      sortOrder?: unknown;
+    }>;
   };
 
   if (input.status !== "active" && input.status !== "inactive") {
@@ -66,14 +74,16 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
 
   const normalizedItems = [];
   for (const rawItem of input.items) {
-    const imagePath = normalizeUploadPath(sanitizeString(rawItem?.imagePath));
-    const mobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.mobileImagePath));
+    const arImagePath = normalizeUploadPath(sanitizeString(rawItem?.arImagePath));
+    const arMobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.arMobileImagePath));
+    const enImagePath = normalizeUploadPath(sanitizeString(rawItem?.enImagePath));
+    const enMobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.enMobileImagePath));
     const targetType = sanitizeString(rawItem?.targetType);
     const targetIdValue = rawItem?.targetId;
     const sortOrder = Number.parseInt(String(rawItem?.sortOrder ?? 0), 10);
 
     if (
-      (!imagePath && !mobileImagePath)
+      (!arImagePath && !arMobileImagePath && !enImagePath && !enMobileImagePath)
       || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number])
       || !Number.isFinite(sortOrder)
     ) {
@@ -84,7 +94,7 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
       if (targetIdValue != null && targetIdValue !== "") {
         return res.status(400).json({ error: "Invalid shop media section payload" });
       }
-      normalizedItems.push({ imagePath, mobileImagePath, targetType, targetId: null, sortOrder });
+      normalizedItems.push({ arImagePath, arMobileImagePath, enImagePath, enMobileImagePath, targetType, targetId: null, sortOrder });
       continue;
     }
 
@@ -97,7 +107,7 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
       return res.status(400).json({ error: "Invalid shop media section payload" });
     }
 
-    normalizedItems.push({ imagePath, mobileImagePath, targetType, targetId, sortOrder });
+    normalizedItems.push({ arImagePath, arMobileImagePath, enImagePath, enMobileImagePath, targetType, targetId, sortOrder });
   }
 
   await replaceShopMediaSectionRepo(slot, input.status, normalizedItems);

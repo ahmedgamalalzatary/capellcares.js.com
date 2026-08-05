@@ -204,6 +204,13 @@
       "when": 1785974400000,
       "tag": "0028_offer_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1786030800000,
+      "tag": "0029_localized_shop_media",
+      "breakpoints": true
     }
   ]
 }

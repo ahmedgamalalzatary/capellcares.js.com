@@ -72,7 +72,13 @@ function pickSlidesForViewport(
 ) {
   return section.items
     .map((item) => {
-      const imagePath = viewport === "desktop" ? item.imagePath : item.mobileImagePath;
+      const requestedImagePath = lang === "ar"
+        ? (viewport === "desktop" ? item.arImagePath : item.arMobileImagePath)
+        : (viewport === "desktop" ? item.enImagePath : item.enMobileImagePath);
+      const fallbackImagePath = lang === "ar"
+        ? (viewport === "desktop" ? item.enImagePath : item.enMobileImagePath)
+        : (viewport === "desktop" ? item.arImagePath : item.arMobileImagePath);
+      const imagePath = requestedImagePath || fallbackImagePath;
       if (!imagePath) {
         return null;
       }
@@ -348,9 +354,7 @@ export function ShopMediaStrip({
 
   const desktopItems = pickSlidesForViewport(section, lang, "desktop");
   const mobileItems = pickSlidesForViewport(section, lang, "mobile");
-  const [prefersDesktop, setPrefersDesktop] = useState(() =>
-    typeof window === "undefined" ? true : window.matchMedia(DESKTOP_MEDIA_QUERY).matches
-  );
+  const [prefersDesktop, setPrefersDesktop] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

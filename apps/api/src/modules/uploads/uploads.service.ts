@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
-import { inArray } from "drizzle-orm";
-import { collections, entityMedia, offers, products } from "@capella/database/drizzle/schema";
+import { inArray, or } from "drizzle-orm";
+import { collections, entityMedia, offers, products, shopMediaSectionItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import type { UploadMediaPayload } from "./uploads.schemas.js";
 
@@ -131,7 +131,13 @@ export async function deleteLocalUploadUrls(urls: Array<string | null | undefine
       db.select({ id: entityMedia.id }).from(entityMedia).where(inArray(entityMedia.url, referenceUrls)).limit(1),
       db.select({ id: products.id }).from(products).where(inArray(products.imagePath, referenceUrls)).limit(1),
       db.select({ id: offers.id }).from(offers).where(inArray(offers.imagePath, referenceUrls)).limit(1),
-      db.select({ id: collections.id }).from(collections).where(inArray(collections.imagePath, referenceUrls)).limit(1)
+      db.select({ id: collections.id }).from(collections).where(inArray(collections.imagePath, referenceUrls)).limit(1),
+      db.select({ id: shopMediaSectionItems.id }).from(shopMediaSectionItems).where(or(
+        inArray(shopMediaSectionItems.arImagePath, referenceUrls),
+        inArray(shopMediaSectionItems.arMobileImagePath, referenceUrls),
+        inArray(shopMediaSectionItems.enImagePath, referenceUrls),
+        inArray(shopMediaSectionItems.enMobileImagePath, referenceUrls)
+      )).limit(1)
     ]);
     if (references.some((rows) => rows.length > 0)) continue;
     try {

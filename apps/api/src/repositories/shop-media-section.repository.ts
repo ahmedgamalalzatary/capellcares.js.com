@@ -13,8 +13,10 @@ import { db } from "@capella/database/src/db";
 type ShopMediaTargetType = (typeof shopMediaSectionTargetTypes)[number];
 
 type ShopMediaSectionItemInput = {
-  imagePath: string | null;
-  mobileImagePath: string | null;
+  arImagePath: string | null;
+  arMobileImagePath: string | null;
+  enImagePath: string | null;
+  enMobileImagePath: string | null;
   targetType: ShopMediaTargetType;
   targetId: number | null;
   sortOrder: number;
@@ -85,8 +87,10 @@ async function listSectionsBase() {
       .filter((item) => item.sectionId === section.id)
       .map((item) => ({
         id: item.id,
-        imagePath: item.imagePath,
-        mobileImagePath: item.mobileImagePath,
+        arImagePath: item.arImagePath,
+        arMobileImagePath: item.arMobileImagePath,
+        enImagePath: item.enImagePath,
+        enMobileImagePath: item.enMobileImagePath,
         targetType: item.targetType,
         targetId: item.targetId,
         targetSlug:
@@ -137,8 +141,10 @@ export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3 | 4 | 5, statu
       await tx.insert(shopMediaSectionItems).values(
         items.map((item) => ({
           sectionId: section.id,
-          imagePath: item.imagePath,
-          mobileImagePath: item.mobileImagePath,
+          arImagePath: item.arImagePath,
+          arMobileImagePath: item.arMobileImagePath,
+          enImagePath: item.enImagePath,
+          enMobileImagePath: item.enMobileImagePath,
           targetType: item.targetType,
           targetId: item.targetId,
           sortOrder: item.sortOrder

@@ -317,8 +317,10 @@ export type ShopMediaTargetType =
 
 export interface ShopMediaSectionItem {
   id: number;
-  imagePath: string | null;
-  mobileImagePath: string | null;
+  arImagePath: string | null;
+  arMobileImagePath: string | null;
+  enImagePath: string | null;
+  enMobileImagePath: string | null;
   targetType: ShopMediaTargetType;
   targetId: number | null;
   targetSlug?: string | null;

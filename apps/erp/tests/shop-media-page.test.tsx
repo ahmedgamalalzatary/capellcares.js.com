@@ -15,8 +15,10 @@ const makeMockState = () => ({
     status: "active",
     items: [{
       id: 11,
-      imagePath: "/uploads/original.jpg",
-      mobileImagePath: "/uploads/original-mobile.jpg",
+      arImagePath: null,
+      arMobileImagePath: null,
+      enImagePath: "/uploads/original.jpg",
+      enMobileImagePath: "/uploads/original-mobile.jpg",
       targetType: "offers",
       targetId: null,
       sortOrder: 1
@@ -77,10 +79,33 @@ describe("ShopMediaPage", () => {
     mockState = makeMockState();
   });
 
+  it("edits and saves Arabic and English desktop and mobile images", () => {
+    render(createElement(ShopMediaPage));
+
+    for (const label of [
+      "صورة سطح المكتب — العربية",
+      "صورة الموبايل — العربية",
+      "صورة سطح المكتب — الإنجليزية",
+      "صورة الموبايل — الإنجليزية"
+    ]) {
+      fireEvent.click(screen.getByRole("button", { name: label }));
+    }
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+
+    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+      items: [expect.objectContaining({
+        arImagePath: "/uploads/changed-صورة سطح المكتب — العربية.jpg",
+        arMobileImagePath: "/uploads/changed-صورة الموبايل — العربية.jpg",
+        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
+        enMobileImagePath: "/uploads/changed-صورة الموبايل — الإنجليزية.jpg"
+      })]
+    }));
+  });
+
   it("keeps unsaved image edits when store data refreshes", async () => {
     const view = render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
 
     mockState = makeMockState();
     view.rerender(createElement(ShopMediaPage));
@@ -89,8 +114,8 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       items: [expect.objectContaining({
-        imagePath: "/uploads/changed-صورة سطح المكتب.jpg",
-        mobileImagePath: "/uploads/original-mobile.jpg"
+        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
+        enMobileImagePath: "/uploads/original-mobile.jpg"
       })]
     }));
   });
@@ -98,15 +123,15 @@ describe("ShopMediaPage", () => {
   it("saves edited section items", async () => {
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
-    fireEvent.click(screen.getAllByText("صورة الموبايل")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("صورة الموبايل — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       status: "active",
       items: [expect.objectContaining({
-        imagePath: "/uploads/changed-صورة سطح المكتب.jpg",
-        mobileImagePath: "/uploads/changed-صورة الموبايل.jpg",
+        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
+        enMobileImagePath: "/uploads/changed-صورة الموبايل — الإنجليزية.jpg",
         targetType: "offers"
       })]
     }));
@@ -135,8 +160,10 @@ describe("ShopMediaPage", () => {
         status: "active",
         items: [{
           id: 11,
-          imagePath: "/uploads/desktop.jpg",
-          mobileImagePath: null as any,
+          arImagePath: null,
+          arMobileImagePath: null,
+          enImagePath: "/uploads/desktop.jpg",
+          enMobileImagePath: null as any,
           targetType: "offers",
           targetId: null,
           sortOrder: 1
@@ -150,8 +177,8 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       items: [expect.objectContaining({
-        imagePath: "/uploads/desktop.jpg",
-        mobileImagePath: null
+        enImagePath: "/uploads/desktop.jpg",
+        enMobileImagePath: null
       })]
     }));
   });
@@ -160,7 +187,7 @@ describe("ShopMediaPage", () => {
     updateShopMediaSection.mockRejectedValueOnce(new Error("save failed"));
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب")[0]!);
+    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     await waitFor(() => {
@@ -191,8 +218,10 @@ describe("ShopMediaPage", () => {
         status: "active",
         items: [{
           id: 11,
-          imagePath: "/uploads/original.jpg",
-          mobileImagePath: null,
+          arImagePath: null,
+          arMobileImagePath: null,
+          enImagePath: "/uploads/original.jpg",
+          enMobileImagePath: null,
           targetType: "product",
           targetId: 2,
           sortOrder: 1
@@ -218,8 +247,10 @@ describe("ShopMediaPage", () => {
         status: "active",
         items: [{
           id: 11,
-          imagePath: "/uploads/original.jpg",
-          mobileImagePath: null,
+          arImagePath: null,
+          arMobileImagePath: null,
+          enImagePath: "/uploads/original.jpg",
+          enMobileImagePath: null,
           targetType: "product",
           targetId: 2,
           sortOrder: 1
@@ -230,7 +261,7 @@ describe("ShopMediaPage", () => {
 
     render(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByText("صورة الموبايل")[0]!);
+    fireEvent.click(screen.getAllByText("صورة الموبايل — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).not.toHaveBeenCalled();
@@ -250,9 +281,9 @@ describe("ShopMediaPage", () => {
         slot: 1,
         status: "active",
         items: [
-          { id: 11, imagePath: "/uploads/a.jpg", mobileImagePath: null, targetType: "product", targetId: 1, sortOrder: 1 },
-          { id: 12, imagePath: "/uploads/b.jpg", mobileImagePath: null, targetType: "offer", targetId: 1, sortOrder: 2 },
-          { id: 13, imagePath: "/uploads/c.jpg", mobileImagePath: null, targetType: "collection", targetId: 1, sortOrder: 3 }
+          { id: 11, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/a.jpg", enMobileImagePath: null, targetType: "product", targetId: 1, sortOrder: 1 },
+          { id: 12, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/b.jpg", enMobileImagePath: null, targetType: "offer", targetId: 1, sortOrder: 2 },
+          { id: 13, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/c.jpg", enMobileImagePath: null, targetType: "collection", targetId: 1, sortOrder: 3 }
         ]
       }],
       products: [
@@ -289,8 +320,10 @@ describe("ShopMediaPage", () => {
         status: "active",
         items: [{
           id: 11,
-          imagePath: "/uploads/original.jpg",
-          mobileImagePath: "/uploads/original-mobile.jpg",
+          arImagePath: null,
+          arMobileImagePath: null,
+          enImagePath: "/uploads/original.jpg",
+          enMobileImagePath: "/uploads/original-mobile.jpg",
           targetType: "category",
           targetId: 2,
           sortOrder: 1

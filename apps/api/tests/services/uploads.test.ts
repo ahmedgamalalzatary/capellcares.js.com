@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { eq } from "drizzle-orm";
+
+import { shopMediaSectionItems, shopMediaSections } from "@capella/database/drizzle/schema";
+import { db } from "@capella/database/src/db";
 
 import { parseUploadBody } from "../../src/modules/uploads/uploads.schemas.js";
-import { uploadBase64Media } from "../../src/modules/uploads/uploads.service.js";
+import { deleteLocalUploadUrls, uploadBase64Media } from "../../src/modules/uploads/uploads.service.js";
 
 test("parseUploadBody accepts valid image upload payload", () => {
   const parsed = parseUploadBody({
@@ -115,5 +119,36 @@ test("uploadBase64Media rejects oversized payloads", async () => {
     );
   } finally {
     rmSync(uploadsDir, { recursive: true, force: true });
+  }
+});
+
+test("deleteLocalUploadUrls preserves files referenced by shop media", async () => {
+  const fileName = `shop-media-reference-${Date.now()}.jpg`;
+  const uploadPath = `/uploads/${fileName}`;
+  const uploadsDir = join(process.cwd(), "uploads");
+  const absolutePath = join(uploadsDir, fileName);
+  mkdirSync(uploadsDir, { recursive: true });
+  writeFileSync(absolutePath, "shop-media");
+
+  await db.delete(shopMediaSections).where(eq(shopMediaSections.slot, 99));
+  const [section] = await db.insert(shopMediaSections).values({ slot: 99, status: "inactive" }).$returningId();
+  try {
+    await db.insert(shopMediaSectionItems).values({
+      sectionId: section.id,
+      arImagePath: null,
+      arMobileImagePath: null,
+      enImagePath: uploadPath,
+      enMobileImagePath: null,
+      targetType: "shop",
+      targetId: null,
+      sortOrder: 1
+    });
+
+    await deleteLocalUploadUrls([uploadPath]);
+
+    assert.equal(existsSync(absolutePath), true);
+  } finally {
+    await db.delete(shopMediaSections).where(eq(shopMediaSections.id, section.id));
+    rmSync(absolutePath, { force: true });
   }
 });

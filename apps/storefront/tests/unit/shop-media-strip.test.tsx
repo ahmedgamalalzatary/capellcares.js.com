@@ -1,5 +1,7 @@
 import { render, fireEvent, act } from "@testing-library/react";
 import { createElement } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ShopMediaSection } from "@capella/shared";
 
@@ -61,8 +63,10 @@ function makeSection(itemCount: number): ShopMediaSection {
     status: "active",
     items: Array.from({ length: itemCount }, (_, i) => ({
       id: i + 1,
-      imagePath: `http://localhost:4000/uploads/img-${i + 1}.jpg`,
-      mobileImagePath: `http://localhost:4000/uploads/mobile-img-${i + 1}.jpg`,
+      arImagePath: `http://localhost:4000/uploads/img-${i + 1}.jpg`,
+      arMobileImagePath: `http://localhost:4000/uploads/mobile-img-${i + 1}.jpg`,
+      enImagePath: `http://localhost:4000/uploads/img-${i + 1}.jpg`,
+      enMobileImagePath: `http://localhost:4000/uploads/mobile-img-${i + 1}.jpg`,
       targetType: "collections" as const,
       targetId: null,
       targetSlug: null,
@@ -95,6 +99,65 @@ describe("ShopMediaStrip carousel", () => {
 
     const image = getDesktopStrip(container).querySelector("img");
     expect(image).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+  });
+
+  it("selects the desktop image for the requested language", () => {
+    const section = makeSection(1);
+    Object.assign(section.items[0]!, {
+      arImagePath: "http://localhost:4000/uploads/ar-desktop.jpg",
+      arMobileImagePath: "http://localhost:4000/uploads/ar-mobile.jpg",
+      enImagePath: "http://localhost:4000/uploads/en-desktop.jpg",
+      enMobileImagePath: "http://localhost:4000/uploads/en-mobile.jpg"
+    });
+
+    const { container, rerender } = render(<ShopMediaStrip lang="ar" section={section} label="Media" />);
+    expect(getDesktopStrip(container).querySelector("img"))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/ar-desktop.jpg");
+
+    rerender(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(getDesktopStrip(container).querySelector("img"))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/en-desktop.jpg");
+  });
+
+  it("falls back to the other language for a missing localized viewport image", () => {
+    const section = makeSection(1);
+    Object.assign(section.items[0]!, {
+      arImagePath: "http://localhost:4000/uploads/ar-desktop.jpg",
+      enImagePath: null
+    });
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(getDesktopStrip(container).querySelector("img"))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/ar-desktop.jpg");
+
+    Object.assign(section.items[0]!, {
+      arImagePath: null,
+      enImagePath: "http://localhost:4000/uploads/en-desktop.jpg"
+    });
+    const { container: arabicContainer } = render(<ShopMediaStrip lang="ar" section={section} label="Media" />);
+    expect(getDesktopStrip(arabicContainer).querySelector("img"))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/en-desktop.jpg");
+  });
+
+  it("falls back between Arabic and English mobile images in both directions", () => {
+    mockViewport(false);
+    const section = makeSection(1);
+    Object.assign(section.items[0]!, {
+      arMobileImagePath: null,
+      enMobileImagePath: "http://localhost:4000/uploads/en-mobile.jpg"
+    });
+
+    const { container, rerender } = render(<ShopMediaStrip lang="ar" section={section} label="Media" />);
+    expect(container.querySelector('[data-viewport="mobile"] img'))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/en-mobile.jpg");
+
+    Object.assign(section.items[0]!, {
+      arMobileImagePath: "http://localhost:4000/uploads/ar-mobile.jpg",
+      enMobileImagePath: null
+    });
+    rerender(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(container.querySelector('[data-viewport="mobile"] img'))
+      .toHaveAttribute("src", "http://localhost:4000/uploads/ar-mobile.jpg");
   });
 
   it("includes the category id in category target links", () => {
@@ -149,6 +212,36 @@ describe("ShopMediaStrip carousel", () => {
     expect(container.querySelectorAll("[data-viewport]")).toHaveLength(1);
   });
 
+  it("hydrates a mobile viewport without changing the initial server tree", async () => {
+    const section = makeSection(1);
+    const browserWindow = globalThis.window;
+    vi.stubGlobal("window", undefined);
+    const html = renderToString(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    vi.stubGlobal("window", browserWindow);
+    mockViewport(false);
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let root: Root | undefined;
+
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, <ShopMediaStrip lang="en" section={section} label="Media" />);
+      });
+
+      const errors = consoleError.mock.calls.flat().map(String).join("\n");
+      expect(errors).not.toMatch(/hydration|didn't match/i);
+      expect(container.querySelector('[data-viewport="mobile"]')).not.toBeNull();
+    } finally {
+      await act(async () => root?.unmount());
+      consoleError.mockRestore();
+      container.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("uses the mobile image source when the viewport is below the desktop breakpoint", () => {
     mockViewport(false);
 
@@ -170,8 +263,10 @@ describe("ShopMediaStrip carousel", () => {
     const section = makeSection(3);
     section.items[1] = {
       ...section.items[1],
-      imagePath: null,
-      mobileImagePath: "http://localhost:4000/uploads/mobile-only.jpg"
+      arImagePath: null,
+      enImagePath: null,
+      arMobileImagePath: "http://localhost:4000/uploads/mobile-only.jpg",
+      enMobileImagePath: "http://localhost:4000/uploads/mobile-only.jpg"
     };
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
@@ -185,8 +280,10 @@ describe("ShopMediaStrip carousel", () => {
     const section = makeSection(2);
     section.items = section.items.map((item) => ({
       ...item,
-      imagePath: null,
-      mobileImagePath: `http://localhost:4000/uploads/mobile-${item.id}.jpg`
+      arImagePath: null,
+      enImagePath: null,
+      arMobileImagePath: `http://localhost:4000/uploads/mobile-${item.id}.jpg`,
+      enMobileImagePath: `http://localhost:4000/uploads/mobile-${item.id}.jpg`
     }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);

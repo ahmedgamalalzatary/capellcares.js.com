@@ -15,14 +15,58 @@ beforeEach(async () => {
 
 function makeItem(input: Partial<Record<string, unknown>> = {}) {
   return {
-    imagePath: "/uploads/shop-media.jpg",
-    mobileImagePath: "/uploads/shop-media-mobile.jpg",
+    arImagePath: null,
+    arMobileImagePath: null,
+    enImagePath: "/uploads/shop-media.jpg",
+    enMobileImagePath: "/uploads/shop-media-mobile.jpg",
     targetType: "collections",
     targetId: null,
     sortOrder: 1,
     ...input
   };
 }
+
+test("erp shop media sections persist all Arabic and English viewport images", async () => {
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const localizedImages = {
+      arImagePath: "http://localhost:4000/uploads/shop-media-ar.jpg",
+      arMobileImagePath: "/uploads/shop-media-ar-mobile.jpg",
+      enImagePath: "/uploads/shop-media-en.jpg",
+      enMobileImagePath: "http://localhost:4000/uploads/shop-media-en-mobile.jpg"
+    };
+
+    const response = await request("/api/erp/shop-media-sections/1", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        status: "active",
+        items: [makeItem(localizedImages)]
+      })
+    });
+
+    assert.equal(response.status, 200);
+
+    const afterUpdate = await request("/api/erp/shop-media-sections", {
+      headers: { ...authHeaders }
+    });
+    const item = afterUpdate.json.items.find((section: any) => section.slot === 1).items[0];
+    assert.deepEqual(
+      {
+        arImagePath: item.arImagePath,
+        arMobileImagePath: item.arMobileImagePath,
+        enImagePath: item.enImagePath,
+        enMobileImagePath: item.enMobileImagePath
+      },
+      {
+        arImagePath: "/uploads/shop-media-ar.jpg",
+        arMobileImagePath: "/uploads/shop-media-ar-mobile.jpg",
+        enImagePath: "/uploads/shop-media-en.jpg",
+        enMobileImagePath: "/uploads/shop-media-en-mobile.jpg"
+      }
+    );
+  });
+});
 
 test("erp shop media sections can be listed and updated, and storefront returns only active populated sections", async () => {
   await withTestServer(app, async (request) => {
@@ -48,11 +92,11 @@ test("erp shop media sections can be listed and updated, and storefront returns 
         status: "active",
         items: [
           makeItem({
-            imagePath: "http://localhost:4000/uploads/shop-media.jpg",
-            mobileImagePath: "http://localhost:4000/uploads/shop-media-mobile.jpg",
+            enImagePath: "http://localhost:4000/uploads/shop-media.jpg",
+            enMobileImagePath: "http://localhost:4000/uploads/shop-media-mobile.jpg",
             targetType: "collections"
           }),
-          makeItem({ imagePath: "/uploads/shop-media-2.jpg", mobileImagePath: "/uploads/shop-media-2-mobile.jpg", targetType: "products", sortOrder: 2 })
+          makeItem({ enImagePath: "/uploads/shop-media-2.jpg", enMobileImagePath: "/uploads/shop-media-2-mobile.jpg", targetType: "products", sortOrder: 2 })
         ]
       })
     });
@@ -67,8 +111,8 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 2);
     assert.equal(updatedSection.status, "active");
     assert.equal(updatedSection.items.length, 2);
-    assert.equal(updatedSection.items[0].imagePath, "/uploads/shop-media.jpg");
-    assert.equal(updatedSection.items[0].mobileImagePath, "/uploads/shop-media-mobile.jpg");
+    assert.equal(updatedSection.items[0].enImagePath, "/uploads/shop-media.jpg");
+    assert.equal(updatedSection.items[0].enMobileImagePath, "/uploads/shop-media-mobile.jpg");
     assert.equal(updatedSection.items[1].targetType, "products");
 
     const storefrontResponse = await request("/api/v1/shop-media-sections");
@@ -134,7 +178,7 @@ test("erp shop media sections reject invalid payloads", async () => {
       body: JSON.stringify({
         status: "active",
         items: [
-          makeItem({ imagePath: "", targetType: "collection", targetId: null })
+          makeItem({ enImagePath: "", targetType: "collection", targetId: null })
         ]
       })
     });
@@ -144,7 +188,7 @@ test("erp shop media sections reject invalid payloads", async () => {
   });
 });
 
-test("erp shop media sections accept items with only a desktop image", async () => {
+test("erp shop media sections accept items with only an English desktop image", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
 
@@ -157,7 +201,7 @@ test("erp shop media sections accept items with only a desktop image", async () 
       body: JSON.stringify({
         status: "active",
         items: [
-          makeItem({ mobileImagePath: "" })
+          makeItem({ enMobileImagePath: "" })
         ]
       })
     });
@@ -168,8 +212,8 @@ test("erp shop media sections accept items with only a desktop image", async () 
       headers: { ...authHeaders }
     });
     const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 4);
-    assert.equal(updatedSection.items[0].imagePath, "/uploads/shop-media.jpg");
-    assert.equal(updatedSection.items[0].mobileImagePath, null);
+    assert.equal(updatedSection.items[0].enImagePath, "/uploads/shop-media.jpg");
+    assert.equal(updatedSection.items[0].enMobileImagePath, null);
   });
 });
 
@@ -204,7 +248,7 @@ test("erp shop media sections accept updating slot 5", async () => {
   });
 });
 
-test("erp shop media sections reject items with no desktop or mobile image", async () => {
+test("erp shop media sections reject items with no localized image", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
 
@@ -217,7 +261,7 @@ test("erp shop media sections reject items with no desktop or mobile image", asy
       body: JSON.stringify({
         status: "active",
         items: [
-          makeItem({ imagePath: "", mobileImagePath: null })
+          makeItem({ enImagePath: "", enMobileImagePath: null })
         ]
       })
     });

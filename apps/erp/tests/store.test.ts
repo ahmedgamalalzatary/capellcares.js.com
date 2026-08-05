@@ -152,7 +152,10 @@ describe("ERP store", () => {
             status: "active",
             items: [{
               id: 10,
-              imagePath: "/uploads/shop-media.jpg",
+              arImagePath: null,
+              arMobileImagePath: null,
+              enImagePath: "/uploads/shop-media.jpg",
+              enMobileImagePath: null,
               targetType: "offers",
               targetId: null,
               sortOrder: 1
