@@ -21,6 +21,26 @@ export const en = {
     search: "Search",
     searchPlaceholder: "What are you looking for?"
   },
+  ask: {
+    button: "Ask Minikoshk",
+    assistant: "Your shopping assistant",
+    close: "Close assistant",
+    welcome: "Hi! Tell me what you are looking for, and I’ll search everything in Minikoshk.",
+    typeMessage: "Type a message…",
+    send: "Search",
+    searching: "Searching",
+    found: "Here’s what I found for you.",
+    noResults: "I couldn’t find anything for “{query}” 😔",
+    browseAll: "Browse all products →",
+    error: "Temporary error. Please try again.",
+    save: "Save",
+    sections: {
+      products: "Products",
+      categories: "Categories",
+      offers: "Offers",
+      collections: "Collections"
+    }
+  },
   shop: {
     shopByCategoryTop: "Shop by",
     shopByCategoryBottom: "Category",

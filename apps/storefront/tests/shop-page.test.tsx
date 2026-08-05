@@ -93,7 +93,7 @@ describe("HomePage homepage sections", () => {
     expect(screen.getAllByRole("img").length).toBeGreaterThanOrEqual(8);
   });
 
-  it("renders the shop-by-category strip from depth-1 categories with images", async () => {
+  it("renders the shop-by-category strip from eligible categories with images", async () => {
     await renderShop();
 
     expect(screen.getByRole("region", { name: /shop by category/i })).toBeInTheDocument();

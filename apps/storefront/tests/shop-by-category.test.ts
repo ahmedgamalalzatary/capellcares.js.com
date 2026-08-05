@@ -15,25 +15,25 @@ function makeCategory(overrides: Partial<StorefrontCategory> & { id: number }): 
 }
 
 describe("selectShopByCategories", () => {
-  it("returns only depth-1 categories that have an image", () => {
-    const root = makeCategory({ id: 1, parentId: null });
+  it("returns image-bearing root and depth-1 categories but excludes deeper categories", () => {
+    const root = makeCategory({ id: 1, parentId: null, imagePath: "/uploads/root.png" });
     const depthOneWithImage = makeCategory({ id: 2, parentId: 1, imagePath: "/uploads/slides.png" });
     const depthOneNoImage = makeCategory({ id: 3, parentId: 1, imagePath: null });
     const depthTwoWithImage = makeCategory({ id: 4, parentId: 2, imagePath: "/uploads/deep.png" });
 
     const result = selectShopByCategories([root, depthOneWithImage, depthOneNoImage, depthTwoWithImage]);
 
-    expect(result.map((c) => c.id)).toEqual([2]);
+    expect(result.map((c) => c.id)).toEqual([1, 2]);
   });
 
-  it("sorts results by sortOrder", () => {
-    const root = makeCategory({ id: 1, parentId: null });
+  it("places roots first and sorts each depth by sortOrder", () => {
+    const root = makeCategory({ id: 1, parentId: null, imagePath: "/root.png", sortOrder: 30 });
     const second = makeCategory({ id: 2, parentId: 1, imagePath: "/a.png", sortOrder: 20 });
     const first = makeCategory({ id: 3, parentId: 1, imagePath: "/b.png", sortOrder: 10 });
 
     const result = selectShopByCategories([root, second, first]);
 
-    expect(result.map((c) => c.id)).toEqual([3, 2]);
+    expect(result.map((c) => c.id)).toEqual([1, 3, 2]);
   });
 
   it("excludes soft-deleted categories and children of deleted parents", () => {

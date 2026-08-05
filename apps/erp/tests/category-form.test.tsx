@@ -46,11 +46,11 @@ describe("CategoryForm", () => {
     expect(screen.getByText("المسار: العناية بالشعر › زيوت الشعر › شعر جاف")).toBeInTheDocument();
   });
 
-  it("shows category image upload only when the selected category depth is 1", () => {
+  it("shows category image upload when the selected category depth is 0 or 1", () => {
     render(createElement(CategoryForm, { mode: "new", categories }));
     const parentSelect = screen.getAllByRole("combobox").at(-1)!;
 
-    expect(screen.queryByText("IMAGE_UPLOAD")).not.toBeInTheDocument();
+    expect(screen.getByText("IMAGE_UPLOAD")).toBeInTheDocument();
 
     fireEvent.change(parentSelect, { target: { value: "1" } });
     expect(screen.getByText("IMAGE_UPLOAD")).toBeInTheDocument();

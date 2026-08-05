@@ -64,8 +64,8 @@ export async function upsertCategoryRepo(input: {
   const nextDepth = lineage.length;
   const isGrandchildCategory = lineage.length === 2;
 
-  if (input.imagePath && nextDepth !== 1) {
-    const error = new Error("Category image is only allowed for depth-1 categories");
+  if (input.imagePath && nextDepth > 1) {
+    const error = new Error("Category image is only allowed for depth-0 and depth-1 categories");
     (error as Error & { code?: string }).code = "CATEGORY_IMAGE_DEPTH_INVALID";
     throw error;
   }
@@ -93,7 +93,7 @@ export async function upsertCategoryRepo(input: {
         slug: input.slug,
         arName: input.arName,
         enName: input.enName,
-        imagePath: nextDepth === 1 ? input.imagePath : null,
+        imagePath: nextDepth <= 1 ? input.imagePath : null,
         isLeaf: input.isLeaf
       })
       .where(eq(categories.id, input.id));
@@ -109,7 +109,7 @@ export async function upsertCategoryRepo(input: {
       slug: input.slug,
       arName: input.arName,
       enName: input.enName,
-      imagePath: nextDepth === 1 ? input.imagePath : null,
+      imagePath: nextDepth <= 1 ? input.imagePath : null,
       isLeaf: input.isLeaf
     })
     .$returningId();

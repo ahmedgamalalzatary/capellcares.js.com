@@ -22,8 +22,8 @@ function CategoryCard({ category, lang }: { category: StorefrontCategory; lang: 
 }
 
 /**
- * "Shop by category" strip: a row of pill cards for the depth-1 categories that
- * carry an image. The caller passes already-filtered categories
+ * "Shop by category" strip: a row of pill cards for root and depth-1 categories
+ * that carry an image. The caller passes already-filtered categories
  * (see `selectShopByCategories`).
  */
 export function ShopByCategory({ categories }: { categories: StorefrontCategory[] }) {

@@ -20,9 +20,8 @@ export interface StorefrontCategory {
 const isLive = (category: StorefrontCategory) => category.deletedAt == null;
 
 /**
- * "Shop by category" shows the depth-1 categories (direct children of a root
- * category) that an admin has given an image — mirroring the ERP rule that only
- * depth-1 categories may carry an image. Results are sorted by `sortOrder`.
+ * "Shop by category" shows root and depth-1 categories that an admin has given
+ * an image. Roots appear first, with each depth sorted by `sortOrder`.
  */
 export function selectShopByCategories(categories: StorefrontCategory[]): StorefrontCategory[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -33,13 +32,16 @@ export function selectShopByCategories(categories: StorefrontCategory[]): Storef
         return false;
       }
       if (category.parentId == null) {
-        return false;
+        return true;
       }
       const parent = byId.get(category.parentId);
       // Depth-1 means the parent exists, is live, and is itself a root category.
       return parent != null && isLive(parent) && parent.parentId == null;
     })
-    .sort((a, b) => (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id));
+    .sort((a, b) => {
+      const depthDifference = Number(a.parentId != null) - Number(b.parentId != null);
+      return depthDifference || (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id);
+    });
 }
 
 export async function getCategories(): Promise<StorefrontCategory[]> {

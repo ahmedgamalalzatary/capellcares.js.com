@@ -83,7 +83,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     }
     return depth;
   }, [byId, parentId]);
-  const canUploadImage = targetDepth === 1;
+  const canUploadImage = targetDepth <= 1;
 
   useEffect(() => {
     if (!canUploadImage && imagePath) {
@@ -148,7 +148,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
             />
           </div>
         ) : (
-          <div className="muted">صورة القسم متاحة فقط للأقسام في المستوى الأول تحت القسم الرئيسي.</div>
+          <div className="muted">صورة القسم متاحة فقط للأقسام الرئيسية وأقسام المستوى الأول.</div>
         )}
         <EditorActions
           cancelLabel="إلغاء"

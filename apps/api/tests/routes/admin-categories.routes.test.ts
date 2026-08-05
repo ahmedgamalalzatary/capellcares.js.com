@@ -632,24 +632,32 @@ test("admin category create allows imagePath for depth-1 categories", async () =
   assert.equal(created?.imagePath, "/uploads/category-child.png");
 });
 
-test("admin category create rejects imagePath for root categories", async () => {
+test("admin category create allows imagePath for root categories", async () => {
+  const enName = `Root Image ${Date.now()}`;
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
     const response = await request("/api/erp/categories", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        slug: `img-root-disallowed-${Date.now()}`,
-        name: { ar: "جذر ممنوع", en: "Root Disallowed" },
+        slug: `img-root-allowed-${Date.now()}`,
+        name: { ar: "جذر بصورة", en: enName },
         parentId: null,
         isLeaf: true,
         imagePath: "/uploads/category-root.png"
       })
     });
 
-    assert.equal(response.status, 400);
-    assert.equal(response.json.reason, "category-image-depth-invalid");
+    assert.equal(response.status, 200);
   });
+
+  const [created] = await db
+    .select({ imagePath: categories.imagePath })
+    .from(categories)
+    .where(eq(categories.enName, enName))
+    .limit(1);
+
+  assert.equal(created?.imagePath, "/uploads/category-root.png");
 });
 
 test("admin category create rejects imagePath for depth-2 categories", async () => {

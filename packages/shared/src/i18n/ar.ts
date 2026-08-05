@@ -21,6 +21,26 @@ export const ar = {
     search: "بحث",
     searchPlaceholder: "عمّا تبحث؟"
   },
+  ask: {
+    button: "اسأل ميني كشك",
+    assistant: "مساعد التسوق الخاص بك",
+    close: "إغلاق المساعد",
+    welcome: "أهلاً! اكتب ما تبحث عنه وسأبحث لك في كل منتجات ميني كشك.",
+    typeMessage: "اكتب رسالة…",
+    send: "بحث",
+    searching: "جارٍ البحث",
+    found: "هذا ما وجدته لك.",
+    noResults: "لم أجد أي نتائج لـ «{query}» 😔",
+    browseAll: "تصفح كل المنتجات ←",
+    error: "حدث خطأ مؤقت. حاول مرة أخرى.",
+    save: "وفّر",
+    sections: {
+      products: "المنتجات",
+      categories: "الأقسام",
+      offers: "العروض",
+      collections: "المجموعات"
+    }
+  },
   shop: {
     shopByCategoryTop: "تسوّق حسب",
     shopByCategoryBottom: "القسم",

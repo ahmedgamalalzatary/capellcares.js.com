@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { categories, categoryPaths, products, productVariants } from "@minikoshk/database/drizzle/schema";
 import { db } from "@minikoshk/database/src/db";
 import {
@@ -15,8 +15,12 @@ function escapeLikeTerm(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string }) {
-  const filters = [eq(products.status, "active"), isNull(products.deletedAt)];
+export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: string; category?: string; limit?: number }) {
+  const filters = [
+    eq(products.status, "active"),
+    isNull(products.deletedAt),
+    isNull(categories.deletedAt)
+  ];
   if (params.category) {
     const [root] = await db
       .select({ id: categories.id })
@@ -34,17 +38,26 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   if (params.q?.trim()) {
     const q = params.q.trim();
     const pattern = `%${escapeLikeTerm(q)}%`;
-    const hasArabic = /[\u0600-\u06FF]/.test(q);
     filters.push(
       or(
         // MySQL's default LIKE escape character is backslash, matching escapeLikeTerm.
-        sql`${hasArabic ? products.arName : products.enName} LIKE ${pattern}`,
-        sql`${products.keywords} LIKE ${pattern}`
+        sql`${products.arName} LIKE ${pattern}`,
+        sql`${products.enName} LIKE ${pattern}`,
+        sql`${products.sku} LIKE ${pattern}`,
+        sql`${products.keywords} LIKE ${pattern}`,
+        sql`${products.arDescription} LIKE ${pattern}`,
+        sql`${products.enDescription} LIKE ${pattern}`,
+        sql`${products.arIngredients} LIKE ${pattern}`,
+        sql`${products.enIngredients} LIKE ${pattern}`,
+        sql`${products.arHowToUse} LIKE ${pattern}`,
+        sql`${products.enHowToUse} LIKE ${pattern}`,
+        sql`${products.arWarnings} LIKE ${pattern}`,
+        sql`${products.enWarnings} LIKE ${pattern}`
       )!
     );
   }
 
-  const rows = await db
+  let productQuery = db
     .select({
       id: products.id,
       slug: products.slug,
@@ -63,7 +76,12 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
-    .where(and(...filters));
+    .where(and(...filters))
+    .$dynamic();
+  if (params.limit != null) {
+    productQuery = productQuery.orderBy(asc(products.id)).limit(params.limit);
+  }
+  const rows = await productQuery;
 
   if (rows.length === 0) return [];
   const productIds = rows.map((r) => r.id);
@@ -138,7 +156,12 @@ export async function findVisibleProductBySlug(slug: string) {
     })
     .from(products)
     .innerJoin(categories, eq(products.categoryId, categories.id))
-    .where(and(eq(products.slug, slug), eq(products.status, "active"), isNull(products.deletedAt)))
+    .where(and(
+      eq(products.slug, slug),
+      eq(products.status, "active"),
+      isNull(products.deletedAt),
+      isNull(categories.deletedAt)
+    ))
     .limit(1);
   const product = rows[0];
   if (!product) return null;
