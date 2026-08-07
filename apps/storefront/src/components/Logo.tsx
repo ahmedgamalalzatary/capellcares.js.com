@@ -16,7 +16,7 @@ export function Logo({ size = 56, className }: LogoProps) {
         width={size}
         height={size}
         priority
-        className="h-auto w-auto object-contain"
+        className="h-auto w-auto object-contain scale-120"
         style={{ height: size }}
       />
     </a>
