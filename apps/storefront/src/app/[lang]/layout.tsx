@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { languages, type Language } from "@minikoshk/shared";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { AskMinikoshkButton } from "@/components/ask-minikoshk/AskMinikoshkButton";
+import { BottomTabBar } from "@/components/nav/BottomTabBar";
 
 export function generateStaticParams() {
   return languages.map((lang) => ({ lang }));
@@ -25,6 +26,7 @@ export default async function LangLayout({
     <LocaleProvider lang={lang as Language}>
       {children}
       <AskMinikoshkButton lang={lang as Language} />
+      <BottomTabBar />
     </LocaleProvider>
   );
 }

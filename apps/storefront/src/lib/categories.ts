@@ -44,6 +44,43 @@ export function selectShopByCategories(categories: StorefrontCategory[]): Storef
     });
 }
 
+/** A root category plus its direct children, as the mobile drawer renders it. */
+export interface CategoryMenuEntry {
+  id: number;
+  slug: string;
+  name: { ar: string; en: string };
+}
+
+export interface CategoryMenuNode extends CategoryMenuEntry {
+  children: CategoryMenuEntry[];
+}
+
+const byDisplayOrder = (a: StorefrontCategory, b: StorefrontCategory) =>
+  (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id);
+
+const toMenuEntry = ({ id, slug, name }: StorefrontCategory): CategoryMenuEntry => ({ id, slug, name });
+
+/**
+ * Mobile drawer navigation: every live root category, each carrying its live
+ * direct children so the drawer can expand it in place. Unlike
+ * `selectShopByCategories` this ignores `imagePath` — a category without an
+ * image still belongs in the menu.
+ */
+export function selectMenuCategories(categories: StorefrontCategory[]): CategoryMenuNode[] {
+  const live = categories.filter(isLive);
+
+  return live
+    .filter((category) => category.parentId == null)
+    .sort(byDisplayOrder)
+    .map((root) => ({
+      ...toMenuEntry(root),
+      children: live
+        .filter((category) => category.parentId === root.id)
+        .sort(byDisplayOrder)
+        .map(toMenuEntry)
+    }));
+}
+
 export async function getCategories(): Promise<StorefrontCategory[]> {
   try {
     const response = await fetch(`${API_BASE}/api/v1/categories`, { cache: "no-store" });

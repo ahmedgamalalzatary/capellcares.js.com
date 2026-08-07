@@ -15,11 +15,19 @@ export const ar = {
     },
     secondary: { aboutUs: "من نحن", contact: "اتصل بنا" },
     toggleMenu: "فتح القائمة",
+    closeMenu: "إغلاق القائمة",
+    menuTitle: "القائمة",
+    quickLinks: "روابط سريعة",
+    language: "اللغة",
     wishlist: "المفضلة",
     cart: "السلة",
     account: "حسابي",
     search: "بحث",
-    searchPlaceholder: "عمّا تبحث؟"
+    searchPlaceholder: "عمّا تبحث؟",
+    // Title-case labels for the mobile bottom tab bar; `menu.*` is uppercase.
+    shop: "تسوق",
+    sale: "تخفيضات",
+    loginRegister: "تسجيل الدخول / حساب جديد"
   },
   ask: {
     button: "اسأل ميني كشك",

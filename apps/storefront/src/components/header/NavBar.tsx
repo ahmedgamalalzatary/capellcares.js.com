@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CartIcon, CloseIcon, MenuIcon, UserIcon } from "../icons";
+import { CartIcon, UserIcon } from "../icons";
 import { useLocale } from "../i18n/LocaleProvider";
 import { LangSwitcher } from "./LangSwitcher";
 import { AUTH_KEY, AUTH_UPDATED_EVENT, logout, readAuth, type AuthState } from "@/lib/auth";
@@ -12,11 +12,11 @@ type NavItem = { label: string; href: string };
 /**
  * White navigation row: primary menu (catalog routes) on the left, secondary
  * links plus the language switch, account, and live cart pill on the right.
- * Collapses into a hamburger-toggled panel below the `lg` breakpoint.
+ * Desktop only — below `lg` these actions live in the mobile drawer
+ * (`MobileHeader`) and the bottom tab bar (`BottomTabBar`).
  */
 export function NavBar() {
   const { lang, dict } = useLocale();
-  const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
   const [auth, setAuth] = useState<AuthState | null>(null);
 
@@ -48,29 +48,15 @@ export function NavBar() {
     { label: dict.pages.offers, href: href("/offers") },
     { label: dict.pages.collections, href: href("/collections") }
   ];
-  const mobileItems: NavItem[] = navItems;
 
   const onLogout = async () => {
     await logout();
-    setOpen(false);
   };
 
   return (
-    <nav className="border-b border-gray-100 bg-white">
+    <nav className="hidden border-b border-gray-100 bg-white lg:block">
       <div className="container flex items-center justify-between gap-4 py-3 text-[13px] font-semibold tracking-wide text-navy">
-        {/* Mobile: hamburger toggle */}
-        <button
-          type="button"
-          aria-label={dict.header.toggleMenu}
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-navy lg:hidden"
-        >
-          {open ? <CloseIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
-        </button>
-
-        {/* Desktop: primary menu */}
-        <ul className="hidden items-center gap-5 lg:flex xl:gap-7">
+        <ul className="flex items-center gap-5 xl:gap-7">
           {navItems.map((item) => (
             <li key={item.label}>
               <a href={item.href} className="flex items-center gap-1 uppercase hover:text-brand-red">
@@ -85,7 +71,7 @@ export function NavBar() {
 
           {/* Signed-in greeting + logout; signed-out login lives on the account icon in the search row. */}
           {auth && (
-            <div className="hidden items-center gap-2 lg:flex">
+            <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5">
                 <UserIcon className="h-5 w-5" />
                 {auth.user.name}
@@ -98,7 +84,7 @@ export function NavBar() {
 
           <a
             href={href("/cart")}
-            className="relative flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-white sm:px-6 sm:py-2.5"
+            className="relative flex items-center gap-2 rounded-full bg-navy px-6 py-2.5 text-white"
             aria-label={dict.header.cart}
           >
             <CartIcon className="h-4 w-4" />
@@ -111,36 +97,6 @@ export function NavBar() {
           </a>
         </div>
       </div>
-
-      {/* Mobile: collapsible menu panel */}
-      {open && (
-        <div className="border-t border-gray-100 lg:hidden">
-          <ul className="container flex flex-col py-2 text-sm font-semibold tracking-wide text-navy">
-            {mobileItems.map((item) => (
-              <li key={item.label}>
-                <a
-                  href={item.href}
-                  className="flex items-center justify-between border-b border-gray-50 py-3 uppercase hover:text-brand-red"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-            {auth && (
-              <li>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="w-full cursor-pointer border-b border-gray-50 py-3 text-start hover:text-brand-red"
-                >
-                  {dict.auth.logout} ({auth.user.name})
-                </button>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
     </nav>
   );
 }

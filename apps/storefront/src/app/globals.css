@@ -20,6 +20,8 @@
   --font-sans: var(--font-poppins, ui-sans-serif), system-ui, sans-serif;
   --font-heading: var(--font-chakra-petch, ui-sans-serif), system-ui, sans-serif;
   --animate-marquee: marquee 30s linear infinite;
+  --animate-drawer-in: drawer-in 260ms ease-out;
+  --animate-scrim-in: scrim-in 260ms ease-out;
 }
 
 /* `--marquee-shift` is one copy's share of the track width, set by the marquee
@@ -46,6 +48,35 @@
   }
   to {
     transform: translateX(var(--marquee-shift, 50%));
+  }
+}
+
+/* The mobile drawer slides in from the reading edge: from the left in LTR, from
+   the right in RTL (see the `[dir="rtl"]` override below). */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-in-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -105,4 +136,19 @@ body {
    rightward in RTL. */
 [dir="rtl"] .animate-marquee {
   animation-name: marquee-rtl;
+}
+
+/* The drawer is anchored to the reading edge by the flex row it sits in, so in
+   RTL it has to slide in from the right. */
+[dir="rtl"] .animate-drawer-in {
+  animation-name: drawer-in-rtl;
+}
+
+/* The mobile bottom tab bar is fixed over the page; reserve its height so the
+   footer and the last section are never trapped underneath it. It is hidden
+   from `lg` up, which is where this padding stops applying. */
+@media (max-width: 1023.98px) {
+  body {
+    padding-bottom: 4.5rem;
+  }
 }

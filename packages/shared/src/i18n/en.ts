@@ -15,11 +15,19 @@ export const en = {
     },
     secondary: { aboutUs: "ABOUT US", contact: "CONTACT" },
     toggleMenu: "Toggle menu",
+    closeMenu: "Close menu",
+    menuTitle: "Menu",
+    quickLinks: "Quick links",
+    language: "Language",
     wishlist: "Wishlist",
     cart: "Cart",
     account: "Account",
     search: "Search",
-    searchPlaceholder: "What are you looking for?"
+    searchPlaceholder: "What are you looking for?",
+    // Title-case labels for the mobile bottom tab bar; `menu.*` is uppercase.
+    shop: "Shop",
+    sale: "Sale",
+    loginRegister: "Login / Register"
   },
   ask: {
     button: "Ask Minikoshk",

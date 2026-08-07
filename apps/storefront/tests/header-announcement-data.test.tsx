@@ -12,6 +12,11 @@ vi.mock("@/components/header/AnnouncementBar", () => ({
 }));
 vi.mock("@/components/header/SearchBar", () => ({ SearchBar: () => <div>search</div> }));
 vi.mock("@/components/header/NavBar", () => ({ NavBar: () => <div>nav</div> }));
+vi.mock("@/components/header/MobileHeader", () => ({ MobileHeader: () => <div>mobile nav</div> }));
+vi.mock("@/lib/categories", () => ({
+  getCategories: vi.fn().mockResolvedValue([]),
+  selectMenuCategories: vi.fn().mockReturnValue([])
+}));
 
 import { Header } from "@/components/header/Header";
 

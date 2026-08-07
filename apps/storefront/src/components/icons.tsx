@@ -114,6 +114,25 @@ export function CartIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function BagIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M4.5 7.5h15l-1.2 12.5a1 1 0 0 1-1 .9H6.7a1 1 0 0 1-1-.9L4.5 7.5Z" strokeLinejoin="round" />
+      <path d="M8.75 10V6.75a3.25 3.25 0 0 1 6.5 0V10" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PercentIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M6.5 17.5 17.5 6.5" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="2.25" />
+      <circle cx="16" cy="16" r="2.25" />
+    </svg>
+  );
+}
+
 export function CreditCardIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
