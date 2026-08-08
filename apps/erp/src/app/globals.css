@@ -185,6 +185,9 @@ html[lang="ar"] .eyebrow { letter-spacing: 0.06em; text-transform: none; }
 }
 .input::placeholder, .textarea::placeholder { color: var(--ink-4); }
 .textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
+/* Comma-separated lists are one unbroken token when written without spaces —
+   break anywhere so they wrap instead of scrolling sideways. */
+.textarea--wrap { overflow-wrap: anywhere; }
 .input:hover, .select:hover, .textarea:hover { border-color: var(--hairline-strong); }
 .input:focus, .select:focus, .textarea:focus {
   border-color: var(--accent);

@@ -120,7 +120,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                 </div>
                 <div className="field field--full">
                   <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل)</label>
-                  <input id="product-keywords" className="input" value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
+                  <textarea id="product-keywords" className="textarea textarea--wrap" rows={3} value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
                   {errors.keywords && <span className="field-error">{errors.keywords}</span>}
                 </div>
                 <div className="field field--full">
