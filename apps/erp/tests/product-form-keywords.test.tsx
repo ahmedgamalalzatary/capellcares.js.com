@@ -43,7 +43,7 @@ vi.mock("@/components/ui/icons", () => ({
 
 import { ProductForm } from "@/components/forms/product-form";
 
-const KEYWORDS_LABEL = "كلمات مفتاحية (مفصولة بفواصل)";
+const KEYWORDS_LABEL = "كلمات مفتاحية (مفصولة بفواصل أو أسطر جديدة)";
 
 const initial = {
   id: 1,

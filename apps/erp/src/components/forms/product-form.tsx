@@ -119,7 +119,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
                   {errors.buyingPrice && <span className="field-error">{errors.buyingPrice}</span>}
                 </div>
                 <div className="field field--full">
-                  <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل)</label>
+                  <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل أو أسطر جديدة)</label>
                   <textarea id="product-keywords" className="textarea" rows={3} value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
                   {errors.keywords && <span className="field-error">{errors.keywords}</span>}
                 </div>
