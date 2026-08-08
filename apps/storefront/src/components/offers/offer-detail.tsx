@@ -61,7 +61,7 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
             testIdPrefix="offer"
             dotLabelTemplate={lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}"}
             thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
-            renderImage={(url) => <OfferIllustration offer={{ ...offer, imagePath: url }} className="w-140 object-contain rounded-lg" />}
+            renderImage={(url) => <OfferIllustration offer={{ ...offer, imagePath: url }} className="h-full w-full object-contain rounded-lg" />}
             overlay={(
               <>
                 <ItemTagPill

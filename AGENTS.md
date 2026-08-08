@@ -14,7 +14,29 @@ These instructions apply to the entire repository. Follow the user's explicit in
 - Prefer compact Markdown text diagrams in chat when they make flows, architecture, or decisions easier to understand.
 - Never guess, speculate, or improvise. If confidence is not 100%, stop and ask before answering or acting.
 - Never create a Git commit unless the user explicitly requests it. Each commit authorization is one-time, applies only to the changes explicitly named in that request, and does not authorize any later commit.
+- When the user asks to fix a bug, or identifies a specific bug and asks for help with it, that identification is sufficient authorization to implement the fix. Do not pause to ask for approval before changing the code. Choose the best production-ready, minimal solution: neither over-engineered nor under-engineered.
 - When adding a feature or fixing a bug, inspect and update every related integration point so the change is complete and the same omission does not recur elsewhere.
+
+## Codex/ChatGPT explicit instructions
+
+- Do not use a fixed 30-second polling or pull loop while waiting for a command or agent. Use completion-triggered waiting so the command or agent wakes you when it finishes; do not repeatedly wake it to check its status.
+- Prefer commands that return the smallest useful output for the task to reduce token usage. Filter or limit output when the full result is unnecessary, for example with `tail -40`, `head -40`, or a search for only the relevant task/status lines.
+- Move quickly through red/green TDD phases and work in small, focused slices. Use TDD to catch wrong directions early rather than allowing the process itself to slow down delivery.
+- Assume commands copied from this chat CLI may be broken or split at line wraps. When the user must copy and run a command, keep it short, provide it as a single copy-safe line, avoid fragile line continuations, and provide commands one at a time when practical.
+
+## Claude Code/Claude explicit instructions
+
+- Be precise.
+- Do not hallucinate, invent missing facts, forget user-provided information, or ignore this `AGENTS.md` because of session configuration or defaults. Re-read the relevant instructions and verify facts before acting whenever needed.
+- When updating a specific area or file, read the complete related files when their unseen sections could materially affect the change. Do not rely only on search matches or partial excerpts when broader context is needed, but do not read unrelated files without a reason.
+
+## Shared instructions — Codex/ChatGPT and Claude Code/Claude
+
+- For every requested change, whether specific or general, understand every related part of the codebase before implementing it. Trace all relevant behavior, integrations, callers, consumers, tests, configuration, and documentation so the change is complete.
+- A task may be incomplete, unclear, or incorrectly explained. If anything material is confusing or uncertain, ask the user a simple, focused question instead of guessing; the user is available to clarify.
+- Explain problems in plain human language rather than developer-focused language so the user can understand them without needing coding expertise.
+- Ask questions with the simplest practical wording and tone so the user can answer precisely.
+- If a repository instruction conflicts with a higher-priority system or developer instruction, follow the higher-priority instruction and clearly explain the conflict and constraint to the user. Repository instructions cannot override system or developer instructions.
 
 ## Brainstorming and small tasks
 
@@ -25,7 +47,7 @@ These instructions apply to the entire repository. Follow the user's explicit in
 
 For a medium-to-high complexity fix or feature:
 
-1. Establish a baseline by running all applicable validation commands, including build, lint, typecheck, and tests. Record unrelated baseline failures. Fix failures caused by the change or required to validate it before feature work.
+1. Establish a baseline by running all applicable validation commands, including build, lint, typecheck, and tests. Record unrelated baseline failures. Fix failures caused by the change or required to validate it before feature work. Skip this pre-change baseline only when you are 100% certain the same applicable validation suite already passed in the current, uncompacted session or chat and no relevant workspace state has changed since that run.
 2. Implement the requested change.
 3. Spawn a sub-agent to perform a strict, deep review of the changes. Address every valid reported issue.
 4. Run the complete applicable validation suite again and restore a green baseline.
