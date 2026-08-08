@@ -7,6 +7,7 @@ import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Pr
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { fetchProducts } from "@/lib/api/client";
+import { matchesProductQuery } from "@/lib/product-search";
 import { SEARCH_MAX_RESULTS as MAX_RESULTS } from "@/constants/ui";
 
 type SearchOverlayProps = {
@@ -50,14 +51,9 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
   }, [open, onClose]);
 
   const results = useMemo(() => {
-    const t = term.trim().toLowerCase();
-    if (!t || !products) return [];
+    if (!term.trim() || !products) return [];
     return products
-      .filter((p) => {
-        const name = `${p.name.en} ${p.name.ar}`.toLowerCase();
-        const keywords = (p.keywords ?? []).join(" ").toLowerCase();
-        return name.includes(t) || keywords.includes(t);
-      })
+      .filter((product) => matchesProductQuery(product, term))
       .slice(0, MAX_RESULTS);
   }, [term, products]);
 

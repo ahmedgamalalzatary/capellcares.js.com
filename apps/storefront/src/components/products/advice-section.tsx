@@ -2,24 +2,21 @@ import type { Advice, Language } from "@capella/shared";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
 
+/**
+ * Capella Tips. Always the shop page's single horizontally scrolling row, so the
+ * section reads identically wherever it appears (shop, product search results).
+ */
 export function AdviceSection({
   advices,
   lang,
-  dict,
-  scrollRow = false
+  dict
 }: {
   advices: Advice[];
   lang: Language;
   dict: any;
-  /** Shop page only: render as a single horizontally scrolling row instead of a grid. */
-  scrollRow?: boolean;
 }) {
   if (advices.length === 0) return null;
   const isAr = lang === "ar";
-
-  const cards = advices.map((advice) => (
-    <SectionCard key={advice.id} kind="advice" data={advice} lang={lang} dict={dict} />
-  ));
 
   return (
     <section className="mt-4 mb-4">
@@ -31,11 +28,11 @@ export function AdviceSection({
         </h2>
       </header>
 
-      {scrollRow ? (
-        <ShopCardRow lang={lang}>{cards}</ShopCardRow>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-7">{cards}</div>
-      )}
+      <ShopCardRow lang={lang}>
+        {advices.map((advice) => (
+          <SectionCard key={advice.id} kind="advice" data={advice} lang={lang} dict={dict} />
+        ))}
+      </ShopCardRow>
     </section>
   );
 }

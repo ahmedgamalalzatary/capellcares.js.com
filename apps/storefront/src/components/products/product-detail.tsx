@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
-import { ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
+import { ItemTagPill, ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { ShareButton } from "@/components/ui/share-button";
 import { WishlistButton } from "@/components/ui/wishlist-button";
@@ -27,15 +27,15 @@ interface Props {
 export function ProductDetail({ product, offers, lang, dict, categoryName, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  const badgeTags: ItemTag[] = [
-    ...getProductTags(product, dict),
-    ...offers.map((offer): ItemTag => ({
-      kind: "offer",
-      label: pickLang(offer.name, lang),
-      href: `/${lang}/offers/${offer.slug}`,
-      star: true,
-    })),
-  ];
+  // New/bestseller float over the media as a single lead tag, exactly like the
+  // cards do; only the linked offers remain as inline badges beside the title.
+  const leadTag = getProductTags(product, dict)[0];
+  const badgeTags: ItemTag[] = offers.map((offer): ItemTag => ({
+    kind: "offer",
+    label: pickLang(offer.name, lang),
+    href: `/${lang}/offers/${offer.slug}`,
+    star: true,
+  }));
 
   const firstInStockVariant = product.variants.find((variant) => variant.stock > 0);
   const [variantId, setVariantId] = useState<number | null>(firstInStockVariant?.id ?? product.variants[0]?.id ?? null);
@@ -81,12 +81,17 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
             renderImage={(url) => <ProductIllustration product={{ ...product, imagePath: url }} />}
             overlay={(
-              <WishlistButton
-                entityType="product"
-                entityId={product.id}
-                lang={lang}
-                label={dict.common.addToWishlist}
-              />
+              <>
+                {leadTag ? (
+                  <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
+                ) : null}
+                <WishlistButton
+                  entityType="product"
+                  entityId={product.id}
+                  lang={lang}
+                  label={dict.common.addToWishlist}
+                />
+              </>
             )}
           />
         </div>
@@ -94,8 +99,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
           <div className="grid gap-3">
             <h1 className={lang === "ar"
-              ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
-              : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
+              ? "m-0 text-[clamp(20px,3.4vw,32px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
+              : "m-0 text-[clamp(20px,3.4vw,32px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
               {pickLang(product.name, lang)}
             </h1>
             {categoryName ? (

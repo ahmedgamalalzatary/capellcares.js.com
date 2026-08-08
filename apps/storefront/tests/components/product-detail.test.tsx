@@ -10,9 +10,20 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
 
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add: vi.fn() })
-}));
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add: vi.fn(),
+      lines: [],
+      count: 0,
+      setQty: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 vi.mock("@/components/providers/wishlist-provider", () => ({
   useWishlist: () => ({ has: () => false, toggle: vi.fn() })
@@ -504,6 +515,119 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("img", { name: "Related Collection" })).toHaveAttribute("src", "/uploads/related-collection.jpg");
     expect(rows[2]).toHaveTextContent("Collection");
     expect(rows[2]).toHaveTextContent("60");
+  });
+
+  it("floats the new/bestseller lead tag over the media instead of listing it in the badge row", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      status: "active" as const,
+      isNew: true,
+      isBestseller: true,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    render(createElement(ProductDetail, { product, offers: [], lang: "en", dict }));
+
+    const frame = screen.getByTestId("product-media-main").parentElement as HTMLElement;
+
+    // A single lead tag, styled exactly like the card tags.
+    const tag = frame.querySelector("span.absolute") as HTMLElement;
+    expect(tag).toHaveTextContent("New");
+    expect(tag.className).toContain("top-0");
+    expect(tag.className).toContain("inset-s-0");
+    expect(tag.className).toContain("rounded-ss-lg");
+
+    const heart = frame.querySelector("button") as HTMLElement;
+    expect(heart).toHaveAttribute("aria-label", "Wishlist");
+    expect(heart.className).toContain("inset-e-2");
+    expect(heart.className).not.toContain("inset-s-2");
+
+    // The information section no longer repeats them as CSS badges.
+    const badgeTexts = Array.from(document.querySelectorAll(".badge")).map((el) => el.textContent);
+    expect(badgeTexts).toHaveLength(0);
+  });
+
+  it("floats no tag for a product that is neither new nor a bestseller, and keeps its offer badges", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      offerIds: [3],
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    render(createElement(ProductDetail, {
+      product,
+      offers: [{
+        id: 3,
+        slug: "duo",
+        name: { ar: "عرض", en: "Duo" },
+        description: { ar: "", en: "" },
+        imagePath: "",
+        price: 70,
+        originalTotal: 90,
+        categoryId: 5,
+        items: [],
+        stock: 4,
+        status: "active" as const,
+        visibility: "visible" as const,
+        createdAt: "",
+        updatedAt: ""
+      }],
+      lang: "en",
+      dict
+    }));
+
+    const frame = screen.getByTestId("product-media-main").parentElement as HTMLElement;
+    expect(frame.querySelector("span.absolute")).toBeNull();
+
+    // The linked offer badge still lives in the information section.
+    const offerBadge = screen.getByRole("link", { name: /Duo/ });
+    expect(offerBadge).toHaveClass("badge");
+    expect(offerBadge).toHaveAttribute("href", "/en/offers/duo");
   });
 
   it("shares the product link via the Web Share API when supported", () => {

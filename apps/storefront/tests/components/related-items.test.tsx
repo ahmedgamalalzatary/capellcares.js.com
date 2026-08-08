@@ -12,9 +12,23 @@ vi.mock("next/navigation", () => ({
 }));
 
 const add = vi.fn();
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add })
-}));
+const cartLines: any[] = [];
+const cartSetQty = vi.fn();
+const cartRemove = vi.fn();
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add,
+      lines: cartLines,
+      count: 0,
+      setQty: cartSetQty,
+      remove: cartRemove,
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 const has = vi.fn(() => false);
 const toggle = vi.fn();
@@ -29,7 +43,7 @@ vi.mock("@/components/providers/auth-provider", () => ({
 import { RelatedItems } from "@/components/products/related-items";
 
 const dict = {
-  common: { addToCart: "Add to cart", added: "Added", addToWishlist: "Wishlist" },
+  common: { addToCart: "Add to cart", added: "Added", addToWishlist: "Wishlist", quantity: "Quantity" },
   offers: { badge: "Offer" },
   collections: { badge: "Set" }
 };
@@ -53,6 +67,22 @@ describe("RelatedItems", () => {
   beforeEach(() => {
     add.mockClear();
     toggle.mockClear();
+    has.mockReturnValue(false);
+    cartLines.length = 0;
+    cartSetQty.mockClear();
+    cartRemove.mockClear();
+  });
+
+  it("shows the quantity stepper for a related product already in the cart", () => {
+    cartLines.push({ type: "product", productId: 1, variantId: 11, qty: 2 });
+
+    render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    expect(screen.getByText("Quantity: 2")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add to cart" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    expect(cartSetQty).toHaveBeenCalledWith("p:1:11", 3);
   });
 
   it("adds a related product to the cart using its cheapest in-stock variant", () => {
@@ -180,13 +210,26 @@ describe("RelatedItems", () => {
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/products/serum"));
   });
 
-  it("opens on the one-column layout", () => {
+  it("keeps the heart's background when the item is saved — only the glyph fills", () => {
+    const { rerender } = render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+    const idleClass = screen.getByRole("button", { name: "Wishlist" }).className;
+
+    has.mockReturnValue(true);
+    rerender(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
+
+    const saved = screen.getByRole("button", { name: "Wishlist" });
+    expect(saved.className).toBe(idleClass);
+    expect(saved.className).not.toContain("bg-accent");
+    expect(saved.querySelector("svg")).toHaveAttribute("fill", "currentColor");
+  });
+
+  it("opens on the two-column layout", () => {
     render(createElement(RelatedItems, { items, lang: "en", dict, title: "Related" }));
 
     const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
-    expect(grid.className).toContain("grid-cols-1");
-    expect(grid.className).toContain("md:grid-cols-2");
-    expect(grid.className).toContain("lg:grid-cols-3");
+    expect(grid.className).toContain("grid-cols-2");
+    expect(grid.className).toContain("md:grid-cols-3");
+    expect(grid.className).toContain("lg:grid-cols-4");
   });
 
   it("keeps the selected one-column and two-column layouts across breakpoints", () => {
@@ -194,16 +237,18 @@ describe("RelatedItems", () => {
 
     const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
 
-    fireEvent.click(screen.getByRole("button", { name: /2 per row/i }));
-
-    expect(grid.className).toContain("grid-cols-2");
-    expect(grid.className).toContain("md:grid-cols-3");
-    expect(grid.className).toContain("lg:grid-cols-4");
-
+    // Two columns is the default, so the switch has to be exercised away from it
+    // first — clicking "2 per row" up front would assert a layout already on screen.
     fireEvent.click(screen.getByRole("button", { name: /1 per row/i }));
 
     expect(grid.className).toContain("grid-cols-1");
     expect(grid.className).toContain("md:grid-cols-2");
     expect(grid.className).toContain("lg:grid-cols-3");
+
+    fireEvent.click(screen.getByRole("button", { name: /2 per row/i }));
+
+    expect(grid.className).toContain("grid-cols-2");
+    expect(grid.className).toContain("md:grid-cols-3");
+    expect(grid.className).toContain("lg:grid-cols-4");
   });
 });

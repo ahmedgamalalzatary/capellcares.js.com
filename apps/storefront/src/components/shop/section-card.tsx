@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { pickLang, formatPrice, type Language, type Offer, type Collection, type Advice, type RatingSummary } from "@capella/shared";
+import { pickLang, formatPrice, type CartLine, type Language, type Offer, type Collection, type Advice, type RatingSummary } from "@capella/shared";
 import { SOCIAL_LINKS } from "@/constants/socials";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { CardRating } from "@/components/reviews/card-rating";
 import { Icon } from "@/components/ui/icons";
-import { useCart } from "@/components/providers/cart-provider";
+import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -24,22 +24,13 @@ export function SectionCard(props: SectionCardProps) {
   const { lang, dict } = props;
   const isAr = lang === "ar";
   const router = useRouter();
-  const cart = useCart();
   const wishlist = useWishlist();
   const { user } = useAuth();
-  const [added, setAdded] = useState(false);
-  const addedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [advicePreviewActive, setAdvicePreviewActive] = useState(false);
   const adviceDialogRef = useRef<HTMLDivElement | null>(null);
   const adviceCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const adviceTriggerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => () => {
-    if (addedResetTimeoutRef.current != null) {
-      clearTimeout(addedResetTimeoutRef.current);
-    }
-  }, []);
 
   useEffect(() => {
     if (!adviceOpen || typeof document === "undefined") return;
@@ -80,7 +71,8 @@ export function SectionCard(props: SectionCardProps) {
   let originalTotal: number | null = null;
   // Advice carries no rating; only the two purchasable kinds set one.
   let rating: RatingSummary | null = null;
-  let onAdd: ((e: React.MouseEvent) => void) | null = null;
+  let cartLine: CartLine | null = null;
+  let cartMaxQty: number | undefined;
   let adviceVideo: ReturnType<typeof resolveAdviceVideo> = null;
   let adviceVideoUrl: string | null = null;
   let adviceTrigger: React.ReactNode = null;
@@ -97,18 +89,8 @@ export function SectionCard(props: SectionCardProps) {
     price = offer.price;
     originalTotal = offer.originalTotal;
     rating = offer.rating ?? null;
-    onAdd = (e) => {
-      e.preventDefault();
-      cart.add({ type: "offer", offerId: offer.id, qty: 1 });
-      setAdded(true);
-      if (addedResetTimeoutRef.current != null) {
-        clearTimeout(addedResetTimeoutRef.current);
-      }
-      addedResetTimeoutRef.current = setTimeout(() => {
-        setAdded(false);
-        addedResetTimeoutRef.current = null;
-      }, 1400);
-    };
+    cartLine = { type: "offer", offerId: offer.id, qty: 1 };
+    cartMaxQty = offer.stock;
     isWishlisted = wishlist.has("offer", offer.id);
     onWish = (e) => {
       e.preventDefault();
@@ -128,18 +110,8 @@ export function SectionCard(props: SectionCardProps) {
     price = collection.price;
     originalTotal = collection.originalTotal;
     rating = collection.rating ?? null;
-    onAdd = (e) => {
-      e.preventDefault();
-      cart.add({ type: "collection", collectionId: collection.id, qty: 1 });
-      setAdded(true);
-      if (addedResetTimeoutRef.current != null) {
-        clearTimeout(addedResetTimeoutRef.current);
-      }
-      addedResetTimeoutRef.current = setTimeout(() => {
-        setAdded(false);
-        addedResetTimeoutRef.current = null;
-      }, 1400);
-    };
+    cartLine = { type: "collection", collectionId: collection.id, qty: 1 };
+    cartMaxQty = collection.stock;
     isWishlisted = wishlist.has("collection", collection.id);
     onWish = (e) => {
       e.preventDefault();
@@ -292,9 +264,7 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
         {onWish ? (
           <button
-            className={`absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
-              isWishlisted ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
-            }`}
+            className="absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 bg-surface/85 hover:bg-(--warm-soft)"
             aria-label={dict.common.addToWishlist}
             onClick={onWish}
           >
@@ -327,12 +297,9 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
       </div>}
 
-      {href && onAdd ? (
+      {href && cartLine ? (
         <div className="mt-3 flex gap-2">
-          <button onClick={onAdd} className={addClass}>
-            {added ? <Icon.Check size={16} /> : null}
-            <span>{added ? dict.common.added : dict.common.addToCart}</span>
-          </button>
+          <AddToCartControl line={cartLine} dict={dict} maxQty={cartMaxQty} className={addClass} />
         </div>
       ) : null}
 

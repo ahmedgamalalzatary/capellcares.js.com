@@ -139,7 +139,7 @@ export function CollectionGrid({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-3 border-b border-(--hairline) pb-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-1 gap-y-3 pb-3.5">
         <div className="flex flex-wrap items-center gap-x-1 gap-y-3">
           <button
             onClick={() => setShowFilters(true)}

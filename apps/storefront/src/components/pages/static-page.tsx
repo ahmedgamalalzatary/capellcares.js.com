@@ -1,5 +1,6 @@
 import type { Language } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { renderInlineLinks } from "@/lib/inline-links";
 
 export interface StaticBlock {
   h?: string;
@@ -58,13 +59,13 @@ export function StaticPage({
                 >
                   {block.ul.map((item, j) => (
                     <li key={j} className="leading-[1.8]">
-                      {item}
+                      {renderInlineLinks(item, lang)}
                     </li>
                   ))}
                 </ul>
               );
             }
-            return <p key={i}>{block.p}</p>;
+            return <p key={i}>{renderInlineLinks(block.p ?? "", lang)}</p>;
           })}
         </div>
       </article>

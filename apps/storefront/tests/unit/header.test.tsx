@@ -34,8 +34,8 @@ vi.mock("@/components/layout/header/search-overlay", () => ({
   SearchOverlay: () => null
 }));
 
-vi.mock("@/hooks/use-search", () => ({
-  useHeaderSearch: () => ({ switchLang: vi.fn() })
+vi.mock("@/hooks/use-language-switch", () => ({
+  useLanguageSwitch: () => ({ switchLang: vi.fn() })
 }));
 
 import { Header } from "@/components/layout/header";

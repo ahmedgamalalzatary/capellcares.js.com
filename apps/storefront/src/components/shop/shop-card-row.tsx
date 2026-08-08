@@ -11,7 +11,8 @@ import { Icon } from "@/components/ui/icons";
  * On desktop, prev/next buttons scroll the row by a page and disable at the
  * ends. The buttons are hidden on touch/tablet, where swiping is natural.
  *
- * Shop-page only — other pages keep their multi-row grids, so this leaves
+ * Used by the shop page's sections and by Capella Tips wherever it appears.
+ * Product/category listings keep their multi-row grids, so this leaves
  * ProductCard / SectionCard untouched.
  */
 export function ShopCardRow({

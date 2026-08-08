@@ -11,7 +11,7 @@ import { HeaderMobileDrawer } from "./header/mobile-drawer";
 import { AnnouncementBar } from "./header/announcement-bar";
 import { ShopMegaMenu } from "./header/shop-mega-menu";
 import { SearchOverlay } from "./header/search-overlay";
-import { useHeaderSearch } from "../../hooks/use-search";
+import { useLanguageSwitch } from "../../hooks/use-language-switch";
 import type { HeaderProps } from "../../types/header.types";
 
 export function Header({ lang, dict, menuEntries }: HeaderProps) {
@@ -21,7 +21,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
-  const { switchLang } = useHeaderSearch(lang);
+  const { switchLang } = useLanguageSwitch(lang);
 
   const announcements: string[] = Array.isArray(dict.nav.announcements)
     ? dict.nav.announcements

@@ -6,9 +6,20 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
 
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
-}));
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add: vi.fn(),
+      lines: [],
+      count: 0,
+      setQty: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 vi.mock("@/components/providers/wishlist-provider", () => ({
   useWishlist: () => ({ has: () => false, toggle: vi.fn(), ids: [] })
@@ -39,5 +50,29 @@ describe("AdviceSection", () => {
     expect(screen.getByText("Capella Advices")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Advice" })).toHaveAttribute("href", "https://instagram.com/capella");
     expect(screen.queryByRole("img", { name: "Advice" })).toBeNull();
+  });
+
+  it("lays advices out as the shop's scrolling row everywhere it is used", () => {
+    const { container } = render(createElement(AdviceSection, {
+      lang: "en",
+      dict: { advices: { title: "Capella Advices", description: "Helpful guidance" } },
+      advices: [{
+        id: 1,
+        title: { ar: "نصيحة", en: "Advice" },
+        description: { ar: "وصف", en: "Description" },
+        videoUrl: "https://www.youtube.com/watch?v=capella",
+        status: "active" as const,
+        createdAt: "",
+        updatedAt: ""
+      }]
+    }));
+
+    // ShopCardRow's signature: a snapping horizontal scroller with prev/next.
+    expect(screen.getByRole("button", { name: "Previous" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+    expect(container.querySelector(".snap-x")).not.toBeNull();
+
+    // and definitively not the old multi-row grid
+    expect(container.querySelector(".lg\\:grid-cols-3")).toBeNull();
   });
 });

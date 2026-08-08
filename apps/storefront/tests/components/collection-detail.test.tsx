@@ -10,9 +10,20 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
 
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add: vi.fn() })
-}));
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add: vi.fn(),
+      lines: [],
+      count: 0,
+      setQty: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 const has = vi.fn(() => false);
 const toggle = vi.fn();
@@ -86,6 +97,24 @@ describe("CollectionDetail", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save collection" }));
     expect(toggle).toHaveBeenCalledWith("collection", 2);
+  });
+
+  it("floats the collection tag top-start and the wishlist heart top-end, styled like the card tags", () => {
+    render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
+
+    const frame = screen.getByTestId("collection-media-main").parentElement as HTMLElement;
+
+    const tag = frame.querySelector("span.absolute") as HTMLElement;
+    expect(tag).toHaveTextContent("Collection");
+    expect(tag.className).toContain("top-0");
+    expect(tag.className).toContain("inset-s-0");
+    expect(tag.className).toContain("rounded-ss-lg");
+    expect(tag.className).not.toContain("inset-e-0");
+
+    const heart = frame.querySelector("button") as HTMLElement;
+    expect(heart).toHaveAttribute("aria-label", "Save collection");
+    expect(heart.className).toContain("inset-e-2");
+    expect(heart.className).not.toContain("inset-s-2");
   });
 
   it("shows the collection rating summary on the detail page", () => {

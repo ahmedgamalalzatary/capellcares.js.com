@@ -18,9 +18,20 @@ vi.mock("@/components/providers/auth-provider", () => ({
   useAuth: () => ({ user: { id: 1 } })
 }));
 
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add: vi.fn() })
-}));
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add: vi.fn(),
+      lines: [],
+      count: 0,
+      setQty: vi.fn(),
+      remove: vi.fn(),
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 import { ProductCard } from "@/components/products/product-card";
 import { RelatedItems } from "@/components/products/related-items";

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatPrice, pickLang, type Language, type RelatedItemCard } from "@capella/shared";
+import { formatPrice, pickLang, type CartLine, type Language, type RelatedItemCard } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -11,7 +11,7 @@ import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { CardRating } from "@/components/reviews/card-rating";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
-import { useCart } from "@/components/providers/cart-provider";
+import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -28,7 +28,7 @@ function hrefFor(item: RelatedItemCard, lang: Language): string {
 }
 
 export function RelatedItems({ items, lang, dict, title }: Props) {
-  const [cols, setCols] = useState<Cols>(1);
+  const [cols, setCols] = useState<Cols>(2);
 
   if (items.length === 0) {
     return null;
@@ -70,17 +70,8 @@ export function RelatedItems({ items, lang, dict, title }: Props) {
  */
 function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Language; dict: any }) {
   const router = useRouter();
-  const cart = useCart();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  const [added, setAdded] = useState(false);
-  const addedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (addedResetTimeoutRef.current != null) {
-      clearTimeout(addedResetTimeoutRef.current);
-    }
-  }, []);
 
   const isAr = lang === "ar";
   const href = hrefFor(item, lang);
@@ -107,23 +98,11 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
 
   // A product needs a variant to transact on; bundles are addressed by their
   // own id. Without one there is nothing to add, so the row is withheld.
-  const canAdd = item.type !== "product" || item.variantId != null;
-
-  const onAdd = (event: React.MouseEvent) => {
-    event.preventDefault();
-    if (item.type === "offer") {
-      cart.add({ type: "offer", offerId: item.id, qty: 1 });
-    } else if (item.type === "collection") {
-      cart.add({ type: "collection", collectionId: item.id, qty: 1 });
-    } else if (item.variantId != null) {
-      cart.add({ type: "product", productId: item.id, variantId: item.variantId, qty: 1 });
-    }
-    setAdded(true);
-    if (addedResetTimeoutRef.current != null) {
-      clearTimeout(addedResetTimeoutRef.current);
-    }
-    addedResetTimeoutRef.current = setTimeout(() => setAdded(false), 1400);
-  };
+  const cartLine: CartLine | null =
+    item.type === "offer" ? { type: "offer", offerId: item.id, qty: 1 }
+      : item.type === "collection" ? { type: "collection", collectionId: item.id, qty: 1 }
+        : item.variantId != null ? { type: "product", productId: item.id, variantId: item.variantId, qty: 1 }
+          : null;
 
   return (
     <article className="group" data-testid="related-item">
@@ -155,9 +134,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
 
         <button
           type="button"
-          className={`absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
-            isWishlisted ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
-          }`}
+          className="absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 bg-surface/85 hover:bg-(--warm-soft)"
           aria-label={isWishlisted ? (dict.common.removeFromWishlist ?? dict.common.addToWishlist) : dict.common.addToWishlist}
           aria-pressed={isWishlisted}
           onClick={onWish}
@@ -194,16 +171,9 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
         ) : null}
       </div>
 
-      {canAdd ? (
+      {cartLine ? (
         <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={onAdd}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
-          >
-            {added ? <Icon.Check size={16} /> : null}
-            <span>{added ? dict.common.added : dict.common.addToCart}</span>
-          </button>
+          <AddToCartControl line={cartLine} dict={dict} />
         </div>
       ) : null}
     </article>

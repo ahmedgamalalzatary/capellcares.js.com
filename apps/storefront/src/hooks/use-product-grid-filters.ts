@@ -6,6 +6,7 @@ import type { Category, Language, Product } from "@capella/shared";
 
 import type { CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
 import { isDescendantOf, minVariantPrice, safeName } from "../utils/product-grid.utils";
+import { matchesProductQuery } from "../lib/product-search";
 
 interface UseProductGridFiltersOptions {
   products: Product[];
@@ -163,10 +164,9 @@ export function useProductGridFilters({
           );
           if (!matchesHeaderCategory) return false;
         }
-        if (ql) {
-          const name = safeName(product, lang).toLowerCase();
-          if (!name.includes(ql)) return false;
-        }
+        // Same matcher the header overlay previews with, so "view all" always
+        // lands on at least the results the dropdown showed.
+        if (!matchesProductQuery(product, ql)) return false;
         if (category) {
           const sameCategory = product.categoryId === category;
           const descendantMatch = isDescendantOf(product.categoryId, category, categoryById);

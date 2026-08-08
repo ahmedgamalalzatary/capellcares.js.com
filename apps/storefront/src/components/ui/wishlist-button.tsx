@@ -37,8 +37,9 @@ export function WishlistButton({ entityType, entityId, lang, label, className }:
     <button
       type="button"
       className={[
-        "absolute top-2 inset-s-2 z-20 grid h-11 w-11 place-items-center rounded-full text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105",
-        saved ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)",
+        // The plate is identical in both states — saving is signalled by the
+        // heart filling in, never by a change of background.
+        "absolute top-2 inset-e-2 z-20 grid h-11 w-11 place-items-center rounded-full text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 bg-surface/85 hover:bg-(--warm-soft)",
         className
       ].filter(Boolean).join(" ")}
       aria-label={label}

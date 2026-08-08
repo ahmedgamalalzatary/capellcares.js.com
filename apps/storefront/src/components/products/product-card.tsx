@@ -6,10 +6,10 @@ import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getP
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
+import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { CardRating } from "@/components/reviews/card-rating";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { useCart } from "@/components/providers/cart-provider";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -24,7 +24,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  const cart = useCart();
   const prices = product.variants.map((v) => getEffectiveVariantPrice(v));
   const basePrices = product.variants.map((v) => v.price);
   const minPrice = Math.min(...prices);
@@ -38,7 +37,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const primaryImage = imageMedia[0]?.url ?? product.imagePath;
   const hoverImage = product.hoverImagePath || primaryImage;
   const [previewImage, setPreviewImage] = useState(primaryImage);
-  const [added, setAdded] = useState(false);
 
   // The variant we transact on from the card: cheapest one that is in stock,
   // falling back to the cheapest overall so the buttons still resolve a target.
@@ -57,14 +55,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
       return;
     }
     toggle("product", product.id);
-  };
-
-  const onAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isOutOfStock || !buyVariant) return;
-    cart.add({ type: "product", productId: product.id, variantId: buyVariant.id, qty: 1 });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1400);
   };
 
   return (
@@ -96,9 +86,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         ) : null}
 
         <button
-          className={`absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 ${
-            has("product", product.id) ? "border-accent! bg-accent text-canvas" : "bg-surface/85 hover:bg-(--warm-soft)"
-          }`}
+          className="absolute top-2 rounded-full inset-e-2 z-20 grid h-9 w-9 place-items-center text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 bg-surface/85 hover:bg-(--warm-soft)"
           aria-label={dict.common.addToWishlist}
           onClick={onWish}
         >
@@ -149,15 +137,13 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         ) : null}
       </div>
 
-      {!isOutOfStock ? (
+      {!isOutOfStock && buyVariant ? (
         <div className="mt-3 flex gap-2">
-          <button
-            onClick={onAdd}
-            className="inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
-          >
-            {added ? <Icon.Check size={16} /> : null}
-            <span>{added ? dict.common.added : dict.common.addToCart}</span>
-          </button>
+          <AddToCartControl
+            line={{ type: "product", productId: product.id, variantId: buyVariant.id, qty: 1 }}
+            dict={dict}
+            maxQty={buyVariant.stock}
+          />
         </div>
       ) : null}
     </article>

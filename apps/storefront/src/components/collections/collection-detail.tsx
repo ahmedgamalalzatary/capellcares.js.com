@@ -72,7 +72,7 @@ export function CollectionDetail({
               <>
                 <ItemTagPill
                   tag={{ kind: "collection", label: dict.collections.badge, star: true }}
-                  className="absolute inset-e-0 top-0"
+                  className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
                 />
                 <WishlistButton
                   entityType="collection"
@@ -87,8 +87,8 @@ export function CollectionDetail({
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
           <h1 className={isAr
-            ? "m-0 text-[clamp(30px,3.4vw,46px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
-            : "m-0 text-[clamp(32px,3.4vw,48px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
+            ? "m-0 text-[clamp(20px,3.4vw,32px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
+            : "m-0 text-[clamp(20px,3.4vw,32px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
             {pickLang(collection.name, lang)}
           </h1>
           {collection.reviewData !== undefined && dict.reviews ? (

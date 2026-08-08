@@ -179,7 +179,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       />
 
       {/* Capella Advices */}
-      <AdviceSection advices={advices} lang={lang} dict={dict} scrollRow />
+      <AdviceSection advices={advices} lang={lang} dict={dict} />
     </main>
   );
 }

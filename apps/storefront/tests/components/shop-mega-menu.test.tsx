@@ -33,7 +33,17 @@ const menuEntries: HeaderMenuEntry[] = [
     slug: "collections",
     label: "Collections",
     collections: [
-      { id: 6, slug: "starter-kit", label: "Starter Kit", name: { en: "Starter Kit", ar: "مجموعة" }, imagePath: "" }
+      { id: 6, slug: "starter-kit", label: "Starter Kit", name: { en: "Starter Kit", ar: "مجموعة" }, imagePath: "/uploads/starter-kit.jpg" }
+    ]
+  },
+  {
+    type: "offers",
+    key: "offers",
+    slug: "offers",
+    label: "Offers",
+    offers: [
+      { id: 9, slug: "duo-deal", label: "Duo Deal", name: { en: "Duo Deal", ar: "عرض" }, imagePath: "/uploads/duo-deal.jpg" },
+      { id: 10, slug: "bare-deal", label: "Bare Deal", name: { en: "Bare Deal", ar: "عرض" }, imagePath: "" }
     ]
   }
 ];
@@ -41,7 +51,7 @@ const menuEntries: HeaderMenuEntry[] = [
 const dict = { nav: { viewAllCategory: "All {name} →" } };
 
 describe("ShopMegaMenu", () => {
-  it("orders tabs as categories then Collections (last), with no New/Bestseller/Offers", () => {
+  it("leads with Offers and Collections, then the categories, and still hides New/Bestseller", () => {
     render(createElement(ShopMegaMenu, {
       lang: "en",
       dict,
@@ -51,15 +61,25 @@ describe("ShopMegaMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
 
-    expect(screen.getAllByRole("button").slice(1, 4).map((item) => item.textContent?.trim())).toEqual([
+    expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
+      "Offers",
+      "Collections",
       "Body Care",
-      "Skin Care",
-      "Collections"
+      "Skin Care"
     ]);
 
     expect(screen.queryByRole("button", { name: "New" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Best Seller" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Offers" })).toBeNull();
+  });
+
+  it("shows real offers under the Offers tab with an 'All Offers' link", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Offers" }));
+
+    expect(screen.getByRole("link", { name: "All Offers →" })).toHaveAttribute("href", "/en/offers");
+    expect(screen.getByRole("link", { name: /Duo Deal/ })).toHaveAttribute("href", "/en/offers/duo-deal");
   });
 
   it("shows real collections under the Collections tab with an 'All Collections' link", () => {
@@ -70,6 +90,31 @@ describe("ShopMegaMenu", () => {
 
     expect(screen.getByRole("link", { name: "All Collections →" })).toHaveAttribute("href", "/en/collections");
     expect(screen.getByRole("link", { name: /Starter Kit/ })).toHaveAttribute("href", "/en/collections/starter-kit");
+  });
+
+  it("renders offer and collection thumbnails beside their labels, like category children", () => {
+    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
+
+    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Offers" }));
+
+    // Same thumbnail treatment NavBranch gives a child category.
+    const offerImage = screen.getByAltText("Duo Deal");
+    expect(offerImage).toHaveAttribute("src", "/uploads/duo-deal.jpg");
+    expect(offerImage.className).toContain("h-12");
+    expect(offerImage.className).toContain("w-12");
+    expect(offerImage.className).toContain("object-cover");
+    expect(screen.getByRole("link", { name: "Duo Deal" })).toContainElement(offerImage);
+
+    // An entry with no artwork still renders, just without a thumbnail.
+    expect(screen.getByRole("link", { name: "Bare Deal" })).toBeInTheDocument();
+    expect(screen.queryByAltText("Bare Deal")).toBeNull();
+
+    // The "All …" link stays plain text, exactly like "All {category}".
+    expect(screen.getByRole("link", { name: "All Offers →" }).querySelector("img")).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Collections" }));
+    expect(screen.getByAltText("Starter Kit")).toHaveAttribute("src", "/uploads/starter-kit.jpg");
   });
 
   it("applies an underline + bold hover to leaf (non-parent) sub-category links", () => {
@@ -178,10 +223,10 @@ describe("ShopMegaMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
 
-    expect(screen.getAllByRole("button").slice(1, 4).map((item) => item.textContent?.trim())).toEqual([
+    // Offers/Collections lead, so the category order is read from index 3 on.
+    expect(screen.getAllByRole("button").slice(3, 5).map((item) => item.textContent?.trim())).toEqual([
       "Body Care",
-      "Skin Care",
-      "Collections"
+      "Skin Care"
     ]);
   });
 

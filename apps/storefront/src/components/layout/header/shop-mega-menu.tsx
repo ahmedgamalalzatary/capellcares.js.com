@@ -56,13 +56,15 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  // Categories come first; Collections always come last.
+  // Offers and Sets lead — the same two entries the mobile drawer opens with —
+  // then the category roots in ERP order. New/Bestsellers stay out of the panel.
   const roots = [
+    ...menuEntries.filter((entry) => entry.type === "offers"),
+    ...menuEntries.filter((entry) => entry.type === "collections"),
     ...menuEntries
       .filter((entry) => entry.type === "category")
       .slice()
-      .sort(compareHeaderCategoryEntries),
-    ...menuEntries.filter((entry) => entry.type === "collections")
+      .sort(compareHeaderCategoryEntries)
   ];
   const active = roots[activeRoot];
 
@@ -137,7 +139,15 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                 key={activeRoot}
                 className={`animate-in duration-300 ${fromRight ? "slide-in-from-right-16" : "slide-in-from-left-16"}`}
               >
-              {active.type === "collections" ? (
+              {active.type === "offers" ? (
+                <MediaGrid
+                  lang={lang}
+                  basePath="offers"
+                  allLabel={dict.nav.viewAllCategory.replace("{name}", active.label)}
+                  items={active.offers}
+                  onNavigate={closeNow}
+                />
+              ) : active.type === "collections" ? (
                 <MediaGrid
                   lang={lang}
                   basePath="collections"
@@ -177,9 +187,9 @@ function MediaGrid({
   onNavigate
 }: {
   lang: Language;
-  basePath: "collections";
+  basePath: "offers" | "collections";
   allLabel: string;
-  items: { id: number; slug: string; label: string }[];
+  items: { id: number; slug: string; label: string; imagePath?: string }[];
   onNavigate: () => void;
 }) {
   return (
@@ -192,14 +202,23 @@ function MediaGrid({
       >
         {allLabel}
       </Link>
+      {/* Thumbnail + label, the same anatomy NavBranch gives a child category. */}
       {items.map((item) => (
         <Link
           key={item.id}
           href={`/${lang}/${basePath}/${item.slug}`}
+          aria-label={item.label}
           onClick={onNavigate}
-          className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
+          className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
         >
-          {item.label}
+          {item.imagePath ? (
+            <img
+              src={item.imagePath}
+              alt={item.label}
+              className="h-12 w-12 shrink-0 rounded-md object-cover"
+            />
+          ) : null}
+          <span>{item.label}</span>
         </Link>
       ))}
     </div>

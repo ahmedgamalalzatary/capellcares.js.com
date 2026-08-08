@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 
 import { useProductGridFilters } from "@/hooks/use-product-grid-filters";
-import type { Category, Product } from "@capella/shared";
+import type { Category, Language, Product } from "@capella/shared";
 
 const replace = vi.fn();
 let pathname = "/en/products";
@@ -72,18 +72,50 @@ const categoryPageSubtreeCategories: Category[] = [
   { id: 103, parentId: 101, slug: "dry-skin", name: { ar: "بشرة جافة", en: "Dry Skin" }, isLeaf: true, sortOrder: 3 }
 ];
 
+// The product from the bug report: English display name, unrelated Arabic name,
+// and keywords in both languages that appear in neither name.
+const aloeProduct: Product = {
+  id: 9,
+  sku: "ALOE-1",
+  slug: "aloe-vera",
+  name: { ar: "لوشن للجسم برائحة الصبار", en: "ALOE VERA" },
+  description: { ar: "", en: "" },
+  ingredients: { ar: "", en: "" },
+  howToUse: { ar: "", en: "" },
+  warnings: { ar: "", en: "" },
+  keywords: ["لوشن", "لوشن للجسم", "تعطير الجسم", "رائحة الموز", "lotion", "aloe vera", "body lotion"],
+  buyingPrice: 60,
+  imagePath: "/aloe.png",
+  status: "active",
+  isNew: false,
+  isBestseller: false,
+  categoryId: 2,
+  variants: [{ id: 91, productId: 9, size: "250ml", price: 120, stock: 6 }],
+  createdAt: "",
+  updatedAt: ""
+};
+
 interface HookProbeProps {
   categoryInput?: Category[];
   initialCategory?: number;
+  productInput?: Product[];
+  initialSearch?: string;
+  lang?: Language;
 }
 
-function HookProbe({ categoryInput = categories, initialCategory = 1 }: HookProbeProps) {
+function HookProbe({
+  categoryInput = categories,
+  initialCategory = 1,
+  productInput = products,
+  initialSearch = "",
+  lang = "en"
+}: HookProbeProps) {
   const [headerCategoryIds, setHeaderCategoryIds] = useState<number[]>([]);
   const grid = useProductGridFilters({
-    products,
+    products: productInput,
     categories: categoryInput,
-    lang: "en",
-    initialSearch: "",
+    lang,
+    initialSearch,
     initialCategory,
     headerCategoryIds,
     onHeaderCategoryIdsChange: setHeaderCategoryIds
@@ -121,6 +153,32 @@ describe("useProductGridFilters", () => {
     render(createElement(HookProbe));
 
     expect(screen.getByText("ids:1,2")).toBeInTheDocument();
+  });
+
+  // The "view all" destination must find everything the overlay previewed,
+  // otherwise the dropdown promises matches this page cannot deliver.
+  it("finds a product by a keyword that appears in neither name", () => {
+    render(createElement(HookProbe, { productInput: [aloeProduct], initialSearch: "lotion" }));
+
+    expect(screen.getByText("ids:9")).toBeInTheDocument();
+  });
+
+  it("finds a product by its other-language name while browsing in English", () => {
+    render(createElement(HookProbe, { productInput: [aloeProduct], initialSearch: "الصبار" }));
+
+    expect(screen.getByText("ids:9")).toBeInTheDocument();
+  });
+
+  it("finds a product by its English name while browsing in Arabic", () => {
+    render(createElement(HookProbe, { productInput: [aloeProduct], initialSearch: "aloe", lang: "ar" }));
+
+    expect(screen.getByText("ids:9")).toBeInTheDocument();
+  });
+
+  it("still excludes products that match neither name nor keyword", () => {
+    render(createElement(HookProbe, { productInput: [aloeProduct], initialSearch: "shampoo" }));
+
+    expect(screen.getByText("ids:")).toBeInTheDocument();
   });
 
   it("builds the category tree and filters descendants from the initial category", () => {

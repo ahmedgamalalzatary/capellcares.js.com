@@ -14,9 +14,24 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push })
 }));
 
-vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ add: vi.fn(), lines: [], count: 0, setQty: vi.fn(), remove: vi.fn(), clear: vi.fn(), keyOf: vi.fn() })
-}));
+const cartLines: any[] = [];
+const cartAdd = vi.fn();
+const cartSetQty = vi.fn();
+const cartRemove = vi.fn();
+vi.mock("@/components/providers/cart-provider", async () => {
+  const { cartKeyOf } = await import("../helpers/cart");
+  return {
+    useCart: () => ({
+      add: cartAdd,
+      lines: cartLines,
+      count: 0,
+      setQty: cartSetQty,
+      remove: cartRemove,
+      clear: vi.fn(),
+      keyOf: cartKeyOf
+    })
+  };
+});
 
 vi.mock("@/components/providers/wishlist-provider", () => ({
   useWishlist: () => ({ has, toggle })
@@ -29,6 +44,7 @@ vi.mock("@/components/providers/auth-provider", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   has.mockReturnValue(false);
+  cartLines.length = 0;
 });
 
 import { SectionCard } from "@/components/shop/section-card";
@@ -37,7 +53,7 @@ const dict = {
   offers: { badge: "Bundle" },
   collections: { badge: "Set" },
   advices: { tipBadge: "Tip", readMore: "Read more", close: "Close" },
-  common: { save: "Save", addToCart: "Add to cart", added: "Added", cancel: "Cancel", addToWishlist: "Wishlist" }
+  common: { save: "Save", addToCart: "Add to cart", added: "Added", cancel: "Cancel", addToWishlist: "Wishlist", quantity: "Quantity" }
 };
 
 const baseOffer = {
@@ -88,20 +104,8 @@ const instagramAdvice = {
 };
 
 describe("SectionCard", () => {
-  it("clears its add-to-cart timeout when unmounted", () => {
-    vi.useFakeTimers();
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
-
-    const { unmount } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
-
-    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
-    unmount();
-
-    expect(clearTimeoutSpy).toHaveBeenCalled();
-
-    clearTimeoutSpy.mockRestore();
-    vi.useRealTimers();
-  });
+  // The add/confirm/stepper timer moved into AddToCartControl; its unmount
+  // cleanup is covered directly in add-to-cart-control.test.tsx.
 
   it("renders an offer with title, savings, and links to the offer detail page", () => {
     const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
@@ -150,6 +154,43 @@ describe("SectionCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
 
     expect(toggle).toHaveBeenCalledWith("collection", 2);
+  });
+
+  it("shows the quantity stepper for an offer already in the cart", () => {
+    cartLines.push({ type: "offer", offerId: 1, qty: 2 });
+
+    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    expect(screen.getByText("Quantity: 2")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add to cart" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    expect(cartSetQty).toHaveBeenCalledWith("o:1", 3);
+  });
+
+  it("removes a collection from the cart when − is pressed at one", () => {
+    cartLines.push({ type: "collection", collectionId: 2, qty: 1 });
+
+    render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("button", { name: "−" }));
+
+    expect(cartRemove).toHaveBeenCalledWith("c:2");
+    expect(cartSetQty).not.toHaveBeenCalled();
+  });
+
+  it("keeps the heart's background when the offer is saved — only the glyph fills", () => {
+    const card = { kind: "offer", data: baseOffer, lang: "en", dict } as any;
+    const { rerender } = render(createElement(SectionCard, card));
+    const idleClass = screen.getByRole("button", { name: "Wishlist" }).className;
+
+    has.mockReturnValue(true);
+    rerender(createElement(SectionCard, card));
+
+    const saved = screen.getByRole("button", { name: "Wishlist" });
+    expect(saved.className).toBe(idleClass);
+    expect(saved.className).not.toContain("bg-accent");
+    expect(saved.querySelector("svg")).toHaveAttribute("fill", "currentColor");
   });
 
   it("does not render a struck-through original price when there are no savings", () => {
