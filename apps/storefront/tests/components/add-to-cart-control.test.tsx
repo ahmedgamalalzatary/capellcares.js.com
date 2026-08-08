@@ -13,7 +13,9 @@ vi.mock("@/lib/api/client", () => ({
 import { CartProvider, useCart } from "@/components/providers/cart-provider";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 
-const dict = { common: { addToCart: "Add to cart", added: "Added", quantity: "Quantity" } };
+const dict = {
+  common: { addToCart: "Add to cart", added: "Added", quantity: "Quantity", outOfStock: "Out of stock" }
+};
 const line = { type: "product" as const, productId: 1, variantId: 11, qty: 1 };
 
 /** Surfaces the real cart contents so assertions test the cart, not the button. */
@@ -121,6 +123,18 @@ describe("AddToCartControl", () => {
 
     expect(cartLines()).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeInTheDocument();
+  });
+
+  it("refuses the very first add when nothing is in stock", () => {
+    renderControl({ maxQty: 0 });
+
+    const button = screen.getByRole("button", { name: "Out of stock" });
+    expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+
+    expect(cartLines()).toHaveLength(0);
+    expect(screen.queryByText("Added")).toBeNull();
   });
 
   it("stops + at the available stock", () => {

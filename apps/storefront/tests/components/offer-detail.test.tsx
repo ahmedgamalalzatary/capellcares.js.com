@@ -179,7 +179,7 @@ describe("OfferDetail media overlay", () => {
     expect(tag).toHaveTextContent("Offer");
     expect(tag.className).toContain("top-0");
     expect(tag.className).toContain("inset-s-0");
-    expect(tag.className).toContain("rounded-ss-lg");
+    expect(tag.className).toContain("rounded-ss-md");
     expect(tag.className).not.toContain("inset-e-0");
 
     const heart = frame.querySelector("button") as HTMLElement;

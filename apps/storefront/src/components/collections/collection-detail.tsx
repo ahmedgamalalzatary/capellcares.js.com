@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice, pickLang, type Category, type Collection, type Language, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -13,6 +12,7 @@ import { useCart } from "@/components/providers/cart-provider";
 import { RelatedItems } from "@/components/products/related-items";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
+import { useAddedFlash } from "@/hooks/use-added-flash";
 
 interface ItemEntry {
   qty: number;
@@ -40,15 +40,14 @@ export function CollectionDetail({
 }) {
   const router = useRouter();
   const cart = useCart();
-  const [added, setAdded] = useState(false);
+  const { added, flash: flashAdded } = useAddedFlash();
   const savings = collection.originalTotal - collection.price;
   const inStock = items.every((item) => item.available >= item.qty);
   const isAr = lang === "ar";
 
   const add = () => {
     cart.add({ type: "collection", collectionId: collection.id, qty: 1 });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1600);
+    flashAdded();
   };
 
   const buyNow = () => {
@@ -72,7 +71,7 @@ export function CollectionDetail({
               <>
                 <ItemTagPill
                   tag={{ kind: "collection", label: dict.collections.badge, star: true }}
-                  className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
+                  className="absolute top-0 inset-s-0 z-10 rounded-ss-md"
                 />
                 <WishlistButton
                   entityType="collection"

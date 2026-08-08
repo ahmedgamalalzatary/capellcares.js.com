@@ -108,4 +108,20 @@ describe("product form keywords field", () => {
       "body lotion"
     ]);
   });
+
+  it("splits keywords written on separate lines, since a textarea invites Enter", async () => {
+    const field = renderForm();
+
+    fireEvent.change(field, { target: { value: "لوشن\nbody lotion, aloe vera\n\nترطيب" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "حفظ التعديلات" }));
+    });
+
+    expect(upsertProduct.mock.calls[0]![0].keywords).toEqual([
+      "لوشن",
+      "body lotion",
+      "aloe vera",
+      "ترطيب"
+    ]);
+  });
 });

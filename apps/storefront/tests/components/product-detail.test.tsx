@@ -556,7 +556,7 @@ describe("ProductDetail", () => {
     expect(tag).toHaveTextContent("New");
     expect(tag.className).toContain("top-0");
     expect(tag.className).toContain("inset-s-0");
-    expect(tag.className).toContain("rounded-ss-lg");
+    expect(tag.className).toContain("rounded-ss-md");
 
     const heart = frame.querySelector("button") as HTMLElement;
     expect(heart).toHaveAttribute("aria-label", "Wishlist");

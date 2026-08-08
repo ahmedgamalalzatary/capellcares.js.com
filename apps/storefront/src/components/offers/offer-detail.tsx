@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, type Category, type Language, type Offer, type Product, type RelatedItemCard, type ReviewPage } from "@capella/shared";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
@@ -13,6 +12,7 @@ import { useCart } from "@/components/providers/cart-provider";
 import { RelatedItems } from "@/components/products/related-items";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
+import { useAddedFlash } from "@/hooks/use-added-flash";
 
 interface ItemEntry {
   qty: number;
@@ -35,14 +35,13 @@ interface Props {
 export function OfferDetail({ offer, category, items, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  const [added, setAdded] = useState(false);
+  const { added, flash: flashAdded } = useAddedFlash();
   const savings = offer.originalTotal - offer.price;
   const inStock = items.every((item) => item.available >= item.qty);
 
   const add = () => {
     cart.add({ type: "offer", offerId: offer.id, qty: 1 });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1600);
+    flashAdded();
   };
 
   const buyNow = () => {
@@ -67,7 +66,7 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
               <>
                 <ItemTagPill
                   tag={{ kind: "offer", label: dict.offers.badge, star: true }}
-                  className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
+                  className="absolute top-0 inset-s-0 z-10 rounded-ss-md"
                 />
                 <WishlistButton
                   entityType="offer"

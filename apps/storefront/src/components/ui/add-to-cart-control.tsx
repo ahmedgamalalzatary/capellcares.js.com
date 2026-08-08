@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import type { CartLine } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
+import { useAddedFlash } from "@/hooks/use-added-flash";
 
 interface Props {
   /** One unit of the thing this card sells; the control owns the quantity. */
@@ -18,6 +18,9 @@ interface Props {
 const ADD_CLASS =
   "inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 
+/** Appended to whatever the card supplies, so a sold-out card always reads as one. */
+const DISABLED_CLASS = "disabled:pointer-events-none disabled:opacity-50";
+
 const STEP_CLASS =
   "grid h-9 w-9 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30";
 
@@ -31,14 +34,7 @@ const STEP_CLASS =
  */
 export function AddToCartControl({ line, dict, maxQty, className }: Props) {
   const { lines, add, setQty, remove, keyOf } = useCart();
-  const [added, setAdded] = useState(false);
-  const addedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (addedResetTimeoutRef.current != null) {
-      clearTimeout(addedResetTimeoutRef.current);
-    }
-  }, []);
+  const { added, flash: flashAdded } = useAddedFlash(1400);
 
   const key = keyOf(line);
   const qty = lines.find((item) => keyOf(item) === key)?.qty ?? 0;
@@ -47,14 +43,7 @@ export function AddToCartControl({ line, dict, maxQty, className }: Props) {
   const onAdd = (event: React.MouseEvent) => {
     event.preventDefault();
     add(line);
-    setAdded(true);
-    if (addedResetTimeoutRef.current != null) {
-      clearTimeout(addedResetTimeoutRef.current);
-    }
-    addedResetTimeoutRef.current = setTimeout(() => {
-      setAdded(false);
-      addedResetTimeoutRef.current = null;
-    }, 1400);
+    flashAdded();
   };
 
   const onStep = (next: number) => (event: React.MouseEvent) => {
@@ -95,9 +84,16 @@ export function AddToCartControl({ line, dict, maxQty, className }: Props) {
     );
   }
 
+  // `atStock` covers the steps; the very first unit needs the same cap, or a
+  // sold-out card would still put one in the bag before disabling `+`.
   return (
-    <button type="button" className={className ?? ADD_CLASS} onClick={onAdd}>
-      <span>{dict.common.addToCart}</span>
+    <button
+      type="button"
+      className={`${className ?? ADD_CLASS} ${DISABLED_CLASS}`}
+      disabled={atStock}
+      onClick={onAdd}
+    >
+      <span>{atStock ? dict.common.outOfStock : dict.common.addToCart}</span>
     </button>
   );
 }

@@ -12,6 +12,7 @@ import { WishlistButton } from "@/components/ui/wishlist-button";
 import { useCart } from "@/components/providers/cart-provider";
 import { ReviewSummary } from "@/components/reviews/review-summary";
 import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
+import { useAddedFlash } from "@/hooks/use-added-flash";
 
 type Tab = "description" | "ingredients" | "howToUse" | "warnings";
 
@@ -41,7 +42,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const [variantId, setVariantId] = useState<number | null>(firstInStockVariant?.id ?? product.variants[0]?.id ?? null);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
-  const [added, setAdded] = useState(false);
+  const { added, flash: flashAdded } = useAddedFlash();
   const variant = useMemo(
     () => product.variants.find((item) => item.id === variantId) ?? null,
     [variantId, product.variants]
@@ -52,8 +53,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const addToCart = () => {
     if (!variant) return;
     cart.add({ type: "product", productId: product.id, variantId: variant.id, qty });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1600);
+    flashAdded();
   };
 
   const buyNow = () => {
@@ -83,7 +83,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             overlay={(
               <>
                 {leadTag ? (
-                  <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
+                  <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-md" />
                 ) : null}
                 <WishlistButton
                   entityType="product"
