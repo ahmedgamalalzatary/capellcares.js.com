@@ -127,14 +127,15 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
         <div className="flex items-center justify-end">
           {/* Mobile cluster: wishlist · cart */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
-            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
-              <Icon.Heart size={24} />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
-            </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
               <span className="absolute right-1/4 top-1/8 grid min-h-4 min-w-4 place-items-center text-xs font-semibold leading-none">{count}</span>
             </Link>
+            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
+              <Icon.Heart size={24} />
+              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+            </Link>
+            
           </div>
 
           {/* Desktop right cluster: cart · wishlist · login */}
