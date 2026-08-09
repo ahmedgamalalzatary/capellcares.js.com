@@ -117,6 +117,7 @@ export function CategoryPageContent({
         lang={lang}
         dict={dict}
         initialCategory={category.id}
+        scopedCategoryId={category.id}
         initialCols={1}
         lockCategory={false}
         headerCategoryIds={headerCategoryIds}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { pickLang } from "@capella/shared";
 import { ProductCard } from "../product-card";
-import { MobileFilterDrawer } from "../filters/mobile-filter-drawer";
+import { FilterDrawer } from "../filters/filter-drawer";
 import { ProductGridEmptyState } from "./product-grid-empty-state";
 import { ProductGridToolbar } from "./product-grid-toolbar";
 import type { ProductGridProps } from "../../../types/product-grid.types";
@@ -21,7 +21,8 @@ export function ProductGrid({
   initialCols = 1,
   lockCategory,
   headerCategoryIds,
-  onHeaderCategoryIdsChange
+  onHeaderCategoryIdsChange,
+  scopedCategoryId
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [cols, setCols] = useState<Cols>(initialCols);
@@ -70,6 +71,7 @@ export function ProductGrid({
     openParents,
     toggleParent,
     lockCategory,
+    scopedCategoryId,
     onClear: handleClear,
   };
 
@@ -120,7 +122,7 @@ export function ProductGrid({
       </div>
 
       {/* ── Mobile drawer ── */}
-      <MobileFilterDrawer
+      <FilterDrawer
         open={showFilters}
         onClose={() => setShowFilters(false)}
         {...sharedFilterProps}

@@ -18,6 +18,7 @@ export const ar = {
     search: "ابحث عن منتج",
     categories: "الأقسام",
     allCategories: "كل الأقسام",
+    allCategoryTypes: "كل أنواع {name}",
     announcement: "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه · ادفع عند الاستلام",
     announcements: [
       "شحن مجاني داخل القاهرة للطلبات فوق ٦٠٠ جنيه",
@@ -119,7 +120,7 @@ export const ar = {
   },
   filters: {
     title: "الفلاتر",
-    beytype: "حسب النوع",
+    bytype: "حسب النوع",
     price: "السعر",
     priceMin: "الأدنى",
     priceMax: "الأعلى",
@@ -130,6 +131,7 @@ export const ar = {
     sortPriceDesc: "السعر: من الأعلى للأقل",
     sortName: "الاسم",
     closeFilters: "إغلاق",
+    dismissFilters: "إغلاق الفلاتر",
     showResults: "عرض النتائج",
     emptyDesc: "جرّبي تعديل الفلاتر أو ابحثي عن منتج آخر.",
     toggleCategory: "تبديل الفئة",

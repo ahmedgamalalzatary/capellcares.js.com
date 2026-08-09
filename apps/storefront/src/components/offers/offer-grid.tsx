@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { pickLang, type Category, type Language, type Offer } from "@capella/shared";
 import { SectionCard } from "@/components/shop/section-card";
-import { MobileFilterDrawer } from "@/components/products/filters/mobile-filter-drawer";
+import { FilterDrawer } from "@/components/products/filters/filter-drawer";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import type { CategoryTreeNode, Sort } from "@/types/product-grid.types";
 
@@ -214,7 +214,7 @@ export function OfferGrid({
         </div>
       )}
 
-      <MobileFilterDrawer
+      <FilterDrawer
         open={showFilters}
         onClose={() => setShowFilters(false)}
         lang={lang}

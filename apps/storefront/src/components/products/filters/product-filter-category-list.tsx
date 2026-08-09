@@ -16,6 +16,13 @@ interface ProductFilterCategoryListProps {
   categoryTree: CategoryTreeNode[];
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;
+  /**
+   * The category the surrounding page is scoped to (category pages only). When it
+   * is the tree's own root, that root doubles as the "everything here" pill —
+   * labelled after the category — and the generic all-categories pill is dropped,
+   * so the same filter is never offered twice.
+   */
+  scopedCategoryId?: number;
 }
 
 const mobileListClass = "flex flex-col gap-1.5";
@@ -69,8 +76,15 @@ function branchContains(node: CategoryTreeNode, targetId: number): boolean {
   return node.children.some((child) => branchContains(child, targetId));
 }
 
-function getIsOpen(node: CategoryTreeNode, category: number | undefined, openParents: Record<number, boolean>) {
-  return openParents[node.category.id] ?? Boolean(category && branchContains(node, category));
+function getIsOpen(
+  node: CategoryTreeNode,
+  category: number | undefined,
+  openParents: Record<number, boolean>,
+  isScopedRoot = false
+) {
+  // A scoped root is the whole page, so its children start visible even before a
+  // selection exists to trace a branch from.
+  return openParents[node.category.id] ?? (isScopedRoot || Boolean(category && branchContains(node, category)));
 }
 
 function getBranchClasses(isMobile: boolean) {
@@ -91,21 +105,39 @@ export function ProductFilterCategoryList({
   categories,
   categoryTree,
   openParents,
-  toggleParent
+  toggleParent,
+  scopedCategoryId
 }: ProductFilterCategoryListProps) {
   const isMobile = mode === "mobile";
   const name = isMobile ? "cat-mobile" : "cat";
   const fallbackCategories = categories.slice(0, 14);
   const classes = getBranchClasses(isMobile);
 
-  const renderPill = (item: Category, indent = false) => (
-    <CategoryPill key={item.id} name={name} checked={category === item.id} onChange={() => setCategory(item.id)} indent={indent}>
-      {pickLang(item.name, lang)}
-    </CategoryPill>
-  );
+  const scopedRoot = scopedCategoryId == null
+    ? undefined
+    : categoryTree.find((node) => node.category.id === scopedCategoryId);
+
+  const renderPill = (item: Category, indent = false) => {
+    const isScopedRoot = item.id === scopedRoot?.category.id;
+    return (
+      <CategoryPill
+        key={item.id}
+        name={name}
+        // The scoped root also stands in for "no narrowing yet", so it stays
+        // selected whether the page arrived with its id or with nothing.
+        checked={isScopedRoot ? category == null || category === item.id : category === item.id}
+        onChange={() => setCategory(item.id)}
+        indent={indent}
+      >
+        {isScopedRoot
+          ? String(dict.nav.allCategoryTypes).replace("{name}", pickLang(item.name, lang))
+          : pickLang(item.name, lang)}
+      </CategoryPill>
+    );
+  };
 
   const renderNode = (node: CategoryTreeNode, depth = 0): React.ReactNode => {
-    const isOpen = getIsOpen(node, category, openParents);
+    const isOpen = getIsOpen(node, category, openParents, node.category.id === scopedRoot?.category.id);
     const childContent = node.children.map((child) => renderNode(child, depth + 1));
 
     return (
@@ -134,9 +166,11 @@ export function ProductFilterCategoryList({
 
   return (
     <div className={isMobile ? mobileListClass : desktopListClass}>
-      <CategoryPill name={name} checked={!category} onChange={() => setCategory(undefined)}>
-        {dict.nav.allCategories}
-      </CategoryPill>
+      {!scopedRoot && (
+        <CategoryPill name={name} checked={!category} onChange={() => setCategory(undefined)}>
+          {dict.nav.allCategories}
+        </CategoryPill>
+      )}
       {categoryTree.length > 0 ? renderedTree : fallbackCategories.map((item) => renderPill(item))}
     </div>
   );

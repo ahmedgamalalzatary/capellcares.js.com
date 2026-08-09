@@ -3,18 +3,37 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { EntityAvatar } from "@/components/admin/entity-avatar";
+import { API_BASE } from "@/lib/api/client";
 
 describe("EntityAvatar", () => {
-  it("renders the actual image when a src is provided", () => {
+  // Uploads are served by the API, not by the ERP origin, so a stored
+  // `/uploads/...` path has to be resolved against the API before it is shown.
+  it("resolves a stored upload path against the API origin", () => {
     const { container } = render(
       createElement(EntityAvatar, { src: "/uploads/thing.webp", fallback: "T" })
     );
 
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
-    expect(img).toHaveAttribute("src", "/uploads/thing.webp");
+    expect(img).toHaveAttribute("src", `${API_BASE}/uploads/thing.webp`);
     expect(img).toHaveClass("avatar-tile");
     expect(container.textContent).not.toContain("T");
+  });
+
+  it("leaves an already absolute image URL alone", () => {
+    const { container } = render(
+      createElement(EntityAvatar, { src: "https://cdn.example.com/thing.webp", fallback: "T" })
+    );
+
+    expect(container.querySelector("img")).toHaveAttribute("src", "https://cdn.example.com/thing.webp");
+  });
+
+  it("leaves a non-upload relative path alone", () => {
+    const { container } = render(
+      createElement(EntityAvatar, { src: "/static/thing.webp", fallback: "T" })
+    );
+
+    expect(container.querySelector("img")).toHaveAttribute("src", "/static/thing.webp");
   });
 
   it("falls back to the first-letter avatar tile when src is missing", () => {

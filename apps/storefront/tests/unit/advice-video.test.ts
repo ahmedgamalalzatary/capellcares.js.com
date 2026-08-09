@@ -12,7 +12,20 @@ describe("resolveAdviceVideo", () => {
       provider: "youtube",
       permalinkUrl: "https://www.youtube.com/watch?v=capella",
       popupUrl: expect.stringContaining("https://www.youtube.com/embed/capella?"),
+      embedUrl: expect.stringContaining("https://www.youtube.com/embed/capella?"),
       thumbnailUrl: "https://i.ytimg.com/vi/capella/sddefault.jpg"
+    });
+  });
+
+  // The popup is a chrome-free reel; a video sitting inside a gallery instead
+  // needs a scrubber and volume, so the two players differ on controls.
+  it("keeps player controls on the in-page embed but not the popup", () => {
+    const resolved = resolveAdviceVideo("https://www.youtube.com/watch?v=capella");
+
+    expect(resolved).toMatchObject({
+      provider: "youtube",
+      embedUrl: expect.stringContaining("controls=1"),
+      popupUrl: expect.stringContaining("controls=0")
     });
   });
 

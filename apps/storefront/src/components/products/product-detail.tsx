@@ -75,6 +75,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           <EntityMediaGallery
             media={product.media}
             imagePath={product.imagePath}
+            videoUrl={product.youtubeUrl}
             label={pickLang(product.name, lang)}
             testIdPrefix="product"
             dotLabelTemplate={dict.product?.mediaDotLabel ?? (lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}")}

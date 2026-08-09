@@ -990,4 +990,68 @@ describe("ProductDetail", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toContain("/api/v1/reviews/product/1?page=2&pageSize=1");
     vi.unstubAllGlobals();
   });
+
+  it("shows the product's linked video as the last item in the media gallery", () => {
+    const dict = {
+      product: {
+        description: "Description",
+        ingredients: "Ingredients",
+        howToUse: "How to use",
+        warnings: "Warnings",
+        selectSize: "Select size"
+      },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: {
+        outOfStock: "Out of stock",
+        lowStock: "Only {n}",
+        inStock: "In stock",
+        quantity: "Quantity",
+        addToCart: "Add to cart",
+        added: "Added",
+        buyNow: "Buy now",
+        addToWishlist: "Wishlist"
+      },
+      offers: { save: "Save {amount}" }
+    };
+
+    render(createElement(ProductDetail, {
+      product: {
+        id: 1,
+        sku: "SKU-1",
+        slug: "product-1",
+        name: { ar: "منتج", en: "Product" },
+        description: { ar: "", en: "Description" },
+        ingredients: { ar: "", en: "Ingredients" },
+        howToUse: { ar: "", en: "Use" },
+        warnings: { ar: "", en: "Warnings" },
+        keywords: [],
+        buyingPrice: 10,
+        imagePath: "/uploads/primary.jpg",
+        status: "active" as const,
+        isNew: false,
+        isBestseller: false,
+        categoryId: 5,
+        media: [
+          { type: "image" as const, url: "/uploads/primary.jpg" },
+          { type: "image" as const, url: "/uploads/hover.jpg" }
+        ],
+        youtubeUrl: "https://www.youtube.com/watch?v=capella",
+        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+        createdAt: "",
+        updatedAt: ""
+      },
+      offers: [],
+      lang: "en",
+      dict
+    }));
+
+    const thumbnails = screen.getByTestId("product-media-thumbs").querySelectorAll("button");
+    expect(thumbnails).toHaveLength(3);
+
+    fireEvent.click(thumbnails[2]!);
+    expect(screen.getByTestId("product-media-main").querySelector("iframe")).toHaveAttribute(
+      "src",
+      expect.stringContaining("https://www.youtube.com/embed/capella?")
+    );
+  });
 });

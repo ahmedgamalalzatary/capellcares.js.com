@@ -15,11 +15,11 @@ vi.mock("@/components/layout/breadcrumb", () => ({
 }));
 
 vi.mock("@/components/products/grid/product-grid", () => ({
-  ProductGrid: ({ categories, initialCategory, initialCols, lockCategory, headerCategoryIds }: any) =>
+  ProductGrid: ({ categories, initialCategory, initialCols, lockCategory, headerCategoryIds, scopedCategoryId }: any) =>
     createElement(
       "div",
       { "data-testid": "product-grid", "data-initial-cols": String(initialCols) },
-      `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"}`
+      `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"};scoped:${scopedCategoryId ?? "none"}`
     )
 }));
 
@@ -91,6 +91,15 @@ describe("category page", () => {
     expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:62");
     expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
     expect(screen.getByTestId("product-grid")).toHaveTextContent("locked:no");
+  });
+
+  it("scopes the grid filters to the category the page is showing", async () => {
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "curly-hair" }),
+      searchParams: Promise.resolve({ categoryId: "62" })
+    }));
+
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("scoped:62");
   });
 
   it("rejects ambiguous slug lookup when categoryId is invalid", async () => {

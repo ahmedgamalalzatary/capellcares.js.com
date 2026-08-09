@@ -85,4 +85,79 @@ describe("ProductFilterCategoryList", () => {
     expect(screen.getByText("Body")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Toggle category" })).not.toBeInTheDocument();
   });
+
+  it("labels the scoped root pill after its category and drops the generic all-categories pill", () => {
+    render(createElement(ProductFilterCategoryList, {
+      mode: "desktop",
+      lang: "en",
+      dict: {
+        nav: { allCategories: "All categories", allCategoryTypes: "All {name} Types" },
+        filters: { toggleCategory: "Toggle category" }
+      },
+      category: 1,
+      setCategory: vi.fn(),
+      categories,
+      categoryTree: [{ category: categories[0], children: [{ category: categories[1], children: [] }] }],
+      openParents: { 1: true },
+      toggleParent: vi.fn(),
+      scopedCategoryId: 1
+    }));
+
+    expect(screen.getByText("All Care Types")).toBeInTheDocument();
+    expect(screen.queryByText("All categories")).not.toBeInTheDocument();
+    // The scoped root is represented only by the renamed pill, never twice.
+    expect(screen.queryByText("Care")).not.toBeInTheDocument();
+    // Its children still render underneath it.
+    expect(screen.getByText("Serums")).toBeInTheDocument();
+  });
+
+  it("selects the scoped category instead of clearing when its pill is clicked", () => {
+    const setCategory = vi.fn();
+
+    render(createElement(ProductFilterCategoryList, {
+      mode: "mobile",
+      lang: "en",
+      dict: {
+        nav: { allCategories: "All categories", allCategoryTypes: "All {name} Types" },
+        filters: { toggleCategory: "Toggle category" }
+      },
+      category: 2,
+      setCategory,
+      categories,
+      categoryTree: [{ category: categories[0], children: [{ category: categories[1], children: [] }] }],
+      openParents: { 1: true },
+      toggleParent: vi.fn(),
+      scopedCategoryId: 1
+    }));
+
+    fireEvent.click(screen.getByText("All Care Types"));
+    expect(setCategory).toHaveBeenCalledWith(1);
+  });
+
+  it("keeps the generic all-categories pill when the scoped category is not a tree root", () => {
+    render(createElement(ProductFilterCategoryList, {
+      mode: "desktop",
+      lang: "en",
+      dict: {
+        nav: { allCategories: "All categories", allCategoryTypes: "All {name} Types" },
+        filters: { toggleCategory: "Toggle category" }
+      },
+      category: 2,
+      setCategory: vi.fn(),
+      categories,
+      categoryTree: [
+        { category: categories[0], children: [{ category: categories[1], children: [] }] },
+        { category: categories[3], children: [] }
+      ],
+      openParents: { 1: true },
+      toggleParent: vi.fn(),
+      // Serums is nested, not a root of the rendered tree.
+      scopedCategoryId: 2
+    }));
+
+    expect(screen.getByText("All categories")).toBeInTheDocument();
+    expect(screen.queryByText("All Serums Types")).not.toBeInTheDocument();
+    expect(screen.getByText("Care")).toBeInTheDocument();
+    expect(screen.getByText("Serums")).toBeInTheDocument();
+  });
 });

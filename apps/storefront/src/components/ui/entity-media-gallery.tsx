@@ -3,9 +3,16 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { EntityMedia } from "@capella/shared";
 
+import { loadInstagramEmbedScript, resolveAdviceVideo, type AdviceVideoPresentation } from "@/lib/advice-video";
+
 interface Props {
   media?: EntityMedia[];
   imagePath?: string | null;
+  /**
+   * Optional YouTube/Instagram link. It joins the gallery as the last item, so
+   * the uploaded photos still lead and nothing plays until it is selected.
+   */
+  videoUrl?: string | null;
   label: string;
   testIdPrefix: "product" | "offer" | "collection";
   dotLabelTemplate?: string;
@@ -14,9 +21,21 @@ interface Props {
   overlay?: ReactNode;
 }
 
+/** Uploaded files and a linked video share one strip, so they share one shape. */
+type GalleryItem =
+  | { kind: "file"; type: "image" | "video"; url: string }
+  | { kind: "embed"; video: AdviceVideoPresentation };
+
+function itemKey(item: GalleryItem, index: number) {
+  return item.kind === "embed"
+    ? `embed-${item.video.permalinkUrl}-${index}`
+    : `${item.type}-${item.url}-${index}`;
+}
+
 export function EntityMediaGallery({
   media: incomingMedia,
   imagePath,
+  videoUrl,
   label,
   testIdPrefix,
   dotLabelTemplate = "go to media {index}",
@@ -26,26 +45,52 @@ export function EntityMediaGallery({
 }: Props) {
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const activePointerTargetRef = useRef<HTMLElement | null>(null);
+  // Only the pointer that began the swipe may finish it — a second finger
+  // lifting must not consume, or cancel, someone else's gesture.
+  const dragPointerIdRef = useRef<number | null>(null);
   const activeIndexRef = useRef(0);
-  const media = useMemo(
-    () => incomingMedia?.length
+
+  // A link we cannot turn into a player contributes no item at all, rather than
+  // a thumbnail that opens nothing.
+  const linkedVideo = useMemo(
+    () => (videoUrl?.trim() ? resolveAdviceVideo(videoUrl) : null),
+    [videoUrl]
+  );
+
+  const items = useMemo<GalleryItem[]>(() => {
+    const files: GalleryItem[] = (incomingMedia?.length
       ? incomingMedia
       : imagePath
         ? [{ type: "image" as const, url: imagePath }]
-        : [],
-    [incomingMedia, imagePath]
-  );
+        : []
+    ).map((item) => ({ kind: "file", type: item.type, url: item.url }));
+
+    return linkedVideo ? [...files, { kind: "embed", video: linkedVideo }] : files;
+  }, [incomingMedia, imagePath, linkedVideo]);
+
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeMedia = media[activeIndex] ?? media[0] ?? null;
+  const activeItem = items[activeIndex] ?? items[0] ?? null;
   activeIndexRef.current = activeIndex;
-  const isVideoTarget = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest("video"));
+
+  // Swipes must not fight a player the shopper is scrubbing or an embed that
+  // owns its own pointer handling.
+  const isPlayerTarget = (target: EventTarget | null) =>
+    target instanceof Element && Boolean(target.closest("video, iframe, blockquote"));
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [incomingMedia, imagePath]);
+  }, [incomingMedia, imagePath, videoUrl]);
+
+  useEffect(() => {
+    const active = items[activeIndex];
+    if (active?.kind === "embed" && active.video.provider === "instagram") {
+      loadInstagramEmbedScript();
+    }
+  }, [items, activeIndex]);
 
   const clearPointer = (pointerId: number) => {
     dragStartRef.current = null;
+    dragPointerIdRef.current = null;
     const target = activePointerTargetRef.current;
     activePointerTargetRef.current = null;
     if (target && "hasPointerCapture" in target && target.hasPointerCapture(pointerId) && "releasePointerCapture" in target) {
@@ -53,24 +98,30 @@ export function EntityMediaGallery({
     }
   };
 
+  /** True only for the pointer that started the current swipe. */
+  const isSwipePointer = (event: Pick<globalThis.PointerEvent, "pointerId" | "target">) =>
+    dragStartRef.current !== null &&
+    dragPointerIdRef.current === event.pointerId &&
+    !isPlayerTarget(event.target);
+
   const completeSwipe = ({ clientX, clientY, isPrimary, pointerId }: Pick<globalThis.PointerEvent, "clientX" | "clientY" | "isPrimary" | "pointerId">) => {
     const dragStart = dragStartRef.current;
     clearPointer(pointerId);
-    if (media.length <= 1 || !isPrimary || !dragStart) return;
+    if (items.length <= 1 || !isPrimary || !dragStart) return;
     const deltaX = clientX - dragStart.x;
     const deltaY = clientY - dragStart.y;
     if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
     const direction = deltaX < 0 ? 1 : -1;
-    const nextIndex = Math.max(0, Math.min(media.length - 1, activeIndexRef.current + direction));
+    const nextIndex = Math.max(0, Math.min(items.length - 1, activeIndexRef.current + direction));
     if (nextIndex !== activeIndexRef.current) setActiveIndex(nextIndex);
   };
 
   useEffect(() => {
     const handlePointerUp = (event: globalThis.PointerEvent) => {
-      if (dragStartRef.current && !isVideoTarget(event.target)) completeSwipe(event);
+      if (isSwipePointer(event)) completeSwipe(event);
     };
     const handlePointerCancel = (event: globalThis.PointerEvent) => {
-      if (dragStartRef.current && !isVideoTarget(event.target)) clearPointer(event.pointerId);
+      if (isSwipePointer(event)) clearPointer(event.pointerId);
     };
     document.addEventListener("pointerup", handlePointerUp);
     document.addEventListener("pointercancel", handlePointerCancel);
@@ -78,14 +129,64 @@ export function EntityMediaGallery({
       document.removeEventListener("pointerup", handlePointerUp);
       document.removeEventListener("pointercancel", handlePointerCancel);
     };
-  }, [media.length]);
+  }, [items.length]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
-    if (media.length <= 1 || !event.isPrimary || isVideoTarget(event.target)) return;
+    if (items.length <= 1 || !event.isPrimary || isPlayerTarget(event.target)) return;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
+    dragPointerIdRef.current = event.pointerId;
     activePointerTargetRef.current = event.currentTarget;
     if ("setPointerCapture" in event.currentTarget) event.currentTarget.setPointerCapture(event.pointerId);
   };
+
+  const renderEmbed = (video: AdviceVideoPresentation) =>
+    video.provider === "youtube" ? (
+      <iframe
+        title={`${label} video`}
+        src={video.embedUrl}
+        className="aspect-video w-full"
+        allow="encrypted-media; picture-in-picture"
+        allowFullScreen
+      />
+    ) : (
+      <div className="flex w-full items-center justify-center p-4">
+        <blockquote
+          className="instagram-media m-0 w-full"
+          data-instgrm-captioned=""
+          data-instgrm-permalink={video.permalinkUrl}
+          data-instgrm-version="14"
+        >
+          <a href={video.permalinkUrl} target="_blank" rel="noreferrer">
+            {label}
+          </a>
+        </blockquote>
+      </div>
+    );
+
+  const renderEmbedThumbnail = (video: AdviceVideoPresentation, index: number) =>
+    video.provider === "youtube" ? (
+      <img
+        src={video.thumbnailUrl}
+        alt=""
+        loading="lazy"
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      // Instagram exposes no thumbnail without an API call, so the tile just
+      // reads as "a video lives here".
+      <span
+        className="grid aspect-square w-full place-items-center bg-ink text-canvas"
+        aria-label={`${label} video ${index + 1}`}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </span>
+    );
+
+  const thumbnailItems: GalleryItem[] = items.length
+    ? items
+    : [{ kind: "file", type: "image", url: imagePath ?? "" }];
 
   return (
     <>
@@ -95,26 +196,28 @@ export function EntityMediaGallery({
           data-testid={`${testIdPrefix}-media-main`}
           onPointerDown={onPointerDown}
           onPointerUp={(event) => {
-            if (!isVideoTarget(event.target)) completeSwipe(event.nativeEvent);
+            if (isSwipePointer(event.nativeEvent)) completeSwipe(event.nativeEvent);
           }}
           onPointerCancel={(event) => {
-            if (!isVideoTarget(event.target)) clearPointer(event.pointerId);
+            if (isSwipePointer(event.nativeEvent)) clearPointer(event.pointerId);
           }}
         >
-          {activeMedia?.type === "video" ? (
-            <video className="h-4/5 w-4/5" controls src={activeMedia.url} aria-label={label}>
-              <track kind="captions" />
-            </video>
-          ) : renderImage(activeMedia?.url ?? imagePath ?? "")}
+          {activeItem?.kind === "embed"
+            ? renderEmbed(activeItem.video)
+            : activeItem?.type === "video" ? (
+              <video className="h-4/5 w-4/5" controls src={activeItem.url} aria-label={label}>
+                <track kind="captions" />
+              </video>
+            ) : renderImage(activeItem?.url ?? imagePath ?? "")}
         </div>
         {overlay}
       </div>
 
-      {media.length > 1 ? (
+      {items.length > 1 ? (
         <div className="flex items-center justify-center gap-2" data-testid={`${testIdPrefix}-media-dots`}>
-          {media.map((item, index) => (
+          {items.map((item, index) => (
             <button
-              key={`dot-${item.type}-${item.url}-${index}`}
+              key={`dot-${itemKey(item, index)}`}
               type="button"
               onClick={() => setActiveIndex(index)}
               aria-label={dotLabelTemplate.replace("{index}", String(index + 1))}
@@ -129,16 +232,18 @@ export function EntityMediaGallery({
         className="grid grid-cols-4 gap-4 sm:gap-4"
         data-testid={`${testIdPrefix}-media-thumbs`}
       >
-        {(media.length ? media : [{ type: "image" as const, url: imagePath ?? "" }]).map((item, index) => (
+        {thumbnailItems.map((item, index) => (
           <button
-            key={`${item.type}-${item.url}-${index}`}
+            key={itemKey(item, index)}
             type="button"
             className="bg-surface transition-transform hover:border-warm data-[active=true]:scale-105"
             data-active={activeIndex === index}
             aria-label={thumbnailLabelTemplate.replace("{index}", String(index + 1))}
             onClick={() => setActiveIndex(index)}
           >
-            {item.type === "video" ? (
+            {item.kind === "embed" ? (
+              renderEmbedThumbnail(item.video, index)
+            ) : item.type === "video" ? (
               <video src={item.url} aria-label={`${label} video ${index + 1}`}>
                 <track kind="captions" />
               </video>

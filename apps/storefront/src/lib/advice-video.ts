@@ -2,7 +2,10 @@ export type AdviceVideoPresentation =
   | {
       provider: "youtube";
       permalinkUrl: string;
+      /** Chrome-free player for the full-screen advice popup. */
       popupUrl: string;
+      /** Player for a video sitting inline among other media, so it keeps controls. */
+      embedUrl: string;
       thumbnailUrl: string;
     }
   | {
@@ -62,11 +65,18 @@ export function resolveAdviceVideo(videoUrl: string): AdviceVideoPresentation | 
       controls: "0",
       modestbranding: "1"
     });
+    const embedParams = new URLSearchParams({
+      rel: "0",
+      playsinline: "1",
+      controls: "1",
+      modestbranding: "1"
+    });
     const base = `https://www.youtube.com/embed/${youtubeId}`;
     return {
       provider: "youtube",
       permalinkUrl: url.toString(),
       popupUrl: `${base}?${popupParams.toString()}`,
+      embedUrl: `${base}?${embedParams.toString()}`,
       thumbnailUrl: `https://i.ytimg.com/vi/${youtubeId}/sddefault.jpg`
     };
   }

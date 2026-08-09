@@ -25,6 +25,7 @@ interface ProductFiltersContentProps {
   lockCategory?: boolean;
   showSearch?: boolean;
   showPrice?: boolean;
+  scopedCategoryId?: number;
   mode: "mobile" | "desktop";
 }
 
@@ -44,6 +45,7 @@ export function ProductFiltersContent({
   lockCategory,
   showSearch = true,
   showPrice = true,
+  scopedCategoryId,
   mode
 }: ProductFiltersContentProps) {
   const isMobile = mode === "mobile";
@@ -87,6 +89,7 @@ export function ProductFiltersContent({
             categoryTree={categoryTree}
             openParents={openParents}
             toggleParent={toggleParent}
+            scopedCategoryId={scopedCategoryId}
           />
         </FilterSection>
       )}

@@ -11,6 +11,12 @@ export interface ProductGridProps {
   lockCategory?: boolean;
   headerCategoryIds?: number[];
   onHeaderCategoryIdsChange?: (value: number[]) => void;
+  /**
+   * Set by pages that already stand for one category (category pages), so the
+   * filter panel names its catch-all pill after that category instead of
+   * offering a generic "all categories" that would duplicate the tree root.
+   */
+  scopedCategoryId?: number;
 }
 
 export type Sort = "default" | "newest" | "price-asc" | "price-desc" | "name";

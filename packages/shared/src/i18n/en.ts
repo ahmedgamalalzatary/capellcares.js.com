@@ -18,6 +18,7 @@ export const en = {
     search: "Search products",
     categories: "Categories",
     allCategories: "All Categories",
+    allCategoryTypes: "All {name} Types",
     announcement: "Free Cairo delivery on orders over EGP 600 · Cash on delivery",
     announcements: [
       "Free Cairo delivery on orders over EGP 600",
@@ -130,6 +131,7 @@ export const en = {
     sortPriceDesc: "Price: high to low",
     sortName: "Name",
     closeFilters: "Close filters",
+    dismissFilters: "Dismiss filters",
     showResults: "Show results",
     emptyDesc: "Try adjusting your filters or search for something else.",
     toggleCategory: "Toggle category",

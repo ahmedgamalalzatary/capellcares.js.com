@@ -10,8 +10,8 @@ vi.mock("@/components/shop/section-card", () => ({
   SectionCard: ({ data }: any) => createElement("div", { "data-testid": "offer-card" }, data.name.en)
 }));
 
-vi.mock("@/components/products/filters/mobile-filter-drawer", () => ({
-  MobileFilterDrawer: () => createElement("div")
+vi.mock("@/components/products/filters/filter-drawer", () => ({
+  FilterDrawer: () => createElement("div")
 }));
 
 vi.mock("@/components/ui/columns-toggle", () => ({
