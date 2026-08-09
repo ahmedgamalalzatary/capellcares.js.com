@@ -52,7 +52,7 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
   const isAr = lang === "ar";
   return (
     <>
-      <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[1.1fr_1fr] lg:gap-15">
+      <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
             media={offer.media}
