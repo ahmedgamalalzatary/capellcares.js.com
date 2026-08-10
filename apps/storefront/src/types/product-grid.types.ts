@@ -3,6 +3,8 @@ import type { Category, Dict, Language, Product } from "@capella/shared";
 export interface ProductGridProps {
   products: Product[];
   categories: Category[];
+  /** Full hierarchy lookup for matching and card labels when `categories` is a scoped subtree. */
+  categoryLookupCategories?: Category[];
   lang: Language;
   dict: Dict;
   initialSearch?: string;

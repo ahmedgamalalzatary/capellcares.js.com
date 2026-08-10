@@ -134,6 +134,26 @@ describe("ProductsListPage ordering", () => {
     });
   });
 
+  it("includes ancestor products in a child category ordering scope", async () => {
+    storeState.products = [
+      makeProduct(1, 6, [{ scopeType: "category", scopeId: 7, rank: 1 }], "2026-06-01T00:00:00.000Z"),
+      makeProduct(2, 7, [{ scopeType: "category", scopeId: 7, rank: 2 }], "2026-06-02T00:00:00.000Z")
+    ];
+
+    render(createElement(ProductsListPage));
+
+    fireEvent.change(screen.getByTestId("products-category-filter"), { target: { value: "7" } });
+
+    expect(screen.getByTestId("product-row-1")).toBeInTheDocument();
+    const secondRow = screen.getByTestId("product-row-2");
+    fireEvent.click(within(secondRow).getByRole("button", { name: /لأعلى/ }));
+    fireEvent.click(screen.getByRole("button", { name: /ترتيب/ }));
+
+    await waitFor(() => {
+      expect(reorderProducts).toHaveBeenCalledWith({ categoryId: 7, ids: [2, 1] });
+    });
+  });
+
   it("orders rows by the selected scope's ranks with unranked products last", () => {
     storeState.products = [
       makeProduct(1, 7, [], "2026-06-01T00:00:00.000Z"),

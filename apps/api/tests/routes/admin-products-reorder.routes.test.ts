@@ -98,6 +98,46 @@ test("admin product reorder persists category-scoped ranks including descendant 
   assert.equal(rankByProductId.get(ids.productOneId), 2);
 });
 
+test("admin product reorder includes ancestor products in a child category scope", async () => {
+  const ids = await getBaselineIds();
+  const [childCategory] = await db.insert(categories).values({
+    parentId: ids.leafCategoryId,
+    slug: `ordering-child-${Date.now()}`,
+    arName: "Ordering Child",
+    enName: "Ordering Child",
+    isLeaf: true
+  }).$returningId();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products/reorder", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        categoryId: childCategory.id,
+        ids: [ids.productTwoId, ids.productOneId]
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const rows = await db
+    .select({ entityId: entityOrderings.entityId, rank: entityOrderings.rank })
+    .from(entityOrderings)
+    .where(
+      and(
+        eq(entityOrderings.scopeType, "category"),
+        eq(entityOrderings.scopeId, childCategory.id),
+        eq(entityOrderings.entityType, "product")
+      )
+    );
+
+  const rankByProductId = new Map(rows.map((row) => [row.entityId, row.rank]));
+  assert.equal(rankByProductId.get(ids.productTwoId), 1);
+  assert.equal(rankByProductId.get(ids.productOneId), 2);
+});
+
 test("admin product reorder rejects duplicate ids", async () => {
   const ids = await getBaselineIds();
 

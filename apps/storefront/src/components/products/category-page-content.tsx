@@ -11,6 +11,7 @@ export function CategoryPageContent({
   subCats,
   products,
   categories,
+  categoryLookupCategories,
   lang,
   dict
 }: {
@@ -18,6 +19,7 @@ export function CategoryPageContent({
   subCats: Category[];
   products: Product[];
   categories: Category[];
+  categoryLookupCategories: Category[];
   lang: Language;
   dict: any;
 }) {
@@ -114,6 +116,7 @@ export function CategoryPageContent({
       <ProductGrid
         products={products}
         categories={categories}
+        categoryLookupCategories={categoryLookupCategories}
         lang={lang}
         dict={dict}
         initialCategory={category.id}

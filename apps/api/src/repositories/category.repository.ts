@@ -7,7 +7,7 @@ import {
   products
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { collectDescendantIds } from "./category-tree.js";
+import { collectBranchIds, collectDescendantIds } from "./category-tree.js";
 import { assertCompleteOrderedIds, replaceScopedOrderingRepo } from "./entity-ordering.repository.js";
 
 type CategoryDbExecutor = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
@@ -218,6 +218,14 @@ async function descendantCategoryIds(ancestorId: number): Promise<number[]> {
 
 export async function listDescendantCategoryIdsRepo(ancestorId: number) {
   return descendantCategoryIds(ancestorId);
+}
+
+export async function listCategoryBranchIdsRepo(categoryId: number) {
+  const allCategories = await db
+    .select({ id: categories.id, parentId: categories.parentId })
+    .from(categories)
+    .where(isNull(categories.deletedAt));
+  return collectBranchIds(categoryId, allCategories);
 }
 
 export async function hasLinkedProductsInCategoryRepo(id: number) {

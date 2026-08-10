@@ -15,6 +15,24 @@ function scopeRank(product: Product, scopeCategoryId: number | null) {
   )?.rank;
 }
 
+function isDescendantOf(categoryId: number, ancestorId: number, categoryById: Map<number, { id: number; parentId: number | null }>) {
+  let current = categoryById.get(categoryId);
+  const visited = new Set<number>();
+
+  while (current && !visited.has(current.id)) {
+    if (current.id === ancestorId) return true;
+    visited.add(current.id);
+    current = current.parentId != null ? categoryById.get(current.parentId) : undefined;
+  }
+
+  return false;
+}
+
+function isInCategoryBranch(categoryId: number, selectedId: number, categoryById: Map<number, { id: number; parentId: number | null }>) {
+  return isDescendantOf(categoryId, selectedId, categoryById) ||
+    isDescendantOf(selectedId, categoryId, categoryById);
+}
+
 export function useProductsPage() {
   const products = useStore((state) => state.products);
   const categories = useStore((state) => state.categories);
@@ -29,6 +47,7 @@ export function useProductsPage() {
   const [savingOrder, setSavingOrder] = useState(false);
 
   const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
+  const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
 
   const filteredProducts = useMemo(() => {
     return products
@@ -39,26 +58,7 @@ export function useProductsPage() {
         }
 
         if (categoryFilter !== "") {
-          const category = categories.find((candidate) => candidate.id === product.categoryId);
-          if (!category) {
-            return false;
-          }
-
-          let current: typeof category | undefined = category;
-          const visited = new Set<number>();
-          while (current) {
-            if (visited.has(current.id)) {
-              current = undefined;
-              break;
-            }
-            visited.add(current.id);
-            if (current.id === categoryFilter) {
-              break;
-            }
-            current = current.parentId != null ? categories.find((candidate) => candidate.id === current!.parentId) : undefined;
-          }
-
-          if (!current) {
+          if (!isInCategoryBranch(product.categoryId, categoryFilter, categoryById)) {
             return false;
           }
         }
@@ -76,7 +76,7 @@ export function useProductsPage() {
 
         return true;
       });
-  }, [categories, categoryFilter, products, search, statusFilter]);
+  }, [categoryById, categoryFilter, products, search, statusFilter]);
 
   const scopeCategoryId = categoryFilter === "" ? null : categoryFilter;
 

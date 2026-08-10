@@ -114,6 +114,7 @@ export default async function CategoryPage({
         lang={lang}
         dict={dict}
         categories={subtreeCategories}
+        categoryLookupCategories={categories}
       />
     </main>
   );

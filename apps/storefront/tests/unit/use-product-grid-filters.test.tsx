@@ -72,6 +72,18 @@ const categoryPageSubtreeCategories: Category[] = [
   { id: 103, parentId: 101, slug: "dry-skin", name: { ar: "بشرة جافة", en: "Dry Skin" }, isLeaf: true, sortOrder: 3 }
 ];
 
+const branchCategories: Category[] = [
+  ...categories.map((category) => category.id === 4 ? { ...category, isLeaf: false } : category),
+  { id: 5, parentId: 4, slug: "strong-vitamin-c", name: { ar: "Strong Vitamin C", en: "Strong Vitamin C" }, isLeaf: true }
+];
+
+const branchProducts: Product[] = [
+  products[0],
+  { ...products[0], id: 4, sku: "VITAMIN-C-1", slug: "vitamin-c-serum", categoryId: 4 },
+  { ...products[0], id: 5, sku: "STRONG-VITAMIN-C-1", slug: "strong-vitamin-c-serum", categoryId: 5 },
+  products[1]
+];
+
 // The product from the bug report: English display name, unrelated Arabic name,
 // and keywords in both languages that appear in neither name.
 const aloeProduct: Product = {
@@ -128,9 +140,11 @@ function HookProbe({
     createElement("button", { onClick: () => grid.setSort("price-desc") }, "sort-desc"),
     createElement("button", { onClick: () => grid.setSort("newest") }, "sort-newest"),
     createElement("button", { onClick: () => grid.setCategory(2) }, "category-serums"),
+    createElement("button", { onClick: () => grid.setCategory(4) }, "category-vitamin-c"),
     createElement("button", { onClick: () => grid.setCategory(undefined) }, "category-all"),
     createElement("button", { onClick: () => grid.setPriceRange({ min: "200", max: "230" }) }, "price-range"),
     createElement("button", { onClick: () => grid.setHeaderCategoryIds([2, 3]) }, "header-categories"),
+    createElement("button", { onClick: () => grid.setHeaderCategoryIds([4]) }, "header-vitamin-c"),
     createElement("button", { onClick: () => grid.setHeaderCategoryIds([]) }, "header-clear"),
     createElement("button", { onClick: () => grid.handleClear() }, "clear"),
     createElement("div", null, `ids:${grid.filtered.map((product) => product.id).join(",")}`),
@@ -187,6 +201,22 @@ describe("useProductGridFilters", () => {
     expect(screen.getByText("ids:1,2")).toBeInTheDocument();
     expect(screen.getByText("tree:1:2:1")).toBeInTheDocument();
     expect(screen.getByText("selected:1")).toBeInTheDocument();
+  });
+
+  it("includes ancestor and descendant products while excluding sibling branches", async () => {
+    render(createElement(HookProbe, { categoryInput: branchCategories, productInput: branchProducts }));
+
+    screen.getByText("category-vitamin-c").click();
+
+    expect(await screen.findByText("ids:1,4,5")).toBeInTheDocument();
+  });
+
+  it("applies ancestor matching to category-page header pills", async () => {
+    render(createElement(HookProbe, { categoryInput: branchCategories, productInput: branchProducts }));
+
+    screen.getByText("header-vitamin-c").click();
+
+    expect(await screen.findByText("ids:1,4,5")).toBeInTheDocument();
   });
 
   it("roots category-page subtrees at the current category and sorts descendants by category order", () => {

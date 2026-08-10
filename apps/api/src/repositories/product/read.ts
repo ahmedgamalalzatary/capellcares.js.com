@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering } from "@capella/shared";
 import { categories, offerItems, offers, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import { collectBranchIds } from "../category-tree.js";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
@@ -80,18 +81,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       : findUniqueCategoryBySlug(allCategories, params.category);
     if (!root) return [];
     scopeCategoryId = root.id;
-    const descendantIds = new Set<number>([root.id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const c of allCategories) {
-        if (c.parentId != null && descendantIds.has(c.parentId) && !descendantIds.has(c.id)) {
-          descendantIds.add(c.id);
-          changed = true;
-        }
-      }
-    }
-    filters.push(inArray(products.categoryId, [...descendantIds]));
+    filters.push(inArray(products.categoryId, collectBranchIds(root.id, allCategories)));
   }
   if (params.q?.trim()) {
     const q = params.q.trim();

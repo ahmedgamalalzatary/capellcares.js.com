@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildLineage, collectDescendantIds } from "../../src/repositories/category-tree.js";
+import { buildLineage, collectBranchIds, collectDescendantIds } from "../../src/repositories/category-tree.js";
 
 // Tree used across the cases:
 //   1 (root)
@@ -35,6 +35,10 @@ test("collectDescendantIds is safe against parent cycles", () => {
     { id: 2, parentId: 1 }
   ];
   assert.deepEqual(collectDescendantIds(1, cyclic).sort((a, b) => a - b), [1, 2]);
+});
+
+test("collectBranchIds includes ancestors and descendants but excludes siblings", () => {
+  assert.deepEqual(collectBranchIds(2, rows).sort((a, b) => a - b), [1, 2, 4]);
 });
 
 test("buildLineage returns ancestors root-first, inclusive of the start node", () => {

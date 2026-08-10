@@ -16,7 +16,11 @@ vi.mock("next/link", () => ({
 
 // The cards pull in the cart/wishlist providers and say nothing about filtering.
 vi.mock("@/components/products/product-card", () => ({
-  ProductCard: ({ product }: any) => createElement("div", { "data-testid": "product-card" }, product.slug)
+  ProductCard: ({ product, categoryName }: any) => createElement(
+    "div",
+    { "data-testid": "product-card", "data-category-name": categoryName },
+    product.slug
+  )
 }));
 
 import { ProductGrid } from "@/components/products/grid/product-grid";
@@ -98,6 +102,28 @@ describe("ProductGrid", () => {
     }));
 
     expect(screen.getByText("All categories")).toBeInTheDocument();
+    expect(screen.queryByText("All Care Types")).not.toBeInTheDocument();
+  });
+
+  it("resolves ancestor product labels without widening the scoped filter tree", () => {
+    const deepCategory: Category = {
+      id: 3,
+      parentId: 2,
+      slug: "vitamin-c",
+      name: { ar: "Vitamin C", en: "Vitamin C" },
+      isLeaf: true
+    };
+    render(createElement(ProductGrid, {
+      products: [{ ...products[0], categoryId: 1 }],
+      categories: [deepCategory],
+      categoryLookupCategories: [...categories, deepCategory],
+      lang: "en",
+      dict,
+      initialCategory: 3,
+      scopedCategoryId: 3
+    } as any));
+
+    expect(screen.getByTestId("product-card")).toHaveAttribute("data-category-name", "Care");
     expect(screen.queryByText("All Care Types")).not.toBeInTheDocument();
   });
 });

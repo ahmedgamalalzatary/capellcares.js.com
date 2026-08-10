@@ -25,6 +25,16 @@ export function collectDescendantIds(rootId: number, rows: CategoryNode[]): numb
   return [...descendantIds];
 }
 
+/** Returns every category on the same ancestor/descendant branch as `categoryId`. */
+export function collectBranchIds(categoryId: number, rows: CategoryNode[]): number[] {
+  return [
+    ...new Set([
+      ...collectDescendantIds(categoryId, rows),
+      ...buildLineage(categoryId, rows).map((category) => category.id)
+    ])
+  ];
+}
+
 /**
  * Walks parent links upward from `startId` and returns the chain root-first,
  * inclusive of the start node. Returns an empty array for a null start and

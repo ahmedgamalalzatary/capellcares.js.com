@@ -21,3 +21,9 @@ export function isDescendantOf(categoryId: number, selectedId: number, byId: Map
   }
   return false;
 }
+
+export function isInCategoryBranch(categoryId: number, selectedId: number, byId: Map<number, Category>) {
+  return categoryId === selectedId ||
+    isDescendantOf(categoryId, selectedId, byId) ||
+    isDescendantOf(selectedId, categoryId, byId);
+}

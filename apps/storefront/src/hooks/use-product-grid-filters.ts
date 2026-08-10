@@ -5,12 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Category, Language, Product } from "@capella/shared";
 
 import type { CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
-import { isDescendantOf, minVariantPrice, safeName } from "../utils/product-grid.utils";
+import { isInCategoryBranch, minVariantPrice, safeName } from "../utils/product-grid.utils";
 import { matchesProductQuery } from "../lib/product-search";
 
 interface UseProductGridFiltersOptions {
   products: Product[];
   categories: Category[];
+  categoryLookupCategories?: Category[];
   lang: Language;
   initialSearch?: string;
   initialCategory?: number;
@@ -21,6 +22,7 @@ interface UseProductGridFiltersOptions {
 export function useProductGridFilters({
   products,
   categories,
+  categoryLookupCategories,
   lang,
   initialSearch = "",
   initialCategory,
@@ -50,8 +52,8 @@ export function useProductGridFilters({
   }, [headerCategoryIds, initialCategory]);
 
   const categoryById = useMemo(
-    () => new Map(categories.map((item) => [item.id, item])),
-    [categories]
+    () => new Map((categoryLookupCategories ?? categories).map((item) => [item.id, item])),
+    [categories, categoryLookupCategories]
   );
   useEffect(() => {
     if (!/^\/(ar|en)\/products$/.test(pathname)) {
@@ -159,8 +161,7 @@ export function useProductGridFilters({
       .filter((product) => {
         if (headerCategoryIds.length > 0) {
           const matchesHeaderCategory = headerCategoryIds.some((selectedCategoryId) =>
-            product.categoryId === selectedCategoryId ||
-            isDescendantOf(product.categoryId, selectedCategoryId, categoryById)
+            isInCategoryBranch(product.categoryId, selectedCategoryId, categoryById)
           );
           if (!matchesHeaderCategory) return false;
         }
@@ -168,9 +169,7 @@ export function useProductGridFilters({
         // lands on at least the results the dropdown showed.
         if (!matchesProductQuery(product, ql)) return false;
         if (category) {
-          const sameCategory = product.categoryId === category;
-          const descendantMatch = isDescendantOf(product.categoryId, category, categoryById);
-          if (!sameCategory && !descendantMatch) return false;
+          if (!isInCategoryBranch(product.categoryId, category, categoryById)) return false;
         }
         const minVariant = minVariantPrice(product);
         if (!Number.isFinite(minVariant)) return false;

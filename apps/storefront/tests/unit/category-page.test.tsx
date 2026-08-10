@@ -15,11 +15,11 @@ vi.mock("@/components/layout/breadcrumb", () => ({
 }));
 
 vi.mock("@/components/products/grid/product-grid", () => ({
-  ProductGrid: ({ categories, initialCategory, initialCols, lockCategory, headerCategoryIds, scopedCategoryId }: any) =>
+  ProductGrid: ({ categories, categoryLookupCategories, initialCategory, initialCols, lockCategory, headerCategoryIds, scopedCategoryId }: any) =>
     createElement(
       "div",
       { "data-testid": "product-grid", "data-initial-cols": String(initialCols) },
-      `categories:${categories.map((category: any) => category.id).join(",")};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"};scoped:${scopedCategoryId ?? "none"}`
+      `categories:${categories.map((category: any) => category.id).join(",")};lookup:${categoryLookupCategories?.map((category: any) => category.id).join(",") || "none"};initial:${initialCategory ?? "none"};locked:${lockCategory ? "yes" : "no"};header:${headerCategoryIds?.join(",") || "none"};scoped:${scopedCategoryId ?? "none"}`
     )
 }));
 
@@ -89,6 +89,7 @@ describe("category page", () => {
     expect(fetchProducts).toHaveBeenCalledWith({ lang: "en", category: "curly-hair", categoryId: "62" });
     expect(screen.getByText("Home / Products / Hair Care / Hair Tonic / Curly Hair")).toBeInTheDocument();
     expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:62");
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("lookup:8,59,62,69,72");
     expect(screen.getByTestId("product-grid")).toHaveTextContent("initial:62");
     expect(screen.getByTestId("product-grid")).toHaveTextContent("locked:no");
   });

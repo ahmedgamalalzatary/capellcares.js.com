@@ -14,6 +14,7 @@ import type { Cols } from "@/components/ui/columns-toggle";
 export function ProductGrid({
   products,
   categories,
+  categoryLookupCategories,
   lang,
   dict,
   initialSearch = "",
@@ -28,8 +29,8 @@ export function ProductGrid({
   const [cols, setCols] = useState<Cols>(initialCols);
 
   const categoryNameById = useMemo(
-    () => new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const)),
-    [categories, lang]
+    () => new Map((categoryLookupCategories ?? categories).map((c) => [c.id, pickLang(c.name, lang)] as const)),
+    [categories, categoryLookupCategories, lang]
   );
 
   const {
@@ -50,6 +51,7 @@ export function ProductGrid({
   } = useProductGridFilters({
     products,
     categories,
+    categoryLookupCategories,
     lang,
     initialSearch,
     initialCategory,

@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { entityOrderings, orderingScopeTypes, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { listDescendantCategoryIdsRepo } from "../category.repository.js";
+import { listCategoryBranchIdsRepo } from "../category.repository.js";
 import {
   assertCompleteOrderedIds,
   replaceScopedOrderingRepo
@@ -60,7 +60,7 @@ export async function reorderProductsRepo(input: { categoryId: number | null; id
         .from(products)
         .where(
           and(
-            inArray(products.categoryId, await listDescendantCategoryIdsRepo(categoryId)),
+            inArray(products.categoryId, await listCategoryBranchIdsRepo(categoryId)),
             isNull(products.deletedAt)
           )
         );
