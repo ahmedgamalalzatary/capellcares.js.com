@@ -71,13 +71,13 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
   // While the overlay is up, the page behind must not scroll — wheel and touch
   // scrolling belong to the results list, which has its own overflow container.
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+    // Restore whatever was there before instead of blanking it, so an outer lock
+    // (a drawer, a modal) that is still up survives this overlay closing.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 

@@ -41,14 +41,21 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchProducts(), fetchOffers(), fetchCollections(), fetchCategories()])
-      .then(([p, o, c, cats]) => {
+    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
+      .then(([p, o, c]) => {
         if (cancelled) return;
         setProducts(p);
         setOffers(o);
         setCollections(c);
-        setCategories(cats);
         setCatalogLoaded(true);
+      })
+      .catch(() => { });
+    // Categories are decorative (a label on the line), so they load on their own
+    // and a failure here must never hold back — or blank — the cart itself.
+    fetchCategories()
+      .then((cats) => {
+        if (cancelled) return;
+        setCategories(cats);
       })
       .catch(() => { });
     return () => {
