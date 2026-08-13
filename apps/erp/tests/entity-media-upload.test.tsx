@@ -63,4 +63,35 @@ describe("EntityMediaUpload", () => {
       ]);
     });
   });
+
+  it("pairs uploads with existing images missing the selected language before appending", async () => {
+    const onChange = vi.fn();
+    uploadMedia
+      .mockResolvedValueOnce({ url: "/uploads/ar-paired.jpg" })
+      .mockResolvedValueOnce({ url: "/uploads/ar-extra.jpg" });
+    render(
+      <EntityMediaUpload
+        value={[{ type: "image", arUrl: null, enUrl: "/uploads/en-existing.jpg" }]}
+        onChange={onChange}
+        uploadContext="collections.update"
+        testIdPrefix="collection"
+      />
+    );
+
+    fireEvent.change(screen.getByTestId("collection-media-add-ar-input"), {
+      target: {
+        files: [
+          new File(["paired"], "paired.jpg", { type: "image/jpeg" }),
+          new File(["extra"], "extra.jpg", { type: "image/jpeg" })
+        ]
+      }
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith([
+        { type: "image", arUrl: "/uploads/ar-paired.jpg", enUrl: "/uploads/en-existing.jpg" },
+        { type: "image", arUrl: "/uploads/ar-extra.jpg", enUrl: null }
+      ]);
+    });
+  });
 });

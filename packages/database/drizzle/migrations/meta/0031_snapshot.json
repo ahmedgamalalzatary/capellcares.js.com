@@ -1021,7 +1021,7 @@
         },
         "entity_media_localized_url_check": {
           "name": "entity_media_localized_url_check",
-          "value": "((`entity_media`.`media_type` = 'image' and (`entity_media`.`ar_url` is not null or `entity_media`.`url` is not null)) or (`entity_media`.`media_type` = 'video' and `entity_media`.`url` is not null and `entity_media`.`ar_url` is null))"
+          "value": "((`entity_media`.`media_type` = 'image' and ((`entity_media`.`ar_url` is not null and `entity_media`.`ar_url` <> '') or (`entity_media`.`url` is not null and `entity_media`.`url` <> ''))) or (`entity_media`.`media_type` = 'video' and `entity_media`.`url` is not null and `entity_media`.`url` <> '' and `entity_media`.`ar_url` is null))"
         }
       }
     },

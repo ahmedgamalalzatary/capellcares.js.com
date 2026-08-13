@@ -146,6 +146,38 @@ describe("ProductCard", () => {
     expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
   });
 
+  it("synchronizes the preview when the localized primary image changes", () => {
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "" },
+      ingredients: { ar: "", en: "" },
+      howToUse: { ar: "", en: "" },
+      warnings: { ar: "", en: "" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/en-primary.jpg",
+      hoverImagePath: "",
+      media: [{ type: "image" as const, arUrl: "/uploads/ar-primary.jpg", enUrl: "/uploads/en-primary.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+    const view = render(createElement(ProductCard, { lang: "en", dict, product }));
+
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/en-primary.jpg");
+
+    view.rerender(createElement(ProductCard, { lang: "ar", dict, product }));
+
+    expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ar-primary.jpg");
+  });
+
   it("stacks the name, category and price as text below the image", () => {
     render(createElement(ProductCard, {
       lang: "en",

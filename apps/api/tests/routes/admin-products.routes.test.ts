@@ -149,6 +149,45 @@ serialTest("admin product upsert derives an active product image from normalized
   assert.equal(created?.imagePath, "/uploads/from-media.jpg");
 });
 
+serialTest("admin product upsert keeps Arabic-only media active without storing it as English", async () => {
+  const ids = await getBaselineIds();
+  const payload = makeCompleteProduct(ids.leafCategoryId);
+  delete (payload as { imagePath?: string }).imagePath;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        sku: "ROUTE-ACTIVE-AR-MEDIA",
+        imagePath: "/uploads/ar-only.jpg",
+        media: [{ type: "image", arUrl: "/uploads/ar-only.jpg", enUrl: null }]
+      })
+    });
+    assert.equal(createResponse.status, 200);
+
+    const [created] = await db
+      .select({ id: products.id, imagePath: products.imagePath })
+      .from(products)
+      .where(eq(products.sku, "ROUTE-ACTIVE-AR-MEDIA"));
+    assert.ok(created);
+    assert.equal(created.imagePath, null);
+
+    const updateResponse = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        id: created.id,
+        sku: "ROUTE-ACTIVE-AR-MEDIA"
+      })
+    });
+    assert.equal(updateResponse.status, 200);
+  });
+});
+
 serialTest("admin product upsert preserves an active product image when image fields are omitted", async () => {
   const ids = await getBaselineIds();
   const payload = {

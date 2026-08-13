@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { assertConformsTo, assertForbiddenFieldsAbsent } from "./helpers.js";
 import { storefrontRatingContract } from "./rating.contract.js";
+import { storefrontEntityMediaContract } from "./entity-media.contract.js";
 
 const bilingualSchema = z.object({
   ar: z.string(),
@@ -19,10 +20,7 @@ export const storefrontProductContract = z.object({
   keywords: z.array(z.string()),
   imagePath: z.string().nullable(),
   hoverImagePath: z.string().nullable(),
-  media: z.array(z.union([
-    z.object({ type: z.literal("image"), arUrl: z.string().nullable(), enUrl: z.string().nullable() }),
-    z.object({ type: z.literal("video"), url: z.string() })
-  ])),
+  media: z.array(storefrontEntityMediaContract),
   youtubeUrl: z.string().nullable().optional(),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),

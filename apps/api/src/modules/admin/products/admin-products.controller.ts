@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { products } from "@capella/database/drizzle/schema";
+import { entityMedia, products } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../../repositories/category.repository.js";
 import { buildLineage } from "../../../repositories/category-tree.js";
 import {
@@ -19,7 +19,6 @@ import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
 import { parseRelatedItems } from "../shared/related-items.js";
-import { resolveLocalizedEntityMediaUrl } from "@capella/shared";
 
 type NormalizedVariantDiscount = {
   type: "percentage" | "fixed";
@@ -83,7 +82,7 @@ function buildCategorySlugsFromMap(
 async function findProductRevalidationData(
   id: number,
   categoryById?: Map<number, { id: number; slug: string; parentId: number | null }>
-): Promise<{ slug: string; imagePath: string | null; categorySlugs: string[] } | null> {
+): Promise<{ slug: string; imagePath: string | null; hasLocalizedImage: boolean; categorySlugs: string[] } | null> {
   const [product] = await db
     .select({ slug: products.slug, imagePath: products.imagePath, categoryId: products.categoryId })
     .from(products)
@@ -92,10 +91,15 @@ async function findProductRevalidationData(
   if (!product) {
     return null;
   }
+  const mediaRows = await db
+    .select({ mediaType: entityMedia.mediaType, url: entityMedia.url, arUrl: entityMedia.arUrl })
+    .from(entityMedia)
+    .where(eq(entityMedia.productId, id));
 
   return {
     slug: product.slug,
     imagePath: product.imagePath,
+    hasLocalizedImage: mediaRows.some((item) => item.mediaType === "image" && Boolean(item.url || item.arUrl)),
     categorySlugs: categoryById
       ? buildCategorySlugsFromMap(product.categoryId, categoryById)
       : await buildCategorySlugs(product.categoryId)
@@ -154,14 +158,17 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     const hasLegacyHoverInput = Object.prototype.hasOwnProperty.call(incoming, "hoverImagePath");
     const hasArHoverInput = Object.prototype.hasOwnProperty.call(incoming, "arHoverImagePath");
     const hasEnHoverInput = Object.prototype.hasOwnProperty.call(incoming, "enHoverImagePath");
-    const productImagePath = hasImagePathInput
-      ? incoming.imagePath
-      : hasMediaInput
-        ? (() => {
-          const image = normalizedMedia?.find((item) => item.type === "image");
-          return image ? resolveLocalizedEntityMediaUrl(image, "en") || null : null;
-        })()
+    const selectedImage = normalizedMedia?.find((item) => item.type === "image");
+    const productImagePath = hasMediaInput
+      ? selectedImage?.enUrl ?? null
+      : hasImagePathInput
+        ? incoming.imagePath
         : existingRevalidation?.imagePath ?? null;
+    const hasLocalizedProductImage = hasMediaInput
+      ? Boolean(selectedImage?.arUrl || selectedImage?.enUrl)
+      : hasImagePathInput
+        ? Boolean(incoming.imagePath)
+        : existingRevalidation?.hasLocalizedImage ?? Boolean(productImagePath);
     const mediaUpdate = hasMediaInput
       ? normalizedMedia
       : hasImagePathInput
@@ -175,7 +182,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         !productNameAr ||
         !productNameEn ||
         productKeywords.length === 0 ||
-        !productImagePath ||
+        !hasLocalizedProductImage ||
         !incoming.categoryId ||
         productVariants.length === 0
       )

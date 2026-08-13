@@ -64,14 +64,28 @@ export function EntityMediaUpload({
     try {
       const uploaded = await upload(files);
       if (uploaded.length === 0) return;
-      commit((current) => [
-        ...current,
-        ...uploaded.map(({ url }) => ({
-          type: "image" as const,
-          arUrl: lang === "ar" ? url : null,
-          enUrl: lang === "en" ? url : null
-        }))
-      ]);
+      commit((current) => {
+        const languageKey = lang === "ar" ? "arUrl" : "enUrl";
+        const next = current.slice();
+        let uploadedIndex = 0;
+
+        for (let index = 0; index < next.length && uploadedIndex < uploaded.length; index += 1) {
+          const item = next[index];
+          if (item?.type === "image" && item[languageKey] === null) {
+            next[index] = { ...item, [languageKey]: uploaded[uploadedIndex]!.url };
+            uploadedIndex += 1;
+          }
+        }
+
+        return [
+          ...next,
+          ...uploaded.slice(uploadedIndex).map(({ url }) => ({
+            type: "image" as const,
+            arUrl: lang === "ar" ? url : null,
+            enUrl: lang === "en" ? url : null
+          }))
+        ];
+      });
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "فشل رفع الصور");
     } finally {

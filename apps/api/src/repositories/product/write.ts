@@ -5,8 +5,7 @@ import {
   normalizeMedia,
   normalizeVariantSizeLabel,
   ProductMediaItem,
-  replaceProductMediaRepo,
-  resolvePrimaryImagePath
+  replaceProductMediaRepo
 } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -43,7 +42,7 @@ export async function createAdminProductRepo(input: {
     ? input.media ?? normalizeMedia(undefined, input.imagePath ?? null)
     : undefined;
   const primaryImagePath = mediaUpdate
-    ? resolvePrimaryImagePath(mediaUpdate, input.imagePath ?? null)
+    ? mediaUpdate.find((item) => item.type === "image")?.enUrl ?? null
     : null;
   const hasEnHoverUpdate = input.enHoverImagePath !== undefined || input.hoverImagePath !== undefined;
   const enHoverImagePath = input.enHoverImagePath !== undefined

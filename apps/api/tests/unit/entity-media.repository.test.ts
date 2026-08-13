@@ -44,12 +44,18 @@ test("normalizeEntityMedia maps stored English images and optional Arabic images
 });
 
 test("resolvePrimaryEntityImagePath localizes with opposite-language fallback", () => {
-  const media = [
-    { type: "image" as const, arUrl: null, enUrl: "/uploads/en.jpg" },
+  const bilingualMedia = [
+    { type: "image" as const, arUrl: "/uploads/ar.jpg", enUrl: "/uploads/en.jpg" },
     { type: "video" as const, url: "/uploads/demo.mp4" }
   ];
-  assert.equal(resolvePrimaryEntityImagePath(media, null, "ar"), "/uploads/en.jpg");
-  assert.equal(resolvePrimaryEntityImagePath(media, null, "en"), "/uploads/en.jpg");
+  assert.equal(resolvePrimaryEntityImagePath(bilingualMedia, null, "ar"), "/uploads/ar.jpg");
+  assert.equal(resolvePrimaryEntityImagePath(bilingualMedia, null, "en"), "/uploads/en.jpg");
+  assert.equal(resolvePrimaryEntityImagePath([
+    { type: "image", arUrl: null, enUrl: "/uploads/en-only.jpg" }
+  ], null, "ar"), "/uploads/en-only.jpg");
+  assert.equal(resolvePrimaryEntityImagePath([
+    { type: "image", arUrl: "/uploads/ar-only.jpg", enUrl: null }
+  ], null, "en"), "/uploads/ar-only.jpg");
 });
 
 test("product hover image resolution uses the requested language with fallback", () => {
@@ -58,6 +64,7 @@ test("product hover image resolution uses the requested language with fallback",
   if (typeof resolve !== "function") return;
 
   assert.equal(resolve("/uploads/ar-hover.jpg", "/uploads/en-hover.jpg", "ar"), "http://localhost:4000/uploads/ar-hover.jpg");
+  assert.equal(resolve("/uploads/ar-hover.jpg", "/uploads/en-hover.jpg", "en"), "http://localhost:4000/uploads/en-hover.jpg");
   assert.equal(resolve(null, "/uploads/en-hover.jpg", "ar"), "http://localhost:4000/uploads/en-hover.jpg");
   assert.equal(resolve("/uploads/ar-hover.jpg", null, "en"), "http://localhost:4000/uploads/ar-hover.jpg");
 });

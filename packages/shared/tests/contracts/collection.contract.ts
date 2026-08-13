@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { assertConformsTo, assertForbiddenFieldsAbsent } from "./helpers.js";
 import { storefrontRatingContract } from "./rating.contract.js";
+import { storefrontEntityMediaContract } from "./entity-media.contract.js";
 
 const bilingualSchema = z.object({
   ar: z.string(),
@@ -14,10 +15,7 @@ export const storefrontCollectionContract = z.object({
   description: bilingualSchema,
   youtubeUrl: z.string().nullable().optional(),
   imagePath: z.string(),
-  media: z.array(z.union([
-    z.object({ type: z.literal("image"), arUrl: z.string().nullable(), enUrl: z.string().nullable() }),
-    z.object({ type: z.literal("video"), url: z.string() })
-  ])),
+  media: z.array(storefrontEntityMediaContract),
   price: z.number(),
   originalTotal: z.number(),
   categoryId: z.number(),

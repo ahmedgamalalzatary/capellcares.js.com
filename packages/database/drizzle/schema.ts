@@ -252,7 +252,7 @@ export const entityMedia = mysqlTable(
     ),
     localizedUrlCheck: check(
       "entity_media_localized_url_check",
-      sql`((${table.mediaType} = 'image' and (${table.arUrl} is not null or ${table.url} is not null)) or (${table.mediaType} = 'video' and ${table.url} is not null and ${table.arUrl} is null))`
+      sql`((${table.mediaType} = 'image' and ((${table.arUrl} is not null and ${table.arUrl} <> '') or (${table.url} is not null and ${table.url} <> ''))) or (${table.mediaType} = 'video' and ${table.url} is not null and ${table.url} <> '' and ${table.arUrl} is null))`
     )
   })
 );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, resolveLocalizedEntityMediaUrl, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
@@ -39,6 +39,10 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
     : product.imagePath;
   const hoverImage = product.hoverImagePath || primaryImage;
   const [previewImage, setPreviewImage] = useState(primaryImage);
+
+  useEffect(() => {
+    setPreviewImage(primaryImage);
+  }, [primaryImage]);
 
   // The variant we transact on from the card: cheapest one that is in stock,
   // falling back to the cheapest overall so the buttons still resolve a target.

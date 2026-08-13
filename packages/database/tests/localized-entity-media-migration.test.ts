@@ -7,6 +7,7 @@ const migrationPath = resolve(
   import.meta.dirname,
   "../drizzle/migrations/0031_localized_entity_images.sql"
 );
+const schemaPath = resolve(import.meta.dirname, "../drizzle/schema.ts");
 
 test("localized entity-media migration preserves current images as English", () => {
   assert.equal(existsSync(migrationPath), true, "expected localized entity-media migration");
@@ -35,4 +36,8 @@ test("localized entity-media migration permits either image language while video
   assert.match(migrationSql, /entity_media_localized_url_check/);
   assert.match(migrationSql, /`media_type` = 'image'[\s\S]*`ar_url` is not null[\s\S]*`url` is not null/i);
   assert.match(migrationSql, /`media_type` = 'video'[\s\S]*`url` is not null/i);
+  assert.match(migrationSql, /`ar_url` <> ''/i);
+  assert.match(migrationSql, /`url` <> ''/i);
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  assert.match(schemaSource, /localizedUrlCheck:[\s\S]*arUrl[^\n]*<> ''[\s\S]*url[^\n]*<> ''/);
 });
