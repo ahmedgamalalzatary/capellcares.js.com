@@ -5,6 +5,7 @@ import {
   CUSTOMER_REFRESH_COOKIE,
   refreshCookieOptions
 } from "./cookie-options.js";
+import { canExposeRefreshToken, extractRefreshToken, isMobileClient } from "./mobile-client.js";
 
 export async function signupController(req: Request, res: Response) {
   try {
@@ -18,8 +19,14 @@ export async function signupController(req: Request, res: Response) {
 export async function loginController(req: Request, res: Response) {
   try {
     const result = await login(req.body);
-    res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
-    res.json({ accessToken: result.accessToken, user: result.user });
+    if (!isMobileClient(req)) {
+      res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
+    }
+    res.json({
+      accessToken: result.accessToken,
+      user: result.user,
+      ...(isMobileClient(req) ? { refreshToken: result.refreshToken } : {})
+    });
   } catch (error) {
     res.status(401).json({ message: error instanceof Error ? error.message : "Login failed" });
   }
@@ -27,21 +34,30 @@ export async function loginController(req: Request, res: Response) {
 
 export async function refreshController(req: Request, res: Response) {
   try {
-    const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE];
+    const token = extractRefreshToken(req, CUSTOMER_REFRESH_COOKIE);
     if (!token) return res.status(401).json({ message: "Missing refresh token" });
     const result = await refreshCustomerSession(token);
-    res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
-    return res.json({ accessToken: result.accessToken });
+    if (!isMobileClient(req)) {
+      res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
+    }
+    return res.json({
+      accessToken: result.accessToken,
+      ...(canExposeRefreshToken(req, CUSTOMER_REFRESH_COOKIE)
+        ? { refreshToken: result.refreshToken }
+        : {})
+    });
   } catch {
     return res.status(401).json({ message: "Invalid refresh token" });
   }
 }
 
 export async function logoutController(req: Request, res: Response) {
-  const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE];
+  const token = extractRefreshToken(req, CUSTOMER_REFRESH_COOKIE);
   if (token) {
     await logoutCustomerSession(token);
   }
-  res.cookie(CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
+  if (!isMobileClient(req)) {
+    res.cookie(CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
+  }
   return res.status(204).send();
 }

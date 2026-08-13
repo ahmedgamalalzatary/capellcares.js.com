@@ -29,7 +29,7 @@ There is no mobile code anywhere. The new app lives at `apps/mobile` (picked up 
 ### Verified constraints (from code exploration)
 
 1. **`@capella/shared` ships raw TS** — its `exports` map points at `.ts` source and internal imports use NodeNext-style `./x.js` specifiers. Metro needs a custom `resolveRequest` that strips the `.js` extension so the `.ts` file resolves. The root export (types, i18n, dto, schemas, constants, ordering) is pure TS + zod and fully reusable. **`@capella/shared/ui` is DOM-only (Radix/Tailwind) — must not be imported on mobile.**
-2. **Auth is the one API blocker.** Refresh tokens live exclusively in httpOnly cookies (`capella_refresh` / `capella_admin_refresh`); `POST /api/v1/auth/refresh` and the admin twin read `req.cookies` only (`apps/api/src/modules/auth/auth.controller.ts`, `apps/api/src/modules/admin/auth/admin-auth.controller.ts`). Native apps have no cookie jar → Phase 0 adds a small, backward-compatible token-based variant.
+2. **Auth is the one API blocker.** Refresh tokens live exclusively in httpOnly cookies (`capella_refresh` / `capella_admin_refresh`); `POST /api/v1/auth/refresh` and the admin twin read `req.cookies` only (`apps/api/src/modules/auth/auth.controller.ts`, `apps/api/src/modules/admin/auth/admin-auth.controller.ts`). React Native cookie authentication is unstable and unsuitable as the session source of truth → Phase 0 adds a small, backward-compatible token-based variant that is independent of native cookie behavior.
 3. **API base URL**: `resolveApiBase()` in `packages/shared/src/api/base.ts` branches on `window` — mobile needs its own resolver from `EXPO_PUBLIC_API_URL`. A device can't reach `localhost`; the Android emulator uses `10.0.2.2`.
 4. **i18n**: `packages/shared/src/i18n` (`getDict`, `isRtl`, `dir`, complete ar/en dictionaries including legal pages as `{h|p|ul}` block arrays under `dict.pages`) is framework-agnostic — reuse as-is. Storefront default language is `ar`.
 5. **Styling source of truth**: the Parchment OKLCH palette in `apps/storefront/src/app/globals.css` (`--canvas: #f1f0ed`, ink near-black, white surfaces, radii 6/10/16/24, fonts Roboto / Tajawal / Lobster). React Native doesn't parse OKLCH → convert once to hex constants in a mobile `theme.ts`.
@@ -46,15 +46,15 @@ Small, backward-compatible; web responses stay byte-for-byte identical.
 
 | File | Change |
 |---|---|
-| `apps/api/src/modules/auth/mobile-client.ts` | **new** — `isMobileClient(req)` (checks `x-client: mobile` header) and `extractRefreshToken(req, cookieName)` (cookie ?? `x-refresh-token` header ?? `body.refreshToken`) |
-| `apps/api/src/modules/auth/auth.controller.ts` | login/refresh additionally return `refreshToken` in JSON **only when** `isMobileClient(req)`; refresh/logout read the token via `extractRefreshToken` |
+| `apps/api/src/modules/auth/mobile-client.ts` | **new** — `isMobileClient(req)` requires `x-client: mobile` with no browser `Origin`; `extractRefreshToken(req, cookieName)` keeps transports separate: web uses its cookie only, while mobile uses `x-refresh-token` then `body.refreshToken` and ignores any retained cookie; the disclosure guard permits JSON refresh-token output only for accepted mobile header/body transport |
+| `apps/api/src/modules/auth/auth.controller.ts` | mobile login/refresh return `refreshToken` in JSON and do not issue cookies; mobile refresh/logout use header/body tokens; web login/refresh/logout remain cookie-only and byte-for-byte compatible |
 | `apps/api/src/modules/admin/auth/admin-auth.controller.ts` | same three edits for the admin flow |
 
-`express.json()` is already global so body parsing works; rate limits and cookies unchanged. (This exact change was validated once against `pnpm --filter @capella/api typecheck` before being reverted.)
+`express.json()` is already global so body parsing works; rate limits are unchanged. Web cookie behavior is unchanged, while explicit mobile requests never issue refresh cookies, so SecureStore rotation cannot be disrupted by unstable native cookie retention.
 
 **Exit criteria**
 - `pnpm --filter @capella/api typecheck` green; `pnpm test` green (web auth tests unaffected).
-- API integration tests cover customer and admin mobile login, refresh-token rotation, logout/revocation, rejected old tokens, and confirmation that ordinary web responses never expose refresh tokens.
+- API integration tests cover customer and admin mobile login, refresh-token rotation, logout/revocation, rejected old tokens, browser-origin spoofing, mixed cookie/header requests, and confirmation that ordinary web responses never expose refresh tokens.
 - `curl -X POST /api/v1/auth/login -H "x-client: mobile"` returns `refreshToken` in the body; without the header it does not.
 
 ---
