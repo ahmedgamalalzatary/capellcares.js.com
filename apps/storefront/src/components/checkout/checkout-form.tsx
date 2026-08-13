@@ -37,6 +37,18 @@ export function CheckoutForm({
 
       <Section title={dict.checkout.shipping}>
         <div className="grid gap-4 md:grid-cols-2">
+          {/* Display only. Capella ships within Egypt exclusively, so this field
+              is fixed and disabled: it is NOT part of the checkout form state and
+              is never sent to the API — placeOrder builds its payload from `form`,
+              which has no country key. It exists purely to tell the customer where
+              we deliver. If shipping ever expands, this must become a real field
+              (form state + validation + order payload) instead of a label. */}
+          <Field label={dict.checkout.country}>
+            {/* defaultValue, not value: a controlled field with no onChange warns. */}
+            <select className="select" defaultValue="EG" disabled aria-readonly="true">
+              <option value="EG">{dict.checkout.countryEgypt}</option>
+            </select>
+          </Field>
           <Field label={dict.checkout.governorate} error={errors.governorate}>
             <select className="select" value={form.governorate} onChange={(event) => setField("governorate", event.target.value)}>
               <option value="">—</option>

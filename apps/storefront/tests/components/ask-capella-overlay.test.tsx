@@ -1,6 +1,6 @@
 import { createElement } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -25,6 +25,12 @@ function renderOverlay() {
 }
 
 describe("AskCapellaOverlay", () => {
+  // The transcript is kept in sessionStorage so it survives the overlay closing
+  // (e.g. when a result is clicked); clear it so cases don't inherit each other.
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
   it("puts focus back in the field after a question is answered", async () => {
     const input = renderOverlay();
     input.focus();
@@ -75,6 +81,21 @@ describe("AskCapellaOverlay", () => {
     expect(input).not.toBeDisabled();
   });
 
+  it("keeps the conversation when the overlay is closed and reopened", async () => {
+    const input = renderOverlay();
+
+    fireEvent.change(input, { target: { value: "hair loss" } });
+    fireEvent.submit(input.closest("form")!);
+    expect(await screen.findByText("hair loss")).toBeInTheDocument();
+
+    // Clicking a result closes the overlay, which unmounts it. Reopening must
+    // not drop what the customer asked for.
+    cleanup();
+    renderOverlay();
+
+    expect(await screen.findByText("hair loss")).toBeInTheDocument();
+  });
+
   it("leaves focus alone when the overlay first opens on a touch device", () => {
     const matchMedia = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
       matches: false,
@@ -92,4 +113,5 @@ describe("AskCapellaOverlay", () => {
     expect(document.activeElement).not.toBe(input);
     matchMedia.mockRestore();
   });
+
 });

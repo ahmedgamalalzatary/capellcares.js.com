@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
+import { resolveMediaUrl } from "@/lib/api/client/normalizers";
 import type { WishlistEntry, WishlistEntityType } from "@capella/shared";
 
 interface WishlistContextValue {
@@ -36,7 +37,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     })
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((data) => {
-        const nextItems = (data.items ?? []) as WishlistEntry[];
+        // Entries may still carry a storage-relative `/uploads/...` path, which
+        // would otherwise be requested from the storefront origin and 404.
+        const nextItems = ((data.items ?? []) as WishlistEntry[]).map((item) => ({
+          ...item,
+          imagePath: resolveMediaUrl(item.imagePath) || null
+        }));
         setItems(nextItems);
         setIds(nextItems.map((item) => keyOf(item.entityType, item.entityId)));
       })

@@ -17,10 +17,17 @@ import { Icon } from "@/components/ui/icons";
  */
 export function ShopCardRow({
   children,
-  lang
+  lang,
+  cols = 1
 }: {
   children: React.ReactNode;
   lang: string;
+  /**
+   * Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per
+   * screen on desktop), 2 packs one extra card into every breakpoint. Only the
+   * item width changes — the row still scrolls and snaps either way.
+   */
+  cols?: 1 | 2;
 }) {
   const isRtl = lang === "ar";
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -59,22 +66,30 @@ export function ShopCardRow({
     el.scrollBy({ left: amount, behavior: "smooth" });
   };
 
+  // Widths subtract the gaps (1.25rem / 1.5rem / 1.75rem per breakpoint) so a
+  // whole number of cards lands per screen, leaving a peek on mobile.
+  const itemWidthClass = cols === 2
+    ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
+    : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
+
   const buttonClass =
     "absolute top-[42%] z-10 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 disabled:pointer-events-none disabled:opacity-0 lg:grid";
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div
         ref={scrollerRef}
         className={[
-          "flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-2 sm:gap-6 lg:gap-7",
+          // min-w-0 keeps the scroller from being widened to its content by a
+          // flex/grid parent, which would push the cards past the viewport.
+          "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-2 sm:gap-6 lg:gap-7",
           // hide the scrollbar — prev/next buttons (and swipe) are the affordance
           "scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         ].join(" ")}
       >
         {Children.map(children, (child) =>
           child == null ? null : (
-            <div className="w-[78%] shrink-0 snap-start sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]">
+            <div className={`shrink-0 snap-start ${itemWidthClass}`}>
               {child}
             </div>
           )

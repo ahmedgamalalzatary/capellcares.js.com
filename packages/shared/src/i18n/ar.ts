@@ -150,7 +150,12 @@ export const ar = {
     emptyTagline: "ابدئي رحلتك مع كابيلا اليوم. اختاري قطعةً واحدة وستفعل عجائب.",
     summaryEyebrow: "الفاتورة",
     summaryTitle: "ملخّص الطلب",
-    codNote: "الدفع عند الاستلام · شحن للقاهرة والجيزة"
+    codNote: "الدفع عند الاستلام · شحن للقاهرة والجيزة",
+    saveForLater: "حفظ في المفضلة",
+    saved: "محفوظة",
+    each: "للقطعة",
+    itemsCount: "{count} منتجات",
+    itemsCountOne: "منتج واحد"
   },
   wishlist: {
     title: "قائمة المفضلة",
@@ -198,6 +203,8 @@ export const ar = {
     fullName: "الاسم الكامل",
     phone: "رقم الهاتف",
     email: "البريد الإلكتروني",
+    country: "الدولة",
+    countryEgypt: "مصر",
     governorate: "المحافظة",
     city: "المدينة / المنطقة",
     addressLine: "اسم الشارع",

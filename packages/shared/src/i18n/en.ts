@@ -149,7 +149,12 @@ export const en = {
     emptyTagline: "Pick one calm, considered piece. Let it do the work.",
     summaryEyebrow: "Summary",
     summaryTitle: "Your order",
-    codNote: "Cash on delivery · Cairo & Giza shipping"
+    codNote: "Cash on delivery · Cairo & Giza shipping",
+    saveForLater: "Save to wishlist",
+    saved: "Saved",
+    each: "each",
+    itemsCount: "{count} items",
+    itemsCountOne: "1 item"
   },
   wishlist: {
     title: "Your wishlist",
@@ -196,6 +201,8 @@ export const en = {
     fullName: "Full name",
     phone: "Phone number",
     email: "Email",
+    country: "Country",
+    countryEgypt: "Egypt",
     governorate: "Governorate",
     city: "City / Area",
     addressLine: "Street address",

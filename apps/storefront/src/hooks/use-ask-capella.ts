@@ -9,6 +9,41 @@ import type {
   AskCapellaResults
 } from "../types/ask-capella.types";
 
+// The overlay unmounts whenever it closes — including when a result link is
+// clicked — so the conversation cannot live only in component state or it is
+// wiped the moment the customer opens something we found for them. Parking it in
+// sessionStorage keeps the thread for the tab: close the panel, browse the
+// product, reopen, and the search is still there. It is deliberately session
+// scoped (not localStorage): the thread is a browsing aid, not something to
+// resurrect days later, and queries can be personal.
+const CONVERSATION_KEY = "capella:ask:v1";
+const MAX_STORED_MESSAGES = 20;
+
+function loadConversation(): AskCapellaMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(CONVERSATION_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? (parsed as AskCapellaMessage[]) : [];
+  } catch {
+    // Unparsable or storage blocked (private mode / disabled cookies): the chat
+    // still works, it just starts empty.
+    return [];
+  }
+}
+
+function saveConversation(messages: AskCapellaMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      CONVERSATION_KEY,
+      JSON.stringify(messages.slice(-MAX_STORED_MESSAGES))
+    );
+  } catch {
+    // Over quota or storage blocked — nothing to do, the in-memory thread is fine.
+  }
+}
+
 // Categories, offers, and collections are matched by name in BOTH languages
 // (these have no keyword field), so a query in either language finds them
 // regardless of the active store language.
@@ -19,11 +54,27 @@ function matchesBilingual(name: { ar: string; en: string }, queryLower: string) 
 export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   const dict = getDict(lang);
   const isAr = lang === "ar";
+  // Starts empty and fills in after mount: reading storage during render would
+  // make the server and client markup disagree and trip hydration.
   const [messages, setMessages] = useState<AskCapellaMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const restored = useRef(false);
+
+  useEffect(() => {
+    const stored = loadConversation();
+    restored.current = true;
+    if (stored.length > 0) setMessages(stored);
+  }, []);
+
+  useEffect(() => {
+    // Don't let the empty first render overwrite a stored thread.
+    if (!restored.current) return;
+    saveConversation(messages);
+  }, [messages]);
 
   // Autofocus only on devices with a fine pointer (mouse/trackpad). On touch
   // devices, focusing on open would instantly raise the on-screen keyboard

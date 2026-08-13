@@ -2,6 +2,11 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collections, offers, products, wishlists } from "@capella/database/drizzle/schema";
 import type { WishlistEntryDto, WishlistItemDto } from "@capella/shared";
+import {
+  loadEntityMediaRows,
+  normalizeEntityMedia,
+  resolvePrimaryEntityImagePath
+} from "./entity-media.repository.js";
 
 type WishlistEntityType = WishlistItemDto["entityType"];
 
@@ -123,6 +128,25 @@ export async function listWishlistEntriesByCustomer(customerId: number): Promise
           .where(inArray(collections.id, collectionIds))
   ]);
 
+  // The legacy `imagePath` column is often empty (media now lives in
+  // `entity_media`), and even when set it holds a storage-relative
+  // `/uploads/...` path that only resolves against the public uploads base.
+  // Mirror the product/offer/collection repos so wishlist rows get a usable URL.
+  const [productMedia, offerMedia, collectionMedia] = await Promise.all([
+    loadEntityMediaRows("product", productIds),
+    loadEntityMediaRows("offer", offerIds),
+    loadEntityMediaRows("collection", collectionIds)
+  ]);
+
+  const imageFor = (
+    type: "product" | "offer" | "collection",
+    id: number,
+    imagePath: string | null
+  ) => {
+    const rows = (type === "product" ? productMedia : type === "offer" ? offerMedia : collectionMedia).get(id);
+    return resolvePrimaryEntityImagePath(normalizeEntityMedia(rows, imagePath), imagePath);
+  };
+
   const productById = new Map(
     productRows.map((row) => [
       row.id,
@@ -130,7 +154,7 @@ export async function listWishlistEntriesByCustomer(customerId: number): Promise
         entityType: "product" as const,
         entityId: row.id,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath,
+        imagePath: imageFor("product", row.id, row.imagePath),
         href: `/products/${row.slug}`,
         availability: row.status === "active" && !row.deletedAt ? "available" as const : "unavailable" as const
       }
@@ -143,7 +167,7 @@ export async function listWishlistEntriesByCustomer(customerId: number): Promise
         entityType: "offer" as const,
         entityId: row.id,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath,
+        imagePath: imageFor("offer", row.id, row.imagePath),
         href: row.status === "active" && row.visibility === "visible" && !row.deletedAt ? `/offers/${row.slug}` : null,
         availability:
           row.status === "active" && row.visibility === "visible" && !row.deletedAt ? "available" as const : "unavailable" as const
@@ -157,7 +181,7 @@ export async function listWishlistEntriesByCustomer(customerId: number): Promise
         entityType: "collection" as const,
         entityId: row.id,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath,
+        imagePath: imageFor("collection", row.id, row.imagePath),
         href:
           row.status === "active" && row.visibility === "visible" && !row.deletedAt
             ? `/collections/${row.slug}`

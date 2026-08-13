@@ -66,4 +66,15 @@ describe("CartView", () => {
     expect((await screen.findAllByText(/EGP\s*200/)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/EGP\s*400/)).not.toBeInTheDocument();
   });
+
+  it("shows the unit price alongside the line total when a line has more than one unit", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 2 }]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    // "EGP 100 each" under the name, "EGP 200" as the line total.
+    expect(await screen.findByText(dict.cart.each)).toBeInTheDocument();
+    expect(screen.getByText(/EGP\s*100/)).toBeInTheDocument();
+  });
 });

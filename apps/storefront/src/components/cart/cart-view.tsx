@@ -17,6 +17,8 @@ interface Resolved {
   qty: number;
   slug: string;
   type: "product" | "offer" | "collection";
+  /** Wishlist target for the card's "save for later" action. */
+  entityId: number;
   illustration: React.ReactNode;
 }
 
@@ -65,7 +67,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,
             slug: `/${lang}/products/${p.slug}`,
-            illustration: <ProductIllustration product={p} />
+            entityId: p.id,
+            illustration: <ProductIllustration product={p} className="h-full w-full object-cover" />
           };
         }
 
@@ -80,7 +83,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             unitPrice: o.price,
             qty: l.qty,
             slug: `/${lang}/offers/${o.slug}`,
-            illustration: <OfferIllustration offer={o} />
+            entityId: o.id,
+            illustration: <OfferIllustration offer={o} className="h-full w-full object-cover" />
           };
         }
 
@@ -94,6 +98,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           unitPrice: collection.price,
           qty: l.qty,
           slug: `/${lang}/collections/${collection.slug}`,
+          entityId: collection.id,
           illustration: (
             <div className="grid h-full w-full place-items-center text-xs font-semibold text-(--ink-2)">
               {dict.itemType.collection}
@@ -105,6 +110,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   }, [lines, lang, dict, keyOf, products, offers, collections]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
+  const totalUnits = resolved.reduce((acc, r) => acc + r.qty, 0);
 
   // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch
   // failed): show a loading state, never the "empty" screen. Collapsing this into
@@ -143,84 +149,55 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   return (
     <div className="grid gap-6 pb-8 sm:gap-9 sm:pb-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div>
-        {/* Mobile: stacked cards */}
-        <ul className="flex flex-col gap-3 sm:hidden">
-          {resolved.map((r) => (
-            <li
-              key={r.key}
-              className="rounded-lg border border-(--hairline) bg-surface p-3"
-            >
-              <div className="flex items-start gap-3">
-                <Link href={r.slug} className="shrink-0">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
-                    {r.illustration}
-                  </div>
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link href={r.slug} className="block min-w-0">
-                    <div className="truncate font-semibold">{r.title}</div>
-                    <div className="text-xs text-(--ink-2)">{r.meta}</div>
-                  </Link>
-                  <div className="mt-2 font-semibold">{formatPrice(r.unitPrice * r.qty, lang)}</div>
-                </div>
-                <button
-                  className="-mt-1 -me-1 shrink-0 rounded-(--radius) border-0 bg-transparent p-2 text-(--ink-3) transition-colors hover:bg-[color-mix(in_oklch,var(--error)_10%,transparent)] hover:text-(--error)"
-                  onClick={() => remove(r.key)}
-                  aria-label={dict.cart.remove}
-                >
-                  <Icon.Trash size={18} />
-                </button>
-              </div>
-              <div className="mt-3">
-                <div className="inline-grid grid-cols-[36px_44px_36px] items-center rounded-full border border-(--hairline) bg-surface">
-                  <button
-                    className="grid h-9 place-items-center rounded-full border-0 bg-transparent"
-                    onClick={() => setQty(r.key, r.qty - 1)}
-                    aria-label="−"
-                  >
-                    <Icon.Minus />
-                  </button>
-                  <span className="text-center text-sm font-semibold">{r.qty}</span>
-                  <button
-                    className="grid h-9 place-items-center rounded-full border-0 bg-transparent"
-                    onClick={() => setQty(r.key, r.qty + 1)}
-                    aria-label="+"
-                  >
-                    <Icon.Plus />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+      <div className="grid gap-3 self-start">
+        <div className="flex items-baseline justify-between border-b border-(--hairline) pb-2">
+          <span className="eyebrow text-(--ink-3)!">{dict.cart.item}</span>
+          <span className="text-sm text-(--ink-3)">
+            {totalUnits === 1
+              ? dict.cart.itemsCountOne
+              : (dict.cart.itemsCount ?? "{count}").replace("{count}", String(totalUnits))}
+          </span>
+        </div>
 
-        {/* Tablet/desktop: table */}
-        <div className="hidden sm:block">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{dict.cart.item}</th>
-              <th className="w-35">{dict.cart.qty}</th>
-              <th className="w-30 text-end">{dict.cart.price}</th>
-              <th className="w-12"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {resolved.map((r) => (
-              <tr key={r.key}>
-                <td>
-                  <Link href={r.slug} className="flex items-center gap-3 sm:gap-3.5">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft) sm:h-16 sm:w-16">
-                      {r.illustration}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold">{r.title}</div>
-                      <div className="text-xs text-(--ink-2) sm:text-sm">{r.meta}</div>
-                    </div>
+        <ul className="grid list-none gap-3 p-0 m-0">
+          {resolved.map((r) => {
+            return (
+              <li
+                key={r.key}
+                className="overflow-hidden rounded-(--radius) border border-(--hairline) bg-surface transition-colors hover:border-warm"
+              >
+                {/* Body: media + details + line total */}
+                <div className="grid grid-cols-[80px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[104px_minmax(0,1fr)] sm:gap-5 sm:p-4">
+                  <Link
+                    href={r.slug}
+                    className="aspect-square w-20 self-start overflow-hidden rounded-md bg-(--warm-soft) sm:w-26"
+                  >
+                    {r.illustration}
                   </Link>
-                </td>
-                <td>
+
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="min-w-0">
+                      <div className="eyebrow text-(--ink-3)!">{dict.itemType[r.type]}</div>
+                      <Link href={r.slug} className="mt-1 block truncate font-medium text-ink hover:text-accent">
+                        {r.title}
+                      </Link>
+                      <div className="mt-1 truncate text-sm text-(--ink-3)">{r.meta}</div>
+                      <div className="mt-2 text-sm text-(--ink-2)">
+                        {formatPrice(r.unitPrice, lang)}
+                        {r.qty > 1 ? <span className="text-(--ink-3)"> {dict.cart.each}</span> : null}
+                      </div>
+                    </div>
+
+                    <div className="ms-auto shrink-0 text-end">
+                      <div className="text-base font-semibold text-ink sm:text-lg">
+                        {formatPrice(r.unitPrice * r.qty, lang)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer strip: quantity on one side, item actions on the other */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-(--hairline) bg-[color-mix(in_oklch,var(--warm-soft)_45%,transparent)] px-3 py-2 sm:px-4">
                   <div className="inline-grid grid-cols-[32px_40px_32px] items-center rounded-full border border-(--hairline) bg-surface">
                     <button
                       className="grid h-8 place-items-center rounded-full border-0 bg-transparent"
@@ -238,25 +215,23 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                       <Icon.Plus />
                     </button>
                   </div>
-                </td>
-                <td className="text-end font-semibold">{formatPrice(r.unitPrice * r.qty, lang)}</td>
-                <td>
+
                   <button
-                    className="rounded-(--radius) border-0 bg-transparent p-2 text-(--ink-3) transition-colors hover:bg-[color-mix(in_oklch,var(--error)_10%,transparent)] hover:text-(--error)"
+                    className="ms-auto inline-flex items-center gap-1.5 rounded-(--radius) border-0 bg-transparent px-1 py-1 text-sm text-(--ink-3) transition-colors hover:text-(--error)"
                     onClick={() => remove(r.key)}
                     aria-label={dict.cart.remove}
                   >
-                    <Icon.Trash size={18} />
+                    <span>{dict.cart.remove}</span>
+                    <Icon.Trash size={16} />
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
-      <aside className="self-start rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
+      <aside className="self-start rounded-(--radius) border border-(--hairline) bg-surface p-5 sm:p-6 lg:sticky lg:top-35">
         <span className="eyebrow text-(--ink-3)!">{dict.cart.summaryEyebrow}</span>
         <div className={`mt-1 ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
@@ -272,16 +247,15 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
           <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
         </div>
-        <div className="my-5 h-px bg-(--hairline)" />
-        <div className="flex items-end justify-between pt-1">
-          <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
+        <div className="mt-4 flex items-center justify-between rounded-(--radius) px-3 py-3">
+          <span className="text-2xl text-ink">{dict.common.total}</span>
           <span className={`text-accent leading-none ${lang === "ar"
             ? "text-2xl font-bold font-(family-name:--font-ar)"
-            : "text-3xl font-(--font-display)"}`}>
+            : "text-2xl font-(--font-display)"}`}>
             {formatPrice(subtotal, lang)}
           </span>
         </div>
-        <Link href={`/${lang}/checkout`} className="btn btn--primary btn--block btn--lg mt-6">
+        <Link href={`/${lang}/checkout`} className="btn btn--primary btn--block btn--lg mt-5">
           {dict.cart.proceed}
         </Link>
         <Link href={`/${lang}/products`} className="btn btn--ghost btn--block mt-2">
