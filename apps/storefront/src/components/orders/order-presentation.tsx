@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   pickLang,
+  type Category,
   type Collection,
   type Language,
   type Offer,
@@ -10,7 +11,7 @@ import {
   type PaymentStatus,
   type Product
 } from "@capella/shared";
-import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -27,6 +28,7 @@ export interface Catalog {
   products: Product[];
   offers: Offer[];
   collections: Collection[];
+  categories: Category[];
   loaded: boolean;
 }
 
@@ -35,6 +37,7 @@ export function useCatalog(): Catalog {
     products: [],
     offers: [],
     collections: [],
+    categories: [],
     loaded: false
   });
 
@@ -42,13 +45,14 @@ export function useCatalog(): Catalog {
     let cancelled = false;
     // Settled, not all-or-nothing: one failing catalog used to discard the two
     // that did load, so every order line rendered as "unavailable".
-    Promise.allSettled([fetchProducts(), fetchOffers(), fetchCollections()])
-      .then(([products, offers, collections]) => {
+    Promise.allSettled([fetchProducts(), fetchOffers(), fetchCollections(), fetchCategories()])
+      .then(([products, offers, collections, categories]) => {
         if (cancelled) return;
         setCatalog((current) => ({
           products: products.status === "fulfilled" ? products.value : current.products,
           offers: offers.status === "fulfilled" ? offers.value : current.offers,
           collections: collections.status === "fulfilled" ? collections.value : current.collections,
+          categories: categories.status === "fulfilled" ? categories.value : current.categories,
           loaded: true
         }));
       });
@@ -72,6 +76,18 @@ export function orderItemHref(item: OrderItem, catalog: Catalog, lang: Language)
   }
   const collection = catalog.collections.find((c) => c.id === item.collectionId);
   return collection ? `/${lang}/collections/${collection.slug}` : null;
+}
+
+/**
+ * The category a product line belongs to, resolved through the live catalog.
+ * Order lines snapshot only name/size, so a deleted product (or an unloaded
+ * catalog) yields null and the caller simply omits the category.
+ */
+export function orderItemCategory(item: OrderItem, catalog: Catalog, lang: Language): string | null {
+  if (item.itemType !== "product_variant") return null;
+  const product = catalog.products.find((p) => p.variants.some((v) => v.id === item.variantId));
+  const category = product ? catalog.categories.find((c) => c.id === product.categoryId) : undefined;
+  return category ? pickLang(category.name, lang) : null;
 }
 
 export function OrderItemMedia({

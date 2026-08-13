@@ -43,7 +43,10 @@ vi.mock("@/lib/api/client", () => {
   return {
     fetchProducts: vi.fn().mockResolvedValue([discountedProduct]),
     fetchOffers: vi.fn().mockResolvedValue([]),
-    fetchCollections: vi.fn().mockResolvedValue([])
+    fetchCollections: vi.fn().mockResolvedValue([]),
+    fetchCategories: vi.fn().mockResolvedValue([
+      { id: 1, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true }
+    ])
   };
 });
 
@@ -65,6 +68,15 @@ describe("CartView", () => {
     // Discounted unit price is 100 (50% off 200), qty 2 -> line total 200, not 400.
     expect((await screen.findAllByText(/EGP\s*200/)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/EGP\s*400/)).not.toBeInTheDocument();
+  });
+
+  it("shows the product's category on the cart line", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    expect(await screen.findByText(/Serums · /)).toBeInTheDocument();
   });
 
   it("shows the unit price alongside the line total when a line has more than one unit", async () => {

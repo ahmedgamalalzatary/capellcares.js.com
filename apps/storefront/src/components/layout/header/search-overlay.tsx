@@ -68,6 +68,19 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     }
   }, [open]);
 
+  // While the overlay is up, the page behind must not scroll — wheel and touch
+  // scrolling belong to the results list, which has its own overflow container.
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

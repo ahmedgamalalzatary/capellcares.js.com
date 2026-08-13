@@ -92,29 +92,24 @@ describe("ShopMegaMenu", () => {
     expect(screen.getByRole("link", { name: /Starter Kit/ })).toHaveAttribute("href", "/en/collections/starter-kit");
   });
 
-  it("renders offer and collection thumbnails beside their labels, like category children", () => {
+  it("renders offer and collection entries as text-only links, like category children", () => {
     render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Offers" }));
 
-    // Same thumbnail treatment NavBranch gives a child category.
-    const offerImage = screen.getByAltText("Duo Deal");
-    expect(offerImage).toHaveAttribute("src", "/uploads/duo-deal.jpg");
-    expect(offerImage.className).toContain("h-12");
-    expect(offerImage.className).toContain("w-12");
-    expect(offerImage.className).toContain("object-cover");
-    expect(screen.getByRole("link", { name: "Duo Deal" })).toContainElement(offerImage);
-
-    // An entry with no artwork still renders, just without a thumbnail.
+    // Same text-only treatment NavBranch gives a child category: no thumbnails,
+    // even when the entry has artwork.
+    expect(screen.getByRole("link", { name: "Duo Deal" }).querySelector("img")).toBeNull();
+    expect(screen.queryByAltText("Duo Deal")).toBeNull();
     expect(screen.getByRole("link", { name: "Bare Deal" })).toBeInTheDocument();
-    expect(screen.queryByAltText("Bare Deal")).toBeNull();
 
     // The "All …" link stays plain text, exactly like "All {category}".
     expect(screen.getByRole("link", { name: "All Offers →" }).querySelector("img")).toBeNull();
 
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Collections" }));
-    expect(screen.getByAltText("Starter Kit")).toHaveAttribute("src", "/uploads/starter-kit.jpg");
+    expect(screen.getByRole("link", { name: "Starter Kit" }).querySelector("img")).toBeNull();
+    expect(screen.queryByAltText("Starter Kit")).toBeNull();
   });
 
   it("applies an underline + bold hover to leaf (non-parent) sub-category links", () => {

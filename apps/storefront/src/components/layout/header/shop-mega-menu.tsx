@@ -211,13 +211,6 @@ function MediaGrid({
           onClick={onNavigate}
           className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
         >
-          {item.imagePath ? (
-            <img
-              src={item.imagePath}
-              alt={item.label}
-              className="h-12 w-12 shrink-0 rounded-md object-cover"
-            />
-          ) : null}
           <span>{item.label}</span>
         </Link>
       ))}

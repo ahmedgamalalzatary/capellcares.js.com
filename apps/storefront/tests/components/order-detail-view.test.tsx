@@ -22,7 +22,8 @@ vi.mock("@/lib/api/client", () => ({
   // deep links; an empty catalog exercises the "no longer available" fallback.
   fetchProducts: () => Promise.resolve([]),
   fetchOffers: () => Promise.resolve([]),
-  fetchCollections: () => Promise.resolve([])
+  fetchCollections: () => Promise.resolve([]),
+  fetchCategories: () => Promise.resolve([])
 }));
 
 import { OrderDetailView } from "@/components/orders/order-detail-view";
