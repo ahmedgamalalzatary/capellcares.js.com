@@ -1,7 +1,7 @@
 # Capella Mobile App (Expo / React Native) — Combined Storefront + ERP
 
 > Status: **plan only — nothing implemented yet.**
-> Decisions: React Native via **Expo** (App Store / Google Play distribution), **one combined app** (customer storefront + ERP admin unlocked by staff login), **full parity** with the web apps — same styling, same functionality, nothing new.
+> Decisions: React Native via **Expo** (App Store / Google Play distribution), **one combined app** (customer storefront + ERP admin unlocked by staff login), **full parity** with the web apps — the same styling, routes, functionality, data, permissions, languages, and known unfinished functionality; nothing product-level is added, removed, or redesigned for mobile. Native controls and layouts adapt the same design to phone interaction without changing behavior.
 >
 > Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
 
@@ -17,6 +17,14 @@ The monorepo ships three web workspaces today:
 | `packages/shared` | Raw TS (types, i18n, zod schemas, dto, constants) | Shared by all |
 
 There is no mobile code anywhere. The new app lives at `apps/mobile` (picked up automatically by the `apps/*` pnpm workspace glob and Turborepo).
+
+### Resolved implementation decisions
+
+- The combined storefront + ERP app is intentional. Customer and admin authentication remain independent, and the authenticated ERP route tree is permission-aware.
+- Use the **current stable Expo SDK at implementation time** and let `expo install` select its compatible React and React Native versions. Do not retain stale hard-coded SDK versions merely to use Expo Go.
+- Use an installable Expo development build for reliable Android/iOS testing. Expo Go may be used for checks it supports, but it is not an acceptance environment for dynamic RTL switching.
+- Mobile participates in the repository's complete validation suite with `build`, `lint`, `typecheck`, and `test` scripts. Every phase runs all applicable validation and leaves the repository green, not merely typechecked.
+- Checkout and contact are known unfinished web/API functionality. Their mobile implementation is explicitly deferred until the existing implementation works; mobile then reproduces it exactly rather than inventing mobile-only behavior.
 
 ### Verified constraints (from code exploration)
 
@@ -46,6 +54,7 @@ Small, backward-compatible; web responses stay byte-for-byte identical.
 
 **Exit criteria**
 - `pnpm --filter @capella/api typecheck` green; `pnpm test` green (web auth tests unaffected).
+- API integration tests cover customer and admin mobile login, refresh-token rotation, logout/revocation, rejected old tokens, and confirmation that ordinary web responses never expose refresh tokens.
 - `curl -X POST /api/v1/auth/login -H "x-client: mobile"` returns `refreshToken` in the body; without the header it does not.
 
 ---
@@ -58,7 +67,7 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 
 | File | Purpose |
 |---|---|
-| `apps/mobile/package.json` | `@capella/mobile`; expo ~54, react 19.1.0, react-native 0.81.x, expo-router ~6, expo-secure-store, `@react-native-async-storage/async-storage`, expo-image, expo-font + `@expo-google-fonts/{roboto,tajawal,lobster}`, expo-localization, expo-updates, react-native-safe-area-context, react-native-screens, `"@capella/shared": "workspace:*"`; scripts `dev`/`typecheck` so Turbo picks it up; devDeps typescript, `@types/react`, `babel-preset-expo` (explicit — pnpm's isolated layout won't resolve it transitively) |
+| `apps/mobile/package.json` | `@capella/mobile`; current stable Expo SDK with Expo-selected compatible React/React Native versions; expo-router, expo-secure-store, `@react-native-async-storage/async-storage`, expo-image, expo-font + `@expo-google-fonts/{roboto,tajawal,lobster}`, expo-localization, expo-updates, react-native-safe-area-context, react-native-screens, React Native WebView for the same advice-video presentation, icons, and `"@capella/shared": "workspace:*"`; scripts `dev`, `build` (bundle/export both native platforms), `lint`, `typecheck`, and `test` so Turbo validates the app; Expo-compatible TypeScript, lint, and React Native test dependencies are installed directly for pnpm's isolated layout |
 | `apps/mobile/app.json` | name "Capella Care", scheme `capella`, splash/background `#f1f0ed`, `supportsRTL`, bundle ids `com.capellacare.app`, plugins expo-router / expo-secure-store / expo-localization, `newArchEnabled` |
 | `apps/mobile/metro.config.js` | `watchFolders=[repo root]`, `nodeModulesPaths` (app + root), `disableHierarchicalLookup: true`, `unstable_enablePackageExports: true`, and the `.js`→extensionless `resolveRequest` shim for shared's NodeNext imports |
 | `apps/mobile/babel.config.js` | `babel-preset-expo` |
@@ -66,13 +75,13 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 | `apps/mobile/expo-env.d.ts`, `apps/mobile/.gitignore`, `apps/mobile/.env.example` | Expo types; ignore `.expo/ android/ ios/ dist/ .env`; document `EXPO_PUBLIC_API_URL` per target. Emulator (`http://10.0.2.2:4000`) and iOS simulator (`http://localhost:4000`) may be inferred in dev; **a physical device (`http://<LAN-IP>:4000`) and every production build must set the variable explicitly** — neither can reach a `localhost` fallback |
 | `apps/mobile/app/_layout.tsx` | minimal root `<Stack>` |
 | `apps/mobile/app/index.tsx` | temporary placeholder that imports something from `@capella/shared` (e.g. `getDict("ar").brand`) to prove shared-package bundling. **Deleted in Phase 6**, where `(tabs)/index.tsx` takes over `/` — the `(tabs)` group adds no URL segment, so the two files would otherwise both claim the root route |
-| `turbo.json` (edit) | add `EXPO_PUBLIC_API_URL` to `test.passThroughEnv` |
+| `turbo.json` (edit) | declare `EXPO_PUBLIC_API_URL` for the mobile tasks that consume it, especially `build` and `test`, so Turbo environment isolation and cache invalidation are correct |
 
 **Exit criteria**
 - `pnpm install` succeeds; `pnpm --filter @capella/mobile exec expo install --check` clean (run `--fix` once to snap exact SDK versions).
-- `pnpm --filter @capella/mobile typecheck` green.
-- `npx expo export --platform android` inside `apps/mobile` bundles without resolver errors ← proves the shared-TS/Metro integration.
-- App opens in Expo Go showing the placeholder with a dict string.
+- `pnpm --filter @capella/mobile lint`, `typecheck`, and `test` are green.
+- Both Android and iOS exports bundle without resolver errors ← proves the shared-TS/Metro integration on both targets.
+- An installable development build opens on an emulator/simulator or physical device and shows the placeholder with a dict string.
 
 ---
 
@@ -86,10 +95,10 @@ No screens yet — the primitives everything else imports.
 |---|---|
 | `apps/mobile/src/theme.ts` | Parchment palette OKLCH→hex: canvas `#f1f0ed`, ink `#0e0d0b`, ink-2 `#3a3833`, ink-3 `#6d6a62`, accent `#46433c`, accent-deep `#201e1a`, warm-soft `#eae5d4`, hairline `#c5bda6`, error `#b13f2c`, success `#2e7d4f`, surface `#ffffff`; radii {6,10,16,24}; spacing scale; font families keyed by language (Roboto latin / Tajawal arabic / Lobster wordmark) |
 | `apps/mobile/src/constants/storage.ts` | AsyncStorage/SecureStore keys — reuse web names: `capella.cart.v1`, `capella.auth.v1`, plus `capella.lang.v1`, secure keys for refresh tokens |
-| `apps/mobile/src/lib/lang.tsx` | `LangProvider` + `useLang()`: language (`ar` default) + `getDict`/`dir` from `@capella/shared/i18n`, persisted; switching calls `I18nManager.allowRTL/forceRTL` then `Updates.reloadAsync()` so layout flips natively |
+| `apps/mobile/src/lib/lang.tsx` | `LangProvider` + `useLang()`: language (`ar` default) + `getDict`/`dir` from `@capella/shared/i18n`, persisted; switching updates `I18nManager.allowRTL/forceRTL` and reloads the installed app with the SDK-supported app reload API so layout flips natively. Dynamic RTL is verified in a development build, not Expo Go |
 | `apps/mobile/app/_layout.tsx` (edit) | load fonts (expo-font + google-font packages), keep splash until ready, wrap in `LangProvider` + SafeArea |
 
-**Exit criteria**: typecheck green; app boots in Arabic with Tajawal, toggling to English reloads LTR with Roboto.
+**Exit criteria**: build/lint/typecheck/tests green; a development build boots in Arabic with Tajawal, toggling to English reloads LTR with Roboto, and toggling back restores RTL.
 
 ---
 
@@ -106,7 +115,7 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 | `apps/mobile/src/lib/api/types.ts`, `normalizers.ts`, `selectors.ts` | ported verbatim; media URLs resolved against `API_BASE` |
 | `apps/mobile/src/lib/api/client.ts` | all fetchers: products, categories, offers, collections, advices, shop-media-sections, orders, reviews, wishlist, checkout |
 
-**Exit criteria**: typecheck green; a temporary debug call on the placeholder screen lists real products from a running local API.
+**Exit criteria**: build/lint/typecheck/tests green; a temporary debug call on the placeholder screen lists real products from a running local API.
 
 ---
 
@@ -116,12 +125,12 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 | File | Purpose |
 |---|---|
-| `apps/mobile/src/lib/auth/token-store.ts` | access token in memory with subscribe/listener + single-flight `refreshPromise` (same pattern as `apps/storefront/src/lib/auth-provider.api.ts`); **refresh token in `expo-secure-store`**; all auth calls send `x-client: mobile`, refresh sends `x-refresh-token` |
+| `apps/mobile/src/lib/auth/token-store.ts` | access token in memory with subscribe/listener + single-flight `refreshPromise` (same pattern as `apps/storefront/src/lib/auth-provider.api.ts`); **refresh token in `expo-secure-store`**; all auth calls send `x-client: mobile`, refresh sends `x-refresh-token`. Every successful refresh persists the newly rotated refresh token before publishing the new access token; rejection/logout clears both tokens locally |
 | `apps/mobile/src/lib/auth/auth-context.tsx` | `AuthProvider` + `useAuth()`: login/signup/logout/bootstrap-from-storage; user profile in AsyncStorage (`capella.auth.v1` shape) |
 | `apps/mobile/src/lib/cart.tsx` | `CartProvider` + `useCart()`: `CartLine[]` in AsyncStorage under `capella.cart.v1`, reusing `normalizeCartLine` validation from `apps/storefront/src/lib/cart.ts`; add/update/remove/clear; totals via `getEffectiveVariantPrice` from `@capella/shared` |
 | `apps/mobile/app/_layout.tsx` (edit) | mount `AuthProvider` + `CartProvider` |
 
-**Exit criteria**: typecheck green; login against local API survives an app reload (SecureStore) and a forced 401 (auto-refresh); cart lines persist across restarts.
+**Exit criteria**: build/lint/typecheck/tests green; login against local API survives an app reload, at least two consecutive token rotations, and a forced 401; rejected refresh/logout clears the local session; cart lines persist across restarts.
 
 ---
 
@@ -131,7 +140,7 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 **Files** — `apps/mobile/src/components/`: `screen.tsx` (safe-area + canvas bg), `button.tsx` (primary/outline/ghost, pressed = accent-deep), `input.tsx`, `price-text.tsx` (EGP + strikethrough original), `rating-stars.tsx`, `badge.tsx` (new/bestseller/offer from `dict.badges`), `qty-stepper.tsx`, `media-image.tsx` (bilingual `EntityMedia` → url by lang, expo-image), `product-card.tsx`, `section-header.tsx` (eyebrow style), `empty-state.tsx`.
 
-**Exit criteria**: typecheck green; a temporary gallery screen renders every component in ar (RTL) and en (LTR).
+**Exit criteria**: build/lint/typecheck/tests green; a temporary gallery screen renders every component in ar (RTL) and en (LTR).
 
 ---
 
@@ -142,18 +151,22 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 - `(tabs)/_layout.tsx` — tab bar: Home, Shop, Cart, Orders, Account (labels from `dict.nav`)
 - `(tabs)/index.tsx` — Home: shop-media hero sections, new arrivals, bestsellers, offers/sets rails (mirrors web home/shop)
 - `(tabs)/shop.tsx` — search + category chips + product grid (mirrors `/shop` + `/products`)
+- `new.tsx` and `bestsellers.tsx` — dedicated filtered product lists matching the current `/new` and `/bestsellers` routes
 - `category/[slug].tsx` — grid filtered via `getCategoryBySlug`/`categoryId`
 - `product/[slug].tsx` — media gallery with dots, size/variant selector, discount pricing, description/ingredients/how-to-use/warnings sections, related items, add-to-cart (reviews & wishlist buttons land in Phase 8)
+- Shop/products advice cards reproduce the current advice content and YouTube/Instagram presentation using native navigation and WebView/external-link handling as appropriate to the same source URL.
 
-**Exit criteria**: browse real catalog end-to-end in Expo Go, both languages, RTL correct; add-to-cart updates the tab badge.
+**Exit criteria**: build/lint/typecheck/tests green; browse every current catalog route end-to-end in a development build, both languages, RTL correct; advice presentation works; add-to-cart updates the tab badge.
 
 ---
 
-## Phase 7 — Customer slice B: cart & checkout (sellable path)
+## Phase 7 — Customer slice B: cart & checkout (checkout deferred upstream)
+
+> **Known unfinished upstream functionality:** checkout does not currently work end-to-end in the existing app. The cart is implemented in this phase, but mobile checkout remains visibly unavailable and is not represented as working. Finish and validate the existing web/API checkout first; then implement the same contract and behavior here without mobile-only product changes.
 
 **Files** — `(tabs)/cart.tsx` (lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`), `checkout.tsx` (full form: governorate picker from `GOVERNORATES`, `EG_PHONE_REGEX` validation, notes, COD block, POST `/api/v1/checkout`, success state clears cart — mirrors web checkout), plus an `order-success` state/screen.
 
-**Exit criteria**: a real COD order placed from the phone appears in the ERP web app; validation errors match web copy in both languages.
+**Exit criteria**: cart behavior and tests match the web app. After the upstream checkout blocker is resolved, a real COD order placed from the phone appears in the ERP web app and validation errors match web copy in both languages. Until then, checkout is explicitly recorded as deferred rather than passing this criterion.
 
 ---
 
@@ -167,9 +180,9 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 ## Phase 9 — Customer slice D: offers, collections, static pages
 
-**Files** — `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` (bundle contents, savings badge, add-bundle-to-cart, unavailability states, plus the Phase 8 review list/submit components on both detail screens), `page/[key].tsx` (generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks), `contact.tsx` (mirrors web contact form).
+**Files** — `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` (bundle contents, savings badge, add-bundle-to-cart, unavailability states, plus the Phase 8 review list/submit components on both detail screens), `page/[key].tsx` (generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks, including working inline internal/external links), `contact.tsx` (deferred unfinished functionality; after the existing contact flow is completed, reproduce its fields, validation, attachment selection/preview, submission, and result states).
 
-**Exit criteria**: every storefront web route has a mobile equivalent reachable from tabs/account; full storefront parity checklist passes.
+**Exit criteria**: every working storefront web route has a mobile equivalent reachable from tabs/account and the storefront parity checklist passes. Contact is explicitly recorded as deferred until its existing implementation actually submits messages; the mobile app must not show a false successful-delivery state.
 
 ---
 
@@ -180,11 +193,11 @@ Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
 **Files**
 - `apps/mobile/src/lib/admin/auth.ts` — admin token store twin (own SecureStore key) using Phase 0's mobile flow against `/api/erp/auth`
 - `apps/mobile/src/lib/admin/client.ts` — `/api/erp` fetch wrappers
-- `apps/mobile/app/admin/_layout.tsx` — **Arabic content boundary**: while this route tree is mounted it uses the `ar` dictionary and Tajawal family regardless of the customer language, then restores the customer's dictionary and fonts on leaving. It does not call `I18nManager` or change native direction, so the physical layout direction stays as the app was launched. The layout allows unauthenticated access to `admin/login.tsx`; its staff guard protects only `admin/index.tsx`, `admin/orders.tsx`, `admin/order/[id].tsx`, and later authenticated admin routes
+- `apps/mobile/app/admin/_layout.tsx` — **Arabic RTL boundary**: while this route tree is mounted it uses the `ar` dictionary, Tajawal, right-aligned text/writing direction, RTL row ordering, and mirrored directional controls regardless of customer language. It does not mutate the customer's global language. The layout allows unauthenticated access only to `admin/login.tsx`; permission-aware staff guards protect every authenticated admin route
 - `admin/login.tsx`, `admin/index.tsx` (dashboard), `admin/orders.tsx` + `admin/order/[id].tsx` (list, detail, payment-status updates — parity with `apps/erp` orders module)
-- Later increments, same pattern: inventory, catalog/offers/collections management, reviews moderation, uploads
+- Explicit sequential ERP increments cover every current module and action: dashboard; orders; products and discounts; categories; offers; collections; advices; shop media; reviews moderation; sales; staff and effective permissions; trash/restore; uploads and media selection. Each increment inventories the matching web routes, API endpoints, permission keys, mutations, validation, empty/loading/error states, and touch adaptation before implementation
 
-**Exit criteria**: staff login from Account opens the admin area; an order status changed on the phone is reflected in the ERP web app; customer session and admin session coexist independently.
+**Exit criteria**: build/lint/typecheck/tests green; every existing ERP route and permitted action has a mobile equivalent; Arabic layout remains truly RTL even when the customer app is English; permission-based navigation and route guards match web ERP; customer and admin sessions coexist independently.
 
 ---
 
@@ -192,7 +205,7 @@ Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
 
 EAS build config (`eas.json`, dev/preview/production profiles), real icon + splash assets, Android adaptive icon, iOS privacy manifest, store listings; `EXPO_PUBLIC_API_URL=https://api.capellacares.com` baked into production builds. Requires Apple Developer + Google Play accounts — user action.
 
-**Exit criteria**: `eas build` produces installable .aab/.ipa; internal-track/TestFlight install passes the Phase 7 sellable-path test against production API.
+**Exit criteria**: `eas build` produces installable .aab/.ipa; internal-track/TestFlight installs pass the complete parity checklist against the production API. Checkout and contact join this checklist only after their explicitly recorded upstream blockers are resolved.
 
 ---
 
@@ -204,6 +217,7 @@ apps/mobile/
 ├── app/
 │   ├── _layout.tsx                    # fonts, splash, Lang/Auth/Cart providers, Stack
 │   ├── (tabs)/_layout.tsx  index  shop  cart  orders  account
+│   ├── new  bestsellers
 │   ├── product/[slug]  category/[slug]  offers/  offer/[slug]
 │   ├── collections/  collection/[slug]  checkout  login  signup
 │   ├── wishlist  order/[id]  contact  page/[key]
