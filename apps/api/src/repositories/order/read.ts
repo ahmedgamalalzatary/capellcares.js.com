@@ -1,22 +1,50 @@
 import { db } from "@capella/database/src/db";
 import { offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   mergeProductTotal,
   mergeVariantTotal,
   toNumber
 } from "./shared.js";
 
-export async function listOrdersRepo(filters?: { customerId?: number }) {
+export async function listOrdersRepo(filters?: { customerId?: number; withItems?: boolean }) {
   const rows = await db
     .select()
     .from(orders)
     .where(filters?.customerId != null ? eq(orders.customerId, filters.customerId) : undefined)
     .orderBy(desc(orders.createdAt));
 
-  return rows.map((row) => ({
+  const summaries = rows.map((row) => ({
     ...row,
     totalAmount: toNumber(row.totalAmount)
+  }));
+
+  // The admin list only needs order-level columns. The storefront list renders a
+  // card per order with item thumbnails and a unit count, so it opts into the
+  // line items via one extra query rather than N per-order detail requests.
+  if (!filters?.withItems || summaries.length === 0) {
+    return summaries;
+  }
+
+  const rawItems = await db
+    .select()
+    .from(orderItems)
+    .where(inArray(orderItems.orderId, summaries.map((row) => row.id)));
+
+  const itemsByOrder = new Map<number, typeof rawItems>();
+  for (const item of rawItems) {
+    const bucket = itemsByOrder.get(item.orderId);
+    if (bucket) bucket.push(item);
+    else itemsByOrder.set(item.orderId, [item]);
+  }
+
+  return summaries.map((row) => ({
+    ...row,
+    items: (itemsByOrder.get(row.id) ?? []).map((item) => ({
+      ...item,
+      unitPrice: toNumber(item.unitPrice),
+      lineTotal: toNumber(item.lineTotal)
+    }))
   }));
 }
 

@@ -63,7 +63,7 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
 }
 
 export async function listCustomerOrdersController(req: AuthenticatedRequest, res: Response) {
-  res.json({ items: await listOrdersRepo({ customerId: req.user!.id }) });
+  res.json({ items: await listOrdersRepo({ customerId: req.user!.id, withItems: true }) });
 }
 
 export async function getCustomerOrderController(req: AuthenticatedRequest, res: Response) {

@@ -2,16 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { type Language, type OrderSummary } from "@capella/shared";
+import { formatPrice, type Language, type OrderSummary } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { fetchCustomerOrders } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
+import { authHref } from "@/lib/auth-redirect";
+import {
+  formatOrderDate,
+  itemsCountLabel,
+  OrderItemMedia,
+  paymentStatusChip,
+  paymentStatusLabel,
+  useCatalog
+} from "./order-presentation";
+
+/** Thumbnails shown on a card before collapsing the rest into a "+N" chip. */
+const MAX_THUMBS = 4;
 
 export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   const { user, accessToken, logout } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [authRequired, setAuthRequired] = useState(false);
+  const catalog = useCatalog();
 
   useEffect(() => {
     if (user && !accessToken) {
@@ -53,14 +66,25 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
           {dict.orders.loginRequired}
         </h2>
         <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{dict.orders.loginRequiredDesc}</p>
-        <Link href={`/${lang}/login`} className="btn btn--primary btn--lg mt-1">
+        <Link href={authHref("login", lang, `/${lang}/orders`)} className="btn btn--primary btn--lg mt-1">
           {dict.wishlist.goLogin}
         </Link>
       </div>
     );
   }
 
-  if (loading) return <p className="py-12 text-center text-(--ink-3)">{dict.common.loading}</p>;
+  if (loading) {
+    return (
+      <div className="mb-16 grid gap-3">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-40 animate-pulse rounded-lg border border-(--hairline) bg-(--warm-soft)"
+          />
+        ))}
+      </div>
+    );
+  }
 
   if (orders.length === 0) {
     return (
@@ -81,44 +105,73 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
     );
   }
 
-  const statusChip = (status: string) => {
-    const s = status.toLowerCase();
-    if (s.includes("accepted") || s.includes("paid") || s.includes("delivered") || s.includes("complete")) return "chip--sage";
-    if (s.includes("pending") || s.includes("processing")) return "chip--gold";
-    if (s.includes("denied") || s.includes("cancel") || s.includes("fail")) return "chip--accent";
-    return "";
-  };
-
   return (
-    <div className="mb-16 overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1) sm:mb-20">
-      <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{dict.orders.orderCode}</th>
-              <th>{dict.orders.paymentStatus}</th>
-              <th>{dict.common.total}</th>
-              <th>{dict.orders.orderDate}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td className="font-mono text-sm text-ink">{order.orderCode}</td>
-                <td><span className={`chip ${statusChip(order.paymentStatus)}`}>{order.paymentStatus}</span></td>
-                <td className="text-ink">{order.totalAmount}</td>
-                <td className="text-(--ink-2)">{new Date(order.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
-                <td className="text-end">
-                  <Link href={`/${lang}/orders/${order.id}`} className="btn btn--ghost btn--sm">
-                    {dict.orders.viewDetails}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <ul className="mb-16 grid list-none gap-3 p-0 sm:mb-20 sm:gap-4">
+      {orders.map((order) => {
+        const items = order.items ?? [];
+        const units = items.reduce((acc, item) => acc + item.qty, 0);
+        const thumbs = items.slice(0, MAX_THUMBS);
+        const overflow = items.length - thumbs.length;
+
+        return (
+          <li
+            key={order.id}
+            className="overflow-hidden rounded-lg border border-(--hairline) bg-surface shadow-(--shadow-1) transition-colors hover:border-warm"
+          >
+            {/* Head: identity and status, the two things scanned first */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-(--hairline) px-4 py-3 sm:px-5">
+              <span className="font-mono text-sm font-semibold text-ink">{order.orderCode}</span>
+              <span className={`chip ${paymentStatusChip(order.paymentStatus)}`}>
+                {paymentStatusLabel(order.paymentStatus, dict)}
+              </span>
+              <span className="ms-auto text-sm text-(--ink-3)">
+                {formatOrderDate(order.createdAt, lang)}
+              </span>
+            </div>
+
+            {/* Body: what was in the order, at a glance */}
+            <div className="flex flex-wrap items-center gap-4 px-4 py-4 sm:px-5">
+              {thumbs.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  {thumbs.map((item) => (
+                    <div
+                      key={item.id}
+                      className="aspect-square w-14 overflow-hidden rounded-md bg-(--warm-soft) sm:w-16"
+                    >
+                      <OrderItemMedia item={item} catalog={catalog} lang={lang} />
+                    </div>
+                  ))}
+                  {overflow > 0 ? (
+                    <div className="grid aspect-square w-14 place-items-center rounded-md bg-(--warm-soft) text-sm font-semibold text-(--ink-2) sm:w-16">
+                      {(dict.orders.andMore ?? "+{n}").replace("{n}", String(overflow))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="ms-auto text-end">
+                {units > 0 ? (
+                  <div className="text-sm text-(--ink-3)">{itemsCountLabel(units, dict)}</div>
+                ) : null}
+                <div className="mt-0.5 text-lg font-semibold text-accent">
+                  {formatPrice(order.totalAmount, lang)}
+                </div>
+              </div>
+            </div>
+
+            {/* Foot: the single action this card offers */}
+            <div className="border-t border-(--hairline) bg-[color-mix(in_oklch,var(--warm-soft)_45%,transparent)] px-4 py-2.5 text-end sm:px-5">
+              <Link
+                href={`/${lang}/orders/${order.id}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-ink transition-colors hover:text-accent"
+              >
+                <span>{dict.orders.viewDetails}</span>
+                <Icon.Chevron size={14} className="arrow-flip" />
+              </Link>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

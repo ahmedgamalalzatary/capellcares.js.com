@@ -15,14 +15,47 @@ const { fetchCustomerOrderById, submitReview } = vi.hoisted(() => ({
   submitReview: vi.fn()
 }));
 
-vi.mock("@/lib/api/client", () => ({ fetchCustomerOrderById, submitReview }));
+vi.mock("@/lib/api/client", () => ({
+  fetchCustomerOrderById,
+  submitReview,
+  // The receipt resolves each line back to the live catalog for thumbnails and
+  // deep links; an empty catalog exercises the "no longer available" fallback.
+  fetchProducts: () => Promise.resolve([]),
+  fetchOffers: () => Promise.resolve([]),
+  fetchCollections: () => Promise.resolve([])
+}));
 
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 
 const dict = {
-  common: { loading: "Loading", empty: "Empty", total: "Total" },
+  common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", currency: "EGP" },
   cart: { item: "Item", qty: "Qty", price: "Price" },
-  orders: { orderCode: "Order", paymentStatus: "Payment", backToOrders: "Back" },
+  checkout: {
+    fullName: "Full name",
+    phone: "Phone",
+    governorate: "Governorate",
+    city: "City",
+    addressLine: "Address",
+    building: "Building",
+    notes: "Notes",
+    cod: "Cash on Delivery"
+  },
+  orders: {
+    orderCode: "Order",
+    paymentStatus: "Payment",
+    backToOrders: "Back",
+    statusPending: "Pending",
+    statusAccepted: "Accepted",
+    statusDenied: "Denied",
+    placedOn: "Placed on",
+    itemsCountOne: "1 item",
+    itemsCount: "{n} items",
+    deliveryDetails: "Delivery details",
+    paymentMethod: "Payment method",
+    orderSummary: "Order summary",
+    itemsInOrder: "Items in this order",
+    unavailableItem: "No longer available"
+  },
   reviews: {
     writeReview: "Write a review",
     submitted: "Review submitted",
@@ -47,6 +80,14 @@ beforeEach(() => {
     orderCode: "ORDER-12",
     paymentStatus: "accepted",
     totalAmount: 50,
+    createdAt: "2026-05-20T10:00:00.000Z",
+    fullName: "Capella User",
+    phone: "01012345678",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 4",
+    notes: null,
     items: [{
       id: 20,
       itemType: "product_variant",
@@ -69,7 +110,7 @@ describe("OrderDetailView reviews", () => {
   it("lets an eligible signed-in customer submit one review from the order item", async () => {
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 
-    expect((await screen.findByText("accepted")).className).toContain("chip--sage");
+    expect((await screen.findByText("Accepted")).className).toContain("chip--sage");
     fireEvent.click(await screen.findByRole("button", { name: "Write a review" }));
     fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
     fireEvent.change(screen.getByLabelText("Your review"), { target: { value: "Wonderful product" } });
@@ -91,12 +132,20 @@ describe("OrderDetailView reviews", () => {
       orderCode: "ORDER-13",
       paymentStatus: "denied",
       totalAmount: 50,
+      createdAt: "2026-05-20T10:00:00.000Z",
+      fullName: "Capella User",
+      phone: "01012345678",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street 10",
+      buildingApartment: "Building 4",
+      notes: null,
       items: []
     });
 
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 13 }));
 
-    expect((await screen.findByText("denied")).className).toContain("chip--accent");
+    expect((await screen.findByText("Denied")).className).toContain("chip--accent");
   });
 
   it("contains keyboard focus in the review form and restores it to the opener", async () => {

@@ -234,13 +234,6 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
         onClick={onNavigate}
         className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
       >
-        {node.imagePath ? (
-          <img
-            src={node.imagePath}
-            alt={node.label}
-            className="h-12 w-12 shrink-0 rounded-md object-cover"
-          />
-        ) : null}
         <span>{node.label}</span>
       </Link>
     </div>

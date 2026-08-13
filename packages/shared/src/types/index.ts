@@ -391,6 +391,11 @@ export interface OrderSummary {
   paymentStatus: PaymentStatus;
   totalAmount: number;
   createdAt: string;
+  /**
+   * Present on the storefront order list (which renders item thumbnails per
+   * card) and absent on the admin list, which only needs order-level columns.
+   */
+  items?: OrderItem[];
 }
 
 export interface Order extends OrderSummary {

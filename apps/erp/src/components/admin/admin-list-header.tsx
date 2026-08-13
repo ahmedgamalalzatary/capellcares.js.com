@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Icon } from "@/components/ui/icons";
 
 export interface ListFilterOption {
@@ -32,6 +33,7 @@ interface AdminListHeaderProps {
   onSearchChange: (value: string) => void;
   countLabel: string;
   filters?: ListFilter[];
+  customFilters?: ReactNode;
 }
 
 /**
@@ -45,7 +47,8 @@ export function AdminListHeader({
   searchValue,
   onSearchChange,
   countLabel,
-  filters = []
+  filters = [],
+  customFilters
 }: AdminListHeaderProps) {
   return (
     <div className="toolbar list-header">
@@ -61,7 +64,7 @@ export function AdminListHeader({
         </div>
       </div>
 
-      {filters.length > 0 ? (
+      {filters.length > 0 || customFilters ? (
         <div className="list-header__filters">
           {filters.map((filter) => (
             <select
@@ -77,6 +80,7 @@ export function AdminListHeader({
               ))}
             </select>
           ))}
+          {customFilters}
         </div>
       ) : null}
 

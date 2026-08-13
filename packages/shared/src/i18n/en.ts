@@ -184,7 +184,15 @@ export const en = {
     viewDetails: "View details",
     backToOrders: "Back to orders",
     startShopping: "Start shopping and your orders will appear here.",
-    viewOrders: "View my orders"
+    viewOrders: "View my orders",
+    placedOn: "Placed on",
+    itemsCountOne: "1 item",
+    itemsCount: "{n} items",
+    andMore: "+{n} more",
+    paymentMethod: "Payment method",
+    orderSummary: "Order summary",
+    itemsInOrder: "Items in this order",
+    unavailableItem: "No longer available"
   },
   advices: {
     title: "Capella Tips",

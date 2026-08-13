@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { authHref } from "@/lib/auth-redirect";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -18,6 +20,10 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
+  // Signing in from the header should return the customer to the page they were
+  // reading, not drop them on the locale home.
+  const pathname = usePathname();
+  const accountHref = user ? `/${lang}/orders` : authHref("login", lang, pathname);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
@@ -78,7 +84,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               <MenuToggle open={mobileOpen} />
             </button>
             <Link
-              href={user ? `/${lang}/orders` : `/${lang}/login`}
+              href={accountHref}
               className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
@@ -148,7 +154,7 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
               <span className="absolute right-1/4 top-1 grid min-h-4 min-w-4 place-items-center text-md font-bold leading-none  ">{count}</span>
             </Link>
             <Link
-              href={user ? `/${lang}/orders` : `/${lang}/login`}
+              href={accountHref}
               className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >

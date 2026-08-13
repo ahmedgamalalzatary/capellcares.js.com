@@ -16,7 +16,11 @@ vi.mock("@/components/providers/auth-provider", () => ({
 }));
 
 vi.mock("@/lib/api/client", () => ({
-  fetchCustomerOrders: (...args: any[]) => fetchCustomerOrders(...args)
+  fetchCustomerOrders: (...args: any[]) => fetchCustomerOrders(...args),
+  // The order cards resolve line items back to the live catalog for thumbnails.
+  fetchProducts: () => Promise.resolve([]),
+  fetchOffers: () => Promise.resolve([]),
+  fetchCollections: () => Promise.resolve([])
 }));
 
 const dict = {
@@ -27,10 +31,16 @@ const dict = {
     orderCode: "Order code",
     paymentStatus: "Payment status",
     orderDate: "Order date",
-    viewDetails: "View details"
+    viewDetails: "View details",
+    statusPending: "Pending",
+    statusAccepted: "Accepted",
+    statusDenied: "Denied",
+    itemsCountOne: "1 item",
+    itemsCount: "{n} items",
+    andMore: "+{n} more"
   },
   wishlist: { goLogin: "Log in" },
-  common: { loading: "Loading", total: "Total" },
+  common: { loading: "Loading", total: "Total", currency: "EGP" },
   cart: { keepShopping: "Keep shopping" }
 };
 
@@ -59,14 +69,33 @@ describe("OrdersView", () => {
         paymentMethod: "cod",
         paymentStatus: "accepted",
         totalAmount: 320,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            id: 11,
+            orderId: 5,
+            itemType: "product_variant",
+            variantId: 3,
+            offerId: null,
+            collectionId: null,
+            qty: 2,
+            unitPrice: 160,
+            lineTotal: 320,
+            snapshotNameAr: "منتج",
+            snapshotNameEn: "Rose Lotion",
+            snapshotSizeLabel: "100ml"
+          }
+        ]
       }
     ]);
 
     render(createElement(OrdersView, { lang: "en", dict }));
 
     await waitFor(() => expect(screen.getByText("ABCD-005")).toBeInTheDocument());
-    expect(screen.getByText("accepted")).toBeInTheDocument();
+    // The status chip is localized from the union, not echoed as the raw value.
+    expect(screen.getByText("Accepted")).toBeInTheDocument();
+    expect(screen.queryByText("accepted")).not.toBeInTheDocument();
+    expect(screen.getByText("2 items")).toBeInTheDocument();
   });
 
   it("shows the login-required state when the orders request is unauthorized", async () => {

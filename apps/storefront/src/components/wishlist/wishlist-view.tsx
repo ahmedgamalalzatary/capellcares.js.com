@@ -11,6 +11,7 @@ import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
+import { authHref } from "@/lib/auth-redirect";
 
 /** Row order for the mixed wishlist: offers, then collections, then products. */
 const KIND_RANK = { offer: 0, collection: 1, product: 2 } as const;
@@ -58,7 +59,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const { items, remove } = useWishlist();
   const isAr = lang === "ar";
   // POV control: 1 = roomy cards, 2 = one extra card per screen in the row.
-  const [cols, setCols] = useState<Cols>(1);
+  const [cols, setCols] = useState<Cols>(2);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -148,7 +149,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
           icon={<Icon.Heart size={32} />}
           title={dict.wishlist.loginRequired}
           desc={dict.wishlist.loginRequiredDesc}
-          ctaHref={`/${lang}/login`}
+          ctaHref={authHref("login", lang, `/${lang}/wishlist`)}
           ctaLabel={dict.wishlist.goLogin}
         />
       </>

@@ -9,7 +9,12 @@ const mockedUseAdminAuth = vi.fn(() => ({
   logout: vi.fn()
 }));
 
-function makeOrder(id: number, fullName: string, paymentStatus: "pending" | "accepted" | "denied") {
+function makeOrder(
+  id: number,
+  fullName: string,
+  paymentStatus: "pending" | "accepted" | "denied",
+  createdAt = "2026-05-19T00:00:00.000Z"
+) {
   return {
     id,
     orderCode: `YMFI-00${id}`,
@@ -26,7 +31,7 @@ function makeOrder(id: number, fullName: string, paymentStatus: "pending" | "acc
     paymentMethod: "cod",
     paymentStatus,
     totalAmount: 213,
-    createdAt: "2026-05-19T00:00:00.000Z"
+    createdAt
   };
 }
 
@@ -125,6 +130,81 @@ describe("OrdersPage", () => {
     expect(screen.getByText("قيد المراجعة", { selector: "span" })).toHaveClass("status--draft");
     expect(screen.getByText("مقبول", { selector: "span" })).toHaveClass("status--active");
     expect(screen.getByText("مرفوض", { selector: "span" })).toHaveClass("status--deleted");
+  });
+
+  it("filters by an inclusive local calendar-day range", () => {
+    mockState = {
+      orders: [
+        makeOrder(1, "Before Range", "pending", "2026-05-18T12:00:00.000Z"),
+        makeOrder(2, "First Boundary", "pending", "2026-05-19T00:00:00.000Z"),
+        makeOrder(3, "Last Boundary", "pending", "2026-05-20T20:59:59.000Z"),
+        makeOrder(4, "After Range", "pending", "2026-05-20T21:00:00.000Z")
+      ]
+    };
+    render(createElement(OrdersPage));
+
+    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-19" } });
+    fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-20" } });
+
+    expect(screen.queryByText("Before Range")).not.toBeInTheDocument();
+    expect(screen.getByText("First Boundary")).toBeInTheDocument();
+    expect(screen.getByText("Last Boundary")).toBeInTheDocument();
+    expect(screen.queryByText("After Range")).not.toBeInTheDocument();
+  });
+
+  it("supports either date bound independently and clearing it", () => {
+    mockState = {
+      orders: [
+        makeOrder(1, "Earlier Order", "pending", "2026-05-18T12:00:00.000Z"),
+        makeOrder(2, "Later Order", "pending", "2026-05-21T12:00:00.000Z")
+      ]
+    };
+    render(createElement(OrdersPage));
+
+    const fromDate = screen.getByLabelText("من تاريخ");
+    const toDate = screen.getByLabelText("إلى تاريخ");
+
+    fireEvent.change(fromDate, { target: { value: "2026-05-20" } });
+    expect(screen.queryByText("Earlier Order")).not.toBeInTheDocument();
+    expect(screen.getByText("Later Order")).toBeInTheDocument();
+
+    fireEvent.change(fromDate, { target: { value: "" } });
+    fireEvent.change(toDate, { target: { value: "2026-05-20" } });
+    expect(screen.getByText("Earlier Order")).toBeInTheDocument();
+    expect(screen.queryByText("Later Order")).not.toBeInTheDocument();
+
+    fireEvent.change(toDate, { target: { value: "" } });
+    expect(screen.getByText("Earlier Order")).toBeInTheDocument();
+    expect(screen.getByText("Later Order")).toBeInTheDocument();
+  });
+
+  it("shows the filter-aware empty state for an invalid date range", () => {
+    render(createElement(OrdersPage));
+
+    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-20" } });
+    fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-19" } });
+
+    expect(screen.queryByText("Capella User")).not.toBeInTheDocument();
+    expect(screen.getByText("لا توجد طلبات تطابق البحث أو عوامل التصفية.")).toBeInTheDocument();
+  });
+
+  it("combines the date range with the existing payment-status filter", () => {
+    mockState = {
+      orders: [
+        makeOrder(1, "Pending In Range", "pending", "2026-05-19T12:00:00.000Z"),
+        makeOrder(2, "Accepted In Range", "accepted", "2026-05-19T12:00:00.000Z"),
+        makeOrder(3, "Accepted Out Of Range", "accepted", "2026-05-21T12:00:00.000Z")
+      ]
+    };
+    render(createElement(OrdersPage));
+
+    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-19" } });
+    fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-19" } });
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, { target: { value: "accepted" } });
+
+    expect(screen.queryByText("Pending In Range")).not.toBeInTheDocument();
+    expect(screen.getByText("Accepted In Range")).toBeInTheDocument();
+    expect(screen.queryByText("Accepted Out Of Range")).not.toBeInTheDocument();
   });
 
   it("filters orders by payment status", () => {

@@ -301,8 +301,19 @@ html[lang="ar"] .page-title { letter-spacing: 0; }
 }
 .list-header__search { flex: 1 1 100%; display: flex; align-items: center; min-width: 0; }
 .list-header__search .search { flex: 1; min-width: 0; }
-.list-header__filters { display: flex; flex: 1 1 auto; gap: 10px; min-width: 0; }
+.list-header__filters { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: 10px; min-width: 0; }
 .list-header__filters .select { flex: 1; min-width: 0; width: 100%; }
+.list-date-filter {
+  display: inline-flex;
+  flex: 1 1 150px;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.list-date-filter .input { min-width: 0; width: 100%; }
 .list-header__count {
   white-space: nowrap;
   font-size: 12px;
@@ -316,6 +327,8 @@ html[lang="ar"] .page-title { letter-spacing: 0; }
   .list-header__search .search { min-width: 220px; }
   .list-header__filters { flex: 0 0 auto; }
   .list-header__filters .select { flex: 0 0 auto; width: auto; }
+  .list-date-filter { flex: 0 0 auto; }
+  .list-date-filter .input { width: auto; }
 }
 
 /* checkbox */

@@ -7,6 +7,7 @@ import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Pr
 import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
+import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { Icon } from "@/components/ui/icons";
 
 interface Resolved {
@@ -100,9 +101,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           slug: `/${lang}/collections/${collection.slug}`,
           entityId: collection.id,
           illustration: (
-            <div className="grid h-full w-full place-items-center text-xs font-semibold text-(--ink-2)">
-              {dict.itemType.collection}
-            </div>
+            <CollectionIllustration collection={collection} lang={lang} className="h-full w-full object-cover" />
           )
         };
       })

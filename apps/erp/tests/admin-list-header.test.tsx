@@ -97,6 +97,20 @@ describe("AdminListHeader", () => {
     expect(screen.getByLabelText("البحث في التقييمات")).toBeInTheDocument();
   });
 
+  it("renders custom filter controls in the shared filter group", () => {
+    render(createElement(AdminListHeader, {
+      searchPlaceholder: "Search",
+      searchValue: "",
+      onSearchChange: vi.fn(),
+      countLabel: "3 items",
+      customFilters: createElement("input", { "aria-label": "من تاريخ", type: "date" })
+    }));
+
+    const dateInput = screen.getByLabelText("من تاريخ");
+    expect(dateInput).toHaveAttribute("type", "date");
+    expect(dateInput.parentElement).toHaveClass("list-header__filters");
+  });
+
   it("styles filters with the shared select class so pages cannot drift", () => {
     render(createElement(AdminListHeader, {
       searchPlaceholder: "ابحثي…",

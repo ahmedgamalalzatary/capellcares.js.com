@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import { authHref, NEXT_PARAM, resolveAuthDestination } from "@/lib/auth-redirect";
 import type { Language } from "@capella/shared";
 
 type Mode = "login" | "signup";
 
 export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dict: any }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, signup, user } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -17,10 +19,19 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (user) {
-    router.push(`/${lang}`);
-    return null;
-  }
+  // Where to land once authenticated: the page that sent the customer here,
+  // falling back to the locale home when nothing (trustworthy) was passed.
+  const next = searchParams.get(NEXT_PARAM);
+  const destination = resolveAuthDestination(next, lang);
+
+  // Already signed in (or a session restored while this page was open): bounce
+  // to the destination. This runs as an effect, not during render — navigating
+  // mid-render is a side effect React may run twice or discard.
+  useEffect(() => {
+    if (user) router.replace(destination);
+  }, [user, destination, router]);
+
+  if (user) return null;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -38,7 +49,7 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       } else {
         await signup(name, email, password);
       }
-      router.push(`/${lang}`);
+      router.replace(destination);
     } catch {
       setError(dict.auth.genericError);
     } finally {
@@ -103,11 +114,11 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       <div className="mt-6 text-center text-sm text-(--ink-2)">
         {mode === "login" ? (
           <>
-            {dict.auth.noAccount} <Link href={`/${lang}/signup`} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.signupHere}</Link>
+            {dict.auth.noAccount} <Link href={authHref("signup", lang, next)} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.signupHere}</Link>
           </>
         ) : (
           <>
-            {dict.auth.haveAccount} <Link href={`/${lang}/login`} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.loginHere}</Link>
+            {dict.auth.haveAccount} <Link href={authHref("login", lang, next)} className="font-semibold text-accent underline-offset-4 hover:underline">{dict.auth.loginHere}</Link>
           </>
         )}
       </div>

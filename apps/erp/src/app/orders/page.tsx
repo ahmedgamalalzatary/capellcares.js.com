@@ -11,6 +11,13 @@ import { canReadErpModule } from "@/lib/erp-permissions";
 import { paymentStatusChip, paymentStatusFilterOptions, paymentStatusLabel } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 
+function localDateKey(value: string) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function OrdersPage() {
   const { user } = useAdminAuth();
@@ -30,19 +37,25 @@ function OrdersPageContent() {
   const orders = useStore((s) => s.orders);
   const [search, setSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | "all">("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const filtered = useMemo(() => {
     const byStatus = paymentStatusFilter === "all"
       ? orders
       : orders.filter((o) => o.paymentStatus === paymentStatusFilter);
-    if (!search.trim()) return byStatus;
+    const byDate = byStatus.filter((order) => {
+      const orderDate = localDateKey(order.createdAt);
+      return (!fromDate || orderDate >= fromDate) && (!toDate || orderDate <= toDate);
+    });
+    if (!search.trim()) return byDate;
     const term = search.trim().toLowerCase();
-    return byStatus.filter((o) =>
+    return byDate.filter((o) =>
       o.orderCode.toLowerCase().includes(term) ||
       o.fullName.toLowerCase().includes(term) ||
       o.phone.includes(term)
     );
-  }, [orders, paymentStatusFilter, search]);
+  }, [fromDate, orders, paymentStatusFilter, search, toDate]);
 
   return (
     <AdminShell title="الطلبات" crumbs={[{ label: "الطلبات" }]}>
@@ -60,6 +73,30 @@ function OrdersPageContent() {
             options: paymentStatusFilterOptions
           }
         ]}
+        customFilters={(
+          <>
+            <label className="list-date-filter">
+              <span aria-hidden="true">من</span>
+              <input
+                aria-label="من تاريخ"
+                className="input"
+                type="date"
+                value={fromDate}
+                onChange={(event) => setFromDate(event.target.value)}
+              />
+            </label>
+            <label className="list-date-filter">
+              <span aria-hidden="true">إلى</span>
+              <input
+                aria-label="إلى تاريخ"
+                className="input"
+                type="date"
+                value={toDate}
+                onChange={(event) => setToDate(event.target.value)}
+              />
+            </label>
+          </>
+        )}
       />
 
       <div className="card">
@@ -99,7 +136,7 @@ function OrdersPageContent() {
             ))}
             {filtered.length === 0 && (
               <tr><td colSpan={6} className="state-note state-note--lg state-note--muted">
-                {orders.length === 0 ? "لا توجد طلبات بعد." : "لا توجد طلبات تطابق البحث."}
+                {orders.length === 0 ? "لا توجد طلبات بعد." : "لا توجد طلبات تطابق البحث أو عوامل التصفية."}
               </td></tr>
             )}
           </tbody>
