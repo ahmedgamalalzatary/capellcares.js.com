@@ -3,6 +3,7 @@ import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js"
 import { addToWishlist, deleteFromWishlist, getWishlist } from "./wishlist.service.js";
 import type { WishlistItemDto } from "@capella/shared";
 import { WishlistEntityValidationError } from "../../repositories/wishlist.repository.js";
+import type { LocalizedRequest } from "../../middlewares/locale.middleware.js";
 
 function userId(req: Request) {
   return (req as AuthenticatedRequest).user?.id;
@@ -15,7 +16,8 @@ function parseEntityType(value: unknown): WishlistItemDto["entityType"] | null {
 export async function listWishlistController(req: Request, res: Response) {
   const id = userId(req);
   if (!id) return res.status(401).json({ message: "Unauthorized" });
-  const items = await getWishlist(id);
+  const lang = (req as LocalizedRequest).locale ?? "ar";
+  const items = await getWishlist(id, lang);
   return res.json({ items });
 }
 

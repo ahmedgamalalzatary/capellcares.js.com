@@ -1,8 +1,8 @@
-import type { WishlistItemDto } from "@capella/shared";
+import type { Language, WishlistItemDto } from "@capella/shared";
 import { addWishlistItem, listWishlistEntriesByCustomer, removeWishlistItem } from "../../repositories/wishlist.repository.js";
 
-export function getWishlist(customerId: number) {
-  return listWishlistEntriesByCustomer(customerId);
+export function getWishlist(customerId: number, lang: Language = "ar") {
+  return listWishlistEntriesByCustomer(customerId, lang);
 }
 
 export async function addToWishlist(customerId: number, entityType: WishlistItemDto["entityType"], entityId: number) {

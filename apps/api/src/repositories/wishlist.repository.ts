@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collections, offers, products, wishlists } from "@capella/database/drizzle/schema";
-import type { WishlistEntryDto, WishlistItemDto } from "@capella/shared";
+import type { Language, WishlistEntryDto, WishlistItemDto } from "@capella/shared";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
@@ -73,7 +73,10 @@ export function removeWishlistItem(customerId: number, entityType: WishlistEntit
     );
 }
 
-export async function listWishlistEntriesByCustomer(customerId: number): Promise<WishlistEntryDto[]> {
+export async function listWishlistEntriesByCustomer(
+  customerId: number,
+  lang: Language = "ar"
+): Promise<WishlistEntryDto[]> {
   const rows = await listWishlistByCustomer(customerId);
   if (rows.length === 0) return [];
 
@@ -144,7 +147,7 @@ export async function listWishlistEntriesByCustomer(customerId: number): Promise
     imagePath: string | null
   ) => {
     const rows = (type === "product" ? productMedia : type === "offer" ? offerMedia : collectionMedia).get(id);
-    return resolvePrimaryEntityImagePath(normalizeEntityMedia(rows, imagePath), imagePath);
+    return resolvePrimaryEntityImagePath(normalizeEntityMedia(rows, imagePath), imagePath, lang);
   };
 
   const productById = new Map(

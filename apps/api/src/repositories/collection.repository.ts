@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
+import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
 import { categories, collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
 import {
@@ -17,11 +17,11 @@ import {
   type EntityMediaItem
 } from "./entity-media.repository.js";
 
-async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[]) {
+async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByCollection = await loadEntityMediaRows("collection", rows.map((row) => row.id));
   return rows.map((row) => {
     const media = normalizeEntityMedia(mediaByCollection.get(row.id), row.imagePath);
-    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath) };
+    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang) };
   });
 }
 
@@ -175,24 +175,24 @@ export async function listCollectionsRepo(includeDeleted = false) {
   );
 }
 
-export async function listVisibleCollectionsRepo() {
+export async function listVisibleCollectionsRepo(lang: Language = "ar") {
   const rows = await db
     .select()
     .from(collections)
     .where(
       sql`${collections.visibility} = 'visible' and ${collections.status} = 'active' and ${collections.deletedAt} is null`
     );
-  const ranked = await withCollectionRanks(await withCollectionMedia(rows), "storefront");
+  const ranked = await withCollectionRanks(await withCollectionMedia(rows, lang), "storefront");
   const itemsByCollectionId = await listOrderedItemsByCollectionRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByCollectionId.get(row.id) ?? [] }));
 }
 
-export async function findCollectionBySlugRepo(slug: string) {
+export async function findCollectionBySlugRepo(slug: string, lang: Language = "ar") {
   const [row] = await db.select().from(collections).where(eq(collections.slug, slug)).limit(1);
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedCollectionItemsRepo(row.id);
-  const [withMedia] = await withCollectionMedia([row]);
+  const [withMedia] = await withCollectionMedia([row], lang);
   return { ...withMedia!, items };
 }
 
@@ -224,7 +224,9 @@ export async function upsertCollectionRepo(input: {
   const mergedItems = mergeCollectionItems(input.items);
   const shouldReplaceMedia = input.media !== undefined || !input.id;
   const mediaUpdate = shouldReplaceMedia
-    ? input.media ?? (input.imagePath ? [{ type: "image", url: input.imagePath }] : [])
+    ? input.media ?? (input.imagePath
+      ? [{ type: "image", arUrl: null, enUrl: input.imagePath }]
+      : [])
     : undefined;
   const primaryImagePath = mediaUpdate
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)

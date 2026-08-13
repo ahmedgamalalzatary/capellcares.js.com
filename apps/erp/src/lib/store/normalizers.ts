@@ -1,4 +1,4 @@
-import type { Category, EntityOrderingRef, Product } from "@capella/shared";
+import { resolveLocalizedEntityMediaUrl, type Category, type EntityOrderingRef, type Product } from "@capella/shared";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 
 const orderingScopeTypes = ["root", "category", "offer", "collection"] as const;
@@ -33,6 +33,12 @@ function toBilingual(
 }
 
 export function normalizeProduct(input: ProductApiShape): Product {
+  const normalizedMedia = input.media?.length
+    ? input.media
+    : input.imagePath
+      ? [{ type: "image" as const, arUrl: null, enUrl: input.imagePath }]
+      : [];
+  const primaryImage = normalizedMedia.find((item) => item.type === "image");
   return {
     id: toNumber(input.id),
     sku: input.sku ?? "",
@@ -48,13 +54,11 @@ export function normalizeProduct(input: ProductApiShape): Product {
         ? input.keywords.split(",").map((x) => x.trim()).filter(Boolean)
         : [],
     buyingPrice: toNumber(input.buyingPrice),
-    imagePath: input.imagePath ?? input.media?.find((item) => item.type === "image")?.url ?? "",
+    imagePath: input.imagePath ?? (primaryImage ? resolveLocalizedEntityMediaUrl(primaryImage, "en") : ""),
     hoverImagePath: input.hoverImagePath ?? "",
-    media: input.media?.length
-      ? input.media
-      : input.imagePath
-        ? [{ type: "image", url: input.imagePath }]
-        : [],
+    arHoverImagePath: input.arHoverImagePath ?? "",
+    enHoverImagePath: input.enHoverImagePath ?? input.hoverImagePath ?? "",
+    media: normalizedMedia,
     youtubeUrl: input.youtubeUrl ?? undefined,
     status: input.status ?? "inactive",
     isNew: input.isNew ?? false,

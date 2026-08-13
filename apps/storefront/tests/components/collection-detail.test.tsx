@@ -77,8 +77,8 @@ describe("CollectionDetail", () => {
         ...collection,
         imagePath: "/uploads/collection-main.jpg",
         media: [
-          { type: "image", url: "/uploads/collection-main.jpg" },
-          { type: "image", url: "/uploads/collection-detail.jpg" }
+          { type: "image", arUrl: null, enUrl: "/uploads/collection-main.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/collection-detail.jpg" }
         ]
       },
       items: [],
@@ -97,7 +97,7 @@ describe("CollectionDetail", () => {
       collection: {
         ...collection,
         youtubeUrl: "https://www.youtube.com/watch?v=collection-video",
-        media: [{ type: "image", url: "/uploads/collection-main.jpg" }]
+        media: [{ type: "image", arUrl: null, enUrl: "/uploads/collection-main.jpg" }]
       },
       items: [],
       lang: "en",

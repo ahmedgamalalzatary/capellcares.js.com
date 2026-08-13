@@ -1,8 +1,13 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { getEffectiveVariantPrice } from "@capella/shared";
+import { getEffectiveVariantPrice, type Language } from "@capella/shared";
 import { EMPTY_RATING, safeRatingSummaries } from "../review.repository.js";
+import {
+  loadEntityMediaRows,
+  normalizeEntityMedia,
+  resolvePrimaryEntityImagePath
+} from "../entity-media.repository.js";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
 /** A card as the per-type queries build it; the rating lands at assembly. */
@@ -77,7 +82,10 @@ export async function listRelatedLinksForSourceRepo(
  * - offers: active, non-deleted, visible
  * Filtered-out targets are dropped; remaining order (with gaps) is preserved.
  */
-export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise<StorefrontRelatedCard[]> {
+export async function getStorefrontRelatedCardsRepo(
+  source: RelatedRef,
+  lang: Language = "ar"
+): Promise<StorefrontRelatedCard[]> {
   const ordered = await listRelatedLinksForSourceRepo(source.type, source.id);
   if (ordered.length === 0) {
     return [];
@@ -96,6 +104,20 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
     safeRatingSummaries("offer", offerIds),
     safeRatingSummaries("collection", collectionIds)
   ]);
+  const mediaPromise = Promise.all([
+    loadEntityMediaRows("product", productIds),
+    loadEntityMediaRows("offer", offerIds),
+    loadEntityMediaRows("collection", collectionIds)
+  ]);
+  const [productMedia, offerMedia, collectionMedia] = await mediaPromise;
+  const imageFor = (
+    type: "product" | "offer" | "collection",
+    id: number,
+    imagePath: string | null
+  ) => {
+    const mediaRows = (type === "product" ? productMedia : type === "offer" ? offerMedia : collectionMedia).get(id);
+    return resolvePrimaryEntityImagePath(normalizeEntityMedia(mediaRows, imagePath), imagePath, lang);
+  };
 
   const productCards = new Map<number, UnratedRelatedCard>();
   if (productIds.length > 0) {
@@ -161,7 +183,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath ?? null,
+        imagePath: imageFor("product", row.id, row.imagePath),
         price,
         variantId: cheapest.id,
         originalTotal: savingOrNull(Number(cheapest.sellingPrice), price),
@@ -220,7 +242,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath ?? null,
+        imagePath: imageFor("offer", row.id, row.imagePath),
         price,
         variantId: null,
         originalTotal: savingOrNull(parts, price),
@@ -276,7 +298,7 @@ export async function getStorefrontRelatedCardsRepo(source: RelatedRef): Promise
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: row.imagePath ?? null,
+        imagePath: imageFor("collection", row.id, row.imagePath),
         price,
         variantId: null,
         originalTotal: savingOrNull(sumBundleParts(items), price),

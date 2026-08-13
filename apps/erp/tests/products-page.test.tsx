@@ -248,25 +248,34 @@ describe("ProductsListPage", () => {
     const initialSpinbuttons = form.getAllByRole("spinbutton");
     fireEvent.change(initialSpinbuttons[0]!, { target: { value: "10" } });
 
-    const mediaInput = form.getByTestId("product-media-input");
-    fireEvent.change(mediaInput, {
+    const englishMediaInput = form.getByTestId("product-media-add-en-input");
+    fireEvent.change(englishMediaInput, {
       target: {
-        files: [
-          new File(["one"], "primary.jpg", { type: "image/jpeg" }),
-          new File(["three"], "demo.mp4", { type: "video/mp4" })
-        ]
+        files: [new File(["one"], "primary.jpg", { type: "image/jpeg" })]
       }
     });
 
-    const hoverInput = form.getByTestId("product-hover-image-input");
+    const videoInput = form.getByTestId("product-media-add-video-input");
+    fireEvent.change(videoInput, {
+      target: {
+        files: [new File(["three"], "demo.mp4", { type: "video/mp4" })]
+      }
+    });
+
+    const hoverInput = form.getByTestId("product-hover-image-en-input");
     fireEvent.change(hoverInput, {
       target: {
         files: [new File(["two"], "hover.jpg", { type: "image/jpeg" })]
       }
     });
 
-    await form.findAllByTestId("product-media-item");
-    await screen.findByText("صورة hover");
+    await waitFor(() => {
+      expect(form.getAllByTestId("product-media-item")).toHaveLength(2);
+    });
+    await waitFor(() => {
+      expect(uploadMedia).toHaveBeenCalledWith(expect.objectContaining({ name: "hover.jpg" }), expect.anything());
+      expect(view.container.querySelector('img[src$="/hover.jpg"]')).not.toBeNull();
+    });
 
     fireEvent.change(form.getByPlaceholderText("100ml"), { target: { value: "100ml" } });
     const numericInputs = form.getAllByRole("spinbutton");
@@ -277,11 +286,17 @@ describe("ProductsListPage", () => {
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({
         media: [
-          { type: "image", url: expect.stringContaining("http://localhost:4000/uploads/primary.jpg") },
+          {
+            type: "image",
+            arUrl: null,
+            enUrl: expect.stringContaining("http://localhost:4000/uploads/primary.jpg")
+          },
           { type: "video", url: expect.stringContaining("http://localhost:4000/uploads/demo.mp4") }
         ],
         imagePath: expect.stringContaining("http://localhost:4000/uploads/primary.jpg"),
-        hoverImagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg")
+        hoverImagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg"),
+        arHoverImagePath: null,
+        enHoverImagePath: expect.stringContaining("http://localhost:4000/uploads/hover.jpg")
       }));
     });
   });

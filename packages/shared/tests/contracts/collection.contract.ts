@@ -14,12 +14,10 @@ export const storefrontCollectionContract = z.object({
   description: bilingualSchema,
   youtubeUrl: z.string().nullable().optional(),
   imagePath: z.string(),
-  media: z.array(
-    z.object({
-      type: z.enum(["image", "video"]),
-      url: z.string()
-    })
-  ),
+  media: z.array(z.union([
+    z.object({ type: z.literal("image"), arUrl: z.string().nullable(), enUrl: z.string().nullable() }),
+    z.object({ type: z.literal("video"), url: z.string() })
+  ])),
   price: z.number(),
   originalTotal: z.number(),
   categoryId: z.number(),

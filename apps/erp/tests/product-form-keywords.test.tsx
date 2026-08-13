@@ -58,7 +58,7 @@ const initial = {
   buyingPrice: 10,
   imagePath: "/uploads/aloe.png",
   hoverImagePath: "",
-  media: [{ type: "image" as const, url: "/uploads/aloe.png" }],
+  media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/aloe.png" }],
   status: "inactive" as const,
   isNew: false,
   isBestseller: false,

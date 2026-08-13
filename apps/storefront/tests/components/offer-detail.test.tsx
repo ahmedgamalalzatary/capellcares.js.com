@@ -82,8 +82,8 @@ describe("OfferDetail", () => {
         ...offer,
         imagePath: "/uploads/offer-main.jpg",
         media: [
-          { type: "image", url: "/uploads/offer-main.jpg" },
-          { type: "image", url: "/uploads/offer-detail.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/offer-main.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/offer-detail.jpg" },
           { type: "video", url: "/uploads/offer-demo.mp4" }
         ]
       },
@@ -105,7 +105,7 @@ describe("OfferDetail", () => {
       offer: {
         ...offer,
         youtubeUrl: "https://www.youtube.com/watch?v=offer-video",
-        media: [{ type: "image", url: "/uploads/offer-main.jpg" }]
+        media: [{ type: "image", arUrl: null, enUrl: "/uploads/offer-main.jpg" }]
       },
       items: [],
       lang: "en",
@@ -126,7 +126,7 @@ describe("OfferDetail", () => {
       offer: {
         ...offer,
         media: [
-          { type: "image", url: "/uploads/offer-main.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/offer-main.jpg" },
           { type: "video", url: "/uploads/offer-demo.mp4" }
         ]
       },

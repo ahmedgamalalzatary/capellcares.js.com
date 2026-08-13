@@ -1,4 +1,4 @@
-import type { Offer } from "@capella/shared";
+import type { EntityMedia, Offer } from "@capella/shared";
 import { toOfferBase } from "../../offers/offer-mapper.shared.js";
 
 type AdminOfferRow = {
@@ -10,7 +10,7 @@ type AdminOfferRow = {
   enDescription: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
-  media?: Array<{ type: "image" | "video"; url: string }>;
+  media?: EntityMedia[];
   fixedPrice: unknown;
   categoryId: number | null;
   status: "active" | "inactive";

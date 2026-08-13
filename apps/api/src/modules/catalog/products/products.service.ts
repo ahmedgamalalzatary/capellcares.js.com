@@ -9,13 +9,13 @@ export async function listStorefrontProducts(args: { lang: Language; q?: string;
   return attachRatings("product", products.map(toStorefrontProduct));
 }
 
-export async function getStorefrontProductBySlug(slug: string) {
-  const product = await findVisibleProductBySlug(slug);
+export async function getStorefrontProductBySlug(slug: string, lang: Language = "ar") {
+  const product = await findVisibleProductBySlug(slug, lang);
   if (!product) {
     return null;
   }
   const [relatedItems, reviewData] = await Promise.all([
-    getStorefrontRelatedCardsRepo({ type: "product", id: product.id }),
+    getStorefrontRelatedCardsRepo({ type: "product", id: product.id }, lang),
     loadReviewData("product", product.id)
   ]);
   return { ...toStorefrontProduct(product), rating: ratingFromReviewData(reviewData), relatedItems, reviewData };

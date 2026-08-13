@@ -19,6 +19,7 @@ import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
 import { parseRelatedItems } from "../shared/related-items.js";
+import { resolveLocalizedEntityMediaUrl } from "@capella/shared";
 
 type NormalizedVariantDiscount = {
   type: "percentage" | "fixed";
@@ -150,16 +151,22 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     const normalizedMedia = parseEntityMediaInput(incoming.media);
     const hasImagePathInput = Object.prototype.hasOwnProperty.call(incoming, "imagePath");
     const hasMediaInput = Object.prototype.hasOwnProperty.call(incoming, "media");
+    const hasLegacyHoverInput = Object.prototype.hasOwnProperty.call(incoming, "hoverImagePath");
+    const hasArHoverInput = Object.prototype.hasOwnProperty.call(incoming, "arHoverImagePath");
+    const hasEnHoverInput = Object.prototype.hasOwnProperty.call(incoming, "enHoverImagePath");
     const productImagePath = hasImagePathInput
       ? incoming.imagePath
       : hasMediaInput
-        ? normalizedMedia?.find((item) => item.type === "image")?.url ?? null
+        ? (() => {
+          const image = normalizedMedia?.find((item) => item.type === "image");
+          return image ? resolveLocalizedEntityMediaUrl(image, "en") || null : null;
+        })()
         : existingRevalidation?.imagePath ?? null;
     const mediaUpdate = hasMediaInput
       ? normalizedMedia
       : hasImagePathInput
         ? productImagePath
-          ? [{ type: "image" as const, url: productImagePath }]
+          ? [{ type: "image" as const, arUrl: null, enUrl: productImagePath }]
           : []
         : undefined;
     if (
@@ -201,7 +208,13 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
         youtubeUrl: incoming.youtubeUrl ?? null,
         imagePath: productImagePath,
-        hoverImagePath: incoming.hoverImagePath ?? null,
+        hoverImagePath: hasLegacyHoverInput ? incoming.hoverImagePath ?? null : undefined,
+        arHoverImagePath: hasArHoverInput ? incoming.arHoverImagePath ?? null : undefined,
+        enHoverImagePath: hasEnHoverInput
+          ? incoming.enHoverImagePath ?? null
+          : hasLegacyHoverInput
+            ? incoming.hoverImagePath ?? null
+            : undefined,
         media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
         status: productStatus,

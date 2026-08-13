@@ -12,7 +12,8 @@ export async function listProductsController(req: Request, res: Response) {
 }
 
 export async function getProductBySlugController(req: Request, res: Response) {
-  const product = await getStorefrontProductBySlug(req.params.slug);
+  const lang = (req as LocalizedRequest).locale ?? "ar";
+  const product = await getStorefrontProductBySlug(req.params.slug, lang);
   if (!product) return res.status(404).json({ message: "Product not found" });
   return res.json(product);
 }

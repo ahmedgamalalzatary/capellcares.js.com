@@ -61,6 +61,7 @@ export function CollectionDetail({
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
             media={collection.media}
+            lang={lang}
             imagePath={collection.imagePath}
             videoUrl={collection.youtubeUrl}
             label={pickLang(collection.name, lang)}

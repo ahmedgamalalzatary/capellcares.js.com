@@ -28,7 +28,7 @@ vi.mock("@/components/forms/entity-media-upload", () => ({
       "data-testid": "offer-media-upload",
       onClick: () => onChange([
         ...value,
-        { type: "image", url: "/uploads/offer-detail.png" },
+        { type: "image", arUrl: null, enUrl: "/uploads/offer-detail.png" },
         { type: "video", url: "/uploads/offer-demo.mp4" }
       ])
     },
@@ -75,7 +75,7 @@ function completeOffer(id: number) {
     name: { ar: "عرض", en: "Offer" },
     description: { ar: "وصف", en: "Description" },
     imagePath: "/uploads/offer.png",
-    media: [{ type: "image" as const, url: "/uploads/offer.png" }],
+    media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/offer.png" }],
     price: 80,
     originalTotal: 100,
     items: [{ variantId: 1, qty: 1 }],
@@ -107,8 +107,8 @@ describe("OfferForm related items", () => {
       expect(upsertOffer).toHaveBeenCalledWith(expect.objectContaining({
         imagePath: "/uploads/offer.png",
         media: [
-          { type: "image", url: "/uploads/offer.png" },
-          { type: "image", url: "/uploads/offer-detail.png" },
+          { type: "image", arUrl: null, enUrl: "/uploads/offer.png" },
+          { type: "image", arUrl: null, enUrl: "/uploads/offer-detail.png" },
           { type: "video", url: "/uploads/offer-demo.mp4" }
         ]
       }));

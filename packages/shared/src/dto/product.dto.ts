@@ -18,10 +18,9 @@ export interface VariantDiscountDto {
   status: "active" | "inactive";
 }
 
-export interface EntityMediaDto {
-  type: "image" | "video";
-  url: string;
-}
+export type EntityMediaDto =
+  | { type: "image"; arUrl: string | null; enUrl: string | null }
+  | { type: "video"; url: string };
 
 /** @deprecated Use EntityMediaDto. */
 export type ProductMediaDto = EntityMediaDto;
@@ -45,6 +44,8 @@ export interface ProductDto {
   youtubeUrl: string | null;
   imagePath: string | null;
   hoverImagePath: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media: EntityMediaDto[];
   status: "active" | "inactive";
   isNew: boolean;

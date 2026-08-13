@@ -1,4 +1,4 @@
-import type { Collection } from "@capella/shared";
+import type { Collection, EntityMedia } from "@capella/shared";
 
 type CollectionMapperRow = {
   id: number;
@@ -9,7 +9,7 @@ type CollectionMapperRow = {
   enDescription: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
-  media?: Array<{ type: "image" | "video"; url: string }>;
+  media?: EntityMedia[];
   fixedPrice: unknown;
   categoryId: number;
   stock: number;
@@ -46,7 +46,9 @@ export function toCollectionBase(
     },
     youtubeUrl: collection.youtubeUrl ?? undefined,
     imagePath: collection.imagePath ?? "",
-    media: collection.media ?? (collection.imagePath ? [{ type: "image", url: collection.imagePath }] : []),
+    media: collection.media ?? (collection.imagePath
+      ? [{ type: "image", arUrl: null, enUrl: collection.imagePath }]
+      : []),
     price,
     originalTotal,
     categoryId: collection.categoryId,

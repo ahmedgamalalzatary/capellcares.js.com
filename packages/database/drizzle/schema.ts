@@ -128,6 +128,7 @@ export const products = mysqlTable("products", {
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
   hoverImagePath: varchar("hover_image_path", { length: 1024 }),
+  arHoverImagePath: varchar("ar_hover_image_path", { length: 1024 }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   isNew: boolean("is_new").notNull().default(false),
   isBestseller: boolean("is_bestseller").notNull().default(false),
@@ -235,7 +236,8 @@ export const entityMedia = mysqlTable(
     offerId: int("offer_id").references(() => offers.id, { onDelete: "cascade" }),
     collectionId: int("collection_id").references(() => collections.id, { onDelete: "cascade" }),
     mediaType: mysqlEnum("media_type", ["image", "video"]).notNull(),
-    url: varchar("url", { length: 1024 }).notNull(),
+    url: varchar("url", { length: 1024 }),
+    arUrl: varchar("ar_url", { length: 1024 }),
     sortOrder: int("sort_order").notNull().default(0),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -247,6 +249,10 @@ export const entityMedia = mysqlTable(
     exactlyOneOwnerCheck: check(
       "entity_media_exactly_one_owner_check",
       sql`((${table.productId} is not null) + (${table.offerId} is not null) + (${table.collectionId} is not null)) = 1`
+    ),
+    localizedUrlCheck: check(
+      "entity_media_localized_url_check",
+      sql`((${table.mediaType} = 'image' and (${table.arUrl} is not null or ${table.url} is not null)) or (${table.mediaType} = 'video' and ${table.url} is not null and ${table.arUrl} is null))`
     )
   })
 );

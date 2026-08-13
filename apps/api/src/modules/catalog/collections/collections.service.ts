@@ -7,9 +7,10 @@ import {
 } from "../../inventory/bundle-inventory.js";
 import { attachRatings, loadReviewData, ratingFromReviewData } from "../review-data.js";
 import { toStorefrontCollection } from "./collections.mapper.js";
+import type { Language } from "@capella/shared";
 
-export async function listStorefrontCollections() {
-  const collections = await listVisibleCollectionsRepo();
+export async function listStorefrontCollections(lang: Language = "ar") {
+  const collections = await listVisibleCollectionsRepo(lang);
   const variantMap = await loadBundleVariantMap(collections);
   const items = collections.map((collection) => {
     const inventory = computeBundleInventoryFromMap(collection.items, variantMap);
@@ -18,14 +19,14 @@ export async function listStorefrontCollections() {
   return attachRatings("collection", items);
 }
 
-export async function getStorefrontCollectionBySlug(slug: string) {
-  const collection = await findCollectionBySlugRepo(slug);
+export async function getStorefrontCollectionBySlug(slug: string, lang: Language = "ar") {
+  const collection = await findCollectionBySlugRepo(slug, lang);
   if (!collection) {
     return null;
   }
   const [inventory, relatedItems, reviewData] = await Promise.all([
     calculateBundleInventory(collection.items),
-    getStorefrontRelatedCardsRepo({ type: "collection", id: collection.id }),
+    getStorefrontRelatedCardsRepo({ type: "collection", id: collection.id }, lang),
     loadReviewData("collection", collection.id)
   ]);
   return {

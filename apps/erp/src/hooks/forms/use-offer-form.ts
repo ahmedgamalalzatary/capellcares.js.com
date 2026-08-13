@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Offer, OfferItem, RelatedItemRef } from "@capella/shared";
+import { resolveLocalizedEntityMediaUrl, type Offer, type OfferItem, type RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
@@ -21,7 +21,9 @@ export function useOfferForm({
   const [price, setPrice] = useState(initial?.price ?? 0);
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [media, setMedia] = useState(
-    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
+    initial?.media ?? (initial?.imagePath
+      ? [{ type: "image" as const, arUrl: null, enUrl: initial.imagePath }]
+      : [])
   );
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<OfferFormRow[]>(() => {
@@ -115,7 +117,10 @@ export function useOfferForm({
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },
       youtubeUrl: youtubeUrl.trim() || undefined,
-      imagePath: media.find((item) => item.type === "image")?.url ?? "",
+      imagePath: (() => {
+        const image = media.find((item) => item.type === "image");
+        return image ? resolveLocalizedEntityMediaUrl(image, "en") : "";
+      })(),
       media,
       price: Number(price),
       originalTotal: computed.originalTotal,

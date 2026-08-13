@@ -4,3 +4,4 @@ export * from "@capella/shared/constants";
 export * from "@capella/shared/i18n";
 export * from "@capella/shared/dto";
 export * from "@capella/shared/schemas";
+export * from "./entity-media.js";

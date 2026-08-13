@@ -1,4 +1,4 @@
-import type { Offer } from "@capella/shared";
+import type { EntityMedia, Offer } from "@capella/shared";
 
 type OfferMapperRow = {
   id: number;
@@ -9,7 +9,7 @@ type OfferMapperRow = {
   enDescription: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
-  media?: Array<{ type: "image" | "video"; url: string }>;
+  media?: EntityMedia[];
   fixedPrice: unknown;
   categoryId: number | null;
   stock: number;
@@ -41,7 +41,9 @@ export function toOfferBase(
     },
     youtubeUrl: offer.youtubeUrl ?? undefined,
     imagePath: offer.imagePath ?? "",
-    media: offer.media ?? (offer.imagePath ? [{ type: "image", url: offer.imagePath }] : []),
+    media: offer.media ?? (offer.imagePath
+      ? [{ type: "image", arUrl: null, enUrl: offer.imagePath }]
+      : []),
     price,
     originalTotal,
     categoryId: offer.categoryId,

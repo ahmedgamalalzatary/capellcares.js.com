@@ -9,8 +9,8 @@ describe("EntityMediaGallery", () => {
     const user = userEvent.setup();
     const view = render(createElement(EntityMediaGallery, {
       media: [
-        { type: "image", url: "/uploads/one.jpg" },
-        { type: "image", url: "/uploads/two.jpg" }
+        { type: "image", arUrl: null, enUrl: "/uploads/one.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/two.jpg" }
       ],
       imagePath: "/uploads/one.jpg",
       label: "First entity",
@@ -23,7 +23,7 @@ describe("EntityMediaGallery", () => {
     expect(secondThumbnail).toHaveAttribute("data-active", "true");
 
     view.rerender(createElement(EntityMediaGallery, {
-      media: [{ type: "image", url: "/uploads/replacement.jpg" }],
+      media: [{ type: "image", arUrl: null, enUrl: "/uploads/replacement.jpg" }],
       imagePath: "/uploads/replacement.jpg",
       label: "Replacement entity",
       testIdPrefix: "product",
@@ -37,7 +37,7 @@ describe("EntityMediaGallery", () => {
     const user = userEvent.setup();
     render(createElement(EntityMediaGallery, {
       media: [
-        { type: "image", url: "/uploads/one.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/one.jpg" },
         { type: "video", url: "/uploads/two.mp4" }
       ],
       imagePath: "/uploads/one.jpg",
@@ -69,8 +69,8 @@ describe("EntityMediaGallery", () => {
   it("uses separate localized labels for dot and thumbnail controls", () => {
     render(createElement(EntityMediaGallery, {
       media: [
-        { type: "image", url: "/uploads/one.jpg" },
-        { type: "image", url: "/uploads/two.jpg" }
+        { type: "image", arUrl: null, enUrl: "/uploads/one.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/two.jpg" }
       ],
       imagePath: "/uploads/one.jpg",
       label: "Entity",
@@ -85,11 +85,30 @@ describe("EntityMediaGallery", () => {
   });
 
   const imageMedia = [
-    { type: "image" as const, url: "/uploads/one.jpg" },
-    { type: "image" as const, url: "/uploads/two.jpg" }
+    { type: "image" as const, arUrl: null, enUrl: "/uploads/one.jpg" },
+    { type: "image" as const, arUrl: null, enUrl: "/uploads/two.jpg" }
   ];
 
   const renderImage = (url: string) => createElement("img", { src: url, alt: "" });
+
+  it("selects the requested image language with opposite-language fallback", () => {
+    render(createElement(EntityMediaGallery, {
+      media: [
+        { type: "image", arUrl: "/uploads/ar.jpg", enUrl: "/uploads/en.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/fallback-en.jpg" }
+      ],
+      lang: "ar",
+      imagePath: "/uploads/en.jpg",
+      label: "Entity",
+      testIdPrefix: "product",
+      renderImage
+    }));
+
+    const images = [...document.querySelectorAll("img")];
+    expect(images.some((image) => image.getAttribute("src") === "/uploads/ar.jpg")).toBe(true);
+    expect(images.some((image) => image.getAttribute("src") === "/uploads/fallback-en.jpg")).toBe(true);
+    expect(images.some((image) => image.getAttribute("src") === "/uploads/en.jpg")).toBe(false);
+  });
 
   it("adds a linked video as the last item, after every image", () => {
     render(createElement(EntityMediaGallery, {

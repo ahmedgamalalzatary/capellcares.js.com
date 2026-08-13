@@ -56,6 +56,7 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
             media={offer.media}
+            lang={lang}
             imagePath={offer.imagePath}
             videoUrl={offer.youtubeUrl}
             label={pickLang(offer.name, lang)}

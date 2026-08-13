@@ -82,8 +82,8 @@ describe("ProductCard", () => {
         imagePath: "/uploads/primary.jpg",
         hoverImagePath: "/uploads/hover.jpg",
         media: [
-          { type: "image", url: "/uploads/primary.jpg" },
-          { type: "image", url: "/uploads/gallery-secondary.jpg" }
+          { type: "image", arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/gallery-secondary.jpg" }
         ],
         status: "active",
         isNew: false,
@@ -123,8 +123,8 @@ describe("ProductCard", () => {
         imagePath: "/uploads/primary.jpg",
         hoverImagePath: "",
         media: [
-          { type: "image", url: "/uploads/primary.jpg" },
-          { type: "image", url: "/uploads/gallery-secondary.jpg" }
+          { type: "image", arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/gallery-secondary.jpg" }
         ],
         status: "active",
         isNew: false,

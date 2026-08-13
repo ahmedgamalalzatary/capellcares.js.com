@@ -9,7 +9,7 @@ import {
   loadVariantDiscountRows,
   mapVariant,
   normalizeMedia,
-  resolveHoverImagePath,
+  resolveLocalizedHoverImagePath,
   resolvePrimaryImagePath,
   toKeywords
 } from "./shared.js";
@@ -106,6 +106,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       keywords: products.keywords,
       imagePath: products.imagePath,
       hoverImagePath: products.hoverImagePath,
+      arHoverImagePath: products.arHoverImagePath,
       status: products.status,
       categoryId: products.categoryId,
       deletedAt: products.deletedAt,
@@ -150,8 +151,8 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       return {
         ...r,
         sortOrder: rankByProductId.get(r.id),
-        imagePath: resolvePrimaryImagePath(media, r.imagePath),
-        hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
+        imagePath: resolvePrimaryImagePath(media, r.imagePath, params.lang),
+        hoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, r.hoverImagePath, params.lang) ?? "",
         media,
         keywords: toKeywords(r.keywords),
         variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
@@ -166,7 +167,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
     .sort(compareByScopedOrdering.bind(null, "storefront"));
 }
 
-export async function findVisibleProductBySlug(slug: string) {
+export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" = "ar") {
   const rows = await db
     .select({
       id: products.id,
@@ -186,6 +187,7 @@ export async function findVisibleProductBySlug(slug: string) {
       youtubeUrl: products.youtubeUrl,
       imagePath: products.imagePath,
       hoverImagePath: products.hoverImagePath,
+      arHoverImagePath: products.arHoverImagePath,
       status: products.status,
       isNew: products.isNew,
       isBestseller: products.isBestseller,
@@ -218,8 +220,8 @@ export async function findVisibleProductBySlug(slug: string) {
   const media = normalizeMedia(mediaByProduct.get(product.id), product.imagePath);
   return {
     ...product,
-    imagePath: resolvePrimaryImagePath(media, product.imagePath),
-    hoverImagePath: resolveHoverImagePath(product.hoverImagePath) ?? "",
+    imagePath: resolvePrimaryImagePath(media, product.imagePath, lang),
+    hoverImagePath: resolveLocalizedHoverImagePath(product.arHoverImagePath, product.hoverImagePath, lang) ?? "",
     media,
     keywords: toKeywords(product.keywords),
     variants: variantsRows.map((variant) => mapVariant(variant, discountByVariantId.get(variant.id) ?? null)).sort((a, b) => a.sortOrder - b.sortOrder),
@@ -274,7 +276,9 @@ export async function listAdminProductsRepo() {
         sortOrder: rootRankByProductId.get(r.id),
         orderings: orderingsByProductId.get(r.id) ?? [],
         imagePath: resolvePrimaryImagePath(media, r.imagePath),
-        hoverImagePath: resolveHoverImagePath(r.hoverImagePath) ?? "",
+        hoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, r.hoverImagePath, "en") ?? "",
+        arHoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, null, "ar") ?? "",
+        enHoverImagePath: resolveLocalizedHoverImagePath(null, r.hoverImagePath, "en") ?? "",
         media,
         offerIds: offerIdsByProductId.get(r.id) ?? [],
         variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
@@ -308,7 +312,9 @@ export async function findAdminProductByIdRepo(id: number) {
   return {
     ...row,
     imagePath: resolvePrimaryImagePath(media, row.imagePath),
-    hoverImagePath: resolveHoverImagePath(row.hoverImagePath) ?? "",
+    hoverImagePath: resolveLocalizedHoverImagePath(row.arHoverImagePath, row.hoverImagePath, "en") ?? "",
+    arHoverImagePath: resolveLocalizedHoverImagePath(row.arHoverImagePath, null, "ar") ?? "",
+    enHoverImagePath: resolveLocalizedHoverImagePath(null, row.hoverImagePath, "en") ?? "",
     media,
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],

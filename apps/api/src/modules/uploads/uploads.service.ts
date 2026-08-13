@@ -128,8 +128,15 @@ export async function deleteLocalUploadUrls(urls: Array<string | null | undefine
     const publicUrl = `${resolvePublicBaseUrl().replace(/\/+$/, "")}/${uploadPath.slice("/uploads/".length)}`;
     const referenceUrls = [...new Set([uploadPath, publicUrl, ...originalUrls])];
     const references = await Promise.all([
-      db.select({ id: entityMedia.id }).from(entityMedia).where(inArray(entityMedia.url, referenceUrls)).limit(1),
-      db.select({ id: products.id }).from(products).where(inArray(products.imagePath, referenceUrls)).limit(1),
+      db.select({ id: entityMedia.id }).from(entityMedia).where(or(
+        inArray(entityMedia.url, referenceUrls),
+        inArray(entityMedia.arUrl, referenceUrls)
+      )).limit(1),
+      db.select({ id: products.id }).from(products).where(or(
+        inArray(products.imagePath, referenceUrls),
+        inArray(products.hoverImagePath, referenceUrls),
+        inArray(products.arHoverImagePath, referenceUrls)
+      )).limit(1),
       db.select({ id: offers.id }).from(offers).where(inArray(offers.imagePath, referenceUrls)).limit(1),
       db.select({ id: collections.id }).from(collections).where(inArray(collections.imagePath, referenceUrls)).limit(1),
       db.select({ id: shopMediaSectionItems.id }).from(shopMediaSectionItems).where(or(

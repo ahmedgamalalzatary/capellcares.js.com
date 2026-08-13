@@ -31,7 +31,8 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
     media, setMedia,
-    hoverImagePath, setHoverImagePath,
+    arHoverImagePath, setArHoverImagePath,
+    enHoverImagePath, setEnHoverImagePath,
     status, setStatus,
     isNew, setIsNew,
     isBestseller, setIsBestseller,
@@ -274,7 +275,12 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
 
           <ImageFieldCard
             title="صورة Hover لبطاقة المنتج"
-            uploadSlot={<ProductHoverImageUpload value={hoverImagePath} onChange={setHoverImagePath} uploadContext={mode === "edit" ? "products.update" : "products.create"} />}
+            uploadSlot={<ProductHoverImageUpload
+              arValue={arHoverImagePath}
+              enValue={enHoverImagePath}
+              onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
+              uploadContext={mode === "edit" ? "products.update" : "products.create"}
+            />}
           />
         </aside>
       </div>

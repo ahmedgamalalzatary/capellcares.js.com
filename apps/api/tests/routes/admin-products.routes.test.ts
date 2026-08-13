@@ -494,10 +494,11 @@ serialTest("admin product upsert persists ordered media and a dedicated hover im
       body: JSON.stringify({
         ...makeCompleteProduct(ids.leafCategoryId),
         sku: "ROUTE-MEDIA-COMPLETE",
-        hoverImagePath: "/uploads/route-hover-dedicated.jpg",
+        arHoverImagePath: "/uploads/route-hover-ar.jpg",
+        enHoverImagePath: "/uploads/route-hover-en.jpg",
         media: [
-          { type: "image", url: "/uploads/route-primary.jpg" },
-          { type: "image", url: "/uploads/route-gallery-secondary.jpg" },
+          { type: "image", arUrl: "/uploads/route-primary-ar.jpg", enUrl: "/uploads/route-primary-en.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/route-gallery-secondary.jpg" },
           { type: "video", url: "/uploads/route-demo.mp4" }
         ]
       })
@@ -508,19 +509,26 @@ serialTest("admin product upsert persists ordered media and a dedicated hover im
   });
 
   const [created] = await db
-    .select({ id: products.id, imagePath: products.imagePath, hoverImagePath: products.hoverImagePath })
+    .select({
+      id: products.id,
+      imagePath: products.imagePath,
+      hoverImagePath: products.hoverImagePath,
+      arHoverImagePath: products.arHoverImagePath
+    })
     .from(products)
     .where(eq(products.sku, "ROUTE-MEDIA-COMPLETE"))
     .limit(1);
 
   assert.ok(created, "expected created product to exist");
-  assert.equal(created.imagePath, "/uploads/route-primary.jpg");
-  assert.equal(created.hoverImagePath, "/uploads/route-hover-dedicated.jpg");
+  assert.equal(created.imagePath, "/uploads/route-primary-en.jpg");
+  assert.equal(created.hoverImagePath, "/uploads/route-hover-en.jpg");
+  assert.equal(created.arHoverImagePath, "/uploads/route-hover-ar.jpg");
 
   const mediaRows = await db
     .select({
       mediaType: entityMedia.mediaType,
       url: entityMedia.url,
+      arUrl: entityMedia.arUrl,
       sortOrder: entityMedia.sortOrder
     })
     .from(entityMedia)
@@ -528,10 +536,48 @@ serialTest("admin product upsert persists ordered media and a dedicated hover im
     .orderBy(asc(entityMedia.sortOrder));
 
   assert.deepEqual(mediaRows, [
-    { mediaType: "image", url: "/uploads/route-primary.jpg", sortOrder: 1 },
-    { mediaType: "image", url: "/uploads/route-gallery-secondary.jpg", sortOrder: 2 },
-    { mediaType: "video", url: "/uploads/route-demo.mp4", sortOrder: 3 }
+    { mediaType: "image", url: "/uploads/route-primary-en.jpg", arUrl: "/uploads/route-primary-ar.jpg", sortOrder: 1 },
+    { mediaType: "image", url: "/uploads/route-gallery-secondary.jpg", arUrl: null, sortOrder: 2 },
+    { mediaType: "video", url: "/uploads/route-demo.mp4", arUrl: null, sortOrder: 3 }
   ]);
+});
+
+serialTest("admin product upsert preserves an explicitly missing English hover image", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: "ROUTE-HOVER-AR-ONLY",
+        hoverImagePath: "/uploads/route-hover-ar-only.jpg",
+        arHoverImagePath: "/uploads/route-hover-ar-only.jpg",
+        enHoverImagePath: null
+      })
+    });
+
+    assert.equal(response.status, 200);
+  });
+
+  const [created] = await db
+    .select({
+      hoverImagePath: products.hoverImagePath,
+      arHoverImagePath: products.arHoverImagePath
+    })
+    .from(products)
+    .where(eq(products.sku, "ROUTE-HOVER-AR-ONLY"))
+    .limit(1);
+
+  assert.deepEqual(created, {
+    hoverImagePath: null,
+    arHoverImagePath: "/uploads/route-hover-ar-only.jpg"
+  });
 });
 
 serialTest("admin product upsert persists mirrored related product links", async () => {

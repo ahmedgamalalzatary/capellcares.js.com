@@ -19,12 +19,10 @@ export const storefrontProductContract = z.object({
   keywords: z.array(z.string()),
   imagePath: z.string().nullable(),
   hoverImagePath: z.string().nullable(),
-  media: z.array(
-    z.object({
-      type: z.enum(["image", "video"]),
-      url: z.string()
-    })
-  ),
+  media: z.array(z.union([
+    z.object({ type: z.literal("image"), arUrl: z.string().nullable(), enUrl: z.string().nullable() }),
+    z.object({ type: z.literal("video"), url: z.string() })
+  ])),
   youtubeUrl: z.string().nullable().optional(),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),

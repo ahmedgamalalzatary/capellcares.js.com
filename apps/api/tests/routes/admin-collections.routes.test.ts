@@ -68,8 +68,8 @@ serialTest("admin collection upsert creates a new collection when the payload ha
     const adminCollection = adminCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
     assert.equal(adminCollection.youtubeUrl, "https://www.youtube.com/watch?v=route-collection");
     assert.deepEqual(adminCollection.media, [
-      { type: "image", url: "http://localhost:4000/uploads/test-collection.png" },
-      { type: "image", url: "http://localhost:4000/uploads/test-collection-detail.png" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/test-collection.png" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/test-collection-detail.png" },
       { type: "video", url: "http://localhost:4000/uploads/test-collection-demo.mp4" }
     ]);
 

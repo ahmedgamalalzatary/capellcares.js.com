@@ -1,4 +1,4 @@
-import type { Category } from "@capella/shared";
+import type { Category, Product } from "@capella/shared";
 import { API_BASE } from "./http";
 import type { CategoryApiShape, ProductApiShape } from "./types";
 
@@ -40,12 +40,18 @@ export function normalizeCategory(input: CategoryApiShape): Category {
   };
 }
 
-export function normalizeProduct<T extends ProductApiShape>(product: T): T {
+export function normalizeProduct<T extends ProductApiShape>(product: T): T & Product {
   const normalizedImagePath = resolveMediaUrl(product.imagePath ?? "");
   const media = product.media?.length
-    ? product.media.map((item) => ({ ...item, url: resolveMediaUrl(item.url) }))
+    ? product.media.map((item) => item.type === "video"
+      ? { ...item, url: resolveMediaUrl(item.url) }
+      : {
+        ...item,
+        arUrl: resolveMediaUrl(item.arUrl) || null,
+        enUrl: resolveMediaUrl(item.enUrl) || null
+      })
     : normalizedImagePath
-      ? [{ type: "image" as const, url: normalizedImagePath }]
+      ? [{ type: "image" as const, arUrl: null, enUrl: normalizedImagePath }]
       : [];
 
   const ensureNumericId = (value: unknown, field: "product id" | "product categoryId") => {
@@ -63,7 +69,10 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T {
     ...product,
     id: ensureNumericId(product.id, "product id"),
     categoryId: ensureNumericId(product.categoryId, "product categoryId"),
-    imagePath: normalizedImagePath || (media.find((item) => item.type === "image")?.url ?? ""),
+    imagePath: normalizedImagePath || (() => {
+      const image = media.find((item) => item.type === "image");
+      return image?.enUrl ?? image?.arUrl ?? "";
+    })(),
     hoverImagePath: resolveMediaUrl(product.hoverImagePath ?? ""),
     media,
     variants: product.variants.map((variant) => ({
@@ -79,5 +88,5 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T {
         }
         : null
     }))
-  } as T;
+  } as T & Product;
 }

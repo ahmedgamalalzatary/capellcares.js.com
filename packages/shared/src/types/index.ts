@@ -46,10 +46,18 @@ export interface VariantDiscount {
   status: "active" | "inactive";
 }
 
-export interface EntityMedia {
-  type: "image" | "video";
+export interface EntityImageMedia {
+  type: "image";
+  arUrl: string | null;
+  enUrl: string | null;
+}
+
+export interface EntityVideoMedia {
+  type: "video";
   url: string;
 }
+
+export type EntityMedia = EntityImageMedia | EntityVideoMedia;
 
 /** @deprecated Use EntityMedia. */
 export type ProductMedia = EntityMedia;
@@ -67,6 +75,8 @@ export interface Product {
   buyingPrice: number;
   imagePath: string;
   hoverImagePath?: string;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMedia[];
   youtubeUrl?: string;
   status: ProductStatus;

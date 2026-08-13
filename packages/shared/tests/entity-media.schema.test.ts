@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import * as shared from "../src/index.ts";
 import { collectionSchema } from "../src/schemas/collection.schema.ts";
 import { offerSchema } from "../src/schemas/offer.schema.ts";
+import { productSchema } from "../src/schemas/product.schema.ts";
 import { nullableYouTubeUrlSchema } from "../src/schemas/youtube-url.schema.ts";
 
 const media = [
-  { type: "image" as const, url: "/uploads/primary.jpg" },
-  { type: "image" as const, url: "/uploads/detail.jpg" },
+  { type: "image" as const, arUrl: "/uploads/primary-ar.jpg", enUrl: "/uploads/primary-en.jpg" },
+  { type: "image" as const, arUrl: null, enUrl: "/uploads/detail-en.jpg" },
   { type: "video" as const, url: "/uploads/demo.mp4" }
 ];
 
@@ -56,10 +58,41 @@ test("collectionSchema preserves an ordered media gallery", () => {
   assert.equal(parsed.youtubeUrl, "https://www.youtube.com/watch?v=collection");
 });
 
-test("collections and offers share the nullable YouTube URL validator", () => {
+test("products, collections, and offers share the nullable YouTube URL validator", () => {
+  assert.equal(productSchema.shape.youtubeUrl, nullableYouTubeUrlSchema);
   assert.equal(collectionSchema.shape.youtubeUrl, nullableYouTubeUrlSchema);
   assert.equal(offerSchema.shape.youtubeUrl, nullableYouTubeUrlSchema);
   assert.equal(nullableYouTubeUrlSchema.parse(null), null);
+});
+
+test("entity image media accepts either language and rejects an image missing both", () => {
+  const schema = productSchema.shape.media.element;
+  assert.deepEqual(
+    schema.parse({ type: "image", arUrl: "/uploads/ar.jpg", enUrl: null }),
+    { type: "image", arUrl: "/uploads/ar.jpg", enUrl: null }
+  );
+  assert.deepEqual(
+    schema.parse({ type: "image", arUrl: null, enUrl: "/uploads/en.jpg" }),
+    { type: "image", arUrl: null, enUrl: "/uploads/en.jpg" }
+  );
+  assert.equal(schema.safeParse({ type: "image", arUrl: null, enUrl: null }).success, false);
+});
+
+test("localized media URL resolution prefers the requested language and falls back to the other", () => {
+  const resolve = (shared as Record<string, unknown>).resolveLocalizedEntityMediaUrl;
+  assert.equal(typeof resolve, "function");
+  if (typeof resolve !== "function") return;
+
+  const bilingualImage = { type: "image" as const, arUrl: "/uploads/ar.jpg", enUrl: "/uploads/en.jpg" };
+  const englishOnlyImage = { type: "image" as const, arUrl: null, enUrl: "/uploads/en.jpg" };
+  const arabicOnlyImage = { type: "image" as const, arUrl: "/uploads/ar.jpg", enUrl: null };
+  const video = { type: "video" as const, url: "/uploads/demo.mp4" };
+
+  assert.equal(resolve(bilingualImage, "ar"), "/uploads/ar.jpg");
+  assert.equal(resolve(bilingualImage, "en"), "/uploads/en.jpg");
+  assert.equal(resolve(englishOnlyImage, "ar"), "/uploads/en.jpg");
+  assert.equal(resolve(arabicOnlyImage, "en"), "/uploads/ar.jpg");
+  assert.equal(resolve(video, "ar"), "/uploads/demo.mp4");
 });
 
 test("YouTube URL validator accepts every gallery-supported YouTube form", () => {

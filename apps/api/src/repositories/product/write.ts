@@ -30,6 +30,8 @@ export async function createAdminProductRepo(input: {
   youtubeUrl?: string | null;
   imagePath?: string | null;
   hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: ProductMediaItem[];
   categoryId: number;
   status: "active" | "inactive";
@@ -43,6 +45,11 @@ export async function createAdminProductRepo(input: {
   const primaryImagePath = mediaUpdate
     ? resolvePrimaryImagePath(mediaUpdate, input.imagePath ?? null)
     : null;
+  const hasEnHoverUpdate = input.enHoverImagePath !== undefined || input.hoverImagePath !== undefined;
+  const enHoverImagePath = input.enHoverImagePath !== undefined
+    ? input.enHoverImagePath
+    : input.hoverImagePath ?? null;
+  const hasArHoverUpdate = input.arHoverImagePath !== undefined;
   const repo = executor ?? db;
 
   if (input.id) {
@@ -73,7 +80,8 @@ export async function createAdminProductRepo(input: {
           enWarnings: input.enWarnings ?? null,
           youtubeUrl: input.youtubeUrl ?? null,
           ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
-          hoverImagePath: input.hoverImagePath ?? null,
+          ...(hasEnHoverUpdate ? { hoverImagePath: enHoverImagePath } : {}),
+          ...(hasArHoverUpdate ? { arHoverImagePath: input.arHoverImagePath ?? null } : {}),
           categoryId: input.categoryId,
           status: input.status,
           isNew: input.isNew ?? false,
@@ -104,7 +112,8 @@ export async function createAdminProductRepo(input: {
       enWarnings: input.enWarnings ?? null,
       youtubeUrl: input.youtubeUrl ?? null,
       imagePath: primaryImagePath,
-      hoverImagePath: input.hoverImagePath ?? null,
+      hoverImagePath: enHoverImagePath,
+      arHoverImagePath: input.arHoverImagePath ?? null,
       categoryId: input.categoryId,
       status: input.status,
       isNew: input.isNew ?? false,
@@ -279,14 +288,19 @@ export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: st
     }
 
     const [row] = await tx
-      .select({ imagePath: products.imagePath, deletedAt: products.deletedAt })
+      .select({
+        imagePath: products.imagePath,
+        hoverImagePath: products.hoverImagePath,
+        arHoverImagePath: products.arHoverImagePath,
+        deletedAt: products.deletedAt
+      })
       .from(products)
       .where(eq(products.id, id))
       .limit(1);
     if (!row || row.deletedAt == null) return null;
 
     const mediaRows = await tx
-      .select({ url: entityMedia.url })
+      .select({ url: entityMedia.url, arUrl: entityMedia.arUrl })
       .from(entityMedia)
       .where(eq(entityMedia.productId, id));
 
@@ -316,7 +330,14 @@ export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: st
     await tx.delete(entityMedia).where(eq(entityMedia.productId, id));
     await tx.delete(productVariants).where(eq(productVariants.productId, id));
     await tx.delete(products).where(eq(products.id, id));
-    return { mediaUrls: [row.imagePath, ...mediaRows.map((item) => item.url)].filter((url): url is string => Boolean(url)) };
+    return {
+      mediaUrls: [
+        row.imagePath,
+        row.hoverImagePath,
+        row.arHoverImagePath,
+        ...mediaRows.flatMap((item) => [item.url, item.arUrl])
+      ].filter((url): url is string => Boolean(url))
+    };
   });
 }
 

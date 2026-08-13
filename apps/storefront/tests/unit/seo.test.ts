@@ -17,7 +17,7 @@ describe("SEO metadata", () => {
       keywords: ["test"],
       buyingPrice: 10,
       imagePath: "/uploads/product.jpg",
-      media: [{ type: "image", url: "/uploads/product.jpg" }],
+      media: [{ type: "image", arUrl: null, enUrl: "/uploads/product.jpg" }],
       status: "active",
       isNew: false,
       isBestseller: false,

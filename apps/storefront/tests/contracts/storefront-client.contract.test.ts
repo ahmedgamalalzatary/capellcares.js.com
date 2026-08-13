@@ -38,8 +38,8 @@ const productBoundaryPayload = {
   imagePath: null,
   hoverImagePath: null,
   media: [
-    { type: "image", url: "/uploads/body-lotion-primary.jpg" },
-    { type: "image", url: "/uploads/body-lotion-hover.jpg" },
+    { type: "image", arUrl: null, enUrl: "/uploads/body-lotion-primary.jpg" },
+    { type: "image", arUrl: null, enUrl: "/uploads/body-lotion-hover.jpg" },
     { type: "video", url: "/uploads/body-lotion-demo.mp4" }
   ],
   youtubeUrl: null,
@@ -74,8 +74,8 @@ const offerBoundaryPayload = {
   youtubeUrl: null,
   imagePath: "http://localhost:4000/uploads/hydration-duo-primary.jpg",
   media: [
-    { type: "image" as const, url: "http://localhost:4000/uploads/hydration-duo-primary.jpg" },
-    { type: "image" as const, url: "http://localhost:4000/uploads/hydration-duo-secondary.jpg" },
+    { type: "image" as const, arUrl: null, enUrl: "http://localhost:4000/uploads/hydration-duo-primary.jpg" },
+    { type: "image" as const, arUrl: null, enUrl: "http://localhost:4000/uploads/hydration-duo-secondary.jpg" },
     { type: "video" as const, url: "http://localhost:4000/uploads/hydration-duo-demo.mp4" }
   ],
   price: 399.5,
@@ -137,8 +137,8 @@ describe("storefront client contracts", () => {
     assertConformsTo(result[0], storefrontProductContract);
     assertForbiddenFieldsAbsent(result[0], ["buyingPrice"]);
     expect(result[0]?.media).toEqual([
-      { type: "image", url: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
-      { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/body-lotion-hover.jpg" },
       { type: "video", url: "http://localhost:4000/uploads/body-lotion-demo.mp4" }
     ]);
   });
@@ -206,7 +206,7 @@ describe("storefront client contracts", () => {
 
     const result = await fetchProducts({ lang: "en" });
 
-    expect(result[0]?.media).toEqual([{ type: "image", url: "http://localhost:4000/uploads/legacy-only.jpg" }]);
+    expect(result[0]?.media).toEqual([{ type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/legacy-only.jpg" }]);
   });
 
   it("normalizes legacy relative upload URLs to the API origin", async () => {
@@ -220,8 +220,8 @@ describe("storefront client contracts", () => {
             imagePath: "/uploads/body-lotion-primary.jpg",
             hoverImagePath: "/uploads/body-lotion-hover-dedicated.jpg",
             media: [
-              { type: "image", url: "/uploads/body-lotion-primary.jpg" },
-              { type: "image", url: "/uploads/body-lotion-hover.jpg" }
+              { type: "image", arUrl: null, enUrl: "/uploads/body-lotion-primary.jpg" },
+              { type: "image", arUrl: null, enUrl: "/uploads/body-lotion-hover.jpg" }
             ]
           }]
         })
@@ -233,8 +233,8 @@ describe("storefront client contracts", () => {
     expect(result[0]?.imagePath).toBe("http://localhost:4000/uploads/body-lotion-primary.jpg");
     expect(result[0]?.hoverImagePath).toBe("http://localhost:4000/uploads/body-lotion-hover-dedicated.jpg");
     expect(result[0]?.media).toEqual([
-      { type: "image", url: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
-      { type: "image", url: "http://localhost:4000/uploads/body-lotion-hover.jpg" }
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/body-lotion-primary.jpg" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/body-lotion-hover.jpg" }
     ]);
   });
 
@@ -251,7 +251,7 @@ describe("storefront client contracts", () => {
         items: [{
           ...productBoundaryPayload,
           imagePath: "/uploads/body-lotion-primary.jpg",
-          media: [{ type: "image", url: "/uploads/body-lotion-primary.jpg" }]
+          media: [{ type: "image", arUrl: null, enUrl: "/uploads/body-lotion-primary.jpg" }]
         }]
       })
     });
@@ -264,7 +264,9 @@ describe("storefront client contracts", () => {
       expect.any(Object)
     );
     expect(result[0]?.imagePath).toBe("https://api.capellacares.com/uploads/body-lotion-primary.jpg");
-    expect(result[0]?.media?.[0]?.url).toBe("https://api.capellacares.com/uploads/body-lotion-primary.jpg");
+    const primaryMedia = result[0]?.media?.[0];
+    expect(primaryMedia?.type === "image" ? primaryMedia.enUrl : null)
+      .toBe("https://api.capellacares.com/uploads/body-lotion-primary.jpg");
   });
 
   it("normalizes numeric product ids so category-scoped filtering does not empty out", async () => {

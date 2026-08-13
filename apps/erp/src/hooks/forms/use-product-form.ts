@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product, ProductVariant, RelatedItemRef } from "@capella/shared";
+import { resolveLocalizedEntityMediaUrl, type Product, type ProductVariant, type RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "../../components/forms/form-slug";
@@ -34,9 +34,12 @@ export function useProductForm({
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [media, setMedia] = useState(
-    initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
+    initial?.media ?? (initial?.imagePath
+      ? [{ type: "image" as const, arUrl: null, enUrl: initial.imagePath }]
+      : [])
   );
-  const [hoverImagePath, setHoverImagePath] = useState(initial?.hoverImagePath ?? "");
+  const [arHoverImagePath, setArHoverImagePath] = useState(initial?.arHoverImagePath ?? "");
+  const [enHoverImagePath, setEnHoverImagePath] = useState(initial?.enHoverImagePath ?? initial?.hoverImagePath ?? "");
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
@@ -98,7 +101,8 @@ export function useProductForm({
   const buildProduct = (): Product => {
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
-    const primaryImage = media.find((item) => item.type === "image")?.url ?? "";
+    const primaryMedia = media.find((item) => item.type === "image");
+    const primaryImage = primaryMedia ? resolveLocalizedEntityMediaUrl(primaryMedia, "en") : "";
     const product: Product = {
       id: id ?? 0,
       sku: sku.trim() || `SKU-${Date.now()}`,
@@ -112,7 +116,9 @@ export function useProductForm({
       keywords: keywords.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
       imagePath: primaryImage,
-      hoverImagePath,
+      hoverImagePath: enHoverImagePath,
+      arHoverImagePath: arHoverImagePath || null,
+      enHoverImagePath: enHoverImagePath || null,
       media,
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,
@@ -166,7 +172,8 @@ export function useProductForm({
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
     media, setMedia,
-    hoverImagePath, setHoverImagePath,
+    arHoverImagePath, setArHoverImagePath,
+    enHoverImagePath, setEnHoverImagePath,
     status, setStatus,
     isNew, setIsNew,
     isBestseller, setIsBestseller,

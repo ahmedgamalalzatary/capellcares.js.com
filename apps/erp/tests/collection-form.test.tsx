@@ -64,8 +64,8 @@ describe("CollectionForm", () => {
         description: { ar: "", en: "" },
         imagePath: "/uploads/collection.png",
         media: [
-          { type: "image", url: "/uploads/collection.png" },
-          { type: "image", url: "/uploads/collection-detail.png" },
+          { type: "image", arUrl: null, enUrl: "/uploads/collection.png" },
+          { type: "image", arUrl: null, enUrl: "/uploads/collection-detail.png" },
           { type: "video", url: "/uploads/collection-demo.mp4" }
         ],
         price: 100,

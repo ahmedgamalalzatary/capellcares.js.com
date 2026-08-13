@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nullableYouTubeUrlSchema } from "./youtube-url.schema.js";
 
 const timestampString = z.string().min(1).refine((value) => !Number.isNaN(new Date(value).getTime()), {
   message: "Invalid timestamp"
@@ -51,10 +52,20 @@ export const productVariantSchema = z.object({
   }
 });
 
-export const entityMediaSchema = z.object({
-  type: z.enum(["image", "video"]),
-  url: z.string().min(1)
+const entityImageMediaSchema = z.object({
+  type: z.literal("image"),
+  arUrl: z.string().min(1).max(1024).nullable(),
+  enUrl: z.string().min(1).max(1024).nullable()
+}).refine((media) => media.arUrl !== null || media.enUrl !== null, {
+  message: "An image URL is required for at least one language"
 });
+
+const entityVideoMediaSchema = z.object({
+  type: z.literal("video"),
+  url: z.string().min(1).max(1024)
+});
+
+export const entityMediaSchema = z.union([entityImageMediaSchema, entityVideoMediaSchema]);
 
 /** @deprecated Use entityMediaSchema. */
 export const productMediaSchema = entityMediaSchema;
@@ -75,9 +86,11 @@ export const productSchema = z.object({
   enHowToUse: z.string().nullable(),
   arWarnings: z.string().nullable(),
   enWarnings: z.string().nullable(),
-  youtubeUrl: z.string().nullable(),
+  youtubeUrl: nullableYouTubeUrlSchema,
   imagePath: z.string().nullable(),
   hoverImagePath: z.string().nullable(),
+  arHoverImagePath: z.string().nullable().optional(),
+  enHoverImagePath: z.string().nullable().optional(),
   media: z.array(entityMediaSchema),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),

@@ -55,6 +55,8 @@ export type ProductApiShape = {
   buyingPrice?: number | string;
   imagePath?: string | null;
   hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMedia[];
   youtubeUrl?: string | null;
   status?: "active" | "inactive";

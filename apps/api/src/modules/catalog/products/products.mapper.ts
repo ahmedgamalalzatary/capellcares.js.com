@@ -1,4 +1,4 @@
-import type { Product } from "@capella/shared";
+import type { EntityMedia, Product } from "@capella/shared";
 
 type ProductRow = {
   id: number;
@@ -7,7 +7,7 @@ type ProductRow = {
   keywords: string[];
   imagePath: string | null;
   hoverImagePath?: string | null;
-  media?: Array<{ type: "image" | "video"; url: string }>;
+  media?: EntityMedia[];
   youtubeUrl?: string | null;
   status: "active" | "inactive";
   isNew: boolean;
@@ -41,7 +41,9 @@ export function toStorefrontProduct(product: ProductRow): Omit<Product, "buyingP
     keywords: product.keywords,
     imagePath: product.imagePath ?? "",
     hoverImagePath: product.hoverImagePath ?? "",
-    media: product.media ?? (product.imagePath ? [{ type: "image", url: product.imagePath }] : []),
+    media: product.media ?? (product.imagePath
+      ? [{ type: "image", arUrl: null, enUrl: product.imagePath }]
+      : []),
     youtubeUrl: product.youtubeUrl ?? undefined,
     status: product.status,
     isNew: product.isNew,

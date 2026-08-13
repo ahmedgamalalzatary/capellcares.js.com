@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import type { EntityMedia } from "@capella/shared";
+import {
+  resolveLocalizedEntityMediaUrl,
+  type EntityMedia,
+  type Language
+} from "@capella/shared";
 
 import { loadInstagramEmbedScript, resolveAdviceVideo, type AdviceVideoPresentation } from "@/lib/advice-video";
 
 interface Props {
   media?: EntityMedia[];
+  lang?: Language;
   imagePath?: string | null;
   /**
    * Optional YouTube/Instagram link. It joins the gallery as the last item, so
@@ -34,6 +39,7 @@ function itemKey(item: GalleryItem, index: number) {
 
 export function EntityMediaGallery({
   media: incomingMedia,
+  lang = "en",
   imagePath,
   videoUrl,
   label,
@@ -58,15 +64,18 @@ export function EntityMediaGallery({
   );
 
   const items = useMemo<GalleryItem[]>(() => {
-    const files: GalleryItem[] = (incomingMedia?.length
-      ? incomingMedia
+    const files: GalleryItem[] = incomingMedia?.length
+      ? incomingMedia.map((item) => ({
+        kind: "file" as const,
+        type: item.type,
+        url: resolveLocalizedEntityMediaUrl(item, lang)
+      }))
       : imagePath
-        ? [{ type: "image" as const, url: imagePath }]
-        : []
-    ).map((item) => ({ kind: "file", type: item.type, url: item.url }));
+        ? [{ kind: "file", type: "image", url: imagePath }]
+        : [];
 
     return linkedVideo ? [...files, { kind: "embed", video: linkedVideo }] : files;
-  }, [incomingMedia, imagePath, linkedVideo]);
+  }, [incomingMedia, imagePath, lang, linkedVideo]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeItem = items[activeIndex] ?? items[0] ?? null;
@@ -79,7 +88,7 @@ export function EntityMediaGallery({
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [incomingMedia, imagePath, videoUrl]);
+  }, [incomingMedia, imagePath, lang, videoUrl]);
 
   useEffect(() => {
     const active = items[activeIndex];

@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
+import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
 import { categories, entityMedia, entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
 import {
@@ -17,11 +17,11 @@ import {
   type EntityMediaItem
 } from "./entity-media.repository.js";
 
-async function withOfferMedia<T extends { id: number; imagePath: string | null }>(rows: T[]) {
+async function withOfferMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByOffer = await loadEntityMediaRows("offer", rows.map((row) => row.id));
   return rows.map((row) => {
     const media = normalizeEntityMedia(mediaByOffer.get(row.id), row.imagePath);
-    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath) };
+    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang) };
   });
 }
 
@@ -178,22 +178,22 @@ export async function listOffersRepo(includeDeleted = false) {
   );
 }
 
-export async function listVisibleOffersRepo() {
+export async function listVisibleOffersRepo(lang: Language = "ar") {
   const rows = await db
     .select()
     .from(offers)
     .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
-  const ranked = await withOfferRanks(await withOfferMedia(rows), "storefront");
+  const ranked = await withOfferRanks(await withOfferMedia(rows, lang), "storefront");
   const itemsByOfferId = await listOrderedItemsByOfferRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByOfferId.get(row.id) ?? [] }));
 }
 
-export async function findOfferBySlugRepo(slug: string) {
+export async function findOfferBySlugRepo(slug: string, lang: Language = "ar") {
   const [row] = await db.select().from(offers).where(eq(offers.slug, slug)).limit(1);
   if (!row) return null;
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedOfferItemsRepo(row.id);
-  const [withMedia] = await withOfferMedia([row]);
+  const [withMedia] = await withOfferMedia([row], lang);
   return { ...withMedia!, items };
 }
 
@@ -224,7 +224,9 @@ export async function upsertOfferRepo(input: {
   const mergedItems = mergeOfferItems(input.items);
   const shouldReplaceMedia = input.media !== undefined || !input.id;
   const mediaUpdate = shouldReplaceMedia
-    ? input.media ?? (input.imagePath ? [{ type: "image", url: input.imagePath }] : [])
+    ? input.media ?? (input.imagePath
+      ? [{ type: "image", arUrl: null, enUrl: input.imagePath }]
+      : [])
     : undefined;
   const primaryImagePath = mediaUpdate
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
@@ -345,7 +347,7 @@ export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: stri
     }
 
     const mediaRows = await tx
-      .select({ url: entityMedia.url })
+      .select({ url: entityMedia.url, arUrl: entityMedia.arUrl })
       .from(entityMedia)
       .where(eq(entityMedia.offerId, id));
 
@@ -368,7 +370,8 @@ export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: stri
       );
     await tx.delete(offers).where(eq(offers.id, id));
     return {
-      mediaUrls: [existing.imagePath, ...mediaRows.map((item) => item.url)].filter((url): url is string => Boolean(url))
+      mediaUrls: [existing.imagePath, ...mediaRows.flatMap((item) => [item.url, item.arUrl])]
+        .filter((url): url is string => Boolean(url))
     };
   });
 }

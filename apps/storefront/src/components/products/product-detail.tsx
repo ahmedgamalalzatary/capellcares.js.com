@@ -74,6 +74,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
             media={product.media}
+            lang={lang}
             imagePath={product.imagePath}
             videoUrl={product.youtubeUrl}
             label={pickLang(product.name, lang)}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, resolveLocalizedEntityMediaUrl, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
@@ -34,7 +34,9 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const leadTag = getProductTags(product, dict, { lead: true })[0];
   const isAr = lang === "ar";
   const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
-  const primaryImage = imageMedia[0]?.url ?? product.imagePath;
+  const primaryImage = imageMedia[0]
+    ? resolveLocalizedEntityMediaUrl(imageMedia[0], lang)
+    : product.imagePath;
   const hoverImage = product.hoverImagePath || primaryImage;
   const [previewImage, setPreviewImage] = useState(primaryImage);
 

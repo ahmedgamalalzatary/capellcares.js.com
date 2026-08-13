@@ -63,8 +63,8 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
     const adminOffer = adminOffersResponse.json.items.find((offer: any) => offer.slug === slug);
     assert.equal(adminOffer.youtubeUrl, "https://www.youtube.com/watch?v=route-offer");
     assert.deepEqual(adminOffer.media, [
-      { type: "image", url: "http://localhost:4000/uploads/test-offer.png" },
-      { type: "image", url: "http://localhost:4000/uploads/test-offer-detail.png" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/test-offer.png" },
+      { type: "image", arUrl: null, enUrl: "http://localhost:4000/uploads/test-offer-detail.png" },
       { type: "video", url: "http://localhost:4000/uploads/test-offer-demo.mp4" }
     ]);
 

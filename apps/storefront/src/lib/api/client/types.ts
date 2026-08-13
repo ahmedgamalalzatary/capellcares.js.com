@@ -9,8 +9,7 @@ import type {
 
 export type FetchLanguage = "ar" | "en";
 
-export type ProductApiShape = Product & {
-  media?: Array<{ type: "image" | "video"; url: string }>;
+export type ProductApiShape = Omit<Product, "imagePath" | "hoverImagePath"> & {
   imagePath?: string | null;
   hoverImagePath?: string | null;
 };

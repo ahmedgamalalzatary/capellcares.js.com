@@ -85,8 +85,8 @@ describe("ProductDetail", () => {
       product: {
         ...baseProduct,
         media: [
-          { type: "image", url: "/uploads/primary.jpg" },
-          { type: "image", url: "/uploads/hover.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image", arUrl: null, enUrl: "/uploads/hover.jpg" },
           { type: "video", url: "/uploads/demo.mp4" }
         ]
       },
@@ -105,7 +105,7 @@ describe("ProductDetail", () => {
     rerender(createElement(ProductDetail, {
       product: {
         ...baseProduct,
-        media: [{ type: "image", url: "/uploads/legacy.jpg" }]
+        media: [{ type: "image", arUrl: null, enUrl: "/uploads/legacy.jpg" }]
       },
       offers: [],
       lang: "en",
@@ -135,7 +135,7 @@ describe("ProductDetail", () => {
       buyingPrice: 10,
       imagePath: "/uploads/main.jpg",
       media: [
-        { type: "image" as const, url: "/uploads/main.jpg" },
+        { type: "image" as const, arUrl: null, enUrl: "/uploads/main.jpg" },
         { type: "video" as const, url: "/uploads/demo.mp4" }
       ],
       status: "active" as const,
@@ -191,8 +191,8 @@ describe("ProductDetail", () => {
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
         media: [
-          { type: "image" as const, url: "/uploads/primary.jpg" },
-          { type: "image" as const, url: "/uploads/secondary.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/secondary.jpg" },
           { type: "video" as const, url: "/uploads/demo.mp4" }
         ],
         status: "active" as const,
@@ -272,8 +272,8 @@ describe("ProductDetail", () => {
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
         media: [
-          { type: "image" as const, url: "/uploads/primary.jpg" },
-          { type: "image" as const, url: "/uploads/secondary.jpg" }
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/secondary.jpg" }
         ],
         status: "active" as const,
         isNew: false,
@@ -342,8 +342,8 @@ describe("ProductDetail", () => {
       product: {
         ...baseProduct,
         media: [
-          { type: "image" as const, url: "/uploads/primary.jpg" },
-          { type: "image" as const, url: "/uploads/secondary.jpg" }
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/secondary.jpg" }
         ]
       },
       offers: [],
@@ -363,7 +363,7 @@ describe("ProductDetail", () => {
     rerender(createElement(ProductDetail, {
       product: {
         ...baseProduct,
-        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }]
+        media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }]
       },
       offers: [],
       lang: "en",
@@ -408,7 +408,7 @@ describe("ProductDetail", () => {
       keywords: [],
       buyingPrice: 10,
       imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
       status: "active" as const,
       isNew: false,
       isBestseller: false,
@@ -476,7 +476,7 @@ describe("ProductDetail", () => {
       keywords: [],
       buyingPrice: 10,
       imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
       status: "active" as const,
       isNew: false,
       isBestseller: false,
@@ -537,7 +537,7 @@ describe("ProductDetail", () => {
       keywords: [],
       buyingPrice: 10,
       imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
       status: "active" as const,
       isNew: true,
       isBestseller: true,
@@ -588,7 +588,7 @@ describe("ProductDetail", () => {
       keywords: [],
       buyingPrice: 10,
       imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
       status: "active" as const,
       isNew: false,
       isBestseller: false,
@@ -671,7 +671,7 @@ describe("ProductDetail", () => {
         keywords: [],
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
-        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
         status: "active" as const,
         isNew: false,
         isBestseller: false,
@@ -734,7 +734,7 @@ describe("ProductDetail", () => {
         keywords: [],
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
-        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
         status: "active" as const,
         isNew: false,
         isBestseller: false,
@@ -797,7 +797,7 @@ describe("ProductDetail", () => {
         keywords: [],
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
-        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
         status: "active" as const,
         isNew: false,
         isBestseller: false,
@@ -855,7 +855,7 @@ describe("ProductDetail", () => {
       keywords: [],
       buyingPrice: 10,
       imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
       status: "active" as const,
       isNew: false,
       isBestseller: false,
@@ -914,7 +914,7 @@ describe("ProductDetail", () => {
         keywords: [],
         buyingPrice: 10,
         imagePath: "/uploads/legacy.jpg",
-        media: [{ type: "image" as const, url: "/uploads/legacy.jpg" }],
+        media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
         status: "active" as const,
         isNew: false,
         isBestseller: false,
@@ -1032,8 +1032,8 @@ describe("ProductDetail", () => {
         isBestseller: false,
         categoryId: 5,
         media: [
-          { type: "image" as const, url: "/uploads/primary.jpg" },
-          { type: "image" as const, url: "/uploads/hover.jpg" }
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/primary.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/hover.jpg" }
         ],
         youtubeUrl: "https://www.youtube.com/watch?v=capella",
         variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
