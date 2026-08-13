@@ -40,13 +40,17 @@ export function useCatalog(): Catalog {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
+    // Settled, not all-or-nothing: one failing catalog used to discard the two
+    // that did load, so every order line rendered as "unavailable".
+    Promise.allSettled([fetchProducts(), fetchOffers(), fetchCollections()])
       .then(([products, offers, collections]) => {
         if (cancelled) return;
-        setCatalog({ products, offers, collections, loaded: true });
-      })
-      .catch(() => {
-        if (!cancelled) setCatalog((current) => ({ ...current, loaded: true }));
+        setCatalog((current) => ({
+          products: products.status === "fulfilled" ? products.value : current.products,
+          offers: offers.status === "fulfilled" ? offers.value : current.offers,
+          collections: collections.status === "fulfilled" ? collections.value : current.collections,
+          loaded: true
+        }));
       });
     return () => {
       cancelled = true;

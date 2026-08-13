@@ -32,9 +32,16 @@ export function sanitizeNext(next: string | null | undefined, lang: Language): s
   if (!next) return null;
   if (!next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return null;
 
+  // Strip both the query and the hash: `/en/login#restore` otherwise slipped
+  // past the auth-loop guard below.
+  const path = next.split(/[?#]/)[0] ?? "";
+
+  // Every storefront route is locale-prefixed, so anything outside the active
+  // locale is either a cross-locale bounce or not one of our pages at all.
+  if (path !== `/${lang}` && !path.startsWith(`/${lang}/`)) return null;
+
   // Never bounce back to the auth pages themselves — that traps the customer in
   // a loop the moment the form redirects to where they "came from".
-  const path = next.split("?")[0] ?? "";
   if (path === `/${lang}/login` || path === `/${lang}/signup`) return null;
 
   return next;

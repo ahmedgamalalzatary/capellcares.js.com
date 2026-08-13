@@ -23,6 +23,16 @@ describe("sanitizeNext", () => {
     expect(sanitizeNext("/ar/login", "ar")).toBeNull();
   });
 
+  it("rejects paths outside the active locale", () => {
+    expect(sanitizeNext("/ar/orders", "en")).toBeNull();
+    expect(sanitizeNext("/api/v1/checkout", "en")).toBeNull();
+    expect(sanitizeNext("/en", "en")).toBe("/en");
+  });
+
+  it("ignores a hash when checking for the auth pages", () => {
+    expect(sanitizeNext("/en/login#restore", "en")).toBeNull();
+  });
+
   it("treats empty input as absent", () => {
     expect(sanitizeNext(null, "en")).toBeNull();
     expect(sanitizeNext("", "en")).toBeNull();

@@ -23,7 +23,17 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   // Signing in from the header should return the customer to the page they were
   // reading, not drop them on the locale home.
   const pathname = usePathname();
-  const accountHref = user ? `/${lang}/orders` : authHref("login", lang, pathname);
+  // Read the query off the location rather than useSearchParams: the Header
+  // renders from the root layout, where that hook would opt every route out of
+  // static rendering. The first paint links to the bare path, which is only a
+  // problem if a customer clicks before hydration.
+  const [search, setSearch] = useState("");
+  // No dep list: filters change the query without changing the pathname. Setting
+  // the same string is a no-op for React, so this cannot loop.
+  useEffect(() => {
+    setSearch(window.location.search);
+  });
+  const accountHref = user ? `/${lang}/orders` : authHref("login", lang, `${pathname}${search}`);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";

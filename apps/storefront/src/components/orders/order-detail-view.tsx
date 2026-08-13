@@ -129,7 +129,9 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                         {item.snapshotSizeLabel ? <span>{item.snapshotSizeLabel}</span> : null}
                         {item.snapshotSizeLabel ? <span aria-hidden>·</span> : null}
                         <span>{formatPrice(item.unitPrice, lang)} × {item.qty}</span>
-                        {!href ? (
+                        {/* Until the catalog lands every line looks unresolvable,
+                            so the notice waits for the fetch to settle. */}
+                        {!href && catalog.loaded ? (
                           <>
                             <span aria-hidden>·</span>
                             <span>{dict.orders.unavailableItem}</span>

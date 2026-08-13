@@ -116,12 +116,17 @@ export function EntityMediaUpload({
   };
 
   const replaceImageLanguage = async (index: number, lang: Language, files: FileList | null) => {
+    // Hold on to the item itself, not its position: a reorder while the upload
+    // is in flight would otherwise write the new URL onto whichever image had
+    // moved into this slot.
+    const target = latestValueRef.current[index];
+    if (!target || target.type !== "image") return;
     setUploading(true);
     setError(null);
     try {
       const [uploaded] = await upload(files);
       if (!uploaded) return;
-      commit((current) => current.map((item, itemIndex) => itemIndex === index && item.type === "image"
+      commit((current) => current.map((item) => item === target && item.type === "image"
         ? { ...item, [lang === "ar" ? "arUrl" : "enUrl"]: uploaded.url }
         : item));
     } catch (uploadError) {
@@ -200,14 +205,16 @@ export function EntityMediaUpload({
                       : index === 0 ? <span className="emedia__tag">الصورة الأساسية</span> : null}
                   </div>
                   <div className="emedia__head-end">
-                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={index === 0}>
+                    {/* Reordering or removing mid-upload would land the pending
+                        file on the wrong card, so the whole panel freezes. */}
+                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={uploading || index === 0}>
                       <span className="icon-flip"><Icon.Chevron size={14} /></span>
                     </button>
-                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={index === value.length - 1}>
+                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={uploading || index === value.length - 1}>
                       <Icon.Chevron size={14} />
                     </button>
                     {item.type === "video" ? (
-                      <button type="button" className="btn btn--ghost btn--sm" aria-label="إزالة" onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                      <button type="button" className="btn btn--ghost btn--sm" aria-label="إزالة" disabled={uploading} onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
                         <Icon.Trash size={14} />
                       </button>
                     ) : null}
@@ -248,6 +255,7 @@ export function EntityMediaUpload({
                                     type="file"
                                     accept={IMAGE_ACCEPT}
                                     className="file-input-hidden"
+                                    disabled={!canUpload}
                                     onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
                                   />
                                 </label>
@@ -255,6 +263,7 @@ export function EntityMediaUpload({
                                   type="button"
                                   className="emedia__chip emedia__chip--danger"
                                   aria-label={`إزالة ${label.title}`}
+                                  disabled={uploading}
                                   onClick={() => removeImageLanguage(index, lang)}
                                 >
                                   <Icon.Trash size={12} />
@@ -270,6 +279,7 @@ export function EntityMediaUpload({
                                 type="file"
                                 accept={IMAGE_ACCEPT}
                                 className="file-input-hidden"
+                                disabled={!canUpload}
                                 onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
                               />
                             </label>

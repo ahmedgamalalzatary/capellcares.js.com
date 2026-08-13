@@ -63,9 +63,9 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 | `apps/mobile/metro.config.js` | `watchFolders=[repo root]`, `nodeModulesPaths` (app + root), `disableHierarchicalLookup: true`, `unstable_enablePackageExports: true`, and the `.js`→extensionless `resolveRequest` shim for shared's NodeNext imports |
 | `apps/mobile/babel.config.js` | `babel-preset-expo` |
 | `apps/mobile/tsconfig.json` | extends `expo/tsconfig.base`, `@/*` → `./src/*` alias (same convention as the web apps) |
-| `apps/mobile/expo-env.d.ts`, `apps/mobile/.gitignore`, `apps/mobile/.env.example` | Expo types; ignore `.expo/ android/ ios/ dist/ .env`; document `EXPO_PUBLIC_API_URL` per target (Android emulator `http://10.0.2.2:4000`, iOS sim `http://localhost:4000`, device `http://<LAN-IP>:4000`, prod `https://api.capellacares.com`) |
+| `apps/mobile/expo-env.d.ts`, `apps/mobile/.gitignore`, `apps/mobile/.env.example` | Expo types; ignore `.expo/ android/ ios/ dist/ .env`; document `EXPO_PUBLIC_API_URL` per target. Emulator (`http://10.0.2.2:4000`) and iOS simulator (`http://localhost:4000`) may be inferred in dev; **a physical device (`http://<LAN-IP>:4000`) and every production build must set the variable explicitly** — neither can reach a `localhost` fallback |
 | `apps/mobile/app/_layout.tsx` | minimal root `<Stack>` |
-| `apps/mobile/app/index.tsx` | placeholder that imports something from `@capella/shared` (e.g. `getDict("ar").brand`) to prove shared-package bundling |
+| `apps/mobile/app/index.tsx` | temporary placeholder that imports something from `@capella/shared` (e.g. `getDict("ar").brand`) to prove shared-package bundling. **Deleted in Phase 6**, where `(tabs)/index.tsx` takes over `/` — the `(tabs)` group adds no URL segment, so the two files would otherwise both claim the root route |
 | `turbo.json` (edit) | add `EXPO_PUBLIC_API_URL` to `test.passThroughEnv` |
 
 **Exit criteria**
@@ -101,8 +101,8 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 | File | Purpose |
 |---|---|
-| `apps/mobile/src/lib/api/base.ts` | `API_BASE` = `EXPO_PUBLIC_API_URL` ?? dev fallback by `Platform.OS` ?? prod URL |
-| `apps/mobile/src/lib/api/http.ts` | `getJSON` / `authedGetJSON` / `authedMutationJSON` with the same 401 → refresh → retry-once logic; `x-lang` from lang state instead of `document` |
+| `apps/mobile/src/lib/api/base.ts` | `API_BASE` = `EXPO_PUBLIC_API_URL`, falling back to the emulator/simulator URL by `Platform.OS` **only when `__DEV__`**; in a production build a missing variable is a startup error, never a dev-URL fallback |
+| `apps/mobile/src/lib/api/http.ts` | `getJSON` / `authedGetJSON` / `authedMutationJSON` with the same 401 → refresh → retry-once logic; `x-lang` from lang state instead of `document`. The retry is opt-out per call: `POST /api/v1/checkout` passes `retryOn401: false` (the caller surfaces a re-login prompt instead) so an expired token can never place the same order twice. If checkout retry is wanted later it must go through a client-generated idempotency key honoured by the API — that is an API change, not a client one |
 | `apps/mobile/src/lib/api/types.ts`, `normalizers.ts`, `selectors.ts` | ported verbatim; media URLs resolved against `API_BASE` |
 | `apps/mobile/src/lib/api/client.ts` | all fetchers: products, categories, offers, collections, advices, shop-media-sections, orders, reviews, wishlist, checkout |
 
@@ -138,6 +138,7 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 ## Phase 6 — Customer slice A: browse (first real screens)
 
 **Files** — `apps/mobile/app/`:
+- `app/index.tsx` — **deleted** (Phase 1 placeholder); `(tabs)/index.tsx` becomes `/`
 - `(tabs)/_layout.tsx` — tab bar: Home, Shop, Cart, Orders, Account (labels from `dict.nav`)
 - `(tabs)/index.tsx` — Home: shop-media hero sections, new arrivals, bestsellers, offers/sets rails (mirrors web home/shop)
 - `(tabs)/shop.tsx` — search + category chips + product grid (mirrors `/shop` + `/products`)
@@ -158,7 +159,7 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 ## Phase 8 — Customer slice C: accounts, orders, wishlist, reviews
 
-**Files** — `login.tsx`, `signup.tsx` (mirror web auth forms), `(tabs)/orders.tsx` + `order/[id].tsx` (history + detail incl. item snapshots, statuses from `dict.orders`), `(tabs)/account.tsx` (profile, language switch, links, admin entry, logout), `wishlist.tsx` (list/add/remove via `/api/v1/wishlist`, heart on cards/detail), reviews on `product/[slug]` + offer/collection details (list + submit + prompt-claim via `/api/v1/reviews`).
+**Files** — `login.tsx`, `signup.tsx` (mirror web auth forms), `(tabs)/orders.tsx` + `order/[id].tsx` (history + detail incl. item snapshots, statuses from `dict.orders`), `(tabs)/account.tsx` (profile, language switch, links, admin entry, logout), `wishlist.tsx` (list/add/remove via `/api/v1/wishlist`, heart on cards/detail), reviews on `product/[slug]` (list + submit + prompt-claim via `/api/v1/reviews`). The same review components are wired into the offer and collection detail screens in Phase 9, where those screens first exist.
 
 **Exit criteria**: guest→login→order history→wishlist→submit review full loop works; logged-out states show the same login-required messaging as web.
 
@@ -166,7 +167,7 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 ## Phase 9 — Customer slice D: offers, collections, static pages
 
-**Files** — `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` (bundle contents, savings badge, add-bundle-to-cart, unavailability states), `page/[key].tsx` (generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks), `contact.tsx` (mirrors web contact form).
+**Files** — `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` (bundle contents, savings badge, add-bundle-to-cart, unavailability states, plus the Phase 8 review list/submit components on both detail screens), `page/[key].tsx` (generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks), `contact.tsx` (mirrors web contact form).
 
 **Exit criteria**: every storefront web route has a mobile equivalent reachable from tabs/account; full storefront parity checklist passes.
 
@@ -179,7 +180,8 @@ Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
 **Files**
 - `apps/mobile/src/lib/admin/auth.ts` — admin token store twin (own SecureStore key) using Phase 0's mobile flow against `/api/erp/auth`
 - `apps/mobile/src/lib/admin/client.ts` — `/api/erp` fetch wrappers
-- `apps/mobile/app/admin/_layout.tsx` (guard: redirects non-staff), `admin/login.tsx`, `admin/index.tsx` (dashboard), `admin/orders.tsx` + `admin/order/[id].tsx` (list, detail, payment-status updates — parity with `apps/erp` orders module)
+- `apps/mobile/app/admin/_layout.tsx` — guard (redirects non-staff) **plus the Arabic boundary**: while this route tree is mounted it forces the `ar` dictionary, the Tajawal family and RTL layout regardless of the customer language, and restores the customer's language and direction on leaving. Native RTL is process-wide (`I18nManager` + reload, see Phase 2), so an English customer entering admin gets an in-tree override — dictionary and fonts swap immediately, and only the physical layout direction stays as the app was launched
+- `admin/login.tsx`, `admin/index.tsx` (dashboard), `admin/orders.tsx` + `admin/order/[id].tsx` (list, detail, payment-status updates — parity with `apps/erp` orders module)
 - Later increments, same pattern: inventory, catalog/offers/collections management, reviews moderation, uploads
 
 **Exit criteria**: staff login from Account opens the admin area; an order status changed on the phone is reflected in the ERP web app; customer session and admin session coexist independently.
