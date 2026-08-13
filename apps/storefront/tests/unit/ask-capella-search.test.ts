@@ -44,6 +44,7 @@ function Harness({ lang, query }: { lang: Language; query: string }) {
     null,
     createElement("button", { type: "button", onClick: () => setInput(query) }, "set"),
     createElement("button", { type: "button", onClick: () => send() }, "send"),
+    createElement("button", { type: "button", onClick: () => { send(); send(); } }, "send-twice"),
     reply && reply.role === "capella"
       ? createElement(
           "p",
@@ -101,6 +102,17 @@ afterEach(() => {
 });
 
 describe("useAskCapella search", () => {
+  it("prevents duplicate submissions while the search request is in flight", () => {
+    const fetchMock = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+    render(createElement(Harness, { lang: "en", query: "glow" }));
+
+    fireEvent.click(screen.getByText("set"));
+    fireEvent.click(screen.getByText("send-twice"));
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
   it("matches categories and offers by the opposite store language", async () => {
     stubFetch({
       categories: [cat(1, "العناية", "Serum Glow")],

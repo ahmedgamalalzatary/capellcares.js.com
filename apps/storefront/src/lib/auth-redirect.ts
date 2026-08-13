@@ -35,6 +35,15 @@ export function sanitizeNext(next: string | null | undefined, lang: Language): s
   // Strip both the query and the hash: `/en/login#restore` otherwise slipped
   // past the auth-loop guard below.
   const path = next.split(/[?#]/)[0] ?? "";
+  const hasDotSegment = path.split("/").some((segment) => {
+    try {
+      const decoded = decodeURIComponent(segment);
+      return decoded === "." || decoded === "..";
+    } catch {
+      return true;
+    }
+  });
+  if (hasDotSegment) return null;
 
   // Every storefront route is locale-prefixed, so anything outside the active
   // locale is either a cross-locale bounce or not one of our pages at all.

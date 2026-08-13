@@ -29,6 +29,11 @@ describe("sanitizeNext", () => {
     expect(sanitizeNext("/en", "en")).toBe("/en");
   });
 
+  it("rejects dot segments before auth-page and locale checks", () => {
+    expect(sanitizeNext("/en/products/../login", "en")).toBeNull();
+    expect(sanitizeNext("/en/../ar/orders", "en")).toBeNull();
+  });
+
   it("ignores a hash when checking for the auth pages", () => {
     expect(sanitizeNext("/en/login#restore", "en")).toBeNull();
   });

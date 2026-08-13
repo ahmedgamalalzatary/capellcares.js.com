@@ -700,6 +700,17 @@ serialTest("admin offer permanent delete rejects offers referenced by orders", a
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-orders");
   });
+
+  const [persistedOffer] = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(eq(offers.id, ids.offerId));
+  const [persistedOrderItem] = await db
+    .select({ id: orderItems.id })
+    .from(orderItems)
+    .where(and(eq(orderItems.orderId, order.id), eq(orderItems.offerId, ids.offerId)));
+  assert.ok(persistedOffer, "expected the referenced offer to remain");
+  assert.ok(persistedOrderItem, "expected the offer order item to remain");
 });
 
 serialTest("admin offer permanent delete returns not-in-trash for active offers", async () => {

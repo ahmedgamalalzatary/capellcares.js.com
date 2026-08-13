@@ -180,7 +180,7 @@ Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
 **Files**
 - `apps/mobile/src/lib/admin/auth.ts` — admin token store twin (own SecureStore key) using Phase 0's mobile flow against `/api/erp/auth`
 - `apps/mobile/src/lib/admin/client.ts` — `/api/erp` fetch wrappers
-- `apps/mobile/app/admin/_layout.tsx` — guard (redirects non-staff) **plus the Arabic boundary**: while this route tree is mounted it forces the `ar` dictionary, the Tajawal family and RTL layout regardless of the customer language, and restores the customer's language and direction on leaving. Native RTL is process-wide (`I18nManager` + reload, see Phase 2), so an English customer entering admin gets an in-tree override — dictionary and fonts swap immediately, and only the physical layout direction stays as the app was launched
+- `apps/mobile/app/admin/_layout.tsx` — **Arabic content boundary**: while this route tree is mounted it uses the `ar` dictionary and Tajawal family regardless of the customer language, then restores the customer's dictionary and fonts on leaving. It does not call `I18nManager` or change native direction, so the physical layout direction stays as the app was launched. The layout allows unauthenticated access to `admin/login.tsx`; its staff guard protects only `admin/index.tsx`, `admin/orders.tsx`, `admin/order/[id].tsx`, and later authenticated admin routes
 - `admin/login.tsx`, `admin/index.tsx` (dashboard), `admin/orders.tsx` + `admin/order/[id].tsx` (list, detail, payment-status updates — parity with `apps/erp` orders module)
 - Later increments, same pattern: inventory, catalog/offers/collections management, reviews moderation, uploads
 

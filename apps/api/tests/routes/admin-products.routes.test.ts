@@ -1080,6 +1080,8 @@ serialTest("admin soft-delete rejects products whose variants are used by offers
   // The baseline seed already links productOne's variant to the baseline offer,
   // so no extra offer_item is needed (and a duplicate would violate the
   // offer_items (offer_id, variant_id) unique constraint).
+  const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [offerItemBefore] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -1091,11 +1093,18 @@ serialTest("admin soft-delete rejects products whose variants are used by offers
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-offers");
   });
+
+  const [productAfter] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [offerItemAfter] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  assert.deepEqual(productAfter, productBefore);
+  assert.deepEqual(offerItemAfter, offerItemBefore);
 });
 
 serialTest("admin soft-delete rejects products whose variants are used by collections", async () => {
   const ids = await getBaselineIds();
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [collectionItemBefore] = await db.select().from(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -1107,6 +1116,11 @@ serialTest("admin soft-delete rejects products whose variants are used by collec
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-collections");
   });
+
+  const [productAfter] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [collectionItemAfter] = await db.select().from(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
+  assert.deepEqual(productAfter, productBefore);
+  assert.deepEqual(collectionItemAfter, collectionItemBefore);
 });
 
 serialTest("admin hard-delete rejects products whose variants are used by offers", async () => {
@@ -1115,6 +1129,8 @@ serialTest("admin hard-delete rejects products whose variants are used by offers
   // Baseline seed already links productOne's variant to the baseline offer
   // (a duplicate offer_item would violate the new unique constraint).
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+  const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [offerItemBefore] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -1126,12 +1142,19 @@ serialTest("admin hard-delete rejects products whose variants are used by offers
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-offers");
   });
+
+  const [productAfter] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [offerItemAfter] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  assert.deepEqual(productAfter, productBefore);
+  assert.deepEqual(offerItemAfter, offerItemBefore);
 });
 
 serialTest("admin hard-delete rejects products whose variants are used by collections", async () => {
   const ids = await getBaselineIds();
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+  const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [collectionItemBefore] = await db.select().from(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -1143,6 +1166,11 @@ serialTest("admin hard-delete rejects products whose variants are used by collec
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-collections");
   });
+
+  const [productAfter] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [collectionItemAfter] = await db.select().from(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
+  assert.deepEqual(productAfter, productBefore);
+  assert.deepEqual(collectionItemAfter, collectionItemBefore);
 });
 
 serialTest("admin hard-delete rejects products whose variants are referenced by orders", async () => {
@@ -1173,6 +1201,11 @@ serialTest("admin hard-delete rejects products whose variants are referenced by 
     lineTotal: "35.00"
   });
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+  const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [orderItemBefore] = await db
+    .select()
+    .from(orderItems)
+    .where(and(eq(orderItems.orderId, order.id), eq(orderItems.variantId, ids.firstVariantId)));
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -1183,6 +1216,14 @@ serialTest("admin hard-delete rejects products whose variants are referenced by 
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-orders");
   });
+
+  const [productAfter] = await db.select().from(products).where(eq(products.id, ids.productOneId));
+  const [orderItemAfter] = await db
+    .select()
+    .from(orderItems)
+    .where(and(eq(orderItems.orderId, order.id), eq(orderItems.variantId, ids.firstVariantId)));
+  assert.deepEqual(productAfter, productBefore);
+  assert.deepEqual(orderItemAfter, orderItemBefore);
 });
 
 serialTest("admin hard-delete on a product that is not soft-deleted returns 404 and leaves data intact", async () => {

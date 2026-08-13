@@ -1,6 +1,14 @@
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+let pathname = "/en/products";
+let searchParams = new URLSearchParams("sort=new");
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathname,
+  useSearchParams: () => searchParams
+}));
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -40,6 +48,11 @@ vi.mock("@/hooks/use-language-switch", () => ({
 
 import { Header } from "@/components/layout/header";
 
+beforeEach(() => {
+  pathname = "/en/products";
+  searchParams = new URLSearchParams("sort=new");
+});
+
 const dict = {
   brand: "Capella",
   nav: {
@@ -71,5 +84,22 @@ describe("Header layout stability", () => {
 
     const menuButton = screen.getByRole("button", { name: "Menu" });
     expect(menuButton.className).toContain("scale-130");
+  });
+
+  it("keeps account redirects current across query-only navigation", () => {
+    const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    expect(screen.getAllByRole("link", { name: "Account" })[0]).toHaveAttribute(
+      "href",
+      "/en/login?next=%2Fen%2Fproducts%3Fsort%3Dnew"
+    );
+
+    searchParams = new URLSearchParams("sort=price-desc");
+    rerender(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    expect(screen.getAllByRole("link", { name: "Account" })[0]).toHaveAttribute(
+      "href",
+      "/en/login?next=%2Fen%2Fproducts%3Fsort%3Dprice-desc"
+    );
   });
 });

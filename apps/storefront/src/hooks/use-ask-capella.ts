@@ -54,7 +54,10 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
   // make the server and client markup disagree and trip hydration.
   const [messages, setMessages] = useState<AskCapellaMessage[]>([]);
   const [input, setInput] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [requestPending, setRequestPending] = useState(false);
+  const [transitionPending, startTransition] = useTransition();
+  const requestInFlight = useRef(false);
+  const pending = requestPending || transitionPending;
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -111,10 +114,12 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
 
   function send() {
     const query = input.trim();
-    if (!query || pending) {
+    if (!query || requestInFlight.current) {
       return;
     }
 
+    requestInFlight.current = true;
+    setRequestPending(true);
     setInput("");
     setMessages((previous) => [...previous, { role: "user", text: query }]);
 
@@ -136,6 +141,9 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
             errorMessage: isAr ? "حدث خطأ مؤقت. حاولي مرة أخرى." : "Temporary error. Please try again."
           }]);
         });
+      } finally {
+        requestInFlight.current = false;
+        setRequestPending(false);
       }
     })();
   }

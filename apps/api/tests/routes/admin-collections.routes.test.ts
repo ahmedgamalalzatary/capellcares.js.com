@@ -461,6 +461,17 @@ serialTest("admin collection permanent delete rejects collections referenced by 
     assert.equal(response.status, 409);
     assert.equal(response.json.reason, "linked-to-orders");
   });
+
+  const [persistedCollection] = await db
+    .select({ id: collections.id })
+    .from(collections)
+    .where(eq(collections.id, ids.collectionId));
+  const [persistedOrderItem] = await db
+    .select({ id: orderItems.id })
+    .from(orderItems)
+    .where(and(eq(orderItems.orderId, order.id), eq(orderItems.collectionId, ids.collectionId)));
+  assert.ok(persistedCollection, "expected the referenced collection to remain");
+  assert.ok(persistedOrderItem, "expected the collection order item to remain");
 });
 
 serialTest("admin collection permanent delete returns not-in-trash for active collections", async () => {
