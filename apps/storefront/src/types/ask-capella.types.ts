@@ -1,16 +1,12 @@
-import type { Category, Collection, Language, Offer, Product } from "@capella/shared";
+import type { Language } from "@capella/shared";
+import type { StorefrontSearchResults } from "../lib/storefront-search";
 
 export interface AskCapellaOverlayProps {
   lang: Language;
   onClose: () => void;
 }
 
-export interface AskCapellaResults {
-  products: Product[];
-  categories: Category[];
-  offers: Offer[];
-  collections: Collection[];
-}
+export type AskCapellaResults = StorefrontSearchResults;
 
 export type AskCapellaMessage =
   | { role: "user"; text: string }

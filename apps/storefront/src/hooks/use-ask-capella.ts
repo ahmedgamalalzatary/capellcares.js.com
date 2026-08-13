@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { getDict } from "@capella/shared";
-import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import {
+  EMPTY_STOREFRONT_SEARCH_RESULTS,
+  searchStorefront
+} from "@/lib/storefront-search";
 import type {
   AskCapellaMessage,
   AskCapellaOverlayProps,
@@ -42,13 +45,6 @@ function saveConversation(messages: AskCapellaMessage[]) {
   } catch {
     // Over quota or storage blocked — nothing to do, the in-memory thread is fine.
   }
-}
-
-// Categories, offers, and collections are matched by name in BOTH languages
-// (these have no keyword field), so a query in either language finds them
-// regardless of the active store language.
-function matchesBilingual(name: { ar: string; en: string }, queryLower: string) {
-  return name.ar.toLowerCase().includes(queryLower) || name.en.toLowerCase().includes(queryLower);
 }
 
 export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
@@ -124,40 +120,13 @@ export function useAskCapella({ lang, onClose }: AskCapellaOverlayProps) {
 
     void (async () => {
       try {
-        const queryLower = query.toLowerCase();
-        const [products, allCategories, allOffers, allCollections] = await Promise.all([
-          fetchProducts({ q: query, lang, throwOnError: true }),
-          fetchCategories({ lang, throwOnError: true }),
-          fetchOffers({ lang, throwOnError: true }),
-          fetchCollections({ lang, throwOnError: true })
-        ]);
-        const categories = allCategories
-          .filter((category) => !category.deletedAt && matchesBilingual(category.name, queryLower))
-          .slice(0, 4);
-        const offers = allOffers
-          .filter((offer) => !offer.deletedAt && offer.status === "active" && matchesBilingual(offer.name, queryLower))
-          .slice(0, 3);
-        const collections = allCollections
-          .filter(
-            (collection) =>
-              !collection.deletedAt &&
-              collection.status === "active" &&
-              collection.visibility === "visible" &&
-              matchesBilingual(collection.name, queryLower)
-          )
-          .slice(0, 3);
-        const results: AskCapellaResults = {
-          products: products.slice(0, 5),
-          categories,
-          offers,
-          collections
-        };
+        const results = await searchStorefront(query, lang);
 
         startTransition(() => {
           setMessages((previous) => [...previous, { role: "capella", results, query }]);
         });
       } catch {
-        const results: AskCapellaResults = { products: [], categories: [], offers: [], collections: [] };
+        const results: AskCapellaResults = EMPTY_STOREFRONT_SEARCH_RESULTS;
         startTransition(() => {
           setMessages((previous) => [...previous, {
             role: "capella",

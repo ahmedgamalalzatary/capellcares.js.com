@@ -5,9 +5,6 @@ export const SHOP_MEDIA_AUTOPLAY_MS = 5000;
 export const SHOP_MEDIA_SWIPE_THRESHOLD_PX = 50;
 export const SHOP_MEDIA_DESKTOP_MEDIA_QUERY = "(min-width: 640px)";
 
-// Header search overlay.
-export const SEARCH_MAX_RESULTS = 6;
-
 // The desktop mega menu reveals at min-[880px]; keep the drawer's auto-close in sync.
 export const DESKTOP_BREAKPOINT = 880;
 

@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
-import { fetchProducts } from "@/lib/api/client";
-import { matchesProductQuery } from "@/lib/product-search";
-import { SEARCH_MAX_RESULTS as MAX_RESULTS } from "@/constants/ui";
+import { buildCategoryHref } from "@/lib/category-links";
+import { searchStorefront, type StorefrontSearchResults } from "@/lib/storefront-search";
 
 type SearchOverlayProps = {
   lang: Language;
@@ -20,20 +19,46 @@ type SearchOverlayProps = {
 export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps) {
   const router = useRouter();
   const [term, setTerm] = useState("");
-  const [products, setProducts] = useState<Product[] | null>(null);
+  const [results, setResults] = useState<StorefrontSearchResults | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const requestIdRef = useRef(0);
 
-  // Lazily load the catalogue once, the first time the overlay opens.
   useEffect(() => {
-    if (!open || products) return;
-    let cancelled = false;
-    fetchProducts({ lang })
-      .then((items) => !cancelled && setProducts(items))
-      .catch(() => !cancelled && setProducts([]));
+    const query = term.trim();
+    if (!open || !query) {
+      requestIdRef.current += 1;
+      setResults(null);
+      setSearching(false);
+      setSearchFailed(false);
+      return;
+    }
+
+    const requestId = ++requestIdRef.current;
+    setSearching(true);
+    setSearchFailed(false);
+    const timer = window.setTimeout(() => {
+      void searchStorefront(query, lang)
+        .then((nextResults) => {
+          if (requestId === requestIdRef.current) setResults(nextResults);
+        })
+        .catch(() => {
+          if (requestId === requestIdRef.current) {
+            setResults(null);
+            setSearchFailed(true);
+          }
+        })
+        .finally(() => {
+          if (requestId === requestIdRef.current) setSearching(false);
+        });
+    }, 200);
+
     return () => {
-      cancelled = true;
+      window.clearTimeout(timer);
+      if (requestId === requestIdRef.current) requestIdRef.current += 1;
     };
-  }, [open, products, lang]);
+  }, [lang, open, term]);
 
   useEffect(() => {
     if (open) {
@@ -49,13 +74,6 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
-
-  const results = useMemo(() => {
-    if (!term.trim() || !products) return [];
-    return products
-      .filter((product) => matchesProductQuery(product, term))
-      .slice(0, MAX_RESULTS);
-  }, [term, products]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,46 +124,131 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
           </form>
 
           {term.trim() && (
-            <div className="max-h-[60vh] overflow-y-auto">
-              {results.length === 0 ? (
+            <div className="max-h-[70vh] overflow-y-auto">
+              {searching ? (
                 <p className="px-5 py-8 text-center text-sm text-(--ink-3)">
-                  {products === null ? dict.common.loading : dict.search?.empty ?? dict.common.empty}
+                  {dict.common.loading}
                 </p>
-              ) : (
-                <ul>
-                  {results.map((p) => {
-                    const prices = p.variants.map((v) => getEffectiveVariantPrice(v));
-                    const min = prices.length ? Math.min(...prices) : 0;
-                    return (
-                      <li key={p.id}>
+              ) : searchFailed ? (
+                <p className="px-5 py-8 text-center text-sm text-(--ink-3)">{dict.auth.genericError}</p>
+              ) : results && Object.values(results).every((items) => items.length === 0) ? (
+                <p className="px-5 py-8 text-center text-sm text-(--ink-3)">
+                  {dict.ask.empty.replace("{q}", term.trim())}
+                </p>
+              ) : results ? (
+                <div className="flex flex-col gap-4 px-5 py-4">
+                  {results.products.length > 0 && (
+                    <section>
+                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                        {dict.ask.sections.products}
+                      </h2>
+                      <ul>
+                        {results.products.map((product) => {
+                          const prices = product.variants.map((variant) => getEffectiveVariantPrice(variant));
+                          const minPrice = prices.length ? Math.min(...prices) : 0;
+                          return (
+                            <li key={product.id}>
+                              <Link
+                                href={`/${lang}/products/${product.slug}`}
+                                onClick={onClose}
+                                className="flex items-center gap-4 rounded-(--radius) py-2 transition-colors hover:bg-(--warm-soft)"
+                              >
+                                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-(--hairline) bg-surface">
+                                  <ProductIllustration product={product} className="h-full w-full object-contain" />
+                                </div>
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                                  {pickLang(product.name, lang)}
+                                </span>
+                                <span className="shrink-0 text-sm font-semibold text-accent">
+                                  {formatPrice(minPrice, lang)}
+                                </span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
+
+                  {results.categories.length > 0 && (
+                    <section>
+                      <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                        {dict.ask.sections.categories}
+                      </h2>
+                      <div className="flex flex-wrap gap-1.5">
+                        {results.categories.map((category) => (
+                          <Link
+                            key={category.id}
+                            href={buildCategoryHref(lang, category)}
+                            onClick={onClose}
+                            className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1.5 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
+                          >
+                            {pickLang(category.name, lang)}
+                          </Link>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {results.offers.length > 0 && (
+                    <section>
+                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                        {dict.ask.sections.offers}
+                      </h2>
+                      {results.offers.map((offer) => (
                         <Link
-                          href={`/${lang}/products/${p.slug}`}
+                          key={offer.id}
+                          href={`/${lang}/offers/${offer.slug}`}
                           onClick={onClose}
-                          className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-(--warm-soft)"
+                          className="flex items-center justify-between gap-2 rounded-(--radius) py-2 transition-colors hover:bg-(--warm-soft)"
                         >
-                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-(--hairline) bg-surface">
-                            <ProductIllustration product={p} className="h-full w-full object-contain" />
-                          </div>
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
-                            {pickLang(p.name, lang)}
-                          </span>
-                          <span className="shrink-0 text-sm font-semibold text-accent">
-                            {formatPrice(min, lang)}
-                          </span>
+                          <span className="truncate text-sm text-ink">{pickLang(offer.name, lang)}</span>
+                          {offer.originalTotal > offer.price && (
+                            <span className="chip chip--accent shrink-0 text-xs">
+                              {dict.offers.save.replace("{amount}", formatPrice(offer.originalTotal - offer.price, lang))}
+                            </span>
+                          )}
                         </Link>
-                      </li>
-                    );
-                  })}
-                  <li>
-                    <button
-                      type="button"
-                      onClick={submit}
-                      className="w-full px-5 py-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-ink transition-colors hover:bg-(--warm-soft)"
-                    >
-                      {dict.nav.viewAll}
-                    </button>
-                  </li>
-                </ul>
+                      ))}
+                    </section>
+                  )}
+
+                  {results.collections.length > 0 && (
+                    <section>
+                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                        {dict.ask.sections.collections}
+                      </h2>
+                      {results.collections.map((collection) => (
+                        <Link
+                          key={collection.id}
+                          href={`/${lang}/collections/${collection.slug}`}
+                          onClick={onClose}
+                          className="flex items-center justify-between gap-2 rounded-(--radius) py-2 transition-colors hover:bg-(--warm-soft)"
+                        >
+                          <span className="truncate text-sm text-ink">{pickLang(collection.name, lang)}</span>
+                          {collection.originalTotal > collection.price && (
+                            <span className="chip chip--accent shrink-0 text-xs">
+                              {dict.offers.save.replace(
+                                "{amount}",
+                                formatPrice(collection.originalTotal - collection.price, lang)
+                              )}
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </section>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={submit}
+                    className="w-full border-t border-(--hairline) pt-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-ink"
+                  >
+                    {dict.nav.viewAll}
+                  </button>
+                </div>
+              ) : (
+                <p className="px-5 py-8 text-center text-sm text-(--ink-3)">{dict.common.loading}</p>
               )}
             </div>
           )}

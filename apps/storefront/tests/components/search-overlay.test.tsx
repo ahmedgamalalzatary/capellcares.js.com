@@ -45,13 +45,68 @@ vi.mock("@/lib/api/client", () => {
   };
 
   return {
-    fetchProducts: vi.fn().mockResolvedValue([discountedProduct])
+    fetchProducts: vi.fn().mockResolvedValue([discountedProduct]),
+    fetchCategories: vi.fn().mockResolvedValue([
+      {
+        id: 2,
+        parentId: null,
+        slug: "face-serums",
+        name: { ar: "سيروم الوجه", en: "Rose Serums" },
+        isLeaf: true,
+        deletedAt: null
+      }
+    ]),
+    fetchOffers: vi.fn().mockResolvedValue([
+      {
+        id: 3,
+        slug: "rose-offer",
+        name: { ar: "عرض الورد", en: "Rose Offer" },
+        price: 150,
+        originalTotal: 200,
+        status: "active",
+        deletedAt: null
+      }
+    ]),
+    fetchCollections: vi.fn().mockResolvedValue([
+      {
+        id: 4,
+        slug: "rose-routine",
+        name: { ar: "روتين الورد", en: "Rose Routine" },
+        price: 250,
+        originalTotal: 300,
+        status: "active",
+        visibility: "visible",
+        deletedAt: null
+      }
+    ])
   };
 });
 
 import { SearchOverlay } from "@/components/layout/header/search-overlay";
 
 describe("SearchOverlay", () => {
+  it("shows products, categories, offers, and collections for a global search", async () => {
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+
+    fireEvent.change(screen.getByPlaceholderText(dict.nav.search), { target: { value: "rose" } });
+
+    expect(await screen.findByText(dict.ask.sections.products)).toBeInTheDocument();
+    expect(screen.getByText(dict.ask.sections.categories)).toBeInTheDocument();
+    expect(screen.getByText(dict.ask.sections.offers)).toBeInTheDocument();
+    expect(screen.getByText(dict.ask.sections.collections)).toBeInTheDocument();
+    expect(screen.getByText("Rose Serum").closest("a")).toHaveAttribute("href", "/en/products/rose-serum");
+    expect(screen.getByRole("link", { name: "Rose Serums" })).toHaveAttribute(
+      "href",
+      "/en/category/face-serums?categoryId=2"
+    );
+    expect(screen.getByRole("link", { name: /Rose Offer/ })).toHaveAttribute("href", "/en/offers/rose-offer");
+    expect(screen.getByRole("link", { name: /Rose Routine/ })).toHaveAttribute(
+      "href",
+      "/en/collections/rose-routine"
+    );
+  });
+
   it("shows the effective discounted price in search results, not the original price", async () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
