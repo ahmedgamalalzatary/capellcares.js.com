@@ -24,6 +24,8 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
     setDescEn,
     price,
     setPrice,
+    youtubeUrl,
+    setYoutubeUrl,
     media,
     setMedia,
     categoryId,
@@ -80,6 +82,10 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
             </div>
 
             <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
+            <div className="field">
+              <label htmlFor="offer-youtube">رابط فيديو يوتيوب (اختياري)</label>
+              <input id="offer-youtube" className="input" dir="ltr" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="https://youtube.com/…" />
+            </div>
           </div>
         </section>
 

@@ -100,6 +100,27 @@ describe("OfferDetail", () => {
     expect(screen.getByTestId("offer-media-main").querySelector("video")).toHaveAttribute("src", "/uploads/offer-demo.mp4");
   });
 
+  it("appends the optional YouTube link after all offer media", () => {
+    render(createElement(OfferDetail, {
+      offer: {
+        ...offer,
+        youtubeUrl: "https://www.youtube.com/watch?v=offer-video",
+        media: [{ type: "image", url: "/uploads/offer-main.jpg" }]
+      },
+      items: [],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    const thumbnails = screen.getByTestId("offer-media-thumbs").querySelectorAll("button");
+    expect(thumbnails).toHaveLength(2);
+    expect(thumbnails[1]!.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://i.ytimg.com/vi/offer-video/sddefault.jpg"
+    );
+  });
+
   it("uses the selected language for video accessibility labels", () => {
     render(createElement(OfferDetail, {
       offer: {

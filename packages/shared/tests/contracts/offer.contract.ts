@@ -12,6 +12,7 @@ export const storefrontOfferContract = z.object({
   slug: z.string(),
   name: bilingualSchema,
   description: bilingualSchema,
+  youtubeUrl: z.string().nullable().optional(),
   imagePath: z.string().nullable(),
   media: z.array(
     z.object({

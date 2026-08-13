@@ -1094,10 +1094,10 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 
 /* ── Sales ── */
 .sales-grid { gap: 16px; }
-.sales-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.sales-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sales-grid--2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.sales-grid--3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
 .sales-grid--spaced { margin-top: 16px; }
-.sales-metric { margin-top: 8px; }
+.sales-metric { margin-top: 8px; overflow-wrap: anywhere; }
 
 /* ── Reviews ── */
 .review-stars { color: var(--gold); white-space: nowrap; }
@@ -1155,7 +1155,9 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 
   /* ── Tables scroll horizontally inside their wrapper ── */
   .table-outer { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table { min-width: 520px; width: max-content; }
+  /* width:100% (not max-content) so cells stretch to fill min-width —
+     otherwise short tables leave a dead band at the inline end. */
+  .table { min-width: 520px; width: 100%; }
 
   /* ── Toolbar / search ── */
   .search { min-width: 0; flex: 1; }
@@ -1169,6 +1171,14 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   /* ── Stats ── */
   .stat { padding: 16px; }
   .stat__value { font-size: 24px; }
+
+  /* ── Sales ── */
+  .sales-grid { gap: 10px; }
+  .sales-grid--spaced { margin-top: 10px; }
+  .sales-metric { font-size: 17px; }
+  /* Top-products / top-variants are 3 narrow columns — they fit without
+     the shared 520px scroll floor. */
+  .sales-grid--2 .table { min-width: 0; }
 }
 
 @media (max-width: 480px) {
@@ -1176,6 +1186,8 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   .stat { padding: 14px; }
   .stat__value { font-size: 22px; }
   .page-title { font-size: 16px; }
+  .sales-grid--3 { grid-template-columns: 1fr 1fr; }
+  .sales-metric { font-size: 15px; }
 }
 
 /* ============================================================

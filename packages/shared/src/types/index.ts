@@ -219,6 +219,7 @@ export interface Collection {
   slug: string;
   name: Bilingual;
   description: Bilingual;
+  youtubeUrl?: string;
   imagePath: string;
   media?: EntityMedia[];
   price: number;
@@ -263,6 +264,7 @@ export interface Offer {
   slug: string;
   name: Bilingual;
   description: Bilingual;
+  youtubeUrl?: string;
   imagePath: string;
   media?: EntityMedia[];
   price: number;

@@ -81,6 +81,42 @@ const categories = [
 ];
 
 describe("bundle form item ordering", () => {
+  it("edits and saves an offer YouTube URL", async () => {
+    upsertOffer.mockClear();
+    const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products, categories }));
+    const form = within(view.container);
+
+    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب (اختياري)"), {
+      target: { value: " https://www.youtube.com/watch?v=offer " }
+    });
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
+
+    await waitFor(() => {
+      expect(upsertOffer).toHaveBeenCalledWith(expect.objectContaining({
+        youtubeUrl: "https://www.youtube.com/watch?v=offer"
+      }));
+    });
+  });
+
+  it("edits and saves a collection YouTube URL", async () => {
+    upsertCollection.mockClear();
+    const view = render(
+      createElement(CollectionForm, { mode: "edit", initial: collectionInitial, products, categories })
+    );
+    const form = within(view.container);
+
+    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب (اختياري)"), {
+      target: { value: " https://www.youtube.com/watch?v=collection " }
+    });
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
+
+    await waitFor(() => {
+      expect(upsertCollection).toHaveBeenCalledWith(expect.objectContaining({
+        youtubeUrl: "https://www.youtube.com/watch?v=collection"
+      }));
+    });
+  });
+
   it("moves an offer item up and saves items in the new order", async () => {
     const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products, categories }));
     const form = within(view.container);

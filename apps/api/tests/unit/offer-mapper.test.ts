@@ -11,6 +11,7 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     enName: "Spring Bundle",
     arDescription: null,
     enDescription: "Fresh picks",
+    youtubeUrl: "https://www.youtube.com/watch?v=spring",
     imagePath: null,
     fixedPrice: "125.50",
     categoryId: 3,
@@ -25,6 +26,7 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     slug: "spring-bundle",
     name: { ar: "باقة الربيع", en: "Spring Bundle" },
     description: { ar: "", en: "Fresh picks" },
+    youtubeUrl: "https://www.youtube.com/watch?v=spring",
     imagePath: "",
     media: [],
     price: 125.5,
@@ -45,6 +47,7 @@ test("toOfferBase keeps a legacy offer's missing category as null", () => {
     enName: "Legacy Bundle",
     arDescription: null,
     enDescription: null,
+    youtubeUrl: null,
     imagePath: null,
     fixedPrice: "90.00",
     categoryId: null,
@@ -56,4 +59,5 @@ test("toOfferBase keeps a legacy offer's missing category as null", () => {
 
   assert.equal(offer.categoryId, null);
   assert.equal(offer.visibility, "hidden");
+  assert.equal(offer.youtubeUrl, undefined);
 });

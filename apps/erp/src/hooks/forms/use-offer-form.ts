@@ -19,6 +19,7 @@ export function useOfferForm({
   const [descAr, setDescAr] = useState(initial?.description.ar ?? "");
   const [descEn, setDescEn] = useState(initial?.description.en ?? "");
   const [price, setPrice] = useState(initial?.price ?? 0);
+  const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [media, setMedia] = useState(
     initial?.media ?? (initial?.imagePath ? [{ type: "image" as const, url: initial.imagePath }] : [])
   );
@@ -113,6 +114,7 @@ export function useOfferForm({
       slug,
       name: { ar: nameAr.trim(), en: nameEn.trim() },
       description: { ar: descAr, en: descEn },
+      youtubeUrl: youtubeUrl.trim() || undefined,
       imagePath: media.find((item) => item.type === "image")?.url ?? "",
       media,
       price: Number(price),
@@ -149,6 +151,8 @@ export function useOfferForm({
     setDescEn,
     price,
     setPrice,
+    youtubeUrl,
+    setYoutubeUrl,
     media,
     setMedia,
     categoryId,

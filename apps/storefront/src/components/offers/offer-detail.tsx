@@ -57,6 +57,7 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
           <EntityMediaGallery
             media={offer.media}
             imagePath={offer.imagePath}
+            videoUrl={offer.youtubeUrl}
             label={pickLang(offer.name, lang)}
             testIdPrefix="offer"
             dotLabelTemplate={lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}"}

@@ -8,6 +8,7 @@ type AdminCollectionRow = {
   enName: string;
   arDescription: string | null;
   enDescription: string | null;
+  youtubeUrl: string | null;
   imagePath: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;

@@ -71,6 +71,7 @@ const offerBoundaryPayload = {
     ar: "منتجان بسعر خاص",
     en: "Two products at a bundle price"
   },
+  youtubeUrl: null,
   imagePath: "http://localhost:4000/uploads/hydration-duo-primary.jpg",
   media: [
     { type: "image" as const, url: "http://localhost:4000/uploads/hydration-duo-primary.jpg" },

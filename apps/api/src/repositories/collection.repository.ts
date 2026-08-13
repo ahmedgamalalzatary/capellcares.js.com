@@ -211,6 +211,7 @@ export async function upsertCollectionRepo(input: {
   enName: string;
   arDescription?: string | null;
   enDescription?: string | null;
+  youtubeUrl?: string | null;
   imagePath?: string | null;
   media?: EntityMediaItem[];
   fixedPrice: number;
@@ -239,6 +240,7 @@ export async function upsertCollectionRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
+        youtubeUrl: input.youtubeUrl ?? null,
         ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
@@ -255,6 +257,7 @@ export async function upsertCollectionRepo(input: {
         enName: input.enName,
         arDescription: input.arDescription ?? null,
         enDescription: input.enDescription ?? null,
+        youtubeUrl: input.youtubeUrl ?? null,
         imagePath: primaryImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,

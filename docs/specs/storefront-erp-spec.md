@@ -180,7 +180,7 @@ Wishlist rules:
 - Logged-in users only.
 - Stored in database.
 - Persists across devices/accounts.
-- Wishlist stores products only, not offers.
+- Wishlist stores products, offers, and collections.
 
 Cart rules:
 - Works for guests and logged-in users.

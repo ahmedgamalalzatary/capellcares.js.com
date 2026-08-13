@@ -62,6 +62,7 @@ export function CollectionDetail({
           <EntityMediaGallery
             media={collection.media}
             imagePath={collection.imagePath}
+            videoUrl={collection.youtubeUrl}
             label={pickLang(collection.name, lang)}
             testIdPrefix="collection"
             dotLabelTemplate={lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}"}

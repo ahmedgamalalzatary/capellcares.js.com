@@ -28,6 +28,8 @@ export interface UseOfferFormResult {
   setDescEn: (value: string) => void;
   price: number;
   setPrice: (value: number) => void;
+  youtubeUrl: string;
+  setYoutubeUrl: (value: string) => void;
   media: EntityMedia[];
   setMedia: (value: EntityMedia[]) => void;
   categoryId: number | null;

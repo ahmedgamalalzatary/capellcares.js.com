@@ -211,6 +211,13 @@
       "when": 1786030800000,
       "tag": "0029_localized_shop_media",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1786579200000,
+      "tag": "0030_bundle_youtube_urls",
+      "breakpoints": true
     }
   ]
 }

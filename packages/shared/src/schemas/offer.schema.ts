@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { entityMediaSchema } from "./product.schema.js";
+import { nullableYouTubeUrlSchema } from "./youtube-url.schema.js";
 
 export const offerItemSchema = z.object({
   id: z.number().int().positive(),
@@ -15,6 +16,7 @@ export const offerSchema = z.object({
   enName: z.string().min(1),
   arDescription: z.string().nullable(),
   enDescription: z.string().nullable(),
+  youtubeUrl: nullableYouTubeUrlSchema,
   imagePath: z.string().nullable(),
   media: z.array(entityMediaSchema),
   fixedPrice: z.number().nonnegative(),

@@ -193,6 +193,7 @@ export const offers = mysqlTable("offers", {
   enName: varchar("en_name", { length: 255 }).notNull(),
   arDescription: text("ar_description"),
   enDescription: text("en_description"),
+  youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
   // Nullable only for offers created before classification existed; the
@@ -213,6 +214,7 @@ export const collections = mysqlTable("collections", {
   enName: varchar("en_name", { length: 255 }).notNull(),
   arDescription: text("ar_description"),
   enDescription: text("en_description"),
+  youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
   categoryId: int("category_id")

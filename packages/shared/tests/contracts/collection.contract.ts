@@ -12,6 +12,7 @@ export const storefrontCollectionContract = z.object({
   slug: z.string(),
   name: bilingualSchema,
   description: bilingualSchema,
+  youtubeUrl: z.string().nullable().optional(),
   imagePath: z.string(),
   media: z.array(
     z.object({

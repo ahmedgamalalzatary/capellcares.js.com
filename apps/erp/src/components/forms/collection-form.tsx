@@ -31,6 +31,8 @@ export function CollectionForm({
     setDescEn,
     price,
     setPrice,
+    youtubeUrl,
+    setYoutubeUrl,
     media,
     setMedia,
     categoryId,
@@ -84,6 +86,10 @@ export function CollectionForm({
             </div>
 
             <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
+            <div className="field">
+              <label htmlFor="collection-youtube">رابط فيديو يوتيوب (اختياري)</label>
+              <input id="collection-youtube" className="input" dir="ltr" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="https://youtube.com/…" />
+            </div>
           </div>
         </section>
 

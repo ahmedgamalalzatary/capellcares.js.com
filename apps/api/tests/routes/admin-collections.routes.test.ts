@@ -40,6 +40,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
         slug,
         name: { ar: "مجموعة اختبار", en: "Route Collection Test" },
         description: { ar: "وصف", en: "Description" },
+        youtubeUrl: "https://www.youtube.com/watch?v=route-collection",
         imagePath: "/uploads/test-collection.png",
         media: [
           { type: "image", url: "/uploads/test-collection.png" },
@@ -65,6 +66,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
     });
     assert.equal(adminCollectionsResponse.status, 200);
     const adminCollection = adminCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.equal(adminCollection.youtubeUrl, "https://www.youtube.com/watch?v=route-collection");
     assert.deepEqual(adminCollection.media, [
       { type: "image", url: "http://localhost:4000/uploads/test-collection.png" },
       { type: "image", url: "http://localhost:4000/uploads/test-collection-detail.png" },
@@ -74,6 +76,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
     const storefrontCollectionsResponse = await request("/api/v1/collections");
     assert.equal(storefrontCollectionsResponse.status, 200);
     const storefrontCollection = storefrontCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.equal(storefrontCollection.youtubeUrl, adminCollection.youtubeUrl);
     assert.deepEqual(storefrontCollection.media, adminCollection.media);
   });
 
@@ -83,6 +86,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
       slug: collections.slug,
       arName: collections.arName,
       enName: collections.enName,
+      youtubeUrl: collections.youtubeUrl,
       visibility: collections.visibility,
       categoryId: collections.categoryId
     })
@@ -93,6 +97,7 @@ serialTest("admin collection upsert creates a new collection when the payload ha
   assert.ok(createdCollection, "expected collection row to be inserted");
   assert.equal(createdCollection.arName, "مجموعة اختبار");
   assert.equal(createdCollection.enName, "Route Collection Test");
+  assert.equal(createdCollection.youtubeUrl, "https://www.youtube.com/watch?v=route-collection");
   assert.equal(createdCollection.visibility, "visible");
   assert.equal(createdCollection.categoryId, ids.rootCategoryId);
 

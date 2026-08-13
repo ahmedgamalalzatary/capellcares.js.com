@@ -201,6 +201,7 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       enName: incoming.name?.en ?? incoming.enName ?? "",
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
+      youtubeUrl: incoming.youtubeUrl ?? null,
       imagePath: incoming.imagePath ?? null,
       media: parseEntityMediaInput(incoming.media),
       fixedPrice,

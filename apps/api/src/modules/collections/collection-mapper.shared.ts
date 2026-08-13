@@ -7,6 +7,7 @@ type CollectionMapperRow = {
   enName: string;
   arDescription: string | null;
   enDescription: string | null;
+  youtubeUrl: string | null;
   imagePath: string | null;
   media?: Array<{ type: "image" | "video"; url: string }>;
   fixedPrice: unknown;
@@ -43,6 +44,7 @@ export function toCollectionBase(
       ar: collection.arDescription ?? "",
       en: collection.enDescription ?? ""
     },
+    youtubeUrl: collection.youtubeUrl ?? undefined,
     imagePath: collection.imagePath ?? "",
     media: collection.media ?? (collection.imagePath ? [{ type: "image", url: collection.imagePath }] : []),
     price,

@@ -35,6 +35,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
         slug,
         name: { ar: "عرض اختبار", en: "Route Offer Test" },
         description: { ar: "وصف", en: "Description" },
+        youtubeUrl: "https://www.youtube.com/watch?v=route-offer",
         imagePath: "/uploads/test-offer.png",
         media: [
           { type: "image", url: "/uploads/test-offer.png" },
@@ -60,6 +61,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
     });
     assert.equal(adminOffersResponse.status, 200);
     const adminOffer = adminOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.equal(adminOffer.youtubeUrl, "https://www.youtube.com/watch?v=route-offer");
     assert.deepEqual(adminOffer.media, [
       { type: "image", url: "http://localhost:4000/uploads/test-offer.png" },
       { type: "image", url: "http://localhost:4000/uploads/test-offer-detail.png" },
@@ -69,6 +71,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
     const storefrontOffersResponse = await request("/api/v1/offers");
     assert.equal(storefrontOffersResponse.status, 200);
     const storefrontOffer = storefrontOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.equal(storefrontOffer.youtubeUrl, adminOffer.youtubeUrl);
     assert.deepEqual(storefrontOffer.media, adminOffer.media);
   });
 
@@ -78,6 +81,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
       slug: offers.slug,
       arName: offers.arName,
       enName: offers.enName,
+      youtubeUrl: offers.youtubeUrl,
       visibility: offers.visibility
     })
     .from(offers)
@@ -87,6 +91,7 @@ serialTest("admin offer upsert creates a new offer when the payload has no id", 
   assert.ok(createdOffer, "expected offer row to be inserted");
   assert.equal(createdOffer.arName, "عرض اختبار");
   assert.equal(createdOffer.enName, "Route Offer Test");
+  assert.equal(createdOffer.youtubeUrl, "https://www.youtube.com/watch?v=route-offer");
   assert.equal(createdOffer.visibility, "visible");
 
   const createdItems = await db

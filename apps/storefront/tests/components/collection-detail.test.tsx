@@ -92,6 +92,27 @@ describe("CollectionDetail", () => {
     expect(screen.getByTestId("collection-media-main").querySelector("img")).toHaveAttribute("src", "/uploads/collection-detail.jpg");
   });
 
+  it("appends the optional YouTube link after all collection media", () => {
+    render(createElement(CollectionDetail, {
+      collection: {
+        ...collection,
+        youtubeUrl: "https://www.youtube.com/watch?v=collection-video",
+        media: [{ type: "image", url: "/uploads/collection-main.jpg" }]
+      },
+      items: [],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    const thumbnails = screen.getByTestId("collection-media-thumbs").querySelectorAll("button");
+    expect(thumbnails).toHaveLength(2);
+    expect(thumbnails[1]!.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://i.ytimg.com/vi/collection-video/sddefault.jpg"
+    );
+  });
+
   it("adds the collection to wishlist", () => {
     render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
 

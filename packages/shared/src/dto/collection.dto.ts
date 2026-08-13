@@ -12,6 +12,7 @@ export interface CollectionDto {
   enName: string;
   arDescription: string | null;
   enDescription: string | null;
+  youtubeUrl: string | null;
   imagePath: string | null;
   media: EntityMediaDto[];
   fixedPrice: number;
