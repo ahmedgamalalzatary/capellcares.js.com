@@ -4,7 +4,7 @@ import test, { beforeEach } from "node:test";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { and, asc, eq, or } from "drizzle-orm";
-import { categories, entityMedia, entityOrderings, offerItems, offers, products, relatedItems } from "@capella/database/drizzle/schema";
+import { categories, entityMedia, entityOrderings, offerItems, offers, orderItems, orders, products, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -611,6 +611,7 @@ serialTest("admin offer permanent delete removes a soft-deleted offer and its it
     url: `http://localhost:4000/uploads/${fileName}`,
     sortOrder: 1
   });
+  await db.insert(wishlists).values({ customerId: ids.customerId, entityType: "offer", entityId: ids.offerId });
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -655,7 +656,50 @@ serialTest("admin offer permanent delete removes a soft-deleted offer and its it
       )
     );
   assert.equal(remainingEntityOrderings.length, 0);
+  const remainingWishlists = await db
+    .select({ id: wishlists.id })
+    .from(wishlists)
+    .where(and(eq(wishlists.entityType, "offer"), eq(wishlists.entityId, ids.offerId)));
+  assert.equal(remainingWishlists.length, 0);
   await assert.rejects(access(absolutePath), "expected offer media file to be unlinked");
+});
+
+serialTest("admin offer permanent delete rejects offers referenced by orders", async () => {
+  const ids = await getBaselineIds();
+  const [order] = await db.insert(orders).values({
+    orderCode: `OFF-HARD-${Date.now()}`,
+    customerType: "registered",
+    customerId: ids.customerId,
+    fullName: "Seed Customer",
+    phone: "01012345678",
+    email: "seed-customer@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 4",
+    paymentMethod: "cod",
+    paymentStatus: "accepted",
+    totalAmount: "75.00"
+  }).$returningId();
+  await db.insert(orderItems).values({
+    orderId: order.id,
+    itemType: "offer",
+    offerId: ids.offerId,
+    qty: 1,
+    unitPrice: "75.00",
+    lineTotal: "75.00"
+  });
+  await db.update(offers).set({ deletedAt: new Date() }).where(eq(offers.id, ids.offerId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/offers/${ids.offerId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-orders");
+  });
 });
 
 serialTest("admin offer permanent delete returns not-in-trash for active offers", async () => {

@@ -376,6 +376,13 @@ export class ErpStore {
     void this.refetch();
   }
 
+  async hardDeleteCollection(id: number) {
+    await api.del(`/api/erp/collections/${id}/permanent`);
+    this.collections = this.collections.filter((collection) => collection.id !== id);
+    this.emit();
+    void this.refetch();
+  }
+
   async restoreCollection(id: number) {
     await api.post(`/api/erp/collections/${id}/restore`);
     await this.refetch();

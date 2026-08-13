@@ -5,6 +5,7 @@ import { collectionItems, collections, productVariants, products } from "@capell
 import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
 import {
   findCollectionByIdRepo,
+  hardDeleteCollectionRepo,
   listCollectionsRepo,
   reorderCollectionsRepo,
   restoreCollectionRepo,
@@ -255,6 +256,29 @@ export async function adminRestoreCollection(req: Request, res: Response) {
     await safeTriggerCollectionRevalidation(revalidation);
   }
   res.json({ ok: true });
+}
+
+export async function adminHardDeleteCollection(req: Request, res: Response, next: NextFunction) {
+  const id = Number(req.params.id);
+  const revalidation = await findCollectionRevalidationData(id);
+  let result;
+  try {
+    result = await hardDeleteCollectionRepo(id);
+  } catch (error) {
+    if ((error as { code?: string })?.code === "COLLECTION_LINKED_TO_ORDERS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-orders" });
+    }
+    return next(error);
+  }
+  if (!result) {
+    return res.status(404).json({ ok: false, reason: "not-in-trash" });
+  }
+  const { deleteLocalUploadUrls } = await import("../../uploads/uploads.service.js");
+  await deleteLocalUploadUrls(result.mediaUrls);
+  if (revalidation) {
+    await safeTriggerCollectionRevalidation(revalidation);
+  }
+  res.status(204).end();
 }
 
 export async function adminToggleCollectionStatus(req: Request, res: Response) {

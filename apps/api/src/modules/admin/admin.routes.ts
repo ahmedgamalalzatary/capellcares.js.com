@@ -31,6 +31,7 @@ import {
   adminRestoreOffer,
   adminHardDeleteOffer,
   adminRestoreCollection,
+  adminHardDeleteCollection,
   adminToggleOfferStatus,
   adminToggleCollectionStatus
 } from "./admin.controller.js";
@@ -77,6 +78,7 @@ adminRoutes.post("/collections", requireErpPermission((req) => (req.body?.id ? "
 adminRoutes.post("/collections/reorder", requireErpPermission("collections.update"), wrapAsync(adminReorderCollections));
 adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_delete"), wrapAsync(adminSoftDeleteCollection));
 adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), wrapAsync(adminRestoreCollection));
+adminRoutes.delete("/collections/:id/permanent", requireErpPermission("collections.permanent_delete"), wrapAsync(adminHardDeleteCollection));
 adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), wrapAsync(adminToggleCollectionStatus));
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);

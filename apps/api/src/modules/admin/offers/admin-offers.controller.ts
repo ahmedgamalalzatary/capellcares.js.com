@@ -251,9 +251,17 @@ export async function adminRestoreOffer(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
-export async function adminHardDeleteOffer(req: Request, res: Response) {
+export async function adminHardDeleteOffer(req: Request, res: Response, next: NextFunction) {
   const revalidation = await findOfferRevalidationData(Number(req.params.id));
-  const result = await hardDeleteOfferRepo(Number(req.params.id));
+  let result;
+  try {
+    result = await hardDeleteOfferRepo(Number(req.params.id));
+  } catch (error) {
+    if ((error as { code?: string })?.code === "OFFER_LINKED_TO_ORDERS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-orders" });
+    }
+    return next(error);
+  }
   if (!result) {
     return res.status(404).json({ ok: false, reason: "not-in-trash" });
   }

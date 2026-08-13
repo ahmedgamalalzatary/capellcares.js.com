@@ -14,6 +14,7 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import {
   canCreateErpModule,
   canReadErpModule,
+  canSoftDeleteErpModule,
   canToggleErpModule,
   canUpdateErpModule
 } from "@/lib/erp-permissions";
@@ -59,6 +60,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CollectionStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
+  const [pendingDelete, setPendingDelete] = useState<Collection | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Collection | null>(null);
 
   const visibleCollections = useMemo(
@@ -216,7 +218,7 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                           </button>
                         </>
                       )}
-                      {(canToggleErpModule(user, "collections") || canUpdateErpModule(user, "collections")) && (
+                      {(canToggleErpModule(user, "collections") || canUpdateErpModule(user, "collections") || canSoftDeleteErpModule(user, "collections")) && (
                         <RowMenu>
                           {canToggleErpModule(user, "collections") && (
                             <button
@@ -233,6 +235,16 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
                             <Link href={`/collections/${collection.id}/edit`} className="row-menu__item">
                               <Icon.Edit /> تعديل
                             </Link>
+                          )}
+                          {canSoftDeleteErpModule(user, "collections") && (
+                            <button
+                              type="button"
+                              className="row-menu__item row-menu__item--danger"
+                              onClick={() => setPendingDelete(collection)}
+                              aria-label="حذف"
+                            >
+                              <Icon.Trash /> حذف
+                            </button>
                           )}
                         </RowMenu>
                       )}
@@ -273,6 +285,25 @@ function CollectionsListPageContent({ user }: { user: NonNullable<ReturnType<typ
             ? "سيتم إيقاف هذه المجموعة ولن تظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذه المجموعة لتظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
+      </AdminConfirmModal>
+
+      <AdminConfirmModal
+        open={pendingDelete != null}
+        title="تأكيد الحذف"
+        onClose={() => setPendingDelete(null)}
+        confirmLabel="حذف المجموعة"
+        confirmClassName="btn btn--danger btn--sm"
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await getStore().softDeleteCollection(pendingDelete.id);
+            setPendingDelete(null);
+          } catch (error) {
+            showErrorToast(error, "تعذر حذف المجموعة. حاولي مرة أخرى.");
+          }
+        }}
+      >
+        <p className="modal-note">سيتم نقل المجموعة إلى المحذوفات. يمكنك استعادتها لاحقًا.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

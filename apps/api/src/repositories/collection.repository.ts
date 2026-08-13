@@ -1,7 +1,17 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { categories, collectionItems, collections, productVariants } from "@capella/database/drizzle/schema";
+import {
+  categories,
+  collectionItems,
+  collections,
+  entityMedia,
+  entityOrderings,
+  orderItems,
+  productVariants,
+  relatedItems,
+  wishlists
+} from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksForScopesRepo,
@@ -321,6 +331,53 @@ export async function softDeleteCollectionRepo(id: number) {
 
 export async function restoreCollectionRepo(id: number) {
   await db.update(collections).set({ deletedAt: null }).where(eq(collections.id, id));
+}
+
+export async function hardDeleteCollectionRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ deletedAt: collections.deletedAt, imagePath: collections.imagePath })
+      .from(collections)
+      .where(eq(collections.id, id))
+      .limit(1);
+
+    if (!existing || existing.deletedAt == null) {
+      return null;
+    }
+
+    const sold = await tx
+      .select({ id: orderItems.id })
+      .from(orderItems)
+      .where(eq(orderItems.collectionId, id))
+      .limit(1);
+    if (sold.length > 0) {
+      const error = new Error("linked-to-orders") as Error & { code?: string };
+      error.code = "COLLECTION_LINKED_TO_ORDERS";
+      throw error;
+    }
+
+    const mediaRows = await tx
+      .select({ url: entityMedia.url, arUrl: entityMedia.arUrl })
+      .from(entityMedia)
+      .where(eq(entityMedia.collectionId, id));
+
+    await tx.delete(wishlists).where(and(eq(wishlists.entityType, "collection"), eq(wishlists.entityId, id)));
+    await tx.delete(relatedItems).where(or(
+      and(eq(relatedItems.sourceType, "collection"), eq(relatedItems.sourceId, id)),
+      and(eq(relatedItems.targetType, "collection"), eq(relatedItems.targetId, id))
+    ));
+    await tx.delete(collectionItems).where(eq(collectionItems.collectionId, id));
+    await tx.delete(entityOrderings).where(or(
+      and(eq(entityOrderings.entityType, "collection"), eq(entityOrderings.entityId, id)),
+      and(eq(entityOrderings.scopeType, "collection"), eq(entityOrderings.scopeId, id))
+    ));
+    await tx.delete(collections).where(eq(collections.id, id));
+
+    return {
+      mediaUrls: [existing.imagePath, ...mediaRows.flatMap((item) => [item.url, item.arUrl])]
+        .filter((url): url is string => Boolean(url))
+    };
+  });
 }
 
 export async function toggleCollectionStatusRepo(id: number) {

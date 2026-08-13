@@ -3,7 +3,9 @@ import { compareByScopedOrdering, type OrderingSurface } from "@capella/shared";
 import {
   categories,
   categoryPaths,
+  collections,
   entityOrderings,
+  offers,
   products
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
@@ -182,6 +184,18 @@ export async function hardDeleteCategoryRepo(id: number): Promise<boolean> {
 
     if (!existing || existing.deletedAt == null) {
       return false;
+    }
+
+    const [childCategory, product, offer, collection] = await Promise.all([
+      tx.select({ id: categories.id }).from(categories).where(eq(categories.parentId, id)).limit(1),
+      tx.select({ id: products.id }).from(products).where(eq(products.categoryId, id)).limit(1),
+      tx.select({ id: offers.id }).from(offers).where(eq(offers.categoryId, id)).limit(1),
+      tx.select({ id: collections.id }).from(collections).where(eq(collections.categoryId, id)).limit(1)
+    ]);
+    if (childCategory.length > 0 || product.length > 0 || offer.length > 0 || collection.length > 0) {
+      const error = new Error("linked-entities") as Error & { code?: string };
+      error.code = "CATEGORY_LINKED_ENTITIES";
+      throw error;
     }
 
     await tx

@@ -253,6 +253,12 @@ export async function softDeleteProductRepo(id: number) {
     error.code = "PRODUCT_LINKED_TO_OFFERS";
     throw error;
   }
+  const linkedToCollection = await hasCollectionLinkedVariantsForProductRepo(id);
+  if (linkedToCollection) {
+    const error = new Error("linked-to-collections") as Error & { code?: string };
+    error.code = "PRODUCT_LINKED_TO_COLLECTIONS";
+    throw error;
+  }
   await db.update(products).set({ deletedAt: sql`NOW()` }).where(eq(products.id, id));
 }
 
@@ -262,6 +268,18 @@ export async function restoreProductRepo(id: number) {
 
 export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
   return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        imagePath: products.imagePath,
+        hoverImagePath: products.hoverImagePath,
+        arHoverImagePath: products.arHoverImagePath,
+        deletedAt: products.deletedAt
+      })
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+    if (!row || row.deletedAt == null) return null;
+
     const linked = await tx
       .select({ variantId: offerItems.variantId })
       .from(offerItems)
@@ -271,6 +289,18 @@ export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: st
     if (linked.length > 0) {
       const error = new Error("linked-to-offers") as Error & { code?: string };
       error.code = "PRODUCT_LINKED_TO_OFFERS";
+      throw error;
+    }
+
+    const linkedToCollection = await tx
+      .select({ variantId: collectionItems.variantId })
+      .from(collectionItems)
+      .innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
+      .where(eq(productVariants.productId, id))
+      .limit(1);
+    if (linkedToCollection.length > 0) {
+      const error = new Error("linked-to-collections") as Error & { code?: string };
+      error.code = "PRODUCT_LINKED_TO_COLLECTIONS";
       throw error;
     }
 
@@ -285,18 +315,6 @@ export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: st
       error.code = "PRODUCT_LINKED_TO_ORDERS";
       throw error;
     }
-
-    const [row] = await tx
-      .select({
-        imagePath: products.imagePath,
-        hoverImagePath: products.hoverImagePath,
-        arHoverImagePath: products.arHoverImagePath,
-        deletedAt: products.deletedAt
-      })
-      .from(products)
-      .where(eq(products.id, id))
-      .limit(1);
-    if (!row || row.deletedAt == null) return null;
 
     const mediaRows = await tx
       .select({ url: entityMedia.url, arUrl: entityMedia.arUrl })
@@ -361,6 +379,16 @@ async function hasOfferLinkedVariantsForProductRepo(productId: number) {
     .select({ variantId: offerItems.variantId })
     .from(offerItems)
     .innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+    .where(eq(productVariants.productId, productId))
+    .limit(1);
+  return linked.length > 0;
+}
+
+async function hasCollectionLinkedVariantsForProductRepo(productId: number) {
+  const linked = await db
+    .select({ variantId: collectionItems.variantId })
+    .from(collectionItems)
+    .innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
     .where(eq(productVariants.productId, productId))
     .limit(1);
   return linked.length > 0;

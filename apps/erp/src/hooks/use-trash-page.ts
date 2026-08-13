@@ -11,6 +11,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   const products = useStore((state) => state.products);
   const categories = useStore((state) => state.categories);
   const offers = useStore((state) => state.offers);
+  const collections = useStore((state) => state.collections);
 
   const [tab, setTab] = useState<TrashTab>("products");
   const [pendingHardDelete, setPendingHardDelete] = useState<HardDeleteTarget | null>(null);
@@ -92,6 +93,19 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     [offers]
   );
 
+  const deletedCollections = useMemo(
+    () =>
+      collections
+        .filter((collection) => collection.deletedAt)
+        .map<TrashListRow>((collection) => ({
+          id: collection.id,
+          title: collection.name.ar,
+          subtitle: collection.name.en,
+          meta: new Date(collection.deletedAt!).toLocaleDateString("ar-EG")
+        })),
+    [collections]
+  );
+
   const deletedReviews = useMemo(
     () => reviews.map<TrashListRow>((review) => ({
       id: review.id,
@@ -106,6 +120,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     { id: "products", label: "المنتجات", count: deletedProducts.length },
     { id: "categories", label: "الأقسام", count: deletedCategories.length },
     { id: "offers", label: "العروض", count: deletedOffers.length },
+    { id: "collections", label: "المجموعات", count: deletedCollections.length },
     ...(options.reviewsReadable ? [{ id: "reviews" as const, label: "التقييمات", count: deletedReviews.length }] : [])
   ];
 
@@ -130,6 +145,8 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
         await getStore().hardDeleteCategory(pendingHardDelete.id);
       } else if (pendingHardDelete.kind === "offers") {
         await getStore().hardDeleteOffer(pendingHardDelete.id);
+      } else if (pendingHardDelete.kind === "collections") {
+        await getStore().hardDeleteCollection(pendingHardDelete.id);
       } else {
         await api.del(`/api/erp/reviews/${pendingHardDelete.id}/permanent`);
         setReviews((current) => current.filter((review) => review.id !== pendingHardDelete.id));
@@ -137,8 +154,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
       setPendingHardDelete(null);
     } catch (error) {
       console.error(error);
-      const message = "تعذر حذف العنصر نهائياً. حاولي مرة أخرى.";
-      showErrorToast(error, message);
+      const message = showErrorToast(error, "تعذر حذف العنصر نهائياً. حاولي مرة أخرى.");
       setDeleteError(message);
     } finally {
       setIsDeleting(false);
@@ -152,6 +168,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     deletedProducts,
     deletedCategories,
     deletedOffers,
+    deletedCollections,
     deletedReviews,
     reviewsLoading,
     reviewsError,
@@ -167,6 +184,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     restoreProduct: (id: number) => getStore().restoreProduct(id),
     restoreCategory: (id: number) => getStore().restoreCategory(id),
     restoreOffer: (id: number) => getStore().restoreOffer(id),
+    restoreCollection: (id: number) => getStore().restoreCollection(id),
     restoreReview: async (id: number) => {
       try {
         setDeleteError(null);

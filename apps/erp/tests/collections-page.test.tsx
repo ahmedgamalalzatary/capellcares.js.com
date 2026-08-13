@@ -9,6 +9,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
 }));
 
 const toggleCollectionStatus = vi.fn().mockResolvedValue(undefined);
+const softDeleteCollection = vi.fn().mockResolvedValue(undefined);
 const storeState: any = {
   collections: [{
     id: 1,
@@ -44,7 +45,8 @@ vi.mock("@/components/shell/admin-shell", () => ({
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => mockedUseStore(selector),
   getStore: () => ({
-    toggleCollectionStatus
+    toggleCollectionStatus,
+    softDeleteCollection
   })
 }));
 
@@ -60,6 +62,7 @@ describe("CollectionsListPage", () => {
       logout: vi.fn()
     });
     toggleCollectionStatus.mockClear();
+    softDeleteCollection.mockClear();
     mockedUseStore.mockClear();
     storeState.collections = [{
       id: 1,
@@ -134,6 +137,19 @@ describe("CollectionsListPage", () => {
 
     fireEvent.click(screen.getByLabelText("إجراءات"));
     expect(screen.getByRole("button", { name: "إيقاف" })).toHaveAttribute("aria-label", "إيقاف");
+  });
+
+  it("soft-deletes a collection only after confirmation", async () => {
+    render(createElement(CollectionsListPage));
+
+    fireEvent.click(screen.getByLabelText("إجراءات"));
+    fireEvent.click(screen.getByRole("button", { name: "حذف" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(softDeleteCollection).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "حذف المجموعة" }));
+    expect(softDeleteCollection).toHaveBeenCalledWith(1);
   });
 
   it("falls back to the first-letter avatar when the collection has no image", () => {

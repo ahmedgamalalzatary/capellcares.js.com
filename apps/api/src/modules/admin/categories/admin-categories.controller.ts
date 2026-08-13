@@ -80,6 +80,9 @@ export async function adminHardDeleteCategory(req: Request, res: Response, next:
     }
     res.status(204).end();
   } catch (error) {
+    if ((error as { code?: string })?.code === "CATEGORY_LINKED_ENTITIES") {
+      return res.status(409).json({ ok: false, reason: "linked-entities" });
+    }
     next(error);
   }
 }

@@ -10,6 +10,8 @@ import {
   collectionItems,
   offerItems,
   entityMedia,
+  orderItems,
+  orders,
   products,
   productVariants,
   relatedItems,
@@ -1010,8 +1012,9 @@ serialTest("admin products list includes soft-deleted products for ERP trash", a
 serialTest("admin hard-delete removes product, variants, wishlists, and image file", async () => {
   const ids = await getBaselineIds();
 
-  // Unlink the seed offer item so productOne is freely hard-deletable.
+  // Unlink the seed bundles so productOne is freely hard-deletable.
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  await db.delete(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
 
   const uploadsDir = resolve(process.cwd(), "uploads");
   const fileName = `test-hard-delete-${ids.productOneId}.jpg`;
@@ -1090,6 +1093,22 @@ serialTest("admin soft-delete rejects products whose variants are used by offers
   });
 });
 
+serialTest("admin soft-delete rejects products whose variants are used by collections", async () => {
+  const ids = await getBaselineIds();
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-collections");
+  });
+});
+
 serialTest("admin hard-delete rejects products whose variants are used by offers", async () => {
   const ids = await getBaselineIds();
 
@@ -1109,10 +1128,67 @@ serialTest("admin hard-delete rejects products whose variants are used by offers
   });
 });
 
+serialTest("admin hard-delete rejects products whose variants are used by collections", async () => {
+  const ids = await getBaselineIds();
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-collections");
+  });
+});
+
+serialTest("admin hard-delete rejects products whose variants are referenced by orders", async () => {
+  const ids = await getBaselineIds();
+  await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  await db.delete(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
+  const [order] = await db.insert(orders).values({
+    orderCode: `PROD-HARD-${Date.now()}`,
+    customerType: "registered",
+    customerId: ids.customerId,
+    fullName: "Seed Customer",
+    phone: "01012345678",
+    email: "seed-customer@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 4",
+    paymentMethod: "cod",
+    paymentStatus: "accepted",
+    totalAmount: "35.00"
+  }).$returningId();
+  await db.insert(orderItems).values({
+    orderId: order.id,
+    itemType: "product_variant",
+    variantId: ids.firstVariantId,
+    qty: 1,
+    unitPrice: "35.00",
+    lineTotal: "35.00"
+  });
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/products/${ids.productOneId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-to-orders");
+  });
+});
+
 serialTest("admin hard-delete on a product that is not soft-deleted returns 404 and leaves data intact", async () => {
   const ids = await getBaselineIds();
 
-  // Unlink the seed offer item so the only reason for a non-204 is the trash check.
+  // Keep the seed collection link to prove the trash check runs before dependency checks.
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
   await withTestServer(app, async (request) => {
@@ -1135,8 +1211,9 @@ serialTest("admin hard-delete on a product that is not soft-deleted returns 404 
 
 serialTest("admin hard-delete tolerates a missing image file", async () => {
   const ids = await getBaselineIds();
-  // Unlink the seed offer item so productOne is freely hard-deletable.
+  // Unlink the seed bundles so productOne is freely hard-deletable.
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
+  await db.delete(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
   await db.update(products).set({ deletedAt: new Date(), imagePath: "/uploads/does-not-exist.jpg" }).where(eq(products.id, ids.productOneId));
 
   await withTestServer(app, async (request) => {

@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { categories, entityMedia, entityOrderings, offerItems, offers, productVariants, relatedItems } from "@capella/database/drizzle/schema";
+import { categories, entityMedia, entityOrderings, offerItems, offers, orderItems, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
   loadScopedRanksForScopesRepo,
@@ -346,11 +346,23 @@ export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: stri
       return null;
     }
 
+    const sold = await tx
+      .select({ id: orderItems.id })
+      .from(orderItems)
+      .where(eq(orderItems.offerId, id))
+      .limit(1);
+    if (sold.length > 0) {
+      const error = new Error("linked-to-orders") as Error & { code?: string };
+      error.code = "OFFER_LINKED_TO_ORDERS";
+      throw error;
+    }
+
     const mediaRows = await tx
       .select({ url: entityMedia.url, arUrl: entityMedia.arUrl })
       .from(entityMedia)
       .where(eq(entityMedia.offerId, id));
 
+    await tx.delete(wishlists).where(and(eq(wishlists.entityType, "offer"), eq(wishlists.entityId, id)));
     await tx
       .delete(relatedItems)
       .where(

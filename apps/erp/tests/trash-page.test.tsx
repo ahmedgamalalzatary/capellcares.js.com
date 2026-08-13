@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const hardDeleteProduct = vi.fn();
 const hardDeleteCategory = vi.fn();
 const hardDeleteOffer = vi.fn();
+const hardDeleteCollection = vi.fn();
 const restoreProduct = vi.fn();
 const restoreCategory = vi.fn();
 const restoreOffer = vi.fn();
+const restoreCollection = vi.fn();
 const { apiGet, apiPost, apiDel, showErrorToast } = vi.hoisted(() => ({
   apiGet: vi.fn(),
   apiPost: vi.fn(),
@@ -26,7 +28,9 @@ const useAdminAuth = vi.fn(() => ({
       "categories.restore",
       "categories.permanent_delete",
       "offers.restore",
-      "offers.permanent_delete"
+      "offers.permanent_delete",
+      "collections.restore",
+      "collections.permanent_delete"
     ]
   }
 }));
@@ -77,15 +81,22 @@ vi.mock("@/lib/store", () => ({
       id: 5,
       name: { ar: "عرض محذوف", en: "Deleted Offer" },
       deletedAt: "2026-05-20T00:00:00Z"
+    }],
+    collections: [{
+      id: 9,
+      name: { ar: "مجموعة محذوفة", en: "Deleted Collection" },
+      deletedAt: "2026-05-20T00:00:00Z"
     }]
   }),
   getStore: () => ({
     hardDeleteProduct,
     hardDeleteCategory,
     hardDeleteOffer,
+    hardDeleteCollection,
     restoreProduct,
     restoreCategory,
-    restoreOffer
+    restoreOffer,
+    restoreCollection
   })
 }));
 
@@ -96,9 +107,11 @@ describe("TrashPage hard delete", () => {
     hardDeleteProduct.mockReset();
     hardDeleteCategory.mockReset();
     hardDeleteOffer.mockReset();
+    hardDeleteCollection.mockReset();
     restoreProduct.mockReset();
     restoreCategory.mockReset();
     restoreOffer.mockReset();
+    restoreCollection.mockReset();
     apiGet.mockReset();
     apiPost.mockReset();
     apiDel.mockReset();
@@ -121,7 +134,9 @@ describe("TrashPage hard delete", () => {
           "categories.restore",
           "categories.permanent_delete",
           "offers.restore",
-          "offers.permanent_delete"
+          "offers.permanent_delete",
+          "collections.restore",
+          "collections.permanent_delete"
         ]
       }
     });
@@ -191,6 +206,61 @@ describe("TrashPage hard delete", () => {
     const confirmButtons = screen.getAllByText("حذف نهائي");
     fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
     expect(hardDeleteOffer).toHaveBeenCalledWith(5);
+  });
+
+  it("restores collections from a dedicated trash tab", () => {
+    restoreCollection.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
+    fireEvent.click(screen.getByRole("button", { name: /استعادة/ }));
+
+    expect(restoreCollection).toHaveBeenCalledWith(9);
+  });
+
+  it("permanently deletes collections from a dedicated trash tab", () => {
+    hardDeleteCollection.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
+    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
+    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+
+    expect(hardDeleteCollection).toHaveBeenCalledWith(9);
+  });
+
+  it("shows the specific order-history reason when permanent deletion is blocked", async () => {
+    showErrorToast.mockReturnValue("لا يمكن الحذف النهائي لأن العنصر مرتبط بطلبات سابقة.");
+    hardDeleteCollection.mockRejectedValue(Object.assign(new Error("API 409"), {
+      status: 409,
+      body: { reason: "linked-to-orders" }
+    }));
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
+    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
+    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+
+    expect(await screen.findByText("لا يمكن الحذف النهائي لأن العنصر مرتبط بطلبات سابقة.")).toBeInTheDocument();
+  });
+
+  it("shows the specific dependency reason when category permanent deletion is blocked", async () => {
+    const message = "لا يمكن حذف القسم نهائيًا لأنه ما زال مرتبطًا بأقسام أو منتجات أو عروض أو مجموعات.";
+    showErrorToast.mockReturnValue(message);
+    hardDeleteCategory.mockRejectedValue(Object.assign(new Error("API 409"), {
+      status: 409,
+      body: { reason: "linked-entities" }
+    }));
+    render(createElement(TrashPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
+    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
+    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
   });
 
   it("hides restore and permanent-delete actions when trash access lacks the underlying module permission", () => {
@@ -275,7 +345,7 @@ describe("TrashPage hard delete", () => {
     apiGet.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectRequest = reject; }));
     render(createElement(TrashPage));
 
-    fireEvent.click(document.querySelectorAll("button")[3]!);
+    fireEvent.click(screen.getByRole("button", { name: /التقييمات/ }));
     expect(screen.getByRole("status")).toBeInTheDocument();
     rejectRequest(new Error("trash failed"));
 
@@ -287,9 +357,9 @@ describe("TrashPage hard delete", () => {
     apiPost.mockRejectedValueOnce(new Error("restore failed"));
     render(createElement(TrashPage));
 
-    fireEvent.click(document.querySelectorAll("button")[3]!);
+    fireEvent.click(screen.getByRole("button", { name: /التقييمات/ }));
     expect(await screen.findByText(/Sara Ali/)).toBeInTheDocument();
-    fireEvent.click(document.querySelectorAll("button")[4]!);
+    fireEvent.click(screen.getByRole("button", { name: /استعادة/ }));
 
     await waitFor(() => expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), expect.any(String)));
     expect(screen.getByText(/Sara Ali/)).toBeInTheDocument();

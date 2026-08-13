@@ -309,6 +309,9 @@ export async function adminSoftDeleteProduct(req: Request, res: Response, next: 
     if (error?.code === "PRODUCT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });
     }
+    if (error?.code === "PRODUCT_LINKED_TO_COLLECTIONS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-collections" });
+    }
     return next(error);
   }
   if (revalidation) {
@@ -336,6 +339,9 @@ export async function adminHardDeleteProduct(req: Request, res: Response, next: 
   } catch (error: any) {
     if (error?.code === "PRODUCT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });
+    }
+    if (error?.code === "PRODUCT_LINKED_TO_COLLECTIONS") {
+      return res.status(409).json({ ok: false, reason: "linked-to-collections" });
     }
     if (error?.code === "PRODUCT_LINKED_TO_ORDERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-orders" });

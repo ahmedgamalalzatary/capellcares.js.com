@@ -20,6 +20,7 @@ export {
 } from "./categories/admin-categories.controller.js";
 export {
   adminGetCollection,
+  adminHardDeleteCollection,
   adminListCollections,
   adminReorderCollections,
   adminRestoreCollection,

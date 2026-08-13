@@ -94,6 +94,22 @@ test("admin category permanent delete returns not-in-trash for active categories
   });
 });
 
+test("admin category permanent delete rejects categories that still have linked entities", async () => {
+  const ids = await getBaselineIds();
+  await db.update(categories).set({ deletedAt: new Date() }).where(eq(categories.id, ids.rootCategoryId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/categories/${ids.rootCategoryId}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.json.reason, "linked-entities");
+  });
+});
+
 test("admin category create supports deeper nesting and marks the parent as non-leaf", async () => {
   const parentSlug = `route-parent-leaf-${Date.now()}`;
   const childSlug = `route-grandchild-cat-${Date.now()}`;

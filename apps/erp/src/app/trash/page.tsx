@@ -19,6 +19,7 @@ export default function TrashPage() {
     deletedProducts,
     deletedCategories,
     deletedOffers,
+    deletedCollections,
     deletedReviews,
     reviewsLoading,
     reviewsError,
@@ -31,6 +32,7 @@ export default function TrashPage() {
     restoreProduct,
     restoreCategory,
     restoreOffer,
+    restoreCollection,
     restoreReview
   } = useTrashPage({ reviewsReadable });
 
@@ -86,6 +88,14 @@ export default function TrashPage() {
             rows={deletedOffers}
             onRestore={canRestoreErpModule(user, "offers") ? restoreOffer : undefined}
             onHardDelete={hasErpPermission(user, "offers.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "offers", id, title }) : undefined}
+          />
+        )}
+        {tab === "collections" && (
+          <DeletedList
+            empty="لا توجد مجموعات محذوفة."
+            rows={deletedCollections}
+            onRestore={canRestoreErpModule(user, "collections") ? restoreCollection : undefined}
+            onHardDelete={hasErpPermission(user, "collections.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "collections", id, title }) : undefined}
           />
         )}
         {tab === "reviews" && (

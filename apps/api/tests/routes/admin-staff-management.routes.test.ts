@@ -374,5 +374,14 @@ test("admin can read the permission catalog for assignment UI", async () => {
           item.dependencies.includes("orders.read")
       )
     );
+    assert.ok(
+      response.json.items.some(
+        (item: { key: string; dependencies?: string[] }) =>
+          item.key === "collections.permanent_delete" &&
+          Array.isArray(item.dependencies) &&
+          item.dependencies.includes("collections.read") &&
+          item.dependencies.includes("trash.read")
+      )
+    );
   });
 });

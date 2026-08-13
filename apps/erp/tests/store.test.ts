@@ -87,6 +87,17 @@ afterEach(() => {
 });
 
 describe("ERP store", () => {
+  it("permanently deletes a collection through the collection endpoint", async () => {
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+    store.collections = [{ id: 9 } as any];
+
+    await store.hardDeleteCollection(9);
+
+    expect(apiDel).toHaveBeenCalledWith("/api/erp/collections/9/permanent");
+    expect(store.collections).toEqual([]);
+  });
+
   it("hydrates advices and orders during refetch", async () => {
     apiGet
       .mockResolvedValueOnce({ items: [] })

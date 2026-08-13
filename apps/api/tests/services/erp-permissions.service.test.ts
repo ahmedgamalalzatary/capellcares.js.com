@@ -37,6 +37,7 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "categories.soft_delete",
     "categories.update",
     "collections.create",
+    "collections.permanent_delete",
     "collections.read",
     "collections.restore",
     "collections.soft_delete",
