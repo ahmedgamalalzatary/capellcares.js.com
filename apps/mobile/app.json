@@ -9,13 +9,20 @@
     "backgroundColor": "#f1f0ed",
     "ios": {
       "bundleIdentifier": "com.capellacare.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ExpoLocalization_supportsRTL": true
+      }
     },
     "android": {
       "package": "com.capellacare.app"
     },
     "extra": {
-      "supportsRTL": true
+      "supportsRTL": true,
+      "router": {},
+      "eas": {
+        "projectId": "4849c50d-3d67-4bca-9bdd-316605f03fa2"
+      }
     },
     "plugins": [
       "expo-router",
@@ -27,6 +34,7 @@
           "backgroundColor": "#f1f0ed"
         }
       ]
-    ]
+    ],
+    "owner": "alzatary"
   }
 }

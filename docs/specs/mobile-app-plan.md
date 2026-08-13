@@ -1,6 +1,6 @@
 # Capella Mobile App (Expo / React Native) — Combined Storefront + ERP
 
-> Status: **implementation active — Phase 0 is complete; Phase 1 scaffold is implemented and under final verification.**
+> Status: **implementation active — Phase 0 is complete; Phase 1 is code-complete with device acceptance deferred to Phase 2.**
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **one combined app** (customer storefront + ERP admin unlocked by staff login), **full parity** with the web apps — the same styling, routes, functionality, data, permissions, languages, and known unfinished functionality; nothing product-level is added, removed, or redesigned for mobile. Native controls and layouts adapt the same design to phone interaction without changing behavior.
 >
 > Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
@@ -25,6 +25,7 @@ There is no mobile code anywhere. The new app lives at `apps/mobile` (picked up 
 - Use an installable Expo development build for reliable Android/iOS testing. Expo Go may be used for checks it supports, but it is not an acceptance environment for dynamic RTL switching.
 - Mobile participates in the repository's complete validation suite with `build`, `lint`, `typecheck`, and `test` scripts. Every phase runs all applicable validation and leaves the repository green, not merely typechecked.
 - Checkout and contact are known unfinished web/API functionality. Their mobile implementation is explicitly deferred until the existing implementation works; mobile then reproduces it exactly rather than inventing mobile-only behavior.
+- Customer account deletion does not exist anywhere yet, but both app stores require it (see Phase 11). It is a third recorded upstream blocker: add to API + web first, then mirror on mobile before store submission.
 
 ### Verified constraints (from code exploration)
 
@@ -85,6 +86,19 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 - An installable development build opens on an emulator/simulator or physical device and shows the placeholder with a dict string.
 
 Implementation verification: Expo Doctor, dependency compatibility, lint, typecheck, tests, and Android/iOS exports are green. A device launch remains an external environment check because this workspace has no Android SDK/emulator/device and runs on Windows without an iOS toolchain.
+
+### EAS development-build status and future device workflow
+
+- **Connected:** `apps/mobile` is linked to Expo account `alzatary`, EAS project `@alzatary/capella-care` (`4849c50d-3d67-4bca-9bdd-316605f03fa2`). `app.json` contains the owner/project link and `eas.json` contains Android/iOS development, preview, and production profiles.
+- **Not yet completed:** no cloud development build has been requested, no Capella Care development APK has been installed, and the Phase 1 device-launch criterion remains pending.
+- **Build once:** from `apps/mobile`, run `pnpm dlx eas-cli@latest build --platform android --profile development`. EAS uploads the project, builds an installable development APK in the cloud, and returns a build page/download link. Free-plan builds may wait in a low-priority queue.
+- **Install once:** open the EAS build link or scan its installation QR code on the Android phone, download the APK, allow installation from that browser when Android asks, and install **Capella Care**. It is a separate app from Expo Go; Expo Go may remain installed but is not the acceptance environment.
+- **Daily development:** from the repository root, run `pnpm --filter @capella/mobile exec expo start --dev-client`. Keep the PC and phone on the same network, then scan the Metro QR code and open it with the installed Capella Care development client. Use Expo's tunnel option only when LAN discovery cannot connect.
+- **Rebuild only when native inputs change:** JavaScript/TypeScript, styles, and ordinary screen changes load through Metro without another cloud build. Request a new EAS build after changing native dependencies, Expo config/plugins, bundle identifiers, or other native configuration.
+- **API testing on a phone:** before phases that call the API, set `EXPO_PUBLIC_API_URL` to the PC's LAN-reachable API address; a physical phone cannot use the PC's `localhost`.
+- **iOS:** EAS can cloud-build iOS, but installing on a physical iPhone requires Apple signing/device registration, and an iOS Simulator still requires macOS. Android remains the practical acceptance device for this Windows workspace.
+
+**Deferred acceptance decision:** Do not wait for an EAS build merely to verify the temporary Phase 1 placeholder. Treat Phase 1 as code-complete, but not 100% accepted, until the device-launch criterion passes. Complete the Android build/install workflow above no later than Phase 2 acceptance, where Arabic fonts and live RTL/LTR switching require a development build; do not defer it until the full storefront is finished.
 
 ---
 
@@ -147,7 +161,9 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 ---
 
-## Phase 6 — Customer slice A: browse (first real screens)
+## Phase 6 — Customer slice A: browse & catalog (first real screens)
+
+Merged slice (former Phases 6 + 9): all read-only customer surfaces land together — browse, offers, collections, and static pages — so the whole catalog navigation graph is verified in one pass.
 
 **Files** — `apps/mobile/app/`:
 - `app/index.tsx` — **deleted** (Phase 1 placeholder); `(tabs)/index.tsx` becomes `/`
@@ -156,52 +172,66 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 - `(tabs)/shop.tsx` — search + category chips + product grid (mirrors `/shop` + `/products`)
 - `new.tsx` and `bestsellers.tsx` — dedicated filtered product lists matching the current `/new` and `/bestsellers` routes
 - `category/[slug].tsx` — grid filtered via `getCategoryBySlug`/`categoryId`
-- `product/[slug].tsx` — media gallery with dots, size/variant selector, discount pricing, description/ingredients/how-to-use/warnings sections, related items, add-to-cart (reviews & wishlist buttons land in Phase 8)
+- `product/[slug].tsx` — media gallery with dots, size/variant selector, discount pricing, description/ingredients/how-to-use/warnings sections, related items, add-to-cart (reviews & wishlist buttons land in Phase 7)
+- `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` — bundle contents, savings badge, add-bundle-to-cart, unavailability states (review list/submit components are wired in during Phase 7)
+- `page/[key].tsx` — generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks, including working inline internal/external links
 - Shop/products advice cards reproduce the current advice content and YouTube/Instagram presentation using native navigation and WebView/external-link handling as appropriate to the same source URL.
 
-**Exit criteria**: build/lint/typecheck/tests green; browse every current catalog route end-to-end in a development build, both languages, RTL correct; advice presentation works; add-to-cart updates the tab badge.
+**Exit criteria**: build/lint/typecheck/tests green; browse every current read-only storefront route (home, shop, new, bestsellers, categories, products, offers, collections, static pages) end-to-end in a development build, both languages, RTL correct; advice presentation works; add-to-cart and add-bundle-to-cart update the tab badge.
 
 ---
 
-## Phase 7 — Customer slice B: cart & checkout (checkout deferred upstream)
+## Phase 7 — Customer slice B: cart, checkout, accounts, orders, wishlist, reviews
 
-> **Known unfinished upstream functionality:** checkout does not currently work end-to-end in the existing app. The cart is implemented in this phase, but mobile checkout remains visibly unavailable and is not represented as working. Finish and validate the existing web/API checkout first; then implement the same contract and behavior here without mobile-only product changes.
+Merged slice (former Phases 7 + 8): everything that mutates state or needs a customer session.
 
-**Files** — `(tabs)/cart.tsx` (lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`).
-`checkout.tsx` and `order-success` are post-blocker deliverables. Until the upstream checkout flow works, mobile must expose only an unavailable checkout state.
+> **Known unfinished upstream functionality:** checkout and contact do not currently work end-to-end in the existing app. The cart is implemented in this phase, but mobile checkout and contact remain visibly unavailable and are not represented as working. Finish and validate the existing web/API implementations first; then reproduce the same contract and behavior here without mobile-only product changes.
 
-**Exit criteria**: cart behavior and tests match the web app. After the upstream checkout blocker is resolved, a real COD order placed from the phone appears in the ERP web app and validation errors match web copy in both languages. Until then, checkout is explicitly recorded as deferred rather than passing this criterion.
+**Files**
+- `(tabs)/cart.tsx` — lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`
+- `checkout.tsx` + `order-success` — **post-blocker deliverables**: until the upstream checkout flow works, mobile exposes only an unavailable checkout state; afterwards, the full form (governorate picker from `GOVERNORATES`, `EG_PHONE_REGEX` validation, notes, COD block, POST `/api/v1/checkout`, success state clears cart) mirrors web checkout
+- `login.tsx`, `signup.tsx` — mirror web auth forms
+- `(tabs)/orders.tsx` + `order/[id].tsx` — history + detail incl. item snapshots, statuses from `dict.orders`
+- `(tabs)/account.tsx` — profile, language switch, links, admin entry, logout
+- `wishlist.tsx` — list/add/remove via `/api/v1/wishlist`, heart on cards/detail
+- Review components (list + submit + prompt-claim via `/api/v1/reviews`) wired into the `product/[slug]`, `offer/[slug]`, and `collection/[slug]` detail screens (all exist since Phase 6)
+- `contact.tsx` — deferred unfinished functionality; after the existing contact flow is completed, reproduce its fields, validation, attachment selection/preview, submission, and result states
 
----
-
-## Phase 8 — Customer slice C: accounts, orders, wishlist, reviews
-
-**Files** — `login.tsx`, `signup.tsx` (mirror web auth forms), `(tabs)/orders.tsx` + `order/[id].tsx` (history + detail incl. item snapshots, statuses from `dict.orders`), `(tabs)/account.tsx` (profile, language switch, links, admin entry, logout), `wishlist.tsx` (list/add/remove via `/api/v1/wishlist`, heart on cards/detail), reviews on `product/[slug]` (list + submit + prompt-claim via `/api/v1/reviews`). The same review components are wired into the offer and collection detail screens in Phase 9, where those screens first exist.
-
-**Exit criteria**: guest→login→order history→wishlist→submit review full loop works; logged-out states show the same login-required messaging as web.
-
----
-
-## Phase 9 — Customer slice D: offers, collections, static pages
-
-**Files** — `offers/index.tsx` + `offer/[slug].tsx`, `collections/index.tsx` + `collection/[slug].tsx` (bundle contents, savings badge, add-bundle-to-cart, unavailability states, plus the Phase 8 review list/submit components on both detail screens), `page/[key].tsx` (generic renderer for `dict.pages.{about,privacy,terms,termsSale,returns,shipping}` `{h|p|ul}` blocks, including working inline internal/external links), `contact.tsx` (deferred unfinished functionality; after the existing contact flow is completed, reproduce its fields, validation, attachment selection/preview, submission, and result states).
-
-**Exit criteria**: every working storefront web route has a mobile equivalent reachable from tabs/account and the storefront parity checklist passes. Contact is explicitly recorded as deferred until its existing implementation actually submits messages; the mobile app must not show a false successful-delivery state.
+**Exit criteria**: cart behavior and tests match the web app; guest→login→order history→wishlist→submit review full loop works; logged-out states show the same login-required messaging as web; every working storefront web route now has a mobile equivalent reachable from tabs/account and the storefront parity checklist passes. Checkout and contact are explicitly recorded as deferred until their upstream implementations work: once the checkout blocker is resolved, a real COD order placed from the phone must appear in the ERP web app with validation errors matching web copy in both languages, and the mobile app must never show a false successful-delivery state for contact.
 
 ---
 
-## Phase 10 — Admin (ERP) slice
+## Phase 8 — ERP slice A: admin foundation, dashboard, orders
 
-Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
+The former single "Admin (ERP) slice" is now three phases (8–10) — it is roughly as much work as the whole customer side. All of it is Arabic-only regardless of app language (matches web ERP; "nothing new" rule). Every module increment in Phases 8–10 inventories the matching web routes, API endpoints, permission keys, mutations, validation, empty/loading/error states, and touch adaptation before implementation; the ERP's desktop-grade tables and upload UX are adapted to touch with identical content and actions.
 
 **Files**
 - `apps/mobile/src/lib/admin/auth.ts` — admin token store twin (own SecureStore key) using Phase 0's mobile flow against `/api/erp/auth`
 - `apps/mobile/src/lib/admin/client.ts` — `/api/erp` fetch wrappers
 - `apps/mobile/app/admin/_layout.tsx` — **Arabic RTL boundary**: while this route tree is mounted it uses the `ar` dictionary, Tajawal, right-aligned text/writing direction, RTL row ordering, and mirrored directional controls regardless of customer language. It does not mutate the customer's global language. The layout allows unauthenticated access only to `admin/login.tsx`; permission-aware staff guards protect every authenticated admin route
 - `admin/login.tsx`, `admin/index.tsx` (dashboard), `admin/orders.tsx` + `admin/order/[id].tsx` (list, detail, payment-status updates — parity with `apps/erp` orders module)
-- Explicit sequential ERP increments cover every current module and action: dashboard; orders; products and discounts; categories; offers; collections; advices; shop media; reviews moderation; sales; staff and effective permissions; trash/restore; uploads and media selection. Each increment inventories the matching web routes, API endpoints, permission keys, mutations, validation, empty/loading/error states, and touch adaptation before implementation
 
-**Exit criteria**: build/lint/typecheck/tests green; every existing ERP route and permitted action has a mobile equivalent; Arabic layout remains truly RTL even when the customer app is English; permission-based navigation and route guards match web ERP; customer and admin sessions coexist independently.
+**Exit criteria**: build/lint/typecheck/tests green; admin login/refresh/logout works against `/api/erp/auth` and customer/admin sessions coexist independently; dashboard and the complete orders module reach parity with the web ERP; Arabic layout remains truly RTL even when the customer app is English; permission-based navigation and route guards match web ERP.
+
+---
+
+## Phase 9 — ERP slice B: catalog management
+
+Uploads and media selection come first — every catalog form depends on them — then the modules in sequential increments: **products and discounts; categories; offers; collections**.
+
+**Files** — `admin/products*`, `admin/categories*`, `admin/offers*`, `admin/collections*` route trees plus shared admin form/table/media-picker components under `src/components/admin/`, mirroring the corresponding `apps/erp` modules (list, create, edit, delete, discounts, bilingual media management).
+
+**Exit criteria**: build/lint/typecheck/tests green; every route and permitted action of the four modules (plus uploads/media selection) has a mobile equivalent; a create→edit→delete round-trip performed from the phone against the local API shows up correctly in both the web ERP and the storefront.
+
+---
+
+## Phase 10 — ERP slice C: operations & administration
+
+Remaining modules in sequential increments: **advices; shop media; reviews moderation; sales; staff and effective permissions; trash/restore**.
+
+**Files** — `admin/advices*`, `admin/shop-media*`, `admin/reviews*`, `admin/sales*`, `admin/staff*`, `admin/trash*` route trees mirroring the corresponding `apps/erp` modules.
+
+**Exit criteria**: build/lint/typecheck/tests green; every existing ERP route and permitted action now has a mobile equivalent and the full ERP parity checklist passes; permission-restricted staff accounts see exactly the same navigation and guards as on web.
 
 ---
 
@@ -209,7 +239,15 @@ Arabic-only regardless of app language (matches web ERP; "nothing new" rule).
 
 EAS build config (`eas.json`, dev/preview/production profiles), real icon + splash assets, Android adaptive icon, iOS privacy manifest, store listings; `EXPO_PUBLIC_API_URL=https://api.capellacares.com` baked into production builds. Requires Apple Developer + Google Play accounts — user action.
 
-**Exit criteria**: `eas build` produces installable .aab/.ipa; internal-track/TestFlight installs pass the complete parity checklist against the production API. Checkout and contact join this checklist only after their explicitly recorded upstream blockers are resolved.
+### Store review requirements (combined customer + admin app)
+
+- **Review credentials**: Apple (guideline 2.1) and Google Play (the "App access" declaration in Play Console) both require working credentials for every login-gated area of the app. Prepare a demo **customer** account and a demo **staff** account (least-privileged permissions that still demonstrate the admin area) against an API that stays reachable for the entire review window.
+- **Disclose the admin mode**: an undocumented staff area risks rejection under Apple 2.3.1 (hidden features). The App Review notes must state that the app contains a staff-only ERP section and explain how to reach it with the demo staff credentials; the Play "App access" declaration must list it the same way.
+- **Account deletion — recorded upstream blocker**: both stores require in-app account deletion when the app offers account creation (Apple 5.1.1(v); Google Play additionally requires a web deletion link declared in the Data safety form). The API has no deletion endpoint today (`apps/api/src/modules/auth/auth.routes.ts` exposes only signup/login/refresh/logout). Like checkout and contact, this must be added upstream (API + web account page) first and then mirrored on mobile — store submission cannot pass without it.
+- **Data disclosure forms**: Apple privacy nutrition labels + the iOS privacy manifest; Google Play Data safety form (account data, order/address data, no third-party tracking SDKs). A public privacy-policy URL is mandatory on both stores.
+- **Payments**: COD for physical goods is exempt from in-app purchase requirements on both stores — no IAP work needed.
+
+**Exit criteria**: `eas build` produces installable .aab/.ipa; internal-track/TestFlight installs pass the complete parity checklist against the production API; demo customer + staff review accounts exist and are documented in both consoles; the account-deletion blocker is resolved upstream and mirrored on mobile. Checkout and contact join this checklist only after their explicitly recorded upstream blockers are resolved.
 
 ---
 
@@ -225,7 +263,8 @@ apps/mobile/
 │   ├── product/[slug]  category/[slug]  offers/  offer/[slug]
 │   ├── collections/  collection/[slug]  checkout  login  signup
 │   ├── wishlist  order/[id]  contact  page/[key]
-│   └── admin/_layout  login  index  orders  order/[id]
+│   └── admin/_layout  login  index  orders  order/[id]  products  categories  offers
+│       collections  advices  shop-media  reviews  sales  staff  trash
 └── src/
     ├── theme.ts  constants/storage.ts
     ├── lib/lang.tsx  cart.tsx
