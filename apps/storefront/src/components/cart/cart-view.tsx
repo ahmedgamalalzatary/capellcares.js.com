@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type Offer, type Collection } from "@capella/shared";
-import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Category, type Language, type Product, type Offer, type Collection } from "@capella/shared";
+import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -14,6 +14,8 @@ interface Resolved {
   key: string;
   title: string;
   meta: string;
+  /** Localized category name; present on product lines whose category resolved. */
+  category?: string;
   unitPrice: number;
   qty: number;
   slug: string;
@@ -28,6 +30,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   // Track whether the catalog fetch has resolved successfully. The cart's source
   // of truth is `lines` (in memory / localStorage); the fetch only enriches each
   // line with name/price/image. Until it lands — or if it fails — we must NOT
@@ -38,12 +41,13 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
-      .then(([p, o, c]) => {
+    Promise.all([fetchProducts(), fetchOffers(), fetchCollections(), fetchCategories()])
+      .then(([p, o, c, cats]) => {
         if (cancelled) return;
         setProducts(p);
         setOffers(o);
         setCollections(c);
+        setCategories(cats);
         setCatalogLoaded(true);
       })
       .catch(() => { });
@@ -60,11 +64,13 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           const p = products.find((p) => p.id === l.productId);
           const v = p?.variants.find((v) => v.id === l.variantId);
           if (!p || !v) return null;
+          const category = categories.find((c) => c.id === p.categoryId);
           return {
             key,
             type: "product" as const,
             title: pickLang(p.name, lang),
             meta: `${dict.common.size}: ${v.size}`,
+            category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,
             slug: `/${lang}/products/${p.slug}`,
@@ -106,7 +112,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         };
       })
       .filter(Boolean) as Resolved[];
-  }, [lines, lang, dict, keyOf, products, offers, collections]);
+  }, [lines, lang, dict, keyOf, products, offers, collections, categories]);
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
   const totalUnits = resolved.reduce((acc, r) => acc + r.qty, 0);
@@ -180,7 +186,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                       <Link href={r.slug} className="mt-1 block truncate font-medium text-ink hover:text-accent">
                         {r.title}
                       </Link>
-                      <div className="mt-1 truncate text-sm text-(--ink-3)">{r.meta}</div>
+                      <div className="mt-1 truncate text-sm text-(--ink-3)">
+                        {r.category ? `${r.category} · ` : ""}{r.meta}
+                      </div>
                       <div className="mt-2 text-sm text-(--ink-2)">
                         {formatPrice(r.unitPrice, lang)}
                         {r.qty > 1 ? <span className="text-(--ink-3)"> {dict.cart.each}</span> : null}

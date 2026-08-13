@@ -20,7 +20,8 @@ vi.mock("@/lib/api/client", () => ({
   // The order cards resolve line items back to the live catalog for thumbnails.
   fetchProducts: () => Promise.resolve([]),
   fetchOffers: () => Promise.resolve([]),
-  fetchCollections: () => Promise.resolve([])
+  fetchCollections: () => Promise.resolve([]),
+  fetchCategories: () => Promise.resolve([])
 }));
 
 const dict = {

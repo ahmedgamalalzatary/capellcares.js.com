@@ -107,6 +107,25 @@ describe("SearchOverlay", () => {
     );
   });
 
+  it("locks page scroll while open and restores it on close", () => {
+    const dict = getDict("en");
+    const { rerender, unmount } = render(
+      createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() })
+    );
+
+    expect(document.body.style.overflow).toBe("hidden");
+
+    rerender(createElement(SearchOverlay, { lang: "en", dict, open: false, onClose: vi.fn() }));
+    expect(document.body.style.overflow).toBe("");
+
+    rerender(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+    expect(document.body.style.overflow).toBe("hidden");
+
+    // Unmounting mid-open (e.g. a route change) must not leave the page locked.
+    unmount();
+    expect(document.body.style.overflow).toBe("");
+  });
+
   it("shows the effective discounted price in search results, not the original price", async () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));

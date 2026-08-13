@@ -3,9 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "types": ["jest"]
+    "types": [
+      "jest"
+    ]
   },
-  "include": ["app", "src", "__tests__", "expo-env.d.ts"]
+  "include": [
+    "app",
+    "src",
+    "__tests__"
+  ]
 }

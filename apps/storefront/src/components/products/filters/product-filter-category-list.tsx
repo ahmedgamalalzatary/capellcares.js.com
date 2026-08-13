@@ -130,7 +130,11 @@ export function ProductFilterCategoryList({
         indent={indent}
       >
         {isScopedRoot
-          ? String(dict.nav.allCategoryTypes).replace("{name}", pickLang(item.name, lang))
+          ? (
+            <span className="uppercase">
+              {String(dict.nav.allCategoryTypes).replace("{name}", pickLang(item.name, lang))}
+            </span>
+          )
           : pickLang(item.name, lang)}
       </CategoryPill>
     );

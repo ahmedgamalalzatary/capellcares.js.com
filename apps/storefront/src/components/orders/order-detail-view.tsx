@@ -11,6 +11,7 @@ import {
   formatOrderDate,
   itemsCountLabel,
   OrderItemMedia,
+  orderItemCategory,
   orderItemHref,
   orderItemName,
   paymentStatusChip,
@@ -99,6 +100,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
             {order.items.map((item) => {
               const href = orderItemHref(item, catalog, lang);
               const name = orderItemName(item, lang);
+              const category = orderItemCategory(item, catalog, lang);
 
               return (
                 <li
@@ -126,6 +128,12 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                       )}
 
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-(--ink-3)">
+                        {category ? (
+                          <>
+                            <span>{category}</span>
+                            <span aria-hidden>·</span>
+                          </>
+                        ) : null}
                         {item.snapshotSizeLabel ? <span>{item.snapshotSizeLabel}</span> : null}
                         {item.snapshotSizeLabel ? <span aria-hidden>·</span> : null}
                         <span>{formatPrice(item.unitPrice, lang)} × {item.qty}</span>
