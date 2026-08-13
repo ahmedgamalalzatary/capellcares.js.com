@@ -33,7 +33,8 @@ test("storefront product endpoints conform to the shared product contract", asyn
     assert.ok(product.media.length > 0, "expected product to expose at least one media item");
     assert.deepEqual(product.media[0], {
       type: "image",
-      url: product.imagePath
+      arUrl: null,
+      enUrl: product.imagePath
     });
   });
 });
