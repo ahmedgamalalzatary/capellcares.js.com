@@ -250,7 +250,7 @@ describe("ShopMegaMenu", () => {
     ).toEqual(["Cleansers", "Serums"]);
   });
 
-  it("renders category images beside the child category text when available", () => {
+  it("renders child categories as text only, even when they carry an image", () => {
     render(createElement(ShopMegaMenu, {
       lang: "en",
       dict,
@@ -261,8 +261,10 @@ describe("ShopMegaMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
 
-    expect(screen.getByAltText("Cleansers")).toHaveAttribute("src", "/uploads/cleansers.jpg");
+    // "Cleansers" has an imagePath in the fixture; the menu deliberately shows
+    // the label alone, so no thumbnail should be rendered for it.
     expect(screen.getByRole("link", { name: "Cleansers" })).toBeInTheDocument();
+    expect(screen.queryByAltText("Cleansers")).toBeNull();
     expect(screen.queryByAltText("Serums")).toBeNull();
   });
 });

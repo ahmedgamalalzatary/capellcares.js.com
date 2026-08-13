@@ -179,15 +179,16 @@ export function CollectionForm({
             </table>
           </div>
         </section>
-      </div>
 
-      <aside className="stack stack--lg">
+        {/* Media needs the wide column — the 320px rail squeezed the AR/EN pair. */}
         <ImageFieldCard
           title="وسائط المجموعة"
           error={errors.image}
           uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "collections.update" : "collections.create"} entityLabel="مجموعة" testIdPrefix="collection" />}
         />
+      </div>
 
+      <aside className="stack stack--lg">
         <section className="card">
           <div className="card__head"><h3 className="card__title">حسابات المجموعة</h3></div>
           <div className="card__body stack">

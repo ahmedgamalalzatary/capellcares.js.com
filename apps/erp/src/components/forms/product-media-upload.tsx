@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import type { EntityMedia, Language } from "@capella/shared";
-import { resolveLocalizedEntityMediaUrl } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { api, type ErpUploadContext } from "@/lib/api/client";
+import "./entity-media.css";
 
 interface Props {
   value: EntityMedia[];
@@ -16,6 +16,11 @@ interface Props {
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 const VIDEO_ACCEPT = "video/mp4,video/webm";
+
+const LANG_LABEL: Record<Language, { title: string; code: string }> = {
+  ar: { title: "الصورة العربية", code: "AR" },
+  en: { title: "الصورة الإنجليزية", code: "EN" }
+};
 
 export function EntityMediaUpload({
   value,
@@ -139,78 +144,144 @@ export function EntityMediaUpload({
       : entry));
   };
 
+  const imageCount = value.filter((item) => item.type === "image").length;
+  const hasVideo = value.some((item) => item.type === "video");
+  const canUpload = Boolean(uploadContext) && !uploading;
+
   return (
-    <div className="stack">
-      <div className="row row--between">
-        <div className="muted fs-12">
-          أول صورة هي الأساسية. لكل صورة نسخة عربية وإنجليزية اختيارية، ويُستخدم المتاح منهما عند غياب الأخرى.
+    <div className="emedia">
+      <div className="emedia__bar">
+        <div className="emedia__summary">
+          <span className="emedia__pill">{imageCount}</span>
+          <span>{imageCount === 1 ? "صورة" : "صور"}</span>
+          {hasVideo ? <span className="muted fs-12">· فيديو واحد</span> : null}
         </div>
-        <div className="row row--gap-sm">
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addArRef.current?.click()} disabled={uploading || !uploadContext}>
-            <Icon.Upload size={14} /> إضافة صور عربية
+        <div className="emedia__actions">
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addArRef.current?.click()} disabled={!canUpload}>
+            <Icon.Upload size={14} /> صور عربية
           </button>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addEnRef.current?.click()} disabled={uploading || !uploadContext}>
-            <Icon.Upload size={14} /> إضافة صور إنجليزية
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addEnRef.current?.click()} disabled={!canUpload}>
+            <Icon.Upload size={14} /> صور إنجليزية
           </button>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addVideoRef.current?.click()} disabled={uploading || !uploadContext || value.some((item) => item.type === "video")}>
-            <Icon.Upload size={14} /> إضافة فيديو
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addVideoRef.current?.click()} disabled={!canUpload || hasVideo}>
+            <Icon.Upload size={14} /> فيديو
           </button>
         </div>
       </div>
+
+      <p className="emedia__hint">
+        الصورة الأولى هي الأساسية في المتجر. لكل صورة نسخة عربية وإنجليزية اختيارية، ويُعرض المتاح منهما عند غياب الأخرى.
+      </p>
 
       <input ref={addArRef} data-testid={`${testIdPrefix}-media-add-ar-input`} type="file" accept={IMAGE_ACCEPT} multiple className="file-input-hidden" onChange={(event) => { void addImages(event.target.files, "ar"); }} />
       <input ref={addEnRef} data-testid={`${testIdPrefix}-media-add-en-input`} type="file" accept={IMAGE_ACCEPT} multiple className="file-input-hidden" onChange={(event) => { void addImages(event.target.files, "en"); }} />
       <input ref={addVideoRef} data-testid={`${testIdPrefix}-media-add-video-input`} type="file" accept={VIDEO_ACCEPT} className="file-input-hidden" onChange={(event) => { void addVideo(event.target.files); }} />
 
       {value.length === 0 ? (
-        <div className="muted fs-12">ارفعي صور {entityLabel} وفيديوه إن وجد.</div>
+        <div className="emedia__empty-state">
+          <span className="emedia__empty-icon"><Icon.Upload size={20} /></span>
+          <strong className="fs-13">لا توجد وسائط بعد</strong>
+          <span className="fs-12">ارفعي صور {entityLabel} وفيديوه إن وجد، باستخدام الأزرار بالأعلى.</span>
+        </div>
       ) : (
-        <div className="stack">
-          {value.map((item, index) => (
-            <div key={item.type === "video" ? `video-${item.url}-${index}` : `image-${item.arUrl}-${item.enUrl}-${index}`} data-testid={`${testIdPrefix}-media-item`} className="media-tile stack">
-              {item.type === "video" ? (
-                <div className="row row--between">
-                  <div className="row">
-                    <video data-testid={`${testIdPrefix}-media-video-${index}`} src={item.url} className="media-tile__preview"><track kind="captions" /></video>
-                    <strong className="fs-13">فيديو مشترك</strong>
+        <div className="emedia__grid">
+          {value.map((item, index) => {
+            const key = item.type === "video"
+              ? `video-${item.url}-${index}`
+              : `image-${item.arUrl}-${item.enUrl}-${index}`;
+
+            return (
+              <div key={key} data-testid={`${testIdPrefix}-media-item`} className={`emedia__card${item.type === "video" ? " emedia__card--video" : ""}`}>
+                <div className="emedia__head">
+                  <div className="emedia__head-start">
+                    <span className="emedia__index">{index + 1}</span>
+                    {item.type === "video"
+                      ? <span className="fs-13 fw-600">فيديو مشترك</span>
+                      : index === 0 ? <span className="emedia__tag">الصورة الأساسية</span> : null}
                   </div>
-                  <button type="button" className="btn btn--ghost btn--sm" aria-label="إزالة" onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Icon.Trash size={14} /></button>
+                  <div className="emedia__head-end">
+                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={index === 0}>
+                      <span className="icon-flip"><Icon.Chevron size={14} /></span>
+                    </button>
+                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={index === value.length - 1}>
+                      <Icon.Chevron size={14} />
+                    </button>
+                    {item.type === "video" ? (
+                      <button type="button" className="btn btn--ghost btn--sm" aria-label="إزالة" onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                        <Icon.Trash size={14} />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              ) : (
-                <div className="shop-media-item__images">
-                  {(["ar", "en"] as const).map((lang) => {
-                    const url = lang === "ar" ? item.arUrl : item.enUrl;
-                    return (
-                      <div key={lang} className="stack stack--xs">
-                        <strong className="fs-13">{lang === "ar" ? "الصورة العربية" : "الصورة الإنجليزية"}</strong>
-                        {url ? <img src={url} alt="" className="media-tile__preview" /> : <span className="muted fs-12">غير مضافة — ستُستخدم اللغة الأخرى</span>}
-                        <div className="row row--gap-sm">
-                          <label className="btn btn--ghost btn--sm">
-                            <Icon.Upload size={14} /> {url ? "استبدال" : "إضافة"}
-                            <input
-                              data-testid={`${testIdPrefix}-media-image-${lang}-input-${index}`}
-                              type="file"
-                              accept={IMAGE_ACCEPT}
-                              className="file-input-hidden"
-                              onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
-                            />
-                          </label>
-                          {url ? <button type="button" className="btn btn--ghost btn--sm" onClick={() => removeImageLanguage(index, lang)}><Icon.Trash size={14} /> إزالة</button> : null}
+
+                {item.type === "video" ? (
+                  <div className="emedia__video-row">
+                    <div className="emedia__video-frame">
+                      <video data-testid={`${testIdPrefix}-media-video-${index}`} src={item.url} className="emedia__video" controls>
+                        <track kind="captions" />
+                      </video>
+                    </div>
+                    <span className="muted fs-12">يُعرض هذا الفيديو للغتين معًا.</span>
+                  </div>
+                ) : (
+                  <div className="emedia__langs">
+                    {(["ar", "en"] as const).map((lang) => {
+                      const url = lang === "ar" ? item.arUrl : item.enUrl;
+                      const label = LANG_LABEL[lang];
+                      const inputTestId = `${testIdPrefix}-media-image-${lang}-input-${index}`;
+
+                      return (
+                        <div key={lang} className="emedia__lang">
+                          <span className="emedia__label">
+                            <span className="emedia__label-flag">{label.code}</span>
+                            {label.title}
+                          </span>
+
+                          {url ? (
+                            <div className="emedia__frame">
+                              <img src={url} alt="" className="emedia__img" />
+                              <div className="emedia__overlay">
+                                <label className="emedia__chip">
+                                  <Icon.Upload size={12} /> استبدال
+                                  <input
+                                    data-testid={inputTestId}
+                                    type="file"
+                                    accept={IMAGE_ACCEPT}
+                                    className="file-input-hidden"
+                                    onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  className="emedia__chip emedia__chip--danger"
+                                  aria-label={`إزالة ${label.title}`}
+                                  onClick={() => removeImageLanguage(index, lang)}
+                                >
+                                  <Icon.Trash size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="emedia__frame emedia__frame--empty">
+                              <Icon.Upload size={16} />
+                              <span>غير مضافة — ستُستخدم صورة اللغة الأخرى</span>
+                              <input
+                                data-testid={inputTestId}
+                                type="file"
+                                accept={IMAGE_ACCEPT}
+                                className="file-input-hidden"
+                                onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
+                              />
+                            </label>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="row row--between">
-                <span className="muted fs-12">{index === 0 && item.type === "image" ? "الصورة الأساسية" : resolveLocalizedEntityMediaUrl(item, "ar")}</span>
-                <div className="row row--gap-sm">
-                  <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={index === 0}><span className="icon-flip"><Icon.Chevron size={14} /></span></button>
-                  <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={index === value.length - 1}><Icon.Chevron size={14} /></button>
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

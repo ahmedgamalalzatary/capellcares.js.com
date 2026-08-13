@@ -188,13 +188,34 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               </div>
             </div>
           </section>
+
+          {/* Media lives in the wide column: the language pairs need room to
+              breathe, which the 340px rail never had. */}
+          <ImageFieldCard
+            id="section-media"
+            step="04"
+            title="وسائط المنتج"
+            error={errors.image}
+            uploadSlot={<ProductMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "products.update" : "products.create"} />}
+          />
+
+          <ImageFieldCard
+            step="05"
+            title="صورة Hover لبطاقة المنتج"
+            uploadSlot={<ProductHoverImageUpload
+              arValue={arHoverImagePath}
+              enValue={enHoverImagePath}
+              onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
+              uploadContext={mode === "edit" ? "products.update" : "products.create"}
+            />}
+          />
         </div>
 
         <aside className="editor-rail" id="section-publish">
           <section className="card">
             <div className="card__head">
               <div className="section-num">
-                <span className="section-num__digit">04</span>
+                <span className="section-num__digit">06</span>
                 <span className="section-num__rule" />
                 <h3 className="card__title">النشر</h3>
               </div>
@@ -243,7 +264,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
           <section className="card">
             <div className="card__head">
               <div className="section-num">
-                <span className="section-num__digit">05</span>
+                <span className="section-num__digit">07</span>
                 <span className="section-num__rule" />
                 <h3 className="card__title">العناصر المرتبطة</h3>
               </div>
@@ -263,25 +284,6 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
             </div>
           </section>
 
-          <ImageFieldCard
-            title="وسائط المنتج"
-            error={errors.image}
-            uploadSlot={
-              <div id="section-media">
-                <ProductMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "products.update" : "products.create"} />
-              </div>
-            }
-          />
-
-          <ImageFieldCard
-            title="صورة Hover لبطاقة المنتج"
-            uploadSlot={<ProductHoverImageUpload
-              arValue={arHoverImagePath}
-              enValue={enHoverImagePath}
-              onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
-              uploadContext={mode === "edit" ? "products.update" : "products.create"}
-            />}
-          />
         </aside>
       </div>
 

@@ -169,15 +169,16 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
             </table>
           </div>
         </section>
-      </div>
 
-      <aside className="stack stack--lg">
+        {/* Media needs the wide column — the 320px rail squeezed the AR/EN pair. */}
         <ImageFieldCard
           title="وسائط العرض"
           error={errors.image}
           uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "offers.update" : "offers.create"} entityLabel="عرض" testIdPrefix="offer" />}
         />
+      </div>
 
+      <aside className="stack stack--lg">
         <section className="card">
           <div className="card__head"><h3 className="card__title">حسابات الباقة</h3></div>
           <div className="card__body stack">

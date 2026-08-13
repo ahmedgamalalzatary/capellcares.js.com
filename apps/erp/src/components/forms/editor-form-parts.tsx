@@ -106,12 +106,25 @@ interface ImageFieldCardProps {
   title: string;
   uploadSlot: ReactNode;
   error?: string;
+  /** Set on editors whose main column numbers its sections (e.g. "04"). */
+  step?: string;
+  id?: string;
 }
 
-export function ImageFieldCard({ title, uploadSlot, error }: ImageFieldCardProps) {
+export function ImageFieldCard({ title, uploadSlot, error, step, id }: ImageFieldCardProps) {
   return (
-    <section className="card">
-      <div className="card__head"><h3 className="card__title">{title}</h3></div>
+    <section className="card" id={id}>
+      <div className="card__head">
+        {step ? (
+          <div className="section-num">
+            <span className="section-num__digit">{step}</span>
+            <span className="section-num__rule" />
+            <h3 className="card__title">{title}</h3>
+          </div>
+        ) : (
+          <h3 className="card__title">{title}</h3>
+        )}
+      </div>
       <div className="card__body">
         {uploadSlot}
         {error ? <div className="field-error field-error--offset">{error}</div> : null}
