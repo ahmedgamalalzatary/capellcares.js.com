@@ -1,6 +1,6 @@
 # Capella Mobile App (Expo / React Native) — Combined Storefront + ERP
 
-> Status: **plan only — nothing implemented yet.**
+> Status: **implementation active — Phase 0 is complete; Phase 1 scaffold is implemented and under final verification.**
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **one combined app** (customer storefront + ERP admin unlocked by staff login), **full parity** with the web apps — the same styling, routes, functionality, data, permissions, languages, and known unfinished functionality; nothing product-level is added, removed, or redesigned for mobile. Native controls and layouts adapt the same design to phone interaction without changing behavior.
 >
 > Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
@@ -67,14 +67,15 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 
 | File | Purpose |
 |---|---|
-| `apps/mobile/package.json` | `@capella/mobile`; current stable Expo SDK with Expo-selected compatible React/React Native versions; expo-router, expo-secure-store, `@react-native-async-storage/async-storage`, expo-image, expo-font + `@expo-google-fonts/{roboto,tajawal,lobster}`, expo-localization, expo-updates, react-native-safe-area-context, react-native-screens, React Native WebView for the same advice-video presentation, icons, and `"@capella/shared": "workspace:*"`; scripts `dev`, `build` (bundle/export both native platforms), `lint`, `typecheck`, and `test` so Turbo validates the app; Expo-compatible TypeScript, lint, and React Native test dependencies are installed directly for pnpm's isolated layout |
-| `apps/mobile/app.json` | name "Capella Care", scheme `capella`, splash/background `#f1f0ed`, `supportsRTL`, bundle ids `com.capellacare.app`, plugins expo-router / expo-secure-store / expo-localization, `newArchEnabled` |
-| `apps/mobile/metro.config.js` | `watchFolders=[repo root]`, `nodeModulesPaths` (app + root), `disableHierarchicalLookup: true`, `unstable_enablePackageExports: true`, and the `.js`→extensionless `resolveRequest` shim for shared's NodeNext imports |
+| `apps/mobile/package.json` | `@capella/mobile`; current stable Expo SDK with Expo-selected compatible React/React Native versions; expo-router, expo-dev-client, expo-secure-store, `@react-native-async-storage/async-storage`, expo-image, expo-font + `@expo-google-fonts/{roboto,tajawal,lobster}`, expo-localization, expo-updates, react-native-safe-area-context, react-native-screens, React Native WebView for the same advice-video presentation, icons, and `"@capella/shared": "workspace:*"`; scripts `dev`, `build` (bundle/export both native platforms), `lint`, `typecheck`, and `test` so Turbo validates the app; Expo-compatible TypeScript, lint, and React Native test dependencies are installed directly for pnpm's isolated layout |
+| `apps/mobile/app.json` | name "Capella Care", scheme `capella`, splash/background `#f1f0ed`, `supportsRTL`, bundle ids `com.capellacare.app`, plugins expo-router / expo-secure-store / expo-localization; use SDK 57's default New Architecture (the removed `newArchEnabled` config key is not valid in its schema) |
+| `apps/mobile/metro.config.js` | extend `expo/metro-config` and keep SDK 52+ automatic pnpm-monorepo resolution; add only a scoped `.js`→extensionless `resolveRequest` shim for shared's NodeNext imports, with fallback to real `.js` files |
 | `apps/mobile/babel.config.js` | `babel-preset-expo` |
 | `apps/mobile/tsconfig.json` | extends `expo/tsconfig.base`, `@/*` → `./src/*` alias (same convention as the web apps) |
 | `apps/mobile/expo-env.d.ts`, `apps/mobile/.gitignore`, `apps/mobile/.env.example` | Expo types; ignore `.expo/ android/ ios/ dist/ .env`; document `EXPO_PUBLIC_API_URL` per target. Emulator (`http://10.0.2.2:4000`) and iOS simulator (`http://localhost:4000`) may be inferred in dev; **a physical device (`http://<LAN-IP>:4000`) and every production build must set the variable explicitly** — neither can reach a `localhost` fallback |
 | `apps/mobile/app/_layout.tsx` | minimal root `<Stack>` |
 | `apps/mobile/app/index.tsx` | temporary placeholder that imports something from `@capella/shared` (e.g. `getDict("ar").brand`) to prove shared-package bundling. **Deleted in Phase 6**, where `(tabs)/index.tsx` takes over `/` — the `(tabs)` group adds no URL segment, so the two files would otherwise both claim the root route |
+| `packages/shared/package.json`, web app manifests (edit) | keep DOM-only UI libraries as optional peers of shared and direct dependencies of the storefront/ERP, so a mobile install of the pure shared exports cannot pull in a second React/Radix tree |
 | `turbo.json` (edit) | declare `EXPO_PUBLIC_API_URL` for the mobile tasks that consume it, especially `build` and `test`, so Turbo environment isolation and cache invalidation are correct |
 
 **Exit criteria**
@@ -82,6 +83,8 @@ The app boots to a placeholder screen; Metro proves it can bundle `@capella/shar
 - `pnpm --filter @capella/mobile lint`, `typecheck`, and `test` are green.
 - Both Android and iOS exports bundle without resolver errors ← proves the shared-TS/Metro integration on both targets.
 - An installable development build opens on an emulator/simulator or physical device and shows the placeholder with a dict string.
+
+Implementation verification: Expo Doctor, dependency compatibility, lint, typecheck, tests, and Android/iOS exports are green. A device launch remains an external environment check because this workspace has no Android SDK/emulator/device and runs on Windows without an iOS toolchain.
 
 ---
 
@@ -164,7 +167,8 @@ Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo
 
 > **Known unfinished upstream functionality:** checkout does not currently work end-to-end in the existing app. The cart is implemented in this phase, but mobile checkout remains visibly unavailable and is not represented as working. Finish and validate the existing web/API checkout first; then implement the same contract and behavior here without mobile-only product changes.
 
-**Files** — `(tabs)/cart.tsx` (lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`), `checkout.tsx` (full form: governorate picker from `GOVERNORATES`, `EG_PHONE_REGEX` validation, notes, COD block, POST `/api/v1/checkout`, success state clears cart — mirrors web checkout), plus an `order-success` state/screen.
+**Files** — `(tabs)/cart.tsx` (lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`).
+`checkout.tsx` and `order-success` are post-blocker deliverables. Until the upstream checkout flow works, mobile must expose only an unavailable checkout state.
 
 **Exit criteria**: cart behavior and tests match the web app. After the upstream checkout blocker is resolved, a real COD order placed from the phone appears in the ERP web app and validation errors match web copy in both languages. Until then, checkout is explicitly recorded as deferred rather than passing this criterion.
 

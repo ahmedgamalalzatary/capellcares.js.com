@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Capella Care",
+    "slug": "capella-care",
+    "version": "0.1.0",
+    "scheme": "capella",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f1f0ed",
+    "ios": {
+      "bundleIdentifier": "com.capellacare.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.capellacare.app"
+    },
+    "extra": {
+      "supportsRTL": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f1f0ed"
+        }
+      ]
+    ]
+  }
+}

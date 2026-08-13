@@ -32,6 +32,15 @@
         "STOREFRONT_REVALIDATE_SECRET",
         "HOSTINGER_PUBLIC_BASE_URL"
       ]
+    },
+    "@capella/mobile#build": {
+      "env": ["EXPO_PUBLIC_API_URL"]
+    },
+    "@capella/mobile#dev": {
+      "env": ["EXPO_PUBLIC_API_URL"]
+    },
+    "@capella/mobile#test": {
+      "env": ["EXPO_PUBLIC_API_URL"]
     }
   }
 }
