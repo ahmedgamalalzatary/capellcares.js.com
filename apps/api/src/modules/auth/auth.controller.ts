@@ -51,13 +51,32 @@ export async function refreshController(req: Request, res: Response) {
   }
 }
 
-export async function logoutController(req: Request, res: Response) {
+async function handleLogout(
+  req: Request,
+  res: Response,
+  revokeSession: typeof logoutCustomerSession
+) {
   const token = extractRefreshToken(req, CUSTOMER_REFRESH_COOKIE);
   if (token) {
-    await logoutCustomerSession(token);
+    try {
+      await revokeSession(token);
+    } catch {
+      // Logout is idempotent: a failed or already-unavailable session must not
+      // prevent clients from clearing their local authentication state.
+    }
   }
   if (!isMobileClient(req)) {
     res.cookie(CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
   }
   return res.status(204).send();
+}
+
+export function createLogoutController(
+  revokeSession: typeof logoutCustomerSession = logoutCustomerSession
+) {
+  return (req: Request, res: Response) => handleLogout(req, res, revokeSession);
+}
+
+export async function logoutController(req: Request, res: Response) {
+  return handleLogout(req, res, logoutCustomerSession);
 }

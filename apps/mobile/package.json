@@ -15,20 +15,21 @@
     "@expo-google-fonts/lobster": "^0.4.1",
     "@expo-google-fonts/roboto": "^0.4.3",
     "@expo-google-fonts/tajawal": "^0.4.1",
+    "@expo/metro-runtime": "~57.0.10",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "expo": "~57.0.12",
-    "expo-constants": "~57.0.10",
-    "expo-dev-client": "~57.0.11",
+    "expo": "~57.0.13",
+    "expo-constants": "~57.0.11",
+    "expo-dev-client": "~57.0.12",
     "expo-font": "~57.0.1",
-    "expo-image": "~57.0.2",
-    "expo-linking": "~57.0.5",
+    "expo-image": "~57.0.3",
+    "expo-linking": "~57.0.6",
     "expo-localization": "~57.0.1",
-    "expo-router": "~57.0.12",
+    "expo-router": "~57.0.13",
     "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.6",
     "expo-status-bar": "~57.0.1",
-    "expo-updates": "~57.0.13",
+    "expo-updates": "~57.0.14",
     "react": "19.2.3",
     "react-native": "0.86.2",
     "react-native-safe-area-context": "~5.7.0",
@@ -49,6 +50,9 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
     "transformIgnorePatterns": [
       "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg))"
     ]

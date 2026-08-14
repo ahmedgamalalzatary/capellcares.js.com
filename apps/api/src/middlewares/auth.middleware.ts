@@ -49,7 +49,7 @@ export function optionalAuthMiddleware(req: Request, res: Response, next: NextFu
   const user = parseAuthUser(req);
   if (user) {
     (req as AuthenticatedRequest).user = user;
-  } else if (req.headers.authorization?.trim()) {
+  } else if (req.headers.authorization !== undefined) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   return next();

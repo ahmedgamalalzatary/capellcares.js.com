@@ -12,7 +12,7 @@ function createToken(payload: Omit<jwt.JwtPayload, "sub"> & { sub?: number | str
 
 function createRequest(authorization?: string) {
   return {
-    headers: authorization ? { authorization } : {}
+    headers: authorization === undefined ? {} : { authorization }
   };
 }
 
@@ -179,4 +179,32 @@ test("optionalAuthMiddleware allows a request with no authorization header", () 
   assert.equal(req.user, undefined);
   assert.equal(nextCalled, true);
   assert.equal(res.statusCode, 200);
+});
+
+test("optionalAuthMiddleware rejects an empty authorization header", () => {
+  const req = createRequest("");
+  const res = createResponse();
+  let nextCalled = false;
+
+  optionalAuthMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
+});
+
+test("optionalAuthMiddleware rejects a whitespace-only authorization header", () => {
+  const req = createRequest("   ");
+  const res = createResponse();
+  let nextCalled = false;
+
+  optionalAuthMiddleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.jsonBody, { message: "Unauthorized" });
+  assert.equal(nextCalled, false);
 });

@@ -33,7 +33,8 @@
         {
           "backgroundColor": "#f1f0ed"
         }
-      ]
+      ],
+      "expo-image"
     ],
     "owner": "alzatary"
   }
