@@ -150,8 +150,21 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T & Pro
 function normalizeBundle<T extends OfferApiShape | CollectionApiShape>(bundle: T): T {
   return {
     ...bundle,
+    id: requiredPositiveId(bundle.id, "bundle id"),
+    categoryId:
+      bundle.categoryId == null
+        ? null
+        : requiredPositiveId(bundle.categoryId, "bundle categoryId"),
     imagePath: resolveMediaUrl(bundle.imagePath),
     media: normalizeMedia(bundle.media),
+    items: bundle.items.map((item) => ({
+      ...item,
+      id:
+        item.id == null
+          ? undefined
+          : requiredPositiveId(item.id, "bundle item id"),
+      variantId: requiredPositiveId(item.variantId, "bundle item variantId")
+    })),
     relatedItems: normalizeRelatedItems(
       bundle.relatedItems as RelatedItemCard[] | undefined
     )
@@ -186,6 +199,7 @@ export function normalizeShopMediaSection(
 export function normalizeWishlistEntry(entry: WishlistEntry): WishlistEntry {
   return {
     ...entry,
+    entityId: requiredPositiveId(entry.entityId, "wishlist entityId"),
     imagePath: resolveNullableMediaUrl(entry.imagePath),
     href: resolveNativeEntityHref(entry.href)
   };

@@ -259,22 +259,53 @@ describe("mobile API client", () => {
     await expect(client.claimReviewPrompt("token", { lang: "ar" })).resolves.toBeNull();
   });
 
-  test("submits checkout without retrying an expired authenticated request", async () => {
+  test("refreshes and retries checkout once after authentication rejects the request", async () => {
     const refreshAccessToken = jest.fn().mockResolvedValue("new-token");
     http.configureAuthSessionAdapter({
-      getAccessToken: () => "new-token",
+      getAccessToken: () => "old-token",
       getSessionRevision: () => 1,
       refreshAccessToken
     });
-    global.fetch.mockResolvedValue(
-      response(401, { message: "Authentication expired" })
-    );
+    global.fetch
+      .mockResolvedValueOnce(response(401, { message: "Authentication expired" }))
+      .mockResolvedValueOnce(response(201, { id: 9, orderCode: "ORD-9", paymentStatus: "pending" }));
 
     await expect(
       client.submitCheckout({ items: [] }, "old-token", { lang: "ar" })
-    ).rejects.toThrow("Authentication expired");
+    ).resolves.toMatchObject({ orderCode: "ORD-9" });
 
-    expect(refreshAccessToken).not.toHaveBeenCalled();
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test("drops malformed catalog and wishlist rows without losing valid siblings", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const category = { id: 2, parentId: null, slug: "care", name: { ar: "Care", en: "Care" } };
+    const wishlist = {
+      entityType: "product",
+      entityId: 1,
+      name: { ar: "Serum", en: "Serum" },
+      imagePath: null,
+      href: "/products/serum",
+      availability: "available"
+    };
+    global.fetch
+      .mockResolvedValueOnce(response(200, { items: [category, { ...category, id: 0 }] }))
+      .mockResolvedValueOnce(response(200, { items: [offer, { ...offer, id: 0 }] }))
+      .mockResolvedValueOnce(response(200, { items: [collection, { ...collection, id: 0 }] }))
+      .mockResolvedValueOnce(response(200, { items: [wishlist, { ...wishlist, entityId: 0 }] }));
+
+    await expect(client.fetchCategories()).resolves.toHaveLength(1);
+    await expect(client.fetchOffers()).resolves.toHaveLength(1);
+    await expect(client.fetchCollections()).resolves.toHaveLength(1);
+    await expect(client.fetchWishlist("token")).resolves.toHaveLength(1);
+  });
+
+  test("drops a malformed shop-media section without losing valid siblings", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const valid = { id: 1, slot: 1, status: "active", items: [] };
+    global.fetch.mockResolvedValue(response(200, { items: [valid, { id: 2 }] }));
+
+    await expect(client.fetchShopMediaSections()).resolves.toEqual([valid]);
   });
 });

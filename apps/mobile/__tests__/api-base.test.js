@@ -11,10 +11,7 @@ describe("mobile API base", () => {
   });
 
   test("uses a trimmed explicit Expo public API URL", () => {
-    let api = {};
-    try {
-      api = require("../src/lib/api/base");
-    } catch {}
+    const api = require("../src/lib/api/base");
 
     expect(typeof api.resolveMobileApiBase).toBe("function");
     expect(

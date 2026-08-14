@@ -54,6 +54,22 @@ type LanguageOptions = {
   lang?: FetchLanguage;
 };
 
+function normalizeRows<TInput, TOutput>(
+  items: TInput[],
+  normalizer: (item: TInput) => TOutput,
+  label: string
+): TOutput[] {
+  const normalized: TOutput[] = [];
+  for (const item of items) {
+    try {
+      normalized.push(normalizer(item));
+    } catch (error) {
+      console.error(`Failed to normalize ${label} payload`, { error, [label]: item });
+    }
+  }
+  return normalized;
+}
+
 export async function fetchProducts(params?: {
   q?: string;
   category?: string;
@@ -71,16 +87,7 @@ export async function fetchProducts(params?: {
     { lang: params?.lang, throwOnError: params?.throwOnError }
   );
 
-  return (data?.items ?? [])
-    .map((item) => {
-      try {
-        return normalizeProduct(item);
-      } catch (error) {
-        console.error("Failed to normalize product payload", { error, product: item });
-        return null;
-      }
-    })
-    .filter((item): item is Product => item != null);
+  return normalizeRows(data?.items ?? [], normalizeProduct, "product");
 }
 
 export async function fetchProductBySlug(
@@ -112,12 +119,12 @@ export async function fetchCategories(
     "/api/v1/categories",
     options
   );
-  return (data?.items ?? []).map(normalizeCategory);
+  return normalizeRows(data?.items ?? [], normalizeCategory, "category");
 }
 
 export async function fetchOffers(options?: PublicOptions): Promise<Offer[]> {
   const data = await getJSON<{ items: OfferApiShape[] }>("/api/v1/offers", options);
-  return (data?.items ?? []).map(normalizeOffer);
+  return normalizeRows(data?.items ?? [], normalizeOffer, "offer");
 }
 
 export async function fetchCollections(
@@ -127,7 +134,7 @@ export async function fetchCollections(
     "/api/v1/collections",
     options
   );
-  return (data?.items ?? []).map(normalizeCollection);
+  return normalizeRows(data?.items ?? [], normalizeCollection, "collection");
 }
 
 export async function fetchOfferBySlug(
@@ -186,7 +193,7 @@ export async function fetchShopMediaSections(
     "/api/v1/shop-media-sections",
     options
   );
-  return (data?.items ?? []).map(normalizeShopMediaSection);
+  return normalizeRows(data?.items ?? [], normalizeShopMediaSection, "shop media section");
 }
 
 export async function fetchCustomerOrders(
@@ -257,7 +264,7 @@ export async function fetchWishlist(
     accessToken,
     options
   );
-  return (data?.items ?? []).map(normalizeWishlistEntry);
+  return normalizeRows(data?.items ?? [], normalizeWishlistEntry, "wishlist entry");
 }
 
 export function addWishlistItem(
@@ -297,7 +304,7 @@ export function submitCheckout(
     "/api/v1/checkout",
     accessToken,
     { method: "POST", body: input },
-    { ...options, retryOn401: false }
+    options
   );
 }
 

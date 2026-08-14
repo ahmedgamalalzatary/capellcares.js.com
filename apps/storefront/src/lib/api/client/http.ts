@@ -1,5 +1,9 @@
 import { resolveApiBase } from "@capella/shared/api/base";
-import { getCurrentAccessToken, refreshAccessTokenOrNull } from "../../auth-provider.api";
+import {
+  getAuthSessionRevision,
+  getCurrentAccessToken,
+  refreshAccessTokenOrNull
+} from "../../auth-provider.api";
 import type { FetchLanguage } from "./types";
 
 export const API_BASE = resolveApiBase();
@@ -51,30 +55,36 @@ export async function getJSON<T>(
   return response.json() as Promise<T>;
 }
 
-export async function authedGetJSON<T>(path: string, accessToken: string, allowRefresh = true): Promise<T | null> {
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE}${path}`, {
-      cache: "no-store",
-      headers: {
-        authorization: `Bearer ${accessToken}`
-      }
-    });
-  } catch (error) {
-    if (isConnectionFailure(error)) {
-      return null;
+async function resolveRetryToken(failedToken: string, revision: number) {
+  if (getAuthSessionRevision() !== revision) return null;
+  const currentToken = getCurrentAccessToken();
+  if (currentToken && currentToken !== failedToken) return currentToken;
+
+  const refreshedToken = await refreshAccessTokenOrNull();
+  if (getAuthSessionRevision() !== revision) return null;
+  return refreshedToken && refreshedToken !== failedToken ? refreshedToken : null;
+}
+
+async function authedGetJSONInternal<T>(
+  path: string,
+  accessToken: string,
+  allowRefresh: boolean,
+  revision: number
+): Promise<T | null> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    headers: {
+      authorization: `Bearer ${accessToken}`
     }
-    throw error;
-  }
+  });
   if (!response.ok) {
     if (response.status === 404) {
       return null;
     }
     if (response.status === 401 && allowRefresh) {
-      const refreshedToken = await refreshAccessTokenOrNull();
-      const retryToken = refreshedToken ?? getCurrentAccessToken();
+      const retryToken = await resolveRetryToken(accessToken, revision);
       if (retryToken) {
-        return authedGetJSON<T>(path, retryToken, false);
+        return authedGetJSONInternal<T>(path, retryToken, false, revision);
       }
     }
     throw new Error(`API ${response.status} ${path}`);
@@ -82,28 +92,49 @@ export async function authedGetJSON<T>(path: string, accessToken: string, allowR
   return response.json() as Promise<T>;
 }
 
-export async function authedMutationJSON<T>(
+export function authedGetJSON<T>(path: string, accessToken: string): Promise<T | null> {
+  return authedGetJSONInternal(path, accessToken, true, getAuthSessionRevision());
+}
+
+async function authedMutationJSONInternal<T>(
   path: string,
-  accessToken: string,
+  accessToken: string | null,
   init: { method: "POST" | "DELETE"; body?: unknown },
-  allowRefresh = true
+  allowRefresh: boolean,
+  revision: number
 ): Promise<T | null> {
   const response = await fetch(`${API_BASE}${path}`, {
     method: init.method,
     cache: "no-store",
     headers: {
-      authorization: `Bearer ${accessToken}`,
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
       ...(init.body === undefined ? {} : { "content-type": "application/json" })
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body)
   });
   if (response.status === 204) return null;
-  if (response.status === 401 && allowRefresh) {
-    const refreshedToken = await refreshAccessTokenOrNull();
-    const retryToken = refreshedToken ?? getCurrentAccessToken();
-    if (retryToken) return authedMutationJSON<T>(path, retryToken, init, false);
+  if (response.status === 401 && accessToken && allowRefresh) {
+    const retryToken = await resolveRetryToken(accessToken, revision);
+    if (retryToken) {
+      return authedMutationJSONInternal<T>(path, retryToken, init, false, revision);
+    }
   }
   const data = await response.json().catch(() => null) as { message?: string } | null;
   if (!response.ok) throw new Error(data?.message ?? `API ${response.status} ${path}`);
   return data as T;
+}
+
+
+export function authedMutationJSON<T>(
+  path: string,
+  accessToken: string | null,
+  init: { method: "POST" | "DELETE"; body?: unknown }
+): Promise<T | null> {
+  return authedMutationJSONInternal(
+    path,
+    accessToken,
+    init,
+    true,
+    getAuthSessionRevision()
+  );
 }

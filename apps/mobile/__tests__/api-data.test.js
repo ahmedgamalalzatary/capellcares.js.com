@@ -4,10 +4,7 @@ jest.mock("../src/lib/api/base", () => ({
 
 describe("mobile API normalization", () => {
   test("resolves upload paths while preserving absolute and non-upload values", () => {
-    let normalizers = {};
-    try {
-      normalizers = require("../src/lib/api/normalizers");
-    } catch {}
+    const normalizers = require("../src/lib/api/normalizers");
 
     expect(typeof normalizers.resolveMediaUrl).toBe("function");
     expect(normalizers.resolveMediaUrl(" /uploads/product.jpg ")).toBe(
@@ -101,6 +98,9 @@ describe("mobile API normalization", () => {
     (normalizerName) => {
       const normalizer = require("../src/lib/api/normalizers")[normalizerName];
       const value = normalizer({
+        id: 1,
+        categoryId: 2,
+        items: [],
         imagePath: "/uploads/bundle.jpg",
         media: [{ type: "image", arUrl: null, enUrl: "/uploads/bundle-en.jpg" }],
         relatedItems: [{ imagePath: "/uploads/related.jpg" }]
@@ -144,7 +144,7 @@ describe("mobile API normalization", () => {
       })
     );
     expect(
-      normalizeWishlistEntry({ imagePath: "/uploads/wish.jpg" }).imagePath
+      normalizeWishlistEntry({ entityId: 1, imagePath: "/uploads/wish.jpg" }).imagePath
     ).toBe("https://api.example.com/uploads/wish.jpg");
   });
 
@@ -156,7 +156,7 @@ describe("mobile API normalization", () => {
   ])("maps wishlist href %s to the native route", (href, expected) => {
     const { normalizeWishlistEntry } = require("../src/lib/api/normalizers");
 
-    expect(normalizeWishlistEntry({ imagePath: null, href }).href).toBe(expected);
+    expect(normalizeWishlistEntry({ entityId: 1, imagePath: null, href }).href).toBe(expected);
   });
 
   test("normalizes review-prompt media and its native href", () => {
@@ -192,10 +192,7 @@ describe("mobile catalog selectors", () => {
   ];
 
   test("finds active categories and builds a guarded ancestor path", () => {
-    let selectors = {};
-    try {
-      selectors = require("../src/lib/api/selectors");
-    } catch {}
+    const selectors = require("../src/lib/api/selectors");
 
     expect(typeof selectors.getCategoryPath).toBe("function");
     expect(selectors.getCategoryById(categories, 3)).toBeUndefined();

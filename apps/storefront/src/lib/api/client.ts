@@ -1,6 +1,7 @@
 import type {
   Advice,
   Category,
+  CheckoutRequestDto,
   Collection,
   Offer,
   Order,
@@ -16,6 +17,7 @@ import type {
   StorefrontProductDetail
 } from "@capella/shared";
 import { authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
+import { getAuthSessionRevision, refreshAccessTokenOrNull } from "../auth-provider.api";
 import { normalizeCategory, normalizeProduct } from "./client/normalizers";
 import {
   getCategoryById,
@@ -139,6 +141,26 @@ export async function submitReview(accessToken: string, input: ReviewCreateInput
 
 export async function claimReviewPrompt(accessToken: string) {
   return authedMutationJSON<ReviewPrompt>("/api/v1/reviews/prompt/claim", accessToken, { method: "POST" });
+}
+
+export async function submitCheckout(
+  input: CheckoutRequestDto,
+  accessToken: string | null,
+  options?: { requireAuthentication?: boolean }
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus"> | null> {
+  let requestToken = accessToken;
+  if (options?.requireAuthentication && !requestToken) {
+    const revision = getAuthSessionRevision();
+    requestToken = await refreshAccessTokenOrNull();
+    if (!requestToken || getAuthSessionRevision() !== revision) {
+      throw new Error("Authentication required");
+    }
+  }
+  return authedMutationJSON(
+    "/api/v1/checkout",
+    requestToken,
+    { method: "POST", body: input }
+  );
 }
 
 export {

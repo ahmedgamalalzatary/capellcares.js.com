@@ -113,7 +113,8 @@ async function retryToken(
   ) {
     return null;
   }
-  return refreshedToken ?? requestSession.adapter.getAccessToken();
+  const fallbackToken = refreshedToken ?? requestSession.adapter.getAccessToken();
+  return fallbackToken && fallbackToken !== failedToken ? fallbackToken : null;
 }
 
 export async function getJSON<T>(
@@ -175,11 +176,6 @@ async function authedGetJSONInternal<T>(
       throw new Error(await errorMessage(response, path));
     }
     return await successfulJSON<T>(response);
-  } catch (error) {
-    if (isConnectionFailure(error)) {
-      return null;
-    }
-    throw error;
   } finally {
     request?.release();
   }

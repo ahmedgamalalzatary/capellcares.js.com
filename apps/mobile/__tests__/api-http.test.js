@@ -84,10 +84,7 @@ describe("mobile API HTTP transport", () => {
     await rejection;
   });
 
-  test.each([
-    ["public", () => http.getJSON("/slow")],
-    ["authenticated", () => http.authedGetJSON("/slow", "token")]
-  ])("returns null when an optional %s read times out", async (_label, request) => {
+  test("returns null when an optional public read times out", async () => {
     jest.useFakeTimers();
     global.fetch.mockImplementation((_url, init) =>
       new Promise((_resolve, reject) => {
@@ -99,11 +96,36 @@ describe("mobile API HTTP transport", () => {
       })
     );
 
-    const pending = request();
+    const pending = http.getJSON("/slow");
     const resolution = expect(pending).resolves.toBeNull();
     await jest.advanceTimersByTimeAsync(15_000);
 
     await resolution;
+  });
+
+  test("surfaces authenticated read timeouts", async () => {
+    jest.useFakeTimers();
+    global.fetch.mockImplementation((_url, init) =>
+      new Promise((_resolve, reject) => {
+        init.signal.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      })
+    );
+
+    const pending = http.authedGetJSON("/slow", "token");
+    const rejection = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    await jest.advanceTimersByTimeAsync(15_000);
+    await rejection;
+  });
+
+  test("surfaces authenticated read network failures", async () => {
+    const failure = new TypeError("network down");
+    global.fetch.mockRejectedValue(failure);
+
+    await expect(http.authedGetJSON("/orders", "token")).rejects.toBe(failure);
   });
 
   test("attaches timeout signals to authenticated reads and mutations", async () => {
@@ -279,5 +301,18 @@ describe("mobile API HTTP transport", () => {
       headers: { authorization: "Bearer fresh-token" },
       signal: expect.any(AbortSignal)
     });
+  });
+
+  test("does not retry the same token after refresh returns no replacement", async () => {
+    const refreshAccessToken = jest.fn().mockResolvedValue(null);
+    http.configureAuthSessionAdapter({
+      getAccessToken: () => "failed-token",
+      getSessionRevision: () => 1,
+      refreshAccessToken
+    });
+    global.fetch.mockResolvedValue(response(401, { message: "Expired" }));
+
+    await expect(http.authedGetJSON("/orders", "failed-token")).rejects.toThrow("Expired");
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import {
   EG_PHONE_REGEX,
   PAYMENT_METHODS,
+  type CheckoutRequestDto,
   type Collection,
   getEffectiveVariantPrice,
   pickLang
 } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
-import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchCollections, fetchOffers, fetchProducts, submitCheckout } from "@/lib/api/client";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -125,7 +126,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     setPlacing(true);
 
     try {
-      const payload = {
+      const payload: CheckoutRequestDto = {
         fullName: form.fullName,
         phone: form.phone,
         email: form.email,
@@ -135,7 +136,6 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
         paymentMethod: form.paymentMethod,
-        customerId: user?.id ?? null,
         items: lines.map((line) =>
           line.type === "product"
             ? { type: "product", variantId: line.variantId, qty: line.qty }
@@ -145,17 +145,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         )
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/v1/checkout`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {})
-        },
-        body: JSON.stringify(payload)
+      const data = await submitCheckout(payload, accessToken, {
+        requireAuthentication: user != null
       });
-
-      if (!response.ok) throw new Error("Checkout failed");
-      const data = await response.json();
+      if (!data) throw new Error("Checkout failed");
       setOrderId(String(data.orderCode));
       clear();
     } catch (error) {

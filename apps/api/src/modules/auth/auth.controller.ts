@@ -60,9 +60,8 @@ async function handleLogout(
   if (token) {
     try {
       await revokeSession(token);
-    } catch {
-      // Logout is idempotent: a failed or already-unavailable session must not
-      // prevent clients from clearing their local authentication state.
+    } catch (error) {
+      console.warn("Failed to revoke customer session during logout", error);
     }
   }
   if (!isMobileClient(req)) {
