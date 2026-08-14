@@ -93,6 +93,14 @@ export const ar = {
     selectSize: "اختر الحجم",
     moreSizes: "{n} أحجام"
   },
+  media: {
+    open: "عرض كل الوسائط",
+    close: "إغلاق",
+    previous: "السابق",
+    next: "التالي",
+    thumbnail: "وسائط {index}",
+    counter: "{current} / {total}"
+  },
   reviews: {
     title: "تقييمات العملاء",
     outOfFive: "{rating} من 5",

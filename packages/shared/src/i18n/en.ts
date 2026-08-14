@@ -93,6 +93,14 @@ export const en = {
     selectSize: "Select size",
     moreSizes: "{n} sizes"
   },
+  media: {
+    open: "View all media",
+    close: "Close",
+    previous: "Previous media",
+    next: "Next media",
+    thumbnail: "media {index}",
+    counter: "{current} / {total}"
+  },
   reviews: {
     title: "Customer Reviews",
     outOfFive: "{rating} out of 5",
