@@ -45,10 +45,12 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   return next();
 }
 
-export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
+export function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
   const user = parseAuthUser(req);
   if (user) {
     (req as AuthenticatedRequest).user = user;
+  } else if (req.headers.authorization?.trim()) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
   return next();
 }
