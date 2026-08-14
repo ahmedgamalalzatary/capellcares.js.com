@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
@@ -558,8 +558,9 @@ describe("ProductDetail", () => {
     expect(tag.className).toContain("inset-s-0");
     expect(tag.className).toContain("rounded-ss-md");
 
-    const heart = frame.querySelector("button") as HTMLElement;
-    expect(heart).toHaveAttribute("aria-label", "Wishlist");
+    // Queried by label, not by position: the media frame also carries the
+    // expand control that opens the media lightbox.
+    const heart = within(frame).getByRole("button", { name: "Wishlist" });
     expect(heart.className).toContain("inset-e-2");
     expect(heart.className).not.toContain("inset-s-2");
 

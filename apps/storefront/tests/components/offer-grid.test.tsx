@@ -7,7 +7,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/shop/section-card", () => ({
-  SectionCard: ({ data }: any) => createElement("div", { "data-testid": "offer-card" }, data.name.en)
+  SectionCard: ({ data, categoryName }: any) =>
+    createElement("div", { "data-testid": "offer-card" }, `${data.name.en}${categoryName ? ` — ${categoryName}` : ""}`)
 }));
 
 vi.mock("@/components/products/filters/filter-drawer", () => ({
@@ -92,6 +93,21 @@ describe("OfferGrid", () => {
     const cards = screen.getAllByTestId("offer-card");
     expect(cards).toHaveLength(1);
     expect(cards[0]).toHaveTextContent("Skin Offer");
+  });
+
+  it("gives each card its offer's own category name for the classification line", () => {
+    render(createElement(OfferGrid, {
+      offers: [makeOffer(1, "Skin Offer", 2), makeOffer(2, "Legacy Offer", null)],
+      categories,
+      lang: "en" as const,
+      dict
+    }));
+
+    const cards = screen.getAllByTestId("offer-card");
+    expect(cards[0]).toHaveTextContent("Skin Offer — Creams");
+    // A legacy offer with no category gets no line at all.
+    expect(cards[1]).toHaveTextContent("Legacy Offer");
+    expect(cards[1]).not.toHaveTextContent("—");
   });
 
   it("keeps an uncategorised legacy offer out of every category filter", () => {

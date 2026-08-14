@@ -53,6 +53,32 @@ describe("ShopCardRow", () => {
     expect(next.className).toContain("lg:grid");
   });
 
+  it("draws the arrows in ink by default", () => {
+    render(createElement(ShopCardRow, null, createElement("span", { key: "a" }, "A")));
+
+    expect(screen.getByRole("button", { name: "Previous" }).className).toContain("text-ink");
+    expect(screen.getByRole("button", { name: "Next" }).className).toContain("text-ink");
+  });
+
+  it("draws the arrows in white when asked, for rows sitting on dark artwork", () => {
+    render(
+      createElement(
+        ShopCardRow,
+        {
+          lang: "en",
+          arrowTone: "canvas" as const,
+          children: createElement("span", { key: "a" }, "A")
+        }
+      )
+    );
+
+    for (const name of ["Previous", "Next"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.className).toContain("text-canvas");
+      expect(button.className).not.toContain("text-ink");
+    }
+  });
+
   it("skips null children without rendering empty wrappers", () => {
     const { container } = render(
       createElement(ShopCardRow, null, createElement("span", { key: "a" }, "A"), null, false)

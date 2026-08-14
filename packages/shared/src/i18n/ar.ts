@@ -93,6 +93,13 @@ export const ar = {
     selectSize: "اختر الحجم",
     moreSizes: "{n} أحجام"
   },
+  media: {
+    open: "عرض كل الوسائط",
+    close: "إغلاق",
+    previous: "السابق",
+    next: "التالي",
+    thumbnail: "وسائط {index}"
+  },
   reviews: {
     title: "تقييمات العملاء",
     outOfFive: "{rating} من 5",
@@ -289,6 +296,13 @@ export const ar = {
     typeMessage: "اكتبي رسالتك…",
     noResults: "لم أجد نتائج لـ \"{query}\" 😔",
     found: "وجدت هذا لكِ 🌿"
+  },
+  search: {
+    title: "نتائج البحث",
+    resultsFor: "نتائج البحث عن \"{q}\"",
+    prompt: "اكتبي كلمة في خانة البحث لعرض النتائج.",
+    empty: "لا توجد نتائج لـ \"{q}\"",
+    browseAll: "تصفحي كل المنتجات"
   },
   shop: {
     eyebrow: "متجر كابيلا",

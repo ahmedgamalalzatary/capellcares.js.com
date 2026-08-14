@@ -70,14 +70,25 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
 
   // While the overlay is up, the page behind must not scroll — wheel and touch
   // scrolling belong to the results list, which has its own overflow container.
+  // Lock <html>, not <body>: the document element is the scrolling element, and
+  // `overflow: hidden` on the body alone is ignored on mobile (the page keeps
+  // scrolling under the overlay). Same non-shifting lock the mobile drawer uses.
   useEffect(() => {
     if (!open) return;
+    const html = document.documentElement;
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
     // Restore whatever was there before instead of blanking it, so an outer lock
     // (a drawer, a modal) that is still up survives this overlay closing.
-    const previousOverflow = document.body.style.overflow;
+    const previousOverflow = html.style.overflow;
+    const previousPaddingRight = html.style.paddingRight;
+    const previousBodyOverflow = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previousOverflow;
+      html.style.overflow = previousOverflow;
+      html.style.paddingRight = previousPaddingRight;
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, [open]);
 
@@ -92,7 +103,9 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     e.preventDefault();
     const t = term.trim();
     if (!t) return;
-    router.push(`/${lang}/products?q=${encodeURIComponent(t)}`);
+    // The global results page, not /products: this dropdown previews offers and
+    // collections too, so the page behind it has to be able to show them.
+    router.push(`/${lang}/search?q=${encodeURIComponent(t)}`);
     onClose();
   };
 
@@ -111,12 +124,12 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
         aria-modal="true"
         aria-label={dict.nav.search}
         className={[
-          "absolute inset-x-0 top-0 mx-auto w-full max-w-2xl px-4 pt-6 transition-transform duration-200 ease-out",
+          "absolute inset-x-0 top-0 mx-auto flex max-h-[100dvh] w-full max-w-2xl flex-col px-4 pb-6 pt-6 transition-transform duration-200 ease-out",
           open ? "translate-y-0" : "-translate-y-4"
         ].join(" ")}
       >
-        <div className="overflow-hidden rounded-2xl border border-black bg-canvas shadow-(--shadow-2)">
-          <form onSubmit={submit} className="flex items-center gap-3 border-b border-black px-5 py-4">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-black bg-canvas shadow-(--shadow-2)">
+          <form onSubmit={submit} className="flex shrink-0 items-center gap-3 border-b border-black px-5 py-4">
             <Icon.Search />
             <input
               ref={inputRef}
@@ -136,8 +149,9 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
             </button>
           </form>
 
+          {/* overscroll-contain: a scroll reaching this list's end must not chain to the page. */}
           {term.trim() && (
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {searching ? (
                 <p className="px-5 py-8 text-center text-sm text-(--ink-3)">
                   {dict.common.loading}
@@ -252,10 +266,11 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
                     </section>
                   )}
 
+                  {/* Sticky so it stays reachable without scrolling the whole list first. */}
                   <button
                     type="button"
                     onClick={submit}
-                    className="w-full border-t border-(--hairline) pt-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-ink"
+                    className="sticky bottom-0 -mx-5 -mb-4 w-[calc(100%+2.5rem)] border-t border-(--hairline) bg-canvas px-5 py-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-ink"
                   >
                     {dict.nav.viewAll}
                   </button>

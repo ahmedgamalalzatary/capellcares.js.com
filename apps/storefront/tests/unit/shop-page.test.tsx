@@ -270,6 +270,14 @@ describe("shop page", () => {
     expect(screen.getByRole("link", { name: "All collections" })).toBeInTheDocument();
   });
 
+  it("names each bundle's category on its shop-row card", async () => {
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    // The collection is classified under "Sets" (category 11); the offer fixture
+    // carries no category, so its card shows no classification line.
+    expect(screen.getByText("Sets")).toBeInTheDocument();
+  });
+
   it("renders the configured shop media, product, collection, and advice sections", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 

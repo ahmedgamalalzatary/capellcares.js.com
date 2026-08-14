@@ -33,7 +33,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const activeProducts = products.filter((p) => p.status === "active" && !p.deletedAt);
   const newProducts = activeProducts.filter((p) => p.isNew);
   const bestsellerProducts = activeProducts.filter((p) => p.isBestseller);
-  const categoryNameById = new Map(categories.map((c) => [c.id, pickLang(c.name, lang)] as const));
+  // Active categories only: a card must never name a category the shop has
+  // deleted — the same rule the offers/collections grids apply.
+  const categoryNameById = new Map(
+    categories.filter((c) => !c.deletedAt).map((c) => [c.id, pickLang(c.name, lang)] as const)
+  );
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
   return (
@@ -67,7 +71,14 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
           <ShopCardRow lang={lang}>
             {activeOffers.map((offer) => (
-              <SectionCard key={offer.id} kind="offer" data={offer} lang={lang} dict={dict} />
+              <SectionCard
+                key={offer.id}
+                kind="offer"
+                data={offer}
+                lang={lang}
+                dict={dict}
+                categoryName={offer.categoryId != null ? categoryNameById.get(offer.categoryId) : undefined}
+              />
             ))}
           </ShopCardRow>
         </section>
@@ -100,7 +111,14 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
           <ShopCardRow lang={lang}>
             {activeCollections.map((collection) => (
-              <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
+              <SectionCard
+                key={collection.id}
+                kind="collection"
+                data={collection}
+                lang={lang}
+                dict={dict}
+                categoryName={categoryNameById.get(collection.categoryId)}
+              />
             ))}
           </ShopCardRow>
         </section>

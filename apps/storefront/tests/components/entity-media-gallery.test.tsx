@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { EntityMediaGallery } from "@/components/ui/entity-media-gallery";
@@ -241,6 +241,391 @@ describe("EntityMediaGallery", () => {
     fireEvent.pointerUp(document, { clientX: 60, clientY: 105, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
 
     expect(thumbnails()[1]).toHaveAttribute("data-active", "true");
+  });
+
+  describe("media lightbox", () => {
+    const openLightbox = async (user: ReturnType<typeof userEvent.setup>, props: Record<string, unknown> = {}) => {
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage,
+        ...props
+      } as any));
+      // Opened the way a shopper does — the control's label is localized.
+      await user.click(screen.getByTestId("product-media-main"));
+      return screen.getByRole("dialog");
+    };
+
+    it("opens when the media itself is clicked, which is how touch shoppers reach it", async () => {
+      const user = userEvent.setup();
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      // Nothing is open until it is asked for.
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      await user.click(screen.getByTestId("product-media-main"));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("marks the media with the plus cursor instead of floating a plus button over it", () => {
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      expect(screen.getByTestId("product-media-main").className).toContain("cursor-plus");
+      // The old floating chip is gone; the keyboard control stays, unobtrusively.
+      expect(screen.queryByTestId("product-media-expand")).toBeNull();
+      expect(screen.getByRole("button", { name: "View all media" }).className).toContain("sr-only");
+    });
+
+    it("does not open on the swipe that changes the image", () => {
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const main = screen.getByTestId("product-media-main");
+      Object.assign(main, {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn(),
+        hasPointerCapture: vi.fn(() => true)
+      });
+
+      fireEvent.pointerDown(main, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(main, { clientX: 60, clientY: 105, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.click(main);
+
+      // The swipe moved the gallery on; it must not also throw the dialog open.
+      expect(within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[1])
+        .toHaveAttribute("data-active", "true");
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("renders outside the page markup so nothing on the page can show through it", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      // A portal to <body>: inside the page tree, an ancestor's stacking context
+      // let page content (price, share, tabs) paint over the dialog.
+      expect(dialog.parentElement).toBe(document.body);
+    });
+
+    it("keeps the whole picture inside the stage instead of cropping it", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      const stage = within(dialog).getByTestId("product-lightbox-main");
+      // Whatever each detail page renders, it is bounded by the stage box.
+      expect(stage.className).toContain("[&_img]:max-h-full");
+      expect(stage.className).toContain("[&_img]:object-contain");
+      expect(stage.className).toContain("[&_svg]:max-h-full");
+    });
+
+    it("opens a dialog titled with the entity, showing the media it was opened on", async () => {
+      const user = userEvent.setup();
+
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      // Move the page gallery to the second image first: the dialog must open
+      // where the shopper already is, not jump back to the first item.
+      const secondThumbnail = within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[1]!;
+      await user.click(secondThumbnail);
+      await user.click(screen.getByRole("button", { name: "View all media" }));
+
+      const dialog = screen.getByRole("dialog");
+      expect(dialog).toHaveAccessibleName("Rose Serum");
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
+        .toHaveAttribute("src", "/uploads/two.jpg");
+    });
+
+    it("steps through the media with the next and previous controls", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+      const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
+
+      expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+
+      await user.click(within(dialog).getByRole("button", { name: "Next media" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
+
+      await user.click(within(dialog).getByRole("button", { name: "Previous media" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+    });
+
+    it("stops at the ends instead of wrapping around", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      expect(within(dialog).getByRole("button", { name: "Previous media" })).toBeDisabled();
+      await user.click(within(dialog).getByRole("button", { name: "Next media" }));
+      expect(within(dialog).getByRole("button", { name: "Next media" })).toBeDisabled();
+    });
+
+    it("jumps to any item from the dialog's thumbnail strip", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      const thumbnails = within(screen.getByTestId("product-lightbox-thumbs")).getAllByRole("button");
+      expect(thumbnails).toHaveLength(2);
+      await user.click(thumbnails[1]!);
+
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
+        .toHaveAttribute("src", "/uploads/two.jpg");
+      expect(thumbnails[1]).toHaveAttribute("data-active", "true");
+    });
+
+    it("walks the media with the arrow keys", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      await user.keyboard("{ArrowRight}");
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
+        .toHaveAttribute("src", "/uploads/two.jpg");
+
+      await user.keyboard("{ArrowLeft}");
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
+        .toHaveAttribute("src", "/uploads/one.jpg");
+    });
+
+    it("closes on the close control and on Escape, and frees the page scroll again", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      expect(document.documentElement.style.overflow).toBe("hidden");
+
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(document.documentElement.style.overflow).toBe("");
+
+      await user.click(screen.getByRole("button", { name: "View all media" }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(document.documentElement.style.overflow).toBe("");
+    });
+
+    it("leaves the selection it ended on showing in the page gallery", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      await user.click(within(dialog).getByRole("button", { name: "Next media" }));
+      await user.keyboard("{Escape}");
+
+      expect(within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[1])
+        .toHaveAttribute("data-active", "true");
+    });
+
+    it("names its controls in Arabic on an Arabic page", async () => {
+      const user = userEvent.setup();
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        lang: "ar",
+        imagePath: "/uploads/one.jpg",
+        label: "سيروم الورد",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const open = screen.getByRole("button", { name: "عرض كل الوسائط" });
+      await user.click(open);
+
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByRole("button", { name: "التالي" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "السابق" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "إغلاق" })).toBeInTheDocument();
+    });
+
+    it("declares its own direction and language, which the portal cannot inherit", async () => {
+      const user = userEvent.setup();
+
+      const arabic = await openLightbox(user, { lang: "ar", label: "سيروم الورد" });
+      // Portalled to <body>, it sits outside the locale subtree that carries dir,
+      // so it has to state its own or the arrows and layout come out mirrored.
+      expect(arabic).toHaveAttribute("dir", "rtl");
+      expect(arabic).toHaveAttribute("lang", "ar");
+      expect(within(arabic).getByRole("heading").className).toContain("font-(family-name:--font-ar)");
+
+      await user.keyboard("{Escape}");
+      cleanup();
+
+      const english = await openLightbox(user, { lang: "en" });
+      expect(english).toHaveAttribute("dir", "ltr");
+      expect(english).toHaveAttribute("lang", "en");
+      expect(within(english).getByRole("heading").className).not.toContain("font-(family-name:--font-ar)");
+    });
+
+    it("points each arrow at the side it sits on", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      // Chevron draws a ">"; the one on the start side must be turned around, or
+      // the pair reads back-to-front — which is what an unset dir caused.
+      const previous = within(dialog).getByRole("button", { name: "Previous media" });
+      const next = within(dialog).getByRole("button", { name: "Next media" });
+      expect(previous.className).toContain("inset-s-");
+      expect(previous.querySelector("svg")?.getAttribute("class")).toContain("rotate-180");
+      expect(next.className).toContain("inset-e-");
+      expect(next.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("rotate-180");
+    });
+
+    it("advances through the media in Arabic, where the buttons swap sides but not their jobs", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user, { lang: "ar", label: "سيروم الورد" });
+      const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
+
+      // The strip reads right-to-left, so "next" sits on the left — but it still
+      // means the next picture, never the previous one.
+      expect(within(dialog).getByRole("button", { name: "السابق" })).toBeDisabled();
+
+      await user.click(within(dialog).getByRole("button", { name: "التالي" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
+      expect(within(dialog).getByRole("button", { name: "التالي" })).toBeDisabled();
+
+      await user.click(within(dialog).getByRole("button", { name: "السابق" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+    });
+
+    it("opens on the tap that follows a swipe, not only on the one after that", () => {
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const main = screen.getByTestId("product-media-main");
+      Object.assign(main, {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn(),
+        hasPointerCapture: vi.fn(() => true)
+      });
+
+      // A touch swipe releases outside the box and fires no click at all, so the
+      // gesture must not leave a flag behind that eats the next real tap.
+      fireEvent.pointerDown(main, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(document, { clientX: 60, clientY: 105, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+
+      fireEvent.pointerDown(main, { clientX: 100, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(main, { clientX: 100, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.click(main);
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("processes the Instagram embed it mounts inside the dialog", async () => {
+      const user = userEvent.setup();
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        videoUrl: "https://www.instagram.com/reel/DZfXbijzAD6/",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const videoThumbnail = within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[2]!;
+      await user.click(videoThumbnail);
+
+      const process = vi.fn();
+      Object.assign(window, { instgrm: { Embeds: { process } } });
+      process.mockClear();
+
+      await user.click(screen.getByTestId("product-media-main"));
+
+      // Opening mounts a second blockquote in the portal; without a fresh pass
+      // it stays an unprocessed link instead of becoming the player.
+      expect(process).toHaveBeenCalled();
+    });
+
+    it("keeps Tab inside the dialog, which claims to be modal", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      const focusables = within(dialog).getAllByRole("button");
+      const last = focusables[focusables.length - 1]!;
+      last.focus();
+      await user.tab();
+
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+
+    it("leaves the arrow keys to the video while its controls hold focus", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user, {
+        media: [{ type: "video", url: "/uploads/one.mp4" }, ...imageMedia]
+      });
+
+      // Arrows scrub the clip there; stepping the gallery too would move the
+      // video out from under the shopper mid-seek.
+      const stage = within(dialog).getByTestId("product-lightbox-main");
+      expect(stage.querySelector("video")).not.toBeNull();
+      // jsdom will not focus a <video>, so the key is dispatched from it the way
+      // a browser does for a focused player: on the element, bubbling to window.
+      fireEvent.keyDown(stage.querySelector("video")!, { key: "ArrowRight" });
+
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("video")).not.toBeNull();
+    });
+
+    it("shows the Arabic copy of a picture on an Arabic page", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user, {
+        lang: "ar",
+        label: "سيروم الورد",
+        media: [{ type: "image", arUrl: "/uploads/ar.jpg", enUrl: "/uploads/en.jpg" }]
+      });
+
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
+        .toHaveAttribute("src", "/uploads/ar.jpg");
+    });
+
+    it("keeps the thumbnail strip centred at every width", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      const strip = within(dialog).getByTestId("product-lightbox-thumbs");
+      // Centred by an auto-margined track rather than justify-center, which
+      // would clip the first thumbnails once the strip has to scroll.
+      expect(strip.className).toContain("overflow-x-auto");
+      const track = strip.firstElementChild as HTMLElement;
+      expect(track.className).toContain("mx-auto");
+      expect(track.className).toContain("w-max");
+      expect(within(track).getAllByRole("button")).toHaveLength(2);
+    });
+
+    it("offers no expand control when the entity has no media at all", () => {
+      render(createElement(EntityMediaGallery, {
+        media: [],
+        imagePath: "",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      expect(screen.queryByRole("button", { name: "View all media" })).toBeNull();
+    });
   });
 
   it("is unchanged when no video link is supplied", () => {

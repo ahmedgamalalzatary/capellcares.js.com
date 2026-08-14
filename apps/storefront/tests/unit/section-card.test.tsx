@@ -140,6 +140,38 @@ describe("SectionCard", () => {
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/glow"));
   });
 
+  it("shows the offer's category as the classification line, like a product card", () => {
+    render(createElement(SectionCard, {
+      kind: "offer",
+      data: baseOffer,
+      lang: "en",
+      dict,
+      categoryName: "Skin Care"
+    } as any));
+
+    expect(screen.getByText("Skin Care")).toBeInTheDocument();
+  });
+
+  it("shows the collection's category as the classification line", () => {
+    render(createElement(SectionCard, {
+      kind: "collection",
+      data: baseCollection,
+      lang: "en",
+      dict,
+      categoryName: "Sets"
+    } as any));
+
+    expect(screen.getByText("Sets")).toBeInTheDocument();
+  });
+
+  it("renders no classification line for an offer whose category could not be resolved", () => {
+    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    // Name, rating and price only — nothing where the category line would sit.
+    const details = screen.getByRole("heading", { name: "Rose Bundle" }).closest("div");
+    expect(details?.querySelector("p")).toBeNull();
+  });
+
   it("adds an offer to wishlist from the card overlay", () => {
     render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 

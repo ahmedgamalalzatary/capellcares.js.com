@@ -18,10 +18,16 @@ import { Icon } from "@/components/ui/icons";
 export function ShopCardRow({
   children,
   lang,
-  cols = 1
+  cols = 1,
+  arrowTone = "ink"
 }: {
   children: React.ReactNode;
   lang: string;
+  /**
+   * Arrow colour. "ink" reads on the light shop rows; "canvas" (white) is for
+   * rows whose cards are dark artwork, such as Capella Tips.
+   */
+  arrowTone?: "ink" | "canvas";
   /**
    * Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per
    * screen on desktop), 2 packs one extra card into every breakpoint. Only the
@@ -72,8 +78,14 @@ export function ShopCardRow({
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
     : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
 
+  // The halo flips with the tone: a light glow lifts the ink arrows off pale
+  // cards, a dark one keeps the white arrows readable over bright artwork.
+  const toneClass = arrowTone === "canvas"
+    ? "text-canvas drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
+    : "text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]";
+
   const buttonClass =
-    "absolute top-[42%] z-10 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 disabled:pointer-events-none disabled:opacity-0 lg:grid";
+    `absolute top-[42%] z-10 hidden size-12 -translate-y-1/2 place-items-center ${toneClass} transition hover:scale-120 disabled:pointer-events-none disabled:opacity-0 lg:grid`;
 
   return (
     <div className="relative min-w-0">

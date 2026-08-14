@@ -28,7 +28,8 @@ export function AdviceSection({
         </h2>
       </header>
 
-      <ShopCardRow lang={lang}>
+      {/* White arrows: every advice card is dark video artwork. */}
+      <ShopCardRow lang={lang} arrowTone="canvas">
         {advices.map((advice) => (
           <SectionCard key={advice.id} kind="advice" data={advice} lang={lang} dict={dict} />
         ))}
