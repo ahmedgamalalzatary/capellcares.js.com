@@ -15,13 +15,18 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { loadInstagramEmbedScript, resolveAdviceVideo } from "@/lib/advice-video";
 
+/** Resolved category name shown as the classification line, as on ProductCard. */
+type ClassifiedCard = { categoryName?: string };
+
 type SectionCardProps =
-  | { kind: "offer"; data: Offer; lang: Language; dict: any }
-  | { kind: "collection"; data: Collection; lang: Language; dict: any }
+  | ({ kind: "offer"; data: Offer; lang: Language; dict: any } & ClassifiedCard)
+  | ({ kind: "collection"; data: Collection; lang: Language; dict: any } & ClassifiedCard)
   | { kind: "advice"; data: Advice; lang: Language; dict: any };
 
 export function SectionCard(props: SectionCardProps) {
   const { lang, dict } = props;
+  // Advice has no classification; only the two purchasable kinds carry one.
+  const categoryName = props.kind === "advice" ? undefined : props.categoryName;
   const isAr = lang === "ar";
   const router = useRouter();
   const wishlist = useWishlist();
@@ -273,7 +278,7 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
       </div>
 
-      {/* Details: image → name → description → price, stacked beneath the image. */}
+      {/* Details: image → name → category → price, stacked beneath the image. */}
       {props.kind === "advice" ? null : <div className="mt-3 grid gap-1 text-start">
         {href ? (
           <Link href={href} className="block">
@@ -282,6 +287,12 @@ export function SectionCard(props: SectionCardProps) {
         ) : (
           <h3 className={nameClass}>{title}</h3>
         )}
+
+        {categoryName ? (
+          <p className={`m-0 ${isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"}`}>
+            {categoryName}
+          </p>
+        ) : null}
 
         <CardRating rating={rating} dict={dict} lang={lang} />
 

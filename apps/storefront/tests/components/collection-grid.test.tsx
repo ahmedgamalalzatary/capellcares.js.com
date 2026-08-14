@@ -1,0 +1,88 @@
+import { createElement } from "react";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() })
+}));
+
+vi.mock("@/components/shop/section-card", () => ({
+  SectionCard: ({ data, categoryName }: any) =>
+    createElement("div", { "data-testid": "collection-card" }, `${data.name.en}${categoryName ? ` — ${categoryName}` : ""}`)
+}));
+
+vi.mock("@/components/products/filters/filter-drawer", () => ({
+  FilterDrawer: () => createElement("div")
+}));
+
+vi.mock("@/components/ui/columns-toggle", () => ({
+  ColumnsToggle: () => createElement("div")
+}));
+
+import { CollectionGrid } from "@/components/collections/collection-grid";
+
+const categories = [
+  { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, sortOrder: 1, deletedAt: null },
+  { id: 2, parentId: 1, slug: "creams", name: { ar: "كريمات", en: "Creams" }, isLeaf: true, sortOrder: 1, deletedAt: null }
+];
+
+function makeCollection(id: number, nameEn: string, categoryId: number) {
+  return {
+    id,
+    slug: `collection-${id}`,
+    name: { ar: `مجموعة ${id}`, en: nameEn },
+    description: { ar: "", en: "" },
+    imagePath: "",
+    media: [],
+    price: 100,
+    originalTotal: 150,
+    categoryId,
+    items: [],
+    stock: 5,
+    status: "active" as const,
+    visibility: "visible" as const,
+    createdAt: "",
+    updatedAt: ""
+  };
+}
+
+const dict = {
+  common: { filters: "Filters" },
+  filters: {
+    sortBy: "Sort by",
+    sortFeatured: "Featured",
+    sortNewest: "Newest",
+    sortPriceAsc: "Price low",
+    sortPriceDesc: "Price high",
+    sortName: "Name"
+  },
+  collections: { listEmpty: "No collections" }
+};
+
+afterEach(() => {
+  cleanup();
+});
+
+describe("CollectionGrid", () => {
+  it("gives each card its collection's own category name for the classification line", () => {
+    render(createElement(CollectionGrid, {
+      collections: [makeCollection(1, "Glow Set", 2)],
+      categories,
+      lang: "en" as const,
+      dict
+    }));
+
+    expect(screen.getByTestId("collection-card")).toHaveTextContent("Glow Set — Creams");
+  });
+
+  it("renders no classification line when the collection points at a deleted category", () => {
+    render(createElement(CollectionGrid, {
+      collections: [makeCollection(1, "Glow Set", 99)],
+      categories,
+      lang: "en" as const,
+      dict
+    }));
+
+    expect(screen.getByTestId("collection-card")).not.toHaveTextContent("—");
+  });
+});

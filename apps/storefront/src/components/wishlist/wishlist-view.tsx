@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
-import { pickLang, type Collection, type Language, type Offer, type Product } from "@capella/shared";
-import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { pickLang, type Category, type Collection, type Language, type Offer, type Product } from "@capella/shared";
+import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { ProductCard } from "@/components/products/product-card";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
@@ -64,8 +64,8 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  // Categories are deliberately not fetched: product cards on this page render
-  // without their category line, so there is nothing to look a name up for.
+  // Needed only to name the classification line under each card's title.
+  const [categories, setCategories] = useState<Category[]>([]);
   // Same guard as the cart: the wishlist entries are the source of truth, the
   // catalog fetch only upgrades them to full cards. Until it lands we must not
   // render "nothing saved" over a wishlist that actually has entries.
@@ -74,12 +74,19 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    Promise.all([fetchProducts(), fetchOffers(), fetchCollections()])
-      .then(([p, o, c]) => {
+    Promise.all([
+      fetchProducts(),
+      fetchOffers(),
+      fetchCollections(),
+      // Only a label: a failure here costs a classification line, never the cards.
+      fetchCategories().catch(() => [] as Category[])
+    ])
+      .then(([p, o, c, cats]) => {
         if (cancelled) return;
         setProducts(p);
         setOffers(o);
         setCollections(c);
+        setCategories(cats);
         setCatalogLoaded(true);
       })
       .catch(() => {
@@ -115,6 +122,16 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
       // Stable sort keeps the saved order inside each kind.
       .sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind]),
     [items, products, offers, collections]
+  );
+
+  // Active categories only, so a card never names a deleted one.
+  const categoryNameById = useMemo(
+    () => new Map(
+      categories
+        .filter((category) => !category.deletedAt)
+        .map((category) => [category.id, pickLang(category.name, lang)] as const)
+    ),
+    [categories, lang]
   );
 
   // Entries whose target is gone from the catalog (deleted, hidden, or out of
@@ -198,18 +215,31 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
             <ShopCardRow lang={lang} cols={cols}>
               {saved.map((entry) =>
                 entry.kind === "product" ? (
-                  // No categoryName here on purpose: the wishlist row stays compact,
-                  // so product cards skip the category line.
                   <ProductCard
                     key={`product:${entry.data.id}`}
                     product={entry.data}
                     lang={lang}
                     dict={dict}
+                    categoryName={categoryNameById.get(entry.data.categoryId)}
                   />
                 ) : entry.kind === "offer" ? (
-                  <SectionCard key={`offer:${entry.data.id}`} kind="offer" data={entry.data} lang={lang} dict={dict} />
+                  <SectionCard
+                    key={`offer:${entry.data.id}`}
+                    kind="offer"
+                    data={entry.data}
+                    lang={lang}
+                    dict={dict}
+                    categoryName={entry.data.categoryId != null ? categoryNameById.get(entry.data.categoryId) : undefined}
+                  />
                 ) : (
-                  <SectionCard key={`collection:${entry.data.id}`} kind="collection" data={entry.data} lang={lang} dict={dict} />
+                  <SectionCard
+                    key={`collection:${entry.data.id}`}
+                    kind="collection"
+                    data={entry.data}
+                    lang={lang}
+                    dict={dict}
+                    categoryName={categoryNameById.get(entry.data.categoryId)}
+                  />
                 )
               )}
             </ShopCardRow>

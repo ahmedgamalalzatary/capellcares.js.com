@@ -113,16 +113,22 @@ describe("SearchOverlay", () => {
       createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() })
     );
 
+    // <html> is the scrolling element — locking only <body> lets mobile browsers
+    // keep scrolling the page behind the overlay.
+    expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 
     rerender(createElement(SearchOverlay, { lang: "en", dict, open: false, onClose: vi.fn() }));
+    expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
 
     rerender(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+    expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 
     // Unmounting mid-open (e.g. a route change) must not leave the page locked.
     unmount();
+    expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
   });
 

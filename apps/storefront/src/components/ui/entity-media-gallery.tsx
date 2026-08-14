@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import {
+  getDict,
   resolveLocalizedEntityMediaUrl,
   type EntityMedia,
   type Language
 } from "@capella/shared";
+import { Icon } from "@/components/ui/icons";
 
 import { loadInstagramEmbedScript, resolveAdviceVideo, type AdviceVideoPresentation } from "@/lib/advice-video";
 

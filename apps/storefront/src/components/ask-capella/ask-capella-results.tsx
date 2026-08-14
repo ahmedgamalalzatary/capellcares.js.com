@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatPrice, getDict, getEffectiveVariantPrice, pickLang, type Language } from "@capella/shared";
+import { ProductIllustration } from "@/components/ui/product-illustration";
 import { buildCategoryHref } from "@/lib/category-links";
 import type { AskCapellaResults } from "../../types/ask-capella.types";
 
@@ -69,7 +70,11 @@ export function AskCapellaReplyContent({
               onClick={onClose}
               className="flex items-center gap-2.5 rounded-(--radius) p-1.5 transition-colors hover:bg-(--warm-soft)"
             >
-              <div className="h-9 w-9 shrink-0 rounded-(--radius) border border-(--hairline) bg-[radial-gradient(circle,var(--warm-soft),var(--surface))]" />
+              {/* The real picture, with the illustration standing in when a
+                  product has none — same treatment as the search overlay. */}
+              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-(--radius) border border-(--hairline) bg-surface">
+                <ProductIllustration product={product} className="h-full w-full object-contain" />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{pickLang(product.name, lang)}</p>
                 {product.variants?.[0] != null && (

@@ -75,4 +75,23 @@ describe("AdviceSection", () => {
     // and definitively not the old multi-row grid
     expect(container.querySelector(".lg\\:grid-cols-3")).toBeNull();
   });
+
+  it("draws its scroll arrows in white, since advice cards are dark artwork", () => {
+    render(createElement(AdviceSection, {
+      lang: "en",
+      dict: { advices: { title: "Capella Advices", description: "Helpful guidance" } },
+      advices: [{
+        id: 1,
+        title: { ar: "نصيحة", en: "Advice" },
+        description: { ar: "وصف", en: "Description" },
+        videoUrl: "https://www.youtube.com/watch?v=capella",
+        status: "active" as const,
+        createdAt: "",
+        updatedAt: ""
+      }]
+    }));
+
+    expect(screen.getByRole("button", { name: "Previous" }).className).toContain("text-canvas");
+    expect(screen.getByRole("button", { name: "Next" }).className).toContain("text-canvas");
+  });
 });

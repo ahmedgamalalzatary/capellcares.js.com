@@ -79,6 +79,13 @@ export function CollectionGrid({
     [bigCategories]
   );
 
+  // Names for the cards' classification line. Built from active categories only,
+  // so a collection pointing at a deleted category simply shows no line.
+  const categoryNameById = useMemo(
+    () => new Map(activeCategories.map((category) => [category.id, pickLang(category.name, lang)] as const)),
+    [activeCategories, lang]
+  );
+
   const togglePillCategory = (id: number) => {
     setPillCategoryIds((current) =>
       current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
@@ -206,7 +213,14 @@ export function CollectionGrid({
           }`}
         >
           {filtered.map((collection) => (
-            <SectionCard key={collection.id} kind="collection" data={collection} lang={lang} dict={dict} />
+            <SectionCard
+              key={collection.id}
+              kind="collection"
+              data={collection}
+              lang={lang}
+              dict={dict}
+              categoryName={categoryNameById.get(collection.categoryId)}
+            />
           ))}
         </div>
       )}

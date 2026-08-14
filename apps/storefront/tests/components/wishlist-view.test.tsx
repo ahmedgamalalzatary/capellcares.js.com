@@ -34,7 +34,7 @@ vi.mock("@/lib/api/client", () => {
     status: "active",
     isNew: false,
     isBestseller: false,
-    categoryId: 1,
+    categoryId: 2,
     variants: [{ id: 111, productId: 11, size: "30ml", price: 120, stock: 5 }],
     createdAt: "",
     updatedAt: ""
@@ -58,10 +58,34 @@ vi.mock("@/lib/api/client", () => {
     updatedAt: ""
   };
 
+  // Two distinct categories so the product's line and the offer's line can be
+  // told apart in the assertions.
+  const categories = [
+    {
+      id: 1,
+      parentId: null,
+      slug: "skin-care",
+      name: { ar: "العناية بالبشرة", en: "Skin Care" },
+      isLeaf: true,
+      sortOrder: 1,
+      deletedAt: null
+    },
+    {
+      id: 2,
+      parentId: null,
+      slug: "body-care",
+      name: { ar: "العناية بالجسم", en: "Body Care" },
+      isLeaf: true,
+      sortOrder: 2,
+      deletedAt: null
+    }
+  ];
+
   return {
     fetchProducts: vi.fn().mockResolvedValue([product]),
     fetchOffers: vi.fn().mockResolvedValue([offer]),
-    fetchCollections: vi.fn().mockResolvedValue([])
+    fetchCollections: vi.fn().mockResolvedValue([]),
+    fetchCategories: vi.fn().mockResolvedValue(categories)
   };
 });
 
@@ -164,6 +188,30 @@ describe("WishlistView", () => {
     expect(screen.getByText("Hidden Collection")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(remove).toHaveBeenCalledWith("collection", 3);
+  });
+
+  it("names a saved offer's category on its card", async () => {
+    render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
+
+    expect(await screen.findByText("Skin Care")).toBeInTheDocument();
+  });
+
+  it("names a saved product's category on its card", async () => {
+    render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
+
+    expect(await screen.findByText("Body Care")).toBeInTheDocument();
+  });
+
+  it("keeps the saved cards up when the category fetch fails", async () => {
+    const { fetchCategories } = await import("@/lib/api/client");
+    vi.mocked(fetchCategories).mockRejectedValueOnce(new Error("offline"));
+
+    render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
+
+    // A missing category name costs the classification line, never the card.
+    for (const link of await screen.findAllByRole("link", { name: "Bundle Offer" })) {
+      expect(link).toHaveAttribute("href", "/en/offers/bundle-offer");
+    }
   });
 
   it("offers the POV toggle once there are cards to re-flow", async () => {
