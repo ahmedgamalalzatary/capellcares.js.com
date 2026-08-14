@@ -3,8 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
 
+const push = vi.fn();
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push })
 }));
 
 vi.mock("@/lib/api/client", () => {
@@ -105,6 +107,18 @@ describe("SearchOverlay", () => {
       "href",
       "/en/collections/rose-routine"
     );
+  });
+
+  it("sends View all to the global results page, which carries every kind of match", async () => {
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+
+    fireEvent.change(screen.getByPlaceholderText(dict.nav.search), { target: { value: "rose" } });
+    fireEvent.click(await screen.findByRole("button", { name: dict.nav.viewAll }));
+
+    // Not /products: the dropdown previews offers and collections too, so the
+    // page behind it must be able to show them.
+    expect(push).toHaveBeenCalledWith("/en/search?q=rose");
   });
 
   it("locks page scroll while open and restores it on close", () => {

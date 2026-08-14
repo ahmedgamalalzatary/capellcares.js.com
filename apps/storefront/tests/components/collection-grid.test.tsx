@@ -23,7 +23,9 @@ import { CollectionGrid } from "@/components/collections/collection-grid";
 
 const categories = [
   { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, sortOrder: 1, deletedAt: null },
-  { id: 2, parentId: 1, slug: "creams", name: { ar: "كريمات", en: "Creams" }, isLeaf: true, sortOrder: 1, deletedAt: null }
+  { id: 2, parentId: 1, slug: "creams", name: { ar: "كريمات", en: "Creams" }, isLeaf: true, sortOrder: 1, deletedAt: null },
+  // Still returned by the API, but retired: nothing may be classified under it.
+  { id: 99, parentId: null, slug: "retired", name: { ar: "متقاعد", en: "Retired" }, isLeaf: true, sortOrder: 9, deletedAt: "2026-01-01T00:00:00Z" }
 ];
 
 function makeCollection(id: number, nameEn: string, categoryId: number) {

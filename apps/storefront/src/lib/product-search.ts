@@ -3,8 +3,11 @@ import type { Product } from "@capella/shared";
 /**
  * The one definition of "does this product match what the shopper typed".
  *
- * Both the header overlay and the /products?q= grid go through this, so the
- * dropdown can never preview a match the results page then fails to find.
+ * This is the client-side half: the /products?q= grid and the filter drawer
+ * narrow an already-fetched list with it. Global search (the header dropdown and
+ * the /search results page) asks the catalog for the term instead, so both of
+ * those agree with each other rather than with this.
+ *
  * Matching spans *both* names plus the keywords: a product is routinely named
  * in one language and searched for in the other, and its keywords carry terms
  * ("lotion") that appear in neither name.

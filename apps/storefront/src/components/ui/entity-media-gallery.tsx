@@ -88,6 +88,7 @@ export function EntityMediaGallery({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeItem = items[activeIndex] ?? items[0] ?? null;
@@ -102,12 +103,14 @@ export function EntityMediaGallery({
     setActiveIndex(0);
   }, [incomingMedia, imagePath, lang, videoUrl]);
 
+  // lightboxOpen is a dependency because opening mounts a second copy of the
+  // embed in the portal, which needs its own processing pass to become a player.
   useEffect(() => {
     const active = items[activeIndex];
     if (active?.kind === "embed" && active.video.provider === "instagram") {
       loadInstagramEmbedScript();
     }
-  }, [items, activeIndex]);
+  }, [items, activeIndex, lightboxOpen]);
 
   const clearPointer = (pointerId: number) => {
     dragStartRef.current = null;
@@ -154,6 +157,10 @@ export function EntityMediaGallery({
   }, [items.length]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
+    // A new gesture clears the last one's mark. Relying on a click to clear it
+    // strands the flag: a touch swipe releases outside the box and fires none,
+    // so the next genuine tap would be swallowed.
+    swipeConsumedClickRef.current = false;
     if (items.length <= 1 || !event.isPrimary || isPlayerTarget(event.target)) return;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
     dragPointerIdRef.current = event.pointerId;
@@ -258,6 +265,9 @@ export function EntityMediaGallery({
         closeLightbox();
         return;
       }
+      // A focused player owns its arrow keys — they scrub the clip, and stepping
+      // the gallery too would pull it out from under the shopper mid-seek.
+      if (isPlayerTarget(event.target)) return;
       // "Forward" follows the writing direction, so the arrows always move the
       // way the strip reads.
       if (event.key === "ArrowRight") step(isRtl ? -1 : 1);
@@ -266,6 +276,30 @@ export function EntityMediaGallery({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxOpen, isRtl, items.length]);
+
+  /**
+   * A dialog that claims aria-modal must not let Tab walk out into the page it
+   * covers, so focus cycles within it. Same approach the advice dialog uses.
+   */
+  const onDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    const focusables = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])") ?? []
+    );
+    if (focusables.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusables[0]!;
+    const last = focusables[focusables.length - 1]!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   const renderItem = (item: GalleryItem | null, fallbackUrl: string) =>
     item?.kind === "embed"
@@ -362,9 +396,11 @@ export function EntityMediaGallery({
           the detail page painted the price, share button and tabs over it. */}
       {lightboxOpen && typeof document !== "undefined" ? createPortal(
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={label}
+          onKeyDown={onDialogKeyDown}
           // Portalled to <body>, it sits outside the locale subtree that carries
           // dir/lang, so it states its own. Without this every logical property
           // inside (inset-s/inset-e, text alignment) resolves against <html dir>
@@ -394,7 +430,9 @@ export function EntityMediaGallery({
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 sm:px-16">
             <button
               type="button"
-              onClick={() => step(isRtl ? 1 : -1)}
+              // Index steps are direction-agnostic: "previous" is always the
+              // previous picture. Only the button's side and its chevron mirror.
+              onClick={() => step(-1)}
               disabled={activeIndex === 0}
               aria-label={dict.media.previous}
               className="absolute inset-s-1 z-10 grid size-10 place-items-center rounded-full border border-(--hairline) bg-canvas text-ink transition hover:bg-(--warm-soft) disabled:pointer-events-none disabled:opacity-30 sm:size-12"
@@ -414,7 +452,7 @@ export function EntityMediaGallery({
 
             <button
               type="button"
-              onClick={() => step(isRtl ? -1 : 1)}
+              onClick={() => step(1)}
               disabled={activeIndex >= items.length - 1}
               aria-label={dict.media.next}
               className="absolute inset-e-1 z-10 grid size-10 place-items-center rounded-full border border-(--hairline) bg-canvas text-ink transition hover:bg-(--warm-soft) disabled:pointer-events-none disabled:opacity-30 sm:size-12"

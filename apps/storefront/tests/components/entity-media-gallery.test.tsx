@@ -490,6 +490,105 @@ describe("EntityMediaGallery", () => {
       expect(next.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("rotate-180");
     });
 
+    it("advances through the media in Arabic, where the buttons swap sides but not their jobs", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user, { lang: "ar", label: "سيروم الورد" });
+      const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
+
+      // The strip reads right-to-left, so "next" sits on the left — but it still
+      // means the next picture, never the previous one.
+      expect(within(dialog).getByRole("button", { name: "السابق" })).toBeDisabled();
+
+      await user.click(within(dialog).getByRole("button", { name: "التالي" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
+      expect(within(dialog).getByRole("button", { name: "التالي" })).toBeDisabled();
+
+      await user.click(within(dialog).getByRole("button", { name: "السابق" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+    });
+
+    it("opens on the tap that follows a swipe, not only on the one after that", () => {
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const main = screen.getByTestId("product-media-main");
+      Object.assign(main, {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn(),
+        hasPointerCapture: vi.fn(() => true)
+      });
+
+      // A touch swipe releases outside the box and fires no click at all, so the
+      // gesture must not leave a flag behind that eats the next real tap.
+      fireEvent.pointerDown(main, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(document, { clientX: 60, clientY: 105, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+
+      fireEvent.pointerDown(main, { clientX: 100, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(main, { clientX: 100, clientY: 100, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.click(main);
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("processes the Instagram embed it mounts inside the dialog", async () => {
+      const user = userEvent.setup();
+      render(createElement(EntityMediaGallery, {
+        media: imageMedia,
+        imagePath: "/uploads/one.jpg",
+        videoUrl: "https://www.instagram.com/reel/DZfXbijzAD6/",
+        label: "Rose Serum",
+        testIdPrefix: "product",
+        renderImage
+      }));
+
+      const videoThumbnail = within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[2]!;
+      await user.click(videoThumbnail);
+
+      const process = vi.fn();
+      Object.assign(window, { instgrm: { Embeds: { process } } });
+      process.mockClear();
+
+      await user.click(screen.getByTestId("product-media-main"));
+
+      // Opening mounts a second blockquote in the portal; without a fresh pass
+      // it stays an unprocessed link instead of becoming the player.
+      expect(process).toHaveBeenCalled();
+    });
+
+    it("keeps Tab inside the dialog, which claims to be modal", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+
+      const focusables = within(dialog).getAllByRole("button");
+      const last = focusables[focusables.length - 1]!;
+      last.focus();
+      await user.tab();
+
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+
+    it("leaves the arrow keys to the video while its controls hold focus", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user, {
+        media: [{ type: "video", url: "/uploads/one.mp4" }, ...imageMedia]
+      });
+
+      // Arrows scrub the clip there; stepping the gallery too would move the
+      // video out from under the shopper mid-seek.
+      const stage = within(dialog).getByTestId("product-lightbox-main");
+      expect(stage.querySelector("video")).not.toBeNull();
+      // jsdom will not focus a <video>, so the key is dispatched from it the way
+      // a browser does for a focused player: on the element, bubbling to window.
+      fireEvent.keyDown(stage.querySelector("video")!, { key: "ArrowRight" });
+
+      expect(within(dialog).getByTestId("product-lightbox-main").querySelector("video")).not.toBeNull();
+    });
+
     it("shows the Arabic copy of a picture on an Arabic page", async () => {
       const user = userEvent.setup();
       const dialog = await openLightbox(user, {

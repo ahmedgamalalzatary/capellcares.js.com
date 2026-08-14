@@ -103,7 +103,9 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     e.preventDefault();
     const t = term.trim();
     if (!t) return;
-    router.push(`/${lang}/products?q=${encodeURIComponent(t)}`);
+    // The global results page, not /products: this dropdown previews offers and
+    // collections too, so the page behind it has to be able to show them.
+    router.push(`/${lang}/search?q=${encodeURIComponent(t)}`);
     onClose();
   };
 

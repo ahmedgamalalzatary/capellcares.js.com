@@ -98,8 +98,7 @@ export const ar = {
     close: "إغلاق",
     previous: "السابق",
     next: "التالي",
-    thumbnail: "وسائط {index}",
-    counter: "{current} / {total}"
+    thumbnail: "وسائط {index}"
   },
   reviews: {
     title: "تقييمات العملاء",
@@ -297,6 +296,13 @@ export const ar = {
     typeMessage: "اكتبي رسالتك…",
     noResults: "لم أجد نتائج لـ \"{query}\" 😔",
     found: "وجدت هذا لكِ 🌿"
+  },
+  search: {
+    title: "نتائج البحث",
+    resultsFor: "نتائج البحث عن \"{q}\"",
+    prompt: "اكتبي كلمة في خانة البحث لعرض النتائج.",
+    empty: "لا توجد نتائج لـ \"{q}\"",
+    browseAll: "تصفحي كل المنتجات"
   },
   shop: {
     eyebrow: "متجر كابيلا",

@@ -98,8 +98,7 @@ export const en = {
     close: "Close",
     previous: "Previous media",
     next: "Next media",
-    thumbnail: "media {index}",
-    counter: "{current} / {total}"
+    thumbnail: "media {index}"
   },
   reviews: {
     title: "Customer Reviews",
@@ -295,6 +294,13 @@ export const en = {
     typeMessage: "Type a message…",
     noResults: "I couldn't find anything for \"{query}\" 😔",
     found: "Here's what I found for you 🌿"
+  },
+  search: {
+    title: "Search results",
+    resultsFor: "Results for \"{q}\"",
+    prompt: "Type something in the search box to see results.",
+    empty: "Nothing matched \"{q}\"",
+    browseAll: "Browse all products"
   },
   shop: {
     eyebrow: "The Capella Shop",
