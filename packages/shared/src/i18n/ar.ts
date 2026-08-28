@@ -181,6 +181,7 @@ export const ar = {
   orders: {
     title: "طلباتي",
     empty: "لم تقم بأي طلبات بعد.",
+    loadError: "تعذر تحميل طلباتك. يرجى المحاولة مرة أخرى.",
     loginRequired: "تحتاج إلى حساب لعرض الطلبات",
     loginRequiredDesc: "سجل الدخول لعرض سجل الطلبات وتفاصيل كل طلب.",
     statusPending: "قيد المراجعة",

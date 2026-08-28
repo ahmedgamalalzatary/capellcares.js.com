@@ -27,11 +27,29 @@ export async function adminRefreshController(req: Request, res: Response) {
   }
 }
 
-export async function adminLogoutController(req: Request, res: Response) {
+async function handleAdminLogout(
+  req: Request,
+  res: Response,
+  revokeSession: typeof logoutAdminSession
+) {
   const token = req.cookies?.[ADMIN_REFRESH_COOKIE];
   if (token) {
-    await logoutAdminSession(token);
+    try {
+      await revokeSession(token);
+    } catch (error) {
+      console.warn("Failed to revoke admin session during logout", error);
+    }
   }
   res.cookie(ADMIN_REFRESH_COOKIE, "", clearRefreshCookieOptions());
   return res.status(204).send();
+}
+
+export function createAdminLogoutController(
+  revokeSession: typeof logoutAdminSession = logoutAdminSession
+) {
+  return (req: Request, res: Response) => handleAdminLogout(req, res, revokeSession);
+}
+
+export async function adminLogoutController(req: Request, res: Response) {
+  return handleAdminLogout(req, res, logoutAdminSession);
 }

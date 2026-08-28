@@ -179,6 +179,7 @@ export const en = {
   orders: {
     title: "Your orders",
     empty: "You have not placed any orders yet.",
+    loadError: "Could not load your orders. Please try again.",
     loginRequired: "Orders require an account",
     loginRequiredDesc: "Log in to view your order history and order details.",
     statusPending: "Pending",

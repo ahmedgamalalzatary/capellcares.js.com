@@ -6,9 +6,13 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const logout = vi.fn();
+
 vi.mock("@/components/providers/auth-provider", () => ({
-  useAuth: () => ({ accessToken: "customer-token" })
+  useAuth: () => ({ accessToken, logout })
 }));
+
+let accessToken: string | null = "customer-token";
 
 const { fetchCustomerOrderById, submitReview } = vi.hoisted(() => ({
   fetchCustomerOrderById: vi.fn(),
@@ -55,7 +59,8 @@ const dict = {
     paymentMethod: "Payment method",
     orderSummary: "Order summary",
     itemsInOrder: "Items in this order",
-    unavailableItem: "No longer available"
+    unavailableItem: "No longer available",
+    loadError: "Could not load your orders. Please try again."
   },
   reviews: {
     writeReview: "Write a review",
@@ -75,7 +80,9 @@ const dict = {
 };
 
 beforeEach(() => {
+  accessToken = "customer-token";
   vi.clearAllMocks();
+  logout.mockReset();
   fetchCustomerOrderById.mockResolvedValue({
     id: 12,
     orderCode: "ORDER-12",
@@ -108,6 +115,68 @@ beforeEach(() => {
 });
 
 describe("OrderDetailView reviews", () => {
+  it("shows an error instead of an empty receipt when loading fails", async () => {
+    fetchCustomerOrderById.mockRejectedValue(new TypeError("network down"));
+
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load your orders. Please try again.");
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument();
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it("logs out when the order request is rejected with the API 401 contract", async () => {
+    fetchCustomerOrderById.mockRejectedValue(new Error("API 401 /api/v1/orders/12"));
+    logout.mockRejectedValue(new TypeError("logout network down"));
+
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    await waitFor(() => expect(logout.mock.calls.length).toBeGreaterThanOrEqual(1));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("ORDER-12")).not.toBeInTheDocument();
+  });
+
+  it("ignores customer A's delayed receipt after switching to customer B", async () => {
+    let releaseCustomerA!: (order: unknown) => void;
+    fetchCustomerOrderById
+      .mockImplementationOnce(() => new Promise((resolve) => { releaseCustomerA = resolve; }))
+      .mockResolvedValueOnce({
+        id: 22,
+        orderCode: "ORDER-B",
+        paymentStatus: "accepted",
+        totalAmount: 50,
+        createdAt: "2026-05-20T10:00:00.000Z",
+        items: []
+      });
+
+    const view = render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+    accessToken = "customer-b-token";
+    view.rerender(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    expect(await screen.findByText("ORDER-B")).toBeInTheDocument();
+    releaseCustomerA({
+      id: 11,
+      orderCode: "ORDER-A",
+      paymentStatus: "accepted",
+      totalAmount: 50,
+      createdAt: "2026-05-19T10:00:00.000Z",
+      items: []
+    });
+
+    await waitFor(() => expect(screen.queryByText("ORDER-A")).not.toBeInTheDocument());
+    expect(screen.getByText("ORDER-B")).toBeInTheDocument();
+  });
+
+  it("hides the loaded receipt when the access token is cleared", async () => {
+    const view = render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+    expect(await screen.findByText("ORDER-12")).toBeInTheDocument();
+
+    accessToken = null;
+    view.rerender(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    await waitFor(() => expect(screen.queryByText("ORDER-12")).not.toBeInTheDocument());
+  });
+
   it("lets an eligible signed-in customer submit one review from the order item", async () => {
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 

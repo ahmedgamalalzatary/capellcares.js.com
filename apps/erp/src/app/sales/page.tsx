@@ -99,6 +99,7 @@ export default function SalesPage() {
                 <th>الحالة</th>
                 <th>الإجمالي</th>
                 <th>الوحدات</th>
+                <th>العناصر</th>
                 <th>التاريخ</th>
               </tr>
             </thead>
@@ -109,6 +110,13 @@ export default function SalesPage() {
                   <td><span className={paymentStatusChip[order.paymentStatus]}>{paymentStatusLabel[order.paymentStatus]}</span></td>
                   <td>{formatPrice(order.totalAmount, "ar")}</td>
                   <td>{order.unitsSold}</td>
+                  <td>
+                    <div className="stack">
+                      {order.items.map((item, index) => (
+                        <div key={`${order.orderId}-${index}`}>{item.label} x{item.unitsSold}</div>
+                      ))}
+                    </div>
+                  </td>
                   <td>{formatDate(order.createdAt)}</td>
                 </tr>
               ))}

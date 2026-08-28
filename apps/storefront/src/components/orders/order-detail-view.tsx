@@ -31,23 +31,42 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict: any; orderId: number }) {
-  const { accessToken } = useAuth();
+  const { accessToken, logout } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [reviewingItemId, setReviewingItemId] = useState<number | null>(null);
   const catalog = useCatalog();
   const isAr = lang === "ar";
 
   useEffect(() => {
     if (!accessToken) {
+      setOrder(null);
+      setLoadError(false);
       setLoading(false);
       return;
     }
+    let cancelled = false;
+    setOrder(null);
+    setLoadError(false);
+    setLoading(true);
     fetchCustomerOrderById(orderId, accessToken).then((value) => {
+      if (cancelled) return;
       setOrder(value);
       setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [accessToken, orderId]);
+    }).catch((error) => {
+      if (cancelled) return;
+      if (error instanceof Error && error.message.includes("API 401")) {
+        void logout().catch(() => {});
+      } else {
+        setLoadError(true);
+      }
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, orderId, logout]);
 
   if (loading) {
     return (
@@ -57,6 +76,10 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
         ))}
       </div>
     );
+  }
+
+  if (loadError) {
+    return <p role="alert" className="py-12 text-center text-sm text-(--error)">{dict.orders.loadError}</p>;
   }
 
   if (!order) return <p className="py-12 text-center text-(--ink-3)">{dict.common.empty}</p>;

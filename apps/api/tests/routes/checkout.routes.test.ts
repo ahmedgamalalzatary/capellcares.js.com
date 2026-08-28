@@ -115,6 +115,38 @@ test("checkout route persists registered customer orders for authenticated custo
   });
 });
 
+test("checkout route rejects an invalid Bearer token without creating a guest order", async () => {
+  const ids = await getBaselineIds();
+  const before = await db.select({ id: orders.id }).from(orders);
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer expired-or-invalid"
+      },
+      body: JSON.stringify({
+        fullName: "Expired Customer",
+        phone: "01012345678",
+        email: "seed-customer@capella.test",
+        governorate: "Cairo",
+        cityArea: "Nasr City",
+        addressLine: "Street 10",
+        buildingApartment: "Building 4",
+        paymentMethod: "cod",
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(response.json, { message: "Unauthorized" });
+  });
+
+  const after = await db.select({ id: orders.id }).from(orders);
+  assert.equal(after.length, before.length);
+});
+
 test("checkout route ignores guest-supplied customerId values", async () => {
   const ids = await getBaselineIds();
 

@@ -4,7 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import {
   loginRequest,
   logoutRequest,
-  refreshAccessToken,
+  getAuthSessionRevision,
+  getCurrentAccessToken,
   refreshAccessTokenOrNull,
   setCurrentAccessToken,
   subscribeCurrentAccessToken,
@@ -14,6 +15,7 @@ import { readStoredAuthUser, writeStoredAuthUser } from "../../lib/auth-provider
 import type { AuthContextValue, AuthProviderProps, AuthUser } from "../../types/auth-provider.types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const REFRESH_RETRY_MS = 30_000;
 
 function decodeTokenExpiryMs(token: string): number | null {
   try {
@@ -41,32 +43,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!hydrated || !user || accessToken) return;
 
     let cancelled = false;
+    let retryTimer: number | undefined;
+    const refreshBootstrap = async () => {
+      const revision = getAuthSessionRevision();
+      const token = await refreshAccessTokenOrNull();
+      if (cancelled || token) return;
 
-    refreshAccessToken()
-      .then(async (res) => {
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            if (!cancelled) {
-              console.error("[auth] Refresh token rejected, clearing session");
-              setUser(null);
-              setAccessToken(null);
-            }
-          } else {
-            console.error(`[auth] Refresh failed with status ${res.status}`);
-          }
-          return;
+      if (getAuthSessionRevision() !== revision) {
+        if (!getCurrentAccessToken()) {
+          console.error("[auth] Refresh token rejected, clearing session");
+          setUser(null);
         }
-        const data = await res.json();
-        if (!cancelled) {
-          setCurrentAccessToken(data.accessToken ?? null);
-        }
-      })
-      .catch((err) => {
-        console.error("[auth] Refresh request failed:", err?.message ?? err);
-      });
+        return;
+      }
+
+      retryTimer = window.setTimeout(() => void refreshBootstrap(), REFRESH_RETRY_MS);
+    };
+    void refreshBootstrap();
 
     return () => {
       cancelled = true;
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
     };
   }, [hydrated, user, accessToken]);
 
@@ -92,11 +89,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const refreshInMs = Math.max(expiryMs - Date.now() - 60_000, 5_000);
-    const timer = window.setTimeout(() => {
-      void refreshAccessTokenOrNull();
-    }, refreshInMs);
+    let timer: number;
+    let cancelled = false;
+    const refreshAndRetry = async () => {
+      const refreshedToken = await refreshAccessTokenOrNull();
+      if (!cancelled && !refreshedToken && getCurrentAccessToken() === accessToken) {
+        timer = window.setTimeout(() => void refreshAndRetry(), REFRESH_RETRY_MS);
+      }
+    };
+    timer = window.setTimeout(() => void refreshAndRetry(), refreshInMs);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [accessToken]);
 
   useEffect(() => {

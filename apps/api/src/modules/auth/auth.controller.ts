@@ -37,11 +37,29 @@ export async function refreshController(req: Request, res: Response) {
   }
 }
 
-export async function logoutController(req: Request, res: Response) {
+async function handleLogout(
+  req: Request,
+  res: Response,
+  revokeSession: typeof logoutCustomerSession
+) {
   const token = req.cookies?.[CUSTOMER_REFRESH_COOKIE];
   if (token) {
-    await logoutCustomerSession(token);
+    try {
+      await revokeSession(token);
+    } catch (error) {
+      console.warn("Failed to revoke customer session during logout", error);
+    }
   }
   res.cookie(CUSTOMER_REFRESH_COOKIE, "", clearRefreshCookieOptions());
   return res.status(204).send();
+}
+
+export function createLogoutController(
+  revokeSession: typeof logoutCustomerSession = logoutCustomerSession
+) {
+  return (req: Request, res: Response) => handleLogout(req, res, revokeSession);
+}
+
+export async function logoutController(req: Request, res: Response) {
+  return handleLogout(req, res, logoutCustomerSession);
 }

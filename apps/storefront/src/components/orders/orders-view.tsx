@@ -24,33 +24,49 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [authRequired, setAuthRequired] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const catalog = useCatalog();
 
   useEffect(() => {
     if (user && !accessToken) {
+      setOrders([]);
+      setLoadError(false);
       setLoading(true);
       return;
     }
 
     if (!accessToken) {
+      setOrders([]);
+      setLoadError(false);
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
+    setOrders([]);
     setAuthRequired(false);
+    setLoadError(false);
+    setLoading(true);
     fetchCustomerOrders(accessToken)
       .then((items) => {
+        if (cancelled) return;
         setOrders(items);
         setLoading(false);
       })
       .catch((error) => {
+        if (cancelled) return;
         if (error instanceof Error && error.message.includes("API 401")) {
           setAuthRequired(true);
-          logout();
+          void logout().catch(() => {});
+        } else {
+          setLoadError(true);
         }
         setLoading(false);
       });
-  }, [user, accessToken, logout]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, accessToken, logout]);
 
   const isAr = lang === "ar";
 
@@ -84,6 +100,10 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
         ))}
       </div>
     );
+  }
+
+  if (loadError) {
+    return <p role="alert" className="py-12 text-center text-sm text-(--error)">{dict.orders.loadError}</p>;
   }
 
   if (orders.length === 0) {
