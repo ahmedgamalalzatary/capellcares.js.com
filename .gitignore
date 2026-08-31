@@ -25,6 +25,7 @@ lerna-debug.log*
 .next/cache/
 out/
 *.d.ts
+!**/expo-env.d.ts
 # Turbo
 .turbo/
 

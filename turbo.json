@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+      "env": ["EXPO_PUBLIC_API_URL"]
     },
     "dev": {
       "cache": false
@@ -30,7 +31,8 @@
         "ADMIN_EMAIL",
         "ADMIN_PASSWORD",
         "STOREFRONT_REVALIDATE_SECRET",
-        "HOSTINGER_PUBLIC_BASE_URL"
+        "HOSTINGER_PUBLIC_BASE_URL",
+        "EXPO_PUBLIC_API_URL"
       ]
     }
   }
