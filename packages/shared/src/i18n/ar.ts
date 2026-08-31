@@ -282,7 +282,7 @@ export const ar = {
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
   badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
   ask: {
-    button: "اسألي كابيلا",
+    button: "اسألي",
     placeholder: "عن ماذا تبحثين؟",
     sections: {
       products: "المنتجات",

@@ -110,6 +110,8 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
               <span>{dict.orders.placedOn} {formatOrderDate(order.createdAt, lang)}</span>
               <span aria-hidden>·</span>
               <span>{itemsCountLabel(units, dict)}</span>
+              <span aria-hidden>·</span>
+              <span>{dict.common.total}: {formatPrice(order.totalAmount, lang)}</span>
             </div>
           </div>
           <div className="md:text-end">

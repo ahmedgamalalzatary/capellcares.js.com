@@ -54,7 +54,7 @@ export function CollectionGrid({
   const [pillCategoryIds, setPillCategoryIds] = useState<number[]>([]);
   const [sort, setSort] = useState<Sort>("default");
   const [showFilters, setShowFilters] = useState(false);
-  const [cols, setCols] = useState<Cols>(1);
+  const [cols, setCols] = useState<Cols>(2);
 
   const activeCategories = useMemo(
     () => categories.filter((category) => !category.deletedAt),

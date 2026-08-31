@@ -22,12 +22,20 @@ const { fetchCustomerOrderById, submitReview } = vi.hoisted(() => ({
 vi.mock("@/lib/api/client", () => ({
   fetchCustomerOrderById,
   submitReview,
-  // The receipt resolves each line back to the live catalog for thumbnails and
-  // deep links; an empty catalog exercises the "no longer available" fallback.
-  fetchProducts: () => Promise.resolve([]),
+  fetchProducts: () => Promise.resolve([{
+    id: 7,
+    slug: "body-lotion",
+    name: { ar: "لوشن الجسم", en: "Body Lotion" },
+    imagePath: "",
+    categoryId: 4,
+    variants: [{ id: 3 }]
+  }]),
   fetchOffers: () => Promise.resolve([]),
   fetchCollections: () => Promise.resolve([]),
-  fetchCategories: () => Promise.resolve([])
+  fetchCategories: () => Promise.resolve([{
+    id: 4,
+    name: { ar: "لوشن الجسم", en: "Body Lotion" }
+  }])
 }));
 
 import { OrderDetailView } from "@/components/orders/order-detail-view";
@@ -115,6 +123,18 @@ beforeEach(() => {
 });
 
 describe("OrderDetailView reviews", () => {
+  it("shows the order total in the header metadata and each item's classification", async () => {
+    fetchCustomerOrderById.mockResolvedValue({
+      ...(await fetchCustomerOrderById()),
+      totalAmount: 75
+    });
+
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    expect(await screen.findByText(/EGP\s*75/)).toBeInTheDocument();
+    expect(await screen.findByText("Body Lotion")).toBeInTheDocument();
+  });
+
   it("shows an error instead of an empty receipt when loading fails", async () => {
     fetchCustomerOrderById.mockRejectedValue(new TypeError("network down"));
 

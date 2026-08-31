@@ -22,8 +22,8 @@ const catalog: Catalog = {
     createdAt: "",
     updatedAt: ""
   } as any],
-  offers: [],
-  collections: [],
+  offers: [{ id: 2, categoryId: 5 } as any],
+  collections: [{ id: 3, categoryId: 5 } as any],
   categories,
   loaded: true
 };
@@ -52,8 +52,11 @@ describe("orderItemCategory", () => {
     expect(orderItemCategory({ ...productLine, variantId: 999 }, catalog, "en")).toBeNull();
   });
 
-  it("returns null for non-product lines", () => {
+  it("resolves offer and collection lines to their localized category names", () => {
     const offerLine = { ...productLine, itemType: "offer", variantId: null, offerId: 3 } as OrderItem;
-    expect(orderItemCategory(offerLine, catalog, "en")).toBeNull();
+    const collectionLine = { ...productLine, itemType: "collection", variantId: null, collectionId: 3 } as OrderItem;
+
+    expect(orderItemCategory({ ...offerLine, offerId: 2 }, catalog, "en")).toBe("Serums");
+    expect(orderItemCategory(collectionLine, catalog, "en")).toBe("Serums");
   });
 });

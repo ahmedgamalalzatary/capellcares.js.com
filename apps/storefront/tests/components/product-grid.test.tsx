@@ -79,6 +79,13 @@ const dict: any = {
 };
 
 describe("ProductGrid", () => {
+  it("defaults the POV control and grid to two columns", () => {
+    render(createElement(ProductGrid, { products, categories, lang: "en", dict }));
+
+    expect(screen.getByRole("button", { name: "2 per row" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("product-card").parentElement).toHaveAttribute("data-cols", "2");
+  });
+
   it("names the catch-all category pill after the scoped category", () => {
     render(createElement(ProductGrid, {
       products,

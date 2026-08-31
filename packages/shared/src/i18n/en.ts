@@ -280,7 +280,7 @@ export const en = {
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
   badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },
   ask: {
-    button: "Ask Capella",
+    button: "Ask",
     placeholder: "What are you looking for?",
     sections: {
       products: "Products",

@@ -42,10 +42,24 @@ vi.mock("@/lib/api/client", () => {
 
   return {
     fetchProducts: vi.fn().mockResolvedValue([discountedProduct]),
-    fetchOffers: vi.fn().mockResolvedValue([]),
-    fetchCollections: vi.fn().mockResolvedValue([]),
+    fetchOffers: vi.fn().mockResolvedValue([{
+      id: 2,
+      slug: "body-care-offer",
+      name: { ar: "عرض العناية بالجسم", en: "Body Care Offer" },
+      categoryId: 2,
+      price: 300
+    }]),
+    fetchCollections: vi.fn().mockResolvedValue([{
+      id: 3,
+      slug: "body-lotion-set",
+      name: { ar: "مجموعة لوشن الجسم", en: "Body Lotion Set" },
+      categoryId: 3,
+      price: 400
+    }]),
     fetchCategories: vi.fn().mockResolvedValue([
-      { id: 1, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true }
+      { id: 1, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true },
+      { id: 2, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true },
+      { id: 3, parentId: 2, slug: "body-lotion", name: { ar: "لوشن الجسم", en: "Body Lotion" }, isLeaf: true }
     ])
   };
 });
@@ -76,7 +90,20 @@ describe("CartView", () => {
     const dict = getDict("en");
     render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
 
-    expect(await screen.findByText(/Serums · /)).toBeInTheDocument();
+    expect(await screen.findByText("Serums")).toBeInTheDocument();
+  });
+
+  it("shows each offer and collection card's own classification", async () => {
+    saveCartLines(window.localStorage, [
+      { type: "offer", offerId: 2, qty: 1 },
+      { type: "collection", collectionId: 3, qty: 1 }
+    ]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    expect(await screen.findByText("Body Care")).toBeInTheDocument();
+    expect(await screen.findByText("Body Lotion")).toBeInTheDocument();
   });
 
   it("shows the unit price alongside the line total when a line has more than one unit", async () => {

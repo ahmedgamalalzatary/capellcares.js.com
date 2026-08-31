@@ -19,7 +19,7 @@ export function ProductGrid({
   dict,
   initialSearch = "",
   initialCategory,
-  initialCols = 1,
+  initialCols = 2,
   lockCategory,
   headerCategoryIds,
   onHeaderCategoryIdsChange,

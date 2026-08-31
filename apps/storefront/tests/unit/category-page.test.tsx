@@ -131,13 +131,13 @@ describe("category page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Curly Hair" })).toBeInTheDocument();
   });
 
-  it("opens the grid on the one-column layout, like every other product view", async () => {
+  it("opens the grid on the two-column layout", async () => {
     render(await CategoryPage({
       params: Promise.resolve({ lang: "en", slug: "hair-care" }),
       searchParams: Promise.resolve({ categoryId: "8" })
     }));
 
-    expect(screen.getByTestId("product-grid")).toHaveAttribute("data-initial-cols", "1");
+    expect(screen.getByTestId("product-grid")).toHaveAttribute("data-initial-cols", "2");
   });
 
   it("toggles header filter pills as a multi-select source for the grid", async () => {

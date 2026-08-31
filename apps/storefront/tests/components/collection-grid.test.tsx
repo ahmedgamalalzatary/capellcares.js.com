@@ -16,7 +16,7 @@ vi.mock("@/components/products/filters/filter-drawer", () => ({
 }));
 
 vi.mock("@/components/ui/columns-toggle", () => ({
-  ColumnsToggle: () => createElement("div")
+  ColumnsToggle: ({ cols }: any) => createElement("div", { "data-testid": "columns-toggle", "data-cols": cols })
 }));
 
 import { CollectionGrid } from "@/components/collections/collection-grid";
@@ -66,6 +66,14 @@ afterEach(() => {
 });
 
 describe("CollectionGrid", () => {
+  it("defaults the POV control to two columns", () => {
+    render(createElement(CollectionGrid, {
+      collections: [makeCollection(1, "Glow Set", 2)], categories, lang: "en" as const, dict
+    }));
+
+    expect(screen.getByTestId("columns-toggle")).toHaveAttribute("data-cols", "2");
+  });
+
   it("gives each card its collection's own category name for the classification line", () => {
     render(createElement(CollectionGrid, {
       collections: [makeCollection(1, "Glow Set", 2)],

@@ -78,15 +78,16 @@ export function orderItemHref(item: OrderItem, catalog: Catalog, lang: Language)
   return collection ? `/${lang}/collections/${collection.slug}` : null;
 }
 
-/**
- * The category a product line belongs to, resolved through the live catalog.
- * Order lines snapshot only name/size, so a deleted product (or an unloaded
- * catalog) yields null and the caller simply omits the category.
- */
+/** The category an order line belongs to, resolved through the live catalog. */
 export function orderItemCategory(item: OrderItem, catalog: Catalog, lang: Language): string | null {
-  if (item.itemType !== "product_variant") return null;
-  const product = catalog.products.find((p) => p.variants.some((v) => v.id === item.variantId));
-  const category = product ? catalog.categories.find((c) => c.id === product.categoryId) : undefined;
+  const categoryId = item.itemType === "product_variant"
+    ? catalog.products.find((product) => product.variants.some((variant) => variant.id === item.variantId))?.categoryId
+    : item.itemType === "offer"
+      ? catalog.offers.find((offer) => offer.id === item.offerId)?.categoryId
+      : catalog.collections.find((collection) => collection.id === item.collectionId)?.categoryId;
+  const category = categoryId != null
+    ? catalog.categories.find((candidate) => candidate.id === categoryId)
+    : undefined;
   return category ? pickLang(category.name, lang) : null;
 }
 

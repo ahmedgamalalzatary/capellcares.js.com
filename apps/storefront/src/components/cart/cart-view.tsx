@@ -14,7 +14,7 @@ interface Resolved {
   key: string;
   title: string;
   meta: string;
-  /** Localized category name; present on product lines whose category resolved. */
+  /** Localized category name when the line's category resolves. */
   category?: string;
   unitPrice: number;
   qty: number;
@@ -89,11 +89,13 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         if (l.type === "offer") {
           const o = offers.find((o) => o.id === l.offerId);
           if (!o) return null;
+          const category = o.categoryId != null ? categories.find((c) => c.id === o.categoryId) : undefined;
           return {
             key,
             type: "offer" as const,
             title: pickLang(o.name, lang),
             meta: dict.offers.badge,
+            category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: o.price,
             qty: l.qty,
             slug: `/${lang}/offers/${o.slug}`,
@@ -104,11 +106,13 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
         const collection = collections.find((item) => item.id === l.collectionId);
         if (!collection) return null;
+        const category = categories.find((c) => c.id === collection.categoryId);
         return {
           key,
           type: "collection" as const,
           title: pickLang(collection.name, lang),
           meta: dict.itemType.collection,
+          category: category ? pickLang(category.name, lang) : undefined,
           unitPrice: collection.price,
           qty: l.qty,
           slug: `/${lang}/collections/${collection.slug}`,
@@ -193,9 +197,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                       <Link href={r.slug} className="mt-1 block truncate font-medium text-ink hover:text-accent">
                         {r.title}
                       </Link>
-                      <div className="mt-1 truncate text-sm text-(--ink-3)">
-                        {r.category ? `${r.category} · ` : ""}{r.meta}
-                      </div>
+                      {r.category ? (
+                        <div className="mt-1 truncate text-sm text-(--ink-3)">{r.category}</div>
+                      ) : null}
                       <div className="mt-2 text-sm text-(--ink-2)">
                         {formatPrice(r.unitPrice, lang)}
                         {r.qty > 1 ? <span className="text-(--ink-3)"> {dict.cart.each}</span> : null}

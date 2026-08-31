@@ -16,7 +16,7 @@ vi.mock("@/components/products/filters/filter-drawer", () => ({
 }));
 
 vi.mock("@/components/ui/columns-toggle", () => ({
-  ColumnsToggle: () => createElement("div")
+  ColumnsToggle: ({ cols }: any) => createElement("div", { "data-testid": "columns-toggle", "data-cols": cols })
 }));
 
 import { OfferGrid } from "@/components/offers/offer-grid";
@@ -65,6 +65,14 @@ afterEach(() => {
 });
 
 describe("OfferGrid", () => {
+  it("defaults the POV control to two columns", () => {
+    render(createElement(OfferGrid, {
+      offers: [makeOffer(1, "Skin Offer", 2)], categories, lang: "en" as const, dict
+    }));
+
+    expect(screen.getByTestId("columns-toggle")).toHaveAttribute("data-cols", "2");
+  });
+
   it("offers only root categories that own at least one offer as filter pills", () => {
     render(createElement(OfferGrid, {
       offers: [makeOffer(1, "Skin Offer", 2)],
