@@ -19,13 +19,23 @@
     "./tests/contracts": "./tests/contracts/index.ts"
   },
   "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "radix-ui": "^1.4.3",
-    "react": "19.2.6",
-    "tailwind-merge": "^3.6.0",
-    "zod": "^3.24.1"
+    "react": "^19.0.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependenciesMeta": {
+    "class-variance-authority": { "optional": true },
+    "clsx": { "optional": true },
+    "lucide-react": { "optional": true },
+    "radix-ui": { "optional": true },
+    "react": { "optional": true },
+    "tailwind-merge": { "optional": true }
   },
   "devDependencies": {
     "@types/node": "^22.7.0",
