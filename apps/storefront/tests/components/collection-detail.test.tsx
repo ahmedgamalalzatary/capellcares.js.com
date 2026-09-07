@@ -150,4 +150,32 @@ describe("CollectionDetail", () => {
 
     expect(screen.getByRole("button", { name: "4.0 out of 5, 3 reviews" })).toBeInTheDocument();
   });
+
+  it("shows each included product's classification", () => {
+    render(createElement(CollectionDetail, {
+      collection,
+      items: [{
+        qty: 2,
+        variantId: 11,
+        size: "100ml",
+        unitPrice: 90,
+        available: 4,
+        product: {
+          id: 1,
+          slug: "body-lotion",
+          name: { ar: "لوشن الجسم", en: "Body Lotion" },
+          categoryId: 3
+        }
+      }],
+      categories: [
+        { id: 3, parentId: 2, slug: "body-lotion", name: { ar: "لوشن الجسم", en: "Body Lotion Category" }, isLeaf: true }
+      ],
+      lang: "en",
+      dict,
+      relatedItems: []
+    } as any));
+
+    expect(screen.getByText("Body Lotion")).toBeInTheDocument();
+    expect(screen.getByText("Body Lotion Category")).toBeInTheDocument();
+  });
 });

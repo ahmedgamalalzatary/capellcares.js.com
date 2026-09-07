@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrdersView } from "@/components/orders/orders-view";
 
 const fetchCustomerOrders = vi.fn();
+const fetchProducts = vi.fn();
+const fetchOffers = vi.fn();
+const fetchCollections = vi.fn();
+const fetchCategories = vi.fn();
 const logout = vi.fn();
 let accessToken = "token";
 
@@ -18,11 +22,12 @@ vi.mock("@/components/providers/auth-provider", () => ({
 
 vi.mock("@/lib/api/client", () => ({
   fetchCustomerOrders: (...args: any[]) => fetchCustomerOrders(...args),
-  // The order cards resolve line items back to the live catalog for thumbnails.
-  fetchProducts: () => Promise.resolve([]),
-  fetchOffers: () => Promise.resolve([]),
-  fetchCollections: () => Promise.resolve([]),
-  fetchCategories: () => Promise.resolve([])
+  // The order cards resolve line items back to the live catalog for thumbnails
+  // and classification names.
+  fetchProducts: (...args: any[]) => fetchProducts(...args),
+  fetchOffers: (...args: any[]) => fetchOffers(...args),
+  fetchCollections: (...args: any[]) => fetchCollections(...args),
+  fetchCategories: (...args: any[]) => fetchCategories(...args)
 }));
 
 const dict = {
@@ -52,6 +57,14 @@ describe("OrdersView", () => {
     accessToken = "token";
     fetchCustomerOrders.mockReset();
     fetchCustomerOrders.mockResolvedValue([]);
+    fetchProducts.mockReset();
+    fetchOffers.mockReset();
+    fetchCollections.mockReset();
+    fetchCategories.mockReset();
+    fetchProducts.mockResolvedValue([]);
+    fetchOffers.mockResolvedValue([]);
+    fetchCollections.mockResolvedValue([]);
+    fetchCategories.mockResolvedValue([]);
     logout.mockReset();
   });
 
@@ -161,5 +174,67 @@ describe("OrdersView", () => {
 
     await waitFor(() => expect(screen.queryByText("ORDER-A")).not.toBeInTheDocument());
     expect(screen.getByText("ORDER-B")).toBeInTheDocument();
+  });
+
+  it("shows each listed line's classification from the live catalog", async () => {
+    fetchProducts.mockResolvedValue([{
+      id: 1,
+      slug: "rose-lotion",
+      name: { ar: "لوشن", en: "Rose Lotion" },
+      categoryId: 5,
+      variants: [{ id: 3, productId: 1, size: "100ml", price: 160, stock: 4 }]
+    }]);
+    fetchOffers.mockResolvedValue([{
+      id: 2,
+      slug: "body-care-offer",
+      name: { ar: "عرض", en: "Body Care Offer" },
+      categoryId: 8
+    }]);
+    fetchCategories.mockResolvedValue([
+      { id: 5, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true },
+      { id: 8, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true }
+    ]);
+    fetchCustomerOrders.mockResolvedValue([
+      {
+        id: 5,
+        orderCode: "ABCD-005",
+        paymentStatus: "accepted",
+        totalAmount: 480,
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            id: 11,
+            itemType: "product_variant",
+            variantId: 3,
+            offerId: null,
+            collectionId: null,
+            qty: 1,
+            unitPrice: 160,
+            lineTotal: 160,
+            snapshotNameAr: "لوشن",
+            snapshotNameEn: "Rose Lotion",
+            snapshotSizeLabel: "100ml"
+          },
+          {
+            id: 12,
+            itemType: "offer",
+            variantId: null,
+            offerId: 2,
+            collectionId: null,
+            qty: 1,
+            unitPrice: 320,
+            lineTotal: 320,
+            snapshotNameAr: "عرض",
+            snapshotNameEn: "Body Care Offer",
+            snapshotSizeLabel: null
+          }
+        ]
+      }
+    ]);
+
+    render(createElement(OrdersView, { lang: "en", dict }));
+
+    expect(await screen.findByText("Serums")).toBeInTheDocument();
+    expect(screen.getByText("Body Care")).toBeInTheDocument();
   });
 });

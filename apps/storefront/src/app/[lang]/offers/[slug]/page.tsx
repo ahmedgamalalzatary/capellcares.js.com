@@ -62,6 +62,7 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
       <OfferDetail
         offer={offer}
         category={category}
+        categories={categories}
         items={items}
         lang={lang}
         dict={dict}

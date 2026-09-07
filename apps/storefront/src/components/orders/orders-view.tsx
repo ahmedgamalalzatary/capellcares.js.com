@@ -11,6 +11,8 @@ import {
   formatOrderDate,
   itemsCountLabel,
   OrderItemMedia,
+  orderItemCategory,
+  orderItemName,
   paymentStatusChip,
   paymentStatusLabel,
   useCatalog
@@ -152,15 +154,23 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
             {/* Body: what was in the order, at a glance */}
             <div className="flex flex-wrap items-center gap-4 px-4 py-4 sm:px-5">
               {thumbs.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  {thumbs.map((item) => (
-                    <div
-                      key={item.id}
-                      className="aspect-square w-14 overflow-hidden rounded-md bg-(--warm-soft) sm:w-16"
-                    >
-                      <OrderItemMedia item={item} catalog={catalog} lang={lang} />
-                    </div>
-                  ))}
+                <div className="flex min-w-0 flex-1 flex-wrap items-start gap-3">
+                  {thumbs.map((item) => {
+                    const category = orderItemCategory(item, catalog, lang);
+                    return (
+                      <div key={item.id} className="flex min-w-0 items-center gap-2">
+                        <div className="aspect-square w-14 shrink-0 overflow-hidden rounded-md bg-(--warm-soft) sm:w-16">
+                          <OrderItemMedia item={item} catalog={catalog} lang={lang} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-ink">{orderItemName(item, lang)}</div>
+                          {category ? (
+                            <div className="truncate text-sm text-(--ink-3)">{category}</div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
                   {overflow > 0 ? (
                     <div className="grid aspect-square w-14 place-items-center rounded-md bg-(--warm-soft) text-sm font-semibold text-(--ink-2) sm:w-16">
                       {(dict.orders.andMore ?? "+{n}").replace("{n}", String(overflow))}

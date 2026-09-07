@@ -61,6 +61,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
       <CollectionDetail
         collection={collection}
         category={category}
+        categories={categories}
         items={items}
         lang={lang}
         dict={dict}

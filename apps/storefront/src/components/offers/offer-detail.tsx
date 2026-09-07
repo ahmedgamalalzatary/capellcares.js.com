@@ -26,13 +26,14 @@ interface ItemEntry {
 interface Props {
   offer: Offer & { reviewData?: ReviewPage | null };
   category?: Category;
+  categories?: Category[];
   items: ItemEntry[];
   lang: Language;
   dict: any;
   relatedItems?: RelatedItemCard[];
 }
 
-export function OfferDetail({ offer, category, items, lang, dict, relatedItems = [] }: Props) {
+export function OfferDetail({ offer, category, categories = [], items, lang, dict, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
   const { added, flash: flashAdded } = useAddedFlash();
@@ -112,7 +113,9 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
           <div className="grid gap-3">
             <div className="eyebrow text-(--ink-3)!">{dict.offers.includes}</div>
             <div className="grid gap-2">
-              {items.map((item) => (
+              {items.map((item) => {
+                const itemCategory = categories.find((candidate) => candidate.id === item.product.categoryId && !candidate.deletedAt);
+                return (
                 <Link
                   key={`${item.product.id}-${item.variantId}`}
                   href={`/${lang}/products/${item.product.slug}`}
@@ -123,6 +126,9 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
                   </div>
                   <div className="min-w-0">
                     <div className="truncate font-medium text-ink">{pickLang(item.product.name, lang)}</div>
+                    {itemCategory ? (
+                      <div className="mt-0.5 truncate text-sm text-(--ink-3)">{pickLang(itemCategory.name, lang)}</div>
+                    ) : null}
                     <div className="mt-0.5 text-sm text-(--ink-3)">
                       {item.size} · ×{item.qty}
                     </div>
@@ -131,7 +137,8 @@ export function OfferDetail({ offer, category, items, lang, dict, relatedItems =
                     {formatPrice(item.unitPrice * item.qty, lang)}
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
 

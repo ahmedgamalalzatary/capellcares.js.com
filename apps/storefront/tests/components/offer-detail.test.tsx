@@ -229,4 +229,32 @@ describe("OfferDetail category", () => {
 
     expect(screen.queryByText(/Category:/)).not.toBeInTheDocument();
   });
+
+  it("shows each included product's classification", () => {
+    render(createElement(OfferDetail, {
+      offer,
+      items: [{
+        qty: 1,
+        variantId: 11,
+        size: "30ml",
+        unitPrice: 200,
+        available: 4,
+        product: {
+          id: 1,
+          slug: "rose-serum",
+          name: { ar: "سيروم الورد", en: "Rose Serum" },
+          categoryId: 5
+        }
+      }],
+      categories: [
+        { id: 5, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true }
+      ],
+      lang: "en",
+      dict,
+      relatedItems: []
+    } as any));
+
+    expect(screen.getByText("Rose Serum")).toBeInTheDocument();
+    expect(screen.getByText("Serums")).toBeInTheDocument();
+  });
 });
