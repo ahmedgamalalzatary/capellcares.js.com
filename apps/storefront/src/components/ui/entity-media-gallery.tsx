@@ -320,6 +320,9 @@ export function EntityMediaGallery({
         <div
           className={[
             "relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start",
+            // pan-y: the page may still scroll vertically; a horizontal finger
+            // drag stays with this box so it can change the picture.
+            items.length > 1 ? "touch-pan-y" : "",
             // The picture is the trigger: a plus cursor announces it to anyone
             // with a hover-capable pointer, and a tap opens it on touch.
             items.length > 0 ? "cursor-plus" : ""
@@ -445,7 +448,17 @@ export function EntityMediaGallery({
               // Each detail page renders its own artwork here, so the stage caps
               // whatever comes back rather than trusting it to fit — otherwise a
               // tall photo runs off the bottom of the screen.
-              className="grid h-full max-h-full w-full max-w-4xl place-items-center overflow-hidden [&_img]:max-h-full [&_img]:max-w-full [&_img]:w-auto [&_img]:object-contain [&_svg]:max-h-full [&_svg]:max-w-full [&_video]:max-h-full [&_video]:max-w-full"
+              className={[
+                "grid h-full max-h-full w-full max-w-4xl place-items-center overflow-hidden [&_img]:max-h-full [&_img]:max-w-full [&_img]:w-auto [&_img]:object-contain [&_svg]:max-h-full [&_svg]:max-w-full [&_video]:max-h-full [&_video]:max-w-full",
+                items.length > 1 ? "touch-pan-y" : ""
+              ].join(" ").trim()}
+              onPointerDown={onPointerDown}
+              onPointerUp={(event) => {
+                if (isSwipePointer(event.nativeEvent)) completeSwipe(event.nativeEvent);
+              }}
+              onPointerCancel={(event) => {
+                if (isSwipePointer(event.nativeEvent)) clearPointer(event.pointerId);
+              }}
             >
               {renderItem(activeItem, imagePath ?? "")}
             </div>

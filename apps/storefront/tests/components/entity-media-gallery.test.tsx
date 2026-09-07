@@ -243,6 +243,51 @@ describe("EntityMediaGallery", () => {
     expect(thumbnails()[1]).toHaveAttribute("data-active", "true");
   });
 
+  it("keeps vertical page scroll but claims horizontal finger movement on the big image", () => {
+    render(createElement(EntityMediaGallery, {
+      media: imageMedia,
+      imagePath: "/uploads/one.jpg",
+      label: "Entity",
+      testIdPrefix: "product",
+      renderImage
+    }));
+
+    expect(screen.getByTestId("product-media-main").className).toContain("touch-pan-y");
+  });
+
+  it("advances the big image on a left finger swipe and goes back on a right swipe", () => {
+    render(createElement(EntityMediaGallery, {
+      media: [
+        { type: "image", arUrl: null, enUrl: "/uploads/one.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/two.jpg" },
+        { type: "image", arUrl: null, enUrl: "/uploads/three.jpg" }
+      ],
+      imagePath: "/uploads/one.jpg",
+      label: "Entity",
+      testIdPrefix: "offer",
+      renderImage
+    }));
+
+    const main = screen.getByTestId("offer-media-main");
+    Object.assign(main, {
+      setPointerCapture: vi.fn(),
+      releasePointerCapture: vi.fn(),
+      hasPointerCapture: vi.fn(() => true)
+    });
+    const shown = () => main.querySelector("img");
+    const thumbs = () => within(screen.getByTestId("offer-media-thumbs")).getAllByRole("button");
+
+    fireEvent.pointerDown(main, { clientX: 260, clientY: 80, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+    fireEvent.pointerUp(main, { clientX: 40, clientY: 85, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+    expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
+    expect(thumbs()[1]).toHaveAttribute("data-active", "true");
+
+    fireEvent.pointerDown(main, { clientX: 40, clientY: 80, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+    fireEvent.pointerUp(main, { clientX: 260, clientY: 85, pointerId: 2, pointerType: "touch", button: 0, isPrimary: true });
+    expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+    expect(thumbs()[0]).toHaveAttribute("data-active", "true");
+  });
+
   describe("media lightbox", () => {
     const openLightbox = async (user: ReturnType<typeof userEvent.setup>, props: Record<string, unknown> = {}) => {
       render(createElement(EntityMediaGallery, {
@@ -289,6 +334,24 @@ describe("EntityMediaGallery", () => {
       // The old floating chip is gone; the keyboard control stays, unobtrusively.
       expect(screen.queryByTestId("product-media-expand")).toBeNull();
       expect(screen.getByRole("button", { name: "View all media" }).className).toContain("sr-only");
+    });
+
+    it("lets a finger swipe change the picture inside the lightbox", async () => {
+      const user = userEvent.setup();
+      const dialog = await openLightbox(user);
+      const stage = within(dialog).getByTestId("product-lightbox-main");
+      Object.assign(stage, {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn(),
+        hasPointerCapture: vi.fn(() => true)
+      });
+
+      expect(stage.className).toContain("touch-pan-y");
+
+      fireEvent.pointerDown(stage, { clientX: 260, clientY: 80, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(stage, { clientX: 40, clientY: 85, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
+
+      expect(stage.querySelector("img")).toHaveAttribute("src", "/uploads/two.jpg");
     });
 
     it("does not open on the swipe that changes the image", () => {
