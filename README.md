@@ -89,6 +89,20 @@ Run all apps through Turbo:
 pnpm dev
 ```
 
+Web (storefront + ERP). `dev:web` also starts the API so both fronts can talk to it:
+
+```powershell
+pnpm dev:web
+pnpm build:web
+pnpm build:web-stack
+```
+
+| Command | What it runs |
+| --- | --- |
+| `pnpm build:web` | Storefront + ERP |
+| `pnpm build:web-stack` | Storefront + ERP + API |
+| `pnpm dev:web` / `pnpm dev:web-stack` | Storefront + ERP + API |
+
 Run individual apps:
 
 ```powershell
