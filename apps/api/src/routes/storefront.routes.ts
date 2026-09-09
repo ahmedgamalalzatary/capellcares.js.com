@@ -9,6 +9,7 @@ import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-adv
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
 import { storefrontShopMediaRoutes } from "../modules/shop-media/storefront-shop-media.routes.js";
+import { storefrontAnnouncementsRoutes } from "../modules/announcements/storefront-announcements.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";
 import { storefrontReviewsRoutes } from "../modules/reviews/reviews.routes.js";
 
@@ -24,6 +25,7 @@ storefrontRoutes.use("/orders", storefrontOrdersRoutes);
 storefrontRoutes.use("/wishlist", wishlistRoutes);
 storefrontRoutes.use("/reviews", storefrontReviewsRoutes);
 storefrontRoutes.use("/shop-media-sections", storefrontShopMediaRoutes);
+storefrontRoutes.use("/announcements", storefrontAnnouncementsRoutes);
 // Wrapped like the product and collection routers: an unwrapped async handler
 // rejects into an unhandled rejection, which takes the process down rather than
 // returning a 500.

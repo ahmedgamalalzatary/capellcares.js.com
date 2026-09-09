@@ -31,7 +31,7 @@ vi.mock("@/components/layout/header/mobile-drawer", () => ({
 }));
 
 vi.mock("@/components/layout/header/announcement-bar", () => ({
-  AnnouncementBar: () => null
+  AnnouncementBar: ({ items }: { items: string[] }) => createElement("div", { "data-testid": "announcement-bar" }, items.join("|"))
 }));
 
 vi.mock("@/components/layout/header/shop-mega-menu", () => ({
@@ -101,5 +101,15 @@ describe("Header layout stability", () => {
       "href",
       "/en/login?next=%2Fen%2Fproducts%3Fsort%3Dprice-desc"
     );
+  });
+
+  it("renders CMS announcement texts when provided", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} announcements={["Free shipping", "New season"]} />);
+    expect(screen.getByTestId("announcement-bar")).toHaveTextContent("Free shipping|New season");
+  });
+
+  it("hides the announcement bar when the CMS list is empty", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} announcements={[]} />);
+    expect(screen.queryByTestId("announcement-bar")).not.toBeInTheDocument();
   });
 });

@@ -140,4 +140,22 @@ describe("storefront revalidate route", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/en/products");
     expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
   });
+
+  it("revalidates locale layouts for announcement updates without requiring a slug", async () => {
+    const { POST } = await import("@/app/api/revalidate/route");
+
+    const response = await POST(new Request("http://localhost:3000/api/revalidate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-revalidate-secret": "dev-revalidate-secret"
+      },
+      body: JSON.stringify({ entity: "announcements" })
+    }));
+
+    expect(response.status).toBe(200);
+    expect(revalidatePath).toHaveBeenCalledWith("/ar", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/en", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/[lang]", "layout");
+  });
 });

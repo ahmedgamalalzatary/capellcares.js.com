@@ -122,6 +122,12 @@ export function OrderItemMedia({
   );
 }
 
+export function orderItemTypeKey(item: OrderItem): "product" | "offer" | "collection" {
+  if (item.itemType === "offer") return "offer";
+  if (item.itemType === "collection") return "collection";
+  return "product";
+}
+
 export function orderItemName(item: OrderItem, lang: Language): string {
   return lang === "ar"
     ? item.snapshotNameAr ?? item.snapshotNameEn ?? ""
@@ -140,9 +146,8 @@ export function paymentStatusLabel(status: PaymentStatus, dict: any): string {
 }
 
 export function paymentStatusChip(status: PaymentStatus): string {
-  if (status === "accepted") return "chip--sage";
-  if (status === "denied") return "chip--accent";
-  return "chip--gold";
+  if (status === "accepted") return "chip--status-ok";
+  return "chip--status-bad";
 }
 
 export function formatOrderDate(value: string, lang: Language): string {

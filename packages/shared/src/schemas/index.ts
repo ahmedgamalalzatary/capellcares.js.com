@@ -1,5 +1,6 @@
 export * from "./auth.schema.js";
 export * from "./advice.schema.js";
+export * from "./announcement.schema.js";
 export * from "./category.schema.js";
 export * from "./collection.schema.js";
 export * from "./checkout.schema.js";

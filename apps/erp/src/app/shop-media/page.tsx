@@ -14,7 +14,7 @@ import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
-import type { ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
+import type { Announcement, ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 
 type EditableItem = {
   id: string;
@@ -30,6 +30,13 @@ type EditableSection = {
   slot: 1 | 2 | 3 | 4 | 5;
   status: "active" | "inactive";
   items: EditableItem[];
+};
+
+type EditableAnnouncement = {
+  id: string;
+  arText: string;
+  enText: string;
+  status: "active" | "inactive";
 };
 
 const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
@@ -88,15 +95,23 @@ function resolvePreviewSrc(value: string) {
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
   const shopMediaSections = useStore((store) => store.shopMediaSections);
+  const storedAnnouncements = useStore((store) => store.announcements);
+  const storedBarStatus = useStore((store) => store.announcementBarStatus);
   const products = useStore((store) => store.products);
   const categories = useStore((store) => store.categories);
   const offers = useStore((store) => store.offers);
   const collections = useStore((store) => store.collections);
   const [sections, setSections] = useState<EditableSection[]>([]);
+  const [tab, setTab] = useState<"announcements" | "images">("images");
+  const [announcementItems, setAnnouncementItems] = useState<EditableAnnouncement[]>([]);
+  const [barStatus, setBarStatus] = useState<"active" | "inactive">("active");
   const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
+  const [savingAnnouncements, setSavingAnnouncements] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dirtySlotsRef = useRef<Set<1 | 2 | 3 | 4 | 5>>(new Set());
   const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3 | 4 | 5>>(new Set());
+  const announcementsDirtyRef = useRef(false);
+  const [announcementsDirty, setAnnouncementsDirty] = useState(false);
   const { collapsed: collapsedSlots, toggle: toggleCollapsed } = useCollapsedShopMedia();
   const { collapsed: collapsedItems, toggle: toggleCollapsedItem } = useCollapsedShopMediaItems();
 
@@ -110,6 +125,19 @@ export default function ShopMediaPage() {
       return toEditableSection(bySlot.get(slot), slot);
     }));
   }, [shopMediaSections]);
+
+  useEffect(() => {
+    if (announcementsDirtyRef.current) {
+      return;
+    }
+    setAnnouncementItems((storedAnnouncements ?? []).map((item: Announcement) => ({
+      id: String(item.id),
+      arText: item.arText,
+      enText: item.enText,
+      status: item.status
+    })));
+    setBarStatus(storedBarStatus ?? "active");
+  }, [storedAnnouncements, storedBarStatus]);
 
   // Soft-deleted entities still live in the store (the trash page reads them from
   // these same slices), so every target picker has to exclude them itself.
@@ -207,6 +235,60 @@ export default function ShopMediaPage() {
     ]
   }));
 
+  const markAnnouncementsDirty = (updater: (current: EditableAnnouncement[]) => EditableAnnouncement[]) => {
+    announcementsDirtyRef.current = true;
+    setAnnouncementsDirty(true);
+    setAnnouncementItems(updater);
+  };
+
+  const setBarStatusDirty = (status: "active" | "inactive") => {
+    announcementsDirtyRef.current = true;
+    setAnnouncementsDirty(true);
+    setBarStatus(status);
+  };
+
+  const addAnnouncement = () => markAnnouncementsDirty((current) => [
+    ...current,
+    {
+      id: crypto.randomUUID(),
+      arText: "",
+      enText: "",
+      status: "active"
+    }
+  ]);
+
+  const saveAnnouncements = async () => {
+    if (announcementItems.some((item) => !item.arText.trim() || !item.enText.trim())) {
+      const validationError = new Error("أضيفي النص العربي والإنجليزي لكل إعلان قبل الحفظ.");
+      setError(validationError.message);
+      showErrorToast(validationError, validationError.message);
+      return;
+    }
+
+    try {
+      setSavingAnnouncements(true);
+      setError(null);
+      await getStore().replaceAnnouncements({
+        barStatus,
+        items: announcementItems.map((item, index) => ({
+          arText: item.arText.trim(),
+          enText: item.enText.trim(),
+          status: item.status,
+          sortOrder: index + 1
+        }))
+      });
+      announcementsDirtyRef.current = false;
+      setAnnouncementsDirty(false);
+      toast.success("تم حفظ الإعلانات بنجاح.");
+    } catch {
+      const saveError = new Error("تعذر حفظ الإعلانات. حاولي مرة أخرى.");
+      setError(saveError.message);
+      showErrorToast(saveError, saveError.message);
+    } finally {
+      setSavingAnnouncements(false);
+    }
+  };
+
   const moveItem = (slot: 1 | 2 | 3 | 4 | 5, itemId: string, direction: -1 | 1) => setSection(slot, (current) => {
     const index = current.items.findIndex((entry) => entry.id === itemId);
     const targetIndex = index + direction;
@@ -222,7 +304,194 @@ export default function ShopMediaPage() {
   return (
     <AdminShell title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]}>
       <div className="shop-media-sections">
-        {sections.map((section) => {
+      <div className="card shop-media-tabs-card">
+        <div className="card__head trash-tabs__head">
+          <div className="trash-tabs" role="tablist" aria-label="وسائط المتجر">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "images"}
+              className="trash-tab"
+              data-active={tab === "images"}
+              onClick={() => setTab("images")}
+            >
+              أقسام الصور
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "announcements"}
+              className="trash-tab"
+              data-active={tab === "announcements"}
+              onClick={() => setTab("announcements")}
+            >
+              شريط الإعلانات
+            </button>
+          </div>
+        </div>
+      </div>
+        {tab === "announcements" ? (() => {
+          const isAnnouncementsCollapsed = collapsedItems.has("announcements");
+          return (
+        <div className="card">
+          <div className="shop-media-head">
+            <div className="shop-media-head__main-flex">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => toggleCollapsedItem("announcements")}
+                aria-label={isAnnouncementsCollapsed ? "توسيع القسم" : "طي القسم"}
+                aria-expanded={!isAnnouncementsCollapsed}
+              >
+                <Icon.Chevron size={14} className={isAnnouncementsCollapsed ? "rotate-180" : undefined} />
+              </button>
+              <div className="shop-media-head__main">
+                <h3 className="card__title">شريط الإعلانات</h3>
+                <span className="shop-media-head__sub">يظهر أعلى المتجر ويتبدل بين الرسائل النشطة</span>
+              </div>
+            </div>
+            <div className="shop-media-head__tools">
+              <span className="tag">{announcementItems.length} رسالة</span>
+              {announcementsDirty ? <span className="shop-media-dirty">تغييرات غير محفوظة</span> : null}
+              {canEdit ? (
+                <>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      aria-label="تفعيل شريط الإعلانات"
+                      checked={barStatus === "active"}
+                      onChange={(event) => setBarStatusDirty(event.target.checked ? "active" : "inactive")}
+                    />
+                    <span className="switch__track" />
+                    <span className="switch__text"><span className="switch__title">{barStatus === "active" ? "الشريط ظاهر" : "الشريط مخفي"}</span></span>
+                  </label>
+                  <button type="button" className="btn btn--primary" disabled={savingAnnouncements || !announcementsDirty} onClick={() => void saveAnnouncements()}>
+                    حفظ الإعلانات
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+          {isAnnouncementsCollapsed ? null : (
+          <div className="card__body form-stack">
+            {announcementItems.length === 0 ? (
+              <div className="shop-media-empty">لا توجد رسائل إعلانية بعد.</div>
+            ) : (
+              <div className="shop-media-list">
+                {announcementItems.map((item, index) => {
+                  const itemKey = `announcement:${item.id}`;
+                  const isItemCollapsed = collapsedItems.has(itemKey);
+                  const summary = item.arText.trim() || item.enText.trim() || "بدون نص";
+                  return (
+                  <div key={item.id} className="shop-media-item">
+                    <div className="shop-media-item__bar">
+                      <div className="shop-media-item__bar-start">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => toggleCollapsedItem(itemKey)}
+                          aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
+                          aria-expanded={!isItemCollapsed}
+                        >
+                          <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
+                        </button>
+                        <span className="shop-media-tile__index">{index + 1}</span>
+                        {isItemCollapsed ? (
+                          <span className="faint shop-media-item__summary">{summary}</span>
+                        ) : null}
+                      </div>
+                      {canEdit ? (
+                        <div className="shop-media-item__bar-end">
+                          <label className="switch">
+                            <input
+                              type="checkbox"
+                              aria-label="تفعيل الإعلان"
+                              checked={item.status === "active"}
+                              onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.checked ? "active" : "inactive" } : entry))}
+                            />
+                            <span className="switch__track" />
+                            <span className="switch__text"><span className="switch__title">{item.status === "active" ? "نشط" : "غير نشط"}</span></span>
+                          </label>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            aria-label="تحريك الإعلان لأعلى"
+                            disabled={index === 0}
+                            onClick={() => markAnnouncementsDirty((current) => {
+                              if (index === 0) return current;
+                              const next = [...current];
+                              const [moved] = next.splice(index, 1);
+                              next.splice(index - 1, 0, moved!);
+                              return next;
+                            })}
+                          >
+                            <Icon.Chevron size={14} className="rotate-180" />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            aria-label="تحريك الإعلان لأسفل"
+                            disabled={index === announcementItems.length - 1}
+                            onClick={() => markAnnouncementsDirty((current) => {
+                              if (index >= current.length - 1) return current;
+                              const next = [...current];
+                              const [moved] = next.splice(index, 1);
+                              next.splice(index + 1, 0, moved!);
+                              return next;
+                            })}
+                          >
+                            <Icon.Chevron size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => markAnnouncementsDirty((current) => current.filter((entry) => entry.id !== item.id))}
+                          >
+                            إزالة
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                    {isItemCollapsed ? null : (
+                    <div className="shop-media-item__body">
+                      <div className="field">
+                        <label htmlFor={`announcement-ar-${item.id}`}>النص العربي</label>
+                        <input
+                          id={`announcement-ar-${item.id}`}
+                          className="input"
+                          value={item.arText}
+                          disabled={!canEdit}
+                          onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, arText: event.target.value } : entry))}
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor={`announcement-en-${item.id}`}>English text</label>
+                        <input
+                          id={`announcement-en-${item.id}`}
+                          className="input"
+                          value={item.enText}
+                          disabled={!canEdit}
+                          onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, enText: event.target.value } : entry))}
+                        />
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+            {canEdit ? (
+              <button type="button" className="shop-media-add" onClick={addAnnouncement}>
+                <Icon.Plus /> إضافة إعلان
+              </button>
+            ) : null}
+          </div>
+          )}
+        </div>
+          );
+        })() : null}
+        {tab === "images" ? sections.map((section) => {
           const isActive = section.status === "active";
           const isDirty = dirtySlots.has(section.slot);
           const isSaving = savingSlot === section.slot;
@@ -508,7 +777,7 @@ export default function ShopMediaPage() {
               </div>
             </div>
           );
-        })}
+        }) : null}
 
         {error ? <p className="form-error-note">{error}</p> : null}
       </div>

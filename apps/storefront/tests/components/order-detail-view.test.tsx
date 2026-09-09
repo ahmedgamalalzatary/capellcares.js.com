@@ -42,6 +42,7 @@ import { OrderDetailView } from "@/components/orders/order-detail-view";
 
 const dict = {
   common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", currency: "EGP" },
+  itemType: { product: "Product type", offer: "Offer type", collection: "Collection type" },
   cart: { item: "Item", qty: "Qty", price: "Price" },
   checkout: {
     fullName: "Full name",
@@ -123,6 +124,22 @@ beforeEach(() => {
 });
 
 describe("OrderDetailView reviews", () => {
+  it("places status opposite the order code and back-to-orders with the metadata", async () => {
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    const header = (await screen.findByText("ORDER-12")).closest("header");
+    expect(header).toBeTruthy();
+    expect(header).toContainElement(screen.getByText("Accepted"));
+    expect(header).toContainElement(screen.getByRole("link", { name: "Back" }));
+    expect(header).toHaveTextContent("Placed on");
+    expect(header).toHaveTextContent("1 item");
+    expect(header).toHaveTextContent(/Total:\s*EGP\s*50/);
+    const meta = header!.querySelector("[data-order-meta]");
+    expect(meta).toHaveTextContent("Placed on");
+    expect(meta).not.toHaveTextContent("Accepted");
+    expect(meta).not.toHaveTextContent("Back");
+  });
+
   it("shows the order total in the header metadata and each item's classification", async () => {
     fetchCustomerOrderById.mockResolvedValue({
       ...(await fetchCustomerOrderById()),
@@ -133,6 +150,23 @@ describe("OrderDetailView reviews", () => {
 
     expect(await screen.findByText(/EGP\s*75/)).toBeInTheDocument();
     expect(await screen.findByText("Body Lotion")).toBeInTheDocument();
+    expect(screen.getByText("Product type")).toBeInTheDocument();
+  });
+
+  it("labels offer and collection lines with their item type", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({
+      ...order,
+      items: [
+        { ...order.items[0], id: 20, itemType: "offer", variantId: null, offerId: 9, snapshotNameEn: "Lotion pack" },
+        { ...order.items[0], id: 21, itemType: "collection", variantId: null, collectionId: 8, snapshotNameEn: "Hair set", review: null }
+      ]
+    });
+
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+
+    expect(await screen.findByText("Offer type")).toBeInTheDocument();
+    expect(screen.getByText("Collection type")).toBeInTheDocument();
   });
 
   it("shows an error instead of an empty receipt when loading fails", async () => {
@@ -200,7 +234,7 @@ describe("OrderDetailView reviews", () => {
   it("lets an eligible signed-in customer submit one review from the order item", async () => {
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 
-    expect((await screen.findByText("Accepted")).className).toContain("chip--sage");
+    expect((await screen.findByText("Accepted")).className).toContain("chip--status-ok");
     fireEvent.click(await screen.findByRole("button", { name: "Write a review" }));
     fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
     fireEvent.change(screen.getByLabelText("Your review"), { target: { value: "Wonderful product" } });
@@ -235,7 +269,7 @@ describe("OrderDetailView reviews", () => {
 
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 13 }));
 
-    expect((await screen.findByText("Denied")).className).toContain("chip--accent");
+    expect((await screen.findByText("Denied")).className).toContain("chip--status-bad");
   });
 
   it("contains keyboard focus in the review form and restores it to the opener", async () => {

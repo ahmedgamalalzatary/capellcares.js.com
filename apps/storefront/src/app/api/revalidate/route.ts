@@ -6,7 +6,7 @@ import { resolveRevalidateSecret } from "@/lib/api/revalidate-secret";
 const REVALIDATE_SECRET = resolveRevalidateSecret();
 const LOCALES = ["ar", "en"] as const;
 
-type RevalidateEntity = "product" | "offer" | "collection" | "advice" | "shop-media";
+type RevalidateEntity = "product" | "offer" | "collection" | "advice" | "shop-media" | "announcements";
 
 type RevalidatePayload = {
   entity?: RevalidateEntity;
@@ -35,7 +35,7 @@ function normalizeSlugs(value: unknown): string[] {
 }
 
 function isValidEntity(value: unknown): value is RevalidateEntity {
-  return value === "product" || value === "offer" || value === "collection" || value === "advice" || value === "shop-media";
+  return value === "product" || value === "offer" || value === "collection" || value === "advice" || value === "shop-media" || value === "announcements";
 }
 
 function revalidateLocalizedPath(pathname: string, type?: "page" | "layout") {
@@ -114,6 +114,11 @@ function revalidateByEntity(payload: Required<Pick<RevalidatePayload, "entity">>
       revalidateLocalizedPath("/shop");
       break;
     }
+    case "announcements": {
+      revalidateLocalizedPath("", "layout");
+      revalidateLocalizedDynamicPath("", "layout");
+      break;
+    }
   }
 
   revalidatePath("/sitemap.xml");
@@ -130,7 +135,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: "invalid-payload" }, { status: 400 });
   }
 
-  if (payload.entity !== "advice" && payload.entity !== "shop-media" && !trimOptionalString(payload.slug)) {
+  if (payload.entity !== "advice" && payload.entity !== "shop-media" && payload.entity !== "announcements" && !trimOptionalString(payload.slug)) {
     return NextResponse.json({ ok: false, reason: "invalid-payload" }, { status: 400 });
   }
 

@@ -117,6 +117,7 @@ describe("ERP store", () => {
         }]
       })
       .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({
         items: [{
           id: 7,
@@ -155,6 +156,17 @@ describe("ERP store", () => {
 
   it("hydrates shop media sections during refetch", async () => {
     apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/announcements") {
+        return {
+          items: [{
+            id: 1,
+            arText: "شحن مجاني",
+            enText: "Free shipping",
+            status: "active",
+            sortOrder: 1
+          }]
+        };
+      }
       if (path === "/api/erp/shop-media-sections") {
         return {
           items: [{
@@ -186,6 +198,7 @@ describe("ERP store", () => {
     await store.refetch();
 
     expect((store as any).shopMediaSections).toHaveLength(1);
+    expect((store as any).announcements).toHaveLength(1);
   });
 
   it("hydrates collections during refetch", async () => {
@@ -262,7 +275,7 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    expect(apiGet).toHaveBeenCalledTimes(16);
+    expect(apiGet).toHaveBeenCalledTimes(18);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {
@@ -305,7 +318,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(16);
+    expect(apiGet).toHaveBeenCalledTimes(18);
   });
 
   it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {
@@ -351,7 +364,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(8);
+    expect(apiGet).toHaveBeenCalledTimes(9);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {

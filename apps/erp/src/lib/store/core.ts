@@ -1,6 +1,6 @@
 "use client";
 
-import type { Advice, Category, Collection, Offer, Order, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { Advice, Announcement, Category, Collection, Offer, Order, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -27,6 +27,8 @@ export class ErpStore {
   offers: Offer[] = [];
   advices: Advice[] = [];
   shopMediaSections: ShopMediaSection[] = [];
+  announcements: Announcement[] = [];
+  announcementBarStatus: "active" | "inactive" = "active";
   orders: OrderSummary[] = [];
   sales: SalesAnalytics = {
     summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
@@ -57,6 +59,8 @@ export class ErpStore {
       offers: this.offers,
       advices: this.advices,
       shopMediaSections: this.shopMediaSections,
+      announcements: this.announcements,
+      announcementBarStatus: this.announcementBarStatus,
       orders: this.orders,
       sales: this.sales,
       loaded: this.loaded,
@@ -96,6 +100,8 @@ export class ErpStore {
       this.offers = [];
       this.advices = [];
       this.shopMediaSections = [];
+      this.announcements = [];
+      this.announcementBarStatus = "active";
       this.orders = [];
       this.sales = this.createEmptySales();
       let firstError: unknown = null;
@@ -235,6 +241,13 @@ export class ErpStore {
         load: () => api.get<{ items: ShopMediaSection[] }>("/api/erp/shop-media-sections"),
         assign: (result: { items: ShopMediaSection[] }, store: ErpStore) => {
           store.shopMediaSections = result.items;
+        }
+      },
+      canRead("shop_media.read") && {
+        load: () => api.get<{ barStatus?: "active" | "inactive"; items: Announcement[] }>("/api/erp/announcements"),
+        assign: (result: { barStatus?: "active" | "inactive"; items: Announcement[] }, store: ErpStore) => {
+          store.announcements = result.items;
+          store.announcementBarStatus = result.barStatus ?? "active";
         }
       },
       canRead("orders.read") && {
@@ -431,6 +444,19 @@ export class ErpStore {
     }> }
   ) {
     await api.post(`/api/erp/shop-media-sections/${slot}`, input);
+    await this.refetch();
+  }
+
+  async replaceAnnouncements(input: {
+    barStatus: "active" | "inactive";
+    items: Array<{
+      arText: string;
+      enText: string;
+      status: "active" | "inactive";
+      sortOrder: number;
+    }>;
+  }) {
+    await api.post("/api/erp/announcements", input);
     await this.refetch();
   }
 

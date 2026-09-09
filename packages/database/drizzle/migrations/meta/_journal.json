@@ -225,6 +225,20 @@
       "when": 1786613412271,
       "tag": "0031_localized_entity_images",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1786613412272,
+      "tag": "0032_announcements",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1786613412273,
+      "tag": "0033_announcement_bar_settings",
+      "breakpoints": true
     }
   ]
 }

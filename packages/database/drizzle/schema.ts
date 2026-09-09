@@ -278,6 +278,22 @@ export const shopMediaSections = mysqlTable("shop_media_sections", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const announcementBarSettings = mysqlTable("announcement_bar_settings", {
+  id: int("id").primaryKey(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const announcements = mysqlTable("announcements", {
+  id: int("id").autoincrement().primaryKey(),
+  arText: varchar("ar_text", { length: 255 }).notNull(),
+  enText: varchar("en_text", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const shopMediaSectionItems = mysqlTable("shop_media_section_items", {
   id: int("id").autoincrement().primaryKey(),
   sectionId: int("section_id").notNull().references(() => shopMediaSections.id, { onDelete: "cascade" }),

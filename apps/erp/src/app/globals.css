@@ -771,6 +771,12 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   gap: 20px;
 }
 
+.shop-media-tabs-card {
+  width: fit-content;
+  max-width: 100%;
+  justify-self: start;
+}
+
 .shop-media-head {
   padding: 16px 22px;
   border-bottom: 1px solid var(--hairline);

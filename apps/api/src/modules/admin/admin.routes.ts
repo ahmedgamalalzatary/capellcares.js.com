@@ -37,6 +37,7 @@ import {
 } from "./admin.controller.js";
 import { adminAdvicesRoutes } from "./advices/admin-advices.routes.js";
 import { adminShopMediaRoutes } from "./shop-media/admin-shop-media.routes.js";
+import { adminAnnouncementsRoutes } from "./announcements/admin-announcements.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
 import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
@@ -83,5 +84,6 @@ adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collect
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/shop-media-sections", adminShopMediaRoutes);
+adminRoutes.use("/announcements", adminAnnouncementsRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);
 adminRoutes.use("/reviews", adminReviewsRoutes);

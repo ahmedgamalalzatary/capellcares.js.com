@@ -5,4 +5,5 @@ export interface HeaderProps {
   lang: Language;
   dict: any;
   menuEntries: HeaderMenuEntry[];
+  announcements?: string[] | null;
 }

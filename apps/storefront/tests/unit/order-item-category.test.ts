@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Category, OrderItem } from "@capella/shared";
-import { orderItemCategory, type Catalog } from "@/components/orders/order-presentation";
+import { orderItemCategory, orderItemTypeKey, type Catalog } from "@/components/orders/order-presentation";
 
 const categories: Category[] = [
   { id: 5, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true }
@@ -58,5 +58,11 @@ describe("orderItemCategory", () => {
 
     expect(orderItemCategory({ ...offerLine, offerId: 2 }, catalog, "en")).toBe("Serums");
     expect(orderItemCategory(collectionLine, catalog, "en")).toBe("Serums");
+  });
+
+  it("maps each order line to its storefront item-type key", () => {
+    expect(orderItemTypeKey(productLine)).toBe("product");
+    expect(orderItemTypeKey({ ...productLine, itemType: "offer" })).toBe("offer");
+    expect(orderItemTypeKey({ ...productLine, itemType: "collection" })).toBe("collection");
   });
 });

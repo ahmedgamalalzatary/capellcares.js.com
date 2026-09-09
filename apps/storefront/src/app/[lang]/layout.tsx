@@ -9,7 +9,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
 import { BackToTop } from "@/components/shop/back-to-top";
-import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchAnnouncements, fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -40,11 +40,12 @@ export default async function LocaleLayout({
 }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const [categories, products, offers, collections] = await Promise.all([
+  const [categories, products, offers, collections, announcements] = await Promise.all([
     fetchCategories({ lang }).catch(() => []),
     fetchProducts({ lang }).catch(() => []),
     fetchOffers({ lang }).catch(() => []),
-    fetchCollections({ lang }).catch(() => [])
+    fetchCollections({ lang }).catch(() => []),
+    fetchAnnouncements({ lang }).catch(() => null)
   ]);
   const navGroups = buildNav(categories, lang);
   const menuEntries = buildHeaderMenu({ navGroups, products, offers, collections, dict, lang });
@@ -64,7 +65,7 @@ export default async function LocaleLayout({
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
             />
             <Suspense fallback={null}>
-              <Header lang={lang} dict={dict} menuEntries={menuEntries} />
+              <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} />
             </Suspense>
             <div className="flex-1">{children}</div>
             <Footer lang={lang} dict={dict} />

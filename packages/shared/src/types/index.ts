@@ -350,6 +350,16 @@ export interface ShopMediaSection {
   updatedAt?: string;
 }
 
+export interface Announcement {
+  id: number;
+  arText: string;
+  enText: string;
+  status: "active" | "inactive";
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface OrderItem {
   id: number;
   orderId: number;

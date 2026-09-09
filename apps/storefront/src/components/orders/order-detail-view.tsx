@@ -14,6 +14,7 @@ import {
   orderItemCategory,
   orderItemHref,
   orderItemName,
+  orderItemTypeKey,
   paymentStatusChip,
   paymentStatusLabel,
   useCatalog
@@ -94,30 +95,31 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4">
         {/* Header: identity, status, and the way back */}
-        <div className="grid gap-3 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-6 md:grid-cols-[1fr_auto] md:items-start">
-          <div className="grid gap-2">
+        <header className="flex flex-col gap-8 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-6">
+          <div className="grid min-w-0 gap-2">
             <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
-            <div className={`leading-none text-ink ${isAr
-              ? "text-2xl font-bold font-(family-name:--font-ar)"
-              : "text-3xl font-(--font-display)"}`}>
-              {order.orderCode}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-(--ink-2)">
-              <span className={`chip ${paymentStatusChip(order.paymentStatus)}`}>
+            <div className="flex items-center justify-between gap-4">
+              <div className={`min-w-0 leading-none break-all text-ink ${isAr
+                ? "text-2xl font-bold font-(family-name:--font-ar)"
+                : "text-3xl font-(--font-display)"}`}>
+                {order.orderCode}
+              </div>
+              <span className={`chip h-9 shrink-0 px-4 text-sm sm:h-10 sm:px-5 sm:text-base ${paymentStatusChip(order.paymentStatus)}`}>
                 {paymentStatusLabel(order.paymentStatus, dict)}
               </span>
-              <span aria-hidden>·</span>
-              <span>{dict.orders.placedOn} {formatOrderDate(order.createdAt, lang)}</span>
-              <span aria-hidden>·</span>
-              <span>{itemsCountLabel(units, dict)}</span>
-              <span aria-hidden>·</span>
-              <span>{dict.common.total}: {formatPrice(order.totalAmount, lang)}</span>
             </div>
           </div>
-          <div className="md:text-end">
-            <Link href={`/${lang}/orders`} className="btn btn--ghost">{dict.orders.backToOrders}</Link>
+          <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p data-order-meta className="m-0 text-center text-sm text-(--ink-2) sm:text-start">
+              {dict.orders.placedOn} {formatOrderDate(order.createdAt, lang)}
+              {" "}
+              {itemsCountLabel(units, dict)}
+              {" "}
+              {dict.common.total}: {formatPrice(order.totalAmount, lang)}
+            </p>
+            <Link href={`/${lang}/orders`} className="btn btn--ghost w-full sm:w-auto">{dict.orders.backToOrders}</Link>
           </div>
-        </div>
+        </header>
 
         {/* Items: thumbnail, snapshot name/size, quantity, money, review action */}
         <Panel title={dict.orders.itemsInOrder}>
@@ -144,12 +146,13 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
 
                   <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2">
                     <div className="min-w-0 flex-1">
+                      <div className="eyebrow text-(--ink-3)!">{dict.itemType[orderItemTypeKey(item)]}</div>
                       {href ? (
-                        <Link href={href} className="block font-medium break-words text-ink hover:text-accent">
+                        <Link href={href} className="mt-1 block font-medium break-words text-ink hover:text-accent">
                           {name}
                         </Link>
                       ) : (
-                        <div className="font-medium break-words text-ink">{name}</div>
+                        <div className="mt-1 font-medium break-words text-ink">{name}</div>
                       )}
 
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-(--ink-3)">

@@ -278,7 +278,15 @@ body {
 .chip--active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
 .chip--accent { background: var(--accent); color: var(--canvas); }
 .chip--gold   { background: var(--warm); color: var(--ink); }
-.chip--sage   { background: var(--canvas); color: var(--error); }
+.chip--sage   { background: var(--canvas); color: var(--success); }
+.chip--status-ok,
+.chip--status-bad {
+  font-weight: 600;
+}
+.chip--status-ok { background: var(--warm-soft); color: var(--success); }
+.chip--status-bad { background: transparent; color: var(--error); }
+.chip--status-ok:hover { background: var(--warm-soft); color: var(--success); }
+.chip--status-bad:hover { background: transparent; color: var(--error); }
 
 /* Bath & Body Works–style outlined filter pills (category sub-nav row). */
 .filter-pill {

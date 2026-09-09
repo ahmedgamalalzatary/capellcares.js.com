@@ -115,6 +115,11 @@ export async function fetchShopMediaSections(options?: { lang?: string }): Promi
   return data?.items ?? [];
 }
 
+export async function fetchAnnouncements(options?: { lang?: string }): Promise<string[] | null> {
+  const data = await getJSON<{ items: string[] }>(`/api/v1/announcements`, options);
+  return data?.items ?? null;
+}
+
 export async function fetchCustomerOrders(accessToken: string): Promise<OrderSummary[]> {
   const data = await authedGetJSON<{ items: OrderSummary[] }>(`/api/v1/orders`, accessToken);
   return data?.items ?? [];

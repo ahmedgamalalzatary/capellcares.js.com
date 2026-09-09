@@ -16,7 +16,7 @@ import { SearchOverlay } from "./header/search-overlay";
 import { useLanguageSwitch } from "../../hooks/use-language-switch";
 import type { HeaderProps } from "../../types/header.types";
 
-export function Header({ lang, dict, menuEntries }: HeaderProps) {
+export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncements }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
@@ -33,9 +33,8 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   const isAr = lang === "ar";
   const { switchLang } = useLanguageSwitch(lang);
 
-  const announcements: string[] = Array.isArray(dict.nav.announcements)
-    ? dict.nav.announcements
-    : [dict.nav.announcement];
+  const announcements: string[] = cmsAnnouncements
+    ?? (Array.isArray(dict.nav.announcements) ? dict.nav.announcements : [dict.nav.announcement]);
 
   // Non-shifting scroll lock: freeze <html> with overflow:hidden and pad for the
   // removed scrollbar. The page never moves, so the sticky header and the drawer's
@@ -63,9 +62,11 @@ export function Header({ lang, dict, menuEntries }: HeaderProps) {
   // pin the announcement bar too.
   return (
     <>
+      {announcements.length > 0 ? (
       <div className="container">
         <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
       </div>
+      ) : null}
 
       <header
         className={[
