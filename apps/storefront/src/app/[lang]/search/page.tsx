@@ -3,9 +3,7 @@ import Link from "next/link";
 import { getDict, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { ProductCard } from "@/components/products/product-card";
-import { SectionCard } from "@/components/shop/section-card";
-import { ShopCardRow } from "@/components/shop/shop-card-row";
+import { SearchResults } from "@/components/search/search-results";
 import { fetchAdvices, fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { isSearchableBundle, matchesBilingualName } from "@/lib/storefront-search";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
@@ -48,7 +46,6 @@ export default async function SearchPage({
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
   const query = (await searchParams).q?.trim() ?? "";
-  const isAr = lang === "ar";
 
   // Tips close the page either way, so they are fetched even for an empty query.
   const [[products, offers, collections, categories], advices] = await Promise.all([
@@ -72,23 +69,13 @@ export default async function SearchPage({
   );
   // Categories are fetched to name each card's classification line, never listed
   // as results of their own.
-  const categoryNameById = new Map(
+  const categoryNames = Object.fromEntries(
     categories
       .filter((category) => !category.deletedAt)
-      .map((category) => [category.id, pickLang(category.name, lang)] as const)
+      .map((category) => [String(category.id), pickLang(category.name, lang)] as const)
   );
 
   const total = activeProducts.length + matchedOffers.length + matchedCollections.length;
-
-  const sectionHeading = (text: string) => (
-    <header className="mb-6">
-      <h2 className={isAr
-        ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-        : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-        {text}
-      </h2>
-    </header>
-  );
 
   return (
     <main className="container">
@@ -109,61 +96,14 @@ export default async function SearchPage({
           </Link>
         </div>
       ) : (
-        // One scrolling row per kind, exactly as the shop page presents them.
-        <div className="grid gap-10 pb-8 sm:gap-12">
-          {matchedOffers.length > 0 && (
-            <section className="min-w-0">
-              {sectionHeading(dict.ask.sections.offers)}
-              <ShopCardRow lang={lang}>
-                {matchedOffers.map((offer) => (
-                  <SectionCard
-                    key={offer.id}
-                    kind="offer"
-                    data={offer}
-                    lang={lang}
-                    dict={dict}
-                    categoryName={offer.categoryId != null ? categoryNameById.get(offer.categoryId) : undefined}
-                  />
-                ))}
-              </ShopCardRow>
-            </section>
-          )}
-
-          {matchedCollections.length > 0 && (
-            <section className="min-w-0">
-              {sectionHeading(dict.ask.sections.collections)}
-              <ShopCardRow lang={lang}>
-                {matchedCollections.map((collection) => (
-                  <SectionCard
-                    key={collection.id}
-                    kind="collection"
-                    data={collection}
-                    lang={lang}
-                    dict={dict}
-                    categoryName={categoryNameById.get(collection.categoryId)}
-                  />
-                ))}
-              </ShopCardRow>
-            </section>
-          )}
-
-          {activeProducts.length > 0 && (
-            <section className="min-w-0">
-              {sectionHeading(dict.ask.sections.products)}
-              <ShopCardRow lang={lang}>
-                {activeProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    lang={lang}
-                    dict={dict}
-                    categoryName={categoryNameById.get(product.categoryId)}
-                  />
-                ))}
-              </ShopCardRow>
-            </section>
-          )}
-        </div>
+        <SearchResults
+          products={activeProducts}
+          offers={matchedOffers}
+          collections={matchedCollections}
+          categoryNames={categoryNames}
+          lang={lang}
+          dict={dict}
+        />
       )}
 
       {/* Capella Tips closes the page, whether or not the search found anything. */}

@@ -8,7 +8,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     maxWorkers: "75%",
-    fileParallelism: true
+    fileParallelism: true,
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/e2e/**"]
   },
   resolve: {
     alias: {

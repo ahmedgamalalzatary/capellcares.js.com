@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
@@ -143,7 +143,7 @@ describe("search results page", () => {
     expect(screen.getByTestId("collection-card")).toHaveTextContent("Rose Care");
   });
 
-  // No page-head here by design: the breadcrumb leads straight into the rows,
+  // No page-head here by design: the breadcrumb leads straight into the grids,
   // so the query is echoed in the tab title (generateMetadata) rather than an h1.
 
   it("leaves out a kind that has no match instead of showing an empty section", async () => {
@@ -197,16 +197,56 @@ describe("search results page", () => {
     expect(screen.getByRole("link", { name: /products/i })).toBeInTheDocument();
   });
 
-  it("lays every section out as the shop's scrolling row", async () => {
+  it("lays every section out as a wrapping grid, not a scrolling row", async () => {
     seedCatalog();
 
     const { container } = render(await renderPage("rose"));
 
-    // ShopCardRow's signature: a snapping horizontal scroller per section.
-    expect(container.querySelectorAll(".snap-x")).toHaveLength(3);
+    expect(container.querySelectorAll(".snap-x")).toHaveLength(0);
     for (const card of ["offer-card", "collection-card", "product-card"]) {
-      expect(screen.getByTestId(card).closest(".snap-x")).not.toBeNull();
+      const grid = screen.getByTestId(card).parentElement;
+      expect(grid?.className).toMatch(/\bgrid\b/);
+      expect(grid?.className).toMatch(/grid-cols-/);
     }
+  });
+
+  it("shows a columns toggle defaulting to two cards per row", async () => {
+    seedCatalog();
+
+    render(await renderPage("rose"));
+
+    expect(screen.getByTestId("columns-toggle")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "2 per row" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "1 per row" })).toHaveAttribute("aria-pressed", "false");
+    for (const card of ["offer-card", "collection-card", "product-card"]) {
+      expect(screen.getByTestId(card).parentElement).toHaveAttribute("data-cols", "2");
+    }
+  });
+
+  it("applies the columns toggle to every results grid", async () => {
+    seedCatalog();
+
+    render(await renderPage("rose"));
+
+    fireEvent.click(screen.getByRole("button", { name: "1 per row" }));
+
+    expect(screen.getByRole("button", { name: "1 per row" })).toHaveAttribute("aria-pressed", "true");
+    for (const card of ["offer-card", "collection-card", "product-card"]) {
+      const grid = screen.getByTestId(card).parentElement;
+      expect(grid).toHaveAttribute("data-cols", "1");
+      expect(grid?.className).toMatch(/grid-cols-1/);
+    }
+  });
+
+  it("hides the columns toggle when there are no results", async () => {
+    fetchProducts.mockResolvedValue([]);
+    fetchOffers.mockResolvedValue([]);
+    fetchCollections.mockResolvedValue([]);
+    fetchCategories.mockResolvedValue(categories);
+
+    render(await renderPage("zzz"));
+
+    expect(screen.queryByTestId("columns-toggle")).toBeNull();
   });
 
   it("orders the results offers, then collections, then products", async () => {
