@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import {
   DeniedOrderLockedError,
+  PaidPaymobRefundRequiredError,
   findOrderByIdRepo,
   getSalesAnalyticsRepo,
   listOrdersRepo,
@@ -51,7 +52,7 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
   try {
     await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
   } catch (error) {
-    if (error instanceof DeniedOrderLockedError) {
+    if (error instanceof DeniedOrderLockedError || error instanceof PaidPaymobRefundRequiredError) {
       return res.status(409).json({ message: error.message });
     }
     if (error instanceof OrderNotFoundError) {

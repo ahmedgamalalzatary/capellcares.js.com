@@ -15,6 +15,8 @@ import {
   orderItemHref,
   orderItemName,
   orderItemTypeKey,
+  orderPaymentChip,
+  orderPaymentLabel,
   paymentStatusChip,
   paymentStatusLabel,
   useCatalog
@@ -104,8 +106,8 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                 : "text-3xl font-(--font-display)"}`}>
                 {order.orderCode}
               </div>
-              <span className={`chip h-9 shrink-0 px-4 text-sm sm:h-10 sm:px-5 sm:text-base ${paymentStatusChip(order.paymentStatus)}`}>
-                {paymentStatusLabel(order.paymentStatus, dict)}
+              <span className={`chip h-9 shrink-0 px-4 text-sm sm:h-10 sm:px-5 sm:text-base ${orderPaymentChip(order)}`}>
+                {orderPaymentLabel(order, dict)}
               </span>
             </div>
           </div>

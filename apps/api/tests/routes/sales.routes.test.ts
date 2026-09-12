@@ -6,14 +6,78 @@ import { db } from "@capella/database/src/db";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
-import { offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { eq } from "drizzle-orm";
+import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-test("erp sales aggregates direct product orders, offer orders, and all payment statuses", async () => {
+test("erp sales uses the sold bundle composition after the catalog changes", async () => {
+  const ids = await getBaselineIds();
+  const created = await createOrderFromCheckout({
+    fullName: "Historical bundle", phone: "01012345678", email: "history@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    buildingApartment: "1", paymentMethod: "cod",
+    items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
+  });
+  await db.update(orders).set({ paymentStatus: "accepted" }).where(eq(orders.id, created.id));
+  await db.update(offerItems).set({ qty: 3 }).where(eq(offerItems.offerId, ids.offerId));
+  await db.update(productVariants).set({ sellingPrice: "90.00" }).where(eq(productVariants.id, ids.firstVariantId));
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.summary.totalUnitsSold, 2);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.unitsSold, 1);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.secondVariantId)?.unitsSold, 1);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.revenue, 27.22);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.secondVariantId)?.revenue, 42.78);
+  });
+});
+
+test("erp sales recognizes only the remaining paid amount after a partial Paymob refund", async () => {
+  const ids = await getBaselineIds();
+  const [order] = await db.insert(orders).values({
+    orderCode: "PART-001", customerType: "registered", customerId: ids.customerId,
+    fullName: "Partially Refunded", phone: "01011111111", email: "partial-sales@capella.test",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "partially_refunded",
+    refundedAmountCents: 1200, totalAmount: "35.00"
+  }).$returningId();
+  await db.insert(orderItems).values({ orderId: order.id, itemType: "product_variant",
+    variantId: ids.firstVariantId, qty: 1, unitPrice: "35.00", lineTotal: "35.00",
+    snapshotNameEn: "Baseline Product 1", snapshotNameAr: "منتج تجريبي", snapshotSizeLabel: "100ml" });
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.summary.totalRevenue, 23);
+    assert.equal(response.json.variantTotals[0]?.revenue, 23);
+  });
+});
+
+test("erp sales expands collection lines into the variants actually sold", async () => {
+  const ids = await getBaselineIds();
+  const [collection] = await db.insert(collections).values({ slug: `sales-${crypto.randomUUID()}`,
+    arName: "مجموعة", enName: "Sales collection", fixedPrice: "90.00",
+    categoryId: ids.leafCategoryId, status: "active", visibility: "visible" }).$returningId();
+  await db.insert(collectionItems).values({ collectionId: collection.id, variantId: ids.firstVariantId, qty: 2 });
+  const [order] = await db.insert(orders).values({ orderCode: "COLL-SALE-1", customerType: "registered",
+    customerId: ids.customerId, fullName: "Collection Buyer", phone: "01011111111",
+    email: "collection-sales@capella.test", governorate: "Cairo", cityArea: "Nasr City",
+    addressLine: "Street 1", buildingApartment: "1", paymentMethod: "cod",
+    paymentStatus: "accepted", totalAmount: "90.00" }).$returningId();
+  await db.insert(orderItems).values({ orderId: order.id, itemType: "collection", collectionId: collection.id,
+    qty: 1, unitPrice: "90.00", lineTotal: "90.00", snapshotNameEn: "Sales collection" });
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.summary.totalUnitsSold, 2);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.revenue, 90);
+  });
+});
+
+test("erp sales excludes denied orders from recognized revenue and units", async () => {
   const ids = await getBaselineIds();
 
   const [deniedOrder] = await db.insert(orders).values({
@@ -83,15 +147,15 @@ test("erp sales aggregates direct product orders, offer orders, and all payment 
     });
 
     assert.equal(response.status, 200);
-    assert.equal(response.json.summary.totalOrders, 2);
-    assert.equal(response.json.summary.totalUnitsSold, 4);
-    assert.equal(response.json.summary.totalRevenue, 140);
+    assert.equal(response.json.summary.totalOrders, 1);
+    assert.equal(response.json.summary.totalUnitsSold, 2);
+    assert.equal(response.json.summary.totalRevenue, 70);
 
     const productOne = response.json.productTotals.find((item: any) => item.productId === ids.productOneId);
     const productTwo = response.json.productTotals.find((item: any) => item.productId === ids.productTwoId);
     assert.ok(productOne);
     assert.ok(productTwo);
-    assert.equal(productOne.unitsSold, 3);
+    assert.equal(productOne.unitsSold, 1);
     assert.equal(productTwo.unitsSold, 1);
 
     // Offer revenue is the actual paid bundle price (lineTotal), allocated across components,
@@ -106,14 +170,13 @@ test("erp sales aggregates direct product orders, offer orders, and all payment 
     const secondVariant = response.json.variantTotals.find((item: any) => item.variantId === ids.secondVariantId);
     assert.ok(firstVariant);
     assert.ok(secondVariant);
-    assert.equal(firstVariant.unitsSold, 3);
+    assert.equal(firstVariant.unitsSold, 1);
     assert.equal(secondVariant.unitsSold, 1);
 
     const denied = response.json.orders.find((item: any) => item.orderId === deniedOrder.id);
     const accepted = response.json.orders.find((item: any) => item.orderId === acceptedOrder.id);
-    assert.equal(denied.paymentStatus, "denied");
+    assert.equal(denied, undefined);
     assert.equal(accepted.paymentStatus, "accepted");
-    assert.equal(denied.unitsSold, 2);
     assert.equal(accepted.unitsSold, 2);
   });
 });
@@ -138,7 +201,7 @@ test("erp sales expands offer quantities using underlying offer item quantities"
     buildingApartment: "Building 3",
     notes: "",
     paymentMethod: "cod",
-    paymentStatus: "pending",
+    paymentStatus: "accepted",
     totalAmount: "140.00"
   }).$returningId();
 

@@ -23,6 +23,30 @@ test("parseCheckoutBody accepts COD checkout payload with API field names", () =
   assert.equal(parsed.items[0]?.type, "product");
 });
 
+test("parseCheckoutBody accepts Paymob without accepting provider-controlled fields", () => {
+  const parsed = parseCheckoutBody({
+    fullName: "Test User",
+    phone: "01012345678",
+    email: "test@example.com",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "Street 10",
+    buildingApartment: "Building 2, Apt 5",
+    paymentMethod: "paymob",
+    amount: 1,
+    currency: "USD",
+    paymentStatus: "accepted",
+    integrationId: 123,
+    items: [{ type: "product", variantId: 123, qty: 2 }]
+  });
+
+  assert.equal(parsed.paymentMethod, "paymob");
+  assert.equal("amount" in parsed, false);
+  assert.equal("currency" in parsed, false);
+  assert.equal("paymentStatus" in parsed, false);
+  assert.equal("integrationId" in parsed, false);
+});
+
 test("parseCheckoutBody rejects storefront-legacy field names and invalid item id types", () => {
   assert.throws(
     () =>

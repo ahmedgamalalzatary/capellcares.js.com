@@ -437,6 +437,130 @@ serialTest("allows a new active variant with the same size after the old one is 
     .where(eq(productVariants.id, base.variantId));
 });
 
+serialTest("payment sessions persist reservations and reject attempts beyond three", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  assert.ok(schema.checkoutSessions, "checkoutSessions table must exist");
+  assert.ok(schema.checkoutReservations, "checkoutReservations table must exist");
+  assert.ok(schema.paymentAttempts, "paymentAttempts table must exist");
+
+  const publicId = `checkout-${Date.now()}`;
+  const [session] = await db.insert(schema.checkoutSessions).values({
+    publicId,
+    idempotencyKey: `idempotency-${Date.now()}`,
+    customerType: "guest",
+    fullName: "Payment Test",
+    phone: "+201012345678",
+    email: "payment@capella.test",
+    governorate: "Cairo",
+    cityArea: "Nasr City",
+    addressLine: "1 Payment Street",
+    buildingApartment: "1",
+    cartSnapshot: "[]",
+    amountCents: 1000,
+    shippingAmountCents: 0,
+    currency: "EGP",
+    state: "payment_pending",
+    attemptCount: 1,
+    reservationExpiresAt: new Date(Date.now() + 30 * 60 * 1000)
+  }).$returningId();
+
+  try {
+    await db.insert(schema.checkoutReservations).values({
+      checkoutSessionId: session.id,
+      variantId: base.secondVariantId,
+      qty: 1,
+      state: "reserved"
+    });
+    await assert.rejects(db.insert(schema.paymentAttempts).values({
+      checkoutSessionId: session.id,
+      attemptNumber: 4,
+      merchantReference: `attempt-four-${Date.now()}`,
+      amountCents: 1000,
+      currency: "EGP",
+      environment: "test",
+      status: "created"
+    }));
+  } finally {
+    await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
+  }
+});
+
+serialTest("payment webhook events reject duplicate provider fingerprints", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  assert.ok(schema.paymentWebhookEvents, "paymentWebhookEvents table must exist");
+  const fingerprint = `paymob-${Date.now()}`;
+  await db.insert(schema.paymentWebhookEvents).values({
+    provider: "paymob",
+    callbackType: "transaction",
+    eventFingerprint: fingerprint,
+    processingStatus: "processed"
+  });
+  await assert.rejects(db.insert(schema.paymentWebhookEvents).values({
+    provider: "paymob",
+    callbackType: "transaction",
+    eventFingerprint: fingerprint,
+    processingStatus: "processed"
+  }));
+  await db.delete(schema.paymentWebhookEvents).where(eq(schema.paymentWebhookEvents.eventFingerprint, fingerprint));
+});
+
+serialTest("payment attempts reject duplicate Paymob intention identifiers", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const [session] = await db.insert(schema.checkoutSessions).values({
+    publicId: `checkout-provider-${Date.now()}`,
+    idempotencyKey: `idempotency-provider-${Date.now()}`,
+    customerType: "guest", fullName: "Provider Test", phone: "+201012345678",
+    email: "provider@capella.test", governorate: "Cairo", cityArea: "Nasr City",
+    addressLine: "1 Test", buildingApartment: "1", cartSnapshot: "[]",
+    amountCents: 1000, shippingAmountCents: 0, currency: "EGP", state: "payment_pending",
+    attemptCount: 2, reservationExpiresAt: new Date(Date.now() + 30 * 60 * 1000)
+  }).$returningId();
+  const attempts = schema.paymentAttempts as any;
+  try {
+    await db.insert(attempts).values({
+      checkoutSessionId: session.id, attemptNumber: 1, merchantReference: `ref-1-${Date.now()}`,
+      amountCents: 1000, currency: "EGP", environment: "test", status: "pending",
+      paymobIntentionId: "pi_test_duplicate", paymobOrderId: "9001", clientSecret: "client-1",
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    });
+    await assert.rejects(db.insert(attempts).values({
+      checkoutSessionId: session.id, attemptNumber: 2, merchantReference: `ref-2-${Date.now()}`,
+      amountCents: 1000, currency: "EGP", environment: "test", status: "pending",
+      paymobIntentionId: "pi_test_duplicate", paymobOrderId: "9002", clientSecret: "client-2",
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    }));
+  } finally {
+    await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
+  }
+});
+
+serialTest("orders can link a successful Paymob attempt without using the operational status as payment truth", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const [session] = await db.insert(schema.checkoutSessions).values({
+    publicId: `checkout-order-${Date.now()}`, idempotencyKey: `idempotency-order-${Date.now()}`,
+    customerType: "guest", fullName: "Paid Test", phone: "+201012345678", email: "paid@capella.test",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "1 Test", buildingApartment: "1",
+    cartSnapshot: "[]", amountCents: 1000, shippingAmountCents: 0, currency: "EGP",
+    state: "payment_pending", attemptCount: 1, reservationExpiresAt: new Date(Date.now() + 1800000)
+  }).$returningId();
+  const [attempt] = await db.insert(schema.paymentAttempts).values({
+    checkoutSessionId: session.id, attemptNumber: 1, merchantReference: `paid-ref-${Date.now()}`,
+    amountCents: 1000, currency: "EGP", environment: "test", status: "succeeded"
+  }).$returningId();
+  const [order] = await db.insert(schema.orders as any).values({
+    orderCode: `PAID-${Date.now()}`, customerType: "guest", fullName: "Paid Test", phone: "+201012345678",
+    email: "paid@capella.test", governorate: "Cairo", cityArea: "Nasr City", addressLine: "1 Test",
+    buildingApartment: "1", paymentMethod: "paymob", paymentStatus: "pending",
+    providerPaymentStatus: "succeeded", paymentAttemptId: attempt.id, totalAmount: "10.00"
+  }).$returningId();
+  const [stored] = await db.select().from(schema.orders).where(eq(schema.orders.id, order.id)).limit(1);
+  assert.equal(stored.paymentStatus, "pending");
+  assert.equal(stored.providerPaymentStatus, "succeeded");
+  assert.equal(stored.paymentAttemptId, attempt.id);
+  await db.delete(schema.orders).where(eq(schema.orders.id, order.id));
+  await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
+});
+
 test.after(async () => {
   await mysqlPool.end();
 });

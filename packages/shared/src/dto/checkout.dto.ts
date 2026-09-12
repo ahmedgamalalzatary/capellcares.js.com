@@ -1,3 +1,8 @@
+import type { z } from "zod";
+import type { checkoutResponseSchema } from "../schemas/checkout.schema.js";
+
+export type CheckoutResponseDto = z.infer<typeof checkoutResponseSchema>;
+
 export interface CheckoutProductItemDto {
   type: "product";
   variantId: number;
@@ -27,7 +32,7 @@ export interface CheckoutRequestDto {
   addressLine: string;
   buildingApartment: string;
   notes?: string;
-  paymentMethod: "cod";
+  paymentMethod: "cod" | "paymob";
   customerId?: number | null;
   items: CheckoutItemDto[];
 }

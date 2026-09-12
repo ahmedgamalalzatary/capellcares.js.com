@@ -4,6 +4,7 @@ import {
   check,
   datetime,
   decimal,
+  foreignKey,
   index,
   int,
   mysqlEnum,
@@ -457,8 +458,11 @@ export const orders = mysqlTable("orders", {
   addressLine: varchar("address_line", { length: 255 }).notNull(),
   buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
   notes: text("notes"),
-  paymentMethod: mysqlEnum("payment_method", ["cod"]).notNull(),
+  paymentMethod: mysqlEnum("payment_method", ["cod", "paymob"]).notNull(),
   paymentStatus: mysqlEnum("payment_status", ["pending", "accepted", "denied"]).notNull(),
+  providerPaymentStatus: mysqlEnum("provider_payment_status", ["pending", "succeeded", "failed", "partially_refunded", "refunded", "voided"]),
+  refundedAmountCents: int("refunded_amount_cents").notNull().default(0),
+  paymentAttemptId: int("payment_attempt_id").unique(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -479,6 +483,7 @@ export const orderItems = mysqlTable("order_items", {
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
   snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 }),
+  snapshotComponents: text("snapshot_components"),
   snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 2 }),
   snapshotDiscountId: int("snapshot_discount_id"),
   snapshotDiscountType: mysqlEnum("snapshot_discount_type", ["percentage", "fixed"]),
@@ -487,6 +492,90 @@ export const orderItems = mysqlTable("order_items", {
   snapshotDiscountEndsAt: datetime("snapshot_discount_ends_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const checkoutSessions = mysqlTable("checkout_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("public_id", { length: 64 }).notNull().unique(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull().unique(),
+  customerType: mysqlEnum("customer_type", ["guest", "registered"]).notNull(),
+  customerId: int("customer_id"),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 32 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  governorate: varchar("governorate", { length: 120 }).notNull(),
+  cityArea: varchar("city_area", { length: 120 }).notNull(),
+  addressLine: varchar("address_line", { length: 255 }).notNull(),
+  buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
+  notes: text("notes"),
+  cartSnapshot: text("cart_snapshot").notNull(),
+  amountCents: int("amount_cents").notNull(),
+  shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
+  currency: varchar("currency", { length: 3 }).notNull().default("EGP"),
+  state: mysqlEnum("state", ["open", "payment_pending", "completed", "failed", "expired"]).notNull(),
+  attemptCount: int("attempt_count").notNull().default(0),
+  reservationExpiresAt: datetime("reservation_expires_at").notNull(),
+  createdOrderId: int("created_order_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  amountCheck: check("checkout_sessions_amount_check", sql`${table.amountCents} > 0`),
+  shippingCheck: check("checkout_sessions_shipping_check", sql`${table.shippingAmountCents} = 0`),
+  attemptCountCheck: check("checkout_sessions_attempt_count_check", sql`${table.attemptCount} between 0 and 3`),
+  customerFk: foreignKey({ name: "checkout_sessions_customer_fk", columns: [table.customerId], foreignColumns: [customers.id] }).onDelete("set null"),
+  createdOrderFk: foreignKey({ name: "checkout_sessions_order_fk", columns: [table.createdOrderId], foreignColumns: [orders.id] }).onDelete("set null")
+}));
+
+export const checkoutReservations = mysqlTable("checkout_reservations", {
+  id: int("id").autoincrement().primaryKey(),
+  checkoutSessionId: int("checkout_session_id").notNull(),
+  variantId: int("variant_id").notNull(),
+  qty: int("qty").notNull(),
+  state: mysqlEnum("state", ["reserved", "released", "finalized"]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  sessionVariantUnique: unique("checkout_reservations_session_variant_unique").on(table.checkoutSessionId, table.variantId),
+  qtyCheck: check("checkout_reservations_qty_check", sql`${table.qty} > 0`),
+  sessionFk: foreignKey({ name: "checkout_reservations_session_fk", columns: [table.checkoutSessionId], foreignColumns: [checkoutSessions.id] }).onDelete("cascade"),
+  variantFk: foreignKey({ name: "checkout_reservations_variant_fk", columns: [table.variantId], foreignColumns: [productVariants.id] }).onDelete("restrict")
+}));
+
+export const paymentAttempts = mysqlTable("payment_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  checkoutSessionId: int("checkout_session_id").notNull(),
+  attemptNumber: int("attempt_number").notNull(),
+  merchantReference: varchar("merchant_reference", { length: 191 }).notNull().unique(),
+  paymobIntentionId: varchar("paymob_intention_id", { length: 64 }).unique(),
+  paymobOrderId: varchar("paymob_order_id", { length: 64 }).unique(),
+  paymobTransactionId: varchar("paymob_transaction_id", { length: 64 }).unique(),
+  clientSecret: varchar("client_secret", { length: 512 }),
+  integrationId: int("integration_id"),
+  allowedIntegrationIds: text("allowed_integration_ids"),
+  paymentMethod: mysqlEnum("payment_method", ["card", "wallet"]),
+  amountCents: int("amount_cents").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("EGP"),
+  environment: mysqlEnum("environment", ["test", "live"]).notNull(),
+  status: mysqlEnum("status", ["created", "pending", "succeeded", "failed", "cancelled", "expired", "reconciliation_required"]).notNull(),
+  expiresAt: datetime("expires_at"),
+  failureCode: varchar("failure_code", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  sessionAttemptUnique: unique("payment_attempts_session_attempt_unique").on(table.checkoutSessionId, table.attemptNumber),
+  attemptNumberCheck: check("payment_attempts_attempt_number_check", sql`${table.attemptNumber} between 1 and 3`),
+  amountCheck: check("payment_attempts_amount_check", sql`${table.amountCents} > 0`),
+  sessionFk: foreignKey({ name: "payment_attempts_session_fk", columns: [table.checkoutSessionId], foreignColumns: [checkoutSessions.id] }).onDelete("cascade")
+}));
+
+export const paymentWebhookEvents = mysqlTable("payment_webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: mysqlEnum("provider", ["paymob"]).notNull(),
+  callbackType: mysqlEnum("callback_type", ["transaction", "card_token"]).notNull(),
+  eventFingerprint: varchar("event_fingerprint", { length: 128 }).notNull().unique(),
+  processingStatus: mysqlEnum("processing_status", ["received", "processed", "rejected", "failed"]).notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  processedAt: datetime("processed_at")
 });
 
 export const reviews = mysqlTable(

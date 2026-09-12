@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   mergeProductTotal,
@@ -84,8 +84,30 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
 }
 
 export async function getSalesAnalyticsRepo() {
-  const orderRows = await db.select().from(orders).orderBy(desc(orders.createdAt));
+  const allOrderRows = await db.select().from(orders).orderBy(desc(orders.createdAt));
+  const orderRows = allOrderRows.filter((order) =>
+    order.paymentMethod === "cod"
+      ? order.paymentStatus === "accepted"
+      : order.paymentStatus !== "denied" &&
+        (order.providerPaymentStatus === "succeeded" || order.providerPaymentStatus === "partially_refunded")
+  );
   const itemRows = await db.select().from(orderItems).orderBy(desc(orderItems.orderId));
+  const recognizedCentsByOrder = new Map(orderRows.map((order) => [order.id,
+    Math.max(0, Math.round(toNumber(order.totalAmount) * 100) -
+      (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0))]));
+  const lineRevenueCents = new Map<number, number>();
+  for (const order of orderRows) {
+    const lines = itemRows.filter((item) => item.orderId === order.id);
+    const grossCents = Math.round(toNumber(order.totalAmount) * 100);
+    const netCents = recognizedCentsByOrder.get(order.id) ?? 0;
+    let allocated = 0;
+    lines.forEach((line, index) => {
+      const amount = index === lines.length - 1 ? netCents - allocated :
+        grossCents > 0 ? Math.round(Math.round(toNumber(line.lineTotal) * 100) * netCents / grossCents) : 0;
+      lineRevenueCents.set(line.id, amount);
+      allocated += amount;
+    });
+  }
   const variantRows = await db
     .select({
       variantId: productVariants.id,
@@ -97,6 +119,7 @@ export async function getSalesAnalyticsRepo() {
     .from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId));
   const offerItemRows = await db.select().from(offerItems);
+  const collectionItemRows = await db.select().from(collectionItems);
 
   const variantById = new Map(
     variantRows.map((row) => [
@@ -115,6 +138,12 @@ export async function getSalesAnalyticsRepo() {
     const items = offerItemsByOfferId.get(row.offerId) ?? [];
     items.push({ variantId: row.variantId, qty: row.qty });
     offerItemsByOfferId.set(row.offerId, items);
+  }
+  const collectionItemsByCollectionId = new Map<number, Array<{ variantId: number; qty: number }>>();
+  for (const row of collectionItemRows) {
+    const items = collectionItemsByCollectionId.get(row.collectionId) ?? [];
+    items.push({ variantId: row.variantId, qty: row.qty });
+    collectionItemsByCollectionId.set(row.collectionId, items);
   }
 
   const productTotals = new Map<number, { productId: number; productName: string; unitsSold: number; revenue: number }>();
@@ -137,12 +166,12 @@ export async function getSalesAnalyticsRepo() {
       orderId: order.id,
       orderCode: order.orderCode,
       paymentStatus: order.paymentStatus,
-      totalAmount: toNumber(order.totalAmount),
+      totalAmount: (recognizedCentsByOrder.get(order.id) ?? 0) / 100,
       unitsSold: 0,
       createdAt: order.createdAt.toISOString(),
       items: []
     });
-    totalRevenue += toNumber(order.totalAmount);
+    totalRevenue += (recognizedCentsByOrder.get(order.id) ?? 0) / 100;
   }
 
   for (const item of itemRows) {
@@ -151,8 +180,12 @@ export async function getSalesAnalyticsRepo() {
       continue;
     }
 
-    if (item.itemType === "offer") {
-      const expandedItems = offerItemsByOfferId.get(item.offerId ?? -1) ?? [];
+    if (item.itemType === "offer" || item.itemType === "collection") {
+      const expandedItems: Array<{ variantId: number; qty: number; unitPrice?: number }> = item.snapshotComponents
+        ? JSON.parse(item.snapshotComponents) as Array<{ variantId: number; qty: number; unitPrice?: number }>
+        : item.itemType === "offer"
+          ? offerItemsByOfferId.get(item.offerId ?? -1) ?? []
+          : collectionItemsByCollectionId.get(item.collectionId ?? -1) ?? [];
       // Allocate the offer line's actual paid total (lineTotal) across its component
       // variants in proportion to each component's catalog value, so component revenue
       // reconciles with totalRevenue instead of using the standalone catalog price.
@@ -162,14 +195,16 @@ export async function getSalesAnalyticsRepo() {
           return [];
         }
         const unitsSold = expandedItem.qty * item.qty;
-        return [{ variant, unitsSold, weight: variant.defaultUnitPrice * unitsSold }];
+        return [{ variant, unitsSold, weight: (expandedItem.unitPrice ?? variant.defaultUnitPrice) * unitsSold }];
       });
-      const paidTotal = toNumber(item.lineTotal);
+      const paidCents = lineRevenueCents.get(item.id) ?? 0;
       const weightSum = components.reduce((sum, component) => sum + component.weight, 0);
-      for (const { variant, unitsSold, weight } of components) {
-        const revenue = weightSum > 0
-          ? paidTotal * (weight / weightSum)
-          : paidTotal / components.length;
+      let allocatedCents = 0;
+      for (const [index, { variant, unitsSold, weight }] of components.entries()) {
+        const componentCents = index === components.length - 1 ? paidCents - allocatedCents
+          : Math.round(paidCents * (weightSum > 0 ? weight / weightSum : 1 / components.length));
+        allocatedCents += componentCents;
+        const revenue = componentCents / 100;
         const label = `${variant.productName} / ${variant.variantLabel}`;
         totalUnitsSold += unitsSold;
         orderBreakdown.unitsSold += unitsSold;
@@ -190,7 +225,7 @@ export async function getSalesAnalyticsRepo() {
     }
 
     const unitsSold = item.qty;
-    const revenue = toNumber(item.lineTotal);
+    const revenue = (lineRevenueCents.get(item.id) ?? 0) / 100;
     const label = `${variant.productName} / ${variant.variantLabel}`;
     totalUnitsSold += unitsSold;
     orderBreakdown.unitsSold += unitsSold;

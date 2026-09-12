@@ -23,7 +23,7 @@ test("wrapAsync forwards rejected async route handlers to the JSON error middlew
     const { port } = server.address() as AddressInfo;
     const response = await fetch(`http://127.0.0.1:${port}/boom`);
     assert.equal(response.status, 500);
-    assert.deepEqual(await response.json(), { error: "async boom" });
+    assert.deepEqual(await response.json(), { error: "Internal server error" });
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }

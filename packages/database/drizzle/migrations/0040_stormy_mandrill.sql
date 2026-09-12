@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `refunded_amount_cents` int DEFAULT 0 NOT NULL;

@@ -13,6 +13,8 @@ import {
   OrderItemMedia,
   orderItemCategory,
   orderItemName,
+  orderPaymentChip,
+  orderPaymentLabel,
   paymentStatusChip,
   paymentStatusLabel,
   useCatalog
@@ -143,8 +145,8 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
             {/* Head: identity and status, the two things scanned first */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-(--hairline) px-4 py-3 sm:px-5">
               <span className="font-mono text-sm font-semibold text-ink">{order.orderCode}</span>
-              <span className={`chip ${paymentStatusChip(order.paymentStatus)}`}>
-                {paymentStatusLabel(order.paymentStatus, dict)}
+              <span className={`chip ${orderPaymentChip(order)}`}>
+                {orderPaymentLabel(order, dict)}
               </span>
               <span className="ms-auto text-sm text-(--ink-3)">
                 {formatOrderDate(order.createdAt, lang)}

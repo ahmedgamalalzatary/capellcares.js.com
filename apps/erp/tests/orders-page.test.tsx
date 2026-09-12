@@ -103,11 +103,25 @@ describe("OrdersPage", () => {
     expect(detailsLink).toHaveAttribute("href", "/orders/5");
   });
 
+  it("links staff to paid Paymob checkouts that need reconciliation but have no order", () => {
+    render(createElement(OrdersPage));
+    expect(screen.getByRole("link", { name: "مدفوعات قيد المراجعة" }))
+      .toHaveAttribute("href", "/orders/reconciliation");
+  });
+
   it("renders the payment status in Arabic instead of the raw enum", () => {
     render(createElement(OrdersPage));
 
     expect(screen.getByText("قيد المراجعة", { selector: "span" })).toBeInTheDocument();
     expect(screen.queryByText("pending")).not.toBeInTheDocument();
+  });
+
+  it("shows a Paymob-confirmed order as paid rather than pending", () => {
+    mockState = { orders: [{ ...makeOrder(5, "Online Customer", "pending"),
+      paymentMethod: "paymob", providerPaymentStatus: "succeeded" }] };
+    render(createElement(OrdersPage));
+    expect(screen.getByText("مدفوع عبر باي موب", { selector: "span" })).toBeInTheDocument();
+    expect(screen.queryByText("قيد المراجعة", { selector: "span" })).toBeNull();
   });
 
   it("formats the order total with the shared price formatter", () => {

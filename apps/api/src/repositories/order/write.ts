@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { checkoutReservations, collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 
@@ -8,6 +8,12 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export class DeniedOrderLockedError extends Error {
   constructor() {
     super("Denied orders are locked");
+  }
+}
+
+export class PaidPaymobRefundRequiredError extends Error {
+  constructor() {
+    super("Refund the Paymob payment in Paymob first");
   }
 }
 
@@ -28,6 +34,7 @@ interface OrderItem {
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
+  snapshotComponents?: Array<{ variantId: number; qty: number; unitPrice?: number }> | null;
   snapshotBaseUnitPrice?: number | null;
   snapshotDiscountId?: number | null;
   snapshotDiscountType?: "percentage" | "fixed" | null;
@@ -78,12 +85,24 @@ async function restockOrderItems(tx: DbTransaction, orderId: number) {
       variantId: orderItems.variantId,
       offerId: orderItems.offerId,
       collectionId: orderItems.collectionId,
-      qty: orderItems.qty
+      qty: orderItems.qty,
+      snapshotComponents: orderItems.snapshotComponents
     })
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
 
   for (const item of items) {
+    if ((item.itemType === "offer" || item.itemType === "collection") && item.snapshotComponents) {
+      const components = JSON.parse(item.snapshotComponents) as Array<{ variantId: number; qty: number }>;
+      if (!Array.isArray(components) || components.length === 0) throw new Error("Bundle component snapshot is invalid");
+      for (const component of components) {
+        if (!Number.isSafeInteger(component.variantId) || !Number.isSafeInteger(component.qty) || component.qty <= 0) {
+          throw new Error("Bundle component snapshot is invalid");
+        }
+        await incrementVariantStock(tx, component.variantId, component.qty * item.qty);
+      }
+      continue;
+    }
     if (item.itemType === "offer") {
       if (item.offerId == null) {
         throw buildMissingOrderItemIdError(orderId, item, "offerId");
@@ -152,21 +171,15 @@ export async function createOrderWithItems(input: {
           throw new Error("Order item.itemType=offer requires non-null item.offerId before querying offerItems");
         }
 
-        const underlyingItems = await tx
-          .select({
-            variantId: offerItems.variantId,
-            bundleQty: offerItems.qty
-          })
-          .from(offerItems)
-          .where(eq(offerItems.offerId, item.offerId));
-
-        if (underlyingItems.length === 0) {
-          throw new Error(`No offerItems found for item.offerId=${item.offerId}`);
+        if (!item.snapshotComponents) {
+          const underlyingItems = await tx.select({ variantId: offerItems.variantId, bundleQty: offerItems.qty })
+            .from(offerItems).where(eq(offerItems.offerId, item.offerId));
+          if (underlyingItems.length === 0) throw new Error(`No offerItems found for item.offerId=${item.offerId}`);
+          item.snapshotComponents = underlyingItems.map(({ variantId, bundleQty }) => ({ variantId, qty: bundleQty }));
         }
 
-        for (const underlyingItem of underlyingItems) {
-          const requiredQty = underlyingItem.bundleQty * item.qty;
-          await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
+        for (const component of item.snapshotComponents) {
+          await decrementVariantStock(tx, component.variantId, component.qty * item.qty);
         }
       } else {
         if (item.itemType === "collection") {
@@ -174,21 +187,15 @@ export async function createOrderWithItems(input: {
             throw new Error("Order item.itemType=collection requires non-null item.collectionId before querying collectionItems");
           }
 
-          const underlyingItems = await tx
-            .select({
-              variantId: collectionItems.variantId,
-              bundleQty: collectionItems.qty
-            })
-            .from(collectionItems)
-            .where(eq(collectionItems.collectionId, item.collectionId));
-
-          if (underlyingItems.length === 0) {
-            throw new Error(`No collectionItems found for item.collectionId=${item.collectionId}`);
+          if (!item.snapshotComponents) {
+            const underlyingItems = await tx.select({ variantId: collectionItems.variantId, bundleQty: collectionItems.qty })
+              .from(collectionItems).where(eq(collectionItems.collectionId, item.collectionId));
+            if (underlyingItems.length === 0) throw new Error(`No collectionItems found for item.collectionId=${item.collectionId}`);
+            item.snapshotComponents = underlyingItems.map(({ variantId, bundleQty }) => ({ variantId, qty: bundleQty }));
           }
 
-          for (const underlyingItem of underlyingItems) {
-            const requiredQty = underlyingItem.bundleQty * item.qty;
-            await decrementVariantStock(tx, underlyingItem.variantId, requiredQty);
+          for (const component of item.snapshotComponents) {
+            await decrementVariantStock(tx, component.variantId, component.qty * item.qty);
           }
           continue;
         }
@@ -225,8 +232,8 @@ export async function createOrderWithItems(input: {
         lineTotal: sql`${item.lineTotal}`,
         snapshotNameAr: item.snapshotNameAr ?? null,
         snapshotNameEn: item.snapshotNameEn ?? null,
-        snapshotSizeLabel: item.snapshotSizeLabel ?? null
-        ,
+        snapshotSizeLabel: item.snapshotSizeLabel ?? null,
+        snapshotComponents: item.snapshotComponents ? JSON.stringify(item.snapshotComponents) : null,
         snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : sql`${item.snapshotBaseUnitPrice}`,
         snapshotDiscountId: item.snapshotDiscountId ?? null,
         snapshotDiscountType: item.snapshotDiscountType ?? null,
@@ -249,7 +256,9 @@ export async function updateOrderPaymentStatusRepo(
   }
   await db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ paymentStatus: orders.paymentStatus })
+      .select({ paymentStatus: orders.paymentStatus, paymentMethod: orders.paymentMethod,
+        paymentAttemptId: orders.paymentAttemptId,
+        providerPaymentStatus: orders.providerPaymentStatus })
       .from(orders)
       .where(eq(orders.id, id))
       .limit(1)
@@ -263,8 +272,25 @@ export async function updateOrderPaymentStatusRepo(
       throw new DeniedOrderLockedError();
     }
 
+    if (paymentStatus === "denied" && existing.paymentMethod === "paymob" &&
+      existing.providerPaymentStatus !== "refunded") {
+      throw new PaidPaymobRefundRequiredError();
+    }
+
     if (paymentStatus === "denied") {
-      await restockOrderItems(tx, id);
+      if (existing.paymentMethod === "paymob") {
+        const [attempt] = await tx.select({ checkoutSessionId: paymentAttempts.checkoutSessionId })
+          .from(paymentAttempts).where(eq(paymentAttempts.id, existing.paymentAttemptId ?? -1)).limit(1);
+        const reservations = attempt ? await tx.select().from(checkoutReservations)
+          .where(and(eq(checkoutReservations.checkoutSessionId, attempt.checkoutSessionId),
+            eq(checkoutReservations.state, "finalized"))).for("update") : [];
+        if (reservations.length === 0) throw new Error("Paymob reservation snapshot is missing");
+        for (const reservation of reservations) {
+          await incrementVariantStock(tx, reservation.variantId, reservation.qty);
+        }
+      } else {
+        await restockOrderItems(tx, id);
+      }
     }
 
     await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));

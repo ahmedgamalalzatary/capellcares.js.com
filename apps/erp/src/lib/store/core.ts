@@ -464,6 +464,19 @@ export class ErpStore {
     return api.get(`/api/erp/orders/${id}`);
   }
 
+  async fetchPaymobReconciliation(): Promise<Array<{
+    checkoutId: string; customerName: string; customerEmail: string; amountCents: number;
+    currency: string; environment: "test" | "live"; paymobOrderId: string | null;
+    paymobTransactionId: string | null; reason: string | null;
+  }>> {
+    const result = await api.get<{ items: Array<{
+      checkoutId: string; customerName: string; customerEmail: string; amountCents: number;
+      currency: string; environment: "test" | "live"; paymobOrderId: string | null;
+      paymobTransactionId: string | null; reason: string | null;
+    }> }>("/api/erp/orders/reconciliation");
+    return result.items;
+  }
+
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {
     await api.post(`/api/erp/orders/${id}/payment-status`, { paymentStatus });
     await this.refetch();

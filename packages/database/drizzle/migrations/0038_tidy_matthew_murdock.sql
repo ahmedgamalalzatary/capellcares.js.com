@@ -1,0 +1,1 @@
+ALTER TABLE `payment_attempts` ADD `allowed_integration_ids` text;

@@ -33,7 +33,7 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSumm
       </div>
       <div className="flex items-center justify-between py-1 text-sm">
         <span className="text-(--ink-2)">{dict.common.shipping}</span>
-        <span className="text-xs text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
+        <span className="text-ink">{formatPrice(0, lang)}</span>
       </div>
       <div className="mt-4 flex items-end justify-between border-t border-(--hairline) pt-4">
         <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>

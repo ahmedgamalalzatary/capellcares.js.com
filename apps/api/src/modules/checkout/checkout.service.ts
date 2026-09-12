@@ -1,6 +1,14 @@
 import { EG_PHONE_REGEX, GOVERNORATES } from "@capella/shared/constants";
 import { createOrderFromCheckout } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
+import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
+import { initiatePaymobCheckout } from "./paymob-checkout.service.js";
+
+export class PaymobUnavailableError extends Error {
+  constructor() {
+    super("Paymob checkout is not configured");
+  }
+}
 
 function validateCheckoutPayload(payload: CheckoutPayload) {
   const requiredFields: Array<keyof CheckoutPayload> = [
@@ -25,11 +33,29 @@ function validateCheckoutPayload(payload: CheckoutPayload) {
   if (!GOVERNORATES.includes(payload.governorate as (typeof GOVERNORATES)[number])) {
     throw new Error("Invalid governorate");
   }
-  if (payload.paymentMethod !== "cod") throw new Error("Only COD payment is supported");
+  if (payload.paymentMethod !== "cod" && payload.paymentMethod !== "paymob") {
+    throw new Error("Unsupported payment method");
+  }
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
 }
 
-export async function submitCheckout(payload: CheckoutPayload) {
+export async function submitCheckout(payload: CheckoutPayload, options: { idempotencyKey?: string } = {}) {
   validateCheckoutPayload(payload);
-  return createOrderFromCheckout(payload);
+  if (payload.paymentMethod === "paymob") {
+    if (!options.idempotencyKey?.trim()) {
+      throw new Error("Idempotency-Key header is required for Paymob checkout");
+    }
+    const config = resolvePaymobConfig();
+    const notificationUrl = process.env.PAYMOB_NOTIFICATION_URL?.trim();
+    const redirectionUrl = process.env.PAYMOB_REDIRECTION_URL?.trim();
+    if (!config.canInitiatePayments || !notificationUrl || !redirectionUrl) throw new PaymobUnavailableError();
+    return initiatePaymobCheckout({
+      payload,
+      idempotencyKey: options.idempotencyKey.trim(),
+      config,
+      notificationUrl,
+      redirectionUrl
+    });
+  }
+  return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload) };
 }

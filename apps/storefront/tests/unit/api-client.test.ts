@@ -132,7 +132,7 @@ describe("storefront api client", () => {
     );
   });
 
-  it("refreshes and retries an authenticated checkout exactly once after a 401", async () => {
+  it("never replays an authenticated checkout after a 401", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: "Expired" }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ accessToken: "fresh-token" }) })
@@ -143,10 +143,54 @@ describe("storefront api client", () => {
       }));
 
     const { submitCheckout } = await import("@/lib/api/client");
-    await expect(submitCheckout(checkoutInput, "expired-token")).resolves.toMatchObject({ orderCode: "ORD-8" });
-    expect(fetch).toHaveBeenCalledTimes(3);
-    expect(fetch).toHaveBeenNthCalledWith(3, expect.stringContaining("/api/v1/checkout"),
-      expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer fresh-token" }) }));
+    await expect(submitCheckout(checkoutInput, "expired-token")).rejects.toThrow("Expired");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends a stable idempotency key with a Paymob checkout request", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true, status: 201,
+      json: async () => ({ kind: "paymob_redirect", checkoutId: "checkout_abc",
+        checkoutUrl: "https://eg.checkout.paymob.com/?test=1", expiresAt: "2026-09-11T12:30:00.000Z" })
+    }));
+    const { submitCheckout } = await import("@/lib/api/client");
+    const result = await submitCheckout({ ...checkoutInput, paymentMethod: "paymob" }, null,
+      { idempotencyKey: "11111111-1111-4111-8111-111111111111" });
+    expect(result?.kind).toBe("paymob_redirect");
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/checkout"),
+      expect.objectContaining({ headers: expect.objectContaining({
+        "idempotency-key": "11111111-1111-4111-8111-111111111111"
+      }) }));
+  });
+
+  it("loads only server-confirmed payment methods for checkout", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true,
+      json: async () => ({ available: true, methods: ["card", "wallet"] }) }));
+    const { fetchPaymobMethods } = await import("@/lib/api/client");
+    await expect(fetchPaymobMethods()).resolves.toEqual({ available: true, methods: ["card", "wallet"] });
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/payments/paymob/methods"),
+      expect.anything());
+  });
+
+  it("retrieves local checkout status without trusting the provider redirect", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true,
+      json: async () => ({ checkoutId: "checkout_abc", status: "completed", order: { id: 7, orderCode: "CAP-7" } }) }));
+    const { fetchCheckoutStatus } = await import("@/lib/api/client");
+    await expect(fetchCheckoutStatus("checkout_abc")).resolves.toMatchObject({ status: "completed",
+      order: { orderCode: "CAP-7" } });
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/checkout/checkout_abc/status"),
+      expect.anything());
+  });
+
+  it("retries a failed Paymob attempt with a single non-replayed POST", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 201,
+      json: async () => ({ kind: "paymob_redirect", checkoutId: "checkout_abc",
+        checkoutUrl: "https://eg.checkout.paymob.com/?next=1", expiresAt: "2026-09-11T12:30:00.000Z" }) }));
+    const { retryPaymobCheckout } = await import("@/lib/api/client");
+    await expect(retryPaymobCheckout("checkout_abc")).resolves.toMatchObject({ kind: "paymob_redirect" });
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/checkout/checkout_abc/retry"),
+      expect.objectContaining({ method: "POST" }));
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("does not retry the token that just received a 401 when refresh is unavailable", async () => {

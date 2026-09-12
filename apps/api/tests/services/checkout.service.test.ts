@@ -24,6 +24,26 @@ beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
+test("priceCheckout returns authoritative snapshots without creating an order or deducting stock", async () => {
+  const module = await import("../../src/modules/orders/orders.service.js") as Record<string, any>;
+  const ids = await getBaselineIds();
+  const beforeOrders = await db.select({ id: orders.id }).from(orders);
+
+  const priced = await module.priceCheckout?.({
+    ...baseCheckoutPayload(),
+    paymentMethod: "paymob",
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
+  });
+
+  const [variant] = await db.select({ stockQty: productVariants.stockQty })
+    .from(productVariants).where(eq(productVariants.id, ids.firstVariantId)).limit(1);
+  assert.equal(priced?.totalAmount, 70);
+  assert.deepEqual(priced?.reservations, [{ variantId: ids.firstVariantId, qty: 2 }]);
+  assert.equal(priced?.items[0]?.snapshotNameEn, "Baseline Product 1");
+  assert.equal(variant?.stockQty, 10);
+  assert.equal((await db.select({ id: orders.id }).from(orders)).length, beforeOrders.length);
+});
+
 test("createOrderFromCheckout deducts stock for normal product variants and keeps payment pending", async () => {
   const ids = await getBaselineIds();
 
@@ -283,6 +303,38 @@ test("createOrderFromCheckout deducts offer stock from each included variant mul
 
   assert.equal(firstVariant?.stockQty, 8);
   assert.equal(secondVariant?.stockQty, 4);
+});
+
+test("priceCheckout snapshots bundle components with their sold quantities", async () => {
+  const ids = await getBaselineIds();
+  const { priceCheckout } = await import("../../src/modules/orders/orders.service.js");
+  const priced = await priceCheckout({
+    fullName: "Snapshot buyer", phone: "01012345678", email: "snapshot@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    buildingApartment: "1", paymentMethod: "cod",
+    items: [{ type: "offer", offerId: ids.offerId, qty: 2 }]
+  });
+  assert.deepEqual(priced.items[0].snapshotComponents, [
+    { variantId: ids.firstVariantId, qty: 1, unitPrice: 35 },
+    { variantId: ids.secondVariantId, qty: 1, unitPrice: 55 }
+  ]);
+});
+
+test("denying a COD bundle restores the checkout-time components after catalog edits", async () => {
+  const ids = await getBaselineIds();
+  const { updateOrderPaymentStatusRepo } = await import("../../src/repositories/order.repository.js");
+  const created = await createOrderFromCheckout({
+    fullName: "Bundle buyer", phone: "01012345678", email: "bundle-snapshot@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    buildingApartment: "1", paymentMethod: "cod",
+    items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
+  });
+  await db.update(offerItems).set({ qty: 3 }).where(eq(offerItems.offerId, ids.offerId));
+  await updateOrderPaymentStatusRepo(created.id, "denied");
+  const variants = await db.select({ id: productVariants.id, stockQty: productVariants.stockQty })
+    .from(productVariants).where(inArray(productVariants.id, [ids.firstVariantId, ids.secondVariantId]));
+  assert.equal(variants.find((row) => row.id === ids.firstVariantId)?.stockQty, 10);
+  assert.equal(variants.find((row) => row.id === ids.secondVariantId)?.stockQty, 6);
 });
 
 test("createOrderFromCheckout stores a collection order line and deducts each underlying variant multiplied by quantity", async () => {

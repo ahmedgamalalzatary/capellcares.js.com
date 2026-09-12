@@ -58,7 +58,7 @@ test("loadWorkspaceEnv maps TEST_DATABASE_URL during tests even without .env.tes
   assert.equal(env.DATABASE_URL, "mysql://root:pass@localhost:3306/capella_test");
 });
 
-test("loadWorkspaceEnv skips loading when DATABASE_URL already exists", () => {
+test("loadWorkspaceEnv still loads non-database settings when DATABASE_URL already exists", () => {
   const env: NodeJS.ProcessEnv = {
     DATABASE_URL: "mysql://already-set"
   };
@@ -70,8 +70,11 @@ test("loadWorkspaceEnv skips loading when DATABASE_URL already exists", () => {
     fileExists: () => true,
     loadFile: () => {
       loaderCalled = true;
+      env.PAYMOB_SECRET_KEY = "sk_test_from_file";
     }
   });
 
-  assert.equal(loaderCalled, false);
+  assert.equal(loaderCalled, true);
+  assert.equal(env.DATABASE_URL, "mysql://already-set");
+  assert.equal(env.PAYMOB_SECRET_KEY, "sk_test_from_file");
 });

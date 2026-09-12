@@ -59,10 +59,6 @@ export function loadWorkspaceEnv(
     env.DATABASE_URL = env.TEST_DATABASE_URL;
   }
 
-  if (env.DATABASE_URL) {
-    return;
-  }
-
   const cwd = options.cwd ?? process.cwd();
   const envPath =
     options.envPath ??
@@ -73,7 +69,11 @@ export function loadWorkspaceEnv(
   }
 
   if (options.loadFile) {
+    const existingDatabaseUrl = env.DATABASE_URL;
     options.loadFile(envPath);
+    if (existingDatabaseUrl) {
+      env.DATABASE_URL = existingDatabaseUrl;
+    }
   } else {
     if (typeof process.loadEnvFile === "function") {
       process.loadEnvFile(envPath);

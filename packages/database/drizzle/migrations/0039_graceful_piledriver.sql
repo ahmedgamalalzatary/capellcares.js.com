@@ -1,0 +1,1 @@
+ALTER TABLE `payment_attempts` MODIFY COLUMN `status` enum('created','pending','succeeded','failed','cancelled','expired','reconciliation_required') NOT NULL;

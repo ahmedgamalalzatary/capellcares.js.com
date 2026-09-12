@@ -4,9 +4,13 @@ import {
   adminUserPermissions,
   adminUsers,
   authSessions,
+  checkoutReservations,
+  checkoutSessions,
   collections,
   customers,
   permissions,
+  paymentAttempts,
+  paymentWebhookEvents,
   advices,
   offers,
   productVariants,
@@ -23,6 +27,10 @@ import { db } from "@capella/database/src/db";
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
+  await db.delete(paymentWebhookEvents);
+  await db.delete(paymentAttempts);
+  await db.delete(checkoutReservations);
+  await db.delete(checkoutSessions);
   await db.delete(reviewPromptStates);
   await db.delete(reviewSubmissionHistory);
   await db.delete(reviews);

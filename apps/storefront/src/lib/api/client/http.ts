@@ -106,7 +106,7 @@ export function authedGetJSON<T>(path: string, accessToken: string): Promise<T |
 async function authedMutationJSONInternal<T>(
   path: string,
   accessToken: string | null,
-  init: { method: "POST" | "DELETE"; body?: unknown },
+  init: { method: "POST" | "DELETE"; body?: unknown; retryOn401?: boolean; idempotencyKey?: string },
   allowRefresh: boolean,
   revision: number
 ): Promise<T | null> {
@@ -115,6 +115,7 @@ async function authedMutationJSONInternal<T>(
     cache: "no-store",
     headers: {
       ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      ...(init.idempotencyKey ? { "idempotency-key": init.idempotencyKey } : {}),
       ...(init.body === undefined ? {} : { "content-type": "application/json" })
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body)
@@ -125,7 +126,7 @@ async function authedMutationJSONInternal<T>(
     }
     return null;
   }
-  if (response.status === 401 && accessToken && allowRefresh) {
+  if (response.status === 401 && accessToken && allowRefresh && init.retryOn401 !== false) {
     const retryToken = await resolveRetryToken(accessToken, revision);
     if (retryToken) {
       return authedMutationJSONInternal<T>(path, retryToken, init, false, revision);
@@ -146,7 +147,7 @@ async function authedMutationJSONInternal<T>(
 export function authedMutationJSON<T>(
   path: string,
   accessToken: string | null,
-  init: { method: "POST" | "DELETE"; body?: unknown }
+  init: { method: "POST" | "DELETE"; body?: unknown; retryOn401?: boolean; idempotencyKey?: string }
 ): Promise<T | null> {
   return authedMutationJSONInternal(
     path,

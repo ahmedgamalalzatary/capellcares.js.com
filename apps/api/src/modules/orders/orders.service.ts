@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collections, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
@@ -55,9 +55,7 @@ function resolveEffectiveVariantPrice(input: {
   };
 }
 
-export async function createOrderFromCheckout(
-  payload: CheckoutPayload
-): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+export async function priceCheckout(payload: CheckoutPayload) {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
@@ -181,6 +179,40 @@ export async function createOrderFromCheckout(
   }
 
   const totalAmount = pricedItems.reduce((sum, row) => addMoney(sum, row.lineTotal), 0);
+  const reservationQuantities = new Map<number, number>();
+  for (const item of pricedItems) {
+    if (item.itemType === "product_variant") {
+      reservationQuantities.set(item.variantId, (reservationQuantities.get(item.variantId) ?? 0) + item.qty);
+      continue;
+    }
+    const components = item.itemType === "offer"
+      ? await db.select({ variantId: offerItems.variantId, qty: offerItems.qty, unitPrice: productVariants.sellingPrice })
+        .from(offerItems).innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+        .where(eq(offerItems.offerId, item.offerId))
+      : await db.select({ variantId: collectionItems.variantId, qty: collectionItems.qty, unitPrice: productVariants.sellingPrice })
+        .from(collectionItems).innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
+        .where(eq(collectionItems.collectionId, item.collectionId));
+    if (components.length === 0) throw new Error(`No components found for ${item.itemType}`);
+    item.snapshotComponents = components.map((component) => ({
+      variantId: component.variantId, qty: component.qty, unitPrice: Number(component.unitPrice)
+    }));
+    for (const component of components) {
+      const qty = component.qty * item.qty;
+      reservationQuantities.set(component.variantId, (reservationQuantities.get(component.variantId) ?? 0) + qty);
+    }
+  }
+  return {
+    items: pricedItems,
+    totalAmount,
+    reservations: [...reservationQuantities.entries()].map(([variantId, qty]) => ({ variantId, qty }))
+  };
+}
+
+export async function createOrderFromCheckout(
+  payload: CheckoutPayload
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+  if (payload.paymentMethod !== "cod") throw new Error("Online checkout cannot create an order before payment succeeds");
+  const { items: pricedItems, totalAmount } = await priceCheckout(payload);
   const paymentStatus: PaymentStatus = "pending";
   const createdOrder = await createOrderWithItems({
     order: {

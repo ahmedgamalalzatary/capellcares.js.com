@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   EG_PHONE_REGEX,
   PAYMENT_METHODS,
@@ -11,7 +11,8 @@ import {
 } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
-import { fetchCollections, fetchOffers, fetchProducts, submitCheckout } from "@/lib/api/client";
+import { fetchCollections, fetchOffers, fetchPaymobMethods, fetchProducts, submitCheckout } from "@/lib/api/client";
+import { getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -38,6 +39,8 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   });
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [placing, setPlacing] = useState(false);
+  const placingRef = useRef(false);
+  const [paymobMethods, setPaymobMethods] = useState<Array<"card" | "wallet">>([]);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [{ products, offers, collections }, setCatalog] = useState<CheckoutCatalogState & { collections: Collection[] }>({
     products: [],
@@ -60,6 +63,12 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       })
       .catch(() => { });
   }, [lang]);
+
+  useEffect(() => {
+    fetchPaymobMethods()
+      .then(({ available, methods }) => setPaymobMethods(available ? methods : []))
+      .catch(() => setPaymobMethods([]));
+  }, []);
 
   const resolved = useMemo<CheckoutResolvedItem[]>(() => {
     return lines
@@ -122,7 +131,9 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   };
 
   const placeOrder = async () => {
+    if (placingRef.current) return;
     if (!validate()) return;
+    placingRef.current = true;
     setPlacing(true);
 
     try {
@@ -146,17 +157,24 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       };
 
       const data = await submitCheckout(payload, accessToken, {
-        requireAuthentication: user != null
+        requireAuthentication: user != null,
+        idempotencyKey: payload.paymentMethod === "paymob" ? await getCheckoutIdempotencyKey(payload) : undefined
       });
       if (!data) throw new Error("Checkout failed");
-      setOrderId(String(data.orderCode));
-      clear();
+      if (data.kind === "paymob_redirect") {
+        rememberPendingCheckout(data.checkoutId, lang);
+        redirectToPaymob(data.checkoutUrl);
+      } else {
+        setOrderId(data.orderCode);
+        clear();
+      }
     } catch (error) {
       setErrors((state) => ({
         ...state,
         submit: error instanceof Error && error.message ? error.message : "Checkout failed"
       }));
     } finally {
+      placingRef.current = false;
       setPlacing(false);
     }
   };
@@ -165,6 +183,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     form,
     errors,
     placing,
+    paymobMethods,
     orderId,
     resolved,
     subtotal,

@@ -8,7 +8,7 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canReadErpModule } from "@/lib/erp-permissions";
-import { paymentStatusChip, paymentStatusFilterOptions, paymentStatusLabel } from "@/lib/payment-status";
+import { orderPaymentDisplay, paymentStatusFilterOptions } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 
 function localDateKey(value: string) {
@@ -59,6 +59,9 @@ function OrdersPageContent() {
 
   return (
     <AdminShell title="الطلبات" crumbs={[{ label: "الطلبات" }]}>
+      <div className="row row--wrap" style={{ marginBottom: 16 }}>
+        <Link href="/orders/reconciliation" className="btn btn--ghost btn--sm">مدفوعات قيد المراجعة</Link>
+      </div>
       <AdminListHeader
         searchPlaceholder="ابحثي بكود الطلب، الاسم، أو رقم الهاتف…"
         searchValue={search}
@@ -125,7 +128,7 @@ function OrdersPageContent() {
                   <div className="faint cell-subline">{order.phone}</div>
                 </td>
                 <td className="fw-600 c-accent">{formatPrice(order.totalAmount, "ar")}</td>
-                <td><span className={paymentStatusChip[order.paymentStatus]}>{paymentStatusLabel[order.paymentStatus]}</span></td>
+                <td><span className={orderPaymentDisplay(order).chip}>{orderPaymentDisplay(order).label}</span></td>
                 <td className="muted">{new Date(order.createdAt).toLocaleDateString("ar-EG", { day: "2-digit", month: "short", year: "numeric" })}</td>
                 <td>
                   <Link href={`/orders/${order.id}`} className="btn btn--ghost btn--sm">

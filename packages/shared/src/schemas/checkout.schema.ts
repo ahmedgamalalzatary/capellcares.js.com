@@ -28,7 +28,22 @@ export const checkoutSchema = z.object({
   addressLine: z.string().min(1),
   buildingApartment: z.string().min(1),
   notes: z.string().optional(),
-  paymentMethod: z.literal("cod"),
+  paymentMethod: z.enum(["cod", "paymob"]),
   customerId: z.number().int().positive().nullable().optional(),
   items: z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema, checkoutCollectionItemSchema])).min(1)
 });
+
+export const checkoutResponseSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("cod_order"),
+    id: z.number().int().positive(),
+    orderCode: z.string().min(1),
+    paymentStatus: z.literal("pending")
+  }),
+  z.object({
+    kind: z.literal("paymob_redirect"),
+    checkoutId: z.string().min(1),
+    checkoutUrl: z.string().url(),
+    expiresAt: z.string().datetime()
+  })
+]);

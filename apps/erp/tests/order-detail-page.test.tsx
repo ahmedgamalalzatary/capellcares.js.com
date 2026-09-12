@@ -50,6 +50,17 @@ beforeEach(() => {
 });
 
 describe("OrderDetailsPage", () => {
+  it("shows provider-confirmed Paymob payment separately and blocks manual payment changes", async () => {
+    fetchOrder.mockResolvedValueOnce({ id: 9, orderCode: "PAY-009", fullName: "Online Customer",
+      phone: "01012345678", governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+      paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "succeeded",
+      totalAmount: 35, createdAt: "2026-09-11T12:00:00.000Z", items: [] });
+    render(createElement(OrderDetailsView, { orderId: 9, crumbLabel: "9" }));
+    expect(await screen.findByText("PAY-009")).toBeInTheDocument();
+    expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+  });
   it("disables payment-status mutation for staff without orders.update_payment_status", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },

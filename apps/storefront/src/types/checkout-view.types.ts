@@ -33,6 +33,7 @@ export interface CheckoutFormProps extends CheckoutViewProps {
   form: CheckoutFormState;
   errors: CheckoutErrors;
   placing: boolean;
+  paymobMethods: Array<"card" | "wallet">;
   setField: <K extends keyof CheckoutFormState>(key: K, value: CheckoutFormState[K]) => void;
   placeOrder: () => Promise<void>;
 }
@@ -46,6 +47,7 @@ export interface UseCheckoutResult {
   form: CheckoutFormState;
   errors: CheckoutErrors;
   placing: boolean;
+  paymobMethods: Array<"card" | "wallet">;
   orderId: string | null;
   resolved: CheckoutResolvedItem[];
   subtotal: number;

@@ -9,6 +9,7 @@ import {
   type Offer,
   type OrderItem,
   type PaymentStatus,
+  type OrderSummary,
   type Product
 } from "@capella/shared";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
@@ -148,6 +149,21 @@ export function paymentStatusLabel(status: PaymentStatus, dict: any): string {
 export function paymentStatusChip(status: PaymentStatus): string {
   if (status === "accepted") return "chip--status-ok";
   return "chip--status-bad";
+}
+
+export function orderPaymentLabel(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">, dict: any): string {
+  if (order.paymentMethod === "cod") return paymentStatusLabel(order.paymentStatus, dict);
+  if (order.providerPaymentStatus === "succeeded") return dict.orders.statusPaidOnline;
+  if (order.providerPaymentStatus === "partially_refunded") return dict.orders.statusPartiallyRefunded;
+  if (order.providerPaymentStatus === "refunded") return dict.orders.statusRefunded;
+  if (order.providerPaymentStatus === "voided") return dict.orders.statusVoided;
+  return dict.orders.statusPending;
+}
+
+export function orderPaymentChip(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): string {
+  if (order.paymentMethod === "cod") return paymentStatusChip(order.paymentStatus);
+  return order.providerPaymentStatus === "succeeded" || order.providerPaymentStatus === "partially_refunded"
+    ? "chip--status-ok" : "chip--status-bad";
 }
 
 export function formatOrderDate(value: string, lang: Language): string {

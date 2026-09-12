@@ -6,6 +6,7 @@ export type { Assert, IsEqual } from "./assert-type-equal.js";
 
 export type Bilingual = { ar: string; en: string };
 export type PaymentStatus = "pending" | "accepted" | "denied";
+export type ProviderPaymentStatus = "pending" | "succeeded" | "failed" | "partially_refunded" | "refunded" | "voided";
 
 export interface Category {
   id: number;
@@ -397,8 +398,10 @@ export interface OrderSummary {
   addressLine: string;
   buildingApartment: string;
   notes: string | null;
-  paymentMethod: "cod";
+  paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  providerPaymentStatus: ProviderPaymentStatus | null;
+  refundedAmountCents: number;
   totalAmount: number;
   createdAt: string;
   /**

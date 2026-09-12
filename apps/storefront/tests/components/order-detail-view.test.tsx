@@ -95,6 +95,8 @@ beforeEach(() => {
   fetchCustomerOrderById.mockResolvedValue({
     id: 12,
     orderCode: "ORDER-12",
+    paymentMethod: "cod",
+    providerPaymentStatus: null,
     paymentStatus: "accepted",
     totalAmount: 50,
     createdAt: "2026-05-20T10:00:00.000Z",
@@ -197,6 +199,8 @@ describe("OrderDetailView reviews", () => {
       .mockResolvedValueOnce({
         id: 22,
         orderCode: "ORDER-B",
+        paymentMethod: "cod",
+        providerPaymentStatus: null,
         paymentStatus: "accepted",
         totalAmount: 50,
         createdAt: "2026-05-20T10:00:00.000Z",
@@ -211,6 +215,8 @@ describe("OrderDetailView reviews", () => {
     releaseCustomerA({
       id: 11,
       orderCode: "ORDER-A",
+      paymentMethod: "cod",
+      providerPaymentStatus: null,
       paymentStatus: "accepted",
       totalAmount: 50,
       createdAt: "2026-05-19T10:00:00.000Z",
@@ -254,6 +260,8 @@ describe("OrderDetailView reviews", () => {
     fetchCustomerOrderById.mockResolvedValue({
       id: 13,
       orderCode: "ORDER-13",
+      paymentMethod: "cod",
+      providerPaymentStatus: null,
       paymentStatus: "denied",
       totalAmount: 50,
       createdAt: "2026-05-20T10:00:00.000Z",

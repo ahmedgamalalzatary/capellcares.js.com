@@ -239,6 +239,62 @@
       "when": 1786613412273,
       "tag": "0033_announcement_bar_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1789151409115,
+      "tag": "0034_paymob_checkout_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1789151900799,
+      "tag": "0035_paymob_webhook_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1789152185137,
+      "tag": "0036_paymob_attempt_identifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1789152457303,
+      "tag": "0037_separate_provider_payment_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1789192205574,
+      "tag": "0038_tidy_matthew_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1789192506236,
+      "tag": "0039_graceful_piledriver",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1789236832110,
+      "tag": "0040_stormy_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "5",
+      "when": 1789237754303,
+      "tag": "0041_stormy_stingray",
+      "breakpoints": true
     }
   ]
 }

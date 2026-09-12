@@ -20,6 +20,28 @@ Local Docker uses:
 docker compose --env-file .env.docker ...
 ```
 
+## Paymob (API container only)
+
+The API container receives the `PAYMOB_*` values from the Compose env file. Store real keys only in the VPS `.env.production` (or the local untracked `.env.docker`), never in Git or `NEXT_PUBLIC_*` variables. The storefront and ERP containers do not receive these secrets.
+
+```env
+PAYMOB_MODE=test
+PAYMOB_SECRET_KEY=your-test-secret-key
+PAYMOB_PUBLIC_KEY=your-test-public-key
+PAYMOB_API_KEY=your-test-api-key
+PAYMOB_HMAC_SECRET=your-test-hmac-secret
+PAYMOB_CARD_INTEGRATION_ID=5885253
+PAYMOB_CARD_INTEGRATION_CONFIRMED=false
+PAYMOB_WALLET_INTEGRATION_ID=
+PAYMOB_WALLET_INTEGRATION_CONFIRMED=false
+PAYMOB_NOTIFICATION_URL=https://api.capellacares.com/api/v1/payments/paymob/webhook
+PAYMOB_REDIRECTION_URL=https://capellacares.com/checkout/payment-result
+```
+
+`5885253` is the dashboard's VPC test integration, **not yet confirmed** by Paymob as the correct normal card/3DS integration. Leave both confirmation flags `false` until Paymob confirms the card integration and supplies the wallet integration. Test and live credentials/IDs must never be mixed. The redirect URL is locale-neutral; the storefront redirects it to the shopper's saved language. Paymob callback configuration must point to the public HTTPS API URL above. When wallets are offered, configure the processed callback on the Paymob dashboard because the per-intention notification override is card-only.
+
+After deploying, confirm the API reports `{ "available": false, "methods": [] }` at `/api/v1/payments/paymob/methods` until an integration is deliberately confirmed. Do not enable either method before the remaining sandbox and release checks in `docs/specs/paymob-payment-integration-plan.md` pass. Docker Compose was unavailable in the development workspace, so rendered Compose configuration and container startup must be checked on the VPS before activation.
+
 ## Required Auth Env
 
 Production and Docker auth require server-only ERP admin bootstrap values:

@@ -9,6 +9,7 @@ export function CheckoutForm({
   form,
   errors,
   placing,
+  paymobMethods,
   setField,
   placeOrder
 }: CheckoutFormProps) {
@@ -86,6 +87,19 @@ export function CheckoutForm({
               <div className="text-sm text-(--ink-2)">{dict.checkout.codDesc}</div>
             </div>
           </label>
+          {paymobMethods.length > 0 && (
+            <label
+              className="grid cursor-pointer grid-cols-[20px_1fr] items-center gap-3.5 rounded-[12px] border border-(--hairline) bg-surface px-4 py-3.5"
+              data-active={form.paymentMethod === "paymob"}
+            >
+              <input type="radio" name="pay" value="paymob" aria-label={dict.checkout.payOnline}
+                checked={form.paymentMethod === "paymob"} onChange={() => setField("paymentMethod", "paymob")} />
+              <div>
+                <div className="font-semibold">{dict.checkout.payOnline}</div>
+                <div className="text-sm text-(--ink-2)">{dict.checkout.payOnlineDesc}</div>
+              </div>
+            </label>
+          )}
         </div>
       </Section>
 

@@ -22,7 +22,7 @@ test("errorMiddleware handles forwarded errors as JSON 500 responses", async () 
 
     assert.equal(response.status, 500);
     assert.match(response.headers.get("content-type") ?? "", /application\/json/i);
-    assert.deepEqual(JSON.parse(text), { error: "boom" });
+    assert.deepEqual(JSON.parse(text), { error: "Internal server error" });
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }

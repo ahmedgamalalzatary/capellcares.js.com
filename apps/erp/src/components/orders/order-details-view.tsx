@@ -58,6 +58,10 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
 
   const canUpdatePaymentStatus = hasErpPermission(user, "orders.update_payment_status");
   const paymentStatusLocked = order?.paymentStatus === "denied";
+  const paymobPaymentLabel = order?.providerPaymentStatus === "succeeded" ? "مدفوع عبر باي موب"
+    : order?.providerPaymentStatus === "partially_refunded" ? "مسترد جزئيًا عبر باي موب"
+      : order?.providerPaymentStatus === "refunded" ? "مسترد عبر باي موب"
+        : "قيد تأكيد باي موب";
 
   return (
     <AdminShell
@@ -81,7 +85,9 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
                 {order.orderCode}
               </div>
               <div className="row row--wrap order-hero__meta">
-                <span className={statusChip(order.paymentStatus)}>{order.paymentStatus}</span>
+                <span className={statusChip(order.paymentMethod === "paymob" ? order.providerPaymentStatus ?? "pending" : order.paymentStatus)}>
+                  {order.paymentMethod === "paymob" ? paymobPaymentLabel : order.paymentStatus}
+                </span>
                 <span className="order-hero__sep">·</span>
                 <span className="order-hero__total">
                   الإجمالي:{" "}
@@ -94,6 +100,10 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
               </div>
             </div>
             <div className="order-hero__status">
+              {order.paymentMethod === "paymob" ? (
+                <div className="muted fs-12-5">حالة الدفع من باي موب فقط. الاسترداد يتم من لوحة باي موب.</div>
+              ) : (
+              <>
               <label htmlFor="order-payment-status" className="eyebrow">حاله الدفع</label>
               <select
                 id="order-payment-status"
@@ -113,6 +123,8 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
                 <option value="accepted">مقبول</option>
                 <option value="denied">مرفوض</option>
               </select>
+              </>
+              )}
             </div>
           </div>
 
