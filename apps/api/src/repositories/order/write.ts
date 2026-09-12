@@ -93,7 +93,12 @@ async function restockOrderItems(tx: DbTransaction, orderId: number) {
 
   for (const item of items) {
     if ((item.itemType === "offer" || item.itemType === "collection") && item.snapshotComponents) {
-      const components = JSON.parse(item.snapshotComponents) as Array<{ variantId: number; qty: number }>;
+      let components: Array<{ variantId: number; qty: number }>;
+      try {
+        components = JSON.parse(item.snapshotComponents) as Array<{ variantId: number; qty: number }>;
+      } catch {
+        throw new Error("Bundle component snapshot is invalid");
+      }
       if (!Array.isArray(components) || components.length === 0) throw new Error("Bundle component snapshot is invalid");
       for (const component of components) {
         if (!Number.isSafeInteger(component.variantId) || !Number.isSafeInteger(component.qty) || component.qty <= 0) {

@@ -8,7 +8,7 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canReadErpModule } from "@/lib/erp-permissions";
-import { orderPaymentDisplay, paymentStatusFilterOptions } from "@/lib/payment-status";
+import { orderMatchesPaymentStatusFilter, orderPaymentDisplay, paymentStatusFilterOptions } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 
 function localDateKey(value: string) {
@@ -43,7 +43,7 @@ function OrdersPageContent() {
   const filtered = useMemo(() => {
     const byStatus = paymentStatusFilter === "all"
       ? orders
-      : orders.filter((o) => o.paymentStatus === paymentStatusFilter);
+      : orders.filter((o) => orderMatchesPaymentStatusFilter(o, paymentStatusFilter));
     const byDate = byStatus.filter((order) => {
       const orderDate = localDateKey(order.createdAt);
       return (!fromDate || orderDate >= fromDate) && (!toDate || orderDate <= toDate);

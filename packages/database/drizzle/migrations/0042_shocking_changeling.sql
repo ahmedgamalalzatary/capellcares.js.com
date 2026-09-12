@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD CONSTRAINT `orders_refunded_amount_cents_check` CHECK (`orders`.`refunded_amount_cents` >= 0);

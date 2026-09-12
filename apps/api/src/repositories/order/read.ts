@@ -95,9 +95,17 @@ export async function getSalesAnalyticsRepo() {
   const recognizedCentsByOrder = new Map(orderRows.map((order) => [order.id,
     Math.max(0, Math.round(toNumber(order.totalAmount) * 100) -
       (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0))]));
+  // Bucket the lines once so the allocation loop below is a single pass over
+  // itemRows instead of scanning every item for every recognized order.
+  const linesByOrderId = new Map<number, typeof itemRows>();
+  for (const item of itemRows) {
+    const bucket = linesByOrderId.get(item.orderId);
+    if (bucket) bucket.push(item);
+    else linesByOrderId.set(item.orderId, [item]);
+  }
   const lineRevenueCents = new Map<number, number>();
   for (const order of orderRows) {
-    const lines = itemRows.filter((item) => item.orderId === order.id);
+    const lines = linesByOrderId.get(order.id) ?? [];
     const grossCents = Math.round(toNumber(order.totalAmount) * 100);
     const netCents = recognizedCentsByOrder.get(order.id) ?? 0;
     let allocated = 0;

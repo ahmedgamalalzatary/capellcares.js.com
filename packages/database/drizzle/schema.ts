@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyMySqlColumn,
   boolean,
   check,
   datetime,
@@ -462,11 +463,15 @@ export const orders = mysqlTable("orders", {
   paymentStatus: mysqlEnum("payment_status", ["pending", "accepted", "denied"]).notNull(),
   providerPaymentStatus: mysqlEnum("provider_payment_status", ["pending", "succeeded", "failed", "partially_refunded", "refunded", "voided"]),
   refundedAmountCents: int("refunded_amount_cents").notNull().default(0),
-  paymentAttemptId: int("payment_attempt_id").unique(),
+  // The callback's return type is annotated to break the orders -> payment_attempts ->
+  // checkout_sessions -> orders inference cycle.
+  paymentAttemptId: int("payment_attempt_id").references((): AnyMySqlColumn => paymentAttempts.id, { onDelete: "set null" }).unique(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
-});
+}, (table) => ({
+  refundedAmountCheck: check("orders_refunded_amount_cents_check", sql`${table.refundedAmountCents} >= 0`)
+}));
 
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),

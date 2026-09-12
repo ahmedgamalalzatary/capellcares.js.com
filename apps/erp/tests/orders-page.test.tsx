@@ -221,6 +221,36 @@ describe("OrdersPage", () => {
     expect(screen.queryByText("Accepted Out Of Range")).not.toBeInTheDocument();
   });
 
+  it("keeps a Paymob-confirmed order out of the pending payment filter", () => {
+    mockState = {
+      orders: [
+        makeOrder(1, "Awaiting Customer", "pending"),
+        { ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus: "succeeded" }
+      ]
+    };
+    render(createElement(OrdersPage));
+
+    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "pending" } });
+
+    expect(screen.getByText("Awaiting Customer")).toBeInTheDocument();
+    expect(screen.queryByText("Online Customer")).not.toBeInTheDocument();
+  });
+
+  it("groups a Paymob-confirmed order under the accepted payment filter", () => {
+    mockState = {
+      orders: [
+        makeOrder(1, "Awaiting Customer", "pending"),
+        { ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus: "succeeded" }
+      ]
+    };
+    render(createElement(OrdersPage));
+
+    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "accepted" } });
+
+    expect(screen.getByText("Online Customer")).toBeInTheDocument();
+    expect(screen.queryByText("Awaiting Customer")).not.toBeInTheDocument();
+  });
+
   it("filters orders by payment status", () => {
     mockState = {
       orders: [

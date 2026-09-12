@@ -193,6 +193,14 @@ describe("storefront api client", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it("never replays a Paymob retry after a 401", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401,
+      json: async () => ({ message: "Expired" }) }));
+    const { retryPaymobCheckout } = await import("@/lib/api/client");
+    await expect(retryPaymobCheckout("checkout_abc")).rejects.toThrow("Expired");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("does not retry the token that just received a 401 when refresh is unavailable", async () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: "Expired" }) })

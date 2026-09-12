@@ -77,6 +77,21 @@ test("updateOrderPaymentStatusRepo rejects missing identifiers when restocking d
   );
 });
 
+test("updateOrderPaymentStatusRepo reports a malformed bundle snapshot with the intended error", async () => {
+  const ids = await getBaselineIds();
+
+  const offerOrder = await createOrderWithItems({
+    order: buildBaseOrder(35, "malformed-snapshot@capella.test"),
+    items: [{ variantId: null, offerId: ids.offerId, itemType: "offer", qty: 1, unitPrice: 35, lineTotal: 35 }]
+  });
+  await db.update(orderItems).set({ snapshotComponents: "{ not json" }).where(eq(orderItems.orderId, offerOrder.id));
+
+  await assert.rejects(
+    updateOrderPaymentStatusRepo(offerOrder.id, "denied"),
+    /Bundle component snapshot is invalid/
+  );
+});
+
 test("updateOrderPaymentStatusRepo throws when the order does not exist", async () => {
   await assert.rejects(
     updateOrderPaymentStatusRepo(999999, "accepted"),
@@ -88,6 +103,7 @@ test("a snapshotted COD bundle can be sold after its catalog component rows chan
   const ids = await getBaselineIds();
   const { offerItems } = await import("@capella/database/drizzle/schema");
   await db.delete(offerItems).where(eq(offerItems.offerId, ids.offerId));
+  const [secondBefore] = await db.select().from(productVariants).where(eq(productVariants.id, ids.secondVariantId));
   const created = await createOrderWithItems({
     order: buildBaseOrder(70, "snapshot-direct@example.com"),
     items: [{ itemType: "offer", variantId: null, offerId: ids.offerId, qty: 1,
@@ -97,7 +113,9 @@ test("a snapshotted COD bundle can be sold after its catalog component rows chan
   });
   assert.ok(created.id > 0);
   const [first] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  const [second] = await db.select().from(productVariants).where(eq(productVariants.id, ids.secondVariantId));
   assert.equal(first.stockQty, 9);
+  assert.equal(second.stockQty, secondBefore.stockQty - 1);
 });
 
 test("ERP cannot deny a paid Paymob order before Paymob confirms a full refund", async () => {
@@ -143,4 +161,53 @@ test("denying a fully refunded Paymob bundle restores the originally reserved co
   const [second] = await db.select().from(productVariants).where(eq(productVariants.id, ids.secondVariantId));
   assert.equal(first.stockQty, 10);
   assert.equal(second.stockQty, initialSecond.stockQty);
+});
+
+test("orders reject a negative refunded amount at the database level", async () => {
+  await assert.rejects(
+    db.insert(orders).values({
+      orderCode: `NEG-${Date.now()}`,
+      customerType: "guest",
+      fullName: "Negative Refund",
+      phone: "01000000000",
+      email: "negative-refund@capella.test",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street",
+      buildingApartment: "1",
+      paymentMethod: "cod",
+      paymentStatus: "pending",
+      refundedAmountCents: -1,
+      totalAmount: "10.00"
+    }),
+    (error: unknown) => {
+      // Drizzle wraps the driver error, so the constraint name lives on the cause.
+      const cause = (error as { cause?: unknown } | null)?.cause;
+      return /orders_refunded_amount_cents_check/i.test(`${String(error)} ${String(cause)}`);
+    }
+  );
+});
+
+test("orders cannot reference a payment attempt that does not exist", async () => {
+  await assert.rejects(
+    db.insert(orders).values({
+      orderCode: `FK-${Date.now()}`,
+      customerType: "guest",
+      fullName: "Missing Attempt",
+      phone: "01000000000",
+      email: "missing-attempt@capella.test",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street",
+      buildingApartment: "1",
+      paymentMethod: "paymob",
+      paymentStatus: "pending",
+      paymentAttemptId: 999999,
+      totalAmount: "10.00"
+    }),
+    (error: unknown) => {
+      const cause = (error as { cause?: unknown } | null)?.cause;
+      return /foreign key constraint fails/i.test(`${String(error)} ${String(cause)}`);
+    }
+  );
 });

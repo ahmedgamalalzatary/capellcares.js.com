@@ -14,6 +14,9 @@ export async function recordPaymobTransaction(
 ): Promise<void> {
   const identity = JSON.stringify({
     id: transaction.id,
+    order_id: (transaction.order as { id?: unknown } | undefined)?.id,
+    integration_id: transaction.integration_id,
+    is_live: transaction.is_live,
     success: transaction.success,
     pending: transaction.pending,
     is_auth: transaction.is_auth,

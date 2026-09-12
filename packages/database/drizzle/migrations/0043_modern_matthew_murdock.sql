@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD CONSTRAINT `orders_payment_attempt_id_payment_attempts_id_fk` FOREIGN KEY (`payment_attempt_id`) REFERENCES `payment_attempts`(`id`) ON DELETE set null ON UPDATE no action;
