@@ -9,7 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.capellacare.app"
+      "bundleIdentifier": "com.capellacare.app",
+      "infoPlist": {
+        "ExpoLocalization_supportsRTL": true,
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

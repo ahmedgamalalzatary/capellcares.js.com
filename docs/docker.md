@@ -14,6 +14,11 @@ Production uses:
 docker compose --env-file .env.production ...
 ```
 
+On the production VPS, the repository is at `~/capellastore`. Its
+`.env.production` pins `COMPOSE_PROJECT_NAME=capellcaresjscom` so Compose keeps
+using the existing MySQL and API uploads volumes after the directory rename.
+Keep that setting when updating the production environment file.
+
 Local Docker uses:
 
 ```cmd
@@ -93,7 +98,7 @@ Use this only when the VPS database has no valuable data. `down -v` deletes the 
 Start on the VPS:
 
 ```bash
-cd ~/capellcares.js.com
+cd ~/capellastore
 git pull
 ```
 
@@ -156,7 +161,7 @@ Use this once production may contain valuable data. Do not use `down -v`.
 Start on the VPS:
 
 ```bash
-cd ~/capellcares.js.com
+cd ~/capellastore
 git pull
 ```
 
@@ -209,11 +214,7 @@ curl -I https://erp.capellacares.com
 
 Use this when your local Docker database has no valuable data.
 
-Run from the repo root on Windows:
-
-```cmd
-D:\Documents\currentwork\capella\capellastore>
-```
+Run from the repo root on Windows.
 
 Verify local Compose config:
 
