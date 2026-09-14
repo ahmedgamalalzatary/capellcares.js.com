@@ -128,16 +128,21 @@ test("listRatingSummaries returns an empty map without querying for no ids", asy
   assert.equal(summaries.size, 0);
 });
 
-test("safeRatingSummaries reports no ratings rather than failing the listing that asked", async () => {
+test("safeRatingSummaries reports no ratings rather than failing the listing that asked", async (t) => {
   const ids = await getBaselineIds();
   await seedRatings("product", ids.productOneId, [{ rating: 5 }]);
+  const unavailable = new Error("reviews table unavailable");
+  const warning = t.mock.method(console, "warn", () => {});
   (db as any).select = () => {
-    throw new Error("reviews table unavailable");
+    throw unavailable;
   };
 
   try {
     const summaries = await safeRatingSummaries("product", [ids.productOneId]);
     assert.equal(summaries.size, 0);
+    assert.deepEqual(warning.mock.calls[0]?.arguments, [
+      "Failed to load storefront rating summaries", "product", unavailable
+    ]);
   } finally {
     delete (db as any).select;
   }

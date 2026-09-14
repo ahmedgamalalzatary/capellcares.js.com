@@ -98,6 +98,7 @@ function Slide({
   label,
   index,
   active,
+  viewport,
   onClickCapture,
   priority = false
 }: {
@@ -106,6 +107,7 @@ function Slide({
   label: string;
   index: number;
   active: boolean;
+  viewport: "desktop" | "mobile";
   onClickCapture?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
   priority?: boolean;
 }) {
@@ -120,14 +122,14 @@ function Slide({
       draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      <div className="relative aspect-[8/3] overflow-hidden">
+      <div className={`relative overflow-hidden ${viewport === "desktop" ? "aspect-[8/3]" : ""}`}>
         <Image
           src={imagePath}
           alt=""
           width={1600}
-          height={600}
+          height={viewport === "desktop" ? 600 : 900}
           sizes="100vw"
-          className="object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
+          className={`${viewport === "mobile" ? "h-full w-full " : ""}object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]`}
           priority={priority}
         />
       </div>
@@ -191,7 +193,7 @@ function ShopMediaViewportStrip({
     return (
       <section className={className} data-viewport={viewport}>
         <div className={`grid grid-cols-1 overflow-hidden ${roundedClass}`}>
-          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active priority={priority} />
+          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active viewport={viewport} priority={priority} />
         </div>
       </section>
     );
@@ -299,6 +301,7 @@ function ShopMediaViewportStrip({
                 label={label}
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
+                viewport={viewport}
                 onClickCapture={handleSlideClickCapture}
                 priority={priority && renderedIndex === renderedActive}
               />

@@ -259,17 +259,34 @@ describe("ShopMediaStrip carousel", () => {
     expect(image).toHaveAttribute("sizes");
   });
 
-  it.each([true, false])("keeps a fixed, cropped banner frame on %s viewport", (isDesktop) => {
-    mockViewport(isDesktop);
-    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(2)} label="Media" />);
-    const strip = container.querySelector(`[data-viewport="${isDesktop ? "desktop" : "mobile"}"]`)!;
+  it.each([1, 2])("keeps the desktop banner frame fixed with %i images", (count) => {
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(count)} label="Media" />);
+    const strip = getDesktopStrip(container);
     const frames = strip.querySelectorAll("[data-slide] > div");
 
-    expect(frames).toHaveLength(4);
+    expect(frames).toHaveLength(count === 1 ? 1 : 4);
     for (const frame of frames) {
       expect(frame).toHaveClass("aspect-[8/3]", "overflow-hidden");
       expect(frame.querySelector("img")).toHaveClass("object-cover", "object-bottom");
+      expect(frame.querySelector("img")).toHaveAttribute("height", "600");
     }
+  });
+
+  it.each([1, 2])("restores the mobile banner sizing with %i images", (count) => {
+    mockViewport(false);
+    const { container } = render(
+      <ShopMediaStrip lang="en" section={makeSection(count)} label="Media" priority />
+    );
+    const strip = container.querySelector('[data-viewport="mobile"]')!;
+    const frames = strip.querySelectorAll("[data-slide] > div");
+
+    expect(frames).toHaveLength(count === 1 ? 1 : 4);
+    for (const frame of frames) {
+      expect(frame).not.toHaveClass("aspect-[8/3]");
+      expect(frame.querySelector("img")).toHaveClass("h-full", "w-full", "object-cover", "object-bottom");
+      expect(frame.querySelector("img")).toHaveAttribute("height", "900");
+    }
+    expect(strip.querySelector('[aria-hidden="false"] img')).toHaveAttribute("data-priority", "true");
   });
 
   it("prioritizes only the active banner as the carousel advances", () => {
