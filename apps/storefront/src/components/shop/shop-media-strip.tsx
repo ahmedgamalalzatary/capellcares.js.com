@@ -98,7 +98,8 @@ function Slide({
   label,
   index,
   active,
-  onClickCapture
+  onClickCapture,
+  priority = false
 }: {
   href: string;
   imagePath: string;
@@ -106,6 +107,7 @@ function Slide({
   index: number;
   active: boolean;
   onClickCapture?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+  priority?: boolean;
 }) {
   return (
     <Link
@@ -118,15 +120,15 @@ function Slide({
       draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      <div className="relative overflow-hidden">
+      <div className="relative aspect-[8/3] overflow-hidden">
         <Image
           src={imagePath}
           alt=""
           width={1600}
-          height={900}
+          height={600}
           sizes="100vw"
-          className="h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
-          loading="lazy"
+          className="object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]"
+          priority={priority}
         />
       </div>
     </Link>
@@ -139,7 +141,8 @@ function ShopMediaViewportStrip({
   label,
   viewport,
   className,
-  flatTop = false
+  flatTop = false,
+  priority = false
 }: {
   lang: Language;
   section: ShopMediaSection;
@@ -147,6 +150,7 @@ function ShopMediaViewportStrip({
   viewport: "desktop" | "mobile";
   className: string;
   flatTop?: boolean;
+  priority?: boolean;
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
   const roundedClass = flatTop ? "rounded-b-lg" : "rounded-lg";
@@ -187,7 +191,7 @@ function ShopMediaViewportStrip({
     return (
       <section className={className} data-viewport={viewport}>
         <div className={`grid grid-cols-1 overflow-hidden ${roundedClass}`}>
-          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active />
+          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active priority={priority} />
         </div>
       </section>
     );
@@ -296,6 +300,7 @@ function ShopMediaViewportStrip({
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
                 onClickCapture={handleSlideClickCapture}
+                priority={priority && renderedIndex === renderedActive}
               />
             );
           })}
@@ -341,12 +346,14 @@ export function ShopMediaStrip({
   lang,
   section,
   label,
-  flatTop = false
+  flatTop = false,
+  priority = false
 }: {
   lang: Language;
   section: ShopMediaSection;
   label: string;
   flatTop?: boolean;
+  priority?: boolean;
 }) {
   if (section.status !== "active") {
     return null;
@@ -385,6 +392,7 @@ export function ShopMediaStrip({
       viewport={viewport}
       className="mb-12"
       flatTop={flatTop}
+      priority={priority}
     />
   );
 }

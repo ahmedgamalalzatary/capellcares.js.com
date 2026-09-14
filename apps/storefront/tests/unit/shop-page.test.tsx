@@ -298,4 +298,15 @@ describe("shop page", () => {
     expect(screen.getByRole("heading", { name: "New" })).toBeInTheDocument();
     expect(screen.getByText("Advice")).toBeInTheDocument();
   });
+
+  it("prioritizes only the first shop media section's visible image", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const mediaImages = container.querySelectorAll('[data-viewport="desktop"] [data-slide] img');
+
+    expect(mediaImages).toHaveLength(5);
+    expect(mediaImages[0]).toHaveAttribute("data-priority", "true");
+    for (const image of Array.from(mediaImages).slice(1)) {
+      expect(image).toHaveAttribute("data-priority", "false");
+    }
+  });
 });

@@ -48,6 +48,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         section={shopMediaBySlot.get(1) ?? { id: -1, slot: 1, status: "inactive", items: [] }}
         label={dict.shopMedia.sectionLabel}
         flatTop
+        priority
       />
 
       {/* Offers */}

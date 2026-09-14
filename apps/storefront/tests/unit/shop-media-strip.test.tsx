@@ -259,6 +259,35 @@ describe("ShopMediaStrip carousel", () => {
     expect(image).toHaveAttribute("sizes");
   });
 
+  it.each([true, false])("keeps a fixed, cropped banner frame on %s viewport", (isDesktop) => {
+    mockViewport(isDesktop);
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(2)} label="Media" />);
+    const strip = container.querySelector(`[data-viewport="${isDesktop ? "desktop" : "mobile"}"]`)!;
+    const frames = strip.querySelectorAll("[data-slide] > div");
+
+    expect(frames).toHaveLength(4);
+    for (const frame of frames) {
+      expect(frame).toHaveClass("aspect-[8/3]", "overflow-hidden");
+      expect(frame.querySelector("img")).toHaveClass("object-cover", "object-bottom");
+    }
+  });
+
+  it("prioritizes only the active banner as the carousel advances", () => {
+    const { container } = render(
+      <ShopMediaStrip lang="en" section={makeSection(3)} label="Media" priority />
+    );
+    const carousel = getDesktopCarousel(container);
+    const priorityImages = () => Array.from(carousel.querySelectorAll('[data-slide] img'))
+      .filter((image) => image.getAttribute("data-priority") === "true");
+
+    expect(priorityImages()).toHaveLength(1);
+    expect(priorityImages()[0]?.closest("[data-slide]")).toHaveAttribute("aria-label", "Media 1");
+
+    fireEvent.click(carousel.querySelector('[aria-label="Next slide"]')!);
+    expect(priorityImages()).toHaveLength(1);
+    expect(priorityImages()[0]?.closest("[data-slide]")).toHaveAttribute("aria-label", "Media 2");
+  });
+
   it("skips items without desktop images in the desktop strip", () => {
     const section = makeSection(3);
     section.items[1] = {
