@@ -561,6 +561,14 @@ serialTest("orders can link a successful Paymob attempt without using the operat
   await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
 });
 
+serialTest("orders reject a negative refunded amount without changing the stored value", async () => {
+  const orderId = await createOrder();
+  await assert.rejects(db.update(orders).set({ refundedAmountCents: -1 }).where(eq(orders.id, orderId)));
+  const [stored] = await db.select({ refundedAmountCents: orders.refundedAmountCents })
+    .from(orders).where(eq(orders.id, orderId));
+  assert.equal(stored.refundedAmountCents, 0);
+});
+
 test.after(async () => {
   await mysqlPool.end();
 });

@@ -48,18 +48,43 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       : [match.attempt.integrationId];
     const integrationMatches = Array.isArray(allowedIntegrationIds) &&
       allowedIntegrationIds.includes(Number(transaction.integration_id));
-    const validIdentity =
+    const baseIdentity =
       transaction.is_auth === false && transaction.is_capture === false &&
-      transaction.is_refunded === false && transaction.is_voided === false &&
+      transaction.is_voided === false &&
       transaction.has_parent_transaction === false &&
       Number(transaction.amount_cents) === match.attempt.amountCents &&
       transaction.currency === match.attempt.currency &&
       integrationMatches &&
       environmentMatches;
+    if (transaction.is_refunded === true) {
+      const refundedCents = Number(transaction.refunded_amount_cents);
+      if (!baseIdentity || transaction.success !== true || transaction.pending !== false ||
+        !Number.isSafeInteger(refundedCents) || refundedCents <= 0 || refundedCents > match.attempt.amountCents ||
+        (match.attempt.paymobTransactionId && match.attempt.paymobTransactionId !== String(transaction.id)) ||
+        (match.attempt.integrationId && match.attempt.integrationId !== Number(transaction.integration_id))) {
+        return { outcome: "rejected" as const };
+      }
+      if (match.session.state !== "payment_pending" ||
+        (match.attempt.status !== "pending" && match.attempt.status !== "created")) {
+        await tx.update(paymentAttempts).set({
+          status: "reconciliation_required", paymobTransactionId: String(transaction.id),
+          failureCode: "REFUND_BEFORE_ORDER_AFTER_CHECKOUT_CLOSED"
+        }).where(eq(paymentAttempts.id, match.attempt.id));
+        return { outcome: "reconciliation_required" as const };
+      }
+      await tx.update(paymentAttempts).set({
+        earlyRefundAmountCents: Math.max(match.attempt.earlyRefundAmountCents, refundedCents),
+        paymobTransactionId: String(transaction.id),
+        integrationId: Number(transaction.integration_id)
+      }).where(eq(paymentAttempts.id, match.attempt.id));
+      return { outcome: "refund_pending_success" as const };
+    }
+    const validIdentity = baseIdentity && transaction.is_refunded === false;
     if (!validIdentity) return { outcome: "rejected" as const };
     if (transaction.pending === true) return { outcome: "pending" as const };
     if (transaction.pending !== false) return { outcome: "rejected" as const };
     if (transaction.success === false) {
+      if (match.attempt.earlyRefundAmountCents > 0) return { outcome: "rejected" as const };
       await tx.update(paymentAttempts).set({ status: "failed", paymobTransactionId: String(transaction.id) })
         .where(eq(paymentAttempts.id, match.attempt.id));
       if (match.attempt.attemptNumber === match.session.attemptCount &&
@@ -79,6 +104,11 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       return { outcome: "failed" as const };
     }
     if (transaction.success !== true) return { outcome: "rejected" as const };
+    if (match.attempt.earlyRefundAmountCents > 0 &&
+      (match.attempt.paymobTransactionId !== String(transaction.id) ||
+        match.attempt.integrationId !== Number(transaction.integration_id))) {
+      return { outcome: "rejected" as const };
+    }
 
     const reservations = await tx.select().from(checkoutReservations)
       .where(and(
@@ -110,7 +140,9 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       notes: match.session.notes,
       paymentMethod: "paymob",
       paymentStatus: "pending",
-      providerPaymentStatus: "succeeded",
+      providerPaymentStatus: match.attempt.earlyRefundAmountCents === match.attempt.amountCents ? "refunded"
+        : match.attempt.earlyRefundAmountCents > 0 ? "partially_refunded" : "succeeded",
+      refundedAmountCents: match.attempt.earlyRefundAmountCents,
       paymentAttemptId: match.attempt.id,
       totalAmount: sql`${match.attempt.amountCents / 100}`
     }).$returningId();

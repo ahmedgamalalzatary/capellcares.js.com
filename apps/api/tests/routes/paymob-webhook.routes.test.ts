@@ -140,3 +140,49 @@ test("Paymob webhook creates the order from a verified matching transaction", as
     if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET; else process.env.PAYMOB_HMAC_SECRET = previous;
   }
 });
+
+test("Paymob webhook acknowledges an early refund and creates a refunded order after success", async () => {
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Early Route Refund", phone: "01012345678", email: "early-route-refund@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }] },
+    idempotencyKey: "54545454-5454-4454-8454-545454545454",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+      enabledMethods: [{ method: "card", integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => ({ intentionId: "pi_early_route_refund", orderId: 9003,
+      clientSecret: "early_secret", checkoutUrl: "https://checkout" })
+  });
+  const previous = process.env.PAYMOB_HMAC_SECRET;
+  process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  const base = { amount_cents: 7000, created_at: "2026-09-11T12:00:00Z", currency: "EGP",
+    error_occured: false, has_parent_transaction: false, id: 7001, integration_id: 123, is_3d_secure: true,
+    is_auth: false, is_capture: false, is_standalone_payment: true, is_voided: false,
+    order: { id: 9003 }, owner: 7, pending: false,
+    source_data: { pan: "1234", sub_type: "MasterCard", type: "card" }, success: true, is_live: false };
+  try {
+    await withTestServer(app, async (request) => {
+      const early = await request("/api/v1/payments/paymob/webhook?hmac=33b43e82670513625e887a1a7a461bd7d2e19fb44253e3bfe0d13698e6b8e13704ae8761cee3ed7c2a922ffcba3c649611258e018bce53b84ab18b35069a7db3", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "TRANSACTION", obj: { ...base, is_refunded: true, refunded_amount_cents: 7000 } })
+      });
+      assert.equal(early.status, 200);
+      const success = await request("/api/v1/payments/paymob/webhook?hmac=a44fd6a394da82d22a90f97102bb7b20d084266359ca1d59922016d4d07f66ca51a94b9da0bf13d352621e1f912396fd73d014f3275854a94f1b9bb8f641b30f", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "TRANSACTION", obj: { ...base, is_refunded: false } })
+      });
+      assert.equal(success.status, 200);
+    });
+    const [order] = await db.select().from(orders).where(eq(orders.email, "early-route-refund@example.com"));
+    assert.equal(order.providerPaymentStatus, "refunded");
+    assert.equal(order.refundedAmountCents, 7000);
+    const events = await db.select().from(paymentWebhookEvents);
+    assert.equal(events.length, 2);
+    assert.ok(events.every((event) => event.processingStatus === "processed"));
+  } finally {
+    if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET;
+    else process.env.PAYMOB_HMAC_SECRET = previous;
+  }
+});

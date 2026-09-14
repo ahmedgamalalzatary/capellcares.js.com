@@ -1,0 +1,2 @@
+ALTER TABLE `payment_attempts` ADD `early_refund_amount_cents` int DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE `payment_attempts` ADD CONSTRAINT `payment_attempts_early_refund_check` CHECK (`payment_attempts`.`early_refund_amount_cents` >= 0 and `payment_attempts`.`early_refund_amount_cents` <= `payment_attempts`.`amount_cents`);

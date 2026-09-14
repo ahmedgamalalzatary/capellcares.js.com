@@ -22,7 +22,7 @@ export async function paymobWebhookController(req: Request, res: Response): Prom
   }
   const result = await processPaymobTransaction(parsedTransaction);
   const processed = result.outcome === "succeeded" || result.outcome === "refunded" ||
-    result.outcome === "failed" || result.outcome === "pending";
+    result.outcome === "failed" || result.outcome === "pending" || result.outcome === "refund_pending_success";
   await recordPaymobTransaction(parsedTransaction, processed ? "processed" : "rejected");
   if (processed) {
     res.status(200).json({ received: true });

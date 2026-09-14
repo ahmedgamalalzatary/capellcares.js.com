@@ -561,6 +561,7 @@ export const paymentAttempts = mysqlTable("payment_attempts", {
   amountCents: int("amount_cents").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("EGP"),
   environment: mysqlEnum("environment", ["test", "live"]).notNull(),
+  earlyRefundAmountCents: int("early_refund_amount_cents").notNull().default(0),
   status: mysqlEnum("status", ["created", "pending", "succeeded", "failed", "cancelled", "expired", "reconciliation_required"]).notNull(),
   expiresAt: datetime("expires_at"),
   failureCode: varchar("failure_code", { length: 128 }),
@@ -570,6 +571,7 @@ export const paymentAttempts = mysqlTable("payment_attempts", {
   sessionAttemptUnique: unique("payment_attempts_session_attempt_unique").on(table.checkoutSessionId, table.attemptNumber),
   attemptNumberCheck: check("payment_attempts_attempt_number_check", sql`${table.attemptNumber} between 1 and 3`),
   amountCheck: check("payment_attempts_amount_check", sql`${table.amountCents} > 0`),
+  earlyRefundCheck: check("payment_attempts_early_refund_check", sql`${table.earlyRefundAmountCents} >= 0 and ${table.earlyRefundAmountCents} <= ${table.amountCents}`),
   sessionFk: foreignKey({ name: "payment_attempts_session_fk", columns: [table.checkoutSessionId], foreignColumns: [checkoutSessions.id] }).onDelete("cascade")
 }));
 

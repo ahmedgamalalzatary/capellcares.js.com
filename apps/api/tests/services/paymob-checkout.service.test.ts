@@ -608,7 +608,7 @@ test("a third declined Paymob attempt releases the stock hold so the customer ca
   assert.equal((await db.select().from(orders)).length, 0);
 });
 
-test("characterises the gap where a signed refund arriving before the success callback is dropped", async () => {
+test("a signed refund arriving before success is applied to the eventual order", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
@@ -630,17 +630,25 @@ test("characterises the gap where a signed refund arriving before the success ca
     is_refunded: true, refunded_amount_cents: 3500, is_voided: false, has_parent_transaction: false,
     source_data: { type: "card" } };
 
-  // The refund callback outruns the payment-succeeded callback, so there is no order to attach
-  // it to yet and the identity check dismisses it. This documents today's behaviour: once the
-  // refund is applied before the order exists it is lost, and the later success callback still
-  // records a fully paid order. Update this test when the refund is persisted for replay instead.
   const premature = await processPaymobTransaction(refund);
-  assert.equal(premature.outcome, "rejected");
+  assert.equal(premature.outcome, "refund_pending_success");
+  assert.equal((await db.select().from(orders)).length, 0);
+
+  const staleDecline = await processPaymobTransaction({ ...refund, success: false,
+    is_refunded: false, refunded_amount_cents: 0 });
+  assert.equal(staleDecline.outcome, "rejected");
+  const [afterDecline] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobOrderId, "9104"));
+  assert.equal(afterDecline.status, "pending");
+
+  const unrelatedSuccess = await processPaymobTransaction({ ...refund, id: 7105,
+    is_refunded: false, refunded_amount_cents: 0 });
+  assert.equal(unrelatedSuccess.outcome, "rejected");
   assert.equal((await db.select().from(orders)).length, 0);
 
   const settled = await processPaymobTransaction({ ...refund, is_refunded: false, refunded_amount_cents: 0 });
   assert.equal(settled.outcome, "succeeded");
   const [order] = await db.select().from(orders).where(eq(orders.email, "premature-refund@example.com"));
-  assert.equal(order.providerPaymentStatus, "succeeded");
-  assert.equal(order.refundedAmountCents, 0);
+  assert.equal(order.providerPaymentStatus, "refunded");
+  assert.equal(order.refundedAmountCents, 3500);
 });

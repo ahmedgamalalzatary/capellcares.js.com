@@ -2,13 +2,17 @@
 
 Status: implementation resumed after the user's 2026-09-12 checkpoint; continue all locally verifiable work until asked to stop. The Paymob flow is not ready for customer use or deployment. Do not infer that a payment method is enabled from this document or from an integration ID in `.env`.
 
-Last updated: 2026-09-12.
+Last updated: 2026-09-13.
 
 ## Current state (latest; supersedes historical checkpoints below)
 
 The locally implemented path is: select a server-confirmed Paymob method in the storefront, reserve stock for 30 minutes, create a Paymob-hosted checkout intention, return to a local status page, and create the order only after a verified successful webhook. A declined attempt can be retried up to three total attempts; the third decline releases the stock. Expiry also releases stock. A verified success arriving after release is flagged for reconciliation rather than creating an order that cannot be fulfilled. The result page trusts only the local API status, not Paymob redirect parameters. Cash on Delivery remains available separately.
 
-Completed supporting work includes idempotent checkout, signed/deduplicated callbacks, provider payment status separate from the order's operational status, cumulative partial/full refund accounting, customer and ERP payment-state display, read-only ERP reconciliation queue, and API-only Docker Compose Paymob settings. Shipping is temporarily **0 EGP**; a shipping-company integration is deferred. Refund operations remain in the Paymob dashboard, with no ERP refund action. Migrations `0034`–`0041` were applied to the `capella_test` database. Focused red/green tests cover these slices; this is **not** a claim of a completed sandbox transaction.
+Completed supporting work includes idempotent checkout, signed/deduplicated callbacks, provider payment status separate from the order's operational status, cumulative partial/full refund accounting, customer and ERP payment-state display, read-only ERP reconciliation queue, and API-only Docker Compose Paymob settings. Shipping is temporarily **0 EGP**; a shipping-company integration is deferred. Refund operations remain in the Paymob dashboard, with no ERP refund action. Migrations `0034`–`0044` were applied to the `capella_test` database. Focused red/green tests cover these slices; this is **not** a claim of a completed sandbox transaction.
+
+2026-09-13 correction: migration `0042` already enforced non-negative `orders.refunded_amount_cents`; a database integrity test now proves a negative update is rejected without changing the stored value. Migration `0044_lonely_nomad.sql` stores cumulative verified refunds received before the payment-success callback on the payment attempt. The later matching success creates the order with the correct partial/full refund state. Unrelated successes and later declines cannot override that recorded refund. If the reservation expires before success, the attempt is flagged `reconciliation_required` for manual review. Focused service, webhook-route, expiry, and database tests cover these paths. Both payment-method confirmation flags remain off.
+
+Verification after the correction: `0044` applied to `capella_test`. Database tests passed twice (36 each). Complete API unit/service/repository/route/contract groups passed twice (92/66/61/228/8 tests per pass). Shared tests passed (28), storefront component and unit/contract suites passed (242 and 247), and ERP tests passed (210). API/database builds and all five package typecheck/lint commands passed. Storefront and ERP build commands were started, but their final exit status was not visible within this workspace's command-return window; do not count those builds as verified in this continuation. Docker Compose and real Paymob sandbox callbacks remain unverified here.
 
 Still open before activation:
 
