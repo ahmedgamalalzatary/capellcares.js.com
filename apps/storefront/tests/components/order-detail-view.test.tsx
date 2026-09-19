@@ -41,7 +41,7 @@ vi.mock("@/lib/api/client", () => ({
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 
 const dict = {
-  common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", currency: "EGP" },
+  common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", currency: "EGP", size: "Size" },
   itemType: { product: "Product type", offer: "Offer type", collection: "Collection type" },
   cart: { item: "Item", qty: "Qty", price: "Price" },
   checkout: {
@@ -153,6 +153,7 @@ describe("OrderDetailView reviews", () => {
     expect(await screen.findByText(/EGP\s*75/)).toBeInTheDocument();
     expect(await screen.findByText("Body Lotion")).toBeInTheDocument();
     expect(screen.getByText("Product type")).toBeInTheDocument();
+    expect(screen.getByText("Size: 100ml")).toBeInTheDocument();
   });
 
   it("labels offer and collection lines with their item type", async () => {

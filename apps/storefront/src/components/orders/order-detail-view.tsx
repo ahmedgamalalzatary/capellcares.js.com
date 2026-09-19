@@ -164,7 +164,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                             <span aria-hidden>·</span>
                           </>
                         ) : null}
-                        {item.snapshotSizeLabel ? <span>{item.snapshotSizeLabel}</span> : null}
+                        {item.snapshotSizeLabel ? <span>{dict.common.size}: {item.snapshotSizeLabel}</span> : null}
                         {item.snapshotSizeLabel ? <span aria-hidden>·</span> : null}
                         <span>{formatPrice(item.unitPrice, lang)} × {item.qty}</span>
                         {/* Until the catalog lands every line looks unresolvable,

@@ -48,7 +48,7 @@ const dict = {
     andMore: "+{n} more"
   },
   wishlist: { goLogin: "Log in" },
-  common: { loading: "Loading", total: "Total", currency: "EGP" },
+  common: { loading: "Loading", total: "Total", currency: "EGP", size: "Size" },
   cart: { keepShopping: "Keep shopping" }
 };
 
@@ -113,6 +113,7 @@ describe("OrdersView", () => {
     expect(screen.getByText("Accepted")).toBeInTheDocument();
     expect(screen.queryByText("accepted")).not.toBeInTheDocument();
     expect(screen.getByText("2 items")).toBeInTheDocument();
+    expect(screen.getByText("Size: 100ml")).toBeInTheDocument();
   });
 
   it("shows the login-required state when the orders request is unauthorized", async () => {

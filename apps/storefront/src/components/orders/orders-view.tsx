@@ -169,6 +169,9 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
                           {category ? (
                             <div className="truncate text-sm text-(--ink-3)">{category}</div>
                           ) : null}
+                          {item.snapshotSizeLabel ? (
+                            <div className="truncate text-sm text-(--ink-3)">{dict.common.size}: {item.snapshotSizeLabel}</div>
+                          ) : null}
                         </div>
                       </div>
                     );
