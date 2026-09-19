@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, offerItems, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
@@ -186,16 +186,19 @@ export async function priceCheckout(payload: CheckoutPayload) {
       continue;
     }
     const components = item.itemType === "offer"
-      ? await db.select({ variantId: offerItems.variantId, qty: offerItems.qty, unitPrice: productVariants.sellingPrice })
+      ? await db.select({ variantId: offerItems.variantId, qty: offerItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
         .from(offerItems).innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
         .where(eq(offerItems.offerId, item.offerId))
-      : await db.select({ variantId: collectionItems.variantId, qty: collectionItems.qty, unitPrice: productVariants.sellingPrice })
+        .orderBy(asc(offerItems.id))
+      : await db.select({ variantId: collectionItems.variantId, qty: collectionItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
         .from(collectionItems).innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
-        .where(eq(collectionItems.collectionId, item.collectionId));
+        .where(eq(collectionItems.collectionId, item.collectionId))
+        .orderBy(asc(collectionItems.id));
     if (components.length === 0) throw new Error(`No components found for ${item.itemType}`);
     item.snapshotComponents = components.map((component) => ({
-      variantId: component.variantId, qty: component.qty, unitPrice: Number(component.unitPrice)
+      variantId: component.variantId, qty: component.qty, unitPrice: Number(component.unitPrice), sizeLabel: component.sizeLabel
     }));
+    item.snapshotSizeLabel = [...new Set(components.map((component) => component.sizeLabel).filter(Boolean))].join(", ") || null;
     for (const component of components) {
       const qty = component.qty * item.qty;
       reservationQuantities.set(component.variantId, (reservationQuantities.get(component.variantId) ?? 0) + qty);

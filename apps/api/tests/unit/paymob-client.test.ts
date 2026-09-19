@@ -102,3 +102,49 @@ test("createPaymobIntention classifies malformed successful provider JSON as a p
     items: []
   }), PaymobProviderError);
 });
+
+function intentionRecord(overrides: Record<string, unknown>) {
+  return {
+    id: "pi_other",
+    intention_order_id: 1,
+    client_secret: "other_secret",
+    special_reference: "other_ref",
+    ...overrides
+  };
+}
+
+test("lookupPaymobIntentionBySpecialReference maps only the record whose special_reference matches", async () => {
+  const { lookupPaymobIntentionBySpecialReference } = await import("../../src/modules/payments/paymob/paymob-client.js");
+  const wanted = intentionRecord({
+    id: "pi_wanted",
+    intention_order_id: 77,
+    client_secret: "wanted_secret",
+    special_reference: "capella_wanted"
+  });
+  const result = await lookupPaymobIntentionBySpecialReference({
+    fetchImpl: async () => new Response(JSON.stringify([
+      intentionRecord({ special_reference: "capella_other", id: "pi_other", client_secret: "other_secret" }),
+      wanted
+    ]), { status: 200 }),
+    baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+    specialReference: "capella_wanted"
+  });
+  assert.deepEqual(result, {
+    intentionId: "pi_wanted",
+    orderId: 77,
+    clientSecret: "wanted_secret",
+    checkoutUrl: "https://eg.checkout.paymob.com/?publicKey=public&clientSecret=wanted_secret"
+  });
+});
+
+test("lookupPaymobIntentionBySpecialReference returns null when no special_reference matches", async () => {
+  const { lookupPaymobIntentionBySpecialReference } = await import("../../src/modules/payments/paymob/paymob-client.js");
+  const result = await lookupPaymobIntentionBySpecialReference({
+    fetchImpl: async () => new Response(JSON.stringify({
+      results: [intentionRecord({ special_reference: "someone_else" })]
+    }), { status: 200 }),
+    baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+    specialReference: "capella_wanted"
+  });
+  assert.equal(result, null);
+});

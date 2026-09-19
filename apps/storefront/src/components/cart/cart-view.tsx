@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { pickLang, formatPrice, getEffectiveVariantPrice, type Category, type Language, type Product, type Offer, type Collection } from "@capella/shared";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { cartLineSizeLabel } from "@/lib/cart-line-size";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -72,11 +73,12 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           const v = p?.variants.find((v) => v.id === l.variantId);
           if (!p || !v) return null;
           const category = categories.find((c) => c.id === p.categoryId);
+          const size = cartLineSizeLabel(l, { products, offers, collections });
           return {
             key,
             type: "product" as const,
             title: pickLang(p.name, lang),
-            meta: `${dict.common.size}: ${v.size}`,
+            meta: size ? `${dict.common.size}: ${size}` : "",
             category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,
@@ -90,11 +92,12 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           const o = offers.find((o) => o.id === l.offerId);
           if (!o) return null;
           const category = o.categoryId != null ? categories.find((c) => c.id === o.categoryId) : undefined;
+          const size = cartLineSizeLabel(l, { products, offers, collections });
           return {
             key,
             type: "offer" as const,
             title: pickLang(o.name, lang),
-            meta: dict.offers.badge,
+            meta: size ? `${dict.common.size}: ${size}` : dict.offers.badge,
             category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: o.price,
             qty: l.qty,
@@ -107,11 +110,12 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         const collection = collections.find((item) => item.id === l.collectionId);
         if (!collection) return null;
         const category = categories.find((c) => c.id === collection.categoryId);
+        const size = cartLineSizeLabel(l, { products, offers, collections });
         return {
           key,
           type: "collection" as const,
           title: pickLang(collection.name, lang),
-          meta: dict.itemType.collection,
+          meta: size ? `${dict.common.size}: ${size}` : dict.itemType.collection,
           category: category ? pickLang(category.name, lang) : undefined,
           unitPrice: collection.price,
           qty: l.qty,
@@ -199,6 +203,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                       </Link>
                       {r.category ? (
                         <div className="mt-1 truncate text-sm text-(--ink-3)">{r.category}</div>
+                      ) : null}
+                      {r.meta ? (
+                        <div className="mt-1 truncate text-sm text-(--ink-3)">{r.meta}</div>
                       ) : null}
                       <div className="mt-2 text-sm text-(--ink-2)">
                         {formatPrice(r.unitPrice, lang)}

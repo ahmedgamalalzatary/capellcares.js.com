@@ -47,14 +47,16 @@ vi.mock("@/lib/api/client", () => {
       slug: "body-care-offer",
       name: { ar: "عرض العناية بالجسم", en: "Body Care Offer" },
       categoryId: 2,
-      price: 300
+      price: 300,
+      items: [{ variantId: 11, qty: 1 }]
     }]),
     fetchCollections: vi.fn().mockResolvedValue([{
       id: 3,
       slug: "body-lotion-set",
       name: { ar: "مجموعة لوشن الجسم", en: "Body Lotion Set" },
       categoryId: 3,
-      price: 400
+      price: 400,
+      items: [{ variantId: 11, qty: 1 }]
     }]),
     fetchCategories: vi.fn().mockResolvedValue([
       { id: 1, parentId: null, slug: "serums", name: { ar: "سيرومات", en: "Serums" }, isLeaf: true },
@@ -82,6 +84,19 @@ describe("CartView", () => {
     // Discounted unit price is 100 (50% off 200), qty 2 -> line total 200, not 400.
     expect((await screen.findAllByText(/EGP\s*200/)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/EGP\s*400/)).not.toBeInTheDocument();
+  });
+
+  it("shows the chosen size on product, offer, and collection cart lines", async () => {
+    saveCartLines(window.localStorage, [
+      { type: "product", productId: 1, variantId: 11, qty: 1 },
+      { type: "offer", offerId: 2, qty: 1 },
+      { type: "collection", collectionId: 3, qty: 1 }
+    ]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    expect((await screen.findAllByText(`${dict.common.size}: 30ml`)).length).toBe(3);
   });
 
   it("shows the product's category on the cart line", async () => {

@@ -6,9 +6,12 @@ interface PaymobBillingData {
 }
 
 export class PaymobProviderError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  readonly status?: number;
+
+  constructor(message: string, options?: ErrorOptions & { status?: number }) {
     super(message, options);
     this.name = "PaymobProviderError";
+    this.status = options?.status;
   }
 }
 
@@ -63,7 +66,7 @@ export async function createPaymobIntention(input: CreatePaymobIntentionInput) {
   }
 
   if (!response.ok) {
-    throw new PaymobProviderError(`Paymob intention request failed with status ${response.status}`);
+    throw new PaymobProviderError(`Paymob intention request failed with status ${response.status}`, { status: response.status });
   }
   let body: Record<string, unknown>;
   try {
@@ -85,4 +88,62 @@ export async function createPaymobIntention(input: CreatePaymobIntentionInput) {
     clientSecret: body.client_secret,
     checkoutUrl: `https://eg.checkout.paymob.com/?publicKey=${encodeURIComponent(input.publicKey)}&clientSecret=${encodeURIComponent(body.client_secret)}`
   };
+}
+
+function mapIntentionRecord(body: Record<string, unknown>, publicKey: string) {
+  if (
+    typeof body.id !== "string" ||
+    typeof body.intention_order_id !== "number" ||
+    typeof body.client_secret !== "string"
+  ) {
+    return null;
+  }
+  return {
+    intentionId: body.id,
+    orderId: body.intention_order_id,
+    clientSecret: body.client_secret,
+    checkoutUrl: `https://eg.checkout.paymob.com/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(body.client_secret)}`
+  };
+}
+
+export async function lookupPaymobIntentionBySpecialReference(input: {
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  baseUrl: string;
+  secretKey: string;
+  publicKey: string;
+  specialReference: string;
+}) {
+  const signal = AbortSignal.timeout(input.timeoutMs ?? 10_000);
+  let response: Response;
+  try {
+    response = await (input.fetchImpl ?? fetch)(
+      `${input.baseUrl}/v1/intention/?special_reference=${encodeURIComponent(input.specialReference)}`,
+      { method: "GET", signal, headers: { authorization: `Token ${input.secretKey}` } }
+    );
+  } catch (error) {
+    if (signal.aborted) throw new PaymobProviderError("Paymob intention lookup timed out", { cause: error });
+    throw new PaymobProviderError("Paymob intention lookup failed", { cause: error });
+  }
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new PaymobProviderError(`Paymob intention lookup failed with status ${response.status}`, { status: response.status });
+  }
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (error) {
+    throw new PaymobProviderError("Paymob returned an invalid intention response", { cause: error });
+  }
+  const candidates: unknown[] = Array.isArray(body)
+    ? body
+    : body && typeof body === "object" && Array.isArray((body as { results?: unknown }).results)
+      ? (body as { results: unknown[] }).results
+      : [body];
+  const record = candidates.find((candidate) =>
+    candidate && typeof candidate === "object"
+    && (candidate as { special_reference?: unknown }).special_reference === input.specialReference
+  );
+  if (!record || typeof record !== "object") return null;
+  return mapIntentionRecord(record as Record<string, unknown>, input.publicKey);
 }

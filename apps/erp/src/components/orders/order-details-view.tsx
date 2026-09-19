@@ -169,6 +169,9 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
                       {item.snapshotNameEn && item.snapshotNameAr && (
                         <div className="faint cell-subline">{item.snapshotNameEn}</div>
                       )}
+                      {item.snapshotSizeLabel ? (
+                        <div className="faint cell-subline">{item.snapshotSizeLabel}</div>
+                      ) : null}
                     </td>
                     <td className="muted fs-12-5">{item.itemType}</td>
                     <td className="cell-center">×{item.qty}</td>

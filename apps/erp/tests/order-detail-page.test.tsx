@@ -110,7 +110,8 @@ describe("OrderDetailsPage", () => {
           unitPrice: 100,
           lineTotal: 200,
           snapshotNameAr: "شامبو",
-          snapshotNameEn: "Shampoo"
+          snapshotNameEn: "Shampoo",
+          snapshotSizeLabel: "100ml"
         }
       ]
     });
@@ -120,6 +121,7 @@ describe("OrderDetailsPage", () => {
 
     await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
     expect((await screen.findAllByText(/YMFI-005/)).length).toBeGreaterThan(0);
+    expect(await screen.findByText("100ml")).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
 

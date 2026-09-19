@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
 import { fetchCollections, fetchOffers, fetchPaymobMethods, fetchProducts, submitCheckout } from "@/lib/api/client";
+import { cartLineSizeLabel } from "@/lib/cart-line-size";
 import { getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
 import type {
   CheckoutCatalogState,
@@ -80,7 +81,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
           return {
             key: `p${line.productId}${line.variantId}`,
             title: pickLang(product.name, lang),
-            meta: variant.size,
+            meta: cartLineSizeLabel(line, { products, offers, collections }) ?? variant.size,
             unit: getEffectiveVariantPrice(variant),
             qty: line.qty
           };
@@ -92,7 +93,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
           return {
             key: `o${line.offerId}`,
             title: pickLang(offer.name, lang),
-            meta: dict.offers.badge,
+            meta: cartLineSizeLabel(line, { products, offers, collections }) ?? dict.offers.badge,
             unit: offer.price,
             qty: line.qty
           };
@@ -103,7 +104,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         return {
           key: `c${line.collectionId}`,
           title: pickLang(collection.name, lang),
-          meta: dict.collections.badge,
+          meta: cartLineSizeLabel(line, { products, offers, collections }) ?? dict.collections.badge,
           unit: collection.price,
           qty: line.qty
         };

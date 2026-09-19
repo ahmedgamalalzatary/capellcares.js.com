@@ -6,13 +6,19 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { createReservedCheckout } from "../../repositories/checkout/checkout-reservation.repository.js";
 import { priceCheckout } from "../orders/orders.service.js";
 import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
-import { createPaymobIntention, type CreatePaymobIntentionInput } from "../payments/paymob/paymob-client.js";
+import {
+  createPaymobIntention,
+  lookupPaymobIntentionBySpecialReference,
+  PaymobProviderError,
+  type CreatePaymobIntentionInput
+} from "../payments/paymob/paymob-client.js";
 
 type PaymobIntention = {
   intentionId: string; orderId: number; clientSecret: string; checkoutUrl: string;
 };
 
 type IntentionCreator = (input: CreatePaymobIntentionInput) => Promise<PaymobIntention>;
+type IntentionLookup = (input: { specialReference: string }) => Promise<PaymobIntention | null>;
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -33,9 +39,13 @@ async function releaseReservedStock(tx: DbTransaction, sessionId: number) {
   }
 }
 
+function isDefinitivePaymobRejection(error: unknown): boolean {
+  if (!(error instanceof PaymobProviderError) || error.status == null) return false;
+  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 409;
+}
+
 /**
- * Records a provider failure as a failed attempt and frees the stock it held, so a transient
- * Paymob outage cannot leave the customer's idempotency key wedged with a held reservation.
+ * Records a confirmed provider rejection as a failed attempt and frees the stock it held.
  */
 async function failPaymobInitiation(sessionId: number, attemptId: number) {
   await db.transaction(async (tx) => {
@@ -46,6 +56,35 @@ async function failPaymobInitiation(sessionId: number, attemptId: number) {
     await tx.update(checkoutSessions).set({ state: "failed" })
       .where(eq(checkoutSessions.id, sessionId));
   });
+}
+
+async function recoverIntentionOrFail(input: {
+  error: unknown;
+  sessionId: number;
+  attemptId: number;
+  specialReference: string;
+  config: PaymobConfig;
+  lookupIntention?: IntentionLookup;
+}): Promise<PaymobIntention> {
+  let recovered: PaymobIntention | null = null;
+  try {
+    recovered = await (input.lookupIntention ?? ((lookupInput) => lookupPaymobIntentionBySpecialReference({
+      baseUrl: input.config.baseUrl,
+      secretKey: input.config.secretKey!,
+      publicKey: input.config.publicKey!,
+      specialReference: lookupInput.specialReference
+    })))({ specialReference: input.specialReference });
+  } catch {
+    if (isDefinitivePaymobRejection(input.error)) {
+      await failPaymobInitiation(input.sessionId, input.attemptId);
+    }
+    throw input.error;
+  }
+  if (recovered) return recovered;
+  if (isDefinitivePaymobRejection(input.error)) {
+    await failPaymobInitiation(input.sessionId, input.attemptId);
+  }
+  throw input.error;
 }
 
 function normalizeEgyptianPhone(phone: string): string {
@@ -62,6 +101,7 @@ export async function initiatePaymobCheckout(input: {
   notificationUrl: string;
   redirectionUrl: string;
   createIntention?: IntentionCreator;
+  lookupIntention?: IntentionLookup;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
@@ -98,12 +138,16 @@ export async function initiatePaymobCheckout(input: {
     };
   }
   if (existing) {
-    if (existing.attemptStatus === "pending") {
+    if (existing.attemptStatus === "pending" ||
+      (existing.attemptStatus === "created" && existing.state === "payment_pending")) {
       throw new Error("Paymob checkout initiation is still in progress");
     }
+    if (existing.cartSnapshot !== cartSnapshot || existing.amountCents !== amountCents) {
+      throw new Error("Idempotency key belongs to a different checkout");
+    }
     // A previous initiation never produced a client secret (a crash after reserving, or a
-    // provider error). Release anything it still holds and recycle the idempotency key so a
-    // retry of the same cart can start clean instead of being blocked forever.
+    // confirmed provider rejection). Release anything it still holds and recycle the
+    // idempotency key so a retry of the same cart can start clean.
     await db.transaction(async (tx) => {
       await releaseReservedStock(tx, existing.sessionId);
       await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
@@ -160,8 +204,14 @@ export async function initiatePaymobCheckout(input: {
   try {
     intention = await (input.createIntention ?? createPaymobIntention)(intentionInput);
   } catch (error) {
-    await failPaymobInitiation(reserved.id, paymentAttemptId);
-    throw error;
+    intention = await recoverIntentionOrFail({
+      error,
+      sessionId: reserved.id,
+      attemptId: paymentAttemptId,
+      specialReference: merchantReference,
+      config: input.config,
+      lookupIntention: input.lookupIntention
+    });
   }
   const stillPayable = await db.transaction(async (tx) => {
     const [current] = await tx.select({ state: checkoutSessions.state, expiresAt: checkoutSessions.reservationExpiresAt })
@@ -187,6 +237,7 @@ export async function retryPaymobCheckout(input: {
   notificationUrl: string;
   redirectionUrl: string;
   createIntention?: IntentionCreator;
+  lookupIntention?: IntentionLookup;
   now?: Date;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
@@ -246,8 +297,14 @@ export async function retryPaymobCheckout(input: {
   try {
     intention = await (input.createIntention ?? createPaymobIntention)(intentionInput);
   } catch (error) {
-    await failPaymobInitiation(allocated.session.id, allocated.attemptId);
-    throw error;
+    intention = await recoverIntentionOrFail({
+      error,
+      sessionId: allocated.session.id,
+      attemptId: allocated.attemptId,
+      specialReference: merchantReference,
+      config: input.config,
+      lookupIntention: input.lookupIntention
+    });
   }
   const stillPayable = await db.transaction(async (tx) => {
     const [current] = await tx.select({ state: checkoutSessions.state, expiresAt: checkoutSessions.reservationExpiresAt })

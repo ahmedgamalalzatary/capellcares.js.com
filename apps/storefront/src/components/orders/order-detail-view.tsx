@@ -97,7 +97,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4">
         {/* Header: identity, status, and the way back */}
-        <header className="flex flex-col gap-8 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-6">
+        <header className="flex flex-col gap-8 rounded-lg border border-(--hairline) bg-surface p-3 shadow-(--shadow-1) sm:p-6">
           <div className="grid min-w-0 gap-2">
             <span className="eyebrow text-(--ink-3)!">{dict.orders.orderCode}</span>
             <div className="flex items-center justify-between gap-4">
@@ -112,7 +112,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
             </div>
           </div>
           <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p data-order-meta className="m-0 text-center text-sm text-(--ink-2) sm:text-start">
+            <p data-order-meta className="m-0 text-center text-sm font-bold text-(--ink-2) sm:text-start">
               {dict.orders.placedOn} {formatOrderDate(order.createdAt, lang)}
               {" "}
               {itemsCountLabel(units, dict)}

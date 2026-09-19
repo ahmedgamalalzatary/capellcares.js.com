@@ -314,9 +314,10 @@ test("priceCheckout snapshots bundle components with their sold quantities", asy
     buildingApartment: "1", paymentMethod: "cod",
     items: [{ type: "offer", offerId: ids.offerId, qty: 2 }]
   });
+  assert.equal(priced.items[0].snapshotSizeLabel, "100ml, 200ml");
   assert.deepEqual(priced.items[0].snapshotComponents, [
-    { variantId: ids.firstVariantId, qty: 1, unitPrice: 35 },
-    { variantId: ids.secondVariantId, qty: 1, unitPrice: 55 }
+    { variantId: ids.firstVariantId, qty: 1, unitPrice: 35, sizeLabel: "100ml" },
+    { variantId: ids.secondVariantId, qty: 1, unitPrice: 55, sizeLabel: "200ml" }
   ]);
 });
 

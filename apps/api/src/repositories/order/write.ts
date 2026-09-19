@@ -34,7 +34,7 @@ interface OrderItem {
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
-  snapshotComponents?: Array<{ variantId: number; qty: number; unitPrice?: number }> | null;
+  snapshotComponents?: Array<{ variantId: number; qty: number; unitPrice?: number; sizeLabel?: string | null }> | null;
   snapshotBaseUnitPrice?: number | null;
   snapshotDiscountId?: number | null;
   snapshotDiscountType?: "percentage" | "fixed" | null;
