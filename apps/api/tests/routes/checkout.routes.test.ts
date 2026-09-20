@@ -25,7 +25,7 @@ test("checkout route allows guest checkout when the email already exists", async
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/checkout", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Existing Guest",
         phone: "01012345678",
@@ -51,7 +51,7 @@ test("checkout route returns a pending COD payment status for a created order", 
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/checkout", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Pending COD",
         phone: "01012345678",
@@ -80,6 +80,30 @@ test("checkout route returns a pending COD payment status for a created order", 
   });
 });
 
+test("checkout route returns the same COD order for the same idempotency key", async () => {
+  const ids = await getBaselineIds();
+  const idempotencyKey = crypto.randomUUID();
+  const body = JSON.stringify({
+    fullName: "Idempotent COD", phone: "01012345678", email: "cod-idempotent@capella.test",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10", buildingApartment: "4",
+    paymentMethod: "cod", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+  });
+
+  await withTestServer(app, async (request) => {
+    const responses = await Promise.all([1, 2].map(() => request("/api/v1/checkout", { method: "POST",
+      headers: { "content-type": "application/json", "idempotency-key": idempotencyKey }, body })));
+    const createdResponse = responses.find((response) => response.status === 201);
+    const replayResponse = responses.find((response) => response.status === 200);
+
+    assert.ok(createdResponse);
+    assert.ok(replayResponse);
+    assert.deepEqual(replayResponse.json, createdResponse.json);
+  });
+
+  const created = await db.select().from(orders).where(eq(orders.email, "cod-idempotent@capella.test"));
+  assert.equal(created.length, 1);
+});
+
 test("checkout route persists registered customer orders for authenticated customers", async () => {
   const ids = await getBaselineIds();
 
@@ -87,7 +111,7 @@ test("checkout route persists registered customer orders for authenticated custo
     const response = await request("/api/v1/checkout", {
       method: "POST",
       headers: {
-        "content-type": "application/json",
+        "content-type": "application/json", "idempotency-key": crypto.randomUUID(),
         authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
       },
       body: JSON.stringify({
@@ -157,7 +181,7 @@ test("checkout route requires an idempotency key before Paymob initiation", asyn
       })
     });
     assert.equal(response.status, 400);
-    assert.deepEqual(response.json, { message: "Idempotency-Key header is required for Paymob checkout" });
+    assert.deepEqual(response.json, { message: "Idempotency-Key header is required for checkout" });
   });
 });
 
@@ -328,7 +352,7 @@ test("checkout route ignores guest-supplied customerId values", async () => {
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/checkout", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Guest Spoof Attempt",
         phone: "01012345678",
@@ -363,7 +387,7 @@ test("checkout route uses the authenticated customer id instead of trusting the 
     const response = await request("/api/v1/checkout", {
       method: "POST",
       headers: {
-        "content-type": "application/json",
+        "content-type": "application/json", "idempotency-key": crypto.randomUUID(),
         authorization: `Bearer ${issueCustomerToken(ids.customerId)}`
       },
       body: JSON.stringify({
@@ -417,7 +441,7 @@ test("checkout route accepts buyable collection items", async () => {
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/checkout", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Collection Customer",
         phone: "01012345678",
@@ -433,5 +457,56 @@ test("checkout route accepts buyable collection items", async () => {
 
     assert.equal(response.status, 201);
     assert.ok(response.json.id);
+  });
+});
+
+test("checkout rejects a cart when the displayed total is stale", async () => {
+  const ids = await getBaselineIds();
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST", headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
+      body: JSON.stringify({ fullName: "Stale Price", phone: "01012345678", email: "stale-price@example.com",
+        governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10", buildingApartment: "4",
+        paymentMethod: "cod", expectedAmountCents: 1,
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] })
+    });
+    assert.equal(response.status, 409);
+  });
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "stale-price@example.com"))).length, 0);
+});
+
+test("checkout route rate-limits repeated anonymous submissions", async () => {
+  await withTestServer(app, async (request) => {
+    const statuses: number[] = [];
+    for (let index = 0; index < 21; index += 1) {
+      const response = await request("/api/v1/checkout", {
+        method: "POST", headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
+        body: "{}"
+      });
+      statuses.push(response.status);
+    }
+    assert.equal(statuses.at(-1), 429);
+  });
+});
+
+test("checkout retry rate-limits repeated requests", async () => {
+  const checkoutId = `checkout_${crypto.randomUUID()}`;
+  await withTestServer(app, async (request) => {
+    let status = 0;
+    for (let index = 0; index < 11; index += 1) {
+      status = (await request(`/api/v1/checkout/${checkoutId}/retry`, { method: "POST" })).status;
+    }
+    assert.equal(status, 429);
+  });
+});
+
+test("checkout status rate-limits repeated polling", async () => {
+  const checkoutId = `checkout_${crypto.randomUUID()}`;
+  await withTestServer(app, async (request) => {
+    let status = 0;
+    for (let index = 0; index < 121; index += 1) {
+      status = (await request(`/api/v1/checkout/${checkoutId}/status`)).status;
+    }
+    assert.equal(status, 429);
   });
 });

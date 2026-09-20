@@ -6,8 +6,15 @@ import { optionalAuthMiddleware } from "../../middlewares/auth.middleware.js";
 import { wrapAsync } from "../../lib/async-route.js";
 import { getCheckoutStatusController } from "./checkout-status.controller.js";
 import { retryCheckoutController } from "./checkout-retry.controller.js";
+import { rateLimit } from "../../middlewares/rate-limit.middleware.js";
 
 export const checkoutRoutes = Router();
-checkoutRoutes.post("/", optionalAuthMiddleware, validateBody(parseCheckoutBody), checkoutController);
-checkoutRoutes.get("/:checkoutId/status", wrapAsync(getCheckoutStatusController));
-checkoutRoutes.post("/:checkoutId/retry", wrapAsync(retryCheckoutController));
+const checkoutLimit = rateLimit({ keyPrefix: "checkout", windowMs: 10 * 60 * 1000, max: 20 });
+const checkoutStatusLimit = rateLimit({ keyPrefix: "checkout-status", windowMs: 60 * 1000, max: 120,
+  key: (req) => `${req.ip ?? "unknown"}:${req.params.checkoutId ?? "unknown"}` });
+const checkoutRetryLimit = rateLimit({ keyPrefix: "checkout-retry", windowMs: 10 * 60 * 1000, max: 10,
+  key: (req) => `${req.ip ?? "unknown"}:${req.params.checkoutId ?? "unknown"}` });
+
+checkoutRoutes.post("/", checkoutLimit, optionalAuthMiddleware, validateBody(parseCheckoutBody), checkoutController);
+checkoutRoutes.get("/:checkoutId/status", checkoutStatusLimit, wrapAsync(getCheckoutStatusController));
+checkoutRoutes.post("/:checkoutId/retry", checkoutRetryLimit, wrapAsync(retryCheckoutController));

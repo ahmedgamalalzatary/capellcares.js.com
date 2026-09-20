@@ -4,7 +4,7 @@ import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import type { CheckoutPayload } from "../../types/domain.js";
 import { createReservedCheckout } from "../../repositories/checkout/checkout-reservation.repository.js";
-import { priceCheckout } from "../orders/orders.service.js";
+import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
 import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
 import {
   createPaymobIntention,
@@ -109,6 +109,9 @@ export async function initiatePaymobCheckout(input: {
   const priced = await priceCheckout(input.payload);
   const cartSnapshot = JSON.stringify(priced.items);
   const amountCents = Math.round(priced.totalAmount * 100);
+  if (input.payload.expectedAmountCents != null && amountCents !== input.payload.expectedAmountCents) {
+    throw new CheckoutAmountChangedError();
+  }
   const [existing] = await db.select({
     sessionId: checkoutSessions.id,
     checkoutId: checkoutSessions.publicId,
@@ -189,8 +192,7 @@ export async function initiatePaymobCheckout(input: {
     integrationIds: input.config.enabledMethods.map((method) => method.integrationId),
     specialReference: merchantReference,
     expirationSeconds: input.config.intentionExpirationSeconds,
-    notificationUrl: input.config.enabledMethods.every((method) => method.method === "card")
-      ? input.notificationUrl : undefined,
+    notificationUrl: input.notificationUrl,
     redirectionUrl: input.redirectionUrl,
     billingData: {
       first_name: names[0] ?? input.payload.fullName,
@@ -221,10 +223,12 @@ export async function initiatePaymobCheckout(input: {
       paymobOrderId: String(intention.orderId),
       clientSecret: intention.clientSecret,
       integrationId: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.integrationId : null,
-      paymentMethod: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.method : null,
-      status: "pending"
+      paymentMethod: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.method : null
     }).where(eq(paymentAttempts.id, paymentAttemptId));
-    return current?.state === "payment_pending" && current.expiresAt > (input.now ?? new Date());
+    await tx.update(paymentAttempts).set({ status: "pending" })
+      .where(and(eq(paymentAttempts.id, paymentAttemptId), eq(paymentAttempts.status, "created")));
+    return (current?.state === "payment_pending" || current?.state === "completed") &&
+      current.expiresAt > (input.now ?? new Date());
   });
   if (!stillPayable) throw new Error("Checkout is no longer payable");
 
@@ -282,8 +286,7 @@ export async function retryPaymobCheckout(input: {
     integrationIds: input.config.enabledMethods.map((method) => method.integrationId),
     specialReference: merchantReference,
     expirationSeconds: Math.min(remainingSeconds, input.config.intentionExpirationSeconds),
-    notificationUrl: input.config.enabledMethods.every((method) => method.method === "card")
-      ? input.notificationUrl : undefined,
+    notificationUrl: input.notificationUrl,
     redirectionUrl: input.redirectionUrl,
     billingData: {
       first_name: names[0] ?? allocated.session.fullName,
@@ -314,10 +317,12 @@ export async function retryPaymobCheckout(input: {
       paymobOrderId: String(intention.orderId),
       clientSecret: intention.clientSecret,
       integrationId: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.integrationId : null,
-      paymentMethod: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.method : null,
-      status: "pending"
+      paymentMethod: input.config.enabledMethods.length === 1 ? input.config.enabledMethods[0]!.method : null
     }).where(eq(paymentAttempts.id, allocated.attemptId));
-    return current?.state === "payment_pending" && current.expiresAt > (input.now ?? new Date());
+    await tx.update(paymentAttempts).set({ status: "pending" })
+      .where(and(eq(paymentAttempts.id, allocated.attemptId), eq(paymentAttempts.status, "created")));
+    return (current?.state === "payment_pending" || current?.state === "completed") &&
+      current.expiresAt > (input.now ?? new Date());
   });
   if (!stillPayable) throw new Error("Checkout is no longer payable");
   return { kind: "paymob_redirect" as const, checkoutId: input.checkoutId,

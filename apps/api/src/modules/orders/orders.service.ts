@@ -1,9 +1,16 @@
+import { createHash, randomUUID } from "node:crypto";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offerItems, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
+
+export class CheckoutAmountChangedError extends Error {
+  constructor() {
+    super("Checkout total changed; refresh and review the cart before paying");
+  }
+}
 
 function resolveEffectiveVariantPrice(input: {
   basePrice: number;
@@ -212,13 +219,30 @@ export async function priceCheckout(payload: CheckoutPayload) {
 }
 
 export async function createOrderFromCheckout(
-  payload: CheckoutPayload
-): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus">> {
+  payload: CheckoutPayload,
+  options: { idempotencyKey: string; now?: Date } = { idempotencyKey: randomUUID() }
+): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus"> & { replayed: boolean }> {
   if (payload.paymentMethod !== "cod") throw new Error("Online checkout cannot create an order before payment succeeds");
+  const checkoutFingerprint = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  const findExisting = () => db.select({ id: orders.id, orderCode: orders.orderCode,
+    paymentStatus: orders.paymentStatus, checkoutFingerprint: orders.checkoutFingerprint })
+    .from(orders).where(eq(orders.idempotencyKey, options.idempotencyKey)).limit(1).then((rows) => rows[0]);
+  const existing = await findExisting();
+  if (existing) {
+    if (existing.checkoutFingerprint !== checkoutFingerprint) {
+      throw new Error("Idempotency key belongs to a different checkout");
+    }
+    return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
+  }
   const { items: pricedItems, totalAmount } = await priceCheckout(payload);
+  if (payload.expectedAmountCents != null && Math.round(totalAmount * 100) !== payload.expectedAmountCents) {
+    throw new CheckoutAmountChangedError();
+  }
   const paymentStatus: PaymentStatus = "pending";
-  const createdOrder = await createOrderWithItems({
-    order: {
+  let createdOrder: { id: number; orderCode: string };
+  try {
+    createdOrder = await createOrderWithItems({
+      order: {
       customerType: payload.customerId ? "registered" : "guest",
       customerId: payload.customerId ?? null,
       fullName: payload.fullName,
@@ -231,9 +255,21 @@ export async function createOrderFromCheckout(
       notes: payload.notes ?? "",
       paymentMethod: payload.paymentMethod,
       paymentStatus,
+      idempotencyKey: options.idempotencyKey,
+      checkoutFingerprint,
+      codExpiresAt: new Date((options.now ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
       totalAmount
-    },
-    items: pricedItems
-  });
-  return { id: createdOrder.id, orderCode: createdOrder.orderCode, paymentStatus };
+      },
+      items: pricedItems
+    });
+  } catch (error) {
+    const candidate = error as { code?: string; cause?: { code?: string } };
+    if (candidate?.code !== "ER_DUP_ENTRY" && candidate?.cause?.code !== "ER_DUP_ENTRY") throw error;
+    const winner = await findExisting();
+    if (!winner || winner.checkoutFingerprint !== checkoutFingerprint) {
+      throw new Error("Idempotency key belongs to a different checkout");
+    }
+    return { id: winner.id, orderCode: winner.orderCode, paymentStatus: winner.paymentStatus, replayed: true };
+  }
+  return { id: createdOrder.id, orderCode: createdOrder.orderCode, paymentStatus, replayed: false };
 }

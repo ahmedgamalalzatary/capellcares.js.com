@@ -1,9 +1,12 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, lt, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode } from "../../../repositories/order/shared.js";
 
-type PaymobTransaction = Record<string, any> & { order?: { id?: unknown }; source_data?: { type?: unknown } };
+type PaymobTransaction = Record<string, any> & {
+  order?: { id?: unknown; merchant_order_id?: unknown };
+  source_data?: { type?: unknown };
+};
 
 export async function processPaymobTransaction(transaction: PaymobTransaction) {
   return db.transaction(async (tx) => {
@@ -12,7 +15,10 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       session: checkoutSessions
     }).from(paymentAttempts)
       .innerJoin(checkoutSessions, eq(checkoutSessions.id, paymentAttempts.checkoutSessionId))
-      .where(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? "")))
+      .where(or(
+        eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? "")),
+        eq(paymentAttempts.merchantReference, String(transaction.order?.merchant_order_id ?? ""))
+      ))
       .limit(1)
       .for("update");
     if (!match) return { outcome: "unmatched" as const };
@@ -139,7 +145,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       buildingApartment: match.session.buildingApartment,
       notes: match.session.notes,
       paymentMethod: "paymob",
-      paymentStatus: "pending",
+      paymentStatus: "accepted",
       providerPaymentStatus: match.attempt.earlyRefundAmountCents === match.attempt.amountCents ? "refunded"
         : match.attempt.earlyRefundAmountCents > 0 ? "partially_refunded" : "succeeded",
       refundedAmountCents: match.attempt.earlyRefundAmountCents,

@@ -128,6 +128,7 @@ test("processPaymobTransaction creates one paid order and finalizes reserved sto
   assert.equal(second?.orderId, first?.orderId);
   assert.equal(createdOrders.length, 1);
   assert.equal(createdOrders[0]?.providerPaymentStatus, "succeeded");
+  assert.equal(createdOrders[0]?.paymentStatus, "accepted");
   assert.equal(items.length, 1);
   assert.equal(reservation?.state, "finalized");
   assert.equal(variant?.stockQty, 8);
@@ -223,7 +224,7 @@ test("processPaymobTransaction accepts the wallet integration offered alongside 
   assert.equal(result.outcome, "succeeded");
 });
 
-test("initiatePaymobCheckout omits card-only notification override when wallets are offered", async () => {
+test("initiatePaymobCheckout sends the processed callback when wallets are offered", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const ids = await getBaselineIds();
   let notificationUrl: string | undefined;
@@ -242,7 +243,37 @@ test("initiatePaymobCheckout omits card-only notification override when wallets 
       return { intentionId: "pi_mixed", orderId: 9013, clientSecret: "mixed_secret", checkoutUrl: "https://checkout" };
     }
   });
-  assert.equal(notificationUrl, undefined);
+  assert.equal(notificationUrl, "https://api.capellacares.com/api/v1/payments/paymob/webhook");
+});
+
+test("processPaymobTransaction matches an early callback by merchant reference before the Paymob order ID is saved", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  let earlyOutcome: string | undefined;
+
+  await initiatePaymobCheckout({
+    payload: { fullName: "Fast payer", phone: "01012345678", email: "fast@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "12121212-1212-4212-8212-121212121212",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async (request) => {
+      const result = await processPaymobTransaction({ id: 7112, order: { id: 9112, merchant_order_id: request.specialReference },
+        amount_cents: 3500, currency: "EGP", integration_id: 123, success: true, pending: false, is_live: false,
+        is_auth: false, is_capture: false, is_refunded: false, is_voided: false, has_parent_transaction: false,
+        source_data: { type: "card" } });
+      earlyOutcome = result.outcome;
+      return { intentionId: "pi_fast", orderId: 9112, clientSecret: "fast_secret", checkoutUrl: "https://checkout" };
+    }
+  });
+
+  assert.equal(earlyOutcome, "succeeded");
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "fast@example.com"))).length, 1);
 });
 
 test("processPaymobTransaction records a matching decline without creating an order or releasing the reservation", async () => {

@@ -27,7 +27,7 @@ The five `Clipboard image 2026-09-20 *.png` files in the repository root are ill
 - Processed webhook: `https://api.capellacares.com/api/v1/payments/paymob/webhook`
 - Customer redirect: `https://capellacares.com/checkout/payment-result`
 
-The application omits the per-intention `notification_url` when card and wallet integrations are offered together because Paymob supports that override only for card integrations. Therefore, the dashboard webhook configuration is required for wallet payments and should be configured for both integrations.
+Every card-only, wallet-only, or mixed card/wallet Intention request includes the processed callback URL as `notification_url`. Separately, the Paymob dashboard must also configure that processed webhook URL for wallet payments and on both integrations; the per-intention payload does not replace the dashboard configuration requirement.
 
 ## Manual actions required from Ahmed
 
@@ -83,7 +83,7 @@ The checked local `.env` currently has the test credentials and card ID, but the
 ## Not implemented or incomplete
 
 - Real Paymob sandbox end-to-end verification
-- Automatic Paymob inquiry/recovery when an Intention request or webhook has an ambiguous failure
+- Special-reference recovery for early webhooks and definitive provider-failure handling are implemented. Automatic provider inquiry or replay remains incomplete for ambiguous Intention requests and ambiguous webhook delivery/processing failures.
 - Operational actions, ownership, notes, alerts, and resolution history for reconciliation cases
 - Refund initiation from Capella ERP; refunds are performed manually in Paymob Dashboard
 - Authorization, capture, and void workflows

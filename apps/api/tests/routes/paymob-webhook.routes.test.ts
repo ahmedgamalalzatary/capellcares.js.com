@@ -186,3 +186,15 @@ test("Paymob webhook acknowledges an early refund and creates a refunded order a
     else process.env.PAYMOB_HMAC_SECRET = previous;
   }
 });
+
+test("Paymob webhook rate-limits invalid callback floods", async () => {
+  await withTestServer(app, async (request) => {
+    let status = 0;
+    for (let index = 0; index < 301; index += 1) {
+      status = (await request("/api/v1/payments/paymob/webhook?hmac=invalid", {
+        method: "POST", headers: { "content-type": "application/json" }, body: "{}"
+      })).status;
+    }
+    assert.equal(status, 429);
+  });
+});

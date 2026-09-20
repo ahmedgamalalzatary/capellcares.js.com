@@ -29,6 +29,7 @@ export const checkoutSchema = z.object({
   buildingApartment: z.string().min(1),
   notes: z.string().optional(),
   paymentMethod: z.enum(["cod", "paymob"]),
+  expectedAmountCents: z.number().int().positive().safe().optional(),
   customerId: z.number().int().positive().nullable().optional(),
   items: z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema, checkoutCollectionItemSchema])).min(1)
 });

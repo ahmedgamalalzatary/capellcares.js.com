@@ -6,7 +6,7 @@ This file defines the canonical folder and boundary expectations for the Capella
 
 Treat this as the implementation baseline unless a new explicit product decision replaces it. The tree is intentionally pragmatic: required boundaries are strict, but helper folders/files are created when the implementation needs them.
 
-This tree was last reconciled against the actual codebase on 2026-06-09. Since the prior reconcile it captures: the **collections** feature (storefront pages, ERP CRUD, API catalog + admin modules, shared DTO/schema, DB migration), the ERP **staff-management / roles-and-permissions** feature (API `erp-permissions` middleware/service plus `admin/staff-management` module), the storefront and ERP move to top-level `hooks/`, `types/`, `constants/`, and `utils/` folders (replacing per-page co-location), new API `config/` entries (`cors.ts`, `secrets.ts`), the `inventory` module, and the `admin/shared` helpers. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories exist on disk but are not listed because they hold no files.
+This tree was last reconciled against the actual codebase on 2026-09-20. It includes the storefront, ERP, API, and mobile workspaces, the current Paymob checkout/payment layer, and database migrations through `0046`. It reflects tracked source files; build artifacts (`node_modules`, `dist`, `.next`, `.turbo`), editor/history folders (`.history`, `.sixth`), and local-only secrets (`.env`, `.env.docker`, `.env.test`) are intentionally omitted. Empty placeholder directories exist on disk but are not listed because they hold no files.
 
 ## Locked Project Decisions
 
@@ -358,6 +358,53 @@ capella/
 │  │  ├─ tsconfig.json
 │  │  └─ package.json
 │  │
+│  ├─ mobile/
+│  │  ├─ __tests__/
+│  │  │  ├─ api-base.test.js
+│  │  │  ├─ api-client.test.js
+│  │  │  ├─ api-data.test.js
+│  │  │  ├─ api-http.test.js
+│  │  │  ├─ app-scaffold.test.js
+│  │  │  ├─ foundation.test.js
+│  │  │  ├─ lang-provider.test.js
+│  │  │  ├─ metro-config.test.js
+│  │  │  ├─ root-layout.test.js
+│  │  │  └─ shared-boundary.test.js
+│  │  ├─ app/
+│  │  │  ├─ _layout.tsx
+│  │  │  └─ index.tsx
+│  │  ├─ assets/
+│  │  │  ├─ adaptive-icon.png
+│  │  │  ├─ icon.png
+│  │  │  └─ splash-icon.png
+│  │  ├─ src/
+│  │  │  ├─ constants/storage.ts
+│  │  │  ├─ lib/
+│  │  │  │  ├─ api/
+│  │  │  │  │  ├─ base.ts
+│  │  │  │  │  ├─ client.ts
+│  │  │  │  │  ├─ http.ts
+│  │  │  │  │  ├─ normalizers.ts
+│  │  │  │  │  ├─ selectors.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  └─ lang.tsx
+│  │  │  └─ theme.ts
+│  │  ├─ tests/
+│  │  │  ├─ metro-js-specifier.test.ts
+│  │  │  ├─ shared-bundle.test.ts
+│  │  │  ├─ storage-keys.test.ts
+│  │  │  └─ theme.test.ts
+│  │  ├─ .env.example
+│  │  ├─ app.json
+│  │  ├─ babel.config.js
+│  │  ├─ eas.json
+│  │  ├─ eslint.config.js
+│  │  ├─ jest.config.js
+│  │  ├─ metro.config.js
+│  │  ├─ metro-js-specifier.js
+│  │  ├─ tsconfig.json
+│  │  └─ package.json
+│  │
 │  └─ api/
 │     ├─ src/
 │     │  ├─ server.ts
@@ -428,9 +475,13 @@ capella/
 │     │  │  │     └─ products.service.ts
 │     │  │  ├─ checkout/
 │     │  │  │  ├─ checkout.controller.ts
+│     │  │  │  ├─ checkout-expiry-worker.ts
+│     │  │  │  ├─ checkout-retry.controller.ts
 │     │  │  │  ├─ checkout.routes.ts
 │     │  │  │  ├─ checkout.schemas.ts
-│     │  │  │  └─ checkout.service.ts
+│     │  │  │  ├─ checkout-status.controller.ts
+│     │  │  │  ├─ checkout.service.ts
+│     │  │  │  └─ paymob-checkout.service.ts
 │     │  │  ├─ collections/
 │     │  │  │  └─ collection-mapper.shared.ts
 │     │  │  ├─ inventory/
@@ -442,6 +493,16 @@ capella/
 │     │  │  │  ├─ orders.controller.ts
 │     │  │  │  ├─ orders.routes.ts
 │     │  │  │  └─ orders.service.ts
+│     │  │  ├─ payments/
+│     │  │  │  └─ paymob/
+│     │  │  │     ├─ paymob-callback.ts
+│     │  │  │     ├─ paymob-client.ts
+│     │  │  │     ├─ paymob-config.ts
+│     │  │  │     ├─ paymob-hmac.ts
+│     │  │  │     ├─ paymob-transaction.service.ts
+│     │  │  │     ├─ paymob-webhook.controller.ts
+│     │  │  │     ├─ paymob-webhook.routes.ts
+│     │  │  │     └─ paymob-webhook.service.ts
 │     │  │  ├─ uploads/
 │     │  │  │  ├─ uploads.controller.ts
 │     │  │  │  ├─ uploads.permissions.ts
@@ -616,6 +677,33 @@ capella/
 │     │  │  │  ├─ 0000_snapshot.json
 │     │  │  │  ├─ 0006_snapshot.json
 │     │  │  │  ├─ 0008_snapshot.json
+│     │  │  │  ├─ 0018_snapshot.json
+│     │  │  │  ├─ 0019_snapshot.json
+│     │  │  │  ├─ 0020_snapshot.json
+│     │  │  │  ├─ 0021_snapshot.json
+│     │  │  │  ├─ 0022_snapshot.json
+│     │  │  │  ├─ 0023_snapshot.json
+│     │  │  │  ├─ 0024_snapshot.json
+│     │  │  │  ├─ 0025_snapshot.json
+│     │  │  │  ├─ 0026_snapshot.json
+│     │  │  │  ├─ 0027_snapshot.json
+│     │  │  │  ├─ 0028_snapshot.json
+│     │  │  │  ├─ 0029_snapshot.json
+│     │  │  │  ├─ 0030_snapshot.json
+│     │  │  │  ├─ 0031_snapshot.json
+│     │  │  │  ├─ 0034_snapshot.json
+│     │  │  │  ├─ 0035_snapshot.json
+│     │  │  │  ├─ 0036_snapshot.json
+│     │  │  │  ├─ 0037_snapshot.json
+│     │  │  │  ├─ 0038_snapshot.json
+│     │  │  │  ├─ 0039_snapshot.json
+│     │  │  │  ├─ 0040_snapshot.json
+│     │  │  │  ├─ 0041_snapshot.json
+│     │  │  │  ├─ 0042_snapshot.json
+│     │  │  │  ├─ 0043_snapshot.json
+│     │  │  │  ├─ 0044_snapshot.json
+│     │  │  │  ├─ 0045_snapshot.json
+│     │  │  │  ├─ 0046_snapshot.json
 │     │  │  │  └─ _journal.json
 │     │  │  ├─ 0000_glamorous_proudstar.sql
 │     │  │  ├─ 0001_handy_advices.sql
@@ -626,7 +714,44 @@ capella/
 │     │  │  ├─ 0006_db_integrity.sql
 │     │  │  ├─ 0007_collections.sql
 │     │  │  ├─ 0008_lumpy_rhino.sql
-│     │  │  └─ 0009_abundant_gargoyle.sql
+│     │  │  ├─ 0009_abundant_gargoyle.sql
+│     │  │  ├─ 0010_category_slug_scope.sql
+│     │  │  ├─ 0011_category_sort_order.sql
+│     │  │  ├─ 0012_fk_hardening.sql
+│     │  │  ├─ 0013_category_paths.sql
+│     │  │  ├─ 0014_entity_orderings.sql
+│     │  │  ├─ 0015_category_images.sql
+│     │  │  ├─ 0016_shop_media_sections.sql
+│     │  │  ├─ 0017_shop_media_mobile_images.sql
+│     │  │  ├─ 0018_shop_media_optional_images.sql
+│     │  │  ├─ 0019_advices_video_only.sql
+│     │  │  ├─ 0020_variant_discounts.sql
+│     │  │  ├─ 0021_wishlist_entities.sql
+│     │  │  ├─ 0022_advices_entity_ordering.sql
+│     │  │  ├─ 0023_reviews.sql
+│     │  │  ├─ 0024_review_prompt_states.sql
+│     │  │  ├─ 0025_review_prompt_orders.sql
+│     │  │  ├─ 0026_review_submission_history.sql
+│     │  │  ├─ 0027_entity_media.sql
+│     │  │  ├─ 0028_offer_categories.sql
+│     │  │  ├─ 0029_localized_shop_media.sql
+│     │  │  ├─ 0030_bundle_youtube_urls.sql
+│     │  │  ├─ 0031_localized_entity_images.sql
+│     │  │  ├─ 0032_announcements.sql
+│     │  │  ├─ 0033_announcement_bar_settings.sql
+│     │  │  ├─ 0034_paymob_checkout_foundation.sql
+│     │  │  ├─ 0035_paymob_webhook_events.sql
+│     │  │  ├─ 0036_paymob_attempt_identifiers.sql
+│     │  │  ├─ 0037_separate_provider_payment_status.sql
+│     │  │  ├─ 0038_tidy_matthew_murdock.sql
+│     │  │  ├─ 0039_graceful_piledriver.sql
+│     │  │  ├─ 0040_stormy_mandrill.sql
+│     │  │  ├─ 0041_stormy_stingray.sql
+│     │  │  ├─ 0042_shocking_changeling.sql
+│     │  │  ├─ 0043_modern_matthew_murdock.sql
+│     │  │  ├─ 0044_lonely_nomad.sql
+│     │  │  ├─ 0045_plain_scalphunter.sql
+│     │  │  └─ 0046_powerful_pepper_potts.sql
 │     │  └─ schema.ts
 │     ├─ drizzle.config.ts
 │     ├─ src/
@@ -647,9 +772,11 @@ capella/
 │     └─ package.json
 │
 ├─ docs/
-│  ├─ specs/
-│  │  ├─ folder-structure.md
-│  │  └─ storefront-erp-spec.md
+│  ├─ folder-structure.md
+│  ├─ mobile-app-plan.md
+│  ├─ paymob-checkout-orders-audit.md
+│  ├─ paymob-integration-status.md
+│  ├─ storefront-erp-spec.md
 │  ├─ plans/
 │  │  ├─ features/
 │  │  │  └─ promo-code-plan.md
@@ -665,7 +792,7 @@ capella/
 │  │     ├─ 05a-playwright-local.md
 │  │     ├─ 06-ci-and-regression.md
 │  │     └─ playwright-vitest-implementation.md
-│  └─ deploy.md
+│  └─ docker.md
 ├─ .dockerignore
 ├─ .env.example
 ├─ .gitignore
@@ -743,6 +870,6 @@ The following may be added when they create real value, but are not required jus
 - Do not merge public catalog and ERP admin modules.
 - Do not expose ERP order-mutation (cancel/modify) UI in v1.
 - Do not move storefront or ERP to direct DB access.
-- Do not reintroduce `cat.txt`; the initial category tree is documented in `docs/specs/storefront-erp-spec.md`.
+- Do not reintroduce `cat.txt`; the initial category tree is documented in `docs/storefront-erp-spec.md`.
 - Shared UI primitives now live in `packages/shared/src/ui`; per-app `components/ui` folders only hold app-specific primitives (storefront: icons/illustrations; ERP: icons/modal).
 - Do not expose ERP staff-management or role/permission editing without going through `erp-permissions` enforcement on the API side.

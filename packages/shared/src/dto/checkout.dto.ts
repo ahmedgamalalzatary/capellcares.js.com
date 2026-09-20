@@ -33,6 +33,7 @@ export interface CheckoutRequestDto {
   buildingApartment: string;
   notes?: string;
   paymentMethod: "cod" | "paymob";
+  expectedAmountCents?: number;
   customerId?: number | null;
   items: CheckoutItemDto[];
 }

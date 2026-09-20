@@ -36,16 +36,16 @@ PAYMOB_PUBLIC_KEY=your-test-public-key
 PAYMOB_API_KEY=your-test-api-key
 PAYMOB_HMAC_SECRET=your-test-hmac-secret
 PAYMOB_CARD_INTEGRATION_ID=5885253
-PAYMOB_CARD_INTEGRATION_CONFIRMED=false
-PAYMOB_WALLET_INTEGRATION_ID=
-PAYMOB_WALLET_INTEGRATION_CONFIRMED=false
+PAYMOB_CARD_INTEGRATION_CONFIRMED=true
+PAYMOB_WALLET_INTEGRATION_ID=5915379
+PAYMOB_WALLET_INTEGRATION_CONFIRMED=true
 PAYMOB_NOTIFICATION_URL=https://api.capellacares.com/api/v1/payments/paymob/webhook
 PAYMOB_REDIRECTION_URL=https://capellacares.com/checkout/payment-result
 ```
 
-`5885253` is the dashboard's VPC test integration, **not yet confirmed** by Paymob as the correct normal card/3DS integration. Leave both confirmation flags `false` until Paymob confirms the card integration and supplies the wallet integration. Test and live credentials/IDs must never be mixed. The redirect URL is locale-neutral; the storefront redirects it to the shopper's saved language. Paymob callback configuration must point to the public HTTPS API URL above. When wallets are offered, configure the processed callback on the Paymob dashboard because the per-intention notification override is card-only.
+Paymob confirmed card integration `5885253` for card/3DS and wallet integration `5915379` for Egyptian mobile wallets. Test and live credentials/IDs must never be mixed. The redirect URL is locale-neutral; the storefront redirects it to the shopper's saved language. Every Intention request includes the processed callback URL, and the same URL must also be configured on both integrations in the Paymob dashboard.
 
-After deploying, confirm the API reports `{ "available": false, "methods": [] }` at `/api/v1/payments/paymob/methods` until an integration is deliberately confirmed. Do not enable either method before the remaining sandbox and release checks in `docs/specs/paymob-payment-integration-plan.md` pass. Docker Compose was unavailable in the development workspace, so rendered Compose configuration and container startup must be checked on the VPS before activation.
+After deploying the confirmed test configuration, verify `/api/v1/payments/paymob/methods` reports `{ "available": true, "methods": ["card", "wallet"] }`. Complete the remaining sandbox and release checks in `docs/paymob-integration-status.md` before enabling live payments.
 
 ## Required Auth Env
 

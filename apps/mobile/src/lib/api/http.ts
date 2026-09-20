@@ -198,6 +198,7 @@ export function authedGetJSON<T>(
 type MutationInit = {
   method: "POST" | "DELETE";
   body?: unknown;
+  idempotencyKey?: string;
 };
 
 async function authedMutationJSONInternal<T>(
@@ -213,6 +214,7 @@ async function authedMutationJSONInternal<T>(
     headers: {
       ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
       ...languageHeaders(options.lang),
+      ...(init.idempotencyKey ? { "idempotency-key": init.idempotencyKey } : {}),
       ...(init.body === undefined ? {} : { "content-type": "application/json" })
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body)

@@ -85,13 +85,11 @@ Activation rule:
 ### ERP
 
 ERP auth rules:
-- One ERP user only in v1.
-- One role only: `admin`.
-- Admin user is stored in the database.
+- Multiple ERP staff accounts are stored in the database.
+- Access is controlled by the existing staff-management and `erp-permissions` role/permission model.
 - Standard login screen.
 - `/api/erp/*` must reject unauthenticated requests.
 - Hardcoded test credentials may temporarily remain for development only, must be clearly flagged with warnings, and must not be treated as production auth.
-- No role matrix in v1.
 - No audit log in v1.
 
 ### Storefront Customers
@@ -126,11 +124,19 @@ Confirmed routes:
 - `/`
 - `/products`
 - `/products/[slug]`
+- `/new`
+- `/bestsellers`
 - `/category/[slug]`
+- `/collections`
+- `/collections/[slug]`
 - `/offers`
 - `/offers/[slug]`
+- `/shop`
 - `/cart`
 - `/checkout`
+- `/checkout/payment-result`
+- `/orders`
+- `/orders/[id]`
 - `/wishlist`
 - `/login`
 - `/signup`
@@ -192,10 +198,10 @@ Cart rules:
 ## Checkout
 
 Checkout method:
-- Cash on Delivery only in v1.
+- Cash on Delivery and PayMob hosted checkout for cards and Egyptian mobile wallets.
 
 Removed from v1:
-- PayMob and online payment integration are intentionally removed from current documentation and implementation scope until a separate careful payment plan exists.
+- Other online payment gateways and saved-card flows remain deferred.
 
 Checkout customer types:
 - guest
@@ -232,11 +238,11 @@ Checkout flow:
 
 Known v1 limitation:
 - Orders are saved in DB.
-- ERP order-management UI is intentionally not implemented yet.
+- ERP provides read-only order list/detail and payment-reconciliation pages; storefront customers have order list/detail pages; mobile order history/detail is planned. Operational order management remains read-only.
 
 ## Orders
 
-Order storage is required in the database even though ERP order management is deferred.
+Order storage is required in the database. Current ERP and storefront order views are read-only; write-capable operational management remains deferred.
 
 Minimum order data:
 - customer type
@@ -258,8 +264,7 @@ Order item rules:
 
 Current v1 decision:
 - Save orders in DB only.
-- Do not build ERP orders module in v1.
-- Do not build customer order history in v1.
+- Keep ERP and storefront order views read-only; mobile order history/detail will use the same existing order contract.
 
 ## Catalog Model
 
@@ -462,12 +467,13 @@ Confirmed v1 ERP modules:
 - products
 - categories
 - offers
+- collections
 
 Deferred modules:
 - recipes
 - socials
 - physical branches
-- order management
+- write-capable order management workflows
 - supplier management
 - purchase orders
 - accounting
@@ -593,14 +599,11 @@ Storefront visibility rules:
 ## Deferred / Explicitly Out of Scope for V1
 
 The following are intentionally not part of v1:
-- PayMob or any online payment gateway
 - forgot password
 - reset password
 - email verification
-- ERP role matrix
-- multi-admin support
 - audit logs
-- order management UI
+- write-capable order management workflows
 - shipping fee engine
 - shipping zones
 - delivery time estimation

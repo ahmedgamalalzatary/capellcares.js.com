@@ -129,7 +129,7 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 | File | Purpose |
 |---|---|
 | `apps/mobile/src/lib/api/base.ts` | `API_BASE` = `EXPO_PUBLIC_API_URL`, falling back to the emulator/simulator URL by `Platform.OS` **only when `__DEV__`**; in a production build a missing variable is a startup error, never a dev-URL fallback |
-| `apps/mobile/src/lib/api/http.ts` | `getJSON` / `authedGetJSON` / `authedMutationJSON` with the same 401 → refresh → retry-once logic; `x-lang` from lang state instead of `document`. The retry is opt-out per call: `POST /api/v1/checkout` passes `retryOn401: false` (the caller surfaces a re-login prompt instead) so an expired token can never place the same order twice. If checkout retry is wanted later it must go through a client-generated idempotency key honoured by the API — that is an API change, not a client one |
+| `apps/mobile/src/lib/api/http.ts` | `getJSON` / `authedGetJSON` / `authedMutationJSON` with the same 401 → refresh → retry-once logic; `x-lang` from lang state instead of `document`. Checkout mutations require a client-generated idempotency key and forward it on the original request and any authentication retry, so retry remains opt-out where needed without risking a duplicate order. The API already requires and honors this key. |
 | `apps/mobile/src/lib/api/types.ts`, `normalizers.ts`, `selectors.ts` | ported verbatim; media URLs resolved against `API_BASE` |
 | `apps/mobile/src/lib/api/client.ts` | all fetchers: products, categories, offers, collections, advices, shop-media-sections, orders, reviews, wishlist, checkout |
 
@@ -186,11 +186,11 @@ Merged slice (former Phases 6 + 9): all read-only customer surfaces land togethe
 
 Merged slice (former Phases 7 + 8): everything that mutates state or needs a customer session.
 
-> **Known unfinished upstream functionality:** checkout and contact do not currently work end-to-end in the existing app. The cart is implemented in this phase, but mobile checkout and contact remain visibly unavailable and are not represented as working. Finish and validate the existing web/API implementations first; then reproduce the same contract and behavior here without mobile-only product changes.
+> **Known unfinished upstream functionality:** contact does not currently work end-to-end in the existing app. Checkout is implemented upstream, including COD and Paymob, so mobile must reproduce that contract and behavior without mobile-only payment changes.
 
 **Files**
 - `(tabs)/cart.tsx` — lines joined against fetched products/offers/collections, qty steppers, totals, mirrors `cart-view.tsx`
-- `checkout.tsx` + `order-success` — **post-blocker deliverables**: until the upstream checkout flow works, mobile exposes only an unavailable checkout state; afterwards, the full form (governorate picker from `GOVERNORATES`, `EG_PHONE_REGEX` validation, notes, COD block, POST `/api/v1/checkout`, success state clears cart) mirrors web checkout
+- `checkout.tsx` + `order-success` + `checkout/payment-result.tsx` — full checkout parity with the storefront: COD submission, Paymob card/wallet initiation, hosted-checkout redirect, pending-checkout recovery, result polling/retry, and cart clearing only after confirmed success. Every checkout mutation supplies a client-generated idempotency key.
 - `login.tsx`, `signup.tsx` — mirror web auth forms
 - `(tabs)/orders.tsx` + `order/[id].tsx` — history + detail incl. item snapshots, statuses from `dict.orders`
 - `(tabs)/account.tsx` — profile, language switch, links, logout (no admin entry — ERP stays web)
@@ -198,7 +198,7 @@ Merged slice (former Phases 7 + 8): everything that mutates state or needs a cus
 - Review components (list + submit + prompt-claim via `/api/v1/reviews`) wired into the `product/[slug]`, `offer/[slug]`, and `collection/[slug]` detail screens (all exist since Phase 6)
 - `contact.tsx` — deferred unfinished functionality; after the existing contact flow is completed, reproduce its fields, validation, attachment selection/preview, submission, and result states
 
-**Exit criteria**: cart behavior and tests match the web app; guest→login→order history→wishlist→submit review full loop works; logged-out states show the same login-required messaging as web; every working storefront web route now has a mobile equivalent reachable from tabs/account and the storefront parity checklist passes. Checkout and contact are explicitly recorded as deferred until their upstream implementations work: once the checkout blocker is resolved, a real COD order placed from the phone must appear in the ERP web app with validation errors matching web copy in both languages, and the mobile app must never show a false successful-delivery state for contact.
+**Exit criteria**: cart behavior and tests match the web app; guest→login→order history→wishlist→submit review full loop works; logged-out states show the same login-required messaging as web; every working storefront web route now has a mobile equivalent reachable from tabs/account and the storefront parity checklist passes. Real COD and Paymob test orders placed from the phone must appear in the ERP web app with validation errors matching web copy in both languages. Contact remains explicitly deferred, and the mobile app must never show a false successful-delivery state for it.
 
 ---
 
@@ -246,5 +246,5 @@ apps/mobile/
 
 ## Out of scope (flagged, not planned)
 
-- Push notifications, web→app deep links, payment methods beyond COD (web is COD-only)
+- Push notifications and web→app deep links
 - Native ERP/admin screens — the ERP stays web (responsive + PWA via its redesign); a native admin slice remains a possible later additive phase, and Phase 0's admin mobile auth already supports it

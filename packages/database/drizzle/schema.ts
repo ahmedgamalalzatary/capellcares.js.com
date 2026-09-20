@@ -466,11 +466,19 @@ export const orders = mysqlTable("orders", {
   // The callback's return type is annotated to break the orders -> payment_attempts ->
   // checkout_sessions -> orders inference cycle.
   paymentAttemptId: int("payment_attempt_id").references((): AnyMySqlColumn => paymentAttempts.id, { onDelete: "set null" }).unique(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).unique(),
+  checkoutFingerprint: varchar("checkout_fingerprint", { length: 64 }),
+  codExpiresAt: datetime("cod_expires_at"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
-  refundedAmountCheck: check("orders_refunded_amount_cents_check", sql`${table.refundedAmountCents} >= 0`)
+  refundedAmountCheck: check("orders_refunded_amount_cents_check", sql`${table.refundedAmountCents} >= 0`),
+  codExpiryIndex: index("orders_cod_expiry_idx").on(
+    table.paymentMethod,
+    table.paymentStatus,
+    table.codExpiresAt
+  )
 }));
 
 export const orderItems = mysqlTable("order_items", {
@@ -487,7 +495,7 @@ export const orderItems = mysqlTable("order_items", {
   lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
-  snapshotSizeLabel: varchar("snapshot_size_label", { length: 64 }),
+  snapshotSizeLabel: text("snapshot_size_label"),
   snapshotComponents: text("snapshot_components"),
   snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 2 }),
   snapshotDiscountId: int("snapshot_discount_id"),

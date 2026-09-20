@@ -271,11 +271,13 @@ describe("mobile API client", () => {
       .mockResolvedValueOnce(response(201, { id: 9, orderCode: "ORD-9", paymentStatus: "pending" }));
 
     await expect(
-      client.submitCheckout({ items: [] }, "old-token", { lang: "ar" })
+      client.submitCheckout({ items: [] }, "old-token", { lang: "ar", idempotencyKey: "checkout-key" })
     ).resolves.toMatchObject({ orderCode: "ORD-9" });
 
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[0][1].headers["idempotency-key"]).toBe("checkout-key");
+    expect(global.fetch.mock.calls[1][1].headers["idempotency-key"]).toBe("checkout-key");
   });
 
   test("drops malformed catalog and wishlist rows without losing valid siblings", async () => {

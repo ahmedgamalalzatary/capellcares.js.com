@@ -41,10 +41,10 @@ function validateCheckoutPayload(payload: CheckoutPayload) {
 
 export async function submitCheckout(payload: CheckoutPayload, options: { idempotencyKey?: string } = {}) {
   validateCheckoutPayload(payload);
+  if (!options.idempotencyKey?.trim()) {
+    throw new Error("Idempotency-Key header is required for checkout");
+  }
   if (payload.paymentMethod === "paymob") {
-    if (!options.idempotencyKey?.trim()) {
-      throw new Error("Idempotency-Key header is required for Paymob checkout");
-    }
     const config = resolvePaymobConfig();
     const notificationUrl = process.env.PAYMOB_NOTIFICATION_URL?.trim();
     const redirectionUrl = process.env.PAYMOB_REDIRECTION_URL?.trim();
@@ -57,5 +57,7 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
       redirectionUrl
     });
   }
-  return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload) };
+  return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload, {
+    idempotencyKey: options.idempotencyKey.trim()
+  }) };
 }

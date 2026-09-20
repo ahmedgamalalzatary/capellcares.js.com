@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 
@@ -117,6 +117,11 @@ export async function releaseExpiredCheckoutReservations(now: Date): Promise<voi
         .set({ status: "reconciliation_required", failureCode: "EARLY_REFUND_EXPIRED" })
         .where(and(eq(paymentAttempts.checkoutSessionId, session.id),
           gt(paymentAttempts.earlyRefundAmountCents, 0)));
+      await tx.update(paymentAttempts)
+        .set({ status: "expired", failureCode: "RESERVATION_EXPIRED" })
+        .where(and(eq(paymentAttempts.checkoutSessionId, session.id),
+          eq(paymentAttempts.earlyRefundAmountCents, 0),
+          inArray(paymentAttempts.status, ["created", "pending"])));
       await tx.update(checkoutSessions)
         .set({ state: "expired" })
         .where(eq(checkoutSessions.id, session.id));

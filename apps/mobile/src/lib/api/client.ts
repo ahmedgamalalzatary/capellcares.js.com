@@ -54,6 +54,10 @@ type LanguageOptions = {
   lang?: FetchLanguage;
 };
 
+type CheckoutOptions = LanguageOptions & {
+  idempotencyKey: string;
+};
+
 function normalizeRows<TInput, TOutput>(
   items: TInput[],
   normalizer: (item: TInput) => TOutput,
@@ -297,13 +301,13 @@ export function removeWishlistItem(
 
 export function submitCheckout(
   input: CheckoutRequestDto,
-  accessToken: string | null = null,
-  options?: LanguageOptions
+  accessToken: string | null,
+  options: CheckoutOptions
 ): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus"> | null> {
   return authedMutationJSON<Pick<Order, "id" | "orderCode" | "paymentStatus">>(
     "/api/v1/checkout",
     accessToken,
-    { method: "POST", body: input },
+    { method: "POST", body: input, idempotencyKey: options.idempotencyKey },
     options
   );
 }

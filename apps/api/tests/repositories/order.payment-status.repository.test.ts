@@ -130,6 +130,18 @@ test("ERP cannot deny a paid Paymob order before Paymob confirms a full refund",
   assert.equal(unchanged.paymentStatus, "pending");
 });
 
+test("ERP cannot manually mark a Paymob order pending or accepted", async () => {
+  const [order] = await db.insert(orders).values({
+    orderCode: `PAY-${crypto.randomUUID().slice(0, 8)}`, customerType: "guest", customerId: null,
+    fullName: "Paid customer", phone: "01012345678", email: "manual-paymob@example.com", governorate: "Cairo",
+    cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+    paymentStatus: "accepted", providerPaymentStatus: "succeeded", totalAmount: "35.00"
+  }).$returningId();
+
+  await assert.rejects(updateOrderPaymentStatusRepo(order.id, "pending"), /managed by paymob/i);
+  await assert.rejects(updateOrderPaymentStatusRepo(order.id, "accepted"), /managed by paymob/i);
+});
+
 test("denying a fully refunded Paymob bundle restores the originally reserved components", async () => {
   const ids = await getBaselineIds();
   const [collection] = await db.insert(collections).values({ slug: `refunded-${crypto.randomUUID()}`,

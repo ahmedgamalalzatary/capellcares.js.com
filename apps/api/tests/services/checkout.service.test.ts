@@ -321,6 +321,23 @@ test("priceCheckout snapshots bundle components with their sold quantities", asy
   ]);
 });
 
+test("bundle order snapshots preserve every unique size label beyond 64 characters", async () => {
+  const ids = await getBaselineIds();
+  const firstLabel = "first-size-label-that-is-deliberately-long-100ml";
+  const secondLabel = "second-size-label-that-is-deliberately-long-200ml";
+  await db.update(productVariants).set({ sizeLabel: firstLabel }).where(eq(productVariants.id, ids.firstVariantId));
+  await db.update(productVariants).set({ sizeLabel: secondLabel }).where(eq(productVariants.id, ids.secondVariantId));
+
+  const created = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
+  });
+
+  const [line] = await db.select({ snapshotSizeLabel: orderItems.snapshotSizeLabel })
+    .from(orderItems).where(eq(orderItems.orderId, created.id));
+  assert.equal(line.snapshotSizeLabel, `${firstLabel}, ${secondLabel}`);
+});
+
 test("denying a COD bundle restores the checkout-time components after catalog edits", async () => {
   const ids = await getBaselineIds();
   const { updateOrderPaymentStatusRepo } = await import("../../src/repositories/order.repository.js");

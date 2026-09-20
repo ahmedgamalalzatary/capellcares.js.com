@@ -1,6 +1,6 @@
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -14,6 +14,12 @@ export class DeniedOrderLockedError extends Error {
 export class PaidPaymobRefundRequiredError extends Error {
   constructor() {
     super("Refund the Paymob payment in Paymob first");
+  }
+}
+
+export class PaymobPaymentStatusManagedError extends Error {
+  constructor() {
+    super("Payment status is managed by Paymob");
   }
 }
 
@@ -165,6 +171,9 @@ export async function createOrderWithItems(input: {
     notes: string;
     paymentMethod: "cod";
     paymentStatus: "pending" | "accepted" | "denied";
+    idempotencyKey?: string | null;
+    checkoutFingerprint?: string | null;
+    codExpiresAt?: Date | null;
     totalAmount: number;
   };
   items: OrderItem[];
@@ -277,6 +286,10 @@ export async function updateOrderPaymentStatusRepo(
       throw new DeniedOrderLockedError();
     }
 
+    if (existing.paymentMethod === "paymob" && paymentStatus !== "denied") {
+      throw new PaymobPaymentStatusManagedError();
+    }
+
     if (paymentStatus === "denied" && existing.paymentMethod === "paymob" &&
       existing.providerPaymentStatus !== "refunded") {
       throw new PaidPaymobRefundRequiredError();
@@ -299,5 +312,23 @@ export async function updateOrderPaymentStatusRepo(
     }
 
     await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
+  });
+}
+
+export async function expirePendingCodOrders(now: Date): Promise<void> {
+  await db.transaction(async (tx) => {
+    const expired = await tx.select({ id: orders.id }).from(orders).where(and(
+      eq(orders.paymentMethod, "cod"),
+      eq(orders.paymentStatus, "pending"),
+      lte(orders.codExpiresAt, now)
+    )).for("update");
+
+    for (const order of expired) {
+      await restockOrderItems(tx, order.id);
+      await tx.update(orders).set({ paymentStatus: "denied" }).where(and(
+        eq(orders.id, order.id),
+        eq(orders.paymentStatus, "pending")
+      ));
+    }
   });
 }

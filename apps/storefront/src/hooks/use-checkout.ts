@@ -134,6 +134,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   const placeOrder = async () => {
     if (placingRef.current) return;
     if (!validate()) return;
+    if (resolved.length !== lines.length) {
+      setErrors((state) => ({ ...state, submit: dict.orders.unavailableItem }));
+      return;
+    }
     placingRef.current = true;
     setPlacing(true);
 
@@ -148,6 +152,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
         paymentMethod: form.paymentMethod,
+        expectedAmountCents: Math.round(subtotal * 100),
         items: lines.map((line) =>
           line.type === "product"
             ? { type: "product", variantId: line.variantId, qty: line.qty }
@@ -159,7 +164,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
 
       const data = await submitCheckout(payload, accessToken, {
         requireAuthentication: user != null,
-        idempotencyKey: payload.paymentMethod === "paymob" ? await getCheckoutIdempotencyKey(payload) : undefined
+        idempotencyKey: await getCheckoutIdempotencyKey(payload)
       });
       if (!data) throw new Error("Checkout failed");
       if (data.kind === "paymob_redirect") {
