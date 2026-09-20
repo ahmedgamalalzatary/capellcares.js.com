@@ -246,6 +246,30 @@ test("initiatePaymobCheckout sends the processed callback when wallets are offer
   assert.equal(notificationUrl, "https://api.capellacares.com/api/v1/payments/paymob/webhook");
 });
 
+test("initiatePaymobCheckout gives Paymob a return URL that identifies the checkout", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const ids = await getBaselineIds();
+  let providerReturnUrl: string | undefined;
+  const result = await initiatePaymobCheckout({
+    payload: { fullName: "Return Customer", phone: "01012345678", email: "return@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "19191919-1919-4919-8919-191919191919",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result?campaign=fall",
+    createIntention: async (request) => {
+      providerReturnUrl = request.redirectionUrl;
+      return { intentionId: "pi_return", orderId: 9019, clientSecret: "return_secret", checkoutUrl: "https://checkout" };
+    }
+  });
+
+  assert.equal(providerReturnUrl,
+    `https://capellacares.com/checkout/payment-result?campaign=fall&checkoutId=${encodeURIComponent(result.checkoutId)}`);
+});
+
 test("processPaymobTransaction matches an early callback by merchant reference before the Paymob order ID is saved", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
@@ -327,14 +351,20 @@ test("retryPaymobCheckout allocates one new attempt against the existing reserva
     currency: "EGP", integration_id: 123, success: false, pending: false, is_live: false,
     is_auth: false, is_capture: false, is_refunded: false, is_voided: false,
     has_parent_transaction: false, source_data: { type: "card" } });
+  let retryReturnUrl: string | undefined;
   const result = await module.retryPaymobCheckout({ checkoutId: initial.checkoutId, config,
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
-    createIntention: async () => ({ intentionId: "pi_retry_second", orderId: 9016, clientSecret: "second_secret", checkoutUrl: "https://checkout/second" }) });
+    createIntention: async (request) => {
+      retryReturnUrl = request.redirectionUrl;
+      return { intentionId: "pi_retry_second", orderId: 9016, clientSecret: "second_secret", checkoutUrl: "https://checkout/second" };
+    } });
   const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.publicId, initial.checkoutId));
   const attempts = await db.select().from(paymentAttempts).where(eq(paymentAttempts.checkoutSessionId, session.id));
   const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
   assert.equal(result.checkoutUrl, "https://checkout/second");
+  assert.equal(retryReturnUrl,
+    `https://capellacares.com/checkout/payment-result?checkoutId=${encodeURIComponent(initial.checkoutId)}`);
   assert.equal(session.attemptCount, 2);
   assert.equal(attempts.length, 2);
   assert.equal(variant.stockQty, 9);

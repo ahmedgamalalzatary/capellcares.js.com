@@ -4,7 +4,29 @@ describe("storefront auth provider API", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.resetModules();
+  });
+
+  it("waits for the cross-tab refresh lock before rotating the cookie", async () => {
+    let enterLock!: () => void;
+    const gate = new Promise<void>((resolve) => { enterLock = resolve; });
+    const request = vi.fn(async (_name: string, callback: () => Promise<Response>) => {
+      await gate;
+      return callback();
+    });
+    vi.stubGlobal("navigator", { locks: { request } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+    const { refreshAccessToken } = await import("@/lib/auth-provider.api");
+
+    const refresh = refreshAccessToken();
+    await Promise.resolve();
+    expect(fetch).not.toHaveBeenCalled();
+
+    enterLock();
+    await refresh;
+    expect(request).toHaveBeenCalledWith("capella:customer-refresh", expect.any(Function));
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("returns null to concurrent callers when refresh throws", async () => {

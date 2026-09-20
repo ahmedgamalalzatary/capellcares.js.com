@@ -9,7 +9,9 @@ export default function PaymobReturnPage() {
 
   useEffect(() => {
     const lang = getPendingCheckoutLang() ?? "ar";
-    router.replace(`/${lang}/checkout/payment-result`);
+    const checkoutId = new URLSearchParams(window.location.search).get("checkoutId");
+    const query = checkoutId ? `?checkoutId=${encodeURIComponent(checkoutId)}` : "";
+    router.replace(`/${lang}/checkout/payment-result${query}`);
   }, [router]);
 
   return null;

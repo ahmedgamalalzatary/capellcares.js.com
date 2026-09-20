@@ -53,6 +53,10 @@ PAYMOB_NOTIFICATION_URL=https://api.capellacares.com/api/v1/payments/paymob/webh
 PAYMOB_REDIRECTION_URL=https://capellacares.com/checkout/payment-result
 ```
 
+`PAYMOB_REDIRECTION_URL` is the locale-neutral base URL. The API adds the opaque
+checkout reference to each intention so the result page can recover the payment
+even when the returning browser has lost its session storage.
+
 The secret key, public key, and HMAC secret must also be present in the API environment. Keep them server-only. The storefront and ERP must not receive them.
 
 The checked local `.env` currently has the test credentials and card ID, but the wallet ID, confirmation flags, notification URL, and redirection URL are not configured. Docker defaults also keep both methods disabled. Paymob should remain disabled until the dashboard configuration and sandbox checks below are complete.

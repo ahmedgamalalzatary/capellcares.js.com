@@ -93,6 +93,12 @@ function normalizeEgyptianPhone(phone: string): string {
   return `+20${phone.replace(/^0/, "")}`;
 }
 
+function checkoutReturnUrl(redirectionUrl: string, checkoutId: string): string {
+  const url = new URL(redirectionUrl);
+  url.searchParams.set("checkoutId", checkoutId);
+  return url.toString();
+}
+
 export async function initiatePaymobCheckout(input: {
   payload: CheckoutPayload;
   idempotencyKey: string;
@@ -193,7 +199,7 @@ export async function initiatePaymobCheckout(input: {
     specialReference: merchantReference,
     expirationSeconds: input.config.intentionExpirationSeconds,
     notificationUrl: input.notificationUrl,
-    redirectionUrl: input.redirectionUrl,
+    redirectionUrl: checkoutReturnUrl(input.redirectionUrl, publicId),
     billingData: {
       first_name: names[0] ?? input.payload.fullName,
       last_name: names.slice(1).join(" ") || names[0] || input.payload.fullName,
@@ -287,7 +293,7 @@ export async function retryPaymobCheckout(input: {
     specialReference: merchantReference,
     expirationSeconds: Math.min(remainingSeconds, input.config.intentionExpirationSeconds),
     notificationUrl: input.notificationUrl,
-    redirectionUrl: input.redirectionUrl,
+    redirectionUrl: checkoutReturnUrl(input.redirectionUrl, input.checkoutId),
     billingData: {
       first_name: names[0] ?? allocated.session.fullName,
       last_name: names.slice(1).join(" ") || names[0] || allocated.session.fullName,

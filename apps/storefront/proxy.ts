@@ -5,6 +5,9 @@ const defaultLocale = "ar";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === "/checkout/payment-result") {
+    return NextResponse.next();
+  }
   if (pathname === "/") {
     return NextResponse.redirect(new URL(`/${defaultLocale}`, request.url));
   }

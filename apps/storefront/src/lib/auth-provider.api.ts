@@ -37,12 +37,15 @@ export function subscribeCurrentAccessToken(listener: (token: string | null) => 
 const REFRESH_TIMEOUT_MS = 10_000;
 
 export async function refreshAccessToken(signal?: AbortSignal) {
-  const response = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+  const request = () => fetch(`${API_BASE}/api/v1/auth/refresh`, {
     method: "POST",
     credentials: "include",
     signal
   });
-  return response;
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("capella:customer-refresh", request);
+  }
+  return request();
 }
 
 export async function refreshAccessTokenOrNull(): Promise<string | null> {

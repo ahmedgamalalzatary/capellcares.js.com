@@ -43,7 +43,7 @@ PAYMOB_NOTIFICATION_URL=https://api.capellacares.com/api/v1/payments/paymob/webh
 PAYMOB_REDIRECTION_URL=https://capellacares.com/checkout/payment-result
 ```
 
-Paymob confirmed card integration `5885253` for card/3DS and wallet integration `5915379` for Egyptian mobile wallets. Test and live credentials/IDs must never be mixed. The redirect URL is locale-neutral; the storefront redirects it to the shopper's saved language. Every Intention request includes the processed callback URL, and the same URL must also be configured on both integrations in the Paymob dashboard.
+Paymob confirmed card integration `5885253` for card/3DS and wallet integration `5915379` for Egyptian mobile wallets. Test and live credentials/IDs must never be mixed. `PAYMOB_REDIRECTION_URL` is a locale-neutral base URL; the API adds the opaque checkout reference to each intention, then the storefront redirects to the shopper's saved language. Every Intention request includes the processed callback URL, and the same URL must also be configured on both integrations in the Paymob dashboard.
 
 After deploying the confirmed test configuration, verify `/api/v1/payments/paymob/methods` reports `{ "available": true, "methods": ["card", "wallet"] }`. Complete the remaining sandbox and release checks in `docs/paymob-integration-status.md` before enabling live payments.
 

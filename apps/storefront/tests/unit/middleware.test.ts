@@ -25,4 +25,13 @@ describe("storefront proxy", () => {
 
     expect(response?.status).toBe(200);
   });
+
+  it("lets the locale-neutral Paymob return page restore its browser session", () => {
+    const response = proxy({
+      nextUrl: new URL("https://capellacares.com/checkout/payment-result?checkoutId=checkout_abc"),
+      url: "https://capellacares.com/checkout/payment-result?checkoutId=checkout_abc"
+    } as any);
+
+    expect(response?.status).toBe(200);
+  });
 });

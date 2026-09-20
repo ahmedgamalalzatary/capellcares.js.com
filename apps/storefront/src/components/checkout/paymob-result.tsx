@@ -8,7 +8,7 @@ import { fetchCheckoutStatus, retryPaymobCheckout, type CheckoutStatus } from "@
 import { clearPendingCheckout, getPendingCheckoutId, getPendingCheckoutLang, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
 import type { CheckoutViewProps } from "@/types/checkout-view.types";
 
-export function PaymobResult({ lang, dict }: CheckoutViewProps) {
+export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps & { returnCheckoutId?: string }) {
   const { clear } = useCart();
   const router = useRouter();
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
@@ -23,9 +23,9 @@ export function PaymobResult({ lang, dict }: CheckoutViewProps) {
       router.replace(`/${savedLang}/checkout/payment-result`);
       return;
     }
-    setCheckoutId(getPendingCheckoutId());
+    setCheckoutId(returnCheckoutId ?? getPendingCheckoutId());
     setSessionLoaded(true);
-  }, [lang, router]);
+  }, [lang, returnCheckoutId, router]);
 
   useEffect(() => {
     if (!checkoutId || status?.status === "completed" || status?.status === "expired") return;

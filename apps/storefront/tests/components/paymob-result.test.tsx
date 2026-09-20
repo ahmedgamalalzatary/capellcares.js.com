@@ -29,12 +29,37 @@ describe("PaymobResult", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/en/checkout/payment-result"));
   });
 
+  it("preserves the checkout reference while localizing the Paymob return", async () => {
+    const { default: PaymobReturnPage } = await import("@/app/checkout/payment-result/page");
+    sessionStorage.setItem("capella:paymob-checkout-lang", "en");
+    window.history.replaceState({}, "", "/checkout/payment-result?checkoutId=checkout_abc");
+
+    render(<PaymobReturnPage />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(
+      "/en/checkout/payment-result?checkoutId=checkout_abc"
+    ));
+  });
+
   it("does not claim to confirm payment when this browser has no checkout reference", async () => {
     const { PaymobResult } = await import("@/components/checkout/paymob-result");
     render(<PaymobResult lang="en" dict={getDict("en")} />);
     expect(await screen.findByText("No payment to check")).toBeInTheDocument();
     expect(screen.queryByText("Confirming your payment")).toBeNull();
     expect(fetchCheckoutStatus).not.toHaveBeenCalled();
+  });
+
+  it("checks the payment returned by Paymob when browser session storage is unavailable", async () => {
+    const { PaymobResult } = await import("@/components/checkout/paymob-result");
+    fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "completed",
+      expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
+      latestAttemptStatus: "succeeded", canRetry: false,
+      order: { id: 7, orderCode: "CAP-7" } });
+
+    render(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_abc" />);
+
+    expect(await screen.findByText("CAP-7")).toBeInTheDocument();
+    expect(fetchCheckoutStatus).toHaveBeenCalledWith("checkout_abc");
   });
 
   it("preserves the cart while payment confirmation is pending", async () => {
