@@ -20,6 +20,15 @@ beforeEach(() => {
 });
 
 describe("PaymobResult", () => {
+  it("routes the locale-neutral Paymob return using the saved checkout language", async () => {
+    const { default: PaymobReturnPage } = await import("@/app/checkout/payment-result/page");
+    sessionStorage.setItem("capella:paymob-checkout-lang", "en");
+
+    render(<PaymobReturnPage />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/en/checkout/payment-result"));
+  });
+
   it("does not claim to confirm payment when this browser has no checkout reference", async () => {
     const { PaymobResult } = await import("@/components/checkout/paymob-result");
     render(<PaymobResult lang="en" dict={getDict("en")} />);
