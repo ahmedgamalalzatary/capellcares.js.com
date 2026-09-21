@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { collectionItems, offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   mergeProductTotal,
@@ -81,6 +81,24 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
       snapshotDiscountEndsAt: item.snapshotDiscountEndsAt?.toISOString() ?? null
     }))
   };
+}
+
+export async function findAdminOrderByIdRepo(id: number) {
+  const order = await findOrderByIdRepo(id);
+  if (!order) return null;
+  const [payment] = order.paymentMethod === "paymob" && order.paymentAttemptId != null
+    ? await db.select({
+      attemptNumber: paymentAttempts.attemptNumber,
+      merchantReference: paymentAttempts.merchantReference,
+      environment: paymentAttempts.environment,
+      paymentMethod: paymentAttempts.paymentMethod,
+      integrationId: paymentAttempts.integrationId,
+      paymobOrderId: paymentAttempts.paymobOrderId,
+      paymobTransactionId: paymentAttempts.paymobTransactionId,
+      createdAt: paymentAttempts.createdAt
+    }).from(paymentAttempts).where(eq(paymentAttempts.id, order.paymentAttemptId)).limit(1)
+    : [];
+  return { ...order, payment: payment ?? null };
 }
 
 export async function getSalesAnalyticsRepo() {

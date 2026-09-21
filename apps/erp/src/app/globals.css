@@ -1053,38 +1053,10 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 .dropzone__title { font-weight: 700; font-size: 13.5px; }
 .dropzone__hint { font-size: 12px; margin-top: 4px; }
 
-/* ── Order details ── */
-.order-details { display: grid; gap: 18px; }
-.order-hero {
-  padding: 28px;
-  display: grid; gap: 16px;
-  grid-template-columns: 1fr auto;
-  align-items: start;
-}
-.order-hero__eyebrow { color: var(--accent); margin-bottom: 10px; }
-.order-hero__code {
-  font-family: var(--font-mono);
-  font-size: 22px; font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-}
-.order-hero__meta { margin-top: 14px; }
-.order-hero__sep { color: var(--ink-3); font-size: 12.5px; }
-.order-hero__total { font-size: 13px; }
-.order-hero__amount { color: var(--accent); font-weight: 700; }
-.order-hero__date { font-size: 13px; color: var(--ink-3); }
-.order-hero__status { display: grid; gap: 6px; }
-.order-cards { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
-.order-card__label { margin-bottom: 12px; }
-.order-card__name { font-weight: 700; font-size: 15.5px; color: var(--ink); }
-.order-card__phone {
-  font-size: 13px; color: var(--ink-2);
-  margin-top: 6px;
-  font-family: var(--font-mono);
-}
-.order-card__address { font-size: 13.5px; color: var(--ink); line-height: 1.7; }
-.order-card__sep { color: var(--ink-3); }
-.order-card__address-line { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+/* ── Order list ── */
+.order-email { display: inline-block; max-width: 260px; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 4px; }
+.order-email:hover { text-decoration-color: currentColor; }
+.order-email:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
 /* ── Categories tree ── */
 .tree__fold-spacer { display: inline-block; width: 28px; }

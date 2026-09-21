@@ -238,11 +238,17 @@ Checkout flow:
 
 Known v1 limitation:
 - Orders are saved in DB.
-- ERP provides read-only order list/detail and payment-reconciliation pages; storefront customers have order list/detail pages; mobile order history/detail is planned. Operational order management remains read-only.
+- ERP provides order list/detail and read-only payment-reconciliation pages. Authorized staff can update Cash on Delivery payment status; Paymob payment status is provider-managed. Storefront customers have read-only order list/detail pages; mobile order history/detail is planned.
 
 ## Orders
 
-Order storage is required in the database. Current ERP and storefront order views are read-only; write-capable operational management remains deferred.
+Order storage is required in the database. ERP supports Cash on Delivery payment-status updates with the relevant permission; other operational order management remains deferred. Storefront order views are read-only.
+
+ERP order information:
+- The order list displays the email entered at checkout and supports searching by that email, customer name, phone, or order code.
+- The detail page shows customer/account information, the complete delivery address, customer notes, item snapshots and quantities, original and discounted prices, totals, refunds, and the net amount after refunds. Monetary values preserve piastres.
+- Paymob orders show available transaction/order references, payment method, test/live environment, integration and merchant references, and the linked payment attempt. Checkout credentials are never included in this payment detail response.
+- Recorded creation/update times and the pending Cash on Delivery review deadline are shown in Cairo time. These are recorded timestamps, not a fulfillment history.
 
 Minimum order data:
 - customer type
@@ -264,7 +270,7 @@ Order item rules:
 
 Current v1 decision:
 - Save orders in DB only.
-- Keep ERP and storefront order views read-only; mobile order history/detail will use the same existing order contract.
+- Keep storefront order views read-only and ERP order changes limited to authorized Cash on Delivery payment-status updates; mobile order history/detail will use the same existing order contract.
 
 ## Catalog Model
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Advice, Announcement, Category, Collection, Offer, Order, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -460,7 +460,7 @@ export class ErpStore {
     await this.refetch();
   }
 
-  async fetchOrder(id: number): Promise<Order> {
+  async fetchOrder(id: number): Promise<AdminOrderDto> {
     return api.get(`/api/erp/orders/${id}`);
   }
 

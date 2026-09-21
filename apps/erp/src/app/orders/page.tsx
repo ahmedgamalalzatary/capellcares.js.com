@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { formatPrice, type PaymentStatus } from "@capella/shared";
+import type { PaymentStatus } from "@capella/shared";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -10,6 +10,7 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import { canReadErpModule } from "@/lib/erp-permissions";
 import { orderMatchesPaymentStatusFilter, orderPaymentDisplay, paymentStatusFilterOptions } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
+import { formatOrderAmount } from "@/lib/order-format";
 
 function localDateKey(value: string) {
   const date = new Date(value);
@@ -53,6 +54,7 @@ function OrdersPageContent() {
     return byDate.filter((o) =>
       o.orderCode.toLowerCase().includes(term) ||
       o.fullName.toLowerCase().includes(term) ||
+      o.email.toLowerCase().includes(term) ||
       o.phone.includes(term)
     );
   }, [fromDate, orders, paymentStatusFilter, search, toDate]);
@@ -63,7 +65,7 @@ function OrdersPageContent() {
         <Link href="/orders/reconciliation" className="btn btn--ghost btn--sm">مدفوعات قيد المراجعة</Link>
       </div>
       <AdminListHeader
-        searchPlaceholder="ابحثي بكود الطلب، الاسم، أو رقم الهاتف…"
+        searchPlaceholder="ابحثي بكود الطلب، الاسم، البريد الإلكتروني، أو الهاتف…"
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={`${filtered.length} طلب`}
@@ -109,6 +111,7 @@ function OrdersPageContent() {
             <tr>
               <th>كود الطلب</th>
               <th>العميل</th>
+              <th>البريد الإلكتروني</th>
               <th>الإجمالي</th>
               <th>حالة الدفع</th>
               <th>تاريخ الطلب</th>
@@ -127,7 +130,10 @@ function OrdersPageContent() {
                   <div className="fw-600">{order.fullName}</div>
                   <div className="faint cell-subline">{order.phone}</div>
                 </td>
-                <td className="fw-600 c-accent">{formatPrice(order.totalAmount, "ar")}</td>
+                <td>
+                  <a href={`mailto:${order.email}`} className="order-email" dir="ltr">{order.email}</a>
+                </td>
+                <td className="fw-600 c-accent">{formatOrderAmount(order.totalAmount)}</td>
                 <td><span className={orderPaymentDisplay(order).chip}>{orderPaymentDisplay(order).label}</span></td>
                 <td className="muted">{new Date(order.createdAt).toLocaleDateString("ar-EG", { day: "2-digit", month: "short", year: "numeric" })}</td>
                 <td>
@@ -138,7 +144,7 @@ function OrdersPageContent() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} className="state-note state-note--lg state-note--muted">
+              <tr><td colSpan={7} className="state-note state-note--lg state-note--muted">
                 {orders.length === 0 ? "لا توجد طلبات بعد." : "لا توجد طلبات تطابق البحث أو عوامل التصفية."}
               </td></tr>
             )}

@@ -20,9 +20,12 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
   useEffect(() => {
     const savedLang = getPendingCheckoutLang();
     if (savedLang && savedLang !== lang) {
-      router.replace(`/${savedLang}/checkout/payment-result`);
+      const checkoutIdParam = returnCheckoutId ? `?checkoutId=${encodeURIComponent(returnCheckoutId)}` : "";
+      router.replace(`/${savedLang}/checkout/payment-result${checkoutIdParam}`);
       return;
     }
+    setStatus(null);
+    setError(false);
     setCheckoutId(returnCheckoutId ?? getPendingCheckoutId());
     setSessionLoaded(true);
   }, [lang, returnCheckoutId, router]);

@@ -104,4 +104,23 @@ describe("storefront auth provider API", () => {
     await Promise.all([refresh, logout]);
     expect(authApi.getCurrentAccessToken()).toBeNull();
   });
+
+  it("passes the fetch signal through the cross-tab refresh lock when available", async () => {
+    const request = vi.fn(async (_name: string, _opts: unknown, _callback?: unknown) => {
+      const callback = (typeof _opts === "function" ? _opts : _callback) as () => Promise<Response>;
+      return callback();
+    });
+    vi.stubGlobal("navigator", { locks: { request } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+    const { refreshAccessToken } = await import("@/lib/auth-provider.api");
+
+    const controller = new AbortController();
+    await refreshAccessToken(controller.signal);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    const args = request.mock.calls[0]!;
+    expect(args[0]).toBe("capella:customer-refresh");
+    expect(args[1]).toMatchObject({ signal: controller.signal });
+    expect(typeof args[2]).toBe("function");
+  });
 });

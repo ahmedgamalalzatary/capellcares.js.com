@@ -2,6 +2,7 @@ import type { Response } from "express";
 import {
   DeniedOrderLockedError,
   PaidPaymobRefundRequiredError,
+  findAdminOrderByIdRepo,
   findOrderByIdRepo,
   getSalesAnalyticsRepo,
   listOrdersRepo,
@@ -31,7 +32,7 @@ export async function getAdminOrderController(req: AuthenticatedRequest, res: Re
   if (id == null) {
     return res.status(400).json({ message: "Invalid order id" });
   }
-  const order = await findOrderByIdRepo(Number(id));
+  const order = await findAdminOrderByIdRepo(Number(id));
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
   }

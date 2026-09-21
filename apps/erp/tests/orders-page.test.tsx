@@ -103,6 +103,22 @@ describe("OrdersPage", () => {
     expect(detailsLink).toHaveAttribute("href", "/orders/5");
   });
 
+  it("finds an order by its checkout email, ignoring case and surrounding spaces", () => {
+    mockState = { orders: [
+      { ...makeOrder(1, "Matching Customer", "pending"), email: "checkout@example.test" },
+      makeOrder(2, "Other Customer", "pending")
+    ] };
+    render(createElement(OrdersPage));
+
+    expect(screen.getByRole("columnheader", { name: "البريد الإلكتروني" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "  CHECKOUT@EXAMPLE.TEST  " } });
+
+    expect(screen.getByText("Matching Customer")).toBeInTheDocument();
+    expect(screen.queryByText("Other Customer")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "checkout@example.test" }))
+      .toHaveAttribute("href", "mailto:checkout@example.test");
+  });
+
   it("links staff to paid Paymob checkouts that need reconciliation but have no order", () => {
     render(createElement(OrdersPage));
     expect(screen.getByRole("link", { name: "مدفوعات قيد المراجعة" }))
@@ -129,6 +145,12 @@ describe("OrdersPage", () => {
 
     expect(screen.getAllByText(money(213)).length).toBe(1);
     expect(screen.queryByText("213")).not.toBeInTheDocument();
+  });
+
+  it("preserves piastres in order totals", () => {
+    mockState = { orders: [{ ...makeOrder(5, "Customer", "pending"), totalAmount: 213.75 }] };
+    render(createElement(OrdersPage));
+    expect(screen.getByText(/٢١٣٫٧٥/)).toBeInTheDocument();
   });
 
   it("gives each payment status its own chip styling", () => {
@@ -267,5 +289,18 @@ describe("OrdersPage", () => {
     expect(screen.queryByText("Pending Customer")).not.toBeInTheDocument();
     expect(screen.getByText("Accepted Customer")).toBeInTheDocument();
     expect(screen.getByText("1 طلب")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["failed", "فشل الدفع عبر باي موب"],
+    ["voided", "أُلغي الدفع عبر باي موب"]
+  ])("shows a %s Paymob payment as terminal and excludes it from pending", (providerPaymentStatus, label) => {
+    mockState = { orders: [{ ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus }] };
+    render(createElement(OrdersPage));
+    expect(screen.getByText(label)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "pending" } });
+    expect(screen.queryByText("Online Customer")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "denied" } });
+    expect(screen.getByText("Online Customer")).toBeInTheDocument();
   });
 });

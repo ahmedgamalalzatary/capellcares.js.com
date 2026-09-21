@@ -33,13 +33,15 @@ export function orderMatchesPaymentStatusFilter(
     return order.paymentStatus === filter;
   }
   const providerStatus = order.providerPaymentStatus;
+  const reversedOrFailed = providerStatus === "partially_refunded" || providerStatus === "refunded" ||
+    providerStatus === "failed" || providerStatus === "voided";
   if (filter === "accepted") {
     return providerStatus === "succeeded";
   }
   if (filter === "denied") {
-    return providerStatus === "partially_refunded" || providerStatus === "refunded";
+    return reversedOrFailed;
   }
-  return providerStatus !== "succeeded" && providerStatus !== "partially_refunded" && providerStatus !== "refunded";
+  return providerStatus !== "succeeded" && !reversedOrFailed;
 }
 
 export function orderPaymentDisplay(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">) {
@@ -50,5 +52,7 @@ export function orderPaymentDisplay(order: Pick<OrderSummary, "paymentMethod" | 
   if (status === "succeeded") return { label: "مدفوع عبر باي موب", chip: "status status--active" };
   if (status === "partially_refunded") return { label: "مسترد جزئيًا عبر باي موب", chip: "status status--draft" };
   if (status === "refunded") return { label: "مسترد عبر باي موب", chip: "status status--deleted" };
+  if (status === "failed") return { label: "فشل الدفع عبر باي موب", chip: "status status--deleted" };
+  if (status === "voided") return { label: "أُلغي الدفع عبر باي موب", chip: "status status--deleted" };
   return { label: "قيد تأكيد باي موب", chip: "status status--draft" };
 }

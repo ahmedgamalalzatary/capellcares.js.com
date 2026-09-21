@@ -5,7 +5,8 @@ import { getDict } from "@capella/shared";
 const clear = vi.fn();
 const fetchCheckoutStatus = vi.fn();
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+const router = { replace };
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/components/providers/cart-provider", () => ({ useCart: () => ({ clear }) }));
 vi.mock("@/lib/api/client", () => ({
   fetchCheckoutStatus: (...args: unknown[]) => fetchCheckoutStatus(...args),
@@ -136,5 +137,54 @@ describe("PaymobResult", () => {
     expect(screen.queryByRole("link", { name: "Return to checkout" })).toBeNull();
     expect(sessionStorage.getItem("capella:pending-paymob-checkout")).toBe("checkout_abc");
     expect(clear).not.toHaveBeenCalled();
+  });
+
+  it("preserves the checkout reference when redirecting to the saved locale", async () => {
+    const modulePath = "@/components/checkout/paymob-result";
+    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
+      PaymobResult: () => null
+    }));
+    sessionStorage.setItem("capella:paymob-checkout-lang", "ar");
+    fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "payment_pending",
+      expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
+      latestAttemptStatus: "pending", canRetry: false, order: null });
+    render(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout abc&x=1" />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(
+      `/ar/checkout/payment-result?checkoutId=${encodeURIComponent("checkout abc&x=1")}`
+    ));
+  });
+
+  it("restarts polling and displayed results when the callback identifier changes", async () => {
+    const modulePath = "@/components/checkout/paymob-result";
+    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
+      PaymobResult: () => null
+    }));
+    fetchCheckoutStatus.mockImplementation((checkoutId: string) => {
+      if (checkoutId === "checkout_first") {
+        return Promise.resolve({ checkoutId, status: "payment_pending",
+          expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
+          latestAttemptStatus: "failed", canRetry: false, order: null });
+      }
+      if (checkoutId === "checkout_second") {
+        return Promise.reject(new Error("boom"));
+      }
+      return Promise.resolve({ checkoutId, status: "payment_pending",
+        expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
+        latestAttemptStatus: "pending", canRetry: false, order: null });
+    });
+    const { rerender } = render(
+      <PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_first" />
+    );
+    expect(await screen.findByText("Payment was not completed")).toBeInTheDocument();
+
+    rerender(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_second" />);
+    await waitFor(() => expect(fetchCheckoutStatus).toHaveBeenCalledWith("checkout_second"));
+    expect(screen.queryByText("Payment was not completed")).toBeNull();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    rerender(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_third" />);
+    await waitFor(() => expect(fetchCheckoutStatus).toHaveBeenCalledWith("checkout_third"));
+    expect(await screen.findByText(/confirming your payment/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

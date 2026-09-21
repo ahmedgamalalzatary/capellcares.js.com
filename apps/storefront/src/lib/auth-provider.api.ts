@@ -43,7 +43,9 @@ export async function refreshAccessToken(signal?: AbortSignal) {
     signal
   });
   if (typeof navigator !== "undefined" && navigator.locks) {
-    return navigator.locks.request("capella:customer-refresh", request);
+    return signal
+      ? navigator.locks.request("capella:customer-refresh", { signal }, request)
+      : navigator.locks.request("capella:customer-refresh", request);
   }
   return request();
 }
