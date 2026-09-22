@@ -503,9 +503,56 @@ test("initiatePaymobCheckout keeps stock held after an ambiguous failure without
   const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
   const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.checkoutSessionId, session.id));
   const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
-  assert.equal(attempt.status, "created");
+  assert.equal(attempt.status, "reconciliation_required");
+  assert.equal(attempt.failureCode, "INTENTION_CREATION_AMBIGUOUS");
   assert.equal(session.state, "payment_pending");
   assert.equal(variant.stockQty, 9);
+
+  const retried = await module.retryPaymobCheckout({
+    checkoutId: session.publicId, config,
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    now: new Date("2026-09-11T12:01:00Z"),
+    createIntention: async () => ({ intentionId: "pi_after_ambiguity", orderId: 9402,
+      clientSecret: "retry_secret", checkoutUrl: "https://checkout/retry" })
+  });
+  assert.equal(retried.checkoutUrl, "https://checkout/retry");
+  const attempts = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.checkoutSessionId, session.id));
+  assert.equal(attempts.length, 2);
+  assert.equal(attempts[0].merchantReference, attempt.merchantReference);
+  assert.equal(attempts[1].status, "pending");
+});
+
+test("an idempotent replay retries an ambiguous initiation without releasing reserved stock", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
+  const ids = await getBaselineIds();
+  const payload = { fullName: "Ambiguous Replay", phone: "01012345678", email: "ambiguous-replay@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    paymentMethod: "paymob" as const, items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] };
+  const idempotencyKey = "a2a2a2a2-a2a2-42a2-82a2-a2a2a2a2a2a2";
+  await assert.rejects(initiatePaymobCheckout({ payload, idempotencyKey, config,
+    notificationUrl, redirectionUrl, now: new Date("2026-09-11T12:00:00Z"),
+    createIntention: async () => { throw new PaymobProviderError("network timeout"); }
+  }), /network timeout/);
+  const [before] = await db.select().from(checkoutSessions)
+    .where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
+
+  const replayed = await initiatePaymobCheckout({ payload, idempotencyKey, config,
+    notificationUrl, redirectionUrl, now: new Date("2026-09-11T12:01:00Z"),
+    createIntention: async () => ({ intentionId: "pi_ambiguous_replay", orderId: 9403,
+      clientSecret: "replayed_secret", checkoutUrl: "https://checkout/replayed" })
+  });
+  assert.equal(replayed.checkoutId, before.publicId);
+  const [stock] = await db.select({ qty: productVariants.stockQty }).from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal(stock.qty, 9);
+  const attempts = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.checkoutSessionId, before.id));
+  assert.equal(attempts.length, 2);
+  assert.equal(attempts[0].failureCode, "INTENTION_CREATION_AMBIGUOUS");
+  assert.equal(attempts[1].status, "pending");
 });
 
 test("initiatePaymobCheckout keeps the checkout recoverable when Paymob throttles with 429", async () => {

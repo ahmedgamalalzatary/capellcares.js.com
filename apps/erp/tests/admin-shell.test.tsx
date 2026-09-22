@@ -82,6 +82,16 @@ describe("AdminShell", () => {
     expect(collectionLinks.length).toBeGreaterThan(0);
   });
 
+  it("shows bulk discounts navigation for staff with bulk discount permission", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["discounts.manage"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+    expect(screen.getAllByRole("link", { name: "إدارة الخصومات" }).length).toBeGreaterThan(0);
+  });
+
   it("shows reviews navigation only when the reviews module is readable", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["reviews.read"] },

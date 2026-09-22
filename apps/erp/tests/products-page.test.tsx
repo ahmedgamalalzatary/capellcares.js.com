@@ -77,6 +77,13 @@ vi.mock("@/lib/store", () => ({
 import ProductsListPage from "@/app/products/page";
 import { ProductForm } from "@/components/forms/product-form";
 
+describe("ProductsListPage bulk discounts", () => {
+  it("opens the bulk discount manager from the products page", () => {
+    render(createElement(ProductsListPage));
+    expect(screen.getByRole("link", { name: "إدارة الخصومات" })).toHaveAttribute("href", "/discounts");
+  });
+});
+
 afterEach(() => {
   cleanup();
 });

@@ -1,5 +1,5 @@
 import { EG_PHONE_REGEX, GOVERNORATES } from "@capella/shared/constants";
-import { createOrderFromCheckout } from "../orders/orders.service.js";
+import { createOrderFromCheckout, priceCheckout } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
 import { initiatePaymobCheckout } from "./paymob-checkout.service.js";
@@ -45,6 +45,12 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
     throw new Error("Idempotency-Key header is required for checkout");
   }
   if (payload.paymentMethod === "paymob") {
+    const priced = await priceCheckout(payload);
+    if (priced.totalAmount === 0) {
+      return { kind: "cod_order" as const, ...await createOrderFromCheckout({ ...payload, paymentMethod: "cod" }, {
+        idempotencyKey: options.idempotencyKey.trim()
+      }) };
+    }
     const config = resolvePaymobConfig();
     const notificationUrl = process.env.PAYMOB_NOTIFICATION_URL?.trim();
     const redirectionUrl = process.env.PAYMOB_REDIRECTION_URL?.trim();

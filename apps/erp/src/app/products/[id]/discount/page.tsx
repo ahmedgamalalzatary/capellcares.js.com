@@ -8,7 +8,7 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canReadErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { api } from "@/lib/api/client";
-import { useStore } from "@/lib/store";
+import { getStore, useStore } from "@/lib/store";
 
 type VariantDiscountState = NonNullable<ProductVariant["discount"]>;
 
@@ -124,6 +124,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
           discount: variant.discount ?? null
         }))
       });
+      await getStore().refetch();
       router.push("/products");
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "تعذر حفظ الخصومات.");

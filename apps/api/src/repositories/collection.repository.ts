@@ -1,6 +1,8 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
+import { loadBundleDiscountsRepo } from "./bundle-discount.repository.js";
+import { validateExistingBundleDiscountPrice } from "./bundle-discount-price.repository.js";
 import {
   categories,
   collectionItems,
@@ -45,6 +47,11 @@ async function withCollectionRanks<T extends { id: number }>(rows: T[], surface:
   return rows
     .map((row) => ({ ...row, sortOrder: rankByCollectionId.get(row.id) }))
     .sort(compareByScopedOrdering.bind(null, surface));
+}
+
+async function withCollectionDiscounts<T extends { id: number }>(rows: T[]) {
+  const discounts = await loadBundleDiscountsRepo("collection", rows.map((row) => row.id));
+  return rows.map((row) => ({ ...row, discount: discounts.get(row.id) ?? null }));
 }
 
 // Items inside one collection must read identically on both surfaces, so the
@@ -176,7 +183,7 @@ async function assertRootCollectionCategory(categoryId: number) {
 
 export async function listCollectionsRepo(includeDeleted = false) {
   const rows = await db.select().from(collections).where(includeDeleted ? undefined : isNull(collections.deletedAt));
-  const ranked = await withCollectionRanks(await withCollectionMedia(rows), "erp");
+  const ranked = await withCollectionRanks(await withCollectionDiscounts(await withCollectionMedia(rows)), "erp");
   return Promise.all(
     ranked.map(async (row) => {
       const items = await listOrderedCollectionItemsRepo(row.id);
@@ -192,7 +199,7 @@ export async function listVisibleCollectionsRepo(lang: Language = "ar") {
     .where(
       sql`${collections.visibility} = 'visible' and ${collections.status} = 'active' and ${collections.deletedAt} is null`
     );
-  const ranked = await withCollectionRanks(await withCollectionMedia(rows, lang), "storefront");
+  const ranked = await withCollectionRanks(await withCollectionDiscounts(await withCollectionMedia(rows, lang)), "storefront");
   const itemsByCollectionId = await listOrderedItemsByCollectionRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByCollectionId.get(row.id) ?? [] }));
 }
@@ -203,7 +210,8 @@ export async function findCollectionBySlugRepo(slug: string, lang: Language = "a
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedCollectionItemsRepo(row.id);
   const [withMedia] = await withCollectionMedia([row], lang);
-  return { ...withMedia!, items };
+  const [withDiscount] = await withCollectionDiscounts([withMedia!]);
+  return { ...withDiscount!, items };
 }
 
 export async function findCollectionByIdRepo(id: number) {
@@ -211,7 +219,8 @@ export async function findCollectionByIdRepo(id: number) {
   if (!row) return null;
   const items = await listOrderedCollectionItemsRepo(row.id);
   const [withMedia] = await withCollectionMedia([row]);
-  return { ...withMedia!, items };
+  const [withDiscount] = await withCollectionDiscounts([withMedia!]);
+  return { ...withDiscount!, items };
 }
 
 export async function upsertCollectionRepo(input: {
@@ -242,6 +251,7 @@ export async function upsertCollectionRepo(input: {
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
     : null;
   return db.transaction(async (tx) => {
+  if (input.id) await validateExistingBundleDiscountPrice(tx, "collection", input.id, input.fixedPrice);
   let collectionId = input.id;
   if (collectionId) {
     await tx

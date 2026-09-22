@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { eq } from "drizzle-orm";
-import { categories, collectionItems, productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
+import { bundleDiscounts, categories, collectionItems, productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   getStorefrontRelatedCardsRepo,
@@ -12,6 +12,20 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
+});
+
+test("related offer and collection cards use their discounted selling prices", async () => {
+  const ids = await getBaselineIds();
+  await db.insert(bundleDiscounts).values([
+    { offerId: ids.offerId, type: "percentage", value: "20.00", startsAt: new Date("2000-01-01"), endsAt: new Date("2999-01-01"), status: "active" },
+    { collectionId: ids.collectionId, type: "fixed", value: "10.00", startsAt: new Date("2000-01-01"), endsAt: new Date("2999-01-01"), status: "active" }
+  ]);
+  await setRelatedLinksForSourceRepo({ type: "product", id: ids.productOneId }, [
+    { type: "offer", id: ids.offerId }, { type: "collection", id: ids.collectionId }
+  ]);
+  const cards = await getStorefrontRelatedCardsRepo({ type: "product", id: ids.productOneId });
+  assert.equal(cards.find((card) => card.type === "offer")?.price, 56);
+  assert.equal(cards.find((card) => card.type === "collection")?.price, 55);
 });
 
 test("getStorefrontRelatedCardsRepo prices a related product at its active discounted price, not the original selling price", async () => {

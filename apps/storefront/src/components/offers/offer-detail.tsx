@@ -102,9 +102,12 @@ export function OfferDetail({ offer, category, categories = [], items, lang, dic
               : "text-3xl font-(--font-display) sm:text-[40px]"}`}>
               {formatPrice(offer.price, lang)}
             </span>
+            {offer.basePrice != null && offer.basePrice > offer.price && (
+              <span className="text-(--ink-3) line-through" aria-label={isAr ? "سعر العرض قبل الخصم الإضافي" : "Offer price before extra discount"}>{formatPrice(offer.basePrice, lang)}</span>
+            )}
             {savings > 0 && (
               <>
-                <span className="text-(--ink-3) line-through">{formatPrice(offer.originalTotal, lang)}</span>
+                {offer.originalTotal > (offer.basePrice ?? offer.price) && <span className="text-(--ink-3) line-through">{formatPrice(offer.originalTotal, lang)}</span>}
                 <span className="chip chip--accent">{dict.offers.save.replace("{amount}", formatPrice(savings, lang))}</span>
               </>
             )}

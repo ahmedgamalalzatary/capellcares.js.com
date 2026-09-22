@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offerItems, offers, orderItems, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
+import { bundleDiscounts, collectionItems, collections, offerItems, offers, orderItems, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -319,6 +319,52 @@ test("priceCheckout snapshots bundle components with their sold quantities", asy
     { variantId: ids.firstVariantId, qty: 1, unitPrice: 35, sizeLabel: "100ml" },
     { variantId: ids.secondVariantId, qty: 1, unitPrice: 55, sizeLabel: "200ml" }
   ]);
+});
+
+test("createOrderFromCheckout accepts a 100% variant discount as a free order", async () => {
+  const ids = await getBaselineIds();
+  const now = Date.now();
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId,
+    type: "percentage",
+    value: "100.00",
+    startsAt: new Date(now - 60_000),
+    endsAt: new Date(now + 60_000),
+    status: "active"
+  });
+
+  const result = await createOrderFromCheckout({
+    ...baseCheckoutPayload(),
+    items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+  });
+  const [line] = await db.select({ unitPrice: orderItems.unitPrice, snapshotDiscountValue: orderItems.snapshotDiscountValue })
+    .from(orderItems).where(eq(orderItems.orderId, result.id));
+  const [order] = await db.select({ totalAmount: orders.totalAmount, paymentStatus: orders.paymentStatus })
+    .from(orders).where(eq(orders.id, result.id));
+  assert.equal(Number(line?.unitPrice), 0);
+  assert.equal(Number(line?.snapshotDiscountValue), 100);
+  assert.equal(Number(order?.totalAmount), 0);
+  assert.equal(order?.paymentStatus, "accepted");
+});
+
+test("priceCheckout discounts offer and collection selling prices independently of their component products", async () => {
+  const ids = await getBaselineIds();
+  const now = Date.now();
+  await db.insert(bundleDiscounts).values([
+    { offerId: ids.offerId, type: "percentage", value: "20.00", startsAt: new Date(now - 60_000), endsAt: new Date(now + 60_000), status: "active" },
+    { collectionId: ids.collectionId, type: "fixed", value: "10.00", startsAt: new Date(now - 60_000), endsAt: new Date(now + 60_000), status: "active" }
+  ]);
+  const { priceCheckout } = await import("../../src/modules/orders/orders.service.js");
+  const priced = await priceCheckout({
+    ...baseCheckoutPayload(),
+    items: [
+      { type: "offer", offerId: ids.offerId, qty: 1 },
+      { type: "collection", collectionId: ids.collectionId, qty: 1 },
+      { type: "product", variantId: ids.firstVariantId, qty: 1 }
+    ]
+  });
+  assert.deepEqual(priced.items.map((item) => item.unitPrice), [56, 55, 35]);
+  assert.equal(priced.totalAmount, 146);
 });
 
 test("bundle order snapshots preserve every unique size label beyond 64 characters", async () => {

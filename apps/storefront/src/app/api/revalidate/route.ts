@@ -6,7 +6,7 @@ import { resolveRevalidateSecret } from "@/lib/api/revalidate-secret";
 const REVALIDATE_SECRET = resolveRevalidateSecret();
 const LOCALES = ["ar", "en"] as const;
 
-type RevalidateEntity = "product" | "offer" | "collection" | "advice" | "shop-media" | "announcements";
+type RevalidateEntity = "product" | "offer" | "collection" | "discounts" | "advice" | "shop-media" | "announcements";
 
 type RevalidatePayload = {
   entity?: RevalidateEntity;
@@ -35,7 +35,7 @@ function normalizeSlugs(value: unknown): string[] {
 }
 
 function isValidEntity(value: unknown): value is RevalidateEntity {
-  return value === "product" || value === "offer" || value === "collection" || value === "advice" || value === "shop-media" || value === "announcements";
+  return value === "product" || value === "offer" || value === "collection" || value === "discounts" || value === "advice" || value === "shop-media" || value === "announcements";
 }
 
 function revalidateLocalizedPath(pathname: string, type?: "page" | "layout") {
@@ -60,6 +60,17 @@ function revalidateByEntity(payload: Required<Pick<RevalidatePayload, "entity">>
   const relatedProductSlugs = normalizeSlugs(payload.relatedProductSlugs);
 
   switch (payload.entity) {
+    case "discounts": {
+      revalidateLocalizedPath("/shop");
+      revalidateLocalizedPath("/products");
+      revalidateLocalizedPath("/offers");
+      revalidateLocalizedPath("/collections");
+      revalidateLocalizedDynamicPath("/products/[slug]", "page");
+      revalidateLocalizedDynamicPath("/offers/[slug]", "page");
+      revalidateLocalizedDynamicPath("/collections/[slug]", "page");
+      revalidateLocalizedDynamicPath("/category/[slug]", "page");
+      break;
+    }
     case "product": {
       revalidateLocalizedPath("/shop");
       revalidateLocalizedPath("/products");
@@ -135,7 +146,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: "invalid-payload" }, { status: 400 });
   }
 
-  if (payload.entity !== "advice" && payload.entity !== "shop-media" && payload.entity !== "announcements" && !trimOptionalString(payload.slug)) {
+  if (payload.entity !== "discounts" && payload.entity !== "advice" && payload.entity !== "shop-media" && payload.entity !== "announcements" && !trimOptionalString(payload.slug)) {
     return NextResponse.json({ ok: false, reason: "invalid-payload" }, { status: 400 });
   }
 

@@ -1,4 +1,4 @@
-import type { Collection, EntityMedia } from "@capella/shared";
+import { getEffectiveVariantPrice, type Collection, type EntityMedia } from "@capella/shared";
 import { toCollectionBase } from "../../collections/collection-mapper.shared.js";
 
 type CollectionRow = {
@@ -12,6 +12,7 @@ type CollectionRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Collection["discount"];
   categoryId: number;
   stock: number;
   status: "active" | "inactive";
@@ -23,5 +24,6 @@ export function toStorefrontCollection(
   collection: CollectionRow,
   originalTotal: number
 ): Omit<Collection, "createdAt" | "updatedAt" | "deletedAt"> {
-  return toCollectionBase(collection, originalTotal);
+  const base = toCollectionBase(collection, originalTotal);
+  return { ...base, price: getEffectiveVariantPrice({ price: base.price, discount: base.discount }) };
 }

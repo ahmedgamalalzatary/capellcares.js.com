@@ -11,6 +11,7 @@ type CollectionMapperRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Collection["discount"];
   categoryId: number;
   stock: number;
   status: "active" | "inactive";
@@ -50,6 +51,8 @@ export function toCollectionBase(
       ? [{ type: "image", arUrl: null, enUrl: collection.imagePath }]
       : []),
     price,
+    basePrice: price,
+    discount: collection.discount ?? null,
     originalTotal,
     categoryId: collection.categoryId,
     stock: collection.stock,

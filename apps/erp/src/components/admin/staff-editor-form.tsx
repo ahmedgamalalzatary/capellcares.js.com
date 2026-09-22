@@ -7,6 +7,7 @@ import { getErrorMessage } from "@/lib/errors";
 const MODULE_LABELS: Record<string, string> = {
   dashboard: "لوحة التحكم",
   products: "المنتجات",
+  discounts: "الخصومات",
   categories: "التصنيفات",
   offers: "العروض",
   collections: "المجموعات",
@@ -22,6 +23,7 @@ const ACTION_LABELS: Record<string, string> = {
   create: "إضافة",
   update: "تعديل",
   discount: "إدارة الخصم",
+  manage: "إدارة الخصومات",
   soft_delete: "حذف",
   delete: "حذف",
   permanent_delete: "حذف نهائي",

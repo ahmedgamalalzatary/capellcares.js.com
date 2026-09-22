@@ -1,0 +1,1 @@
+ALTER TABLE `bundle_discounts` ADD CONSTRAINT `bundle_discounts_exactly_one_bundle_check` CHECK ((`bundle_discounts`.`offer_id` is not null) <> (`bundle_discounts`.`collection_id` is not null));

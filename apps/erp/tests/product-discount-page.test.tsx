@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 afterEach(() => cleanup());
 
 const push = vi.fn();
+const refetch = vi.fn().mockResolvedValue(undefined);
 const mockedUseAdminAuth = vi.fn(() => ({
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.discount"] },
   hydrated: true,
@@ -61,6 +62,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => mockedUseStore(selector),
+  getStore: () => ({ refetch }),
 }));
 
 const apiPost = vi.fn().mockResolvedValue({ ok: true });
@@ -133,6 +135,7 @@ beforeEach(() => {
       });
     });
     expect(push).toHaveBeenCalledWith("/products");
+    expect(refetch).toHaveBeenCalled();
   });
 
   it("renders discount times in local datetime-local format", async () => {

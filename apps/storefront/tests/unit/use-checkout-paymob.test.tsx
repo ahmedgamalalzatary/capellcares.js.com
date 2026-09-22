@@ -45,6 +45,26 @@ beforeEach(() => {
 });
 
 describe("useCheckout Paymob flow", () => {
+  it("submits a free cart without requesting online payment", async () => {
+    fetchProducts.mockResolvedValue([{ id: 1, name: { en: "Serum", ar: "سيروم" }, variants: [{
+      id: 11, size: "30ml", price: 35, stock: 10,
+      discount: { type: "percentage", value: 100, startsAt: "2000-01-01T00:00:00.000Z", endsAt: "2999-01-01T00:00:00.000Z", status: "active" }
+    }] }]);
+    submitCheckout.mockResolvedValue({ kind: "cod_order", id: 8, orderCode: "CAP-8", paymentStatus: "accepted" });
+    const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+    await waitFor(() => expect(result.current.subtotal).toBe(0));
+    await act(async () => {
+      for (const [key, value] of Object.entries({ fullName: "Customer", phone: "01012345678",
+        email: "customer@example.com", governorate: "Cairo", cityArea: "Nasr City",
+        addressLine: "Street 1", buildingApartment: "1" })) {
+        result.current.setField(key as keyof typeof result.current.form, value);
+      }
+      result.current.setField("paymentMethod", "paymob");
+    });
+    await act(async () => { await result.current.placeOrder(); });
+    expect(submitCheckout.mock.calls[0]?.[0]).toMatchObject({ paymentMethod: "cod", expectedAmountCents: 0 });
+    expect(redirectToPaymob).not.toHaveBeenCalled();
+  });
   it("preserves the cart and records the checkout before redirecting to Paymob", async () => {
     submitCheckout.mockResolvedValue({ kind: "paymob_redirect", checkoutId: "checkout_abc",
       checkoutUrl: "https://eg.checkout.paymob.com/?clientSecret=abc",

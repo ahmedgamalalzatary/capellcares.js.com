@@ -151,7 +151,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         addressLine: form.addressLine,
         buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
-        paymentMethod: form.paymentMethod,
+        paymentMethod: subtotal === 0 ? PAYMENT_METHODS.cod : form.paymentMethod,
         expectedAmountCents: Math.round(subtotal * 100),
         items: lines.map((line) =>
           line.type === "product"

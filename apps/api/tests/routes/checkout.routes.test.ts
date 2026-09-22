@@ -7,7 +7,7 @@ import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { db } from "@capella/database/src/db";
-import { checkoutSessions, collectionItems, collections, orders, paymentAttempts } from "@capella/database/drizzle/schema";
+import { checkoutSessions, collectionItems, collections, orders, paymentAttempts, variantDiscounts } from "@capella/database/drizzle/schema";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "dev-access-secret";
 
@@ -77,6 +77,32 @@ test("checkout route returns a pending COD payment status for a created order", 
 
     assert.equal(order?.paymentStatus, "pending");
     assert.equal(order?.orderCode, response.json.orderCode);
+  });
+});
+
+test("checkout route completes a free online-selected cart without starting a payment", async () => {
+  const ids = await getBaselineIds();
+  const now = Date.now();
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId,
+    type: "percentage", value: "100.00",
+    startsAt: new Date(now - 60_000), endsAt: new Date(now + 60_000), status: "active"
+  });
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
+      body: JSON.stringify({
+        fullName: "Free Cart", phone: "01012345678", email: "free-cart@capella.test",
+        governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10",
+        buildingApartment: "Building 4", paymentMethod: "paymob", expectedAmountCents: 0,
+        items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+      })
+    });
+    assert.equal(response.status, 201, JSON.stringify(response.json));
+    assert.equal(response.json.kind, "cod_order");
+    assert.equal(response.json.paymentStatus, "accepted");
+    assert.equal((await db.select().from(paymentAttempts)).length, 0);
   });
 });
 

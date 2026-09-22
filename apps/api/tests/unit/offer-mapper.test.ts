@@ -30,6 +30,8 @@ test("toOfferBase maps common offer fields for shared admin/storefront usage", (
     imagePath: "",
     media: [],
     price: 125.5,
+    basePrice: 125.5,
+    discount: null,
     originalTotal: 180,
     categoryId: 3,
     stock: 4,

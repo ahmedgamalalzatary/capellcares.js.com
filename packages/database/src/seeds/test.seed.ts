@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import {
   categories,
   categoryPaths,
+  bundleDiscounts,
   collectionItems,
   collections,
   customers,
@@ -41,6 +42,7 @@ export async function clearTestSeed() {
     await db.delete(reviews);
     await db.delete(relatedItems);
     await db.delete(orderItems);
+    await db.delete(bundleDiscounts);
     await db.delete(collectionItems);
     await db.delete(orders);
     await db.delete(offerItems);

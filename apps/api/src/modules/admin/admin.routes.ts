@@ -42,8 +42,11 @@ import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
 import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
 import { adminReviewsRoutes } from "./reviews/admin-reviews.routes.js";
+import { adminBulkApplyDiscount } from "./discounts/admin-discounts.controller.js";
 
 export const adminRoutes = Router();
+
+adminRoutes.post("/discounts/bulk", requireErpPermission("discounts.manage"), wrapAsync(adminBulkApplyDiscount));
 
 adminRoutes.get("/products", requireErpPermission("products.read"), wrapAsync(adminListProducts));
 adminRoutes.get("/products/:id", requireErpPermission("products.read"), wrapAsync(adminGetProduct));

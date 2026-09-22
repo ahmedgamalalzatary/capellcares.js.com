@@ -88,6 +88,10 @@ async function handleIntentionFailure(input: {
     await failPaymobInitiation(input.sessionId, input.attemptId);
   } else if (isTransientPaymobRejection(input.error)) {
     await failThrottledPaymobAttempt(input.attemptId);
+  } else {
+    await db.update(paymentAttempts)
+      .set({ status: "reconciliation_required", failureCode: "INTENTION_CREATION_AMBIGUOUS" })
+      .where(and(eq(paymentAttempts.id, input.attemptId), eq(paymentAttempts.status, "created")));
   }
   throw input.error;
 }
@@ -130,6 +134,7 @@ export async function initiatePaymobCheckout(input: {
     expiresAt: checkoutSessions.reservationExpiresAt,
     clientSecret: paymentAttempts.clientSecret,
     attemptStatus: paymentAttempts.status,
+    failureCode: paymentAttempts.failureCode,
     cartSnapshot: checkoutSessions.cartSnapshot,
     amountCents: checkoutSessions.amountCents,
     state: checkoutSessions.state
@@ -172,6 +177,12 @@ export async function initiatePaymobCheckout(input: {
   if (existing) {
     const reused = resolveReuse(existing);
     if (reused) return reused;
+    if (existing.attemptStatus === "reconciliation_required" &&
+      existing.failureCode === "INTENTION_CREATION_AMBIGUOUS") {
+      return retryPaymobCheckout({ checkoutId: existing.checkoutId, config: input.config,
+        notificationUrl: input.notificationUrl, redirectionUrl: input.redirectionUrl,
+        createIntention: input.createIntention, now });
+    }
     // A throttled (429) initiation left the session payable with its stock still held
     // and no client secret. Allocate the next attempt on that session in place so the
     // reservation is never released — releasing first would let competing checkouts
@@ -183,7 +194,8 @@ export async function initiatePaymobCheckout(input: {
       const [latest] = await tx.select().from(paymentAttempts)
         .where(eq(paymentAttempts.checkoutSessionId, session.id))
         .orderBy(desc(paymentAttempts.attemptNumber)).limit(1).for("update");
-      if (!latest || latest.status !== "failed" || latest.clientSecret !== null) return null;
+      if (!latest || latest.status !== "failed" || latest.clientSecret !== null ||
+        latest.failureCode !== "INTENTION_CREATION_THROTTLED") return null;
       if (session.attemptCount >= 3) throw new Error("Payment attempt limit reached");
       const [attempt] = await tx.insert(paymentAttempts).values({
         checkoutSessionId: session.id,
@@ -208,6 +220,18 @@ export async function initiatePaymobCheckout(input: {
       // confirmed provider rejection). Release anything it still holds and recycle the
       // idempotency key so a retry of the same cart can start clean.
       await db.transaction(async (tx) => {
+        const [session] = await tx.select().from(checkoutSessions)
+          .where(eq(checkoutSessions.id, existing.sessionId)).limit(1).for("update");
+        if (!session) return;
+        if (session.state === "completed") throw new Error("Checkout already completed");
+        const [latest] = await tx.select().from(paymentAttempts)
+          .where(eq(paymentAttempts.checkoutSessionId, session.id))
+          .orderBy(desc(paymentAttempts.attemptNumber)).limit(1).for("update");
+        if (latest?.status === "created" || latest?.status === "pending" ||
+          latest?.status === "succeeded" ||
+          latest?.status === "reconciliation_required") {
+          throw new Error("Paymob checkout initiation is still in progress");
+        }
         await releaseReservedStock(tx, existing.sessionId);
         await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
       });
@@ -329,7 +353,11 @@ export async function retryPaymobCheckout(input: {
     const [latest] = await tx.select().from(paymentAttempts)
       .where(eq(paymentAttempts.checkoutSessionId, session.id))
       .orderBy(desc(paymentAttempts.attemptNumber)).limit(1).for("update");
-    if (!latest || latest.status !== "failed") throw new Error("Previous payment attempt has not failed");
+    if (!latest || (latest.status !== "failed" &&
+      !(latest.status === "reconciliation_required" &&
+        latest.failureCode === "INTENTION_CREATION_AMBIGUOUS" && !latest.clientSecret))) {
+      throw new Error("Previous payment attempt has not failed");
+    }
     const [attempt] = await tx.insert(paymentAttempts).values({
       checkoutSessionId: session.id,
       attemptNumber: session.attemptCount + 1,

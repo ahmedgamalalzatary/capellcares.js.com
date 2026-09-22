@@ -1,4 +1,4 @@
-import type { EntityMedia, Offer } from "@capella/shared";
+import { getEffectiveVariantPrice, type EntityMedia, type Offer } from "@capella/shared";
 import { toOfferBase } from "../../offers/offer-mapper.shared.js";
 
 type OfferRow = {
@@ -12,6 +12,7 @@ type OfferRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Offer["discount"];
   categoryId: number | null;
   stock: number;
   status: "active" | "inactive";
@@ -23,5 +24,6 @@ export function toStorefrontOffer(
   offer: OfferRow,
   originalTotal: number
 ): Omit<Offer, "createdAt" | "updatedAt" | "deletedAt"> {
-  return toOfferBase(offer, originalTotal);
+  const base = toOfferBase(offer, originalTotal);
+  return { ...base, price: getEffectiveVariantPrice({ price: base.price, discount: base.discount }) };
 }

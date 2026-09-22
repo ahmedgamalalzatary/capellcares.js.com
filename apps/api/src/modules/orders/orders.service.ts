@@ -3,6 +3,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
+import { loadBundleDiscountsRepo } from "../../repositories/bundle-discount.repository.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
 
@@ -12,25 +13,28 @@ export class CheckoutAmountChangedError extends Error {
   }
 }
 
-function resolveEffectiveVariantPrice(input: {
+function resolveEffectiveDiscountedPrice(input: {
   basePrice: number;
   discount: null | {
     id: number;
     type: "percentage" | "fixed";
     value: number;
-    startsAt: Date;
-    endsAt: Date;
+    startsAt: Date | string;
+    endsAt: Date | string;
     status: "active" | "inactive";
   };
   now?: Date;
 }) {
   const now = input.now ?? new Date();
   const discount = input.discount;
+  const startsAt = discount ? new Date(discount.startsAt) : null;
+  const endsAt = discount ? new Date(discount.endsAt) : null;
   if (
     !discount ||
     discount.status !== "active" ||
-    now < discount.startsAt ||
-    now > discount.endsAt
+    !startsAt || !endsAt ||
+    now < startsAt ||
+    now > endsAt
   ) {
     return {
       unitPrice: input.basePrice,
@@ -47,7 +51,8 @@ function resolveEffectiveVariantPrice(input: {
     ? input.basePrice * (1 - discount.value / 100)
     : input.basePrice - discount.value;
 
-  if (!Number.isFinite(discountedPrice) || discountedPrice <= 0 || discountedPrice >= input.basePrice) {
+  if (!Number.isFinite(discountedPrice) || discountedPrice < 0 ||
+    (discount.type === "fixed" && discountedPrice === 0) || discountedPrice >= input.basePrice) {
     throw new Error("Invalid discounted price");
   }
 
@@ -57,8 +62,8 @@ function resolveEffectiveVariantPrice(input: {
     snapshotDiscountId: discount.id,
     snapshotDiscountType: discount.type,
     snapshotDiscountValue: discount.value,
-    snapshotDiscountStartsAt: discount.startsAt.toISOString(),
-    snapshotDiscountEndsAt: discount.endsAt.toISOString()
+    snapshotDiscountStartsAt: startsAt.toISOString(),
+    snapshotDiscountEndsAt: endsAt.toISOString()
   };
 }
 
@@ -96,7 +101,7 @@ export async function priceCheckout(payload: CheckoutPayload) {
         .limit(1);
       if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
       const basePrice = Number(variant.sellingPrice);
-      const pricing = resolveEffectiveVariantPrice({
+      const pricing = resolveEffectiveDiscountedPrice({
         basePrice,
         discount: variant.discountId
           ? {
@@ -144,17 +149,28 @@ export async function priceCheckout(payload: CheckoutPayload) {
         )
         .limit(1);
       if (!collection) throw new Error(`Collection not found: ${collectionId}`);
+      const discount = (await loadBundleDiscountsRepo("collection", [collectionId])).get(collectionId) ?? null;
+      const pricing = resolveEffectiveDiscountedPrice({
+        basePrice: Number(collection.fixedPrice),
+        discount: discount ? { ...discount, id: discount.id! } : null
+      });
       pricedItems.push({
         itemType: "collection",
         variantId: null,
         offerId: null,
         collectionId,
         qty: item.qty,
-        unitPrice: Number(collection.fixedPrice),
-        lineTotal: multiplyMoney(Number(collection.fixedPrice), item.qty),
+        unitPrice: pricing.unitPrice,
+        lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
         snapshotNameAr: collection.arName,
         snapshotNameEn: collection.enName,
-        snapshotSizeLabel: null
+        snapshotSizeLabel: null,
+        snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+        snapshotDiscountId: pricing.snapshotDiscountId,
+        snapshotDiscountType: pricing.snapshotDiscountType,
+        snapshotDiscountValue: pricing.snapshotDiscountValue,
+        snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+        snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
       });
       continue;
     }
@@ -172,16 +188,27 @@ export async function priceCheckout(payload: CheckoutPayload) {
       )
       .limit(1);
     if (!offer) throw new Error(`Offer not found: ${offerId}`);
+    const discount = (await loadBundleDiscountsRepo("offer", [offerId])).get(offerId) ?? null;
+    const pricing = resolveEffectiveDiscountedPrice({
+      basePrice: Number(offer.fixedPrice),
+      discount: discount ? { ...discount, id: discount.id! } : null
+    });
     pricedItems.push({
       itemType: "offer",
       variantId: null,
       offerId,
       qty: item.qty,
-      unitPrice: Number(offer.fixedPrice),
-      lineTotal: multiplyMoney(Number(offer.fixedPrice), item.qty),
+      unitPrice: pricing.unitPrice,
+      lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
       snapshotNameAr: offer.arName,
       snapshotNameEn: offer.enName,
-      snapshotSizeLabel: null
+      snapshotSizeLabel: null,
+      snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+      snapshotDiscountId: pricing.snapshotDiscountId,
+      snapshotDiscountType: pricing.snapshotDiscountType,
+      snapshotDiscountValue: pricing.snapshotDiscountValue,
+      snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+      snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
     });
   }
 
@@ -238,7 +265,7 @@ export async function createOrderFromCheckout(
   if (payload.expectedAmountCents != null && Math.round(totalAmount * 100) !== payload.expectedAmountCents) {
     throw new CheckoutAmountChangedError();
   }
-  const paymentStatus: PaymentStatus = "pending";
+  const paymentStatus: PaymentStatus = totalAmount === 0 ? "accepted" : "pending";
   let createdOrder: { id: number; orderCode: string };
   try {
     createdOrder = await createOrderWithItems({
@@ -257,7 +284,7 @@ export async function createOrderFromCheckout(
       paymentStatus,
       idempotencyKey: options.idempotencyKey,
       checkoutFingerprint,
-      codExpiresAt: new Date((options.now ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
+      codExpiresAt: totalAmount === 0 ? null : new Date((options.now ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
       totalAmount
       },
       items: pricedItems

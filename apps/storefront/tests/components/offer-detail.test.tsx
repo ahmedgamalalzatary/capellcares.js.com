@@ -76,6 +76,10 @@ const offer = {
 };
 
 describe("OfferDetail", () => {
+  it("shows the offer selling price before an additional discount", () => {
+    render(createElement(OfferDetail, { offer: { ...offer, price: 64, basePrice: 80 }, items: [], lang: "en", dict, relatedItems: [] }));
+    expect(screen.getByLabelText("Offer price before extra discount")).toHaveTextContent("80");
+  });
   it("renders and navigates the ordered offer media gallery", () => {
     render(createElement(OfferDetail, {
       offer: {

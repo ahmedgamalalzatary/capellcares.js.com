@@ -108,9 +108,12 @@ export function CollectionDetail({
               : "text-3xl font-(--font-display) sm:text-[40px]"}`}>
               {formatPrice(collection.price, lang)}
             </span>
+            {collection.basePrice != null && collection.basePrice > collection.price && (
+              <span className="text-(--ink-3) line-through" aria-label={isAr ? "سعر المجموعة قبل الخصم الإضافي" : "Collection price before extra discount"}>{formatPrice(collection.basePrice, lang)}</span>
+            )}
             {savings > 0 && (
               <>
-                <span className="text-(--ink-3) line-through">{formatPrice(collection.originalTotal, lang)}</span>
+                {collection.originalTotal > (collection.basePrice ?? collection.price) && <span className="text-(--ink-3) line-through">{formatPrice(collection.originalTotal, lang)}</span>}
                 <span className="chip chip--accent">{dict.common.save} {formatPrice(savings, lang)}</span>
               </>
             )}

@@ -11,6 +11,7 @@ type OfferMapperRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Offer["discount"];
   categoryId: number | null;
   stock: number;
   status: "active" | "inactive";
@@ -45,6 +46,8 @@ export function toOfferBase(
       ? [{ type: "image", arUrl: null, enUrl: offer.imagePath }]
       : []),
     price,
+    basePrice: price,
+    discount: offer.discount ?? null,
     originalTotal,
     categoryId: offer.categoryId,
     stock: offer.stock,

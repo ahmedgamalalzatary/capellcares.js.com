@@ -330,6 +330,20 @@
       "when": 1789915117028,
       "tag": "0046_powerful_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "5",
+      "when": 1790104467283,
+      "tag": "0047_jazzy_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "5",
+      "when": 1790104493698,
+      "tag": "0048_purple_mikhail_rasputin",
+      "breakpoints": true
     }
   ]
 }

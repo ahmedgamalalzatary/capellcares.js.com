@@ -1,6 +1,8 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
+import { loadBundleDiscountsRepo } from "./bundle-discount.repository.js";
+import { validateExistingBundleDiscountPrice } from "./bundle-discount-price.repository.js";
 import { categories, entityMedia, entityOrderings, offerItems, offers, orderItems, productVariants, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import {
   assertCompleteOrderedIds,
@@ -35,6 +37,11 @@ async function withOfferRanks<T extends { id: number }>(rows: T[], surface: Orde
   return rows
     .map((row) => ({ ...row, sortOrder: rankByOfferId.get(row.id) }))
     .sort(compareByScopedOrdering.bind(null, surface));
+}
+
+async function withOfferDiscounts<T extends { id: number }>(rows: T[]) {
+  const discounts = await loadBundleDiscountsRepo("offer", rows.map((row) => row.id));
+  return rows.map((row) => ({ ...row, discount: discounts.get(row.id) ?? null }));
 }
 
 // Items inside one offer must read identically on both surfaces, so the
@@ -169,7 +176,7 @@ function mergeOfferItems(items: Array<{ id?: number; variantId: number; qty: num
 
 export async function listOffersRepo(includeDeleted = false) {
   const rows = await db.select().from(offers).where(includeDeleted ? undefined : isNull(offers.deletedAt));
-  const ranked = await withOfferRanks(await withOfferMedia(rows), "erp");
+  const ranked = await withOfferRanks(await withOfferDiscounts(await withOfferMedia(rows)), "erp");
   return Promise.all(
     ranked.map(async (row) => {
       const items = await listOrderedOfferItemsRepo(row.id);
@@ -183,7 +190,7 @@ export async function listVisibleOffersRepo(lang: Language = "ar") {
     .select()
     .from(offers)
     .where(sql`${offers.visibility} = 'visible' and ${offers.status} = 'active' and ${offers.deletedAt} is null`);
-  const ranked = await withOfferRanks(await withOfferMedia(rows, lang), "storefront");
+  const ranked = await withOfferRanks(await withOfferDiscounts(await withOfferMedia(rows, lang)), "storefront");
   const itemsByOfferId = await listOrderedItemsByOfferRepo(ranked.map((row) => row.id));
   return ranked.map((row) => ({ ...row, items: itemsByOfferId.get(row.id) ?? [] }));
 }
@@ -194,7 +201,8 @@ export async function findOfferBySlugRepo(slug: string, lang: Language = "ar") {
   if (row.deletedAt || row.visibility !== "visible" || row.status !== "active") return null;
   const items = await listOrderedOfferItemsRepo(row.id);
   const [withMedia] = await withOfferMedia([row], lang);
-  return { ...withMedia!, items };
+  const [withDiscount] = await withOfferDiscounts([withMedia!]);
+  return { ...withDiscount!, items };
 }
 
 export async function findOfferByIdRepo(id: number) {
@@ -202,7 +210,8 @@ export async function findOfferByIdRepo(id: number) {
   if (!row) return null;
   const items = await listOrderedOfferItemsRepo(row.id);
   const [withMedia] = await withOfferMedia([row]);
-  return { ...withMedia!, items };
+  const [withDiscount] = await withOfferDiscounts([withMedia!]);
+  return { ...withDiscount!, items };
 }
 
 export async function upsertOfferRepo(input: {
@@ -233,6 +242,7 @@ export async function upsertOfferRepo(input: {
     : null;
   return db.transaction(async (tx) => {
   await assertRootOfferCategory(tx, input.categoryId);
+  if (input.id) await validateExistingBundleDiscountPrice(tx, "offer", input.id, input.fixedPrice);
   let offerId = input.id;
   if (offerId) {
     await tx

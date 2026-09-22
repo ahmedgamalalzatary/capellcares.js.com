@@ -7,7 +7,7 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Icon } from "@/components/ui/icons";
-import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
+import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { ProductsTable } from "../../components/products-table";
 import { useProductsPage } from "../../hooks/use-products-page";
 
@@ -53,6 +53,11 @@ export default function ProductsListPage() {
       crumbs={[{ label: "المنتجات" }]}
       actions={
         <>
+          {hasErpPermission(user, "discounts.manage") && (
+            <Link href="/discounts" className="btn btn--ghost btn--sm">
+              <Icon.Tag /> إدارة الخصومات
+            </Link>
+          )}
           {isOrderDirty && canUpdateErpModule(user, "products") && (
             <button
               type="button"

@@ -12,6 +12,7 @@ type AdminCollectionRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Collection["discount"];
   categoryId: number;
   status: "active" | "inactive";
   visibility: "visible" | "hidden";

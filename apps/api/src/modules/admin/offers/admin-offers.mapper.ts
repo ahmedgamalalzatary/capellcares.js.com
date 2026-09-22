@@ -12,6 +12,7 @@ type AdminOfferRow = {
   imagePath: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
+  discount?: Offer["discount"];
   categoryId: number | null;
   status: "active" | "inactive";
   visibility: "visible" | "hidden";

@@ -234,6 +234,8 @@ export interface Collection {
   imagePath: string;
   media?: EntityMedia[];
   price: number;
+  basePrice?: number;
+  discount?: VariantDiscount | null;
   originalTotal: number;
   categoryId: number;
   items: CollectionItem[];
@@ -279,6 +281,8 @@ export interface Offer {
   imagePath: string;
   media?: EntityMedia[];
   price: number;
+  basePrice?: number;
+  discount?: VariantDiscount | null;
   originalTotal: number;
   /**
    * The root category this offer is classified under, mirroring collections.

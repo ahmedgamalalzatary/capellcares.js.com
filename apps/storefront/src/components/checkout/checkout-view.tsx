@@ -63,7 +63,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         form={form}
         errors={errors}
         placing={placing}
-        paymobMethods={paymobMethods}
+        paymobMethods={subtotal === 0 ? [] : paymobMethods}
         setField={setField}
         placeOrder={placeOrder}
       />

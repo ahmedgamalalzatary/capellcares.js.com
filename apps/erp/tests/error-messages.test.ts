@@ -42,4 +42,11 @@ describe("getErrorMessage", () => {
   it("falls back to the original error message when there is no known mapping", () => {
     expect(getErrorMessage(new Error("toggle failed"))).toBe("toggle failed");
   });
+
+  it("explains when a selected item's price cannot support the discount", () => {
+    const error = Object.assign(new Error("API 400 /api/erp/discounts/bulk"), {
+      status: 400, body: { reason: "discount-exceeds-price" }
+    });
+    expect(getErrorMessage(error)).toBe("لا يمكن تطبيق الخصم لأن سعر أحد العناصر المختارة لا يسمح به.");
+  });
 });

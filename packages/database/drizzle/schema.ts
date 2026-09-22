@@ -230,6 +230,21 @@ export const collections = mysqlTable("collections", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const bundleDiscounts = mysqlTable("bundle_discounts", {
+  id: int("id").autoincrement().primaryKey(),
+  offerId: int("offer_id").unique().references(() => offers.id, { onDelete: "cascade" }),
+  collectionId: int("collection_id").unique().references(() => collections.id, { onDelete: "cascade" }),
+  type: mysqlEnum("type", ["percentage", "fixed"]).notNull(),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  startsAt: datetime("starts_at").notNull(),
+  endsAt: datetime("ends_at").notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  exactlyOneBundleCheck: check("bundle_discounts_exactly_one_bundle_check", sql`(${table.offerId} is not null) <> (${table.collectionId} is not null)`)
+}));
+
 export const entityMedia = mysqlTable(
   "entity_media",
   {

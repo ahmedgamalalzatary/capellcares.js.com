@@ -1,0 +1,15 @@
+.discounts-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1.1fr); gap: 20px; align-items: start; }
+.discounts-selection, .discounts-editor { min-width: 0; }
+.discounts-options { display: grid; gap: 3px; max-height: 200px; overflow-y: auto; }
+.discounts-option { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 4px 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.discounts-option:hover, .discounts-target:hover { background: var(--warm-soft); }
+.discounts-option input, .discounts-target input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
+.discounts-targets { display: grid; max-height: 480px; overflow-y: auto; border: 1px solid var(--hairline); border-radius: var(--radius); }
+.discounts-target { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--hairline); cursor: pointer; }
+.discounts-target:last-child { border-bottom: 0; }
+.discounts-target[data-excluded="true"] { opacity: .5; }
+.discounts-target__name { min-width: 0; overflow-wrap: anywhere; }
+.discounts-target__name small { display: block; color: var(--error); font-size: 11px; }
+.discounts-target__price { white-space: nowrap; font-size: 12px; color: var(--ink-3); }
+@media (max-width: 900px) { .discounts-layout { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .discounts-target { grid-template-columns: 16px 1fr; } .discounts-target__price { grid-column: 2; } }

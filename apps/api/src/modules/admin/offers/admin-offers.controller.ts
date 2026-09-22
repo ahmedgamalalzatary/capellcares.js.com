@@ -23,6 +23,7 @@ import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
+import { BundleDiscountPriceError } from "../../../repositories/bundle-discount-price.repository.js";
 
 async function findOfferRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
   const [offer] = await db.select({ slug: offers.slug }).from(offers).where(eq(offers.id, id)).limit(1);
@@ -193,7 +194,6 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     if (priceError) {
       return res.status(400).json({ ok: false, reason: priceError });
     }
-
     const { id: offerId } = await upsertOfferRepo({
       id: incoming.id,
       slug,
@@ -220,6 +220,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     await safeTriggerOfferRevalidation(revalidation ?? { slug });
     res.json({ ok: true });
   } catch (error) {
+    if (error instanceof BundleDiscountPriceError) {
+      return res.status(400).json({ ok: false, reason: error.reason });
+    }
     if ((error as { code?: string })?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
       return res.status(400).json({ ok: false, reason: "media-video-limit" });
     }

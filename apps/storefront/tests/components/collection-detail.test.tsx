@@ -71,6 +71,10 @@ const collection = {
 };
 
 describe("CollectionDetail", () => {
+  it("shows the collection selling price before an additional discount", () => {
+    render(createElement(CollectionDetail, { collection: { ...collection, price: 72, basePrice: 90 }, items: [], lang: "en", dict, relatedItems: [] }));
+    expect(screen.getByLabelText("Collection price before extra discount")).toHaveTextContent("90");
+  });
   it("renders the ordered collection media gallery", () => {
     render(createElement(CollectionDetail, {
       collection: {

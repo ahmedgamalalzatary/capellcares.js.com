@@ -19,6 +19,7 @@ interface Props {
 const NAV = [
   { href: "/dashboard",  label: "الرئيسية",  icon: <Icon.Dashboard /> },
   { href: "/products",   label: "المنتجات",  icon: <Icon.Box />       },
+  { href: "/discounts",  label: "إدارة الخصومات", icon: <Icon.Tag /> },
   { href: "/categories", label: "الأقسام",   icon: <Icon.Folder />    },
   { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
   { href: "/collections", label: "المجموعات", icon: <Icon.Tag />      },
@@ -43,6 +44,7 @@ function canAccessNavItem(user: { role: "admin" | "staff"; permissionKeys?: stri
   const requiredPermissionByHref: Record<string, string> = {
     "/dashboard": "dashboard.read",
     "/products": "products.read",
+    "/discounts": "discounts.manage",
     "/categories": "categories.read",
     "/offers": "offers.read",
     "/collections": "collections.read",

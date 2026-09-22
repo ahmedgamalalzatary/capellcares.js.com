@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
+import { loadBundleDiscountsRepo } from "../bundle-discount.repository.js";
 import { getEffectiveVariantPrice, type Language } from "@capella/shared";
 import { EMPTY_RATING, safeRatingSummaries } from "../review.repository.js";
 import {
@@ -94,6 +95,10 @@ export async function getStorefrontRelatedCardsRepo(
   const productIds = ordered.filter((ref) => ref.type === "product").map((ref) => ref.id);
   const offerIds = ordered.filter((ref) => ref.type === "offer").map((ref) => ref.id);
   const collectionIds = ordered.filter((ref) => ref.type === "collection").map((ref) => ref.id);
+  const [offerDiscounts, collectionDiscounts] = await Promise.all([
+    loadBundleDiscountsRepo("offer", offerIds),
+    loadBundleDiscountsRepo("collection", collectionIds)
+  ]);
 
   // A related card carries the same stars as the card it mirrors elsewhere.
   // Started here but only awaited at assembly, so the ratings travel alongside
@@ -235,7 +240,7 @@ export async function getStorefrontRelatedCardsRepo(
       if (availableBundles(items) <= 0) {
         continue;
       }
-      const price = Number(row.fixedPrice);
+      const price = getEffectiveVariantPrice({ price: Number(row.fixedPrice), discount: offerDiscounts.get(row.id) ?? null });
       const parts = sumBundleParts(items);
       offerCards.set(row.id, {
         type: "offer",
@@ -292,7 +297,7 @@ export async function getStorefrontRelatedCardsRepo(
       if (availableBundles(items) <= 0) {
         continue;
       }
-      const price = Number(row.fixedPrice);
+      const price = getEffectiveVariantPrice({ price: Number(row.fixedPrice), discount: collectionDiscounts.get(row.id) ?? null });
       collectionCards.set(row.id, {
         type: "collection",
         id: row.id,
