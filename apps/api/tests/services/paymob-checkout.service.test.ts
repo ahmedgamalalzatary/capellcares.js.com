@@ -430,8 +430,7 @@ test("initiatePaymobCheckout releases the reservation and retries after intentio
   await assert.rejects(
     module.initiatePaymobCheckout({ payload, idempotencyKey, now: new Date("2026-09-11T12:00:00Z"),
       config, notificationUrl, redirectionUrl,
-      createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); },
-      lookupIntention: async () => null }),
+      createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); } }),
     /failed with status 400/
   );
 
@@ -453,7 +452,7 @@ test("initiatePaymobCheckout releases the reservation and retries after intentio
   assert.equal(reserved.stockQty, 9);
 });
 
-test("initiatePaymobCheckout fails the attempt when create is a definitive rejection even if lookup throws", async () => {
+test("initiatePaymobCheckout fails a definitive rejection without calling an unsupported lookup", async () => {
   const module = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
@@ -470,8 +469,7 @@ test("initiatePaymobCheckout fails the attempt when create is a definitive rejec
     payload, idempotencyKey, now: new Date("2026-09-11T12:00:00Z"), config,
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
-    createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); },
-    lookupIntention: async () => { throw new PaymobProviderError("Paymob intention lookup timed out"); }
+    createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); }
   }), /failed with status 400/);
 
   const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
@@ -482,7 +480,7 @@ test("initiatePaymobCheckout fails the attempt when create is a definitive rejec
   assert.equal(variant.stockQty, 10);
 });
 
-test("initiatePaymobCheckout keeps stock held after an ambiguous intention failure", async () => {
+test("initiatePaymobCheckout keeps stock held after an ambiguous failure without calling an unsupported lookup", async () => {
   const module = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
@@ -499,8 +497,7 @@ test("initiatePaymobCheckout keeps stock held after an ambiguous intention failu
     payload, idempotencyKey, now: new Date("2026-09-11T12:00:00Z"), config,
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
-    createIntention: async () => { throw new PaymobProviderError("Paymob intention request timed out"); },
-    lookupIntention: async () => { throw new PaymobProviderError("Paymob intention lookup timed out"); }
+    createIntention: async () => { throw new PaymobProviderError("Paymob intention request timed out"); }
   }), /timed out/i);
 
   const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
@@ -511,7 +508,7 @@ test("initiatePaymobCheckout keeps stock held after an ambiguous intention failu
   assert.equal(variant.stockQty, 9);
 });
 
-test("initiatePaymobCheckout recovers a provider intention found by special reference after a create timeout", async () => {
+test("initiatePaymobCheckout keeps the checkout recoverable when Paymob throttles with 429", async () => {
   const module = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
@@ -519,32 +516,102 @@ test("initiatePaymobCheckout recovers a provider intention found by special refe
     secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
-  let specialReference = "";
-  const result = await module.initiatePaymobCheckout({
-    payload: { fullName: "Recovered Intention", phone: "01012345678", email: "recovered-intention@example.com",
-      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
-      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
-    idempotencyKey: "b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2",
-    now: new Date("2026-09-11T12:00:00Z"), config,
+  const payload = { fullName: "Throttled", phone: "01012345678", email: "throttled@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    paymentMethod: "paymob" as const, items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] };
+  const idempotencyKey = "42942942-4294-4294-8294-429429429429";
+
+  await assert.rejects(module.initiatePaymobCheckout({
+    payload, idempotencyKey, now: new Date("2026-09-11T12:00:00Z"), config,
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => {
+      throw new PaymobProviderError("Paymob intention request failed with status 429", { status: 429 });
+    }
+  }), /failed with status 429/);
+
+  const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.checkoutSessionId, session.id));
+  const [reservation] = await db.select().from(checkoutReservations)
+    .where(eq(checkoutReservations.checkoutSessionId, session.id));
+  const [variant] = await db.select({ stockQty: productVariants.stockQty }).from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId));
+
+  assert.equal(session.state, "payment_pending");
+  assert.equal(attempt.status, "failed");
+  assert.equal(reservation.state, "reserved");
+  assert.equal(variant.stockQty, 9);
+
+  let retryExpirationSeconds = 0;
+  const recovered = await module.initiatePaymobCheckout({ payload, idempotencyKey,
+    now: new Date("2026-09-11T12:01:00Z"), config,
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
     createIntention: async (request) => {
-      specialReference = request.specialReference;
-      throw new PaymobProviderError("Paymob intention request timed out");
-    },
-    lookupIntention: async (request) => {
-      assert.equal(request.specialReference, specialReference);
-      return { intentionId: "pi_recovered_lookup", orderId: 9201, clientSecret: "lookup_secret",
-        checkoutUrl: "https://eg.checkout.paymob.com/?publicKey=public&clientSecret=lookup_secret" };
+      retryExpirationSeconds = request.expirationSeconds;
+      return { intentionId: "pi_throttled_recovered", orderId: 9401,
+        clientSecret: "recovered_secret", checkoutUrl: "https://checkout/recovered" };
+    } });
+  assert.equal(recovered.checkoutUrl, "https://checkout/recovered");
+  assert.equal(retryExpirationSeconds, 1740,
+    "the Paymob intention must expire with the remaining stock reservation");
+
+  const [sessionAfter] = await db.select().from(checkoutSessions)
+    .where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
+  const [reservationAfter] = await db.select().from(checkoutReservations)
+    .where(eq(checkoutReservations.checkoutSessionId, sessionAfter.id));
+  const attemptsAfter = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.checkoutSessionId, sessionAfter.id))
+    .orderBy(paymentAttempts.attemptNumber);
+  const [variantAfter] = await db.select({ stockQty: productVariants.stockQty }).from(productVariants)
+    .where(eq(productVariants.id, ids.firstVariantId));
+
+  assert.equal(sessionAfter.id, session.id, "throttled retry must reuse the existing session");
+  assert.equal(reservationAfter.id, reservation.id, "throttled retry must never release/recreate the reservation");
+  assert.equal(reservationAfter.state, "reserved");
+  assert.equal(variantAfter.stockQty, 9, "stock must stay held through the retry");
+  assert.equal(sessionAfter.attemptCount, 2);
+  assert.equal(attemptsAfter.length, 2);
+  assert.equal(attemptsAfter[0].status, "failed");
+  assert.equal(attemptsAfter[0].failureCode, "INTENTION_CREATION_THROTTLED");
+  assert.equal(attemptsAfter[1].status, "pending");
+  assert.equal(attemptsAfter[1].clientSecret, "recovered_secret");
+});
+
+test("concurrent Paymob initiations with one idempotency key never leak a duplicate-entry error", async () => {
+  const module = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const ids = await getBaselineIds();
+  const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+    canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
+  const input = {
+    payload: { fullName: "Race Customer", phone: "01012345678", email: "race@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob" as const,
+      items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "95959595-9595-4959-8959-959595959595", config,
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => ({ intentionId: "pi_race_window", orderId: 9501,
+      clientSecret: "race_secret", checkoutUrl: "https://checkout/race" })
+  };
+
+  const results = await Promise.allSettled([
+    module.initiatePaymobCheckout(input),
+    module.initiatePaymobCheckout(input)
+  ]);
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      const message = String(result.reason?.message ?? result.reason);
+      assert.ok(!/Duplicate entry|ER_DUP_ENTRY|Failed query|insert into/i.test(message),
+        `leaked database error: ${message}`);
+      assert.ok(/still in progress|different checkout/i.test(message),
+        `expected a clean domain error, got: ${message}`);
     }
-  });
-  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobIntentionId, "pi_recovered_lookup"));
-  const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
-  assert.equal(result.kind, "paymob_redirect");
-  assert.ok(result.checkoutUrl.includes("lookup_secret"));
-  assert.equal(attempt?.paymobOrderId, "9201");
-  assert.equal(attempt?.status, "pending");
-  assert.equal(variant.stockQty, 9);
+  }
+  assert.ok(results.some((result) => result.status === "fulfilled"));
+  assert.equal((await db.select().from(checkoutSessions)).length, 1);
 });
 
 test("initiatePaymobCheckout does not recycle a failed attempt for a different cart on the same idempotency key", async () => {
@@ -564,8 +631,7 @@ test("initiatePaymobCheckout does not recycle a failed attempt for a different c
 
   await assert.rejects(module.initiatePaymobCheckout({
     payload, idempotencyKey, config, notificationUrl, redirectionUrl,
-    createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); },
-    lookupIntention: async () => null
+    createIntention: async () => { throw new PaymobProviderError("Paymob intention request failed with status 400", { status: 400 }); }
   }), /failed with status 400/);
   const [original] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey));
 
@@ -842,4 +908,158 @@ test("a signed refund arriving before success is applied to the eventual order",
   const [order] = await db.select().from(orders).where(eq(orders.email, "premature-refund@example.com"));
   assert.equal(order.providerPaymentStatus, "refunded");
   assert.equal(order.refundedAmountCents, 3500);
+});
+
+const config = {
+  mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+  hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+  canInitiatePayments: true, intentionExpirationSeconds: 1800 as const
+};
+const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
+const redirectionUrl = "https://capellacares.com/checkout/payment-result";
+
+type Callback = Record<string, any>;
+
+function paidTransaction(orderId: number, txnId: number): Callback {
+  return {
+    id: txnId, order: { id: orderId }, amount_cents: 3500, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" }
+  };
+}
+
+async function createPaidSession(options: {
+  email: string; idempotencyKey: string; intentionId: string; orderId: number; txnId: number;
+}) {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: {
+      fullName: "Post Success", phone: "01012345678", email: options.email, governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+    },
+    idempotencyKey: options.idempotencyKey, config, notificationUrl, redirectionUrl,
+    createIntention: async () => ({
+      intentionId: options.intentionId, orderId: options.orderId,
+      clientSecret: "paid_secret", checkoutUrl: "https://checkout"
+    })
+  });
+  const first = await processPaymobTransaction(paidTransaction(options.orderId, options.txnId));
+  assert.equal(first.outcome, "succeeded");
+  return { ids, processPaymobTransaction };
+}
+
+test("processPaymobTransaction rejects a wrong-amount callback after the payment already succeeded", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-amount@example.com", idempotencyKey: "a2a2a2a2-a2a2-4a2a-8a2a-a2a2a2a2a2a2",
+    intentionId: "pi_post_success_amount", orderId: 9301, txnId: 8301
+  });
+
+  const result = await processPaymobTransaction({
+    ...paidTransaction(9301, 8302), amount_cents: 9999
+  });
+
+  assert.equal(result.outcome, "rejected");
+});
+
+test("processPaymobTransaction rejects an out-of-order decline after the payment already succeeded", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-decline@example.com", idempotencyKey: "b3b3b3b3-b3b3-4b3b-8b3b-b3b3b3b3b3b3",
+    intentionId: "pi_post_success_decline", orderId: 9302, txnId: 8303
+  });
+
+  const result = await processPaymobTransaction({
+    ...paidTransaction(9302, 8304), success: false
+  });
+
+  assert.equal(result.outcome, "rejected");
+});
+
+test("processPaymobTransaction rejects a wrong-environment callback after the payment already succeeded", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-env@example.com", idempotencyKey: "c4c4c4c4-c4c4-4c4c-8c4c-c4c4c4c4c4c4",
+    intentionId: "pi_post_success_env", orderId: 9303, txnId: 8305
+  });
+
+  const result = await processPaymobTransaction({
+    ...paidTransaction(9303, 8305), is_live: true
+  });
+
+  assert.equal(result.outcome, "rejected");
+});
+
+test("processPaymobTransaction flags a second distinct capture for reconciliation instead of acknowledging success", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-double-capture@example.com",
+    idempotencyKey: "d5d5d5d5-d5d5-4d5d-8d5d-d5d5d5d5d5d5",
+    intentionId: "pi_post_success_double", orderId: 9304, txnId: 8306
+  });
+
+  const result = await processPaymobTransaction(paidTransaction(9304, 8307));
+
+  assert.equal(result.outcome, "reconciliation_required");
+  const [attempt] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobOrderId, "9304")).limit(1);
+  assert.equal(attempt.status, "succeeded");
+  assert.equal(attempt.failureCode, "SECOND_CAPTURE_AFTER_SUCCESS");
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "post-success-double-capture@example.com"))).length, 1);
+});
+
+test("second-capture flag keeps the post-success flow intact for duplicates and refunds", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-flag-continues@example.com",
+    idempotencyKey: "1a1a1a1a-1a1a-4a1a-8a1a-1a1a1a1a1a1a",
+    intentionId: "pi_post_success_flag", orderId: 9307, txnId: 8310
+  });
+
+  const secondCapture = await processPaymobTransaction(paidTransaction(9307, 8311));
+  assert.equal(secondCapture.outcome, "reconciliation_required");
+
+  const duplicate = await processPaymobTransaction(paidTransaction(9307, 8310));
+  assert.equal(duplicate.outcome, "succeeded");
+
+  const refund = await processPaymobTransaction({
+    ...paidTransaction(9307, 8310), is_refunded: true, refunded_amount_cents: 3500
+  });
+  assert.equal(refund.outcome, "refunded");
+
+  const [attempt] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobOrderId, "9307")).limit(1);
+  assert.equal(attempt.status, "succeeded");
+  assert.equal(attempt.failureCode, "SECOND_CAPTURE_AFTER_SUCCESS");
+  const [order] = await db.select().from(orders)
+    .where(eq(orders.email, "post-success-flag-continues@example.com")).limit(1);
+  assert.equal(order.providerPaymentStatus, "refunded");
+  assert.equal(order.refundedAmountCents, 3500);
+});
+
+test("processPaymobTransaction rejects a failed refund callback after the payment already succeeded", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-failed-refund@example.com",
+    idempotencyKey: "e6e6e6e6-e6e6-4e6e-8e6e-e6e6e6e6e6e6",
+    intentionId: "pi_post_success_failed_refund", orderId: 9305, txnId: 8308
+  });
+
+  const result = await processPaymobTransaction({
+    ...paidTransaction(9305, 8308), is_refunded: true, refunded_amount_cents: 3500, success: false
+  });
+
+  assert.equal(result.outcome, "rejected");
+  const [order] = await db.select().from(orders)
+    .where(eq(orders.email, "post-success-failed-refund@example.com")).limit(1);
+  assert.equal(order.providerPaymentStatus, "succeeded");
+});
+
+test("processPaymobTransaction still acknowledges a duplicate delivery of the original success", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "post-success-duplicate@example.com",
+    idempotencyKey: "f7f7f7f7-f7f7-4f7f-8f7f-f7f7f7f7f7f7",
+    intentionId: "pi_post_success_duplicate", orderId: 9306, txnId: 8309
+  });
+
+  const duplicate = await processPaymobTransaction(paidTransaction(9306, 8309));
+
+  assert.equal(duplicate.outcome, "succeeded");
 });

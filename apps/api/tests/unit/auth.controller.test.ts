@@ -25,6 +25,15 @@ function createResponse() {
   return response;
 }
 
+function createRequest(cookies: Record<string, string>, headers: Record<string, string> = {}) {
+  return {
+    cookies,
+    get(name: string) {
+      return headers[name.toLowerCase()];
+    }
+  };
+}
+
 test("customer logout remains successful when session revocation rejects", async () => {
   const warnings: unknown[][] = [];
   const originalWarn = console.warn;
@@ -32,7 +41,7 @@ test("customer logout remains successful when session revocation rejects", async
   const handler = createLogoutController(async () => {
     throw new Error("database unavailable");
   });
-  const req = { cookies: { capella_refresh: "refresh-token" } };
+  const req = createRequest({ capella_refresh: "refresh-token" });
   const response = createResponse();
 
   try {
@@ -55,7 +64,7 @@ test("admin logout remains successful when session revocation rejects", async ()
   const handler = createAdminLogoutController(async () => {
     throw new Error("database unavailable");
   });
-  const req = { cookies: { capella_admin_refresh: "admin-refresh-token" } };
+  const req = createRequest({ capella_admin_refresh: "admin-refresh-token" });
   const response = createResponse();
 
   try {

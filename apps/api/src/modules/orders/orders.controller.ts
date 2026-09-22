@@ -7,6 +7,7 @@ import {
   getSalesAnalyticsRepo,
   listOrdersRepo,
   OrderNotFoundError,
+  PaymobPaymentStatusManagedError,
   updateOrderPaymentStatusRepo
 } from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
@@ -53,7 +54,8 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
   try {
     await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
   } catch (error) {
-    if (error instanceof DeniedOrderLockedError || error instanceof PaidPaymobRefundRequiredError) {
+    if (error instanceof DeniedOrderLockedError || error instanceof PaidPaymobRefundRequiredError ||
+      error instanceof PaymobPaymentStatusManagedError) {
       return res.status(409).json({ message: error.message });
     }
     if (error instanceof OrderNotFoundError) {

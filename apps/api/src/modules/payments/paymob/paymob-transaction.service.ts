@@ -23,31 +23,6 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       .for("update");
     if (!match) return { outcome: "unmatched" as const };
 
-    if (match.attempt.status === "succeeded" && match.session.createdOrderId) {
-      if (transaction.is_refunded === true) {
-        const refundedCents = Number(transaction.refunded_amount_cents);
-        if (String(transaction.id) !== match.attempt.paymobTransactionId ||
-          Number(transaction.amount_cents) !== match.attempt.amountCents ||
-          transaction.currency !== match.attempt.currency ||
-          Number(transaction.integration_id) !== match.attempt.integrationId ||
-          match.attempt.environment !== (transaction.is_live === true ? "live" : "test") ||
-          !Number.isSafeInteger(refundedCents) || refundedCents <= 0 || refundedCents > match.attempt.amountCents) {
-          return { outcome: "rejected" as const };
-        }
-        await tx.update(orders).set({
-          refundedAmountCents: refundedCents,
-          providerPaymentStatus: refundedCents === match.attempt.amountCents ? "refunded" : "partially_refunded"
-        }).where(and(eq(orders.id, match.session.createdOrderId),
-          lt(orders.refundedAmountCents, refundedCents)));
-        return { outcome: "refunded" as const, orderId: match.session.createdOrderId };
-      }
-      return {
-        outcome: "succeeded" as const,
-        orderId: match.session.createdOrderId,
-        paymentAttemptId: match.attempt.id,
-        checkoutSessionId: match.session.id
-      };
-    }
     const environmentMatches = match.attempt.environment === (transaction.is_live === true ? "live" : "test");
     const allowedIntegrationIds = match.attempt.allowedIntegrationIds
       ? JSON.parse(match.attempt.allowedIntegrationIds) as unknown
@@ -62,6 +37,46 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       transaction.currency === match.attempt.currency &&
       integrationMatches &&
       environmentMatches;
+
+    if (match.attempt.status === "succeeded" && match.session.createdOrderId) {
+      if (transaction.is_refunded === true) {
+        const refundedCents = Number(transaction.refunded_amount_cents);
+        if (String(transaction.id) !== match.attempt.paymobTransactionId ||
+          Number(transaction.amount_cents) !== match.attempt.amountCents ||
+          transaction.currency !== match.attempt.currency ||
+          Number(transaction.integration_id) !== match.attempt.integrationId ||
+          !environmentMatches ||
+          transaction.success !== true || transaction.pending !== false ||
+          !Number.isSafeInteger(refundedCents) || refundedCents <= 0 || refundedCents > match.attempt.amountCents) {
+          return { outcome: "rejected" as const };
+        }
+        await tx.update(orders).set({
+          refundedAmountCents: refundedCents,
+          providerPaymentStatus: refundedCents === match.attempt.amountCents ? "refunded" : "partially_refunded"
+        }).where(and(eq(orders.id, match.session.createdOrderId),
+          lt(orders.refundedAmountCents, refundedCents)));
+        return { outcome: "refunded" as const, orderId: match.session.createdOrderId };
+      }
+      if (!baseIdentity || transaction.success !== true || transaction.pending !== false) {
+        return { outcome: "rejected" as const };
+      }
+      if (match.attempt.paymobTransactionId &&
+        match.attempt.paymobTransactionId !== String(transaction.id)) {
+        // Keep the attempt's canonical succeeded status so later duplicate callbacks and
+        // legitimate refunds still flow through the post-success branch; record the
+        // second-capture flag separately via failureCode (surfaced by ERP reconciliation).
+        await tx.update(paymentAttempts).set({
+          failureCode: "SECOND_CAPTURE_AFTER_SUCCESS"
+        }).where(eq(paymentAttempts.id, match.attempt.id));
+        return { outcome: "reconciliation_required" as const };
+      }
+      return {
+        outcome: "succeeded" as const,
+        orderId: match.session.createdOrderId,
+        paymentAttemptId: match.attempt.id,
+        checkoutSessionId: match.session.id
+      };
+    }
     if (transaction.is_refunded === true) {
       const refundedCents = Number(transaction.refunded_amount_cents);
       if (!baseIdentity || transaction.success !== true || transaction.pending !== false ||

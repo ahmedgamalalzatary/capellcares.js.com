@@ -13,7 +13,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
 import { fetchCollections, fetchOffers, fetchPaymobMethods, fetchProducts, submitCheckout } from "@/lib/api/client";
 import { cartLineSizeLabel } from "@/lib/cart-line-size";
-import { getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
+import { clearPendingCheckout, getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -173,6 +173,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       } else {
         setOrderId(data.orderCode);
         clear();
+        clearPendingCheckout();
       }
     } catch (error) {
       setErrors((state) => ({

@@ -72,7 +72,7 @@ This affects late success after expiry, early refund followed by expiry, surplus
 - A post-success decline or void is masked by the early “already succeeded” branch.
 - Same-idempotency-key concurrent initiation uses check-then-insert; the unique-key loser is not converted into an idempotent response.
 - Recycling a failed checkout deletes its session and attempts with cascade, potentially removing a provider mapping that is still useful for late callbacks.
-- Ambiguous initiation failures attempt one immediate lookup, but remain wedged when lookup fails or returns no intention.
+- Ambiguous initiation failures remain pending for a verified callback or reservation expiry. The API does not call Paymob's unsupported `GET /v1/intention/?special_reference=...` endpoint.
 - Guest orders have no authenticated or guest-token detail lookup; the payment result only exposes the final order code.
 - The ERP order detail component conditionally returns before `useEffect`, violating React hook ordering when permissions change during the component lifetime.
 - COD has no customer cancellation, return, or refund lifecycle.
@@ -120,7 +120,7 @@ This affects late success after expiry, early refund followed by expiry, surplus
 - Out-of-order success/decline/refund/void tests, including stale attempts.
 - Wallet, uppercase-HMAC, array-HMAC, card-token, auth, capture, void, and merchant-reference vectors.
 - Paymob order transition-matrix tests.
-- 429 provider classification and recovered-intention identity validation tests.
+- 429 provider classification, reservation-aligned intention expiration, and unsupported-lookup removal tests.
 - Storefront catalog-failure, multi-tab, lost-storage, unknown-state, polling-limit, and browser-crypto failure tests.
 
 ## Recommended implementation order

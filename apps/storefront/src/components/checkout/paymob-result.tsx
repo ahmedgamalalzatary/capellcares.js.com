@@ -31,7 +31,8 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
   }, [lang, returnCheckoutId, router]);
 
   useEffect(() => {
-    if (!checkoutId || status?.status === "completed" || status?.status === "expired") return;
+    if (!checkoutId || status?.status === "completed" || status?.status === "expired" ||
+      status?.status === "failed") return;
     let cancelled = false;
     const refresh = () => {
       void fetchCheckoutStatus(checkoutId)
@@ -71,8 +72,9 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
 
   const completed = status?.status === "completed" && status.order;
   const expired = status?.status === "expired";
+  const sessionFailed = status?.status === "failed";
   const needsReview = status?.latestAttemptStatus === "reconciliation_required";
-  const failed = status?.latestAttemptStatus === "failed" && !completed && !expired;
+  const failed = (sessionFailed || status?.latestAttemptStatus === "failed") && !completed && !expired;
   const noCheckout = sessionLoaded && !checkoutId;
   return (
     <section className="mx-auto my-8 grid max-w-130 gap-5 rounded-lg border border-(--hairline) bg-surface p-6 shadow-(--shadow-1) sm:my-12 sm:p-10">
@@ -94,8 +96,8 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
       <div className="flex flex-wrap gap-3">
         {completed && <Link href={`/${lang}/orders`} className="btn btn--ghost">{dict.orders.viewOrders}</Link>}
         {needsReview && <a href="https://wa.me/201034668590" className="btn btn--primary">{dict.checkout.contactSupport}</a>}
-        {((expired && !needsReview) || !checkoutId) && <Link href={`/${lang}/checkout`} className="btn btn--primary">
-          {dict.checkout.returnToCheckout}</Link>}
+        {((expired || sessionFailed) && !needsReview) || !checkoutId ? <Link href={`/${lang}/checkout`} className="btn btn--primary">
+          {dict.checkout.returnToCheckout}</Link> : null}
       </div>
     </section>
   );

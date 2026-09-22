@@ -8,7 +8,6 @@ import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.serv
 import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
 import {
   createPaymobIntention,
-  lookupPaymobIntentionBySpecialReference,
   PaymobProviderError,
   type CreatePaymobIntentionInput
 } from "../payments/paymob/paymob-client.js";
@@ -18,7 +17,6 @@ type PaymobIntention = {
 };
 
 type IntentionCreator = (input: CreatePaymobIntentionInput) => Promise<PaymobIntention>;
-type IntentionLookup = (input: { specialReference: string }) => Promise<PaymobIntention | null>;
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -41,7 +39,20 @@ async function releaseReservedStock(tx: DbTransaction, sessionId: number) {
 
 function isDefinitivePaymobRejection(error: unknown): boolean {
   if (!(error instanceof PaymobProviderError) || error.status == null) return false;
-  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 409;
+  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 409 &&
+    error.status !== 429;
+}
+
+function isTransientPaymobRejection(error: unknown): boolean {
+  if (!(error instanceof PaymobProviderError) || error.status == null) return false;
+  return error.status === 429;
+}
+
+function isDuplicateEntryError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: string; cause?: { code?: string; cause?: { code?: string } } };
+  return candidate.code === "ER_DUP_ENTRY" || candidate.cause?.code === "ER_DUP_ENTRY" ||
+    candidate.cause?.cause?.code === "ER_DUP_ENTRY";
 }
 
 /**
@@ -58,31 +69,25 @@ async function failPaymobInitiation(sessionId: number, attemptId: number) {
   });
 }
 
-async function recoverIntentionOrFail(input: {
+/**
+ * A throttled (429) request never created an intention, but it is retryable:
+ * fail only the attempt so the session stays payable and keeps its stock hold.
+ */
+async function failThrottledPaymobAttempt(attemptId: number) {
+  await db.update(paymentAttempts)
+    .set({ status: "failed", failureCode: "INTENTION_CREATION_THROTTLED" })
+    .where(eq(paymentAttempts.id, attemptId));
+}
+
+async function handleIntentionFailure(input: {
   error: unknown;
   sessionId: number;
   attemptId: number;
-  specialReference: string;
-  config: PaymobConfig;
-  lookupIntention?: IntentionLookup;
-}): Promise<PaymobIntention> {
-  let recovered: PaymobIntention | null = null;
-  try {
-    recovered = await (input.lookupIntention ?? ((lookupInput) => lookupPaymobIntentionBySpecialReference({
-      baseUrl: input.config.baseUrl,
-      secretKey: input.config.secretKey!,
-      publicKey: input.config.publicKey!,
-      specialReference: lookupInput.specialReference
-    })))({ specialReference: input.specialReference });
-  } catch {
-    if (isDefinitivePaymobRejection(input.error)) {
-      await failPaymobInitiation(input.sessionId, input.attemptId);
-    }
-    throw input.error;
-  }
-  if (recovered) return recovered;
+}): Promise<never> {
   if (isDefinitivePaymobRejection(input.error)) {
     await failPaymobInitiation(input.sessionId, input.attemptId);
+  } else if (isTransientPaymobRejection(input.error)) {
+    await failThrottledPaymobAttempt(input.attemptId);
   }
   throw input.error;
 }
@@ -107,7 +112,6 @@ export async function initiatePaymobCheckout(input: {
   notificationUrl: string;
   redirectionUrl: string;
   createIntention?: IntentionCreator;
-  lookupIntention?: IntentionLookup;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
@@ -118,7 +122,9 @@ export async function initiatePaymobCheckout(input: {
   if (input.payload.expectedAmountCents != null && amountCents !== input.payload.expectedAmountCents) {
     throw new CheckoutAmountChangedError();
   }
-  const [existing] = await db.select({
+  const now = input.now ?? new Date();
+  const publicKey = input.config.publicKey;
+  const findExistingCheckout = () => db.select({
     sessionId: checkoutSessions.id,
     checkoutId: checkoutSessions.publicId,
     expiresAt: checkoutSessions.reservationExpiresAt,
@@ -131,22 +137,25 @@ export async function initiatePaymobCheckout(input: {
     .innerJoin(paymentAttempts, eq(paymentAttempts.checkoutSessionId, checkoutSessions.id))
     .where(eq(checkoutSessions.idempotencyKey, input.idempotencyKey))
     .orderBy(desc(paymentAttempts.attemptNumber))
-    .limit(1);
-  if (existing?.clientSecret) {
-    if (existing.state === "completed") throw new Error("Checkout already completed");
-    if (existing.state !== "payment_pending") throw new Error("Checkout is no longer payable");
-    if (existing.expiresAt <= (input.now ?? new Date())) throw new Error("Checkout is no longer payable");
-    if (existing.cartSnapshot !== cartSnapshot || existing.amountCents !== amountCents) {
-      throw new Error("Idempotency key belongs to a different checkout");
+    .limit(1)
+    .then((rows) => rows[0]);
+  type ExistingCheckout = NonNullable<Awaited<ReturnType<typeof findExistingCheckout>>>;
+  const resolveReuse = (existing: ExistingCheckout):
+    { kind: "paymob_redirect"; checkoutId: string; checkoutUrl: string; expiresAt: string } | null => {
+    if (existing.clientSecret) {
+      if (existing.state === "completed") throw new Error("Checkout already completed");
+      if (existing.state !== "payment_pending") throw new Error("Checkout is no longer payable");
+      if (existing.expiresAt <= now) throw new Error("Checkout is no longer payable");
+      if (existing.cartSnapshot !== cartSnapshot || existing.amountCents !== amountCents) {
+        throw new Error("Idempotency key belongs to a different checkout");
+      }
+      return {
+        kind: "paymob_redirect" as const,
+        checkoutId: existing.checkoutId,
+        checkoutUrl: `https://eg.checkout.paymob.com/?publicKey=${encodeURIComponent(publicKey)}&clientSecret=${encodeURIComponent(existing.clientSecret)}`,
+        expiresAt: existing.expiresAt.toISOString()
+      };
     }
-    return {
-      kind: "paymob_redirect" as const,
-      checkoutId: existing.checkoutId,
-      checkoutUrl: `https://eg.checkout.paymob.com/?publicKey=${encodeURIComponent(input.config.publicKey)}&clientSecret=${encodeURIComponent(existing.clientSecret)}`,
-      expiresAt: existing.expiresAt.toISOString()
-    };
-  }
-  if (existing) {
     if (existing.attemptStatus === "pending" ||
       (existing.attemptStatus === "created" && existing.state === "payment_pending")) {
       throw new Error("Paymob checkout initiation is still in progress");
@@ -154,40 +163,95 @@ export async function initiatePaymobCheckout(input: {
     if (existing.cartSnapshot !== cartSnapshot || existing.amountCents !== amountCents) {
       throw new Error("Idempotency key belongs to a different checkout");
     }
-    // A previous initiation never produced a client secret (a crash after reserving, or a
-    // confirmed provider rejection). Release anything it still holds and recycle the
-    // idempotency key so a retry of the same cart can start clean.
-    await db.transaction(async (tx) => {
-      await releaseReservedStock(tx, existing.sessionId);
-      await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
-    });
-  }
-  const now = input.now ?? new Date();
-  const expiresAt = new Date(now.getTime() + input.config.intentionExpirationSeconds * 1000);
-  const publicId = `checkout_${randomUUID()}`;
+    return null;
+  };
   const merchantReference = `capella_${randomUUID()}`;
-  const reserved = await createReservedCheckout({
-    publicId,
-    idempotencyKey: input.idempotencyKey,
-    customerType: input.payload.customerId ? "registered" : "guest",
-    customerId: input.payload.customerId ?? null,
-    fullName: input.payload.fullName,
-    phone: normalizeEgyptianPhone(input.payload.phone),
-    email: input.payload.email,
-    governorate: input.payload.governorate,
-    cityArea: input.payload.cityArea,
-    addressLine: input.payload.addressLine,
-    buildingApartment: input.payload.buildingApartment,
-    notes: input.payload.notes ?? "",
-    cartSnapshot,
-    amountCents,
-    reservationExpiresAt: expiresAt,
-    reservations: priced.reservations,
-    initialAttempt: { merchantReference, environment: input.config.mode,
-      allowedIntegrationIds: input.config.enabledMethods.map((method) => method.integrationId), expiresAt }
-  });
-  if (reserved.paymentAttemptId === null) throw new Error("Payment attempt allocation failed");
-  const paymentAttemptId = reserved.paymentAttemptId;
+  type CheckoutPlan = { sessionId: number; checkoutId: string; expiresAt: Date; paymentAttemptId: number };
+  let plan: CheckoutPlan | undefined = undefined;
+  const existing = await findExistingCheckout();
+  if (existing) {
+    const reused = resolveReuse(existing);
+    if (reused) return reused;
+    // A throttled (429) initiation left the session payable with its stock still held
+    // and no client secret. Allocate the next attempt on that session in place so the
+    // reservation is never released — releasing first would let competing checkouts
+    // take the held stock before this retry re-reserves it.
+    const throttledRetry = await db.transaction(async (tx): Promise<CheckoutPlan | null> => {
+      const [session] = await tx.select().from(checkoutSessions)
+        .where(eq(checkoutSessions.id, existing.sessionId)).limit(1).for("update");
+      if (!session || session.state !== "payment_pending" || session.reservationExpiresAt <= now) return null;
+      const [latest] = await tx.select().from(paymentAttempts)
+        .where(eq(paymentAttempts.checkoutSessionId, session.id))
+        .orderBy(desc(paymentAttempts.attemptNumber)).limit(1).for("update");
+      if (!latest || latest.status !== "failed" || latest.clientSecret !== null) return null;
+      if (session.attemptCount >= 3) throw new Error("Payment attempt limit reached");
+      const [attempt] = await tx.insert(paymentAttempts).values({
+        checkoutSessionId: session.id,
+        attemptNumber: session.attemptCount + 1,
+        merchantReference,
+        amountCents: session.amountCents,
+        currency: session.currency,
+        environment: input.config.mode,
+        allowedIntegrationIds: JSON.stringify(input.config.enabledMethods.map((method) => method.integrationId)),
+        status: "created",
+        expiresAt: session.reservationExpiresAt
+      }).$returningId();
+      await tx.update(checkoutSessions).set({ attemptCount: session.attemptCount + 1 })
+        .where(eq(checkoutSessions.id, session.id));
+      return { sessionId: session.id, checkoutId: session.publicId,
+        expiresAt: session.reservationExpiresAt, paymentAttemptId: attempt.id };
+    });
+    if (throttledRetry) {
+      plan = throttledRetry;
+    } else {
+      // A previous initiation never produced a client secret (a crash after reserving, or a
+      // confirmed provider rejection). Release anything it still holds and recycle the
+      // idempotency key so a retry of the same cart can start clean.
+      await db.transaction(async (tx) => {
+        await releaseReservedStock(tx, existing.sessionId);
+        await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
+      });
+    }
+  }
+  if (!plan) {
+    const expiresAt = new Date(now.getTime() + input.config.intentionExpirationSeconds * 1000);
+    const publicId = `checkout_${randomUUID()}`;
+    let reserved: Awaited<ReturnType<typeof createReservedCheckout>>;
+    try {
+      reserved = await createReservedCheckout({
+        publicId,
+        idempotencyKey: input.idempotencyKey,
+        customerType: input.payload.customerId ? "registered" : "guest",
+        customerId: input.payload.customerId ?? null,
+        fullName: input.payload.fullName,
+        phone: normalizeEgyptianPhone(input.payload.phone),
+        email: input.payload.email,
+        governorate: input.payload.governorate,
+        cityArea: input.payload.cityArea,
+        addressLine: input.payload.addressLine,
+        buildingApartment: input.payload.buildingApartment,
+        notes: input.payload.notes ?? "",
+        cartSnapshot,
+        amountCents,
+        reservationExpiresAt: expiresAt,
+        reservations: priced.reservations,
+        initialAttempt: { merchantReference, environment: input.config.mode,
+          allowedIntegrationIds: input.config.enabledMethods.map((method) => method.integrationId), expiresAt }
+      });
+    } catch (error) {
+      if (!isDuplicateEntryError(error)) throw error;
+      // A concurrent request with the same idempotency key won the insert race; behave
+      // like an idempotent replay instead of surfacing the database error.
+      const winner = await findExistingCheckout();
+      if (!winner) throw error;
+      const reused = resolveReuse(winner);
+      if (reused) return reused;
+      throw new Error("Paymob checkout initiation is still in progress");
+    }
+    if (reserved.paymentAttemptId === null) throw new Error("Payment attempt allocation failed");
+    plan = { sessionId: reserved.id, checkoutId: publicId, expiresAt, paymentAttemptId: reserved.paymentAttemptId };
+  }
+  const { sessionId, checkoutId, expiresAt, paymentAttemptId } = plan;
 
   const names = input.payload.fullName.trim().split(/\s+/);
   const intentionInput = {
@@ -197,9 +261,12 @@ export async function initiatePaymobCheckout(input: {
     amountCents,
     integrationIds: input.config.enabledMethods.map((method) => method.integrationId),
     specialReference: merchantReference,
-    expirationSeconds: input.config.intentionExpirationSeconds,
+    expirationSeconds: Math.min(
+      Math.floor((expiresAt.getTime() - now.getTime()) / 1000),
+      input.config.intentionExpirationSeconds
+    ),
     notificationUrl: input.notificationUrl,
-    redirectionUrl: checkoutReturnUrl(input.redirectionUrl, publicId),
+    redirectionUrl: checkoutReturnUrl(input.redirectionUrl, checkoutId),
     billingData: {
       first_name: names[0] ?? input.payload.fullName,
       last_name: names.slice(1).join(" ") || names[0] || input.payload.fullName,
@@ -212,18 +279,15 @@ export async function initiatePaymobCheckout(input: {
   try {
     intention = await (input.createIntention ?? createPaymobIntention)(intentionInput);
   } catch (error) {
-    intention = await recoverIntentionOrFail({
+    intention = await handleIntentionFailure({
       error,
-      sessionId: reserved.id,
-      attemptId: paymentAttemptId,
-      specialReference: merchantReference,
-      config: input.config,
-      lookupIntention: input.lookupIntention
+      sessionId,
+      attemptId: paymentAttemptId
     });
   }
   const stillPayable = await db.transaction(async (tx) => {
     const [current] = await tx.select({ state: checkoutSessions.state, expiresAt: checkoutSessions.reservationExpiresAt })
-      .from(checkoutSessions).where(eq(checkoutSessions.id, reserved.id)).limit(1).for("update");
+      .from(checkoutSessions).where(eq(checkoutSessions.id, sessionId)).limit(1).for("update");
     await tx.update(paymentAttempts).set({
       paymobIntentionId: intention.intentionId,
       paymobOrderId: String(intention.orderId),
@@ -238,7 +302,7 @@ export async function initiatePaymobCheckout(input: {
   });
   if (!stillPayable) throw new Error("Checkout is no longer payable");
 
-  return { kind: "paymob_redirect" as const, checkoutId: publicId, checkoutUrl: intention.checkoutUrl, expiresAt: expiresAt.toISOString() };
+  return { kind: "paymob_redirect" as const, checkoutId, checkoutUrl: intention.checkoutUrl, expiresAt: expiresAt.toISOString() };
 }
 
 export async function retryPaymobCheckout(input: {
@@ -247,7 +311,6 @@ export async function retryPaymobCheckout(input: {
   notificationUrl: string;
   redirectionUrl: string;
   createIntention?: IntentionCreator;
-  lookupIntention?: IntentionLookup;
   now?: Date;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
@@ -306,13 +369,10 @@ export async function retryPaymobCheckout(input: {
   try {
     intention = await (input.createIntention ?? createPaymobIntention)(intentionInput);
   } catch (error) {
-    intention = await recoverIntentionOrFail({
+    intention = await handleIntentionFailure({
       error,
       sessionId: allocated.session.id,
-      attemptId: allocated.attemptId,
-      specialReference: merchantReference,
-      config: input.config,
-      lookupIntention: input.lookupIntention
+      attemptId: allocated.attemptId
     });
   }
   const stillPayable = await db.transaction(async (tx) => {

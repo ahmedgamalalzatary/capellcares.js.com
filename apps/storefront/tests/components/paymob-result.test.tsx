@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
 
@@ -186,5 +186,30 @@ describe("PaymobResult", () => {
     await waitFor(() => expect(fetchCheckoutStatus).toHaveBeenCalledWith("checkout_third"));
     expect(await screen.findByText(/confirming your payment/i)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("stops polling and offers a return path when the checkout session has failed", async () => {
+    vi.useFakeTimers();
+    try {
+      const { PaymobResult } = await import("@/components/checkout/paymob-result");
+      sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_failed");
+      fetchCheckoutStatus.mockResolvedValue({
+        checkoutId: "checkout_failed", status: "failed",
+        expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
+        latestAttemptStatus: "failed", canRetry: false, order: null
+      });
+
+      render(<PaymobResult lang="en" dict={getDict("en")} />);
+      await act(async () => { await Promise.resolve(); });
+
+      expect(screen.getByText("Payment was not completed")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Return to checkout" })).toBeInTheDocument();
+      expect(fetchCheckoutStatus).toHaveBeenCalledTimes(1);
+
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(fetchCheckoutStatus).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

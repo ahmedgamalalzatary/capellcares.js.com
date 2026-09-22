@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@capella/database/src/db";
 import { checkoutSessions, paymentAttempts } from "@capella/database/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { wrapAsync } from "../../lib/async-route.js";
 import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
 import {
@@ -25,7 +25,11 @@ adminOrdersRoutes.get("/reconciliation", requireErpPermission("orders.read"), wr
     reason: paymentAttempts.failureCode
   }).from(paymentAttempts)
     .innerJoin(checkoutSessions, eq(checkoutSessions.id, paymentAttempts.checkoutSessionId))
-    .where(eq(paymentAttempts.status, "reconciliation_required"));
+    .where(or(
+      eq(paymentAttempts.status, "reconciliation_required"),
+      and(eq(paymentAttempts.status, "succeeded"),
+        eq(paymentAttempts.failureCode, "SECOND_CAPTURE_AFTER_SUCCESS"))
+    ));
   res.json({ items: rows });
 }));
 adminOrdersRoutes.get("/:id", requireErpPermission("orders.read"), wrapAsync(getAdminOrderController));

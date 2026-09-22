@@ -510,3 +510,25 @@ test("checkout status rate-limits repeated polling", async () => {
     assert.equal(status, 429);
   });
 });
+
+test("checkout rate limit buckets each forwarded client separately behind a proxy", async () => {
+  await withTestServer(app, async (request) => {
+    const post = (forwardedFor: string) =>
+      request("/api/v1/checkout", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "idempotency-key": crypto.randomUUID(),
+          "x-forwarded-for": forwardedFor
+        },
+        body: "{}"
+      });
+
+    for (let index = 0; index < 20; index += 1) {
+      await post("203.0.113.10");
+    }
+
+    assert.equal((await post("203.0.113.10")).status, 429);
+    assert.notEqual((await post("203.0.113.11")).status, 429);
+  });
+});

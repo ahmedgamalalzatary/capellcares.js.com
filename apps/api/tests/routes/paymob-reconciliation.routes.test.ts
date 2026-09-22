@@ -36,3 +36,26 @@ test("ERP lists paid checkouts needing manual reconciliation without exposing pa
   const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9025"));
   assert.equal(attempt.status, "reconciliation_required");
 });
+
+test("ERP reconciliation surfaces a succeeded attempt flagged for a second capture", async () => {
+  const publicId = `checkout_${crypto.randomUUID()}`;
+  const [session] = await db.insert(checkoutSessions).values({ publicId,
+    idempotencyKey: crypto.randomUUID(), customerType: "guest", fullName: "Double Capture",
+    phone: "+201012345678", email: "double@example.com", governorate: "Cairo", cityArea: "Nasr City",
+    addressLine: "Street 1", buildingApartment: "1", cartSnapshot: "[]", amountCents: 3500,
+    shippingAmountCents: 0, currency: "EGP", state: "completed", attemptCount: 1,
+    reservationExpiresAt: new Date(Date.now() + 600000) }).$returningId();
+  await db.insert(paymentAttempts).values({ checkoutSessionId: session.id, attemptNumber: 1,
+    merchantReference: `capella_${crypto.randomUUID()}`, amountCents: 3500, currency: "EGP",
+    environment: "test", status: "succeeded", paymobOrderId: "9026",
+    paymobTransactionId: "7026", failureCode: "SECOND_CAPTURE_AFTER_SUCCESS" });
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/orders/reconciliation", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    const flagged = response.json.items.find((item: { paymobOrderId: string }) => item.paymobOrderId === "9026");
+    assert.ok(flagged, "second-capture flag must be visible in ERP reconciliation");
+    assert.equal(flagged.reason, "SECOND_CAPTURE_AFTER_SUCCESS");
+  });
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9026"));
+  assert.equal(attempt.status, "succeeded");
+});

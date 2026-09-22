@@ -173,7 +173,7 @@ export type PaymobMethodAvailability = { available: boolean; methods: Array<"car
 
 export type CheckoutStatus = {
   checkoutId: string;
-  status: "payment_pending" | "completed" | "expired";
+  status: "payment_pending" | "completed" | "failed" | "open" | "expired";
   expiresAt: string;
   attemptsUsed: number;
   latestAttemptStatus: string | null;
