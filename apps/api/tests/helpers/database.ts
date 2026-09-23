@@ -4,6 +4,7 @@ import {
   adminUserPermissions,
   adminUsers,
   authSessions,
+  carts,
   checkoutReservations,
   checkoutSessions,
   collections,
@@ -36,6 +37,7 @@ export async function resetApiTestDatabase() {
   await db.delete(reviews);
   await db.delete(relatedItems);
   await db.delete(authSessions);
+  await db.delete(carts);
   await db.delete(wishlists);
   await db.delete(advices);
   await db.delete(adminUserPermissions);

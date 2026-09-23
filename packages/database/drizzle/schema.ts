@@ -8,6 +8,7 @@ import {
   foreignKey,
   index,
   int,
+  json,
   mysqlEnum,
   mysqlTable,
   text,
@@ -460,6 +461,26 @@ export const wishlists = mysqlTable(
     )
   })
 );
+
+/**
+ * Mirrors the storefront `CartLine` union. Declared locally because the
+ * database package must not depend on `@capella/shared`.
+ */
+export type StoredCartLine =
+  | { type: "product"; productId: number; variantId: number; qty: number }
+  | { type: "offer"; offerId: number; qty: number }
+  | { type: "collection"; collectionId: number; qty: number };
+
+export const carts = mysqlTable("carts", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" })
+    .unique(),
+  lines: json("lines").$type<StoredCartLine[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
 
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),

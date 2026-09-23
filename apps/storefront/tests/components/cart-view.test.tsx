@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getDict } from "@capella/shared";
 
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: null, accessToken: null })
+}));
+
 vi.mock("@/lib/api/client", () => {
   const discountedProduct = {
     id: 1,

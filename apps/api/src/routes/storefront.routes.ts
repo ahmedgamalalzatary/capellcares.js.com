@@ -7,6 +7,7 @@ import { catalogProductsRoutes } from "../modules/catalog/products/products.rout
 import { getOfferBySlug, listCategories, listOffers } from "../modules/catalog/catalog.controller.js";
 import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-advices.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
+import { cartRoutes } from "../modules/cart/cart.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
 import { storefrontShopMediaRoutes } from "../modules/shop-media/storefront-shop-media.routes.js";
 import { storefrontAnnouncementsRoutes } from "../modules/announcements/storefront-announcements.routes.js";
@@ -23,6 +24,7 @@ storefrontRoutes.use("/checkout", checkoutRoutes);
 storefrontRoutes.use("/payments/paymob", paymobWebhookRoutes);
 storefrontRoutes.use("/advices", storefrontAdvicesRoutes);
 storefrontRoutes.use("/auth", authRoutes);
+storefrontRoutes.use("/cart", cartRoutes);
 storefrontRoutes.use("/orders", storefrontOrdersRoutes);
 storefrontRoutes.use("/wishlist", wishlistRoutes);
 storefrontRoutes.use("/reviews", storefrontReviewsRoutes);

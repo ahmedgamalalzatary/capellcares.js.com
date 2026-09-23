@@ -10,6 +10,10 @@ vi.mock("@/lib/api/client", () => ({
   fetchCollections: async () => []
 }));
 
+vi.mock("@/components/providers/auth-provider", () => ({
+  useAuth: () => ({ user: null, accessToken: null })
+}));
+
 import { CartProvider, useCart } from "@/components/providers/cart-provider";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 

@@ -2,8 +2,20 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CartLine } from "@capella/shared";
+import { useAuth } from "@/components/providers/auth-provider";
+import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
 import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
-import { clearCartLines, loadCartLines, normalizeCartLine, saveCartLines } from "@/lib/cart";
+import {
+  cartLineAdditions,
+  cartLineKey as lineKey,
+  clearCartLines,
+  loadCartLines,
+  loadLastSyncedCartLines,
+  mergeCartLines,
+  normalizeCartLine,
+  saveCartLines,
+  saveLastSyncedCartLines
+} from "@/lib/cart";
 
 interface CartContextValue {
   lines: CartLine[];
@@ -16,18 +28,49 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-function lineKey(line: CartLine) {
-  return line.type === "product"
-    ? `p:${line.productId}:${line.variantId}`
-    : line.type === "offer"
-      ? `o:${line.offerId}`
-      : `c:${line.collectionId}`;
-}
+
+const UPLOAD_RETRY_DELAY_MS = 750;
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user, accessToken } = useAuth();
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const linesRef = useRef<CartLine[]>([]);
+  // Customer whose cart this browser session has already pulled from the API.
+  // Null means "not synced yet", so pushes stay disabled until the pull lands
+  // (a failed GET must never be followed by a PUT that would overwrite the
+  // stored cart with whatever happens to be in localStorage).
+  const syncedCustomerIdRef = useRef<number | null>(null);
+  // Last cart snapshot known to be on the server (after a successful GET or
+  // PUT). Lets the merge step tell unsynced local additions apart from
+  // quantities that were already synced.
+  const syncedLinesRef = useRef<CartLine[] | null>(null);
+  // Upload queue: serializes PUTs so only one request is active per customer.
+  // `pending` is the latest snapshot not yet sent; a cart change during an
+  // active upload overwrites it and is sent once the active request completes.
+  const uploadStateRef = useRef<{ pending: CartLine[] | null; inFlight: boolean; retryTimer: number | null }>({
+    pending: null,
+    inFlight: false,
+    retryTimer: null
+  });
+  const accessTokenRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    accessTokenRef.current = accessToken;
+  }, [accessToken]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const uploadState = uploadStateRef.current;
+      if (uploadState.retryTimer != null) window.clearTimeout(uploadState.retryTimer);
+      uploadState.retryTimer = null;
+      uploadState.inFlight = false;
+      uploadState.pending = null;
+    };
+  }, []);
 
   const persistLines = useCallback((next: CartLine[]) => {
     try {
@@ -69,12 +112,133 @@ export function CartProvider({ children }: { children: ReactNode }) {
     linesRef.current = lines;
   }, [lines]);
 
+  const persistSyncedSnapshot = useCallback((snapshot: CartLine[]) => {
+    syncedLinesRef.current = snapshot;
+    try {
+      saveLastSyncedCartLines(localStorage, snapshot);
+    } catch {}
+  }, []);
+
+  const drainUpload = useCallback(() => {
+    if (!mountedRef.current) return;
+    const uploadState = uploadStateRef.current;
+    if (uploadState.inFlight) return;
+    const token = accessTokenRef.current;
+    if (!token || syncedCustomerIdRef.current == null) return;
+
+    const snapshot = uploadState.pending;
+    if (snapshot == null) return;
+
+    uploadState.pending = null;
+    uploadState.inFlight = true;
+
+    const failUpload = (failed: CartLine[]) => {
+      // Retain the latest snapshot: a newer one that arrived mid-flight wins;
+      // otherwise the failed snapshot is retried once the upload path frees up.
+      if (uploadState.pending == null) uploadState.pending = failed;
+      if (uploadState.retryTimer == null) {
+        uploadState.retryTimer = window.setTimeout(() => {
+          uploadState.retryTimer = null;
+          drainUpload();
+        }, UPLOAD_RETRY_DELAY_MS);
+      }
+    };
+
+    fetch(`${API_BASE}/api/v1/cart`, {
+      method: "PUT",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ lines: snapshot })
+    })
+      .then((response) => {
+        if (!mountedRef.current) return;
+        uploadState.inFlight = false;
+        if (!response.ok) {
+          failUpload(snapshot);
+          return;
+        }
+        // The server now holds exactly this snapshot.
+        persistSyncedSnapshot(snapshot);
+        if (uploadState.pending != null) drainUpload();
+      })
+      .catch(() => {
+        if (!mountedRef.current) return;
+        uploadState.inFlight = false;
+        failUpload(snapshot);
+      });
+  }, [persistSyncedSnapshot]);
+
+  const uploadLines = useCallback((next: CartLine[]) => {
+    uploadStateRef.current.pending = next;
+    drainUpload();
+  }, [drainUpload]);
+
   useEffect(() => {
     if (!hydrated) return;
     try {
       saveCartLines(localStorage, lines);
     } catch {}
   }, [lines, hydrated]);
+
+  // Server cart sync — signed-in customers only. Guests keep the
+  // localStorage-only cart, so nothing changes for people who never register.
+  useEffect(() => {
+    if (!hydrated || !user || !accessToken) return;
+    if (syncedCustomerIdRef.current === user.id) return;
+
+    let cancelled = false;
+    const previousCustomerId = syncedCustomerIdRef.current;
+
+    fetch(`${API_BASE}/api/v1/cart`, { headers: { authorization: `Bearer ${accessToken}` } })
+      .then((response) =>
+        response.ok ? response.json() : Promise.reject(new Error(`cart fetch failed: ${response.status}`))
+      )
+      .then((data: { lines?: unknown }) => {
+        if (cancelled) return;
+        const serverLines = Array.isArray(data?.lines)
+          ? data.lines
+              .map((line) => normalizeCartLine(line))
+              .filter((line): line is CartLine => line !== null)
+          : [];
+        // Another account was signed in on this browser before: its leftover
+        // local lines must not leak into this account's cart.
+        const localLines =
+          previousCustomerId != null && previousCustomerId !== user.id ? [] : linesRef.current;
+        // Only the local additions the server has not seen are merged in; the
+        // rest of the local cart was already synced and must not be summed
+        // again (that would double quantities on every page reload).
+        const lastSynced = syncedLinesRef.current ?? loadLastSyncedCartLines(localStorage);
+        const additions = cartLineAdditions(localLines, lastSynced);
+        const merged = mergeCartLines(additions, serverLines);
+        // The server snapshot is the new sync baseline; the merged cart is
+        // queued for upload by the lines-change effect.
+        persistSyncedSnapshot(serverLines);
+        syncedCustomerIdRef.current = user.id;
+        commitLines(merged);
+      })
+      .catch(() => {
+        // Sync stays disabled: a failed GET must never be followed by a PUT
+        // that would overwrite the stored cart with whatever is in localStorage.
+        // The localStorage cart keeps working; the next page load retries.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, user, accessToken, commitLines]);
+
+  // Push local changes while signed in so every device converges on the same
+  // cart. Uploads are serialized — one PUT in flight per customer; a change
+  // during an active upload waits in a one-slot queue and is sent when the
+  // active request completes. Failed uploads retain the latest snapshot and
+  // retry without needing another cart change.
+  useEffect(() => {
+    if (!hydrated || !user || !accessToken) return;
+    if (syncedCustomerIdRef.current !== user.id) return;
+    uploadLines(lines);
+  }, [lines, hydrated, user, accessToken, uploadLines]);
 
   useEffect(() => {
     if (!hydrated || lines.length === 0) return;
