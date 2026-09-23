@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CartLine } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
+import { readStoredAuthUser } from "@/lib/auth-provider.storage";
 import { PUBLIC_API_BASE as API_BASE } from "@/constants/api";
 import { fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import {
@@ -36,6 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const linesRef = useRef<CartLine[]>([]);
+  const pendingClearCustomerIdRef = useRef<number | null>(null);
   // Customer whose cart this browser session has already pulled from the API.
   // Null means "not synced yet", so pushes stay disabled until the pull lands
   // (a failed GET must never be followed by a PUT that would overwrite the
@@ -211,12 +213,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // again (that would double quantities on every page reload).
         const lastSynced = syncedLinesRef.current ?? loadLastSyncedCartLines(localStorage);
         const additions = cartLineAdditions(localLines, lastSynced);
-        const merged = mergeCartLines(additions, serverLines);
+        // Checkout can finish while this GET is in flight. Its response is then
+        // an older cart snapshot and must not restore the purchased items.
+        const clearedDuringPull = pendingClearCustomerIdRef.current === user.id;
+        const merged = clearedDuringPull ? [...localLines] : mergeCartLines(additions, serverLines);
         // The server snapshot is the new sync baseline; the merged cart is
         // queued for upload by the lines-change effect.
         persistSyncedSnapshot(serverLines);
         syncedCustomerIdRef.current = user.id;
         commitLines(merged);
+        if (clearedDuringPull) pendingClearCustomerIdRef.current = null;
       })
       .catch(() => {
         // Sync stays disabled: a failed GET must never be followed by a PUT
@@ -305,8 +311,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [commitLines]);
 
   const clear = useCallback(() => {
+    const customerId = user?.id ?? readStoredAuthUser()?.id;
+    pendingClearCustomerIdRef.current = customerId != null && syncedCustomerIdRef.current !== customerId
+      ? customerId : null;
     commitLines([]);
-  }, [commitLines]);
+  }, [commitLines, user?.id]);
 
   const value = useMemo<CartContextValue>(() => ({
     lines,

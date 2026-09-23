@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api/client", () => ({
@@ -56,7 +56,8 @@ function CartProbe() {
     "div",
     null,
     createElement("div", { "data-testid": "lines" }, JSON.stringify(cart.lines)),
-    createElement("button", { onClick: () => cart.add({ type: "offer", offerId: 2, qty: 1 }) }, "add-offer")
+    createElement("button", { onClick: () => cart.add({ type: "offer", offerId: 2, qty: 1 }) }, "add-offer"),
+    createElement("button", { onClick: cart.clear }, "clear-cart")
   );
 }
 
@@ -81,6 +82,65 @@ describe("CartProvider server sync", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps a completed checkout's cart empty when an older server pull finishes afterward", async () => {
+    const oldLine = { type: "offer" as const, offerId: 2, qty: 1 };
+    saveCartLines(window.localStorage, [oldLine]);
+    let resolveServerCart: (response: Response) => void = () => {};
+    const serverCart = new Promise<Response>((resolve) => { resolveServerCart = resolve; });
+    const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      if (!String(input).includes("/api/v1/cart")) throw new Error(`unexpected fetch: ${input}`);
+      if (init?.method === "PUT") return { ok: true } as Response;
+      return serverCart;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    authState.user = { id: 7, email: "customer@capella.test" };
+    authState.accessToken = "token-7";
+    render(createElement(CartProvider, null, createElement(CartProbe)));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE}/api/v1/cart`, { headers: { authorization: "Bearer token-7" } }
+    ));
+    fireEvent.click(screen.getByRole("button", { name: "clear-cart" }));
+
+    await act(async () => {
+      resolveServerCart({ ok: true, json: async () => ({ lines: [oldLine] }) } as Response);
+      await serverCart;
+    });
+
+    await waitFor(() => expect(lastPutBody(fetchMock.mock.calls as unknown[][])).toEqual({ lines: [] }));
+    expect(screen.getByTestId("lines").textContent).toBe("[]");
+  });
+
+  it("does not apply a previous customer's checkout clear to the next account", async () => {
+    const accountCarts: Record<string, unknown[]> = {
+      "token-7": [{ type: "offer", offerId: 2, qty: 1 }],
+      "token-8": [{ type: "collection", collectionId: 3, qty: 1 }]
+    };
+    const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      if (!String(input).includes("/api/v1/cart")) throw new Error(`unexpected fetch: ${input}`);
+      if (init?.method === "PUT") return { ok: true } as Response;
+      const token = String((init?.headers as Record<string, string>)?.authorization).replace("Bearer ", "");
+      return { ok: true, json: async () => ({ lines: accountCarts[token] }) } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    authState.user = { id: 7, email: "a@capella.test" };
+    authState.accessToken = "token-7";
+    const view = render(createElement(CartProvider, null, createElement(CartProbe)));
+    await waitFor(() => expect(screen.getByTestId("lines").textContent).toBe(
+      '[{"type":"offer","offerId":2,"qty":1}]'
+    ));
+
+    fireEvent.click(screen.getByRole("button", { name: "clear-cart" }));
+    await waitFor(() => expect(lastPutBody(fetchMock.mock.calls as unknown[][])).toEqual({ lines: [] }));
+
+    authState.user = { id: 8, email: "b@capella.test" };
+    authState.accessToken = "token-8";
+    view.rerender(createElement(CartProvider, null, createElement(CartProbe)));
+    await waitFor(() => expect(screen.getByTestId("lines").textContent).toBe(
+      '[{"type":"collection","collectionId":3,"qty":1}]'
+    ));
   });
 
   it("pulls the server cart on login and merges it with the local cart", async () => {

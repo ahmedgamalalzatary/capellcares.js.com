@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 
@@ -132,6 +132,40 @@ test("processPaymobTransaction creates one paid order and finalizes reserved sto
   assert.equal(items.length, 1);
   assert.equal(reservation?.state, "finalized");
   assert.equal(variant?.stockQty, 8);
+});
+
+test("processPaymobTransaction clears a registered customer's stored cart after a successful payment", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  const oldLine = { type: "product" as const, productId: ids.productOneId, variantId: ids.firstVariantId, qty: 1 };
+  await db.insert(carts).values({ customerId: ids.customerId, lines: [oldLine] });
+  await initiatePaymobCheckout({
+    payload: {
+      customerId: ids.customerId, fullName: "Paid Customer", phone: "01012345678", email: "paid@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
+    },
+    idempotencyKey: "34343434-3434-4434-8434-343434343434",
+    config: {
+      mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800
+    },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => ({ intentionId: "pi_cart_clear", orderId: 9034, clientSecret: "secret_34", checkoutUrl: "https://checkout" })
+  });
+
+  const result = await processPaymobTransaction({
+    id: 7034, order: { id: 9034 }, amount_cents: 3500, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" }
+  });
+  const [storedCart] = await db.select({ lines: carts.lines }).from(carts).where(eq(carts.customerId, ids.customerId));
+
+  assert.equal(result.outcome, "succeeded");
+  assert.deepEqual(storedCart?.lines, []);
 });
 
 test("initiatePaymobCheckout rejects reusing an idempotency key for a different cart", async () => {

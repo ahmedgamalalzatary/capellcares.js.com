@@ -1,6 +1,6 @@
 import { and, eq, lt, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode } from "../../../repositories/order/shared.js";
 
 type PaymobTransaction = Record<string, any> & {
@@ -198,6 +198,9 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
     }).where(eq(paymentAttempts.id, match.attempt.id));
     await tx.update(checkoutSessions).set({ state: "completed", createdOrderId: order.id })
       .where(eq(checkoutSessions.id, match.session.id));
+    if (match.session.customerId != null) {
+      await tx.update(carts).set({ lines: [] }).where(eq(carts.customerId, match.session.customerId));
+    }
     return { outcome: "succeeded" as const, orderId: order.id, paymentAttemptId: match.attempt.id, checkoutSessionId: match.session.id };
   });
 }
