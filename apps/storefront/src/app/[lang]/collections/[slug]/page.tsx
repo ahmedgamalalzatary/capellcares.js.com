@@ -45,7 +45,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
     <main className="container">
       <StorefrontJsonLd payloads={[
         breadcrumbJsonLd([
-          { name: dict.common.breadcrumbHome, url: `/${lang}` },
+          { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
           { name: dict.collections.title, url: `/${lang}/collections` },
           { name: pickLang(collection.name, lang) }
         ]),
@@ -53,7 +53,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
       ]} />
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.collections.title, href: `/${lang}/collections` },
           { label: pickLang(collection.name, lang) }
         ]}

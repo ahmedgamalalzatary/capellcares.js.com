@@ -31,7 +31,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             breadcrumbJsonLd([
-              { name: dict.common.breadcrumbHome, url: `/${lang}` },
+              { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
               { name: dict.collections.title }
             ])
           )
@@ -39,7 +39,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
       />
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.collections.title }
         ]}
       />

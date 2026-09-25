@@ -11,7 +11,7 @@ export default async function WishlistPage({ params }: { params: Promise<{ lang:
   return (
     <main className="container">
       <Breadcrumb
-        items={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.wishlist.title }]}
+        items={[{ label: dict.common.breadcrumbHome, href: `/${lang}/shop` }, { label: dict.wishlist.title }]}
       />
       <WishlistView lang={lang} dict={dict} />
     </main>

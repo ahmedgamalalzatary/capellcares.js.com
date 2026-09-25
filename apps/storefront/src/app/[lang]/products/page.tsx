@@ -53,7 +53,7 @@ export default async function ProductsPage({
     <main className="container">
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.nav.products }
         ]}
       />

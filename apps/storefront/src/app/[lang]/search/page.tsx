@@ -81,7 +81,7 @@ export default async function SearchPage({
     <main className="container">
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.search.title }
         ]}
       />

@@ -7,7 +7,7 @@ export default async function OrdersPage({ params }: { params: Promise<{ lang: s
 
   return (
     <StorefrontPageShell
-      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.orders.title }]}
+      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}/shop` }, { label: dict.orders.title }]}
       title={dict.orders.title}
     >
       <OrdersView lang={lang} dict={dict} />

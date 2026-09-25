@@ -13,7 +13,7 @@ export default async function PaymentResultPage({ params, searchParams }: {
   const returnCheckoutId = (await searchParams).checkoutId;
   return (
     <StorefrontPageShell title={dict.checkout.payment} eyebrow={dict.checkout.eyebrow}
-      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` },
+      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
         { label: dict.checkout.title, href: `/${lang}/checkout` }, { label: dict.checkout.payment }]}>
       <PaymobResult lang={lang} dict={dict}
         returnCheckoutId={typeof returnCheckoutId === "string" ? returnCheckoutId : undefined} />

@@ -79,6 +79,16 @@ describe("Header layout stability", () => {
     expect(logoLink.className).toContain("scale-130");
   });
 
+  it("points the logo link at the shop home instead of the locale root", () => {
+    const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    expect(screen.getByRole("link", { name: "Capella" })).toHaveAttribute("href", "/en/shop");
+
+    rerender(<Header lang="ar" dict={dict} menuEntries={[]} />);
+
+    expect(screen.getByRole("link", { name: "Capella" })).toHaveAttribute("href", "/ar/shop");
+  });
+
   it("keeps the mobile menu button scaling class on the button", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} />);
 

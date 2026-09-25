@@ -8,7 +8,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ lang:
   return (
     <StorefrontPageShell
       breadcrumbItems={[
-        { label: dict.common.breadcrumbHome, href: `/${lang}` },
+        { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
         { label: dict.cart.title, href: `/${lang}/cart` },
         { label: dict.checkout.title }
       ]}

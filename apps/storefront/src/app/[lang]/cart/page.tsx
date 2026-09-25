@@ -7,7 +7,7 @@ export default async function CartPage({ params }: { params: Promise<{ lang: str
 
   return (
     <StorefrontPageShell
-      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.cart.title }]}
+      breadcrumbItems={[{ label: dict.common.breadcrumbHome, href: `/${lang}/shop` }, { label: dict.cart.title }]}
       title={dict.cart.title}
     >
       <CartView lang={lang} dict={dict} />

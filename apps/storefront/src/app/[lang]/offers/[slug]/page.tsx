@@ -46,7 +46,7 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
     <main className="container">
       <StorefrontJsonLd payloads={[
         breadcrumbJsonLd([
-          { name: dict.common.breadcrumbHome, url: `/${lang}` },
+          { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
           { name: dict.offers.title, url: `/${lang}/offers` },
           { name: pickLang(offer.name, lang) }
         ]),
@@ -54,7 +54,7 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ l
       ]} />
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.offers.title, href: `/${lang}/offers` },
           { label: pickLang(offer.name, lang) }
         ]}

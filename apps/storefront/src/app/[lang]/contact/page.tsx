@@ -16,7 +16,7 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
     <main className="container">
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.contact.title }
         ]}
       />

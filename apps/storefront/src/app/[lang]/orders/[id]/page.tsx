@@ -13,7 +13,7 @@ export default async function OrderPage({ params }: { params: Promise<{ lang: st
 
   return (
     <main className="container">
-      <Breadcrumb items={[{ label: dict.common.breadcrumbHome, href: `/${lang}` }, { label: dict.orders.title, href: `/${lang}/orders` }, { label: id }]} />
+      <Breadcrumb items={[{ label: dict.common.breadcrumbHome, href: `/${lang}/shop` }, { label: dict.orders.title, href: `/${lang}/orders` }, { label: id }]} />
       <OrderDetailView lang={lang} dict={dict} orderId={orderId} />
     </main>
   );

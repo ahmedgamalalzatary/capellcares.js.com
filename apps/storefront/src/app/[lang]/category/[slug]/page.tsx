@@ -86,7 +86,7 @@ export default async function CategoryPage({
     <main className="container">
       <StorefrontJsonLd payloads={[
         breadcrumbJsonLd([
-          { name: dict.common.breadcrumbHome, url: `/${lang}` },
+          { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
           { name: dict.nav.products, url: `/${lang}/products` },
           ...path.map((c, i) => ({
             name: pickLang(c.name, lang),
@@ -96,7 +96,7 @@ export default async function CategoryPage({
       ]} />
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.nav.products, href: `/${lang}/products` },
           ...path.map((c, i) => ({
             label: pickLang(c.name, lang),

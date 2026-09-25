@@ -23,7 +23,9 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
               >
                 {item.label}
               </Link>
-            ) : null}
+            ) : (
+              <span className={isLast ? "text-ink" : ""}>{item.label}</span>
+            )}
             {!isLast && (
               <Icon.Chevron size={11} className="arrow-flip opacity-60" />
             )}

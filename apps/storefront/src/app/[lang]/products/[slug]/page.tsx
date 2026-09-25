@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
 import { ProductDetail } from "@/components/products/product-detail";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { buildCategoryHref } from "@/lib/category-links";
 import {
   fetchProductBySlug,
   fetchProductDetailBySlug,
@@ -54,11 +55,11 @@ export default async function ProductDetailsPage({
     <main className="container">
       <StorefrontJsonLd payloads={[
         breadcrumbJsonLd([
-          { name: dict.common.breadcrumbHome, url: `/${lang}` },
+          { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
           { name: dict.nav.products, url: `/${lang}/products` },
           ...path.map((c) => ({
             name: pickLang(c.name, lang),
-            url: `/${lang}/category/${c.slug}`
+            url: buildCategoryHref(lang, c)
           })),
           { name: pickLang(product.name, lang) }
         ]),
@@ -66,11 +67,11 @@ export default async function ProductDetailsPage({
       ]} />
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.nav.products, href: `/${lang}/products` },
           ...path.map((c) => ({
             label: pickLang(c.name, lang),
-            href: `/${lang}/category/${c.slug}`
+            href: buildCategoryHref(lang, c)
           })),
           { label: pickLang(product.name, lang) }
         ]}

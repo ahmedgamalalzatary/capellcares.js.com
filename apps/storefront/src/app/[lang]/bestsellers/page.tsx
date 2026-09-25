@@ -37,7 +37,7 @@ export default async function BestsellersPage({ params }: { params: Promise<{ la
     <main className="container">
       <Breadcrumb
         items={[
-          { label: dict.common.breadcrumbHome, href: `/${lang}` },
+          { label: dict.common.breadcrumbHome, href: `/${lang}/shop` },
           { label: dict.nav.bestsellers }
         ]}
       />

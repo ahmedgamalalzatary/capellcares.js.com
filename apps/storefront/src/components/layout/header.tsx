@@ -122,7 +122,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         </div>
 
         <Link
-          href={`/${lang}`}
+          href={`/${lang}/shop`}
           className="group flex items-center justify-self-center scale-130"
           aria-label={dict.brand}
         >
