@@ -21,6 +21,13 @@ export type BostaQuoteSettings = {
   responseContract: PricingResponseContract;
 };
 
+export function bostaPricingContractId(account: BostaQuoteSettings): string {
+  return createHash("sha256").update(JSON.stringify([
+    account.accountEvidence, account.codUnit, account.responseContract,
+    Object.entries(account.sizeMapping).sort(([a], [b]) => a.localeCompare(b))
+  ])).digest("hex");
+}
+
 const requestSchema = z.object({
   cityId: z.string().min(1).max(64),
   districtId: z.string().min(1).max(64),
@@ -62,10 +69,7 @@ export function createBostaQuoteService(config: BostaConfig, settings: BostaQuot
       const size = estimateShipmentSize(request.productsTotalCents);
       // Verify the requested size before any provider or saved-rate operation.
       buildShipmentCalculatorQuery({ pickupCity: account.pickupCity, dropOffCity: "pending", cod: 0, size }, account.sizeMapping);
-      const pricingContractId = createHash("sha256").update(JSON.stringify([
-        account.accountEvidence, account.codUnit, account.responseContract,
-        Object.entries(account.sizeMapping).sort(([a], [b]) => a.localeCompare(b))
-      ])).digest("hex");
+      const pricingContractId = bostaPricingContractId(account);
       const context = validateShippingRateContext({
         accountId: account.accountId, environment: config.baseUrl, pricingContractId,
         pickupCity: account.pickupCity, dropOffCity: "pending", destinationId: request.districtId,

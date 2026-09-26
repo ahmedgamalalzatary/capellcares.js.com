@@ -2,8 +2,13 @@ import { db } from "@capella/database/src/db";
 import { checkoutReservations, collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
+import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export class ShippingCustodyRequiredError extends Error {
+  constructor() { super("Check shipping cancellation and warehouse custody before rejecting this order"); }
+}
 
 export class DeniedOrderLockedError extends Error {
   constructor() {
@@ -261,6 +266,7 @@ export async function createOrderWithItems(input: {
       }))
     );
 
+    await enqueueOrderDelivery(tx, order.id);
     return { id: order.id, orderCode };
   });
 }
@@ -300,6 +306,7 @@ export async function updateOrderPaymentStatusRepo(
     }
 
     if (paymentStatus === "denied") {
+      if (!await stopUnsentDelivery(tx, id)) throw new ShippingCustodyRequiredError();
       if (existing.paymentMethod === "paymob") {
         const [attempt] = await tx.select({ checkoutSessionId: paymentAttempts.checkoutSessionId })
           .from(paymentAttempts).where(eq(paymentAttempts.id, existing.paymentAttemptId ?? -1)).limit(1);
@@ -328,6 +335,10 @@ export async function expirePendingCodOrders(now: Date): Promise<void> {
     )).for("update");
 
     for (const order of expired) {
+      if (!await stopUnsentDelivery(tx, order.id)) {
+        await flagShippingOrder(tx, order.id, "expiry_review", "COD deadline reached; carrier outcome/custody is unverified, stock retained");
+        continue;
+      }
       await restockOrderItems(tx, order.id);
       await tx.update(orders).set({ paymentStatus: "denied" }).where(and(
         eq(orders.id, order.id),

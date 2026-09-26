@@ -6,9 +6,9 @@ export const destination = { cityId: "city-cairo", zoneId: "zone-nasr", district
 export const selectedDestination = { cityId: destination.cityId, zoneId: destination.zoneId, districtId: destination.districtId };
 export const shippingBuyer = { fullName: "Shipping Buyer", phone: "01012345678", email: "shipping-buyer@example.com",
   governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "cod" as const };
-export function fixtureShippingService(price = 9729) {
+export function fixtureShippingService(price = 9729, rateIdentity?: (cod: number) => string) {
   return createCheckoutShippingService({ codPricingPolicy: "collection_total", listDestinations: async () => [destination],
-    quote: async input => ({ shippingAmountCents: price, size: "small", rateIdentity: `fixture:${input.paymentMethod}:${input.codAmountCents}`,
+    quote: async input => ({ shippingAmountCents: price, size: "small", rateIdentity: rateIdentity?.(input.codAmountCents) ?? `fixture:${input.paymentMethod}:${input.codAmountCents}`,
       source: "live", quotedAt: new Date().toISOString(), quoteId: "provider-fixture" }) });
 }
 export async function withShippingEnvironment(run: () => Promise<void>, configured = true, price = "97.29") {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { db } from "@capella/database/src/db";
-import { checkoutSessions, orders, orderItems, productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
+import { checkoutSessions, orders, orderItems, productVariants, variantDiscounts, shippingWorkItems, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { initiatePaymobCheckout, retryPaymobCheckout } from "../../src/modules/checkout/paymob-checkout.service.js";
 import { processPaymobTransaction } from "../../src/modules/payments/paymob/paymob-transaction.service.js";
@@ -40,6 +40,7 @@ test("Paymob charges and persists the agreed shipping/address snapshot before an
   assert.equal(session.shippingAmountCents, 9729);
   assert.deepEqual(JSON.parse((session as any).shippingSnapshot), quote);
   assert.equal((await db.select().from(orders)).length, 0);
+  assert.equal((await db.select().from(shippingWorkItems)).length, 0);
 });
 
 test("Paymob cannot reuse an idempotency key after the buyer changes address or customer ownership", async () => {
@@ -75,6 +76,10 @@ test("payment retry and callback retain the original quote and products after cu
   assert.equal(order.shippingQuoteId, quote.quoteId);
   assert.deepEqual(JSON.parse((order as any).shippingSnapshot), quote);
   assert.equal((await db.select().from(orders)).length, 1);
+  const jobs = await db.select().from(shippingWorkItems);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].orderId, created.orderId);
+  assert.equal(jobs[0].status, "pending");
   await processPaymobTransaction({ ...transaction, is_refunded: true, refunded_amount_cents: 3500 });
   const [partiallyRefunded] = await db.select().from(orders).where(eq(orders.id, order.id));
   assert.equal(partiallyRefunded.providerPaymentStatus, "partially_refunded");
@@ -82,6 +87,7 @@ test("payment retry and callback retain the original quote and products after cu
   const [fullyRefunded] = await db.select().from(orders).where(eq(orders.id, order.id));
   assert.equal(fullyRefunded.refundedAmountCents, 13229);
   assert.equal(fullyRefunded.providerPaymentStatus, "refunded");
+  assert.equal((await db.select().from(shippingWorkItems))[0].status, "failed");
 });
 
 test("a full refund before success carries the original shipping-inclusive amount onto the eventual order", async () => {
@@ -93,6 +99,18 @@ test("a full refund before success carries the original shipping-inclusive amoun
   assert.equal(order.providerPaymentStatus, "refunded");
   assert.equal(order.refundedAmountCents, 13229);
   assert.equal(order.shippingQuoteId, quote.quoteId);
+  const jobs = await db.select().from(shippingWorkItems);
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].status, "failed", "already refunded orders must never be dispatched");
+});
+
+test("a partial refund arriving before paid order creation blocks the delivery and raises a staff flag", async () => {
+  const { input } = await setup();
+  await initiatePaymobCheckout(input);
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 });
+  await processPaymobTransaction(paid);
+  assert.equal((await db.select().from(shippingWorkItems))[0].status, "failed");
+  assert.equal((await db.select().from(orderReviewFlags))[0]?.flagType, "refund_review");
 });
 
 test("free products with chargeable shipping still take the online-payment path", async () => {

@@ -6,10 +6,12 @@ const { app } = await import("./app.js");
 const { syncPermissionCatalog } = await import("./services/erp-permissions.service.js");
 const { ensureBootstrapAdmin } = await import("./modules/admin/auth/admin-auth.service.js");
 const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-expiry-worker.js");
+const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
 startCheckoutExpiryWorker();
+startShippingDispatchWorker();
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {

@@ -696,6 +696,8 @@ export const shippingWorkItems = mysqlTable("shipping_work_items", {
   claimedBy: varchar("claimed_by", { length: 64 }),
   claimedAt: datetime("claimed_at"),
   lastError: text("last_error"),
+  requestSnapshot: text("request_snapshot"),
+  responseSnapshot: text("response_snapshot"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({

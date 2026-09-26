@@ -3,6 +3,7 @@ import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode } from "../../../repositories/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
+import { enqueueOrderDelivery, blockRefundedDelivery } from "../../../repositories/shipping-dispatch.repository.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -56,6 +57,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
           providerPaymentStatus: refundedCents === match.attempt.amountCents ? "refunded" : "partially_refunded"
         }).where(and(eq(orders.id, match.session.createdOrderId),
           lt(orders.refundedAmountCents, refundedCents)));
+        await blockRefundedDelivery(tx, match.session.createdOrderId);
         return { outcome: "refunded" as const, orderId: match.session.createdOrderId };
       }
       if (!baseIdentity || transaction.success !== true || transaction.pending !== false) {
@@ -214,6 +216,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
     }).where(eq(paymentAttempts.id, match.attempt.id));
     await tx.update(checkoutSessions).set({ state: "completed", createdOrderId: order.id })
       .where(eq(checkoutSessions.id, match.session.id));
+    await enqueueOrderDelivery(tx, order.id);
     if (match.session.customerId != null) {
       await tx.update(carts).set({ lines: [] }).where(eq(carts.customerId, match.session.customerId));
     }

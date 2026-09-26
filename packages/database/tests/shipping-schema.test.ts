@@ -329,6 +329,31 @@ serialTest("order review flags and manual state history are recorded separately"
   assert.equal(storedHistory.actorType, "staff");
 });
 
+serialTest("delivery work persists frozen requests and provider responses across database reloads", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const orderId = await createOrder();
+  const request = JSON.stringify({ accountId: "fixture", payload: { businessReference: "capella-order", cod: 10 } });
+  const response = JSON.stringify({ success: true, data: { trackingNumber: "TRK-FROZEN" } });
+  const [work] = await db.insert(schema.shippingWorkItems).values({ orderId, operation: "create_delivery",
+    idempotencyKey: `frozen-${orderId}`, status: "processing", nextAttemptAt: new Date(),
+    requestSnapshot: request, responseSnapshot: response }).$returningId();
+  const [stored] = await db.select().from(schema.shippingWorkItems).where(eq(schema.shippingWorkItems.id, work.id));
+  assert.equal(stored.requestSnapshot, request);
+  assert.equal(stored.responseSnapshot, response);
+});
+
+serialTest("test seed reset removes linked shipments and work before clearing orders", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const orderId = await createOrder();
+  await db.insert(schema.shippingWorkItems).values({ orderId, operation: "create_delivery", idempotencyKey: `cleanup-${orderId}`,
+    status: "pending", nextAttemptAt: new Date() });
+  await db.insert(schema.shipments).values({ orderId, provider: "bosta", kind: "outgoing", trackingNumber: `cleanup-${orderId}`,
+    rawProviderState: "Pickup requested", normalizedState: "created", size: "small", idempotencyKey: `cleanup-${orderId}` });
+  await clearTestSeed();
+  assert.equal((await db.select().from(schema.shipments)).length, 0);
+  assert.equal((await db.select().from(schema.shippingWorkItems)).length, 0);
+});
+
 test.after(async () => {
   await mysqlPool.end();
 });

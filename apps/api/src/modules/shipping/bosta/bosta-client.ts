@@ -102,6 +102,9 @@ export class BostaClient {
       if (response.status === 429) {
         throw new BostaProviderError(message, "throttled", response.status);
       }
+      if (!isRead && (response.status === 408 || response.status === 409)) {
+        throw new BostaProviderError(message, "ambiguous", response.status);
+      }
       if (response.status >= 400 && response.status < 500) {
         throw new BostaProviderError(message, "definitive", response.status);
       }
