@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { AdminOrderDto, PaymentStatus } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderShippingStateDto, PaymentStatus } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -11,6 +11,37 @@ import { orderPaymentDisplay, paymentStatusLabel } from "@/lib/payment-status";
 import { getStore } from "@/lib/store";
 import { formatOrderAmount } from "@/lib/order-format";
 import "./order-details.css";
+
+const manualStateLabels = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم", returned: "تم الإرجاع" };
+const carrierStateLabels = { created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق", delivered: "تم التسليم", returned: "تم الإرجاع", cancelled: "تم الإلغاء", exception: "تحتاج متابعة" };
+const custodyLabels = { unknown: "الحيازة غير مؤكدة", carrier: "مع شركة الشحن", recipient: "تم التسليم للمستلم", warehouse_uninspected: "راجع للمخزن؛ بانتظار الفحص" };
+
+function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateDto }) {
+  const collectionConfirmed = shipping.collection.confirmed && shipping.collection.amountCents !== null;
+  return <section className="card" aria-labelledby="order-shipping-state-heading">
+    <div className="card__head"><h3 id="order-shipping-state-heading" className="card__title">حالات الشحن</h3></div>
+    <div className="order-section-body">
+      <dl className="order-fields order-fields--two">
+        <Detail label="حالة الموظفة">{shipping.manualState ? `${manualStateLabels[shipping.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
+        <Detail label="حالة بوسطة">{shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)` : "بانتظار إنشاء الشحنة"}</Detail>
+        <Detail label="حيازة الشحنة">{custodyLabels[shipping.custodyState]}</Detail>
+        <Detail label="إثبات التحصيل">{collectionConfirmed ? "التحصيل مؤكد" : "التحصيل غير مؤكد"}</Detail>
+        <Detail label="المبلغ المحصل">{shipping.collection.amountCents !== null ? formatOrderAmount(shipping.collection.amountCents / 100) : "غير متوفر"}</Detail>
+        {shipping.processing.startedAtMs !== null && <Detail label="بدء المعالجة"><OrderDate value={new Date(shipping.processing.startedAtMs).toISOString()} /></Detail>}
+      </dl>
+      {shipping.processing.addressBlockedAtMs !== null && <p className="order-note">مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة</p>}
+      <p className="order-note">الحالة اليدوية لا تؤكد الدفع أو استعادة المخزون. الإرجاع يحتاج فحصًا وموافقة قبل إعادة البيع.</p>
+      {shipping.history.length > 0 && <div aria-label="سجل حالات الموظفة">
+        {shipping.history.map(event => <div key={event.id} className="order-note">
+          <strong>{manualStateLabels[event.state]}</strong>{" — "}
+          <OrderDate value={new Date(event.atMs).toISOString()} />{" — "}
+          {event.actorType === "staff" ? `الموظفة #${event.actorId ?? "—"}` : "النظام"}
+          {event.reason && <p>{event.reason}</p>}
+        </div>)}
+      </div>}
+    </div>
+  </section>;
+}
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return <div className="order-detail-field"><dt>{label}</dt><dd>{children ?? "غير متوفر"}</dd></div>;
@@ -67,6 +98,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
   async function updatePaymentStatus(paymentStatus: PaymentStatus) {
     if (!order || order.paymentMethod === "paymob" || !canUpdatePaymentStatus ||
       order.paymentStatus === "denied" || savingRef.current || paymentStatus === order.paymentStatus) return;
+    if ((order.shipping || order.shippingQuoteId || (order.shippingAmountCents ?? 0) > 0) && paymentStatus !== "denied") return;
     savingRef.current = true;
     setSaving(true);
     setSaveError(null);
@@ -85,6 +117,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
   }
 
   const paymentDisplay = order ? orderPaymentDisplay(order) : null;
+  const shippingPaymentManaged = Boolean(order?.shipping || order?.shippingQuoteId || (order?.shippingAmountCents ?? 0) > 0);
   const refunded = order?.paymentMethod === "paymob" ? (order.refundedAmountCents ?? 0) : 0;
   const savings = order?.items.reduce((sum, item) => sum + Math.max(0,
     Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 100) - Math.round(item.unitPrice * 100)) * item.qty, 0) ?? 0;
@@ -166,6 +199,8 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                 </section>
               </section>
 
+              {order.shipping && <ShippingStateDetails shipping={order.shipping} />}
+
               <section className="card" aria-labelledby="order-payment-heading">
                 <div className="card__head"><h3 id="order-payment-heading" className="card__title">تفاصيل الدفع</h3></div>
                 <div className="order-section-body">
@@ -189,13 +224,14 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                           disabled={!canUpdatePaymentStatus || order.paymentStatus === "denied" || saving}
                           onChange={(event) => { void updatePaymentStatus(event.target.value as PaymentStatus); }}>
                           {(Object.keys(paymentStatusLabel) as PaymentStatus[]).map((status) => (
-                            <option key={status} value={status}>{paymentStatusLabel[status]}</option>
+                            <option key={status} value={status} disabled={shippingPaymentManaged && status !== "denied"}>{paymentStatusLabel[status]}</option>
                           ))}
                         </select>
                       </div>
                       <p className="order-note">{order.paymentStatus === "denied" ? "الطلب مرفوض؛ لا يمكن تغيير حالة الدفع بعد الرفض."
                         : !canUpdatePaymentStatus ? "لديكِ صلاحية عرض الطلب فقط."
-                          : "رفض الطلب يعيد الكميات إلى المخزون ويمنع تغيير حالته لاحقًا."}</p>
+                          : shippingPaymentManaged ? "تُحدّث حالة الدفع من تحصيل بوسطة. الرفض يحتاج تأكيد الإلغاء وحيازة المخزون."
+                            : "رفض الطلب يعيد الكميات إلى المخزون ويمنع تغيير حالته لاحقًا."}</p>
                     </div>
                     <div aria-live="polite">{saving ? <p className="order-note">جارٍ حفظ حالة الدفع…</p> : saved ? <p className="order-note">تم تحديث حالة الدفع.</p> : null}</div>
                     {saveError && <div className="order-save-error">
@@ -211,7 +247,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                 <dl className="order-fields order-fields--two">
                   <Detail label="رقم الطلب الداخلي"><bdi>#{order.id}</bdi></Detail>
                   <Detail label="آخر تحديث"><OrderDate value={order.updatedAt} /></Detail>
-                  {order.paymentMethod !== "paymob" && order.paymentStatus === "pending" && order.codExpiresAt && (
+                  {order.paymentMethod !== "paymob" && order.paymentStatus === "pending" && order.codExpiresAt && (!order.shipping || order.shipping.processing.untouchedExpiryApplies) && (
                     <Detail label="مهلة مراجعة الدفع عند الاستلام"><OrderDate value={order.codExpiresAt} /></Detail>
                   )}
                 </dl>

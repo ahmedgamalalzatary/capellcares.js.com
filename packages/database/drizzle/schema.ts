@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyMySqlColumn,
   boolean,
+  bigint,
   check,
   datetime,
   decimal,
@@ -513,6 +514,10 @@ export const orders = mysqlTable("orders", {
   shippingQuoteId: varchar("shipping_quote_id", { length: 64 }),
   shippingSize: mysqlEnum("shipping_size", ["small", "medium", "large"]),
   shippingSnapshot: text("shipping_snapshot"),
+  manualShippingState: mysqlEnum("manual_shipping_state", ["preparing", "ready_for_pickup", "printed", "delivered", "returned"]),
+  shippingProcessingAtMs: bigint("shipping_processing_at_ms", { mode: "number" }),
+  shippingPickupAtMs: bigint("shipping_pickup_at_ms", { mode: "number" }),
+  shippingAddressBlockedAtMs: bigint("shipping_address_blocked_at_ms", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
@@ -643,6 +648,8 @@ export const shipments = mysqlTable("shipments", {
   trackingNumber: varchar("tracking_number", { length: 64 }).notNull(),
   rawProviderState: varchar("raw_provider_state", { length: 64 }).notNull(),
   rawProviderCode: int("raw_provider_code"),
+  rawProviderType: varchar("raw_provider_type", { length: 64 }),
+  custodyState: mysqlEnum("custody_state", ["unknown", "carrier", "recipient", "warehouse_uninspected"]).notNull().default("unknown"),
   normalizedState: mysqlEnum("normalized_state", [
     "created",
     "picked_up",
@@ -662,33 +669,47 @@ export const shipments = mysqlTable("shipments", {
   shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
   size: mysqlEnum("size", ["small", "medium", "large"]).notNull(),
   idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull(),
+  providerEventAtMs: bigint("provider_event_at_ms", { mode: "number" }),
+  carrierSnapshot: text("carrier_snapshot"),
+  collectedAmountCents: int("collected_amount_cents"),
+  collectionConfirmed: boolean("collection_confirmed").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
   trackingNumberUnique: unique("shipments_tracking_number_unique").on(table.trackingNumber),
   idempotencyKeyUnique: unique("shipments_idempotency_key_unique").on(table.idempotencyKey),
   shippingAmountCheck: check("shipments_shipping_amount_cents_check", sql`${table.shippingAmountCents} >= 0`),
+  collectedAmountCheck: check("shipments_collected_amount_cents_check", sql`${table.collectedAmountCents} >= 0`),
   orderIndex: index("shipments_order_idx").on(table.orderId, table.kind)
 }));
 
 export const shipmentEvents = mysqlTable("shipment_events", {
   id: int("id").autoincrement().primaryKey(),
-  shipmentId: int("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
+  shipmentId: int("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),
+  trackingNumber: varchar("tracking_number", { length: 64 }),
+  businessReference: varchar("business_reference", { length: 64 }),
+  providerAccountKey: varchar("provider_account_key", { length: 64 }),
+  providerEventAtMs: bigint("provider_event_at_ms", { mode: "number" }),
+  processingError: text("processing_error"),
   eventFingerprint: varchar("event_fingerprint", { length: 128 }).notNull(),
   rawPayload: text("raw_payload").notNull(),
   rawProviderState: varchar("raw_provider_state", { length: 64 }),
   rawProviderCode: int("raw_provider_code"),
   receivedAt: timestamp("received_at").defaultNow().notNull(),
-  processedAt: datetime("processed_at")
+  processedAt: datetime("processed_at"),
+  stateRecordedAt: datetime("state_recorded_at")
 }, (table) => ({
   eventFingerprintUnique: unique("shipment_events_fingerprint_unique").on(table.eventFingerprint),
-  shipmentIndex: index("shipment_events_shipment_idx").on(table.shipmentId, table.receivedAt)
+  shipmentIndex: index("shipment_events_shipment_idx").on(table.shipmentId, table.receivedAt),
+  pendingIndex: index("shipment_events_pending_idx").on(table.processedAt, table.id),
+  stateReplayIndex: index("shipment_events_state_replay_idx").on(table.stateRecordedAt, table.id)
 }));
 
 export const shippingWorkItems = mysqlTable("shipping_work_items", {
   id: int("id").autoincrement().primaryKey(),
   orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
-  operation: mysqlEnum("operation", ["create_delivery", "cancel_delivery", "terminate_delivery"]).notNull(),
+  shipmentId: int("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),
+  operation: mysqlEnum("operation", ["create_delivery", "cancel_delivery", "terminate_delivery", "sync_delivery"]).notNull(),
   idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull(),
   status: mysqlEnum("status", ["pending", "processing", "succeeded", "failed", "review_required"]).notNull(),
   attemptCount: int("attempt_count").notNull().default(0),
@@ -752,6 +773,7 @@ export const orderStateHistory = mysqlTable("order_state_history", {
   ]).notNull(),
   actorType: mysqlEnum("actor_type", ["staff", "system"]).notNull(),
   actorId: int("actor_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  eventAtMs: bigint("event_at_ms", { mode: "number" }),
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({

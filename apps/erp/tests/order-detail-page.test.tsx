@@ -64,6 +64,49 @@ beforeEach(() => {
 });
 
 describe("OrderDetailsPage", () => {
+  it("shows verified collection independently of a contradictory current carrier state", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentStatus: "accepted", shippingQuoteId: "quote",
+      shipping: { manualState: null, carrierState: "in_transit", rawProviderCode: 41, rawProviderType: "SEND",
+        custodyState: "carrier", collection: { confirmed: true, amountCents: 20000 },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: 1760000000123, addressBlockedAtMs: null, untouchedExpiryApplies: false }, history: [] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("في الطريق (بوسطة)")).toBeInTheDocument();
+    expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
+    expect(region.getByText("التحصيل مؤكد")).toBeInTheDocument();
+    expect(region.getByText(/٢٠٠/)).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveValue("accepted");
+  });
+  it("shows staff and Bosta states separately while retaining independent payment, custody and collection evidence", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shippingQuoteId: "quote", shippingAmountCents: 9700,
+      shipping: { manualState: "delivered", carrierState: "in_transit", rawProviderCode: 41, rawProviderType: "SEND",
+        custodyState: "carrier", collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: 1760000000456, addressBlockedAtMs: null, untouchedExpiryApplies: false },
+        history: [{ id: 1, state: "delivered", actorType: "staff", actorId: 7, atMs: 1760000000123, reason: "Staff report" }] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("تم التسليم (الموظفة)")).toBeInTheDocument();
+    expect(region.getByText("في الطريق (بوسطة)")).toBeInTheDocument();
+    expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
+    expect(region.getByText("التحصيل غير مؤكد")).toBeInTheDocument();
+    expect(region.getByText("Staff report")).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveValue("pending");
+    expect(within(screen.getByRole("combobox")).getByRole("option", { name: "مقبول" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+    expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
+  });
+  it("shows the original deadline again for pre-pickup address trouble and never treats a return as approved restocking", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shippingQuoteId: "quote",
+      shipping: { manualState: "preparing", carrierState: "returned", rawProviderCode: 46, rawProviderType: "RTO",
+        custodyState: "warehouse_uninspected", collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: null, addressBlockedAtMs: 1760000000456, untouchedExpiryApplies: true }, history: [] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("راجع للمخزن؛ بانتظار الفحص")).toBeInTheDocument();
+    expect(region.getByText("مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة")).toBeInTheDocument();
+    expect(screen.getByText("مهلة مراجعة الدفع عند الاستلام")).toBeInTheDocument();
+  });
   it("shows the checkout contact, complete delivery instructions, and recorded dates", async () => {
     fetchOrder.mockResolvedValueOnce(detailedOrder);
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));

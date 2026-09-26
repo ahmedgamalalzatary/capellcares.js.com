@@ -379,6 +379,20 @@
       "when": 1790416609102,
       "tag": "0053_shipping_dispatch_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1790424790644,
+      "tag": "0054_shipping_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1790430287743,
+      "tag": "0055_shipping_state_guards",
+      "breakpoints": true
     }
   ]
 }

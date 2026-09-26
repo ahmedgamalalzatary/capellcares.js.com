@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EG_PHONE_REGEX } from "../constants/index.js";
 
 export const shippingMoneyCentsSchema = z.number().int().nonnegative().safe();
 
@@ -66,3 +67,17 @@ export const shipmentStateSchema = z.object({
   normalizedState: shipmentNormalizedStateSchema,
   manualState: shipmentManualStateSchema.nullable()
 });
+
+export const shipmentEditSchema = z.object({
+  recipient: z.object({ fullName: z.string().trim().min(1).max(255).optional(),
+    phone: z.string().regex(EG_PHONE_REGEX).optional() }).strict()
+    .refine(value => Object.values(value).some(entry => entry !== undefined), "Recipient edit is empty").optional(),
+  address: shippingAddressSchema.extend({ addressLine: z.string().trim().min(1).max(255),
+    buildingApartment: z.string().trim().min(1).max(255) }).strict().optional(),
+  notes: z.string().max(4000).optional(),
+  size: shipmentSizeSchema.optional()
+}).strict().refine(value => Object.values(value).some(entry => entry !== undefined), "Shipment edit is empty");
+export type ShipmentEdit = z.infer<typeof shipmentEditSchema>;
+
+export const shipmentManualStateRequestSchema = z.object({ state: shipmentManualStateSchema,
+  reason: z.string().trim().min(1).max(1000).optional() }).strict();

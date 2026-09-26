@@ -3,11 +3,16 @@ import { checkoutReservations, collectionItems, offerItems, orderItems, orders, 
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
+import { untouchedShippingExpiryApplies } from "../shipping-state.repository.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export class ShippingCustodyRequiredError extends Error {
   constructor() { super("Check shipping cancellation and warehouse custody before rejecting this order"); }
+}
+
+export class ShippingCodPaymentManagedError extends Error {
+  constructor() { super("Shipping COD payment is managed by verified Bosta collection"); }
 }
 
 export class DeniedOrderLockedError extends Error {
@@ -282,7 +287,8 @@ export async function updateOrderPaymentStatusRepo(
     const [existing] = await tx
       .select({ paymentStatus: orders.paymentStatus, paymentMethod: orders.paymentMethod,
         paymentAttemptId: orders.paymentAttemptId,
-        providerPaymentStatus: orders.providerPaymentStatus })
+        providerPaymentStatus: orders.providerPaymentStatus, shippingSnapshot: orders.shippingSnapshot,
+        shippingQuoteId: orders.shippingQuoteId, shippingAmountCents: orders.shippingAmountCents })
       .from(orders)
       .where(eq(orders.id, id))
       .limit(1)
@@ -299,6 +305,9 @@ export async function updateOrderPaymentStatusRepo(
     if (existing.paymentMethod === "paymob" && paymentStatus !== "denied") {
       throw new PaymobPaymentStatusManagedError();
     }
+
+    if (existing.paymentMethod === "cod" && paymentStatus !== "denied" &&
+      (existing.shippingSnapshot || existing.shippingQuoteId || existing.shippingAmountCents > 0)) throw new ShippingCodPaymentManagedError();
 
     if (paymentStatus === "denied" && existing.paymentMethod === "paymob" &&
       existing.providerPaymentStatus !== "refunded") {
@@ -328,13 +337,14 @@ export async function updateOrderPaymentStatusRepo(
 
 export async function expirePendingCodOrders(now: Date): Promise<void> {
   await db.transaction(async (tx) => {
-    const expired = await tx.select({ id: orders.id }).from(orders).where(and(
+    const expired = await tx.select().from(orders).where(and(
       eq(orders.paymentMethod, "cod"),
       eq(orders.paymentStatus, "pending"),
       lte(orders.codExpiresAt, now)
     )).for("update");
 
     for (const order of expired) {
+      if (order.shippingSnapshot && !untouchedShippingExpiryApplies(order)) continue;
       if (!await stopUnsentDelivery(tx, order.id)) {
         await flagShippingOrder(tx, order.id, "expiry_review", "COD deadline reached; carrier outcome/custody is unverified, stock retained");
         continue;

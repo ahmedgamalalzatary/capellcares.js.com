@@ -354,6 +354,71 @@ serialTest("test seed reset removes linked shipments and work before clearing or
   assert.equal((await db.select().from(schema.shippingWorkItems)).length, 0);
 });
 
+serialTest("shipment synchronization preserves millisecond ordering and separate carrier/collection evidence", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const orderId = await createOrder();
+  const [created] = await db.insert(schema.shipments).values({ orderId, provider: "bosta", kind: "outgoing",
+    trackingNumber: `sync-${orderId}`, idempotencyKey: `sync-${orderId}`, rawProviderState: "Delivered",
+    normalizedState: "delivered", size: "small", providerEventAtMs: 1760000000123,
+    carrierSnapshot: '{"notes":"Carrier change"}', collectedAmountCents: 1000, collectionConfirmed: true }).$returningId();
+  const [stored] = await db.select().from(schema.shipments).where(eq(schema.shipments.id, created.id));
+  assert.equal(stored.providerEventAtMs, 1760000000123);
+  assert.equal(stored.carrierSnapshot, '{"notes":"Carrier change"}');
+  assert.equal(stored.collectedAmountCents, 1000);
+  assert.equal(stored.collectionConfirmed, true);
+});
+
+serialTest("early carrier events can wait durably for linking and linked reconciliation work has a shipment foreign key", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  const orderId = await createOrder();
+  await assert.doesNotReject(async () => {
+    await db.insert(schema.shipmentEvents).values({ shipmentId: null, eventFingerprint: `early-${orderId}`,
+      trackingNumber: `early-${orderId}`, businessReference: `reference-${orderId}`, providerAccountKey: "fixture-account",
+      rawPayload: "{}", providerEventAtMs: 1760000000123 });
+  });
+  const [shipment] = await db.insert(schema.shipments).values({ orderId, provider: "bosta", kind: "outgoing",
+    trackingNumber: `early-${orderId}`, idempotencyKey: `reference-${orderId}`, rawProviderState: "Created",
+    normalizedState: "created", size: "small" }).$returningId();
+  await assert.doesNotReject(async () => {
+    await db.insert(schema.shippingWorkItems).values({ orderId, shipmentId: shipment.id, operation: "sync_delivery",
+      idempotencyKey: `sync-work-${orderId}`, status: "pending", nextAttemptAt: new Date() });
+  });
+  await assert.rejects(db.insert(schema.shippingWorkItems).values({ orderId, shipmentId: 999_999_999,
+    operation: "sync_delivery", idempotencyKey: `bad-sync-${orderId}`, status: "pending", nextAttemptAt: new Date() }));
+});
+
 test.after(async () => {
   await mysqlPool.end();
+});
+
+serialTest("order processing, pickup and address-block history retain milliseconds independently of payment", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  assert.ok(schema.orders.shippingProcessingAtMs, "durable order processing evidence is required");
+  const orderId = await createOrder();
+  await db.update(schema.orders).set({ manualShippingState: "preparing", shippingProcessingAtMs: 1760000000123,
+    shippingPickupAtMs: 1760000000456, shippingAddressBlockedAtMs: 1760000000789 }).where(eq(schema.orders.id, orderId));
+  const [stored] = await db.select().from(schema.orders).where(eq(schema.orders.id, orderId));
+  assert.equal(stored.manualShippingState, "preparing");
+  assert.equal(stored.shippingProcessingAtMs, 1760000000123);
+  assert.equal(stored.shippingPickupAtMs, 1760000000456);
+  assert.equal(stored.shippingAddressBlockedAtMs, 1760000000789);
+  assert.equal(stored.paymentStatus, "pending");
+});
+
+serialTest("carrier custody, projection progress and manual history keep independent evidence", async () => {
+  const schema = await import("../drizzle/schema.js") as Record<string, any>;
+  assert.ok(schema.shipments.custodyState, "separate carrier custody storage is required");
+  assert.ok(schema.shipmentEvents.stateRecordedAt, "local state replay needs a durable projection marker");
+  assert.ok(schema.orderStateHistory.eventAtMs, "manual processing history needs exact event time");
+  const orderId = await createOrder();
+  const [ship] = await db.insert(schema.shipments).values({ orderId, provider: "bosta", kind: "outgoing",
+    trackingNumber: `state-${orderId}`, idempotencyKey: `state-${orderId}`, rawProviderState: "Picked up",
+    rawProviderType: "SEND", normalizedState: "picked_up", custodyState: "carrier", size: "small" }).$returningId();
+  const [stored] = await db.select().from(schema.shipments).where(eq(schema.shipments.id, ship.id));
+  assert.equal(stored.custodyState, "carrier");
+  assert.equal(stored.rawProviderType, "SEND");
+  await db.insert(schema.orderStateHistory).values({ orderId, state: "preparing", actorType: "staff",
+    actorId: base.adminUserId, eventAtMs: 1760000000123 });
+  const [history] = await db.select().from(schema.orderStateHistory).where(eq(schema.orderStateHistory.orderId, orderId));
+  assert.equal(history.eventAtMs, 1760000000123);
 });

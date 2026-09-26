@@ -1,11 +1,18 @@
 import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { getOrderShippingState } from "../shipping-state.repository.js";
 import {
   mergeProductTotal,
   mergeVariantTotal,
   toNumber
 } from "./shared.js";
+
+function customerOrderFields(row: typeof orders.$inferSelect) {
+  const { manualShippingState: _manual, shippingProcessingAtMs: _processing,
+    shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, ...customer } = row;
+  return customer;
+}
 
 export async function listOrdersRepo(filters?: { customerId?: number; withItems?: boolean }) {
   const rows = await db
@@ -15,7 +22,7 @@ export async function listOrdersRepo(filters?: { customerId?: number; withItems?
     .orderBy(desc(orders.createdAt));
 
   const summaries = rows.map((row) => ({
-    ...row,
+    ...(filters?.customerId != null ? customerOrderFields(row) : row),
     totalAmount: toNumber(row.totalAmount)
   }));
 
@@ -69,7 +76,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
     .where(eq(orderItems.orderId, order.id));
 
   return {
-    ...order,
+    ...(filters?.customerId != null ? customerOrderFields(order) : order),
     totalAmount: toNumber(order.totalAmount),
     items: items.map((item) => ({
       ...item,
@@ -98,7 +105,7 @@ export async function findAdminOrderByIdRepo(id: number) {
       createdAt: paymentAttempts.createdAt
     }).from(paymentAttempts).where(eq(paymentAttempts.id, order.paymentAttemptId)).limit(1)
     : [];
-  return { ...order, payment: payment ?? null };
+  return { ...order, payment: payment ?? null, shipping: await getOrderShippingState(order) };
 }
 
 export async function getSalesAnalyticsRepo() {

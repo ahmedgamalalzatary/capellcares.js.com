@@ -3,6 +3,7 @@ import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orderItems, orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
+import { untouchedShippingExpiryApplies } from "../../repositories/shipping-state.repository.js";
 import { BostaProviderError } from "./bosta/bosta-client.js";
 import { bostaDeliveryProviderFromEnvironment, type DeliveryProvider, type DeliveryRequest, type DeliveryResult } from "./bosta/bosta-delivery.service.js";
 
@@ -47,7 +48,7 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
     if (!recovering) {
       const flags = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
         eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open"))).limit(1);
-      if (blocked(order) || (order.codExpiresAt != null && order.codExpiresAt <= now) || flags.length) {
+      if (blocked(order) || (order.codExpiresAt != null && order.codExpiresAt <= now && untouchedShippingExpiryApplies(order)) || flags.length) {
         await tx.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.id, job.id));
         return null;
       }
@@ -95,6 +96,7 @@ async function complete(job: Job, result: DeliveryResult) {
     if (!existing.length) await tx.insert(shipments).values({ orderId: order.id, kind: "outgoing", provider: "bosta",
       trackingNumber: result.trackingNumber, rawProviderState: result.rawProviderState, rawProviderCode: result.rawProviderCode,
       normalizedState: result.rawProviderCode === 10 ? "created" : "exception", shippingAmountCents: order.shippingAmountCents,
+      manualState: order.manualShippingState,
       size: order.shippingSize!, idempotencyKey: job.idempotencyKey });
     await tx.update(shippingWorkItems).set({ status: "succeeded", lastError: null, claimedBy: null, claimedAt: null })
       .where(eq(shippingWorkItems.id, job.id));

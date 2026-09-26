@@ -7,11 +7,13 @@ const { syncPermissionCatalog } = await import("./services/erp-permissions.servi
 const { ensureBootstrapAdmin } = await import("./modules/admin/auth/admin-auth.service.js");
 const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-expiry-worker.js");
 const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
+const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
 startCheckoutExpiryWorker();
 startShippingDispatchWorker();
+startShippingSyncWorker();
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {

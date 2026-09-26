@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import { z } from "zod";
 import {
   DeniedOrderLockedError,
   PaidPaymobRefundRequiredError,
@@ -9,16 +10,19 @@ import {
   OrderNotFoundError,
   PaymobPaymentStatusManagedError,
   ShippingCustodyRequiredError,
+  ShippingCodPaymentManagedError,
   updateOrderPaymentStatusRepo
 } from "../../repositories/order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
+const paymentChangeSchema = z.object({ paymentStatus: z.enum(allowedPaymentStatuses) }).strict();
 
 function parsePositiveId(value: string) {
-  const id = Number.parseInt(value, 10);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  if (!/^[1-9]\d*$/.test(value)) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id <= 2_147_483_647 ? id : null;
 }
 
 export async function listAdminOrdersController(_req: AuthenticatedRequest, res: Response) {
@@ -47,16 +51,17 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
     return res.status(400).json({ message: "Invalid order id" });
   }
 
-  const paymentStatus = req.body?.paymentStatus;
-  if (!allowedPaymentStatuses.includes(paymentStatus)) {
+  const parsed = paymentChangeSchema.safeParse(req.body);
+  if (!parsed.success) {
     return res.status(400).json({ message: "Invalid payment status" });
   }
+  const { paymentStatus } = parsed.data;
 
   try {
     await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
   } catch (error) {
     if (error instanceof DeniedOrderLockedError || error instanceof PaidPaymobRefundRequiredError ||
-      error instanceof PaymobPaymentStatusManagedError || error instanceof ShippingCustodyRequiredError) {
+      error instanceof PaymobPaymentStatusManagedError || error instanceof ShippingCustodyRequiredError || error instanceof ShippingCodPaymentManagedError) {
       return res.status(409).json({ message: error.message });
     }
     if (error instanceof OrderNotFoundError) {

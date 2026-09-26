@@ -2,7 +2,7 @@
 
 Updated: 2026-09-26. This is the single requirements, progress and continuation record.
 
-**Current:** Phase 3/S07 code is complete and locally verified; S08 has not started. Merchant-account verification remains unfinished and live shipping stays off. This request covers S07 only. No implementation review gate.
+**Current:** S08/S09 are complete locally and uncommitted; unrelated staged document changes are preserved. S01–S07 are committed at `05d893f`. Merchant-account verification remains unfinished and live shipping stays off. S10 has not started. No implementation review gate.
 
 ## Work checklist
 
@@ -17,10 +17,11 @@ Checked means implemented and locally verified. Account verification is tracked 
 - [x] **S06 — Paymob:** shipping-inclusive charges, immutable session/address/quote snapshots, verified callback order creation, replay/refund ordering and original paid refund amounts. Depends on S05.
 - [x] **S07 — Automatic sending:** atomic COD/verified-paid intents, frozen requests, initial responses, concurrent claims, bounded retries and restart recovery; uncertain creation permits read-only reconciliation, never blind resending. O28 is resolved; account activation remains gated below.
 - [ ] **S07 account verification — O27:** verify create/search/read response contracts, default pickup/contact, disabled insurance, package sizes and prepaid zero COD against the merchant account before enabling sending.
-- [ ] **S08 — Synchronization/COD paid:** authenticate and deduplicate webhooks, handle late events, reconcile linked shipments, verify collected amount, reflect permitted Bosta edits. Depends on S07; needs O20/O21.
-- [ ] **S09 — States/edit guards:** separate manual/carrier/payment/custody state, record processing history, lock items/quantities/money, protect existing rejection paths. Depends on S08; needs O02-O04/O07.
+- [x] **S08 — Synchronization/COD paid:** authenticated/deduplicated webhooks, late-event ordering, durable linked-shipment reads/replay, verified collection evidence and shipment-only Bosta edits. Payment/edit policy is D45-D47.
+- [ ] **S08 account verification — O20:** verify this account's webhook/read states, timestamps, actual collection fields/units and delivery confirmation before enabling synchronization.
+- [x] **S09 — States/edit guards:** separate manual/carrier/payment/custody state and ERP detail display; transactional manual/processing history, immutable edit contracts and safe rejection/dispatch/expiry guards. Policy D48-D51 is resolved; staff action routes/buttons remain S13, merchant edit activation needs O07.
 - [ ] **S10 — Cancellation/refunds:** shared staff/customer/expiry operation; block dispatch, reconcile carrier state/custody, cancel safely, apply stock effects once; handle D43 refunds and races. Depends on S09; needs O27.
-- [ ] **S11 — 96-hour expiry:** replace created-order 48-hour rule, fixed deadline, processing/address exceptions, safe COD rejection/restocking, paid-order staff flags; retain payment-session expiry. Depends on S10; needs O03/O04/O12.
+- [ ] **S11 — 96-hour expiry:** replace created-order 48-hour rule, fixed deadline, processing/address exceptions, safe COD rejection/restocking, paid-order staff flags; retain payment-session expiry. Depends on S10 and D49/D50; needs O12.
 - [ ] **S12 — Permissions/ERP overview:** permission catalog/dependencies, staff labels, navigation, shipment list/detail, filters, flags/history and loading/error states. Depends on S08-S11; needs O18/O19.
 - [ ] **S13 — ERP actions:** authorized retry/reconcile, no-money edits, packing correction, manual state/history, cancellation and staff flag handling; guard concurrent updates. Depends on S12 and resolved state policy.
 - [ ] **S14 — Pickups:** individual/recurring list/create/edit/cancel, dates/recurrence validation, Bosta default location/contact, duplicate-safe retries. Depends on S13; needs O25 and account capabilities.
@@ -40,7 +41,7 @@ Checked means implemented and locally verified. Account verification is tracked 
 | D05 | Separate ERP shipping area plus shipping controls in order details; implement supported operations within this scope. |
 | D06 | Size uses products total after discounts, excluding shipping: ≤ EGP 7,000 Small; > 7,000 through 20,000 Medium; > 20,000 Large. Authorized staff may correct size. |
 | D07 | No package opening before delivery acceptance. |
-| D08 | Print only in Bosta. Staff may manually set Preparing, Ready for pickup, Printed, Delivered and Returned with history; these do not fabricate carrier events, collection or inspection. Conflict policy: O02. |
+| D08 | Print only in Bosta. Staff may manually set Preparing, Ready for pickup, Printed, Delivered and Returned with history; these do not fabricate carrier events, collection or inspection. Conflict policy: D48. |
 | D09 | Reuse Bosta's single existing warehouse/contact; no Capella warehouse setup. |
 | D10 | Checkout uses supported Bosta addresses and district drop-off availability; governorate coverage alone is insufficient. |
 | D11 | No insurance; verify account defaults do not enable it unexpectedly. |
@@ -57,7 +58,7 @@ Checked means implemented and locally verified. Account verification is tracked 
 | D22 | Exchanges and positive price differences approved; linked exchange versus refund/reorder and cheaper replacements remain O15. |
 | D23 | Orders survive sending failures; retry automatically, show ERP errors, prevent duplicate deliveries. |
 | D24 | Untouched COD deadline is original customer order creation + 96 hours; automatic sending belongs to the same customer action. |
-| D25 | Genuine processing, including printing, stops untouched expiry. Active/delivered/returned orders are excluded; exact event mapping: O03/O04. |
+| D25 | Genuine processing, including printing, stops untouched expiry. Active/delivered/returned orders are excluded; processing/address policy: D49/D50. |
 | D26 | Wrong/unclear address before collection requires a staff flag and retains the original 96-hour expiry. |
 | D27 | Automatic expiry rejection/restocking applies only to COD. Untouched paid Paymob orders get staff flags, no automatic refund/restock. |
 | D28 | Signed-in customers may cancel their own eligible orders before printing or warehouse departure; printed/dispatched orders cannot use direct cancellation. |
@@ -77,6 +78,13 @@ Checked means implemented and locally verified. Account verification is tracked 
 | D42 | Carrier outage during cancellation shows Cancellation pending and blocks ERP dispatch. Finalize only after rechecking safe cancellation; ERP cannot prevent physical Bosta actions. |
 | D43 | Verified full pre-dispatch Paymob refund stops unsent work and requests linked cancellable shipment cancellation. Retain stock until custody is safe; moving shipments/failures need staff handling. Unexpected partial refund blocks dispatch and raises a staff flag. |
 | D44 | Bosta package contents use English product/bundle names, quantities and sizes; customer notes stay as written. Never include buying costs. |
+| D45 | Delivered COD with a collected amount differing from the locked order total stays unpaid and raises a staff flag. |
+| D46 | Bosta-side recipient/address/notes/package-size/collection edits are mirrored on the shipment record only. Preserve original order details, items, quantities and customer total. |
+| D47 | Capella sends the locked amount for Bosta to collect. S08 does not automatically undo an already-paid COD order; contradictory reports retain payment status and raise a staff flag. Later non-delivery states retain verified collection evidence independently of the current carrier state. |
+| D48 | Display staff/manual and Bosta/carrier shipment states separately, including disagreement; neither changes payment or proves warehouse custody. |
+| D49 | Preparing, Ready for pickup, Printed, or verified Bosta pickup count as genuine processing. Creating/sending a delivery request, notes and ordinary address edits do not. |
+| D50 | Pre-pickup address trouble makes the original untouched-order deadline applicable again despite earlier preparation; flag staff. Confirmed pickup excludes the order from untouched expiry. |
+| D51 | Staff no-money edits are limited to recipient name/phone, delivery address, notes and package size before pickup, subject to verified Bosta edit availability. Items, quantities and customer charges remain locked. |
 
 ## Unresolved decisions and account evidence
 
@@ -84,11 +92,8 @@ Skipping implementation reviews does not answer these questions. Ask only when t
 
 | ID | Missing decision/evidence | Affected work |
 | --- | --- | --- |
-| O02 | Which status is displayed when manual and carrier events disagree? Manual state never proves payment/custody. | S09/S13 |
-| O03 | Exact genuine-processing event map, including printing; notes/ordinary edits do not count. | S09/S11 |
-| O04 | Later pre-collection address trouble after preparation: does previous processing remain decisive? | S09/S11 |
 | O06 | Merchant VAT, COD surcharges, discounts, size mapping, response fields/units, COD input units and pickup defaults. Shipping-inclusive COD may need quote iteration; no fee policy is invented. | S04/S05 |
-| O07 | Allowed no-money fields and carrier states; destination edits cannot change the agreed total. | S09/S13 |
+| O07 | Verify merchant-supported states/edit availability for D51; never assume an editable state or permit post-pickup edits. | S13 activation |
 | O08 | Cancel/reorder flow after printing/dispatch and its return/refund coordination. | S17 |
 | O12 | Paid untouched-order flag timing and whether staff may clear it with a note; prior blank answer did not settle either. | S11 |
 | O13 | Whole-order return scope, post-delivery shipping refund and separate case-specific fees. | S16 |
@@ -98,8 +103,7 @@ Skipping implementation reviews does not answer these questions. Ask only when t
 | O17 | Orders that cannot fit one Large box: staff handling versus an explicitly approved alternative. | S17 |
 | O18 | Final permission granularity for implemented actions. | S12 |
 | O19 | ERP overview groups/filters/bulk actions/pickup view/alerts. | S12/S13 |
-| O20 | Provider delivery/collection evidence and amount mismatch handling; sending is not payment. | S08 |
-| O21 | Ownership of Bosta-side address, collection, size and history edits; never overwrite locked items/customer totals. | S08 |
+| O20 | Verify account webhook/read state, timestamps, delivery-confirmation and actual collection fields/units; public examples do not establish the merchant contract. Mismatch policy is D45. | S08 activation |
 | O23 | Lost/damaged/refused/repeated-failure handling and explicit stock disposition; no insurance/settlement scope. | S08/S13 |
 | O24 | Simple bilingual timeline steps and exception/cancellation/return copy. | S15 |
 | O25 | Recurrence days/dates/parcel count and edit/cancel controls; reuse Bosta defaults. | S14 |
@@ -160,7 +164,13 @@ S07 adds `BOSTA_SHIPMENT_SENDING_ENABLED` (off by default) and server-only `BOST
 
 With the verified account still enabled, turning **sending** off preserves read-only recovery of uncertain jobs. Turning `BOSTA_ENABLED` off prohibits provider calls; already saved successful responses can still finish linking locally. Creation omits pickup location/contact and insurance goods info to use the verified defaults, prevents opening and collects the locked COD total or zero for prepaid. Bosta documents a COD limit of EGP 30,000; larger COD orders are flagged before any create request, with no automatic split.
 
-Capella production domains: storefront `capellacares.com`, ERP `erp.capellacares.com`, API `api.capellacares.com`. Webhook route is not implemented/chosen; it belongs on Capella's API, not Bosta's domain.
+S08 adds `BOSTA_SYNC_ENABLED` (off by default) and server-only `BOSTA_SYNC_SETTINGS_JSON`. Required: verified account ID/evidence; `webhookContract` with verified evidence, `collectionUnit` (`major`/`minor`) and `timestampUnit` (`milliseconds`/`seconds`); `readContract` with verified evidence, collection/requested-COD units, `eventTimePath`/`eventTimeFormat` (`iso`/`milliseconds`/`seconds`), `collectionPath` and `confirmationPath`. Paths are arrays of actual response keys verified against this account; requested COD is never substituted for actual collection. No merchant evidence is supplied or assumed.
+
+Webhook: `POST https://api.capellacares.com/api/v1/shipping/bosta/webhook`; configure the Bosta dashboard custom header `X-Bosta-Webhook-Secret` with the server's secret. Authentication precedes bounded JSON parsing; callbacks are persisted before acknowledgment. With synchronization verified/enabled, `BOSTA_ENABLED=false` prohibits HTTP reads but retains authenticated callbacks and local replay. Turning `BOSTA_SYNC_ENABLED=false` also stops callback processing/replay. Stored tracking/reference/account must match the original creation request; unrelated deliveries are ignored.
+
+The API starts a synchronization worker with durable jobs for linked shipments only: five-minute reads, two-minute claim leases, 30-second to 15-minute failure backoff, staff flag after eight failures and continued recovery reads. Timestamp ordering protects against late callbacks/reads; equal-time conflicting state/collection requires staff handling. Shipment-only edits never reprice the customer order or change items, manual state, stock or refund evidence.
+
+Capella production domains: storefront `capellacares.com`, ERP `erp.capellacares.com`, API `api.capellacares.com`.
 
 Sources: [API/OpenAPI](https://docs.bosta.co/api/api.yaml), [addresses](https://docs.bosta.co/docs/how-to/format-bosta-address/), [delivery](https://docs.bosta.co/docs/how-to/create-your-first-delivery/), [pickups](https://docs.bosta.co/docs/how-to/create-your-first-pickup/), [webhooks](https://docs.bosta.co/docs/how-to/get-delivery-status-via-webhook/), [key access](https://docs.bosta.co/docs/how-to/get-your-api-key/), [whitelisting](https://docs.bosta.co/docs/how-to/whitelisting/), [official SDK/staging](https://github.com/bostaapp/bosta-php), [public pricing](https://bosta.co/en-eg/pricing).
 
@@ -178,6 +188,16 @@ Public screenshot reference, **EGP before VAT; never checkout/account prices**:
 Large pricing and account/governorate region mapping are unknown. Small/Medium sharing a public row does not verify account rates; Medium/Large must not be mapped to bulky services by guesswork.
 
 ## Verification and continuation
+
+CodeRabbit S08/S09 follow-up: all **38** uncommitted modified/new/deleted files reviewed with `--uncommitted --include-untracked`; its single major finding is fixed. Later non-delivery reports retain verified paid COD collection, update carrier/custody state separately and flag reconciliation once. Same-time non-delivery refreshes still mirror shipment edits; explicit delivered-amount corrections retain D47 payment policy. ERP displays confirmed collection independently of current carrier status. API/ERP regressions failed first, then **43/43 API** and **31/31 ERP** tests passed. Affected build/lint/typecheck **7/7**, final workspace **17/17**, full tests **1,690 passed** (API 726, storefront 553, ERP 230, mobile 89, shared 42, database 50); whitespace checks passed. Baseline was the unchanged S09 green result below. Review output: ignored `test-results/coderabbit-s08-s09/review.ndjson`. Staged content and HEAD remain unchanged; no merchant calls, activation, S10 work, deployment or commits.
+
+S09 intended scope/files: shared strict immutable-edit/state contracts; transactional state/history and processing/custody projections in API shipping/order repositories, S08 event integration, S07 dispatch deadline guard, existing staff payment/rejection paths, database schema/migration, admin order DTO/detail compatibility and focused tests. Display manual/carrier/payment/custody independently; prevent payment-proof bypass and item/quantity/money edits; preserve existing safe rejection/restock behavior. Record pre-link staff processing, historical printing/custody reports and late pickup evidence; replay existing local event history without network access. Staff shipping action endpoints/permissions belong to S12/S13; actual Bosta edits, cancellation/refunds and the 96-hour expiry rollout remain S10/S11/S13. Baseline touched API/shared/database/ERP checks before changes; focused red/green then full workspace green. Decisions D48-D51 are resolved; merchant edit evidence O07 remains gated.
+
+S09 verification: baseline API **63/63**, database shipping **12/12**, shared shipping **6/6**, ERP orders **28/28**, with applicable build/lint/typecheck green. Migration **0055_shipping_state_guards** was applied only to `localhost/capella_test`. Focused API **89/89**, database **14/14**, shared **9/9**, ERP **30/30** and touched checks passed; return-transit correction passed **31/31**, then printed-history rejection protection passed **40/40** related regressions after failing first. Final workspace build/lint/typecheck **17/17 tasks passed**; full tests **1,688 passed** (API 725, storefront 553, ERP 229, mobile 89, shared 42, database 50). Tracked/new-file whitespace checks passed. Existing React warnings remain in unchanged storefront/mobile tests; no failures. Controlled provider fixtures only; no merchant requests, activation, deployment or commits. S08 work and unrelated staged documents/deletions are preserved; S10 has not started.
+
+S08 intended scope/files: authenticated bounded webhook route on Capella API; verified state/collection parser and read adapter; transactional event deduplication/ordering and shipment-only snapshots; COD-paid evidence/mismatch flags; durable linked-shipment reconciliation with restart/race/outage handling; API bootstrap/routes/config, shipping repository/services, database migration and focused tests. Use existing linked tracking/reference/account bindings; no historical import, stock restoration, S09 manual-state policy, carrier cancellation or live activation. Baseline: targeted API/database tests and build/lint/typecheck before implementation; red/green behavior tests, focused green, then whole-workspace checks. Preserve the user's unrelated deletions of two Paymob documents.
+
+S08 verification: baseline API **47/47** and database shipping **10/10**, with API/database build/lint/typecheck green. Migration **0054_shipping_sync** was applied only to `localhost/capella_test`. Focused shipping/payment regressions **83/83**, final confirmation/event checks **21/21**, database shipping **12/12**, API/database build/lint/typecheck and tracked/new-file whitespace checks passed. Final workspace build/lint/typecheck **17/17 tasks passed**; full tests **1,658 passed** (API 702, storefront 553, ERP 227, mobile 89, shared 39, database 48). Existing React test warnings remain in unchanged mobile tests; no failures. Provider responses use controlled fixtures only; no merchant requests, activation, deployment or commits. Unrelated staged document changes/deletions were preserved.
 
 Phase 3 CodeRabbit follow-up: reviewed all **26** uncommitted modified/new files; both major findings fixed in the dispatch worker. Preflight failures are recorded as unsent failures so safe staff rejection/COD expiry can restore stock. An expired final claim still gets read-only reconciliation; a missing outcome retains its custody flag without another create or retry cycle. Four regressions failed first, then **43/43** related tests and API build/lint/typecheck passed. Final workspace: build/lint/typecheck **17/17**, full tests **1,619 passed** (API 665, storefront 553, ERP 227, mobile 89, shared 39, database 46); tracked/new-file whitespace checks passed. Baseline was 29/29 plus API checks. User requested PC shutdown after green; changes are saved and uncommitted, live shipping remains off, S08 remains untouched.
 
@@ -213,4 +233,4 @@ pnpm --filter @capella/api build
 
 Other selected checks: ERP/storefront `pnpm --filter @capella/<app> exec vitest run <test>`; shared `pnpm --filter @capella/shared exec tsx --test <test>`. Inspect package scripts and database test-migration tooling before using them; verify test database destination, never production. For small slices check only the touched area; run broader checks for high-complexity work per `AGENTS.md` and at S18.
 
-Continuation: Phase 3/S07 code is finished; stop at this phase boundary. S08 synchronization is next and has not started. Keep account gates explicit and live shipping off. Future work records intended files/checks here and continues within its authorized scope without a review pause. VPS work uses one command at a time; deployment/production writes require their own authorization.
+Continuation: S09 is complete; wait for the user's instruction to start S10. Keep account gates explicit and live shipping off. Future work records intended files/checks here and continues within its authorized scope without a review pause. VPS work uses one command at a time; deployment/production writes require their own authorization.

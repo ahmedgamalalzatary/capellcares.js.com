@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@capella/database/src/db";
-import { orders, shippingWorkItems, shipments, orderReviewFlags } from "@capella/database/drizzle/schema";
+import { orders, shippingWorkItems, shipments, orderReviewFlags, orderStateHistory } from "@capella/database/drizzle/schema";
 
 export type ShippingTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -29,6 +29,12 @@ export async function flagShippingOrder(tx: ShippingTransaction, orderId: number
 
 /** Caller holds the order row lock, shared by claims, refund callbacks and rejection. */
 export async function stopUnsentDelivery(tx: ShippingTransaction, orderId: number): Promise<boolean> {
+  const [order] = await tx.select({ manualState: orders.manualShippingState, pickupAtMs: orders.shippingPickupAtMs })
+    .from(orders).where(eq(orders.id, orderId)).limit(1);
+  if (order && (order.pickupAtMs !== null || ["printed", "delivered", "returned"].includes(order.manualState ?? ""))) return false;
+  const [custodyHistory] = await tx.select({ id: orderStateHistory.id }).from(orderStateHistory).where(and(
+    eq(orderStateHistory.orderId, orderId), inArray(orderStateHistory.state, ["printed", "delivered", "returned"]))).limit(1);
+  if (custodyHistory) return false;
   const jobs = await tx.select().from(shippingWorkItems).where(and(
     eq(shippingWorkItems.orderId, orderId), eq(shippingWorkItems.operation, "create_delivery"))).for("update");
   const linked = await tx.select({ id: shipments.id }).from(shipments).where(eq(shipments.orderId, orderId)).limit(1);
