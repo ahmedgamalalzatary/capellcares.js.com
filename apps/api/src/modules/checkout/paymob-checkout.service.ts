@@ -5,6 +5,8 @@ import { checkoutReservations, checkoutSessions, paymentAttempts, productVariant
 import type { CheckoutPayload } from "../../types/domain.js";
 import { createReservedCheckout } from "../../repositories/checkout/checkout-reservation.repository.js";
 import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
+import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
+import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
 import {
   createPaymobIntention,
@@ -116,19 +118,23 @@ export async function initiatePaymobCheckout(input: {
   notificationUrl: string;
   redirectionUrl: string;
   createIntention?: IntentionCreator;
+  shippingService?: CheckoutShippingService;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
   }
   const priced = await priceCheckout(input.payload);
+  const shipping = await resolveShippingForCheckout(input.payload, priced, input.shippingService);
   const cartSnapshot = JSON.stringify(priced.items);
-  const amountCents = Math.round(priced.totalAmount * 100);
+  const amountCents = Math.round(priced.totalAmount * 100) + (shipping?.shippingAmountCents ?? 0);
+  const shippingSnapshot = shipping ? JSON.stringify(shipping) : null;
   if (input.payload.expectedAmountCents != null && amountCents !== input.payload.expectedAmountCents) {
     throw new CheckoutAmountChangedError();
   }
   const now = input.now ?? new Date();
   const publicKey = input.config.publicKey;
   const findExistingCheckout = () => db.select({
+    checkout: checkoutSessions,
     sessionId: checkoutSessions.id,
     checkoutId: checkoutSessions.publicId,
     expiresAt: checkoutSessions.reservationExpiresAt,
@@ -147,6 +153,15 @@ export async function initiatePaymobCheckout(input: {
   type ExistingCheckout = NonNullable<Awaited<ReturnType<typeof findExistingCheckout>>>;
   const resolveReuse = (existing: ExistingCheckout):
     { kind: "paymob_redirect"; checkoutId: string; checkoutUrl: string; expiresAt: string } | null => {
+    const session = existing.checkout;
+    if (session.customerId !== (input.payload.customerId ?? null) || session.fullName !== input.payload.fullName ||
+      session.phone !== normalizeEgyptianPhone(input.payload.phone) || session.email !== input.payload.email ||
+      session.governorate !== (shipping?.address.cityName.en ?? input.payload.governorate) ||
+      session.cityArea !== (shipping ? `${shipping.address.zoneName.en} / ${shipping.address.districtName.en}`.slice(0, 120) : input.payload.cityArea) ||
+      session.addressLine !== input.payload.addressLine || session.buildingApartment !== input.payload.buildingApartment ||
+      (session.notes ?? "") !== (input.payload.notes ?? "") || session.shippingSnapshot !== shippingSnapshot) {
+      throw new Error("Idempotency key belongs to a different checkout");
+    }
     if (existing.clientSecret) {
       if (existing.state === "completed") throw new Error("Checkout already completed");
       if (existing.state !== "payment_pending") throw new Error("Checkout is no longer payable");
@@ -250,13 +265,15 @@ export async function initiatePaymobCheckout(input: {
         fullName: input.payload.fullName,
         phone: normalizeEgyptianPhone(input.payload.phone),
         email: input.payload.email,
-        governorate: input.payload.governorate,
-        cityArea: input.payload.cityArea,
+        governorate: shipping?.address.cityName.en ?? input.payload.governorate,
+        cityArea: shipping ? `${shipping.address.zoneName.en} / ${shipping.address.districtName.en}`.slice(0, 120) : input.payload.cityArea,
         addressLine: input.payload.addressLine,
         buildingApartment: input.payload.buildingApartment,
         notes: input.payload.notes ?? "",
         cartSnapshot,
         amountCents,
+        shippingAmountCents: shipping?.shippingAmountCents ?? 0,
+        shippingSnapshot,
         reservationExpiresAt: expiresAt,
         reservations: priced.reservations,
         initialAttempt: { merchantReference, environment: input.config.mode,

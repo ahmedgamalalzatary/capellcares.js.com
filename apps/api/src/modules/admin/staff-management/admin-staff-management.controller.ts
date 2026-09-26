@@ -178,22 +178,25 @@ export async function updateAdminStaffController(req: ErpAuthenticatedRequest, r
       ? await bcrypt.hash(input.password, 10)
       : undefined;
 
-  await updateAdminUser(staffId, {
-    name: input.name,
-    email: input.email,
-    isActive: input.isActive,
-    passwordHash: nextPasswordHash,
-    role: "staff"
+  const item = await db.transaction(async (tx) => {
+    await updateAdminUser(staffId, {
+      name: input.name,
+      email: input.email,
+      isActive: input.isActive,
+      passwordHash: nextPasswordHash,
+      role: "staff"
+    }, tx);
+    await replaceAdminUserPermissions(staffId, input.permissionKeys, tx);
+
+    const updatedStaffUser = await findStaffUserById(staffId, tx);
+    if (!updatedStaffUser) {
+      throw new Error("Staff user not found after update");
+    }
+
+    const permissionKeys = await getEffectiveAdminPermissions(staffId, tx);
+    return toStaffDto(updatedStaffUser, permissionKeys);
   });
-  await replaceAdminUserPermissions(staffId, input.permissionKeys);
-
-  const updatedStaffUser = await findStaffUserById(staffId);
-  if (!updatedStaffUser) {
-    return res.status(404).json({ message: "Not found" });
-  }
-
-  const permissionKeys = await getEffectiveAdminPermissions(staffId);
-  res.json({ item: toStaffDto(updatedStaffUser, permissionKeys) });
+  res.json({ item });
 }
 
 function isDuplicateAdminEmailError(error: unknown) {

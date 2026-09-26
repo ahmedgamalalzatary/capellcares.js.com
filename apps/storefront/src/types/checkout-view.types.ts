@@ -1,4 +1,4 @@
-import type { Language, Offer, PaymentMethod, Product } from "@capella/shared";
+import type { Language, Offer, PaymentMethod, Product, ShippingDestination, CheckoutShippingQuote } from "@capella/shared";
 
 export interface CheckoutViewProps {
   lang: Language;
@@ -27,9 +27,22 @@ export interface CheckoutFormState {
   buildingApartment: string;
   notes: string;
   paymentMethod: PaymentMethod;
+  shippingCityId?: string;
+  shippingZoneId?: string;
+  shippingDistrictId?: string;
+}
+
+export interface CheckoutShippingState {
+  enabled: boolean | null;
+  addresses: ShippingDestination[];
+  quote: CheckoutShippingQuote | null;
+  loading: boolean;
+  error: string | null;
+  retry: () => void;
 }
 
 export interface CheckoutFormProps extends CheckoutViewProps {
+  shipping?: CheckoutShippingState;
   form: CheckoutFormState;
   errors: CheckoutErrors;
   placing: boolean;
@@ -39,11 +52,14 @@ export interface CheckoutFormProps extends CheckoutViewProps {
 }
 
 export interface CheckoutSummaryProps extends CheckoutViewProps {
+  shippingAmountCents?: number | null;
   resolved: CheckoutResolvedItem[];
   subtotal: number;
 }
 
 export interface UseCheckoutResult {
+  shipping: CheckoutShippingState;
+  totalAmount: number;
   form: CheckoutFormState;
   errors: CheckoutErrors;
   placing: boolean;

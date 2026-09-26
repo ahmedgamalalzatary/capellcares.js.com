@@ -351,6 +351,27 @@
       "when": 1790186197104,
       "tag": "0049_customer_carts",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "5",
+      "when": 1790404704457,
+      "tag": "0050_shipping_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "5",
+      "when": 1790405038611,
+      "tag": "0051_shipping_rates",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "5",
+      "when": 1790412804393,
+      "tag": "0052_checkout_shipping_snapshots",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,7 @@
 import type {
+  CheckoutShippingAvailability,
+  CheckoutShippingQuote,
+  ShippingAddress,
   Advice,
   Category,
   CheckoutRequestDto,
@@ -17,6 +20,7 @@ import type {
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
+import { checkoutShippingQuoteSchema, shippingDestinationSchema } from "@capella/shared";
 import { API_BASE, authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
 import { getAuthSessionRevision, refreshAccessTokenOrNull } from "../auth-provider.api";
 import { normalizeCategory, normalizeProduct } from "./client/normalizers";
@@ -154,19 +158,42 @@ export async function submitCheckout(
   accessToken: string | null,
   options?: { requireAuthentication?: boolean; idempotencyKey?: string }
 ): Promise<CheckoutResponseDto | null> {
+  const requestToken = accessToken || !options?.requireAuthentication ? accessToken
+    : await checkoutRequestToken(accessToken, true);
+  return authedMutationJSON(
+    "/api/v1/checkout",
+    requestToken,
+    { method: "POST", body: input, retryOn401: false, idempotencyKey: options?.idempotencyKey }
+  );
+}
+
+async function checkoutRequestToken(accessToken: string | null, required = false) {
   let requestToken = accessToken;
-  if (options?.requireAuthentication && !requestToken) {
+  if (required && !requestToken) {
     const revision = getAuthSessionRevision();
     requestToken = await refreshAccessTokenOrNull();
     if (!requestToken || getAuthSessionRevision() !== revision) {
       throw new Error("Authentication required");
     }
   }
-  return authedMutationJSON(
-    "/api/v1/checkout",
-    requestToken,
-    { method: "POST", body: input, retryOn401: false, idempotencyKey: options?.idempotencyKey }
-  );
+  return requestToken;
+}
+
+export async function fetchCheckoutShipping(): Promise<CheckoutShippingAvailability> {
+  const response = await fetch(`${API_BASE}/api/v1/checkout/shipping`, { cache: "no-store" });
+  if (!response.ok) throw Object.assign(new Error("Shipping is unavailable"), { code: "SHIPPING_UNAVAILABLE" });
+  const data = await response.json();
+  if (typeof data.enabled !== "boolean" || !Array.isArray(data.addresses)) throw new Error("Invalid shipping availability");
+  return { enabled: data.enabled, addresses: data.addresses.map((row: unknown) => shippingDestinationSchema.parse(row)) };
+}
+
+export async function fetchCheckoutShippingQuote(input: {
+  items: CheckoutRequestDto["items"]; paymentMethod: "cod" | "paymob"; shippingAddress: ShippingAddress
+}, accessToken: string | null, requireAuthentication = false): Promise<CheckoutShippingQuote> {
+  const token = accessToken || !requireAuthentication ? accessToken : await checkoutRequestToken(accessToken, true);
+  const data = await authedMutationJSON("/api/v1/checkout/shipping/quote", token,
+    { method: "POST", body: input, retryOn401: false });
+  return checkoutShippingQuoteSchema.parse(data);
 }
 
 export type PaymobMethodAvailability = { available: boolean; methods: Array<"card" | "wallet"> };

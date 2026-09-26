@@ -2,6 +2,7 @@ import { and, eq, lt, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode } from "../../../repositories/order/shared.js";
+import { checkoutShippingQuoteSchema } from "@capella/shared";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -147,6 +148,17 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
 
     const snapshot = JSON.parse(match.session.cartSnapshot) as Array<Record<string, any>>;
     if (!Array.isArray(snapshot) || snapshot.length === 0) throw new Error("Checkout snapshot is invalid");
+    const shipping = match.session.shippingSnapshot ? checkoutShippingQuoteSchema.parse(JSON.parse(match.session.shippingSnapshot)) : null;
+    const productsCents = snapshot.reduce((sum, item) => sum + Math.round(Number(item.lineTotal) * 100), 0);
+    if (productsCents + match.session.shippingAmountCents !== match.attempt.amountCents ||
+      match.session.amountCents !== match.attempt.amountCents ||
+      (shipping && (shipping.amountCents !== match.attempt.amountCents || shipping.productsTotalCents !== productsCents ||
+        shipping.shippingAmountCents !== match.session.shippingAmountCents || shipping.paymentMethod !== "paymob" || shipping.codAmountCents !== 0)) ||
+      (!shipping && match.session.shippingAmountCents !== 0)) {
+      await tx.update(paymentAttempts).set({ status: "reconciliation_required", failureCode: "CHECKOUT_SNAPSHOT_MISMATCH",
+        paymobTransactionId: String(transaction.id) }).where(eq(paymentAttempts.id, match.attempt.id));
+      return { outcome: "reconciliation_required" as const };
+    }
     const [order] = await tx.insert(orders).values({
       orderCode: generatePendingOrderCode(),
       customerType: match.session.customerType,
@@ -165,6 +177,10 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
         : match.attempt.earlyRefundAmountCents > 0 ? "partially_refunded" : "succeeded",
       refundedAmountCents: match.attempt.earlyRefundAmountCents,
       paymentAttemptId: match.attempt.id,
+      shippingAmountCents: match.session.shippingAmountCents,
+      shippingQuoteId: shipping?.quoteId ?? null,
+      shippingSize: shipping?.size ?? null,
+      shippingSnapshot: match.session.shippingSnapshot,
       totalAmount: sql`${match.attempt.amountCents / 100}`
     }).$returningId();
     await tx.update(orders).set({ orderCode: generateOrderCode(order.id) }).where(eq(orders.id, order.id));

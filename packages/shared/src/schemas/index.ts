@@ -8,6 +8,7 @@ export * from "./checkout.schema.js";
 export * from "./offer.schema.js";
 export * from "./product.schema.js";
 export * from "./review.schema.js";
+export * from "./shipping.schema.js";
 export * from "./shop-media.schema.js";
 export * from "./wishlist.schema.js";
 export * from "./youtube-url.schema.js";

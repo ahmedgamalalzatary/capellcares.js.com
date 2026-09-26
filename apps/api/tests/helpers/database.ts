@@ -7,6 +7,7 @@ import {
   carts,
   checkoutReservations,
   checkoutSessions,
+  shippingCheckoutQuotes,
   collections,
   customers,
   permissions,
@@ -28,6 +29,7 @@ import { db } from "@capella/database/src/db";
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
+  await db.delete(shippingCheckoutQuotes);
   await db.delete(paymentWebhookEvents);
   await db.delete(paymentAttempts);
   await db.delete(checkoutReservations);

@@ -187,7 +187,7 @@ test("checkout route returns 503 without reserving stock when no Paymob integrat
     });
 
     assert.equal(response.status, 503);
-    assert.deepEqual(response.json, { message: "Paymob checkout is not configured" });
+    assert.deepEqual(response.json, { code: "PAYMENT_UNAVAILABLE", message: "Paymob checkout is not configured" });
   });
 
   assert.equal((await db.select({ id: orders.id }).from(orders)).length, 0);
@@ -291,7 +291,7 @@ test("checkout reports Paymob provider failure without exposing provider details
           paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] })
       });
       assert.equal(response.status, 502);
-      assert.deepEqual(response.json, { message: "Payment provider is temporarily unavailable" });
+      assert.deepEqual(response.json, { code: "PAYMENT_UNAVAILABLE", message: "Payment provider is temporarily unavailable" });
     });
   } finally {
     global.fetch = originalFetch;

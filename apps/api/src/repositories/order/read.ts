@@ -110,9 +110,12 @@ export async function getSalesAnalyticsRepo() {
         (order.providerPaymentStatus === "succeeded" || order.providerPaymentStatus === "partially_refunded")
   );
   const itemRows = await db.select().from(orderItems).orderBy(desc(orderItems.orderId));
-  const recognizedCentsByOrder = new Map(orderRows.map((order) => [order.id,
-    Math.max(0, Math.round(toNumber(order.totalAmount) * 100) -
-      (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0))]));
+  const recognizedCentsByOrder = new Map(orderRows.map((order) => {
+    const grossCents = Math.round(toNumber(order.totalAmount) * 100);
+    const productsCents = Math.max(0, grossCents - order.shippingAmountCents);
+    const paidCents = Math.max(0, grossCents - (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0));
+    return [order.id, grossCents > 0 ? Math.round(productsCents * paidCents / grossCents) : 0];
+  }));
   // Bucket the lines once so the allocation loop below is a single pass over
   // itemRows instead of scanning every item for every recognized order.
   const linesByOrderId = new Map<number, typeof itemRows>();
@@ -124,7 +127,7 @@ export async function getSalesAnalyticsRepo() {
   const lineRevenueCents = new Map<number, number>();
   for (const order of orderRows) {
     const lines = linesByOrderId.get(order.id) ?? [];
-    const grossCents = Math.round(toNumber(order.totalAmount) * 100);
+    const grossCents = Math.max(0, Math.round(toNumber(order.totalAmount) * 100) - order.shippingAmountCents);
     const netCents = recognizedCentsByOrder.get(order.id) ?? 0;
     let allocated = 0;
     lines.forEach((line, index) => {

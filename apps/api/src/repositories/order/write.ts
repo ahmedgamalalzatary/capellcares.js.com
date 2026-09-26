@@ -175,6 +175,10 @@ export async function createOrderWithItems(input: {
     checkoutFingerprint?: string | null;
     codExpiresAt?: Date | null;
     totalAmount: number;
+    shippingAmountCents?: number;
+    shippingQuoteId?: string | null;
+    shippingSize?: "small" | "medium" | "large" | null;
+    shippingSnapshot?: string | null;
   };
   items: OrderItem[];
 }) {

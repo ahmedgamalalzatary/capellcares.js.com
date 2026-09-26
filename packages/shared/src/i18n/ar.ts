@@ -216,6 +216,15 @@ export const ar = {
     readMore: "اقرئي المزيد ←"
   },
   checkout: {
+    zone: "المنطقة", district: "الحي",
+    shippingPending: "اختر عنوان التوصيل",
+    shippingLoading: "جارٍ حساب تكلفة التوصيل…",
+    shippingUnavailable: "تعذر حساب تكلفة التوصيل. حاول مرة أخرى.",
+    shippingUnsupported: "التوصيل غير متاح لهذا العنوان. اختر حيًا آخر.",
+    shippingChanged: "تغيرت تكلفة التوصيل. راجع الإجمالي الجديد قبل تأكيد الطلب.",
+    amountChanged: "تغيرت أسعار السلة. أعد التحميل وراجع الإجمالي قبل الدفع.",
+    retryShipping: "تحديث تكلفة التوصيل", checkoutFailed: "تعذر تأكيد الطلب. حاول مرة أخرى.",
+    paymentUnavailable: "تعذر بدء الدفع الإلكتروني. حاول مرة أخرى.",
     title: "إتمام الطلب",
     contact: "بيانات التواصل",
     shipping: "عنوان الشحن",

@@ -3,7 +3,7 @@
 import { formatPrice } from "@capella/shared";
 import type { CheckoutSummaryProps } from "../../types/checkout-view.types";
 
-export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSummaryProps) {
+export function CheckoutSummary({ lang, dict, resolved, subtotal, shippingAmountCents = 0 }: CheckoutSummaryProps) {
   return (
     <aside className="rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
       <span className="eyebrow text-(--ink-3)!">{dict.checkout.reviewEyebrow}</span>
@@ -33,14 +33,14 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSumm
       </div>
       <div className="flex items-center justify-between py-1 text-sm">
         <span className="text-(--ink-2)">{dict.common.shipping}</span>
-        <span className="text-ink">{formatPrice(0, lang)}</span>
+        <span className="text-ink">{shippingAmountCents == null ? dict.checkout.shippingPending : formatPrice(shippingAmountCents / 100, lang)}</span>
       </div>
       <div className="mt-4 flex items-end justify-between border-t border-(--hairline) pt-4">
         <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
         <span className={`leading-none text-accent ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar)"
           : "text-3xl font-(--font-display)"}`}>
-          {formatPrice(subtotal, lang)}
+          {shippingAmountCents == null ? "—" : formatPrice(subtotal + shippingAmountCents / 100, lang)}
         </span>
       </div>
     </aside>

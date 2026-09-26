@@ -17,6 +17,8 @@ interface ReservedCheckoutInput {
   notes: string;
   cartSnapshot: string;
   amountCents: number;
+  shippingAmountCents?: number;
+  shippingSnapshot?: string | null;
   reservationExpiresAt: Date;
   reservations: Array<{ variantId: number; qty: number }>;
   initialAttempt?: {
@@ -44,7 +46,8 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
       notes: input.notes,
       cartSnapshot: input.cartSnapshot,
       amountCents: input.amountCents,
-      shippingAmountCents: 0,
+      shippingAmountCents: input.shippingAmountCents ?? 0,
+      shippingSnapshot: input.shippingSnapshot ?? null,
       currency: "EGP",
       state: "payment_pending",
       attemptCount: input.initialAttempt ? 1 : 0,

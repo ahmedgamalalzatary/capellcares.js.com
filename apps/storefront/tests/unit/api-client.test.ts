@@ -1,6 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("storefront api client", () => {
+  it("preserves the API recovery code for localized checkout errors", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 409,
+      json: async () => ({ message: "Review the shipping quote", code: "SHIPPING_QUOTE_CHANGED" }) }));
+    const { submitCheckout } = await import("@/lib/api/client");
+    await expect(submitCheckout(checkoutInput, null)).rejects.toMatchObject({ code: "SHIPPING_QUOTE_CHANGED" });
+  });
+  it("reads shipping activation without caching an inactive result", async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ enabled: false, addresses: [] }) });
+    vi.stubGlobal("fetch", fetch);
+    const client = await import("@/lib/api/client");
+    expect(typeof (client as any).fetchCheckoutShipping).toBe("function");
+    await expect((client as any).fetchCheckoutShipping()).resolves.toEqual({ enabled: false, addresses: [] });
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/checkout/shipping"), expect.objectContaining({ cache: "no-store" }));
+  });
   const checkoutInput = {
     fullName: "Capella User",
     phone: "01012345678",

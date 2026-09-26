@@ -214,6 +214,15 @@ export const en = {
     readMore: "View More →"
   },
   checkout: {
+    zone: "Area", district: "District",
+    shippingPending: "Select a delivery destination",
+    shippingLoading: "Calculating delivery cost…",
+    shippingUnavailable: "Delivery pricing is unavailable. Please try again.",
+    shippingUnsupported: "Delivery is unavailable for this destination. Choose another district.",
+    shippingChanged: "The delivery quote changed. Review the updated total before placing your order.",
+    amountChanged: "Your cart prices changed. Refresh and review the total before paying.",
+    retryShipping: "Refresh delivery cost", checkoutFailed: "We could not place your order. Please try again.",
+    paymentUnavailable: "We could not start online payment. Please try again.",
     title: "Checkout",
     contact: "Contact",
     shipping: "Shipping address",

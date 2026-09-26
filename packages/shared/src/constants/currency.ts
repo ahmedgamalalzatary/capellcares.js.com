@@ -6,7 +6,8 @@ export function formatPrice(amount: number, lang: "ar" | "en" = "en") {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: CURRENCY,
-    maximumFractionDigits: 0
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
   }).format(amount);
 }
 

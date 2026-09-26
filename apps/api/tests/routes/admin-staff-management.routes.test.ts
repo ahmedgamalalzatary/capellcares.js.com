@@ -4,12 +4,12 @@ import test, { beforeEach } from "node:test";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { adminUserPermissions, adminUsers, permissions } from "@capella/database/drizzle/schema";
-import { db } from "@capella/database/src/db";
+import { db, mysqlPool } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
-import { syncPermissionCatalog } from "../../src/services/erp-permissions.service.js";
+import { replaceAdminUserPermissions, syncPermissionCatalog } from "../../src/services/erp-permissions.service.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -209,6 +209,83 @@ test("admin can edit staff without replacing password when password is blank", a
   assert.equal(afterUpdate?.name, "Edited Staff");
   assert.equal(afterUpdate?.email, "edited-staff@capella.test");
   assert.equal(afterUpdate?.passwordHash, beforeUpdate?.passwordHash);
+});
+
+test("staff editing rolls back the profile and existing permissions if new permissions cannot be saved", async () => {
+  const staffId = await createTestAdminUser({
+    name: "Original Staff",
+    email: "original-staff@capella.test",
+    passwordHash: await bcrypt.hash("OriginalPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+  await replaceAdminUserPermissions(staffId, ["orders.read"]);
+  const [originalProfile] = await db.select().from(adminUsers).where(eq(adminUsers.id, staffId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    await mysqlPool.query(`CREATE TRIGGER capella_test_staff_permission_failure
+      BEFORE INSERT ON admin_user_permissions FOR EACH ROW
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Permission save failed for rollback test'`);
+    try {
+      const response = await request(`/api/erp/staff/${staffId}`, {
+        method: "PUT",
+        headers: { ...authHeaders, "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Changed Staff",
+          email: "changed-staff@capella.test",
+          password: "ChangedPass123",
+          isActive: false,
+          permissionKeys: ["products.update"]
+        })
+      });
+      assert.equal(response.status, 500);
+    } finally {
+      await mysqlPool.query("DROP TRIGGER IF EXISTS capella_test_staff_permission_failure");
+    }
+  });
+
+  const [savedProfile] = await db.select().from(adminUsers).where(eq(adminUsers.id, staffId));
+  assert.deepEqual(savedProfile, originalProfile);
+  const savedPermissions = await db.select({ key: permissions.key }).from(adminUserPermissions)
+    .innerJoin(permissions, eq(permissions.id, adminUserPermissions.permissionId))
+    .where(eq(adminUserPermissions.adminUserId, staffId));
+  assert.deepEqual(savedPermissions.map((permission) => permission.key), ["orders.read"]);
+});
+
+test("staff cannot change a profile or permissions through the staff editor", async () => {
+  const staffId = await createTestAdminUser({
+    name: "Protected Staff",
+    email: "protected-profile@capella.test",
+    passwordHash: await bcrypt.hash("OriginalPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+  await replaceAdminUserPermissions(staffId, ["orders.read"]);
+  const [originalProfile] = await db.select().from(adminUsers).where(eq(adminUsers.id, staffId));
+
+  await withTestServer(app, async (request) => {
+    const staffAuth = await getStaffAuthHeaders(request);
+    const response = await request(`/api/erp/staff/${staffId}`, {
+      method: "PUT",
+      headers: { authorization: staffAuth.authorization, "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Unauthorized Change",
+        email: "unauthorized-change@capella.test",
+        password: "ChangedPass123",
+        isActive: false,
+        permissionKeys: ["products.update"]
+      })
+    });
+    assert.equal(response.status, 403);
+  });
+
+  const [savedProfile] = await db.select().from(adminUsers).where(eq(adminUsers.id, staffId));
+  assert.deepEqual(savedProfile, originalProfile);
+  const savedPermissions = await db.select({ key: permissions.key }).from(adminUserPermissions)
+    .innerJoin(permissions, eq(permissions.id, adminUserPermissions.permissionId))
+    .where(eq(adminUserPermissions.adminUserId, staffId));
+  assert.deepEqual(savedPermissions.map((permission) => permission.key), ["orders.read"]);
 });
 
 test("admin can deactivate a staff user", async () => {

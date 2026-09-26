@@ -135,8 +135,8 @@ async function authedMutationJSONInternal<T>(
       throw new Error("Authentication refresh unavailable");
     }
   }
-  const data = await response.json().catch(() => null) as { message?: string } | null;
-  if (!response.ok) throw new Error(data?.message ?? `API ${response.status} ${path}`);
+  const data = await response.json().catch(() => null) as { message?: string; code?: string } | null;
+  if (!response.ok) throw Object.assign(new Error(data?.message ?? `API ${response.status} ${path}`), { code: data?.code });
   if (accessToken && getAuthSessionRevision() !== revision) {
     throw new Error("Authentication session changed");
   }

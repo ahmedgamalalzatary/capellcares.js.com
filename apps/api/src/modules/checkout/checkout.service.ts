@@ -3,6 +3,7 @@ import { createOrderFromCheckout, priceCheckout } from "../orders/orders.service
 import type { CheckoutPayload } from "../../types/domain.js";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
 import { initiatePaymobCheckout } from "./paymob-checkout.service.js";
+import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 
 export class PaymobUnavailableError extends Error {
   constructor() {
@@ -30,7 +31,7 @@ function validateCheckoutPayload(payload: CheckoutPayload) {
     }
   }
   if (!EG_PHONE_REGEX.test(payload.phone)) throw new Error("Invalid Egyptian phone number");
-  if (!GOVERNORATES.includes(payload.governorate as (typeof GOVERNORATES)[number])) {
+  if (!payload.shippingAddress && !GOVERNORATES.includes(payload.governorate as (typeof GOVERNORATES)[number])) {
     throw new Error("Invalid governorate");
   }
   if (payload.paymentMethod !== "cod" && payload.paymentMethod !== "paymob") {
@@ -46,9 +47,10 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
   }
   if (payload.paymentMethod === "paymob") {
     const priced = await priceCheckout(payload);
-    if (priced.totalAmount === 0) {
-      return { kind: "cod_order" as const, ...await createOrderFromCheckout({ ...payload, paymentMethod: "cod" }, {
-        idempotencyKey: options.idempotencyKey.trim()
+    const shipping = await resolveShippingForCheckout(payload, priced);
+    if (priced.totalAmount === 0 && (shipping?.shippingAmountCents ?? 0) === 0) {
+      return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload, {
+        idempotencyKey: options.idempotencyKey.trim(), allowFreePrepaid: true
       }) };
     }
     const config = resolvePaymobConfig();

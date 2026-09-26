@@ -19,6 +19,7 @@ vi.mock("@/lib/api/client", () => ({
   fetchOffers: async () => [],
   fetchCollections: async () => [],
   fetchPaymobMethods: async () => ({ available: true, methods: ["card"] }),
+  fetchCheckoutShipping: async () => ({ enabled: false, addresses: [] }),
   submitCheckout: (...args: unknown[]) => submitCheckout(...args)
 }));
 vi.mock("@/lib/paymob-browser-session", () => ({

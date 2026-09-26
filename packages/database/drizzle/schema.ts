@@ -506,16 +506,31 @@ export const orders = mysqlTable("orders", {
   checkoutFingerprint: varchar("checkout_fingerprint", { length: 64 }),
   codExpiresAt: datetime("cod_expires_at"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  // Immutable shipping quote snapshot: the customer-facing charge, the quote
+  // identity the server re-derives on submit, and the estimated size. Written
+  // once at order creation; never updated by later carrier or packing changes.
+  shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
+  shippingQuoteId: varchar("shipping_quote_id", { length: 64 }),
+  shippingSize: mysqlEnum("shipping_size", ["small", "medium", "large"]),
+  shippingSnapshot: text("shipping_snapshot"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
   refundedAmountCheck: check("orders_refunded_amount_cents_check", sql`${table.refundedAmountCents} >= 0`),
+  shippingAmountCheck: check("orders_shipping_amount_cents_check", sql`${table.shippingAmountCents} >= 0`),
   codExpiryIndex: index("orders_cod_expiry_idx").on(
     table.paymentMethod,
     table.paymentStatus,
     table.codExpiresAt
   )
 }));
+
+export const shippingCheckoutQuotes = mysqlTable("shipping_checkout_quotes", {
+  quoteId: varchar("quote_id", { length: 64 }).primaryKey(),
+  checkoutFingerprint: varchar("checkout_fingerprint", { length: 64 }).notNull(),
+  snapshot: text("snapshot").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
@@ -558,6 +573,7 @@ export const checkoutSessions = mysqlTable("checkout_sessions", {
   buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
   notes: text("notes"),
   cartSnapshot: text("cart_snapshot").notNull(),
+  shippingSnapshot: text("shipping_snapshot"),
   amountCents: int("amount_cents").notNull(),
   shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
   currency: varchar("currency", { length: 3 }).notNull().default("EGP"),
@@ -569,7 +585,7 @@ export const checkoutSessions = mysqlTable("checkout_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
   amountCheck: check("checkout_sessions_amount_check", sql`${table.amountCents} > 0`),
-  shippingCheck: check("checkout_sessions_shipping_check", sql`${table.shippingAmountCents} = 0`),
+  shippingCheck: check("checkout_sessions_shipping_check", sql`${table.shippingAmountCents} >= 0`),
   attemptCountCheck: check("checkout_sessions_attempt_count_check", sql`${table.attemptCount} between 0 and 3`),
   customerFk: foreignKey({ name: "checkout_sessions_customer_fk", columns: [table.customerId], foreignColumns: [customers.id] }).onDelete("set null"),
   createdOrderFk: foreignKey({ name: "checkout_sessions_order_fk", columns: [table.createdOrderId], foreignColumns: [orders.id] }).onDelete("set null")
@@ -617,6 +633,127 @@ export const paymentAttempts = mysqlTable("payment_attempts", {
   amountCheck: check("payment_attempts_amount_check", sql`${table.amountCents} > 0`),
   earlyRefundCheck: check("payment_attempts_early_refund_check", sql`${table.earlyRefundAmountCents} >= 0 and ${table.earlyRefundAmountCents} <= ${table.amountCents}`),
   sessionFk: foreignKey({ name: "payment_attempts_session_fk", columns: [table.checkoutSessionId], foreignColumns: [checkoutSessions.id] }).onDelete("cascade")
+}));
+
+export const shipments = mysqlTable("shipments", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
+  kind: mysqlEnum("kind", ["outgoing", "return", "exchange"]).notNull(),
+  provider: mysqlEnum("provider", ["bosta"]).notNull(),
+  trackingNumber: varchar("tracking_number", { length: 64 }).notNull(),
+  rawProviderState: varchar("raw_provider_state", { length: 64 }).notNull(),
+  rawProviderCode: int("raw_provider_code"),
+  normalizedState: mysqlEnum("normalized_state", [
+    "created",
+    "picked_up",
+    "in_transit",
+    "delivered",
+    "returned",
+    "cancelled",
+    "exception"
+  ]).notNull(),
+  manualState: mysqlEnum("manual_state", [
+    "preparing",
+    "ready_for_pickup",
+    "printed",
+    "delivered",
+    "returned"
+  ]),
+  shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
+  size: mysqlEnum("size", ["small", "medium", "large"]).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  trackingNumberUnique: unique("shipments_tracking_number_unique").on(table.trackingNumber),
+  idempotencyKeyUnique: unique("shipments_idempotency_key_unique").on(table.idempotencyKey),
+  shippingAmountCheck: check("shipments_shipping_amount_cents_check", sql`${table.shippingAmountCents} >= 0`),
+  orderIndex: index("shipments_order_idx").on(table.orderId, table.kind)
+}));
+
+export const shipmentEvents = mysqlTable("shipment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
+  eventFingerprint: varchar("event_fingerprint", { length: 128 }).notNull(),
+  rawPayload: text("raw_payload").notNull(),
+  rawProviderState: varchar("raw_provider_state", { length: 64 }),
+  rawProviderCode: int("raw_provider_code"),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  processedAt: datetime("processed_at")
+}, (table) => ({
+  eventFingerprintUnique: unique("shipment_events_fingerprint_unique").on(table.eventFingerprint),
+  shipmentIndex: index("shipment_events_shipment_idx").on(table.shipmentId, table.receivedAt)
+}));
+
+export const shippingWorkItems = mysqlTable("shipping_work_items", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  operation: mysqlEnum("operation", ["create_delivery", "cancel_delivery", "terminate_delivery"]).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "succeeded", "failed", "review_required"]).notNull(),
+  attemptCount: int("attempt_count").notNull().default(0),
+  nextAttemptAt: datetime("next_attempt_at").notNull(),
+  claimedBy: varchar("claimed_by", { length: 64 }),
+  claimedAt: datetime("claimed_at"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  idempotencyKeyUnique: unique("shipping_work_items_idempotency_key_unique").on(table.idempotencyKey),
+  statusIndex: index("shipping_work_items_status_idx").on(table.status, table.nextAttemptAt)
+}));
+
+export const shippingRates = mysqlTable("shipping_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  rateKey: varchar("rate_key", { length: 191 }).notNull(),
+  amountCents: int("amount_cents").notNull(),
+  size: mysqlEnum("size", ["small", "medium", "large"]).notNull(),
+  destinationId: varchar("destination_id", { length: 64 }).notNull(),
+  serviceType: varchar("service_type", { length: 32 }).notNull().default("delivery"),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  rateKeyUnique: unique("shipping_rates_rate_key_unique").on(table.rateKey),
+  amountCheck: check("shipping_rates_amount_cents_check", sql`${table.amountCents} >= 0`),
+  lookupIndex: index("shipping_rates_lookup_idx").on(table.destinationId, table.size, table.serviceType)
+}));
+
+export const orderReviewFlags = mysqlTable("order_review_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  flagType: mysqlEnum("flag_type", [
+    "address_review",
+    "expiry_review",
+    "refund_review",
+    "amount_mismatch",
+    "custody_review",
+    "cancellation_pending"
+  ]).notNull(),
+  reason: text("reason").notNull(),
+  status: mysqlEnum("status", ["open", "resolved"]).notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: datetime("resolved_at")
+}, (table) => ({
+  orderIndex: index("order_review_flags_order_idx").on(table.orderId, table.status)
+}));
+
+export const orderStateHistory = mysqlTable("order_state_history", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  state: mysqlEnum("state", [
+    "preparing",
+    "ready_for_pickup",
+    "printed",
+    "delivered",
+    "returned"
+  ]).notNull(),
+  actorType: mysqlEnum("actor_type", ["staff", "system"]).notNull(),
+  actorId: int("actor_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  orderIndex: index("order_state_history_order_idx").on(table.orderId, table.createdAt)
 }));
 
 export const paymentWebhookEvents = mysqlTable("payment_webhook_events", {

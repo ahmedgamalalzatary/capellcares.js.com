@@ -5,14 +5,20 @@ import { GOVERNORATES } from "@capella/shared";
 import type { CheckoutFormProps } from "../../types/checkout-view.types";
 
 export function CheckoutForm({
+  lang,
   dict,
   form,
   errors,
   placing,
   paymobMethods,
   setField,
-  placeOrder
+  placeOrder,
+  shipping
 }: CheckoutFormProps) {
+  const addresses = shipping?.addresses ?? [];
+  const cities = [...new Map(addresses.map(row => [row.cityId, row])).values()];
+  const zones = [...new Map(addresses.filter(row => row.cityId === form.shippingCityId).map(row => [row.zoneId, row])).values()];
+  const districts = addresses.filter(row => row.cityId === form.shippingCityId && row.zoneId === form.shippingZoneId);
   return (
     <form
       className="grid gap-7"
@@ -50,6 +56,26 @@ export function CheckoutForm({
               <option value="EG">{dict.checkout.countryEgypt}</option>
             </select>
           </Field>
+          {shipping?.enabled ? <>
+            <Field label={dict.checkout.governorate} error={errors.governorate}>
+              <select className="select" value={form.shippingCityId ?? ""} onChange={event => setField("shippingCityId", event.target.value)} disabled={placing}>
+                <option value="">—</option>
+                {cities.map(row => <option key={row.cityId} value={row.cityId}>{row.cityName[lang]}</option>)}
+              </select>
+            </Field>
+            <Field label={dict.checkout.zone} error={errors.city}>
+              <select className="select" value={form.shippingZoneId ?? ""} onChange={event => setField("shippingZoneId", event.target.value)} disabled={!form.shippingCityId || placing}>
+                <option value="">—</option>
+                {zones.map(row => <option key={row.zoneId} value={row.zoneId}>{row.zoneName[lang]}</option>)}
+              </select>
+            </Field>
+            <Field label={dict.checkout.district}>
+              <select className="select" value={form.shippingDistrictId ?? ""} onChange={event => setField("shippingDistrictId", event.target.value)} disabled={!form.shippingZoneId || placing}>
+                <option value="">—</option>
+                {districts.map(row => <option key={row.districtId} value={row.districtId}>{row.districtName[lang]}</option>)}
+              </select>
+            </Field>
+          </> : <>
           <Field label={dict.checkout.governorate} error={errors.governorate}>
             <select className="select" value={form.governorate} onChange={(event) => setField("governorate", event.target.value)}>
               <option value="">—</option>
@@ -63,6 +89,7 @@ export function CheckoutForm({
           <Field label={dict.checkout.city} error={errors.city}>
             <input className="input" value={form.cityArea} onChange={(event) => setField("cityArea", event.target.value)} />
           </Field>
+          </>}
           <Field label={dict.checkout.addressLine} error={errors.addressLine} fullWidth>
             <input className="input" value={form.addressLine} onChange={(event) => setField("addressLine", event.target.value)} />
           </Field>
@@ -74,6 +101,12 @@ export function CheckoutForm({
           </Field>
         </div>
       </Section>
+
+      {shipping?.loading && <p role="status" className="text-sm text-(--ink-2)">{dict.checkout.shippingLoading}</p>}
+      {(shipping?.error || errors.shipping) && <div role="alert" className="text-sm text-(--danger)">
+        <p>{shipping?.error ?? errors.shipping}</p>
+        <button type="button" className="btn btn--ghost" onClick={shipping?.retry} disabled={placing || shipping?.loading}>{dict.checkout.retryShipping}</button>
+      </div>}
 
       <Section title={dict.checkout.payment}>
         <div className="grid gap-2.5">
@@ -105,7 +138,8 @@ export function CheckoutForm({
 
       {errors.submit && <span className="text-sm text-(--danger)">{errors.submit}</span>}
 
-      <button type="submit" className="btn btn--primary btn--block h-[52px]" disabled={placing}>
+      <button type="submit" className="btn btn--primary btn--block h-[52px]"
+        disabled={placing || (shipping != null && (shipping.loading || shipping.enabled == null || (shipping.enabled && !shipping.quote)))}>
         {placing ? dict.common.loading : dict.checkout.placeOrder}
       </button>
     </form>

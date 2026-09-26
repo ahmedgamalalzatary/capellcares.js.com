@@ -408,6 +408,9 @@ export interface OrderSummary {
   refundedAmountCents: number;
   totalAmount: number;
   createdAt: string;
+  shippingAmountCents?: number;
+  shippingQuoteId?: string | null;
+  shippingSize?: "small" | "medium" | "large" | null;
   /**
    * Present on the storefront order list (which renders item thumbnails per
    * card) and absent on the admin list, which only needs order-level columns.
