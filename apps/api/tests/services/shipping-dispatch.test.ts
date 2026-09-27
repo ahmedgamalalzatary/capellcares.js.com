@@ -62,7 +62,7 @@ test("an in-flight delivery prevents staff rejection and automatic expiry from r
   const { created, ids } = await shippingOrder();
   await db.update(shippingWorkItems).set({ status: "processing", attemptCount: 1, claimedBy: "lost-worker", claimedAt: new Date() });
   await assert.rejects(updateOrderPaymentStatusRepo(created.id, "denied"), /shipping|custody/i);
-  await expirePendingCodOrders(new Date(Date.now() + 49 * 60 * 60 * 1000));
+  await expirePendingCodOrders(new Date(Date.now() + 97 * 60 * 60 * 1000));
   const [stock] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
   const [order] = await db.select().from(orders);
   assert.equal(stock.stockQty, 9);
@@ -70,6 +70,6 @@ test("an in-flight delivery prevents staff rejection and automatic expiry from r
   const flags = await db.select().from(orderReviewFlags);
   assert.equal(flags.length, 1);
   assert.equal(flags[0].flagType, "expiry_review");
-  await expirePendingCodOrders(new Date(Date.now() + 50 * 60 * 60 * 1000));
+  await expirePendingCodOrders(new Date(Date.now() + 98 * 60 * 60 * 1000));
   assert.equal((await db.select().from(orderReviewFlags)).length, 1);
 });

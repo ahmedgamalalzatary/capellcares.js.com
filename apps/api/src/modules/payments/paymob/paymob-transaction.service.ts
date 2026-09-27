@@ -1,7 +1,7 @@
 import { and, eq, lt, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { generateOrderCode, generatePendingOrderCode } from "../../../repositories/order/shared.js";
+import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../../repositories/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../../repositories/shipping-dispatch.repository.js";
 
@@ -183,6 +183,9 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       shippingQuoteId: shipping?.quoteId ?? null,
       shippingSize: shipping?.size ?? null,
       shippingSnapshot: match.session.shippingSnapshot,
+      // D24: the paid order gets the same fixed 96-hour untouched deadline as COD, so the
+      // staff alert for an untouched paid order can actually be raised by the sweep.
+      codExpiresAt: new Date(Date.now() + UNTOUCHED_EXPIRY_MS),
       totalAmount: sql`${match.attempt.amountCents / 100}`
     }).$returningId();
     await tx.update(orders).set({ orderCode: generateOrderCode(order.id) }).where(eq(orders.id, order.id));

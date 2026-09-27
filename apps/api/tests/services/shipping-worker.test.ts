@@ -279,7 +279,7 @@ for (const action of ["staff rejection", "COD expiry"] as const) {
     assert.equal(job.requestSnapshot, null);
     assert.equal((await db.select().from(orderReviewFlags))[0].flagType, "address_review");
     if (action === "staff rejection") await updateOrderPaymentStatusRepo(created.id, "denied");
-    else await expirePendingCodOrders(new Date(Date.now() + 49 * 60 * 60 * 1000));
+    else await expirePendingCodOrders(new Date(Date.now() + 97 * 60 * 60 * 1000));
     assert.equal((await db.select().from(orders))[0].paymentStatus, "denied");
     assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0].stockQty, 10);
   });

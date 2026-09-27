@@ -6,12 +6,17 @@ import { wrapAsync } from "../../lib/async-route.js";
 import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
 import {
   getAdminOrderController,
+  listAdminOrderReviewFlagsController,
   listAdminOrdersController,
+  resolveAdminOrderReviewFlagController,
   updateOrderPaymentStatusController
 } from "./orders.controller.js";
 
 export const adminOrdersRoutes = Router();
 adminOrdersRoutes.get("/", requireErpPermission("orders.read"), wrapAsync(listAdminOrdersController));
+adminOrdersRoutes.get("/review-flags", requireErpPermission("orders.read"), wrapAsync(listAdminOrderReviewFlagsController));
+// Registered before "/:id" so the literal review-flags path is never read as an order id.
+adminOrdersRoutes.post("/review-flags/:flagId/resolve", requireErpPermission("orders.read"), wrapAsync(resolveAdminOrderReviewFlagController));
 adminOrdersRoutes.get("/reconciliation", requireErpPermission("orders.read"), wrapAsync(async (_req, res) => {
   const rows = await db.select({
     checkoutId: checkoutSessions.publicId,

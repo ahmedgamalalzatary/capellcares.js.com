@@ -23,6 +23,20 @@ export interface AdminOrderDto extends Order {
   shipping?: AdminOrderShippingStateDto | null;
 }
 
+/** Staff alert for one unresolved order review flag. Acknowledging it never changes the order. */
+export interface AdminOrderReviewFlagDto {
+  id: number;
+  orderId: number;
+  orderCode: string;
+  flagType: "address_review" | "expiry_review" | "refund_review" | "amount_mismatch" | "custody_review" | "cancellation_pending" | "untouched_paid";
+  reason: string;
+  status: "open" | "resolved";
+  customerName: string;
+  totalAmount: number;
+  orderCreatedAt: string;
+  flaggedAt: string;
+}
+
 type ManualShippingState = "preparing" | "ready_for_pickup" | "printed" | "delivered" | "returned";
 export interface AdminOrderShippingStateDto {
   manualState: ManualShippingState | null;

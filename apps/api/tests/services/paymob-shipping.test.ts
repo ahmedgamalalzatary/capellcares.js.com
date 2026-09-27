@@ -9,6 +9,7 @@ import { priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { submitCheckout } from "../../src/modules/checkout/checkout.service.js";
 import { getBaselineIds, resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { fixtureShippingService, selectedDestination, shippingBuyer, withShippingEnvironment } from "../helpers/checkout-shipping.js";
+import { expirePendingCodOrders } from "../../src/repositories/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 
@@ -52,6 +53,52 @@ test("manual safe paid cancellation and a later verified full refund retain sepa
   assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0].stockQty, 10);
   assert.equal((await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.status, "open"))).length, 0);
 });
+test("a real paid order carries the 96-hour untouched deadline and raises the staff alert", async () => {
+  const { input } = await setup();
+  await initiatePaymobCheckout(input);
+  const beforeMs = Math.floor(Date.now() / 1000) * 1000;
+  const created = await processPaymobTransaction(paid);
+  const afterMs = Math.floor(Date.now() / 1000) * 1000;
+  const orderId = created.orderId!;
+
+  // P1: real Paymob orders must carry the deadline, otherwise the sweep can never see them.
+  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+  assert.notEqual(order.codExpiresAt, null, "a real paid order must carry the untouched deadline");
+  // The deadline is creation + 96h, bracketed by the insert window (the `datetime` column has
+  // no sub-second part, so the window is widened to whole seconds) and independent of how it
+  // reads back against the `timestamp` created_at column.
+  const deadline = order.codExpiresAt!.getTime();
+  const ninetySixHours = 96 * 60 * 60 * 1000;
+  // Widened by a second on each side: the `datetime` column truncates to whole seconds, so a
+  // deadline written at the end of a second can sit one second below the sampled window.
+  const expectedLow = beforeMs + ninetySixHours - 1000;
+  const expectedHigh = afterMs + ninetySixHours + 1000;
+  assert.ok(deadline >= expectedLow && deadline <= expectedHigh,
+    `the paid order deadline must be its creation instant plus 96 hours (got ${new Date(deadline).toISOString()})`);
+
+  // Move the fixed deadline into the past; it is never reset.
+  await db.update(orders).set({ codExpiresAt: new Date(Date.now() - 60 * 60 * 1000) }).where(eq(orders.id, orderId));
+  await expirePendingCodOrders(new Date());
+
+  const flags = await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.orderId, orderId));
+  assert.equal(flags[0].flagType, "untouched_paid");
+  const [after] = await db.select().from(orders).where(eq(orders.id, orderId));
+  assert.equal(after.paymentStatus, "accepted", "D27: no automatic refund or denial");
+  assert.equal(after.refundedAmountCents, 0);
+});
+
+test("a paid order with genuine processing never raises the untouched alert", async () => {
+  const { input } = await setup();
+  await initiatePaymobCheckout(input);
+  const created = await processPaymobTransaction(paid);
+  await db.update(orders).set({ codExpiresAt: new Date(Date.now() - 60 * 60 * 1000), shippingProcessingAtMs: Date.now() })
+    .where(eq(orders.id, created.orderId!));
+
+  await expirePendingCodOrders(new Date());
+
+  assert.equal((await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.orderId, created.orderId!))).length, 0);
+});
+
 const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
   hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
 const urls = { config, notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook", redirectionUrl: "https://capellacares.com/checkout/payment-result" };

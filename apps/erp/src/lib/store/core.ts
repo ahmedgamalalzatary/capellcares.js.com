@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -462,6 +462,16 @@ export class ErpStore {
 
   async fetchOrder(id: number): Promise<AdminOrderDto> {
     return api.get(`/api/erp/orders/${id}`);
+  }
+
+  async fetchOpenOrderReviewFlags(): Promise<AdminOrderReviewFlagDto[]> {
+    const result = await api.get<{ items: AdminOrderReviewFlagDto[] }>("/api/erp/orders/review-flags");
+    return result.items;
+  }
+
+  /** Acknowledging an alert is pure staff visibility; it never denies, refunds or restocks the order. */
+  async resolveOrderReviewFlag(flagId: number) {
+    await api.post(`/api/erp/orders/review-flags/${flagId}/resolve`);
   }
 
   async fetchPaymobReconciliation(): Promise<Array<{

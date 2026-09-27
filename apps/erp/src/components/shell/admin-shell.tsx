@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
+import { OrderReviewFlagAlerts } from "@/components/orders/order-review-flag-alerts";
 import { Icon } from "@/components/ui/icons";
 import "./admin-shell.css";
 
@@ -82,6 +83,7 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
 
   return (
     <div className="app-shell">
+      <OrderReviewFlagAlerts />
       {/* ── Desktop sidebar ───────────────────────────── */}
       <aside className="sidebar">
         <div className="sidebar__brand">

@@ -3,6 +3,7 @@ import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orderItems, orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
+import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
 import { untouchedShippingExpiryApplies } from "../../repositories/shipping-state.repository.js";
 import { BostaProviderError } from "./bosta/bosta-client.js";
 import { bostaDeliveryProviderFromEnvironment, type DeliveryProvider, type DeliveryRequest, type DeliveryResult } from "./bosta/bosta-delivery.service.js";
@@ -46,9 +47,14 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
     // A crashed final attempt still needs one read-only reconciliation; never create again at the limit.
     if (!recovering && job.attemptCount >= MAX_ATTEMPTS) return stop("ATTEMPT_LIMIT_REVIEW", false);
     if (!recovering) {
-      const flags = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
-        eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open"))).limit(1);
-      if (blocked(order) || (order.codExpiresAt != null && order.codExpiresAt <= now && untouchedShippingExpiryApplies(order)) || flags.length) {
+      const flags = await tx.select({ flagType: orderReviewFlags.flagType }).from(orderReviewFlags).where(and(
+        eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open")));
+      // O12: an untouched paid order is only alerted, never held — the deadline still denies
+      // COD, but a paid order keeps shipping and is handled by staff through the normal flow.
+      const deadlineBlocks = order.paymentMethod === "cod" && order.codExpiresAt != null &&
+        order.codExpiresAt <= now && untouchedShippingExpiryApplies(order);
+      const safetyFlagOpen = flags.some((flag) => isSafetyReviewFlag(flag.flagType));
+      if (blocked(order) || deadlineBlocks || safetyFlagOpen) {
         await tx.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.id, job.id));
         return null;
       }

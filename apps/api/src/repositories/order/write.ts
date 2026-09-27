@@ -1,6 +1,6 @@
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { and, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "../shipping-state.repository.js";
@@ -338,16 +338,32 @@ export async function updateOrderPaymentStatusRepo(
   });
 }
 
+/**
+ * D24/D39: the untouched deadline is order creation + 96 hours, fixed and never extended.
+ * D27/D49/D50: only untouched orders qualify, and automatic denial/restocking is COD-only;
+ * an untouched paid order raises a staff flag and is never refunded or restocked here.
+ */
 export async function expirePendingCodOrders(now: Date): Promise<void> {
   await db.transaction(async (tx) => {
     const expired = await tx.select().from(orders).where(and(
-      eq(orders.paymentMethod, "cod"),
-      eq(orders.paymentStatus, "pending"),
+      isNull(orders.cancellationStatus),
       lte(orders.codExpiresAt, now)
     )).for("update");
 
     for (const order of expired) {
-      if (order.shippingSnapshot && !untouchedShippingExpiryApplies(order)) continue;
+      if (!untouchedShippingExpiryApplies(order)) continue;
+      if (order.paymentMethod === "paymob") {
+        if (order.paymentStatus === "denied" || order.refundedAmountCents > 0) continue;
+        // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not
+        // return on the next sweep; unlike carrier state it never becomes relevant again.
+        const [alreadyRaised] = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
+          eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1);
+        if (alreadyRaised) continue;
+        await flagShippingOrder(tx, order.id, "untouched_paid",
+          "Paid order passed the 96-hour deadline with no processing; no automatic refund or restocking applies");
+        continue;
+      }
+      if (order.paymentStatus !== "pending") continue;
       if (order.shippingSnapshot) {
         await requestShippingCancellationInTransaction(tx, order, "expiry", { now });
         continue;

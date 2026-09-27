@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
 import { loadBundleDiscountsRepo } from "../../repositories/bundle-discount.repository.js";
+import { UNTOUCHED_EXPIRY_MS } from "../../repositories/order/shared.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
@@ -290,7 +291,7 @@ export async function createOrderFromCheckout(
       paymentStatus,
       idempotencyKey: options.idempotencyKey,
       checkoutFingerprint,
-      codExpiresAt: totalAmount === 0 ? null : new Date((options.now ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
+      codExpiresAt: totalAmount === 0 ? null : new Date((options.now ?? new Date()).getTime() + UNTOUCHED_EXPIRY_MS),
       totalAmount,
       shippingAmountCents: shipping?.shippingAmountCents ?? 0,
       shippingQuoteId: shipping?.quoteId ?? null,

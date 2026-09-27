@@ -13,6 +13,7 @@ import {
   ShippingCodPaymentManagedError,
   updateOrderPaymentStatusRepo
 } from "../../repositories/order.repository.js";
+import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "../../repositories/order-review-flag.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
 
@@ -27,6 +28,29 @@ function parsePositiveId(value: string) {
 
 export async function listAdminOrdersController(_req: AuthenticatedRequest, res: Response) {
   res.json({ items: await listOrdersRepo() });
+}
+
+export async function listAdminOrderReviewFlagsController(_req: AuthenticatedRequest, res: Response) {
+  res.json({ items: await listOpenOrderReviewFlagsRepo() });
+}
+
+export async function resolveAdminOrderReviewFlagController(req: AuthenticatedRequest, res: Response) {
+  const id = parsePositiveId(req.params.flagId);
+  if (id == null) {
+    return res.status(400).json({ message: "Invalid flag id" });
+  }
+  try {
+    if (!await resolveOrderReviewFlagRepo(id)) {
+      return res.status(404).json({ message: "Review flag not found" });
+    }
+  } catch (error) {
+    // A safety flag is a dispatch hold owned by the S13 staff action, not the alert feed.
+    if (error instanceof SafetyReviewFlagError) {
+      return res.status(409).json({ message: error.message });
+    }
+    throw error;
+  }
+  return res.json({ ok: true });
 }
 
 export async function getAdminSalesController(_req: AuthenticatedRequest, res: Response) {

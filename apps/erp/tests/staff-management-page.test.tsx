@@ -58,8 +58,13 @@ describe("StaffManagementPage", () => {
       logout: vi.fn().mockResolvedValue(undefined)
     });
 
-    mockedFetch
-      .mockResolvedValueOnce({
+    // Routed by URL because AdminShell also polls the global order review flags feed.
+    mockedFetch.mockImplementation(async (input: unknown) => {
+      const path = String(input);
+      if (path.includes("/orders/review-flags")) {
+        return { ok: true, status: 200, json: async () => ({ items: [] }) };
+      }
+      return {
         ok: true,
         status: 200,
         json: async () => ({
@@ -74,7 +79,8 @@ describe("StaffManagementPage", () => {
             }
           ]
         })
-      });
+      };
+    });
 
     render(createElement(StaffManagementPage));
 
@@ -85,6 +91,6 @@ describe("StaffManagementPage", () => {
     expect(screen.getByRole("link", { name: /إضافة عضو/i })).toHaveAttribute("href", "/staff/new");
     expect(screen.getByRole("link", { name: "تعديل" })).toHaveAttribute("href", "/staff/11/edit");
     expect(screen.queryByText("orders.update_payment_status")).not.toBeInTheDocument();
-    expect(mockedFetch).toHaveBeenCalledTimes(1);
+    expect(mockedFetch.mock.calls.filter(([input]) => !String(input).includes("/orders/review-flags"))).toHaveLength(1);
   });
 });

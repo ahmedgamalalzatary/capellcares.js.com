@@ -1,0 +1,1 @@
+ALTER TABLE `order_review_flags` MODIFY COLUMN `flag_type` enum('address_review','expiry_review','refund_review','amount_mismatch','custody_review','cancellation_pending','untouched_paid') NOT NULL;
