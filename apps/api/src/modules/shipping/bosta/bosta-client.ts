@@ -36,6 +36,10 @@ export class BostaClient {
     return this.request("POST", path, body);
   }
 
+  async delete(path: string): Promise<unknown> {
+    return this.request("DELETE", path);
+  }
+
   private redact(message: string): string {
     let out = message;
     for (const secret of [this.config.apiKey, this.config.webhookSecret]) {

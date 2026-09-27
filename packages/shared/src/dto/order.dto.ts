@@ -31,6 +31,8 @@ export interface AdminOrderShippingStateDto {
   rawProviderType: string | null;
   custodyState: "unknown" | "carrier" | "recipient" | "warehouse_uninspected";
   collection: { confirmed: boolean; amountCents: number | null };
+  cancellation?: { status: "pending" | "cancelled"; requestedAtMs: number | null; completedAtMs: number | null;
+    stockRestoredAtMs: number | null; refundRequiredCents: number } | null;
   processing: { startedAtMs: number | null; pickupAtMs: number | null; addressBlockedAtMs: number | null; untouchedExpiryApplies: boolean };
   history: { id: number; state: ManualShippingState; actorType: "staff" | "system"; actorId: number | null; atMs: number; reason: string | null }[];
 }

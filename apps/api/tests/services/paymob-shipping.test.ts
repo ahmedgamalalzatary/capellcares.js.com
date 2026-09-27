@@ -7,10 +7,51 @@ import { initiatePaymobCheckout, retryPaymobCheckout } from "../../src/modules/c
 import { processPaymobTransaction } from "../../src/modules/payments/paymob/paymob-transaction.service.js";
 import { priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { submitCheckout } from "../../src/modules/checkout/checkout.service.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { getBaselineIds, resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { fixtureShippingService, selectedDestination, shippingBuyer, withShippingEnvironment } from "../helpers/checkout-shipping.js";
 
 beforeEach(resetApiTestDatabase);
+
+test("verified full shipping refund cancels unsent work and restores sold stock once across duplicate callbacks", async () => {
+  const { input, ids } = await setup();
+  await initiatePaymobCheckout(input);
+  const created = await processPaymobTransaction(paid);
+  const refunded = { ...paid, is_refunded: true, refunded_amount_cents: 13229 };
+  await processPaymobTransaction(refunded);
+  await processPaymobTransaction(refunded);
+  const [stored] = await db.select().from(orders).where(eq(orders.id, created.orderId!));
+  assert.equal(stored.cancellationStatus, "cancelled");
+  assert.equal(stored.providerPaymentStatus, "refunded");
+  assert.equal(stored.paymentStatus, "denied");
+  assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0].stockQty, 10);
+});
+
+test("refund-before-success uses the same cancellation operation after the paid order is created", async () => {
+  const { input, ids } = await setup();
+  await initiatePaymobCheckout(input);
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 });
+  await processPaymobTransaction(paid);
+  const [stored] = await db.select().from(orders);
+  assert.equal(stored.cancellationStatus, "cancelled");
+  assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0].stockQty, 10);
+});
+
+test("manual safe paid cancellation and a later verified full refund retain separate evidence and never restock twice", async () => {
+  const { input, ids } = await setup();
+  await initiatePaymobCheckout(input);
+  const created = await processPaymobTransaction(paid);
+  const actorId = await createTestAdminUser({ name: "Refund admin", email: "refund-cancel@example.test", passwordHash: "unused", role: "admin" });
+  const { requestShippingCancellation } = await import("../../src/repositories/shipping-cancellation.repository.js");
+  const result = await requestShippingCancellation(created.orderId!, { source: "staff", actorId });
+  assert.equal(result.refundRequiredCents, 13229);
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 });
+  const [stored] = await db.select().from(orders).where(eq(orders.id, created.orderId!));
+  assert.equal(stored.cancellationStatus, "cancelled");
+  assert.equal(stored.paymentStatus, "denied");
+  assert.equal(stored.refundedAmountCents, 13229);
+  assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0].stockQty, 10);
+  assert.equal((await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.status, "open"))).length, 0);
+});
 const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
   hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
 const urls = { config, notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook", redirectionUrl: "https://capellacares.com/checkout/payment-result" };
@@ -100,8 +141,9 @@ test("a full refund before success carries the original shipping-inclusive amoun
   assert.equal(order.refundedAmountCents, 13229);
   assert.equal(order.shippingQuoteId, quote.quoteId);
   const jobs = await db.select().from(shippingWorkItems);
-  assert.equal(jobs.length, 1);
-  assert.equal(jobs[0].status, "failed", "already refunded orders must never be dispatched");
+  assert.equal(jobs.length, 2);
+  assert.equal(jobs.find(job => job.operation === "create_delivery")!.status, "failed", "already refunded orders must never be dispatched");
+  assert.equal(jobs.find(job => job.operation === "cancel_delivery")!.status, "succeeded");
 });
 
 test("a partial refund arriving before paid order creation blocks the delivery and raises a staff flag", async () => {

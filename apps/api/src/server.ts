@@ -8,12 +8,14 @@ const { ensureBootstrapAdmin } = await import("./modules/admin/auth/admin-auth.s
 const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-expiry-worker.js");
 const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
 const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
+const { startShippingCancellationWorker } = await import("./modules/shipping/shipping-cancellation-worker.js");
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
 startCheckoutExpiryWorker();
 startShippingDispatchWorker();
 startShippingSyncWorker();
+startShippingCancellationWorker();
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {

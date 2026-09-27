@@ -59,7 +59,8 @@ async function findAcceptedOrderItem(
   const baseConditions = [
     eq(orders.customerId, customerId),
     eq(orders.customerType, "registered"),
-    eq(orders.paymentStatus, "accepted")
+    eq(orders.paymentStatus, "accepted"),
+    or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))!
   ];
 
   if (entityType === "product") {
@@ -263,7 +264,8 @@ export async function claimReviewPrompt(customerId: number) {
     .where(and(
       eq(orders.customerId, customerId),
       eq(orders.customerType, "registered"),
-      eq(orders.paymentStatus, "accepted")
+      eq(orders.paymentStatus, "accepted"),
+      or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))
     ))
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(1);
@@ -352,6 +354,7 @@ export async function claimReviewPrompt(customerId: number) {
       eq(orders.customerId, customerId),
       eq(orders.customerType, "registered"),
       eq(orders.paymentStatus, "accepted"),
+      or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending")),
       inArray(orderItems.itemType, ["product_variant", "offer", "collection"]),
       isNull(reviews.id),
       isNull(reviewSubmissionHistory.id),
@@ -403,8 +406,15 @@ export async function claimReviewPrompt(customerId: number) {
 }
 
 export async function attachReviewEligibilityToOrder<
-  T extends { paymentStatus: string; items: Array<{ itemType: string; variantId: number | null; offerId: number | null; collectionId: number | null }> }
+  T extends { id: number; paymentStatus: string; items: Array<{ itemType: string; variantId: number | null; offerId: number | null; collectionId: number | null }> }
 >(order: T, customerId: number) {
+  const [reviewableOrder] = await db.select({ id: orders.id }).from(orders).where(and(
+    eq(orders.id, order.id),
+    eq(orders.customerId, customerId),
+    eq(orders.customerType, "registered"),
+    eq(orders.paymentStatus, "accepted"),
+    or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))
+  )).limit(1);
   const variantIds = order.items
     .filter((item) => item.itemType === "product_variant" && item.variantId != null)
     .map((item) => item.variantId!);
@@ -444,7 +454,7 @@ export async function attachReviewEligibilityToOrder<
         review: {
           entityType,
           entityId,
-          state: order.paymentStatus !== "accepted"
+          state: order.paymentStatus !== "accepted" || !reviewableOrder
             ? "unavailable" as const
             : reviewedTargets.has(`${entityType}:${entityId}`)
               ? "submitted" as const

@@ -64,6 +64,19 @@ beforeEach(() => {
 });
 
 describe("OrderDetailsPage", () => {
+  it.each(["pending", "cancelled"])("shows %s cancellation separately from carrier, payment and manual refund", async (status) => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod: "paymob", paymentStatus: "accepted", providerPaymentStatus: "succeeded",
+      shipping: { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+        collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+        cancellation: { status, requestedAtMs: 1760000000123, completedAtMs: status === "cancelled" ? 1760000000456 : null,
+          stockRestoredAtMs: status === "cancelled" ? 1760000000456 : null, refundRequiredCents: status === "cancelled" ? 20000 : 0 } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText(status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب")).toBeInTheDocument();
+    expect(region.getByText("تم الإنشاء (بوسطة)")).toBeInTheDocument();
+    if (status === "cancelled") expect(region.getByText(/استرداد كامل يدوي عبر باي موب/)).toBeInTheDocument();
+  });
   it("shows verified collection independently of a contradictory current carrier state", async () => {
     fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentStatus: "accepted", shippingQuoteId: "quote",
       shipping: { manualState: null, carrierState: "in_transit", rawProviderCode: 41, rawProviderType: "SEND",

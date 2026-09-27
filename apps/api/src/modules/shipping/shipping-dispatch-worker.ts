@@ -10,7 +10,7 @@ import { bostaDeliveryProviderFromEnvironment, type DeliveryProvider, type Deliv
 type Job = typeof shippingWorkItems.$inferSelect;
 const MAX_ATTEMPTS = 8;
 const backoff = (attempt: number) => Math.min(15 * 60_000, 30_000 * 2 ** Math.max(0, attempt - 1));
-const blocked = (order: typeof orders.$inferSelect) => order.paymentStatus === "denied" || order.refundedAmountCents > 0 ||
+const blocked = (order: typeof orders.$inferSelect) => order.paymentStatus === "denied" || order.cancellationStatus !== null || order.refundedAmountCents > 0 ||
   (order.paymentMethod === "paymob" && (order.paymentStatus !== "accepted" || order.providerPaymentStatus !== "succeeded"));
 
 async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
@@ -101,7 +101,7 @@ async function complete(job: Job, result: DeliveryResult) {
     await tx.update(shippingWorkItems).set({ status: "succeeded", lastError: null, claimedBy: null, claimedAt: null })
       .where(eq(shippingWorkItems.id, job.id));
     if (blocked(order)) await flagShippingOrder(tx, order.id,
-      order.paymentStatus === "denied" || order.refundedAmountCents === Math.round(Number(order.totalAmount) * 100)
+      order.paymentStatus === "denied" || order.cancellationStatus !== null || order.refundedAmountCents === Math.round(Number(order.totalAmount) * 100)
         ? "cancellation_pending" : "refund_review", "Late delivery outcome after rejection/refund; verify carrier outcome and custody before restocking");
   });
 }
@@ -127,7 +127,7 @@ async function fail(job: Job, now: Date, mode: "throttled" | "definitive" | "unc
 export async function runShippingDispatchOnce(options: { provider?: DeliveryProvider | null; now?: Date; leaseMs?: number } = {}): Promise<boolean> {
   // Saved success needs no carrier call, credentials or additional attempt allocation.
   const [saved] = await db.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.operation, "create_delivery"),
-    isNotNull(shippingWorkItems.responseSnapshot), or(eq(shippingWorkItems.status, "processing"),
+    isNotNull(shippingWorkItems.responseSnapshot), or(eq(shippingWorkItems.status, "processing"), eq(shippingWorkItems.status, "pending"), eq(shippingWorkItems.status, "failed"),
       and(eq(shippingWorkItems.status, "review_required"), eq(shippingWorkItems.lastError, "CREATE_UNCERTAIN")))))
     .orderBy(asc(shippingWorkItems.id)).limit(1);
   if (saved) { await complete(saved, JSON.parse(saved.responseSnapshot!) as DeliveryResult); return true; }

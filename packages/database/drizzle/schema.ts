@@ -518,6 +518,10 @@ export const orders = mysqlTable("orders", {
   shippingProcessingAtMs: bigint("shipping_processing_at_ms", { mode: "number" }),
   shippingPickupAtMs: bigint("shipping_pickup_at_ms", { mode: "number" }),
   shippingAddressBlockedAtMs: bigint("shipping_address_blocked_at_ms", { mode: "number" }),
+  cancellationStatus: mysqlEnum("cancellation_status", ["pending", "cancelled"]),
+  cancellationRequestedAtMs: bigint("cancellation_requested_at_ms", { mode: "number" }),
+  cancellationCompletedAtMs: bigint("cancellation_completed_at_ms", { mode: "number" }),
+  stockRestoredAtMs: bigint("stock_restored_at_ms", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({

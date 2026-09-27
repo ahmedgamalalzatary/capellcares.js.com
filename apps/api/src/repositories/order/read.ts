@@ -10,7 +10,8 @@ import {
 
 function customerOrderFields(row: typeof orders.$inferSelect) {
   const { manualShippingState: _manual, shippingProcessingAtMs: _processing,
-    shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, ...customer } = row;
+    shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, cancellationStatus: _cancellation,
+    cancellationRequestedAtMs: _requested, cancellationCompletedAtMs: _completed, stockRestoredAtMs: _restocked, ...customer } = row;
   return customer;
 }
 

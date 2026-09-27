@@ -25,11 +25,17 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
         <Detail label="حالة الموظفة">{shipping.manualState ? `${manualStateLabels[shipping.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
         <Detail label="حالة بوسطة">{shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)` : "بانتظار إنشاء الشحنة"}</Detail>
         <Detail label="حيازة الشحنة">{custodyLabels[shipping.custodyState]}</Detail>
+        {shipping.cancellation && <>
+          <Detail label="إلغاء الطلب">{shipping.cancellation.status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب"}</Detail>
+          <Detail label="المخزون">{shipping.cancellation.stockRestoredAtMs !== null ? "تمت استعادة المخزون" : "المخزون محجوز لحين تأكيد الإلغاء والحيازة"}</Detail>
+        </>}
         <Detail label="إثبات التحصيل">{collectionConfirmed ? "التحصيل مؤكد" : "التحصيل غير مؤكد"}</Detail>
         <Detail label="المبلغ المحصل">{shipping.collection.amountCents !== null ? formatOrderAmount(shipping.collection.amountCents / 100) : "غير متوفر"}</Detail>
         {shipping.processing.startedAtMs !== null && <Detail label="بدء المعالجة"><OrderDate value={new Date(shipping.processing.startedAtMs).toISOString()} /></Detail>}
       </dl>
       {shipping.processing.addressBlockedAtMs !== null && <p className="order-note">مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة</p>}
+      {shipping.cancellation?.status === "pending" && <p className="order-note">الإرسال محظور حتى تأكيد الإلغاء؛ تعذر الاتصال ببوسطة لا يعيد المخزون تلقائيًا.</p>}
+      {(shipping.cancellation?.refundRequiredCents ?? 0) > 0 && <p className="order-note">استرداد كامل يدوي عبر باي موب مطلوب: {formatOrderAmount(shipping.cancellation!.refundRequiredCents / 100)}. بانتظار تأكيد باي موب.</p>}
       <p className="order-note">الحالة اليدوية لا تؤكد الدفع أو استعادة المخزون. الإرجاع يحتاج فحصًا وموافقة قبل إعادة البيع.</p>
       {shipping.history.length > 0 && <div aria-label="سجل حالات الموظفة">
         {shipping.history.map(event => <div key={event.id} className="order-note">
@@ -97,7 +103,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
 
   async function updatePaymentStatus(paymentStatus: PaymentStatus) {
     if (!order || order.paymentMethod === "paymob" || !canUpdatePaymentStatus ||
-      order.paymentStatus === "denied" || savingRef.current || paymentStatus === order.paymentStatus) return;
+      order.paymentStatus === "denied" || order.shipping?.cancellation || savingRef.current || paymentStatus === order.paymentStatus) return;
     if ((order.shipping || order.shippingQuoteId || (order.shippingAmountCents ?? 0) > 0) && paymentStatus !== "denied") return;
     savingRef.current = true;
     setSaving(true);
@@ -221,7 +227,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                       <div className="field">
                         <label htmlFor="order-payment-status">حالة الدفع عند الاستلام</label>
                         <select id="order-payment-status" className="select" value={order.paymentStatus}
-                          disabled={!canUpdatePaymentStatus || order.paymentStatus === "denied" || saving}
+                          disabled={!canUpdatePaymentStatus || order.paymentStatus === "denied" || !!order.shipping?.cancellation || saving}
                           onChange={(event) => { void updatePaymentStatus(event.target.value as PaymentStatus); }}>
                           {(Object.keys(paymentStatusLabel) as PaymentStatus[]).map((status) => (
                             <option key={status} value={status} disabled={shippingPaymentManaged && status !== "denied"}>{paymentStatusLabel[status]}</option>

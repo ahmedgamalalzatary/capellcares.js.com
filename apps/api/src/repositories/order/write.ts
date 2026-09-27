@@ -4,6 +4,7 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "../shipping-state.repository.js";
+import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../shipping-cancellation.repository.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -285,10 +286,7 @@ export async function updateOrderPaymentStatusRepo(
   }
   await db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ paymentStatus: orders.paymentStatus, paymentMethod: orders.paymentMethod,
-        paymentAttemptId: orders.paymentAttemptId,
-        providerPaymentStatus: orders.providerPaymentStatus, shippingSnapshot: orders.shippingSnapshot,
-        shippingQuoteId: orders.shippingQuoteId, shippingAmountCents: orders.shippingAmountCents })
+      .select()
       .from(orders)
       .where(eq(orders.id, id))
       .limit(1)
@@ -315,6 +313,11 @@ export async function updateOrderPaymentStatusRepo(
     }
 
     if (paymentStatus === "denied") {
+      if (existing.shippingSnapshot) {
+        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true }); }
+        catch (error) { if (error instanceof ShippingCancellationError) throw new ShippingCustodyRequiredError(); throw error; }
+        return;
+      }
       if (!await stopUnsentDelivery(tx, id)) throw new ShippingCustodyRequiredError();
       if (existing.paymentMethod === "paymob") {
         const [attempt] = await tx.select({ checkoutSessionId: paymentAttempts.checkoutSessionId })
@@ -345,6 +348,10 @@ export async function expirePendingCodOrders(now: Date): Promise<void> {
 
     for (const order of expired) {
       if (order.shippingSnapshot && !untouchedShippingExpiryApplies(order)) continue;
+      if (order.shippingSnapshot) {
+        await requestShippingCancellationInTransaction(tx, order, "expiry", { now });
+        continue;
+      }
       if (!await stopUnsentDelivery(tx, order.id)) {
         await flagShippingOrder(tx, order.id, "expiry_review", "COD deadline reached; carrier outcome/custody is unverified, stock retained");
         continue;

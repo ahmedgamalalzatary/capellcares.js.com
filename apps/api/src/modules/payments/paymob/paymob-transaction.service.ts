@@ -217,6 +217,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
     await tx.update(checkoutSessions).set({ state: "completed", createdOrderId: order.id })
       .where(eq(checkoutSessions.id, match.session.id));
     await enqueueOrderDelivery(tx, order.id);
+    if (match.attempt.earlyRefundAmountCents > 0) await blockRefundedDelivery(tx, order.id);
     if (match.session.customerId != null) {
       await tx.update(carts).set({ lines: [] }).where(eq(carts.customerId, match.session.customerId));
     }

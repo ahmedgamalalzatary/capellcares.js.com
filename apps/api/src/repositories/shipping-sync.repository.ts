@@ -57,10 +57,17 @@ async function apply(tx: ShippingTransaction, order: Order, ship: Shipment, even
     carrierSnapshot: JSON.stringify(carrier) }).where(eq(shipments.id, ship.id));
   if (preserveCollection) await flagShippingOrder(tx, order.id, "custody_review",
     "Carrier state contradicts verified paid COD collection; collection evidence retained, reconcile shipment with staff");
+  if (order.cancellationStatus === "cancelled") {
+    if (normalizedState !== "cancelled" || (collected ?? 0) > 0 || confirmed) await flagShippingOrder(tx, order.id, "custody_review",
+      "Carrier evidence contradicts completed safe cancellation; verify custody and retain payment/refund and stock evidence");
+    return null;
+  }
   if (order.paymentStatus === "denied" || order.refundedAmountCents > 0) {
     await flagShippingOrder(tx, order.id, "custody_review", "Carrier update after rejection/refund; verify outcome and custody, retain payment evidence and stock");
     return null;
   }
+  if (order.cancellationStatus === "pending" && (["picked_up", "in_transit", "delivered", "returned"].includes(normalizedState) || (collected ?? 0) > 0)) await flagShippingOrder(tx, order.id, "custody_review",
+    "Carrier update during pending cancellation; retain independent collection/payment evidence and verify safe cancellation/custody before restocking");
   if (ship.kind === "outgoing" && order.paymentMethod === "cod") {
     if (event.carrier.requestedCodAmountCents !== undefined && event.carrier.requestedCodAmountCents !== totalCents) {
       await flagShippingOrder(tx, order.id, "amount_mismatch", "Bosta requested collection differs from locked customer total; order total retained");
@@ -73,7 +80,7 @@ async function apply(tx: ShippingTransaction, order: Order, ship: Shipment, even
       } else await flagShippingOrder(tx, order.id, "custody_review", "Delivered COD lacks verified confirmation/actual collection evidence; leave unpaid");
     }
   }
-  if (normalizedState === "exception" || normalizedState === "returned" || normalizedState === "cancelled") {
+  if (normalizedState === "exception" || normalizedState === "returned" || (normalizedState === "cancelled" && order.cancellationStatus !== "pending")) {
     await flagShippingOrder(tx, order.id, shippingAddressException(event) ? "address_review" : "custody_review",
       "Carrier exception/return/cancellation requires staff handling; no stock or refund effects inferred");
   }
