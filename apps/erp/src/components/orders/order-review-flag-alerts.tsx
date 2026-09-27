@@ -38,6 +38,12 @@ export function OrderReviewFlagAlerts() {
     } catch {
       return;
     }
+    const openIds = new Set(flags.map(flag => flag.id));
+    for (const id of shownIds.current) {
+      if (openIds.has(id)) continue;
+      shownIds.current.delete(id);
+      toast.dismiss(`order-review-flag-${id}`);
+    }
     for (const flag of flags) {
       if (shownIds.current.has(flag.id)) continue;
       shownIds.current.add(flag.id);
@@ -48,6 +54,8 @@ export function OrderReviewFlagAlerts() {
         closeButton: true,
         // A failed dismissal must not hide the still-open alert for the rest of this mount.
         onDismiss: () => {
+          // Feed reconciliation removes the ID before dismissing the toast.
+          if (!shownIds.current.has(flag.id)) return;
           void getStore().resolveOrderReviewFlag(flag.id)
             .catch(() => { shownIds.current.delete(flag.id); });
         }

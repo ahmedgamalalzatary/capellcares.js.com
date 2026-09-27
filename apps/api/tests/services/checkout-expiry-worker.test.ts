@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { and, eq } from "drizzle-orm";
-import { db } from "@capella/database/src/db";
+import { db, mysqlPool } from "@capella/database/src/db";
 import { checkoutSessions, orderReviewFlags, orders, paymentAttempts, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
@@ -281,6 +281,77 @@ test("an untouched paid order keeps its original deadline across sweeps", async 
 
 const dispatchProvider = () => bostaDeliveryProviderFromEnvironment(deliveryEnvironment, async () => Response.json({ success: true,
   data: { trackingNumber: "5108002", state: { code: 10, value: "Pickup requested" } } }))!;
+
+test("concurrent expiry sweeps raise only one untouched paid alert", async () => {
+  const { orderId } = await createPaidOrder(97, "concurrent-paid-expiry@example.test");
+
+  await Promise.all([expirePendingCodOrders(new Date()), expirePendingCodOrders(new Date())]);
+
+  const flags = await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.orderId, orderId));
+  assert.equal(flags.length, 1);
+  assert.equal(flags[0].flagType, "untouched_paid");
+});
+
+test("expiry rechecks processing recorded while it waits for the order lock", async () => {
+  const { orderId, ids } = await createCodOrder(97, "processing-race@example.test");
+  const connection = await mysqlPool.getConnection();
+  let sweep: Promise<void> | undefined;
+  try {
+    await connection.beginTransaction();
+    await connection.query("UPDATE orders SET shipping_processing_at_ms = ? WHERE id = ?", [Date.now(), orderId]);
+    // Candidate discovery can still see the committed untouched state. Once the
+    // lock is released, the sweep must use the newly committed processing state.
+    sweep = expirePendingCodOrders(new Date());
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await connection.commit();
+    await sweep;
+    assert.equal((await orderById(orderId)).paymentStatus, "pending");
+    assert.equal(await stockOf(ids.firstVariantId), 8);
+  } finally {
+    await connection.rollback();
+    connection.release();
+    await sweep;
+  }
+});
+
+for (const scenario of [
+  { name: "denied COD", patch: { paymentStatus: "denied" as const } },
+  { name: "paid COD", patch: { paymentStatus: "accepted" as const } },
+  { name: "already-alerted paid", patch: { paymentMethod: "paymob" as const, paymentStatus: "accepted" as const }, flagStatus: "open" as const },
+  { name: "acknowledged paid", patch: { paymentMethod: "paymob" as const, paymentStatus: "accepted" as const }, flagStatus: "resolved" as const },
+  { name: "refunded paid", patch: { paymentMethod: "paymob" as const, paymentStatus: "accepted" as const, refundedAmountCents: 7000 } },
+  { name: "processed paid", patch: { paymentMethod: "paymob" as const, paymentStatus: "accepted" as const, shippingProcessingAtMs: 1 } },
+  { name: "picked-up paid", patch: { paymentMethod: "paymob" as const, paymentStatus: "accepted" as const, shippingPickupAtMs: 1 } }
+]) {
+  test(`a lock on a ${scenario.name} order cannot delay eligible COD expiry`, async () => {
+    const skipped = await createCodOrder(97, "skipped-lock@example.test");
+    await db.update(orders).set(scenario.patch).where(eq(orders.id, skipped.orderId));
+    if ("flagStatus" in scenario) {
+      await db.insert(orderReviewFlags).values({ orderId: skipped.orderId, flagType: "untouched_paid",
+        status: scenario.flagStatus, reason: "The fixed deadline was already handled" });
+    }
+    const eligible = await createCodOrder(97, "eligible-lock@example.test");
+    const connection = await mysqlPool.getConnection();
+    let sweep: Promise<void> | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await connection.beginTransaction();
+      await connection.query("SELECT id FROM orders WHERE id = ? FOR UPDATE", [skipped.orderId]);
+      sweep = expirePendingCodOrders(new Date());
+      const finished = await Promise.race([
+        sweep.then(() => true),
+        new Promise<boolean>(resolve => { timeout = setTimeout(() => resolve(false), 2000); })
+      ]);
+      assert.equal(finished, true, "expiry must finish while the ineligible order remains locked");
+      assert.equal((await orderById(eligible.orderId)).paymentStatus, "denied");
+    } finally {
+      clearTimeout(timeout);
+      await connection.rollback();
+      connection.release();
+      await sweep;
+    }
+  });
+}
 
 /**
  * A real paid order with its durable delivery intent, built through the actual Paymob path

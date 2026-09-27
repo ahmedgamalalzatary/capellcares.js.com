@@ -1,6 +1,6 @@
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { and, eq, gte, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "../shipping-state.repository.js";
@@ -344,20 +344,33 @@ export async function updateOrderPaymentStatusRepo(
  * an untouched paid order raises a staff flag and is never refunded or restocked here.
  */
 export async function expirePendingCodOrders(now: Date): Promise<void> {
-  await db.transaction(async (tx) => {
-    const expired = await tx.select().from(orders).where(and(
-      isNull(orders.cancellationStatus),
-      lte(orders.codExpiresAt, now)
-    )).for("update");
+  // Discover candidates without locks: a locking range scan can also lock rows
+  // it examines but rejects. Lock only eligible IDs, then recheck their current state.
+  const candidates = await db.select({ id: orders.id }).from(orders).where(and(
+    isNull(orders.cancellationStatus),
+    lte(orders.codExpiresAt, now),
+    isNull(orders.shippingPickupAtMs),
+    or(isNull(orders.shippingProcessingAtMs), isNotNull(orders.shippingAddressBlockedAtMs)),
+    or(
+      and(eq(orders.paymentMethod, "cod"), eq(orders.paymentStatus, "pending")),
+      and(eq(orders.paymentMethod, "paymob"), eq(orders.paymentStatus, "accepted"),
+        eq(orders.refundedAmountCents, 0),
+        notExists(db.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
+          eq(orderReviewFlags.orderId, orders.id), eq(orderReviewFlags.flagType, "untouched_paid")))))
+    )
+  )).orderBy(orders.id);
 
-    for (const order of expired) {
-      if (!untouchedShippingExpiryApplies(order)) continue;
+  await db.transaction(async (tx) => {
+    for (const candidate of candidates) {
+      const [order] = await tx.select().from(orders).where(eq(orders.id, candidate.id)).for("update");
+      if (!order || order.cancellationStatus !== null || order.codExpiresAt === null || order.codExpiresAt > now ||
+        !untouchedShippingExpiryApplies(order)) continue;
       if (order.paymentMethod === "paymob") {
-        if (order.paymentStatus === "denied" || order.refundedAmountCents > 0) continue;
+        if (order.paymentStatus !== "accepted" || order.refundedAmountCents > 0) continue;
         // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not
         // return on the next sweep; unlike carrier state it never becomes relevant again.
         const [alreadyRaised] = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
-          eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1);
+          eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1).for("update");
         if (alreadyRaised) continue;
         await flagShippingOrder(tx, order.id, "untouched_paid",
           "Paid order passed the 96-hour deadline with no processing; no automatic refund or restocking applies");
