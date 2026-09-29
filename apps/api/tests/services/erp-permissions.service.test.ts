@@ -69,6 +69,8 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "reviews.soft_delete",
     "reviews.toggle_status",
     "sales.read",
+    "shipping.read",
+    "shipping.update_state",
     "shop_media.read",
     "shop_media.update",
     "trash.read"

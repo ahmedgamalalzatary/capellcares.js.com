@@ -51,6 +51,36 @@ export interface AdminOrderShippingStateDto {
   history: { id: number; state: ManualShippingState; actorType: "staff" | "system"; actorId: number | null; atMs: number; reason: string | null }[];
 }
 
+/** One ERP shipping-overview row: an outgoing shipping order, or a linked return/exchange shipment. */
+export interface AdminShipmentListItemDto {
+  orderId: number;
+  orderCode: string;
+  customerName: string;
+  customerPhone: string;
+  paymentMethod: "cod" | "paymob";
+  paymentStatus: "pending" | "accepted" | "denied";
+  providerPaymentStatus: "pending" | "succeeded" | "failed" | "partially_refunded" | "refunded" | "voided" | null;
+  totalAmount: number;
+  orderCreatedAt: string;
+  shipmentId: number | null;
+  kind: "outgoing" | "return" | "exchange";
+  trackingNumber: string | null;
+  carrierState: AdminOrderShippingStateDto["carrierState"];
+  rawProviderState: string | null;
+  manualState: AdminOrderShippingStateDto["manualState"];
+  custodyState: AdminOrderShippingStateDto["custodyState"];
+  size: "small" | "medium" | "large" | null;
+  carrierSize: string | null;
+  shippingAmountCents: number | null;
+  collectedAmountCents: number | null;
+  collectionConfirmed: boolean;
+  cancellationStatus: "pending" | "cancelled" | null;
+  openFlagTypes: AdminOrderReviewFlagDto["flagType"][];
+  needsAttention: boolean;
+  workItem: { operation: "create_delivery" | "cancel_delivery" | "terminate_delivery" | "sync_delivery";
+    status: "pending" | "processing" | "succeeded" | "failed" | "review_required"; lastError: string | null } | null;
+}
+
 export interface CreateOrderDto {
   checkout: CheckoutRequestDto["items"];
 }

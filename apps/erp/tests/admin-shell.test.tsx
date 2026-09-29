@@ -149,6 +149,30 @@ describe("AdminShell", () => {
     expect(screen.queryAllByText("فريق العمل")).toHaveLength(0);
   });
 
+  it("shows the shipping navigation item only for staff with shipping.read", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["shipping.read"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    expect(screen.getAllByText("الشحن").length).toBeGreaterThan(0);
+  });
+
+  it("hides the shipping navigation item for staff without shipping.read", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+
+    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
+
+    expect(screen.queryAllByText("الشحن")).toHaveLength(0);
+  });
+
   it("raises a sonner alert for each open order review flag and resolves it when dismissed", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read"] },

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, AdminShipmentListItemDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -485,6 +485,11 @@ export class ErpStore {
       paymobTransactionId: string | null; reason: string | null;
     }> }>("/api/erp/orders/reconciliation");
     return result.items;
+  }
+
+  async fetchShippingOverview(cursor?: string): Promise<{ items: AdminShipmentListItemDto[]; nextCursor: string | null }> {
+    const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+    return api.get<{ items: AdminShipmentListItemDto[]; nextCursor: string | null }>(`/api/erp/shipping${query}`);
   }
 
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {

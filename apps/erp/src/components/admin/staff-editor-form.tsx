@@ -13,6 +13,7 @@ const MODULE_LABELS: Record<string, string> = {
   collections: "المجموعات",
   advices: "النصائح",
   orders: "الطلبات",
+  shipping: "الشحن",
   reviews: "التقييمات",
   sales: "المبيعات",
   trash: "المهملات"
@@ -30,7 +31,8 @@ const ACTION_LABELS: Record<string, string> = {
   restore: "استرجاع",
   toggle_status: "تغيير الحالة",
   stock_update: "تحديث المخزون",
-  update_payment_status: "تحديث حالة الدفع"
+  update_payment_status: "تحديث حالة الدفع",
+  update_state: "تحديث حالة الشحن"
 };
 
 function moduleLabel(moduleName: string) {
