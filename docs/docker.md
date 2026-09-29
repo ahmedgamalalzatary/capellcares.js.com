@@ -47,6 +47,12 @@ Paymob confirmed card integration `5885253` for card/3DS and wallet integration 
 
 After deploying the confirmed test configuration, verify `/api/v1/payments/paymob/methods` reports `{ "available": true, "methods": ["card", "wallet"] }`. Complete the remaining sandbox and release checks in `docs/paymob-integration-status.md` before enabling live payments.
 
+## Bosta shipping
+
+Compose injects the server-only `BOSTA_*` settings into the API, including the separate sending, synchronization, cancellation and edit gates. All gates default to false. Keep account evidence and credentials in the chosen untracked environment file; the storefront and ERP receive none of them.
+
+Before enabling shipping, follow [the shipping release guide](bosta-shipping-release.md) for merchant verification, migrations 0050–0058, the exact webhook header, the redacted configuration check, workers and disable/recovery. The API bundle includes `dist/scripts/check-shipping.mjs`, which can validate the injected configuration without starting workers or calling the provider/database.
+
 ## Required Auth Env
 
 Production and Docker auth require server-only ERP admin bootstrap values:
@@ -136,7 +142,7 @@ docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USE
 Optional seed data:
 
 ```bash
-docker compose --env-file .env.production exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.production run --rm --no-deps migrate pnpm db:seed
 ```
 
 Verify seed data if you ran seed:
@@ -248,7 +254,7 @@ docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\"
 Optional seed data:
 
 ```cmd
-docker compose --env-file .env.docker exec api pnpm --filter @capella/database db:seed
+docker compose --env-file .env.docker run --rm --no-deps migrate pnpm db:seed
 ```
 
 Verify seed data if you ran seed:
@@ -411,7 +417,7 @@ docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USE
 List migration files inside the API container:
 
 ```bash
-docker compose --env-file .env.production exec api sh -lc "ls -1 /app/packages/database/drizzle/migrations"
+docker compose --env-file .env.production run --rm --no-deps migrate sh -lc "ls -1 /app/packages/database/drizzle/migrations"
 ```
 
 For local Docker, replace `.env.production` with `.env.docker`.

@@ -7,6 +7,7 @@ import type { AdminOrderShippingStateDto } from "@capella/shared";
 import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch.repository.js";
 import type { BostaObservation } from "../modules/shipping/bosta/bosta-sync.service.js";
 import { cancellationRefundDue } from "./shipping-cancellation.repository.js";
+import { pickWorkItem } from "./shipping-overview.repository.js";
 
 type Order = typeof orders.$inferSelect;
 type Shipment = typeof shipments.$inferSelect;
@@ -104,14 +105,16 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
   if (!input.shippingSnapshot) return null;
   const [order] = await db.select().from(orders).where(eq(orders.id, input.id)).limit(1);
   if (!order) return null;
-  const [ship] = await db.select().from(shipments).where(and(eq(shipments.orderId, order.id), eq(shipments.kind, "outgoing"))).limit(1);
+  const parcels = await db.select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(asc(shipments.id));
+  const ship = parcels.find(parcel => parcel.kind === "outgoing");
   const history = await db.select().from(orderStateHistory).where(eq(orderStateHistory.orderId, order.id)).orderBy(asc(orderStateHistory.id));
   const flags = await db.select({ id: orderReviewFlags.id, flagType: orderReviewFlags.flagType, reason: orderReviewFlags.reason })
     .from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open")));
   const jobs = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, order.id)).orderBy(desc(shippingWorkItems.id));
-  const actionable = jobs.filter(job => job.operation !== "sync_delivery" && !(job.operation === "create_delivery" && job.lastError === "ORDER_NOT_DISPATCHABLE"));
+  const outgoingJobs = jobs.filter(job => job.shipmentId === null || job.shipmentId === ship?.id);
+  const actionable = outgoingJobs.filter(job => job.operation !== "sync_delivery" && !(job.operation === "create_delivery" && job.lastError === "ORDER_NOT_DISPATCHABLE"));
   const work = actionable.find(job => ["failed", "review_required"].includes(job.status)) ?? actionable.find(job => job.status === "processing" || job.status === "pending") ?? actionable[0] ??
-    jobs.find(job => job.operation === "create_delivery" && job.status === "failed");
+    outgoingJobs.find(job => job.operation === "create_delivery" && job.status === "failed");
   const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot!));
   let editEnabled = !ship;
   if (ship) {
@@ -119,6 +122,14 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
     catch { /* Invalid edit configuration must not block order-detail reads. */ }
   }
   return { flags, destination: { cityId: quote.address.cityId, zoneId: quote.address.zoneId, districtId: quote.address.districtId },
+    relatedShipments: parcels.filter(parcel => parcel.kind !== "outgoing").map(parcel => {
+      const work = pickWorkItem(jobs.filter(job => job.shipmentId === parcel.id));
+      return { id: parcel.id, kind: parcel.kind === "return" ? "return" : "exchange", trackingNumber: parcel.trackingNumber,
+        manualState: parcel.manualState, carrierState: parcel.normalizedState, rawProviderState: parcel.rawProviderState,
+        rawProviderCode: parcel.rawProviderCode, rawProviderType: parcel.rawProviderType, custodyState: parcel.custodyState,
+        providerEventAtMs: parcel.providerEventAtMs,
+        workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null };
+    }),
     editEnabled, packingSize: ship?.size ?? order.shippingSize,
     carrierSnapshot: ship?.carrierSnapshot ? JSON.parse(ship.carrierSnapshot) : null,
     workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null,

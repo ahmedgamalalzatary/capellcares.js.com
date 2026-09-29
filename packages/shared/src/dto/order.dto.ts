@@ -40,6 +40,7 @@ export interface AdminOrderReviewFlagDto {
 
 type ManualShippingState = "preparing" | "ready_for_pickup" | "printed" | "delivered" | "returned";
 export interface AdminOrderShippingStateDto {
+  relatedShipments?: AdminRelatedShipmentDto[];
   workItem?: AdminShipmentListItemDto["workItem"];
   flags?: Pick<AdminOrderReviewFlagDto, "id" | "flagType" | "reason">[];
   destination?: ShippingAddress;
@@ -56,6 +57,21 @@ export interface AdminOrderShippingStateDto {
     stockRestoredAtMs: number | null; refundRequiredCents: number } | null;
   processing: { startedAtMs: number | null; pickupAtMs: number | null; addressBlockedAtMs: number | null; untouchedExpiryApplies: boolean };
   history: { id: number; state: ManualShippingState; actorType: "staff" | "system"; actorId: number | null; atMs: number; reason: string | null }[];
+}
+
+/** Already-linked carrier parcels; operational actions remain on the outgoing order. */
+export interface AdminRelatedShipmentDto {
+  id: number;
+  kind: "return" | "exchange";
+  trackingNumber: string;
+  manualState: ManualShippingState | null;
+  carrierState: Exclude<AdminOrderShippingStateDto["carrierState"], null>;
+  rawProviderState: string;
+  rawProviderCode: number | null;
+  rawProviderType: string | null;
+  custodyState: AdminOrderShippingStateDto["custodyState"];
+  providerEventAtMs: number | null;
+  workItem: AdminShipmentListItemDto["workItem"];
 }
 
 /** One ERP shipping-overview row: an outgoing shipping order, or a linked return/exchange shipment. */

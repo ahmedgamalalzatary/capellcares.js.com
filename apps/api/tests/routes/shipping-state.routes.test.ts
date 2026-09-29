@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { and, eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { orderReviewFlags, orders, productVariants } from "@capella/database/drizzle/schema";
+import { orderReviewFlags, orders, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
@@ -13,6 +13,63 @@ import { recordShippingObservation } from "../../src/repositories/shipping-sync.
 import { findOrderByIdRepo, listOrdersRepo } from "../../src/repositories/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
+test("ERP details show only this order's linked return/exchange evidence without changing money or stock", async () => {
+  const f = await shippingSyncFixture();
+  const other = await shippingSyncFixture(false);
+  await db.update(orders).set({ manualShippingState: "delivered" }).where(eq(orders.id, f.order.id));
+  const atMs = Date.now() - 1000;
+  const inserted = await db.insert(shipments).values([
+    { orderId: f.order.id, kind: "return", provider: "bosta", trackingNumber: "RETURN-DETAIL", size: "small",
+      idempotencyKey: "return-detail", rawProviderState: "Returned to business", rawProviderCode: 46,
+      rawProviderType: "CUSTOMER_RETURN_PICKUP", normalizedState: "returned", custodyState: "warehouse_uninspected", providerEventAtMs: atMs },
+    { orderId: f.order.id, kind: "exchange", provider: "bosta", trackingNumber: "EXCHANGE-DETAIL", size: "medium",
+      idempotencyKey: "exchange-detail", rawProviderState: "In transit", rawProviderCode: 30,
+      rawProviderType: "EXCHANGE", normalizedState: "in_transit", custodyState: "carrier", manualState: "preparing" },
+    { orderId: other.order.id, kind: "return", provider: "bosta", trackingNumber: "OTHER-RETURN", size: "small",
+      idempotencyKey: "other-return-detail", rawProviderState: "Pickup requested", normalizedState: "created" }
+  ]).$returningId();
+  const before = await db.select().from(orders).where(eq(orders.id, f.order.id));
+  const stock = await db.select().from(productVariants).where(eq(productVariants.id, f.ids.firstVariantId));
+  await withTestServer(app, async request => {
+    const staff = await getStaffAuthHeaders(request, { permissionKeys: ["orders.read"] });
+    const response = await request(`/api/erp/orders/${f.order.id}`, { headers: { authorization: staff.authorization } });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.shipping.manualState, "delivered");
+    assert.equal(response.json.shipping.carrierState, "created");
+    assert.deepEqual(response.json.shipping.relatedShipments, [
+      { id: inserted[0].id, kind: "return", trackingNumber: "RETURN-DETAIL", manualState: null,
+        carrierState: "returned", rawProviderState: "Returned to business", rawProviderCode: 46,
+        rawProviderType: "CUSTOMER_RETURN_PICKUP", custodyState: "warehouse_uninspected", providerEventAtMs: atMs, workItem: null },
+      { id: inserted[1].id, kind: "exchange", trackingNumber: "EXCHANGE-DETAIL", manualState: "preparing",
+        carrierState: "in_transit", rawProviderState: "In transit", rawProviderCode: 30,
+        rawProviderType: "EXCHANGE", custodyState: "carrier", providerEventAtMs: null, workItem: null }
+    ]);
+    assert.equal(response.json.paymentStatus, "pending");
+    assert.equal(response.json.providerPaymentStatus, null);
+    assert.equal(response.json.refundedAmountCents, 0);
+  });
+  assert.deepEqual(await db.select().from(orders).where(eq(orders.id, f.order.id)), before);
+  assert.deepEqual(await db.select().from(productVariants).where(eq(productVariants.id, f.ids.firstVariantId)), stock);
+});
+
+test("outgoing actions and related parcel errors select work for their own shipment and retain unresolved failures", async () => {
+  const f = await shippingSyncFixture();
+  const [related] = await db.insert(shipments).values({ orderId: f.order.id, kind: "return", provider: "bosta",
+    trackingNumber: "RETURN-WORK", size: "small", idempotencyKey: "return-work", rawProviderState: "Pickup requested", normalizedState: "created" }).$returningId();
+  await db.insert(shippingWorkItems).values([
+    { orderId: f.order.id, shipmentId: f.shipment.id, operation: "cancel_delivery", idempotencyKey: "outgoing-detail-failed", status: "failed", lastError: "OUTGOING_FAILURE", nextAttemptAt: new Date() },
+    { orderId: f.order.id, shipmentId: related.id, operation: "cancel_delivery", idempotencyKey: "return-detail-failed", status: "failed", lastError: "RETURN_FAILURE", nextAttemptAt: new Date() },
+    { orderId: f.order.id, shipmentId: related.id, operation: "sync_delivery", idempotencyKey: "return-detail-success", status: "succeeded", nextAttemptAt: new Date() }
+  ]);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/orders/${f.order.id}`, { headers: auth });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.shipping.workItem.lastError, "OUTGOING_FAILURE");
+    assert.equal(response.json.shipping.relatedShipments[0].workItem.lastError, "RETURN_FAILURE");
+  });
+});
+
 test("admin order detail shows manual, carrier, payment, collection and custody independently", async () => {
   const f = await shippingSyncFixture();
   const actorId = await createTestAdminUser({ name: "Admin", email: "state-display@example.test", passwordHash: "unused", role: "admin" });
@@ -31,6 +88,7 @@ test("admin order detail shows manual, carrier, payment, collection and custody 
     assert.equal(response.json.shipping.history[0].actorId, actorId);
     assert.equal(response.json.shipping.history[0].reason, "Staff report");
     assert.equal(response.json.shipping.processing.untouchedExpiryApplies, false);
+    assert.deepEqual(response.json.shipping.relatedShipments, []);
   });
 });
 test("staff payment changes cannot bypass Bosta evidence or silently include money/item edits", async () => {

@@ -9,6 +9,7 @@
     "build:bundle": "node esbuild.config.mjs",
     "lint": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "shipping:check": "tsx src/scripts/check-shipping.ts",
     "pretest": "pnpm --filter @capella/database pretest",
     "start": "node dist/server.js",
     "test": "node ./scripts/run-tests.mjs"

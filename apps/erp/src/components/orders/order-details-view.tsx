@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { AdminOrderDto, AdminOrderShippingStateDto, PaymentStatus } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderShippingStateDto, AdminRelatedShipmentDto, PaymentStatus } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -28,7 +28,8 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
     <div className="order-section-body">
       <dl className="order-fields order-fields--two">
         <Detail label="حالة الموظفة">{shipping.manualState ? `${manualStateLabels[shipping.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
-        <Detail label="حالة بوسطة">{shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)` : "بانتظار إنشاء الشحنة"}</Detail>
+        <Detail label="حالة بوسطة">{shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)`
+          : shipping.cancellation ? "لا توجد شحنة مرتبطة ببوسطة" : "بانتظار إنشاء الشحنة"}</Detail>
         <Detail label="حيازة الشحنة">{custodyLabels[shipping.custodyState]}</Detail>
         {shipping.cancellation && <>
           <Detail label="إلغاء الطلب">{shipping.cancellation.status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب"}</Detail>
@@ -60,6 +61,30 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
           {event.reason && <p>{event.reason}</p>}
         </div>)}
       </div>}
+    </div>
+  </section>;
+}
+
+function RelatedShipments({ parcels }: { parcels: AdminRelatedShipmentDto[] }) {
+  if (parcels.length === 0) return null;
+  return <section className="card" aria-labelledby="order-related-shipments-heading">
+    <div className="card__head"><h3 id="order-related-shipments-heading" className="card__title">المرتجعات والاستبدالات</h3></div>
+    <div className="order-section-body">
+      {parcels.map(parcel => <section key={parcel.id} aria-labelledby={`related-shipment-${parcel.id}`}>
+        <h4 id={`related-shipment-${parcel.id}`}>{parcel.kind === "return" ? "مرتجع" : "استبدال"}{" — "}<bdi>{parcel.trackingNumber}</bdi></h4>
+        <dl className="order-fields order-fields--two">
+          <Detail label="حالة بوسطة">{carrierStateLabels[parcel.carrierState]} (بوسطة)</Detail>
+          <Detail label="وصف بوسطة"><span dir="auto">{parcel.rawProviderState}</span></Detail>
+          <Detail label="رمز الحالة لدى بوسطة">{parcel.rawProviderCode?.toLocaleString("ar-EG") ?? "غير متوفر"}</Detail>
+          <Detail label="نوع الشحنة لدى بوسطة"><bdi>{parcel.rawProviderType ?? "غير متوفر"}</bdi></Detail>
+          <Detail label="حالة الموظفة">{parcel.manualState ? `${manualStateLabels[parcel.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
+          <Detail label="حيازة الشحنة">{custodyLabels[parcel.custodyState]}</Detail>
+          <Detail label="آخر حالة مؤكدة من بوسطة"><OrderDate value={parcel.providerEventAtMs === null ? null : new Date(parcel.providerEventAtMs).toISOString()} /></Detail>
+        </dl>
+        {parcel.workItem && ["failed", "review_required", "processing"].includes(parcel.workItem.status) &&
+          <p className="order-note" dir="auto">متابعة الشحنة: {parcel.workItem.lastError ?? "قيد التنفيذ"}</p>}
+      </section>)}
+      <p className="order-note">حالة الإرجاع أو الاستبدال لا تؤكد استرداد الدفع أو إعادة المخزون. تُحدّث استردادات باي موب من تأكيداته، وإعادة المخزون تتم يدويًا بعد الفحص.</p>
     </div>
   </section>;
 }
@@ -223,6 +248,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
               </section>
 
               {order.shipping && <ShippingStateDetails shipping={order.shipping} />}
+              {order.shipping && <RelatedShipments parcels={order.shipping.relatedShipments ?? []} />}
               {order.shipping && canUpdateShipping && <ShippingActions orderIds={[order.id]} order={order}
                 onComplete={() => { void getStore().fetchOrder(orderId).then(setOrder).catch(() => setSaveError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب.")); }} />}
 
