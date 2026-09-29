@@ -134,6 +134,12 @@ export async function fetchCustomerOrderById(id: number, accessToken: string): P
   return authedGetJSON<Order>(`/api/v1/orders/${id}`, accessToken);
 }
 
+export async function cancelCustomerOrder(id: number, accessToken: string): Promise<Order> {
+  const order = await authedMutationJSON<Order>(`/api/v1/orders/${id}/cancel`, accessToken, { method: "POST" });
+  if (!order) throw new Error("Cancellation response is unavailable");
+  return order;
+}
+
 export async function fetchPublicReviews(
   entityType: ReviewEntityType,
   entityId: number,

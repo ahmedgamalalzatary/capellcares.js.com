@@ -2,6 +2,7 @@ import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { getOrderShippingState } from "../shipping-state.repository.js";
+import { customerShippingStates } from "../customer-shipping.repository.js";
 import {
   mergeProductTotal,
   mergeVariantTotal,
@@ -11,7 +12,8 @@ import {
 function customerOrderFields(row: typeof orders.$inferSelect) {
   const { manualShippingState: _manual, shippingProcessingAtMs: _processing,
     shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, cancellationStatus: _cancellation,
-    cancellationRequestedAtMs: _requested, cancellationCompletedAtMs: _completed, stockRestoredAtMs: _restocked, ...customer } = row;
+    cancellationRequestedAtMs: _requested, cancellationCompletedAtMs: _completed, stockRestoredAtMs: _restocked,
+    shippingSnapshot: _shippingSnapshot, ...customer } = row;
   return customer;
 }
 
@@ -22,8 +24,10 @@ export async function listOrdersRepo(filters?: { customerId?: number; withItems?
     .where(filters?.customerId != null ? eq(orders.customerId, filters.customerId) : undefined)
     .orderBy(desc(orders.createdAt));
 
+  const fulfillment = filters?.customerId != null ? await customerShippingStates(rows) : null;
   const summaries = rows.map((row) => ({
     ...(filters?.customerId != null ? customerOrderFields(row) : row),
+    ...(fulfillment ? { fulfillment: fulfillment.get(row.id) ?? null } : {}),
     totalAmount: toNumber(row.totalAmount)
   }));
 
@@ -78,6 +82,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
 
   return {
     ...(filters?.customerId != null ? customerOrderFields(order) : order),
+    ...(filters?.customerId != null ? { fulfillment: (await customerShippingStates([order])).get(order.id) ?? null } : {}),
     totalAmount: toNumber(order.totalAmount),
     items: items.map((item) => ({
       ...item,
@@ -106,7 +111,8 @@ export async function findAdminOrderByIdRepo(id: number) {
       createdAt: paymentAttempts.createdAt
     }).from(paymentAttempts).where(eq(paymentAttempts.id, order.paymentAttemptId)).limit(1)
     : [];
-  return { ...order, payment: payment ?? null, shipping: await getOrderShippingState(order) };
+  return { ...order, payment: payment ?? null, shipping: await getOrderShippingState({ id: order.id,
+    shippingSnapshot: "shippingSnapshot" in order && typeof order.shippingSnapshot === "string" ? order.shippingSnapshot : null }) };
 }
 
 export async function getSalesAnalyticsRepo() {

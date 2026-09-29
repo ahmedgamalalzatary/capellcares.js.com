@@ -27,8 +27,16 @@ export async function directCancellationBlocked(tx: ShippingTransaction, order: 
   const [ship] = await tx.select().from(shipments).where(and(eq(shipments.orderId, order.id), eq(shipments.kind, "outgoing"))).limit(1);
   const [cancellation] = await tx.select({ responseSnapshot: shippingWorkItems.responseSnapshot }).from(shippingWorkItems)
     .where(eq(shippingWorkItems.idempotencyKey, `bosta_cancel_order_${order.id}`)).limit(1);
-  return !!history || carrierCancellationBarrierRecorded(cancellation?.responseSnapshot ?? null) || !!ship && (["picked_up", "in_transit", "delivered", "returned"].includes(ship.normalizedState) || ship.collectionConfirmed || (ship.collectedAmountCents ?? 0) > 0 ||
-    ship.custodyState !== "unknown" || ["printed", "delivered", "returned"].includes(ship.manualState ?? ""));
+  return directCancellationBlockedByFacts(order, ship, !!history, cancellation?.responseSnapshot ?? null);
+}
+
+/** Shared with the batched customer read projection; the mutation still rechecks under its order lock. */
+export function directCancellationBlockedByFacts(order: Order, ship: typeof shipments.$inferSelect | undefined,
+  historicalBarrier: boolean, cancellationSnapshot: string | null) {
+  return order.shippingPickupAtMs !== null || ["printed", "delivered", "returned"].includes(order.manualShippingState ?? "") ||
+    historicalBarrier || carrierCancellationBarrierRecorded(cancellationSnapshot) || !!ship &&
+    (["picked_up", "in_transit", "delivered", "returned"].includes(ship.normalizedState) || ship.collectionConfirmed || (ship.collectedAmountCents ?? 0) > 0 ||
+      ship.custodyState !== "unknown" || ["printed", "delivered", "returned"].includes(ship.manualState ?? ""));
 }
 
 /** Internal finalization only, after the worker proves carrier cancellation and warehouse custody or an unsent intent is stopped. */

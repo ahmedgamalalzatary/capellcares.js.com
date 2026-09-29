@@ -7,8 +7,8 @@ import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 export default async function OrderPage({ params }: { params: Promise<{ lang: string; id: string }> }) {
   const { id } = await params;
   const lang = await resolveStorefrontLang(params);
-  const orderId = Number.parseInt(id, 10);
-  if (!Number.isInteger(orderId) || orderId <= 0) notFound();
+  const orderId = Number(id);
+  if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(orderId) || orderId > 2_147_483_647) notFound();
   const dict = getDict(lang);
 
   return (

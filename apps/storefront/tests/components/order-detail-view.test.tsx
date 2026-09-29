@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getDict } from "@capella/shared";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -9,18 +10,22 @@ vi.mock("next/link", () => ({
 const logout = vi.fn();
 
 vi.mock("@/components/providers/auth-provider", () => ({
-  useAuth: () => ({ accessToken, logout })
+  useAuth: () => ({ user: authUser, hydrated: authHydrated, accessToken, logout })
 }));
 
 let accessToken: string | null = "customer-token";
+let authUser: { id: number } | null = { id: 1 };
+let authHydrated = true;
 
-const { fetchCustomerOrderById, submitReview } = vi.hoisted(() => ({
+const { fetchCustomerOrderById, submitReview, cancelCustomerOrder } = vi.hoisted(() => ({
   fetchCustomerOrderById: vi.fn(),
+  cancelCustomerOrder: vi.fn(),
   submitReview: vi.fn()
 }));
 
 vi.mock("@/lib/api/client", () => ({
   fetchCustomerOrderById,
+  cancelCustomerOrder,
   submitReview,
   fetchProducts: () => Promise.resolve([{
     id: 7,
@@ -90,8 +95,11 @@ const dict = {
 
 beforeEach(() => {
   accessToken = "customer-token";
+  authUser = { id: 1 };
+  authHydrated = true;
   vi.clearAllMocks();
   logout.mockReset();
+  cancelCustomerOrder.mockReset();
   fetchCustomerOrderById.mockResolvedValue({
     id: 12,
     orderCode: "ORDER-12",
@@ -126,6 +134,87 @@ beforeEach(() => {
 });
 
 describe("OrderDetailView reviews", () => {
+  it("does not show an empty receipt before the saved authentication session is read", () => {
+    accessToken = null; authUser = null; authHydrated = false;
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(screen.getByRole("status")).toHaveTextContent("Loading");
+    expect(fetchCustomerOrderById).not.toHaveBeenCalled();
+  });
+  it.each(["en", "ar"] as const)("shows the four customer shipping milestones in %s", async lang => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, fulfillment: { stage: "shipped", status: "active", issue: null, canCancel: false, refundStatus: null, relatedShipments: [] } });
+    render(createElement(OrderDetailView, { lang, dict: getDict(lang), orderId: 12 }));
+    const labels = lang === "en" ? ["Order placed", "Preparing", "Shipped", "Delivered"] : ["تم الطلب", "جارٍ التجهيز", "تم الشحن", "تم التسليم"];
+    for (const label of labels) expect(await screen.findByText(label)).toBeInTheDocument();
+    expect(screen.getByText(labels[2]!).closest("li")).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByRole("button", { name: lang === "en" ? "Cancel order" : "إلغاء الطلب" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a saved login loading while its token is restored", async () => {
+    accessToken = null;
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(screen.getByRole("status")).toHaveTextContent("Loading");
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument();
+    expect(fetchCustomerOrderById).not.toHaveBeenCalled();
+  });
+
+  it("confirms one cancellation and renders the pending result without claiming a refund", async () => {
+    const order = await fetchCustomerOrderById();
+    const fulfillment = { stage: "preparing", status: "active", issue: null, canCancel: true, refundStatus: null, relatedShipments: [] };
+    fetchCustomerOrderById.mockResolvedValue({ ...order, fulfillment });
+    let finish!: (value: unknown) => void;
+    cancelCustomerOrder.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel order" }));
+    expect(cancelCustomerOrder).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm cancellation" }));
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
+    finish({ ...order, fulfillment: { ...fulfillment, status: "cancellation_pending", canCancel: false } });
+    expect(await screen.findByText("Cancellation pending. We are checking your shipment before confirming cancellation.")).toBeInTheDocument();
+    expect(screen.queryByText("Refund pending")).not.toBeInTheDocument();
+    expect(cancelCustomerOrder).toHaveBeenCalledTimes(1);
+    expect(cancelCustomerOrder).toHaveBeenCalledWith(12, "customer-token");
+  });
+
+  it("keeps the receipt and offers a retry when cancellation fails", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, fulfillment: { stage: "placed", status: "active", canCancel: true, issue: null, refundStatus: null, relatedShipments: [] } });
+    cancelCustomerOrder.mockRejectedValue(new TypeError("connection lost"));
+    render(createElement(OrderDetailView, { lang: "ar", dict: getDict("ar"), orderId: 12 }));
+    fireEvent.click(await screen.findByRole("button", { name: "إلغاء الطلب" }));
+    fireEvent.click(screen.getByRole("button", { name: "تأكيد الإلغاء" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("تعذر تأكيد الإلغاء");
+    expect(screen.getByText("ORDER-12")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "تأكيد الإلغاء" })).toBeEnabled();
+  });
+
+  it("ignores a delayed cancellation response after the signed-in customer changes", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, fulfillment: { stage: "placed", status: "active", canCancel: true, issue: null, refundStatus: null, relatedShipments: [] } });
+    let finish!: (value: unknown) => void;
+    cancelCustomerOrder.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const view = render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel order" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm cancellation" }));
+    accessToken = "customer-b-token";
+    fetchCustomerOrderById.mockResolvedValue({ ...order, orderCode: "ORDER-B", fulfillment: null });
+    view.rerender(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText("ORDER-B")).toBeInTheDocument();
+    finish({ ...order, orderCode: "CANCELLED-ORDER-A", fulfillment: null });
+    await waitFor(() => expect(screen.queryByText("CANCELLED-ORDER-A")).not.toBeInTheDocument());
+    expect(screen.getByText("ORDER-B")).toBeInTheDocument();
+  });
+
+  it("shows returns, exchanges and payment refunds as separate read-only statuses", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, fulfillment: { stage: "delivered", status: "returned", canCancel: false, issue: null, refundStatus: "partially_refunded", relatedShipments: [{ kind: "exchange", status: "in_transit" }] } });
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText("Your parcel was returned. Return and refund statuses are tracked separately.")).toBeInTheDocument();
+    expect(screen.getByText("Exchange: In transit")).toBeInTheDocument();
+    expect(screen.getByText("Partially refunded")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /request.*return|exchange|refund/i })).not.toBeInTheDocument();
+  });
+
   it("places status opposite the order code and back-to-orders with the metadata", async () => {
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 

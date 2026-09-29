@@ -177,6 +177,24 @@ export const en = {
     }
   },
   orders: {
+    shipping: {
+      title: "Delivery progress", placed: "Order placed", preparing: "Preparing", shipped: "Shipped", delivered: "Delivered",
+      delayed: "Delivery is delayed. We are following up on your shipment.", address: "Delivery is delayed while the address is checked.",
+      exception: "There is a delivery problem. Our team is following up with the carrier.",
+      lost: "The carrier reported your parcel lost. Our team is following up.", damaged: "The carrier reported damage to your parcel. Our team is following up.",
+      cancellation_pending: "Cancellation pending. We are checking your shipment before confirming cancellation.",
+      cancelled: "Your order is cancelled.", returning: "Your parcel is being returned.",
+      carrier_cancelled: "The carrier cancelled this delivery. Our team is checking the order's next steps.",
+      returned: "Your parcel was returned. Return and refund statuses are tracked separately.", exchanging: "An exchange is in progress with the carrier.",
+      refundPending: "Refund pending", partially_refunded: "Partially refunded", refunded: "Refunded",
+      return: "Return", exchange: "Exchange",
+      carrier: { created: "Awaiting pickup", picked_up: "Picked up", in_transit: "In transit", delivered: "Delivered", returned: "Returned", cancelled: "Cancelled", exception: "Delivery problem" },
+      cancel: "Cancel order", confirm: "Confirm cancellation", keep: "Keep order", cancelling: "Cancelling…",
+      confirmMessage: "Cancel this order? Cancellation is available only before printing or pickup. Any paid refund is tracked separately.",
+      cancelError: "Could not confirm cancellation. Refresh the order status before trying again.",
+      cancelUnavailable: "This order can no longer be cancelled here. Refresh its status or contact our team.",
+      refresh: "Refresh status", refreshing: "Refreshing…", refreshError: "Could not refresh delivery status. Please try again."
+    },
     title: "Your orders",
     empty: "You have not placed any orders yet.",
     loadError: "Could not load your orders. Please try again.",

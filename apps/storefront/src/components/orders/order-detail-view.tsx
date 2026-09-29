@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatPrice, type Language, type Order } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
-import { fetchCustomerOrderById } from "@/lib/api/client";
+import { cancelCustomerOrder, fetchCustomerOrderById } from "@/lib/api/client";
+import { OrderFulfillment } from "./order-fulfillment";
 import { ReviewFormModal } from "@/components/reviews/review-form-modal";
 import { Icon } from "@/components/ui/icons";
 import {
@@ -34,19 +35,22 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict: any; orderId: number }) {
-  const { accessToken, logout } = useAuth();
+  const { user, accessToken, hydrated, logout } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [reviewingItemId, setReviewingItemId] = useState<number | null>(null);
   const catalog = useCatalog();
   const isAr = lang === "ar";
+  const requestKey = `${accessToken}:${orderId}`;
+  const currentRequest = useRef(requestKey);
+  currentRequest.current = requestKey;
 
   useEffect(() => {
-    if (!accessToken) {
+    if (hydrated === false || !accessToken) {
       setOrder(null);
       setLoadError(false);
-      setLoading(false);
+      setLoading(hydrated === false || !!user);
       return;
     }
     let cancelled = false;
@@ -69,11 +73,12 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
     return () => {
       cancelled = true;
     };
-  }, [accessToken, orderId, logout]);
+  }, [user?.id, accessToken, hydrated, orderId, logout]);
 
   if (loading) {
     return (
-      <div className="grid gap-4 pb-20">
+      <div role="status" aria-label={dict.common.loading} className="grid gap-4 pb-20">
+        <span className="sr-only">{dict.common.loading}</span>
         {[0, 1].map((i) => (
           <div key={i} className="h-48 animate-pulse rounded-lg border border-(--hairline) bg-(--warm-soft)" />
         ))}
@@ -122,6 +127,19 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
             <Link href={`/${lang}/orders`} className="btn btn--ghost w-full sm:w-auto">{dict.orders.backToOrders}</Link>
           </div>
         </header>
+
+        {order.fulfillment && <OrderFulfillment key={requestKey} fulfillment={order.fulfillment} dict={dict}
+          onCancel={async () => {
+            if (!accessToken) throw new Error("Authentication required");
+            const updated = await cancelCustomerOrder(order.id, accessToken);
+            if (currentRequest.current === requestKey) { setOrder(updated); setReviewingItemId(null); }
+          }}
+          onRefresh={async () => {
+            if (!accessToken) throw new Error("Authentication required");
+            const updated = await fetchCustomerOrderById(order.id, accessToken);
+            if (!updated) throw new Error("Order unavailable");
+            if (currentRequest.current === requestKey) setOrder(updated);
+          }} />}
 
         {/* Items: thumbnail, snapshot name/size, quantity, money, review action */}
         <Panel title={dict.orders.itemsInOrder}>

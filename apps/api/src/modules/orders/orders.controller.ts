@@ -16,6 +16,7 @@ import {
 import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "../../repositories/order-review-flag.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
+import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
 const paymentChangeSchema = z.object({ paymentStatus: z.enum(allowedPaymentStatuses) }).strict();
@@ -115,4 +116,22 @@ export async function getCustomerOrderController(req: AuthenticatedRequest, res:
     return res.status(404).json({ message: "Order not found" });
   }
   return res.json(await attachReviewEligibilityToOrder(order, req.user.id));
+}
+
+export async function cancelCustomerOrderController(req: AuthenticatedRequest, res: Response) {
+  const id = parsePositiveId(req.params.id);
+  if (id == null) return res.status(400).json({ message: "Invalid order id" });
+  if (!z.object({}).strict().safeParse(req.body ?? {}).success) return res.status(400).json({ message: "Invalid cancellation request" });
+  try {
+    const result = await requestShippingCancellation(id, { source: "customer", actorId: req.user!.id });
+    const order = await findOrderByIdRepo(id, { customerId: req.user!.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    return res.status(result.status === "pending" ? 202 : 200).json(await attachReviewEligibilityToOrder(order, req.user!.id));
+  } catch (error) {
+    if (error instanceof ShippingCancellationError) {
+      if (/not found/i.test(error.message)) return res.status(404).json({ message: "Order not found" });
+      return res.status(409).json({ message: "Order cancellation is unavailable", code: "ORDER_CANCELLATION_UNAVAILABLE" });
+    }
+    throw error;
+  }
 }

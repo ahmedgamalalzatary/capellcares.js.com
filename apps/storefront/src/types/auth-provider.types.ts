@@ -7,6 +7,7 @@ export interface AuthUser {
 }
 
 export interface AuthContextValue {
+  hydrated: boolean;
   user: AuthUser | null;
   accessToken: string | null;
   login: (email: string, password: string) => Promise<AuthUser>;

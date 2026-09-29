@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { fetchCustomerOrders } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
 import { authHref } from "@/lib/auth-redirect";
+import { OrderFulfillment } from "./order-fulfillment";
 import {
   formatOrderDate,
   itemsCountLabel,
@@ -24,7 +25,7 @@ import {
 const MAX_THUMBS = 4;
 
 export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
-  const { user, accessToken, logout } = useAuth();
+  const { user, accessToken, hydrated, logout } = useAuth();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [authRequired, setAuthRequired] = useState(false);
@@ -32,7 +33,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
   const catalog = useCatalog();
 
   useEffect(() => {
-    if (user && !accessToken) {
+    if (hydrated === false || user && !accessToken) {
       setOrders([]);
       setLoadError(false);
       setLoading(true);
@@ -70,11 +71,11 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, accessToken, logout]);
+  }, [user?.id, accessToken, hydrated, logout]);
 
   const isAr = lang === "ar";
 
-  if (!user || authRequired) {
+  if (hydrated !== false && (!user || authRequired)) {
     return (
       <div className="mx-auto my-10 grid max-w-120 place-items-center gap-4 rounded-lg border border-(--hairline) bg-surface px-6 py-12 text-center sm:my-16 sm:px-8 sm:py-14">
         <div className="grid h-19 w-19 place-items-center bg-(--accent-soft) text-accent">
@@ -95,7 +96,8 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
 
   if (loading) {
     return (
-      <div className="mb-16 grid gap-3">
+      <div role="status" aria-label={dict.common.loading} className="mb-16 grid gap-3">
+        <span className="sr-only">{dict.common.loading}</span>
         {[0, 1, 2].map((i) => (
           <div
             key={i}
@@ -195,6 +197,7 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
             </div>
 
             {/* Foot: the single action this card offers */}
+            {order.fulfillment && <OrderFulfillment fulfillment={order.fulfillment} dict={dict} compact />}
             <div className="border-t border-(--hairline) bg-[color-mix(in_oklch,var(--warm-soft)_45%,transparent)] px-4 py-2.5 text-end sm:px-5">
               <Link
                 href={`/${lang}/orders/${order.id}`}

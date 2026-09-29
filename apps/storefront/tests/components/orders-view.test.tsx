@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getDict } from "@capella/shared";
 
 import { OrdersView } from "@/components/orders/orders-view";
 
@@ -11,10 +12,12 @@ const fetchCollections = vi.fn();
 const fetchCategories = vi.fn();
 const logout = vi.fn();
 let accessToken = "token";
+let authHydrated = true;
 
 vi.mock("@/components/providers/auth-provider", () => ({
   useAuth: () => ({
-    user: { id: 1, name: "Capella User", email: "user@capella.test" },
+    user: authHydrated ? { id: 1, name: "Capella User", email: "user@capella.test" } : null,
+    hydrated: authHydrated,
     accessToken,
     logout
   })
@@ -55,6 +58,7 @@ const dict = {
 describe("OrdersView", () => {
   beforeEach(() => {
     accessToken = "token";
+    authHydrated = true;
     fetchCustomerOrders.mockReset();
     fetchCustomerOrders.mockResolvedValue([]);
     fetchProducts.mockReset();
@@ -66,6 +70,23 @@ describe("OrdersView", () => {
     fetchCollections.mockResolvedValue([]);
     fetchCategories.mockResolvedValue([]);
     logout.mockReset();
+  });
+
+  it("keeps loading before authentication hydration instead of showing a login prompt", () => {
+    authHydrated = false; accessToken = "";
+    render(createElement(OrdersView, { lang: "en", dict: getDict("en") }));
+    expect(screen.getByRole("status")).toHaveTextContent("Loading");
+    expect(screen.queryByText("Orders require an account")).not.toBeInTheDocument();
+    expect(fetchCustomerOrders).not.toHaveBeenCalled();
+  });
+
+  it("shows shipping progress separately from payment in the customer order list", async () => {
+    fetchCustomerOrders.mockResolvedValue([{ id: 1, orderCode: "SHIPPED-1", paymentMethod: "cod", paymentStatus: "pending", totalAmount: 50, createdAt: "2026-09-29T10:00:00Z", items: [],
+      fulfillment: { stage: "shipped", status: "delayed", issue: "address", canCancel: false, refundStatus: null, relatedShipments: [] } }]);
+    render(createElement(OrdersView, { lang: "en", dict: getDict("en") }));
+    expect(await screen.findByText("Shipped")).toBeInTheDocument();
+    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(screen.getByText("Delivery is delayed while the address is checked.")).toBeInTheDocument();
   });
 
   it("renders customer orders returned by the storefront API client", async () => {

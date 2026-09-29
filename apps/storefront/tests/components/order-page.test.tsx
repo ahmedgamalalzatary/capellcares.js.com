@@ -29,6 +29,9 @@ vi.mock("@/components/orders/order-detail-view", () => ({
 }));
 
 describe("OrderPage", () => {
+  it.each(["5junk", "1.5", "0", "2147483648", "-1", "01"])("rejects malformed or unsupported order id %s", async id => {
+    await expect(OrderPage({ params: Promise.resolve({ lang: "en", id }) })).rejects.toThrow("notFound");
+  });
   it("does not render the numeric route id as a page heading", async () => {
     const view = await OrderPage({ params: Promise.resolve({ lang: "en", id: "5" }) });
 

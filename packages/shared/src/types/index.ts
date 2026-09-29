@@ -389,6 +389,16 @@ export interface OrderItem {
   review?: OrderItemReview | null;
 }
 
+/** Customer-facing shipping progress; raw carrier events and staff notes stay in ERP. */
+export interface CustomerOrderFulfillment {
+  stage: "placed" | "preparing" | "shipped" | "delivered";
+  status: "active" | "delayed" | "exception" | "cancellation_pending" | "cancelled" | "carrier_cancelled" | "returning" | "returned" | "exchanging";
+  issue: "address" | "lost" | "damaged" | "delivery" | null;
+  canCancel: boolean;
+  refundStatus: "pending" | "partially_refunded" | "refunded" | null;
+  relatedShipments: Array<{ kind: "return" | "exchange"; status: "created" | "picked_up" | "in_transit" | "delivered" | "returned" | "cancelled" | "exception" }>;
+}
+
 export interface OrderSummary {
   id: number;
   orderCode: string;
@@ -411,6 +421,7 @@ export interface OrderSummary {
   shippingAmountCents?: number;
   shippingQuoteId?: string | null;
   shippingSize?: "small" | "medium" | "large" | null;
+  fulfillment?: CustomerOrderFulfillment | null;
   /**
    * Present on the storefront order list (which renders item thumbnails per
    * card) and absent on the admin list, which only needs order-level columns.

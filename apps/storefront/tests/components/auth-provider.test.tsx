@@ -1,8 +1,11 @@
 import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthProvider, useAuth } from "@/components/providers/auth-provider";
+import { OrdersView } from "@/components/orders/orders-view";
+import { getDict } from "@capella/shared";
 
 function Probe() {
   const { user, accessToken } = useAuth();
@@ -27,6 +30,12 @@ function ControlledProbe() {
 }
 
 describe("AuthProvider", () => {
+  it("keeps the real order list loading before saved-session hydration", () => {
+    const html = renderToString(createElement(AuthProvider, null, createElement(OrdersView, { lang: "en", dict: getDict("en") })));
+    const document = new DOMParser().parseFromString(html, "text/html");
+    expect(document.querySelector('[role="status"]')?.textContent ?? "").toContain("Loading");
+    expect(document.body.textContent).not.toContain("Orders require an account");
+  });
   it("refreshes the access token on hydration when user data exists in storage", async () => {
     localStorage.setItem("capella.auth.v1", JSON.stringify({ id: 1, name: "Capella User", email: "user@capella.test" }));
 
