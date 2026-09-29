@@ -70,6 +70,23 @@ test("outgoing actions and related parcel errors select work for their own shipm
   });
 });
 
+test("a newer pending edit remains an explicit barrier when an older failed job wins the attention summary", async () => {
+  const f = await shippingSyncFixture();
+  await db.insert(shippingWorkItems).values([
+    { orderId: f.order.id, shipmentId: f.shipment.id, operation: "edit_delivery", idempotencyKey: "edit-rejected-detail",
+      status: "failed", lastError: "EDIT_REJECTED", nextAttemptAt: new Date(), requestSnapshot: JSON.stringify({ patch: { notes: "Old notes" }, payload: { notes: "Old notes" } }) },
+    { orderId: f.order.id, shipmentId: f.shipment.id, operation: "edit_delivery", idempotencyKey: "edit-uncertain-detail",
+      status: "processing", nextAttemptAt: new Date(), claimedAt: new Date(Date.now() - 300000), requestSnapshot: JSON.stringify({ patch: { notes: "New notes" }, payload: { notes: "New notes" } }) }
+  ]);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/orders/${f.order.id}`, { headers: auth });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.shipping.workItem.lastError, "EDIT_REJECTED");
+    assert.equal(response.json.shipping.hasPendingEdit, true);
+  });
+});
+
 test("admin order detail shows manual, carrier, payment, collection and custody independently", async () => {
   const f = await shippingSyncFixture();
   const actorId = await createTestAdminUser({ name: "Admin", email: "state-display@example.test", passwordHash: "unused", role: "admin" });
@@ -89,6 +106,7 @@ test("admin order detail shows manual, carrier, payment, collection and custody 
     assert.equal(response.json.shipping.history[0].reason, "Staff report");
     assert.equal(response.json.shipping.processing.untouchedExpiryApplies, false);
     assert.deepEqual(response.json.shipping.relatedShipments, []);
+    assert.equal(response.json.shipping.hasPendingEdit, false);
   });
 });
 test("staff payment changes cannot bypass Bosta evidence or silently include money/item edits", async () => {

@@ -34,7 +34,7 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
   const printed = shipping?.history.some(event => ["printed", "delivered", "returned"].includes(event.state)) ||
     ["printed", "delivered", "returned"].includes(shipping?.manualState ?? "");
   const pickedUp = shipping?.processing.pickupAtMs != null;
-  const pendingEdit = shipping?.workItem?.operation === "edit_delivery" && ["processing", "review_required"].includes(shipping.workItem.status);
+  const pendingEdit = shipping?.hasPendingEdit ?? (shipping?.workItem?.operation === "edit_delivery" && ["processing", "review_required"].includes(shipping.workItem.status));
   const editable = !locked && !pickedUp && !pendingEdit && shipping?.editEnabled !== false &&
     !["delivered", "returned"].includes(shipping?.manualState ?? "") && !(order?.refundedAmountCents);
   const currentFlagId = shipping?.flags?.some(flag => flag.id === flagId) ? flagId : shipping?.flags?.[0]?.id;

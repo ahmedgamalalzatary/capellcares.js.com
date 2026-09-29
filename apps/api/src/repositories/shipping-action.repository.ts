@@ -13,6 +13,18 @@ type Order = typeof orders.$inferSelect;
 /** MySQL DATETIME(0) rounds fractional seconds, so align to whole seconds to keep due-now jobs claimable. */
 const dueNow = () => new Date(Math.floor(Date.now() / 1000) * 1000);
 
+export class ShippingConfigurationError extends Error {
+  constructor() { super("Shipping provider configuration is unavailable"); }
+}
+function actionRuntime<T>(resolve: () => T): T {
+  try { return resolve(); }
+  catch { throw new ShippingConfigurationError(); }
+}
+export function editOrderShipment(orderId: number, patch: unknown, actorId: number) {
+  const runtime = actionRuntime(() => resolveBostaEditRuntime());
+  return applyShippingNoMoneyEdit(orderId, patch, actorId, runtime);
+}
+
 async function lockedShippingOrder(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], orderId: number): Promise<Order> {
   const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1).for("update");
   if (!order?.shippingSnapshot) throw new Error("Shipping order not found");
@@ -63,7 +75,7 @@ export async function reconcileOrderDeliveryCreation(orderId: number, actorId: n
       .where(eq(shippingWorkItems.id, job.id));
     return true;
   });
-  return outcome === "edit" ? reconcileShippingEdit(orderId, resolveBostaSyncRuntime()) : outcome;
+  return outcome === "edit" ? reconcileShippingEdit(orderId, actionRuntime(() => resolveBostaSyncRuntime())) : outcome;
 }
 
 export async function resolveShippingFlags(orderId: number, input: unknown, actorId: number, flagId?: number) {
@@ -104,7 +116,7 @@ export async function runBulkShippingAction(action: ShippingBulkRequest["action"
           const { cityId, zoneId, districtId } = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot)).address;
           patch = { ...patch, address: { cityId, zoneId, districtId, ...input.addressLines } };
         }
-        await applyShippingNoMoneyEdit(orderId, patch, input.actorId, resolveBostaEditRuntime());
+        await editOrderShipment(orderId, patch, input.actorId);
       }
       else await resolveShippingFlags(orderId, { note: input.note }, input.actorId);
       results.push({ orderId, status: "ok" });

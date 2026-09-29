@@ -130,7 +130,8 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
         providerEventAtMs: parcel.providerEventAtMs,
         workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null };
     }),
-    editEnabled, packingSize: ship?.size ?? order.shippingSize,
+    editEnabled, hasPendingEdit: outgoingJobs.some(job => job.operation === "edit_delivery" && ["processing", "review_required"].includes(job.status)),
+    packingSize: ship?.size ?? order.shippingSize,
     carrierSnapshot: ship?.carrierSnapshot ? JSON.parse(ship.carrierSnapshot) : null,
     workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null,
     manualState: order.manualShippingState ?? ship?.manualState ?? null, carrierState: ship?.normalizedState ?? null,

@@ -6,9 +6,7 @@ import { requireErpPermission } from "../../middlewares/erp-permissions.middlewa
 import type { ErpAuthenticatedRequest } from "../../middlewares/admin-auth.middleware.js";
 import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
 import { recordOrderManualState } from "../../repositories/shipping-state.repository.js";
-import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags } from "../../repositories/shipping-action.repository.js";
-import { applyShippingNoMoneyEdit } from "../../repositories/shipping-edit.repository.js";
-import { resolveBostaEditRuntime } from "./bosta/bosta-edit.service.js";
+import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags, editOrderShipment, ShippingConfigurationError } from "../../repositories/shipping-action.repository.js";
 import { shipmentManualStateRequestSchema, shipmentEditSchema, shippingFlagResolutionSchema, shippingBulkActionSchema } from "@capella/shared";
 
 export const shippingActionRoutes = Router();
@@ -43,6 +41,7 @@ shippingActionRoutes.post("/orders/:id/cancel", requireErpPermission("shipping.u
 }));
 
 function mapActionError(error: unknown, res: Response) {
+  if (error instanceof ShippingConfigurationError) return res.status(503).json({ message: error.message });
   const message = error instanceof Error ? error.message : String(error);
   if (/not found/i.test(message)) return res.status(404).json({ message });
   if (/permission|authorized/i.test(message)) return res.status(403).json({ message });
@@ -94,7 +93,7 @@ shippingActionRoutes.post("/orders/:id/shipment-edit", requireErpPermission("shi
   if (id == null) return res.status(400).json({ message: "Invalid order id" });
   const parsed = shipmentEditSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: "Invalid shipment edit" });
-  try { return res.json(await applyShippingNoMoneyEdit(id, parsed.data, (req as ErpAuthenticatedRequest).adminUser!.id, resolveBostaEditRuntime())); }
+  try { return res.json(await editOrderShipment(id, parsed.data, (req as ErpAuthenticatedRequest).adminUser!.id)); }
   catch (error) { return mapActionError(error, res); }
 }));
 

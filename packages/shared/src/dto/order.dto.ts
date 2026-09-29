@@ -45,6 +45,7 @@ export interface AdminOrderShippingStateDto {
   flags?: Pick<AdminOrderReviewFlagDto, "id" | "flagType" | "reason">[];
   destination?: ShippingAddress;
   editEnabled?: boolean;
+  hasPendingEdit?: boolean;
   packingSize?: "small" | "medium" | "large" | null;
   carrierSnapshot?: Record<string, unknown> | null;
   manualState: ManualShippingState | null;

@@ -67,6 +67,17 @@ beforeEach(() => {
 });
 
 describe("OrderDetailsPage", () => {
+  it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
+      rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },
+      processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      editEnabled: true, hasPendingEdit: true, workItem: { operation: "edit_delivery", status: "failed", lastError: "EDIT_REJECTED" } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const actions = await screen.findByLabelText("إجراء الشحن");
+    expect(within(actions).getByRole("option", { name: "التحقق من النتيجة لدى بوسطة" })).toBeInTheDocument();
+    expect(within(actions).queryByRole("option", { name: "تعديل بيانات الشحنة / حجم العبوة" })).not.toBeInTheDocument();
+    expect(within(actions).queryByRole("option", { name: "إلغاء قبل الطباعة والاستلام" })).not.toBeInTheDocument();
+  });
   it("shows each linked return/exchange parcel separately and read-only for order readers", async () => {
     mockedUseAdminAuth.mockReturnValue({ user: { name: "Reader", email: "reader@example.test", role: "staff", permissionKeys: ["orders.read"] }, hydrated: true, logout: vi.fn() });
     fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: "delivered", carrierState: "delivered",

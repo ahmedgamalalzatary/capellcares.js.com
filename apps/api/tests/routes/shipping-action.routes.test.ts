@@ -9,8 +9,55 @@ import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
 import { recordOrderManualState } from "../../src/repositories/shipping-state.repository.js";
+import { syncEnvironment } from "../helpers/bosta-sync.js";
 
 beforeEach(resetApiTestDatabase);
+
+test("single and bulk edits never expose malformed server configuration", async t => {
+  const f = await shippingSyncFixture(false);
+  const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true", BOSTA_EDIT_SETTINGS_JSON: "private-sentinel" };
+  const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  Object.assign(process.env, env);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    for (const invalid of ["private-sentinel", JSON.stringify({ accountVerified: "private-sentinel" })]) {
+      process.env.BOSTA_EDIT_SETTINGS_JSON = invalid;
+      const single = await request(`/api/erp/shipping/orders/${f.order.id}/shipment-edit`, {
+        method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ size: "medium" }) });
+      assert.equal(single.status, 503);
+      assert.deepEqual(single.json, { message: "Shipping provider configuration is unavailable" });
+      const bulk = await request("/api/erp/shipping/bulk", { method: "POST", headers: { ...auth, "content-type": "application/json" },
+        body: JSON.stringify({ action: "shipment_edit", orderIds: [f.order.id, 999999], patch: { size: "medium" } }) });
+      assert.equal(bulk.status, 200);
+      assert.deepEqual(bulk.json.results, [
+        { orderId: f.order.id, status: "error", message: "Shipping provider configuration is unavailable" },
+        { orderId: 999999, status: "error", message: "Shipping provider configuration is unavailable" }
+      ]);
+    }
+  });
+  assert.equal((await db.select().from(orders).where(eq(orders.id, f.order.id)))[0].shippingSize, "small");
+});
+
+test("edit reconciliation also keeps invalid synchronization settings out of single and bulk errors", async t => {
+  const f = await shippingSyncFixture();
+  await db.insert(shippingWorkItems).values({ orderId: f.order.id, shipmentId: f.shipment.id, operation: "edit_delivery", status: "processing",
+    idempotencyKey: "pending-edit-config-error", nextAttemptAt: new Date() });
+  const env = { ...syncEnvironment, BOSTA_SYNC_SETTINGS_JSON: "private-sentinel" };
+  const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  Object.assign(process.env, env);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    const single = await request(`/api/erp/shipping/orders/${f.order.id}/reconcile`, { method: "POST", headers: auth });
+    assert.equal(single.status, 503);
+    assert.deepEqual(single.json, { message: "Shipping provider configuration is unavailable" });
+    const bulk = await request("/api/erp/shipping/bulk", { method: "POST", headers: { ...auth, "content-type": "application/json" },
+      body: JSON.stringify({ action: "reconcile", orderIds: [f.order.id] }) });
+    assert.equal(bulk.status, 200);
+    assert.deepEqual(bulk.json.results, [{ orderId: f.order.id, status: "error", message: "Shipping provider configuration is unavailable" }]);
+  });
+});
 
 test("staff cancellation route runs the shared eligibility checks and restores sold stock once", async () => {
   const f = await shippingSyncFixture(false);

@@ -11,6 +11,20 @@ import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.
 
 beforeEach(resetApiTestDatabase);
 
+test("shipping overview rejects malformed queries, impossible dates and invalid cursor IDs with 400", async () => {
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    for (const query of [
+      "cursor=garbage", "unexpected=value", "cursor[]=2026-09-29T12%3A00%3A00.000Z%7C1",
+      ...["2026-99-99T12:00:00.000Z|1", "2026-02-30T12:00:00.000Z|1", "2026-09-29T24:00:00.000Z|1",
+        "2026-09-29T12:00:00.000Z|0", "2026-09-29T12:00:00.000Z|01", "2026-09-29T12:00:00.000Z|2147483648"].map(cursor => `cursor=${encodeURIComponent(cursor)}`)
+    ]) {
+      const response = await request(`/api/erp/shipping?${query}`, { headers: auth });
+      assert.equal(response.status, 400, query);
+    }
+  });
+});
+
 test("permission catalog exposes broad shipping grants with read dependency", async () => {
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
