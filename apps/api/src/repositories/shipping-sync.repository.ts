@@ -5,6 +5,7 @@ import { orders, shipments, shipmentEvents, shippingWorkItems } from "@capella/d
 import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch.repository.js";
 import { normalizeBostaState, type BostaObservation, type BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
 import { recordCarrierShippingFacts, shippingAddressException } from "./shipping-state.repository.js";
+import { confirmShippingEdits } from "./shipping-edit.repository.js";
 
 type Shipment = typeof shipments.$inferSelect;
 type Order = typeof orders.$inferSelect;
@@ -55,6 +56,7 @@ async function apply(tx: ShippingTransaction, order: Order, ship: Shipment, even
     normalizedState, providerEventAtMs: event.atMs, collectedAmountCents: preserveCollection ? ship.collectedAmountCents : collected,
     collectionConfirmed: preserveCollection ? ship.collectionConfirmed : confirmed,
     carrierSnapshot: JSON.stringify(carrier) }).where(eq(shipments.id, ship.id));
+  await confirmShippingEdits(tx, ship, event);
   if (preserveCollection) await flagShippingOrder(tx, order.id, "custody_review",
     "Carrier state contradicts verified paid COD collection; collection evidence retained, reconcile shipment with staff");
   if (order.cancellationStatus === "cancelled") {
@@ -105,6 +107,7 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
     if (ship && (ship.orderId !== order.id || ship.idempotencyKey !== reference)) return "ignored";
     const [existing] = await tx.select().from(shipmentEvents).where(eq(shipmentEvents.eventFingerprint, fingerprint)).limit(1).for("update");
     if (existing?.processedAt) {
+      if (!existing.processingError && ship) await confirmShippingEdits(tx, ship, event);
       if (!existing.stateRecordedAt && ship) {
         if (existing.processingError !== "CONFLICTING_EVENT") await recordCarrierShippingFacts(tx, order, ship, event,
           ship.providerEventAtMs === event.atMs && ship.rawProviderCode === event.stateCode, ship.collectionConfirmed || event.confirmedDelivery === true);

@@ -93,7 +93,7 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
       if (quote.rateIdentity !== expectedRate) throw new Error("Delivery rate account/environment/contract changed");
       const totalCents = Math.round(Number(order.totalAmount) * 100);
       if (quote.amountCents !== totalCents || quote.shippingAmountCents !== order.shippingAmountCents ||
-        quote.size !== order.shippingSize || quote.quoteId !== order.shippingQuoteId || items.length === 0 ||
+        !order.shippingSize || quote.quoteId !== order.shippingQuoteId || items.length === 0 ||
         (quote.paymentMethod !== order.paymentMethod && totalCents !== 0) ||
         items.reduce((sum, item) => sum + Math.round(Number(item.lineTotal) * 100), 0) !== quote.productsTotalCents) {
         throw new Error("Locked delivery amount/size/items snapshot mismatch");
@@ -114,7 +114,7 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
       if (firstLine.length <= 5 || !Number.isSafeInteger(itemsCount)) throw new Error("Delivery address/contents snapshot is invalid");
       return { accountId: settings.accountId, environment, payload: {
         type: 10, cod: codCents / 100, businessReference: reference, allowToOpenPackage: false, notes: order.notes ?? "",
-        specs: { size: settings.sizeMapping[quote.size], packageType: "Parcel", packageDetails: { itemsCount, description: descriptions.join("; ") } },
+        specs: { size: settings.sizeMapping[order.shippingSize!], packageType: "Parcel", packageDetails: { itemsCount, description: descriptions.join("; ") } },
         receiver: { firstName: names[0]!, lastName: names.slice(1).join(" ") || names[0]!, fullName: order.fullName,
           phone: phone(order.phone), email: order.email },
         dropOffAddress: { city: quote.address.cityName.en, zoneId: quote.address.zoneId, districtId: quote.address.districtId, firstLine }

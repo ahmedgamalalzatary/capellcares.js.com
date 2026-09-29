@@ -51,6 +51,17 @@ test("customer cancellation enforces signed-in ownership and staff cancellation 
   assert.equal(result.status, "cancelled");
 });
 
+test("staff cancellation follows the catalog grant shipping.update_state instead of the retired shipping.cancel key", async () => {
+  const f = await shippingSyncFixture(false);
+  const staff = await createTestAdminUser({ name: "Shipping staff", email: "cancel-grant@example.test", passwordHash: "unused", role: "staff" });
+  const { syncPermissionCatalog, replaceAdminUserPermissions } = await import("../../src/services/erp-permissions.service.js");
+  await syncPermissionCatalog();
+  await replaceAdminUserPermissions(staff, ["orders.read", "shipping.read", "shipping.update_state"]);
+  const result = await (await api()).requestShippingCancellation(f.order.id, { source: "staff", actorId: staff, reason: "Customer request" });
+  assert.equal(result.status, "cancelled");
+  assert.equal(await stock(f.ids.firstVariantId), 10);
+});
+
 test("historical printing blocks direct cancellation even after staff switch back to Preparing", async () => {
   const f = await shippingSyncFixture(false);
   const actorId = await admin();

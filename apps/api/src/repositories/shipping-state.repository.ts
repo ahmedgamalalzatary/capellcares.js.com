@@ -1,7 +1,8 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { adminUsers, adminUserPermissions, permissions, orders, orderStateHistory, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { shipmentManualStateRequestSchema, shipmentEditSchema } from "@capella/shared";
+import { adminUsers, adminUserPermissions, permissions, orders, orderStateHistory, shipments, shippingWorkItems, orderReviewFlags } from "@capella/database/drizzle/schema";
+import { shipmentManualStateRequestSchema, shipmentEditSchema, checkoutShippingQuoteSchema } from "@capella/shared";
+import { resolveBostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
 import type { AdminOrderShippingStateDto } from "@capella/shared";
 import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch.repository.js";
 import type { BostaObservation } from "../modules/shipping/bosta/bosta-sync.service.js";
@@ -37,7 +38,7 @@ export async function recordOrderManualState(orderId: number, input: unknown, ac
       shippingProcessingAtMs: processing ? first(order.shippingProcessingAtMs, atMs) : order.shippingProcessingAtMs }).where(eq(orders.id, orderId));
     if (ship) await tx.update(shipments).set({ manualState: body.state }).where(eq(shipments.id, ship.id));
     await tx.insert(orderStateHistory).values({ orderId, state: body.state, actorType: "staff", actorId, eventAtMs: atMs, reason: body.reason ?? null });
-    if (["delivered", "returned"].includes(body.state) || (body.state === "printed" && !ship)) {
+    if (body.state === "delivered" || (body.state === "printed" && !ship)) {
       await flagShippingOrder(tx, orderId, "custody_review", "Staff shipping report is independent of carrier/payment evidence; verify custody before rejection or restocking");
     }
     return true;
@@ -91,7 +92,8 @@ export async function assertShippingEditAllowed(tx: ShippingTransaction, orderId
     }
   } else {
     const jobs = await tx.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.orderId, orderId), eq(shippingWorkItems.operation, "create_delivery"))).for("update");
-    if (jobs.some(job => job.requestSnapshot !== null || job.responseSnapshot !== null || ["processing", "review_required", "succeeded"].includes(job.status))) {
+    if (jobs.some(job => job.responseSnapshot !== null || ["processing", "review_required", "succeeded"].includes(job.status) ||
+      (job.requestSnapshot !== null && !(job.status === "failed" && job.lastError === "CREATE_REJECTED")))) {
       throw new Error("Frozen or uncertain delivery creation blocks edits until linked/reconciled");
     }
   }
@@ -104,7 +106,23 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
   if (!order) return null;
   const [ship] = await db.select().from(shipments).where(and(eq(shipments.orderId, order.id), eq(shipments.kind, "outgoing"))).limit(1);
   const history = await db.select().from(orderStateHistory).where(eq(orderStateHistory.orderId, order.id)).orderBy(asc(orderStateHistory.id));
-  return { manualState: order.manualShippingState ?? ship?.manualState ?? null, carrierState: ship?.normalizedState ?? null,
+  const flags = await db.select({ id: orderReviewFlags.id, flagType: orderReviewFlags.flagType, reason: orderReviewFlags.reason })
+    .from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open")));
+  const jobs = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, order.id)).orderBy(desc(shippingWorkItems.id));
+  const actionable = jobs.filter(job => job.operation !== "sync_delivery" && !(job.operation === "create_delivery" && job.lastError === "ORDER_NOT_DISPATCHABLE"));
+  const work = actionable.find(job => ["failed", "review_required"].includes(job.status)) ?? actionable.find(job => job.status === "processing" || job.status === "pending") ?? actionable[0] ??
+    jobs.find(job => job.operation === "create_delivery" && job.status === "failed");
+  const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot!));
+  let editEnabled = !ship;
+  if (ship) {
+    try { editEnabled = resolveBostaEditRuntime() !== null; }
+    catch { /* Invalid edit configuration must not block order-detail reads. */ }
+  }
+  return { flags, destination: { cityId: quote.address.cityId, zoneId: quote.address.zoneId, districtId: quote.address.districtId },
+    editEnabled, packingSize: ship?.size ?? order.shippingSize,
+    carrierSnapshot: ship?.carrierSnapshot ? JSON.parse(ship.carrierSnapshot) : null,
+    workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null,
+    manualState: order.manualShippingState ?? ship?.manualState ?? null, carrierState: ship?.normalizedState ?? null,
     rawProviderCode: ship?.rawProviderCode ?? null, rawProviderType: ship?.rawProviderType ?? null,
     custodyState: ship?.custodyState ?? "unknown", collection: { confirmed: ship?.collectionConfirmed ?? false, amountCents: ship?.collectedAmountCents ?? null },
     cancellation: order.cancellationStatus ? { status: order.cancellationStatus, requestedAtMs: order.cancellationRequestedAtMs,

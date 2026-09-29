@@ -8,7 +8,8 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { hasErpPermission } from "@/lib/erp-permissions";
-import { paymentStatusFilterOptions, orderPaymentDisplay } from "@/lib/payment-status";
+import { orderPaymentDisplay } from "@/lib/payment-status";
+import { ShippingActions } from "@/components/orders/shipping-actions";
 import { getStore } from "@/lib/store";
 import { formatOrderAmount } from "@/lib/order-format";
 
@@ -65,10 +66,12 @@ export default function ShippingPage() {
     );
   }
 
-  return <ShippingPageContent />;
+  return <ShippingPageContent canModify={hasErpPermission(user, "shipping.update_state")} />;
 }
 
-function ShippingPageContent() {
+function ShippingPageContent({ canModify }: { canModify: boolean }) {
+  const [selected, setSelected] = useState<number[]>([]);
+  const [refreshError, setRefreshError] = useState(false);
   const [items, setItems] = useState<AdminShipmentListItemDto[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +128,21 @@ function ShippingPageContent() {
       (item.trackingNumber ?? "").toLowerCase().includes(term)
     );
   }, [fromDate, items, paymentFilter, search, section, statusFilter, toDate]);
+
+  const selectable = filtered.filter(item => item.kind === "outgoing").map(item => item.orderId);
+  function toggle(orderId: number) { setSelected(prev => prev.includes(orderId) ? prev.filter(id => id !== orderId) : prev.length < 50 ? [...prev, orderId] : prev); }
+  async function refresh() {
+    try {
+      const updated = [] as AdminShipmentListItemDto[];
+      let cursor: string | undefined;
+      let next: string | null;
+      do {
+        const page = await getStore().fetchShippingOverview(cursor);
+        updated.push(...page.items); next = page.nextCursor; cursor = next ?? undefined;
+      } while (next && updated.length < items.length);
+      setItems(updated); setNextCursor(next!); setRefreshError(false);
+    } catch { setRefreshError(true); }
+  }
 
   return (
     <AdminShell title="الشحن" crumbs={[{ label: "الشحن" }]}>
@@ -192,11 +210,18 @@ function ShippingPageContent() {
             )}
           />
 
+          {canModify && selected.length > 0 && <ShippingActions orderIds={selected}
+            orderCodes={Object.fromEntries(items.map(item => [item.orderId, item.orderCode]))} onComplete={() => { void refresh(); }} />}
+          {refreshError && <p role="alert">تم إرسال الإجراء؛ تعذر تحديث القائمة. حدّثي الصفحة للتحقق من النتائج.</p>}
+
           <div className="card">
             <div className="table-outer">
               <table className="table">
                 <thead>
                   <tr>
+                    {canModify && <th><input type="checkbox" aria-label="تحديد الطلبات الظاهرة" disabled={selectable.length === 0}
+                      checked={selectable.length > 0 && selectable.every(id => selected.includes(id))}
+                      onChange={e => setSelected(e.target.checked ? selectable.slice(0, 50) : [])} /></th>}
                     <th>كود الطلب</th>
                     <th>النوع</th>
                     <th>رقم التتبع</th>
@@ -215,6 +240,9 @@ function ShippingPageContent() {
                 <tbody>
                   {filtered.map((item) => (
                     <tr key={`${item.orderId}-${item.kind}-${item.shipmentId ?? "none"}`}>
+                      {canModify && <td>{item.kind === "outgoing" && <input type="checkbox" aria-label={`تحديد ${item.orderCode}`}
+                        checked={selected.includes(item.orderId)} disabled={selected.length >= 50 && !selected.includes(item.orderId)}
+                        onChange={() => toggle(item.orderId)} />}</td>}
                       <td>
                         <Link href={`/orders/${item.orderId}`} className="table-title">
                           <code className="mono fs-12-5">{item.orderCode}</code>
@@ -255,7 +283,7 @@ function ShippingPageContent() {
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={13} className="state-note state-note--lg state-note--muted">
+                    <tr><td colSpan={canModify ? 14 : 13} className="state-note state-note--lg state-note--muted">
                       {items.length === 0 ? "لا توجد شحنات بعد." : "لا توجد شحنات تطابق البحث أو عوامل التصفية."}
                     </td></tr>
                   )}

@@ -36,6 +36,10 @@ export class BostaClient {
     return this.request("POST", path, body);
   }
 
+  async put(path: string, body: unknown): Promise<unknown> {
+    return this.request("PUT", path, body);
+  }
+
   async delete(path: string): Promise<unknown> {
     return this.request("DELETE", path);
   }

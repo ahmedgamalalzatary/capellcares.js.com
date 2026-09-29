@@ -10,6 +10,7 @@ import { hasErpPermission } from "@/lib/erp-permissions";
 import { orderPaymentDisplay, paymentStatusLabel } from "@/lib/payment-status";
 import { getStore } from "@/lib/store";
 import { formatOrderAmount } from "@/lib/order-format";
+import { ShippingActions } from "./shipping-actions";
 import "./order-details.css";
 
 const manualStateLabels = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم", returned: "تم الإرجاع" };
@@ -18,6 +19,10 @@ const custodyLabels = { unknown: "الحيازة غير مؤكدة", carrier: "�
 
 function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateDto }) {
   const collectionConfirmed = shipping.collection.confirmed && shipping.collection.amountCents !== null;
+  const carrier = shipping.carrierSnapshot;
+  const recipient = carrier?.recipient as Record<string, unknown> | undefined;
+  const address = carrier?.address as Record<string, unknown> | undefined;
+  const carrierText = (value: unknown) => typeof value === "string" ? value : "غير متوفر";
   return <section className="card" aria-labelledby="order-shipping-state-heading">
     <div className="card__head"><h3 id="order-shipping-state-heading" className="card__title">حالات الشحن</h3></div>
     <div className="order-section-body">
@@ -33,6 +38,16 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
         <Detail label="المبلغ المحصل">{shipping.collection.amountCents !== null ? formatOrderAmount(shipping.collection.amountCents / 100) : "غير متوفر"}</Detail>
         {shipping.processing.startedAtMs !== null && <Detail label="بدء المعالجة"><OrderDate value={new Date(shipping.processing.startedAtMs).toISOString()} /></Detail>}
       </dl>
+      {carrier && <div aria-label="بيانات بوسطة الحالية"><h4>بيانات بوسطة الحالية</h4><dl className="order-fields order-fields--two">
+        <Detail label="المستلم لدى بوسطة">{carrierText(recipient?.fullName)}</Detail>
+        <Detail label="الهاتف لدى بوسطة">{carrierText(recipient?.phone)}</Detail>
+        <Detail label="العنوان لدى بوسطة">{carrierText(address?.firstLine)}</Detail>
+        <Detail label="الحجم لدى بوسطة">{carrierText(carrier.size)}</Detail>
+        <Detail label="الملاحظات لدى بوسطة">{carrierText(carrier.notes)}</Detail>
+      </dl></div>}
+      {!!shipping.flags?.length && <div aria-label="علامات المتابعة">{shipping.flags.map(flag => <p key={flag.id} className="order-note">{flag.reason}</p>)}</div>}
+      {shipping.workItem && ["failed", "review_required", "processing"].includes(shipping.workItem.status) &&
+        <p className="order-note">متابعة الإرسال: {shipping.workItem.lastError ?? "قيد التنفيذ"}</p>}
       {shipping.processing.addressBlockedAtMs !== null && <p className="order-note">مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة</p>}
       {shipping.cancellation?.status === "pending" && <p className="order-note">الإرسال محظور حتى تأكيد الإلغاء؛ تعذر الاتصال ببوسطة لا يعيد المخزون تلقائيًا.</p>}
       {(shipping.cancellation?.refundRequiredCents ?? 0) > 0 && <p className="order-note">استرداد كامل يدوي عبر باي موب مطلوب: {formatOrderAmount(shipping.cancellation!.refundRequiredCents / 100)}. بانتظار تأكيد باي موب.</p>}
@@ -61,7 +76,8 @@ function OrderDate({ value }: { value?: string | null }) {
 }
 
 export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; crumbLabel: string }) {
-  const { user } = useAdminAuth();
+  const { user, hydrated } = useAdminAuth();
+  if (!hydrated) return <AdminShell title="تفاصيل الطلب"><p role="status">جارٍ تحميل تفاصيل الطلب…</p></AdminShell>;
   if (!hasErpPermission(user, "orders.read")) {
     return (
       <AdminShell title="تفاصيل الطلب"
@@ -72,11 +88,12 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
     );
   }
   return <OrderDetailsContent key={orderId} orderId={orderId} crumbLabel={crumbLabel}
-    canUpdatePaymentStatus={hasErpPermission(user, "orders.update_payment_status")} />;
+    canUpdatePaymentStatus={hasErpPermission(user, "orders.update_payment_status")}
+    canUpdateShipping={hasErpPermission(user, "shipping.update_state")} />;
 }
 
-function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
-  orderId: number; crumbLabel: string; canUpdatePaymentStatus: boolean;
+function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canUpdateShipping }: {
+  orderId: number; crumbLabel: string; canUpdatePaymentStatus: boolean; canUpdateShipping: boolean;
 }) {
   const [order, setOrder] = useState<AdminOrderDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -206,6 +223,8 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
               </section>
 
               {order.shipping && <ShippingStateDetails shipping={order.shipping} />}
+              {order.shipping && canUpdateShipping && <ShippingActions orderIds={[order.id]} order={order}
+                onComplete={() => { void getStore().fetchOrder(orderId).then(setOrder).catch(() => setSaveError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب.")); }} />}
 
               <section className="card" aria-labelledby="order-payment-heading">
                 <div className="card__head"><h3 id="order-payment-heading" className="card__title">تفاصيل الدفع</h3></div>

@@ -79,6 +79,9 @@ export async function requestShippingCancellationInTransaction(tx: ShippingTrans
   }
   if (source === "expiry" && (order.paymentMethod !== "cod" || order.paymentStatus !== "pending" || !order.codExpiresAt ||
     order.codExpiresAt > now || !untouchedShippingExpiryApplies(order))) return null;
+  const [edit] = await tx.select({ id: shippingWorkItems.id }).from(shippingWorkItems).where(and(eq(shippingWorkItems.orderId, order.id),
+    eq(shippingWorkItems.operation, "edit_delivery"), inArray(shippingWorkItems.status, ["processing", "review_required"]))).limit(1).for("update");
+  if (edit && (source === "staff" || source === "customer")) throw new ShippingCancellationError("Shipment edit is pending; confirm its outcome before cancellation");
   const blocked = await directCancellationBlocked(tx, order);
   if (blocked && (source === "customer" || source === "staff")) throw new ShippingCancellationError("Direct cancellation is locked after printing or pickup; verify custody with staff");
   if (order.paymentStatus === "denied" && !order.cancellationStatus) throw new ShippingCancellationError("Denied orders are locked");
@@ -113,7 +116,7 @@ export async function requestShippingCancellation(orderId: number, input: unknow
       const [actor] = await tx.select().from(adminUsers).where(eq(adminUsers.id, body.actorId)).limit(1);
       const grants = actor?.role === "staff" ? await tx.select({ key: permissions.key }).from(adminUserPermissions)
         .innerJoin(permissions, eq(permissions.id, adminUserPermissions.permissionId)).where(eq(adminUserPermissions.adminUserId, body.actorId)) : [];
-      if (!actor?.isActive || (actor.role !== "admin" && !["orders.read", "shipping.read", "shipping.cancel"].every(key => grants.some(grant => grant.key === key)))) {
+      if (!actor?.isActive || (actor.role !== "admin" && !["orders.read", "shipping.read", "shipping.update_state"].every(key => grants.some(grant => grant.key === key)))) {
         throw new ShippingCancellationError("Shipping cancellation permission required");
       }
     }

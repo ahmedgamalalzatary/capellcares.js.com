@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchOrder = vi.fn();
 const updateOrderPaymentStatus = vi.fn();
+const performShippingAction = vi.fn();
 const mockedUseAdminAuth = vi.fn(() => ({
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
   hydrated: true,
@@ -28,7 +29,8 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/store", () => ({
   getStore: () => ({
     fetchOrder,
-    updateOrderPaymentStatus
+    updateOrderPaymentStatus,
+    performShippingAction
   })
 }));
 
@@ -61,9 +63,49 @@ beforeEach(() => {
   });
   fetchOrder.mockReset();
   updateOrderPaymentStatus.mockReset();
+  performShippingAction.mockReset();
 });
 
 describe("OrderDetailsPage", () => {
+  it("authorized shipping actions save a manual state and reload the recorded order", async () => {
+    const shipping = { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      flags: [], workItem: null };
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shipping }).mockResolvedValue({ ...detailedOrder, shipping: { ...shipping, manualState: "preparing" } });
+    performShippingAction.mockResolvedValue({ ok: true });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "manual_state" } });
+    fireEvent.change(screen.getByLabelText("الحالة اليدوية الجديدة"), { target: { value: "preparing" } });
+    expect(screen.queryByRole("option", { name: "تم الإرجاع" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(performShippingAction).toHaveBeenCalledWith(5, { action: "manual_state", state: "preparing" }));
+    expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
+  });
+
+  it("shipping edits submit only changed no-money fields and keep failures reviewable", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: null, rawProviderCode: null, rawProviderType: null, custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      flags: [], workItem: null, editEnabled: true, destination: { cityId: "c", zoneId: "z", districtId: "d" } } });
+    performShippingAction.mockRejectedValue(new Error("Request rejected"));
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "shipment_edit" } });
+    fireEvent.change(screen.getByLabelText("حجم العبوة الجديد"), { target: { value: "medium" } });
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(performShippingAction).toHaveBeenCalledWith(5, { action: "shipment_edit", patch: { size: "medium" } }));
+    expect(await screen.findByText(/تعذر تنفيذ إجراء الشحن/)).toBeInTheDocument();
+    expect(screen.getByLabelText("حجم العبوة الجديد")).toHaveValue("medium");
+  });
+  it("shows current carrier recipient, address and notes alongside the original order details", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      carrierSnapshot: { recipient: { fullName: "Edited carrier buyer", phone: "+201011111111" }, address: { firstLine: "Edited carrier street" }, notes: "Edited carrier instructions", size: "MEDIUM" } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("Edited carrier buyer")).toBeInTheDocument();
+    expect(screen.getByText("Edited carrier street")).toBeInTheDocument();
+    expect(screen.getByText("Edited carrier instructions")).toBeInTheDocument();
+    expect(screen.getByText("Checkout Customer")).toBeInTheDocument();
+    expect(screen.getByText("Street 10")).toBeInTheDocument();
+  });
   it.each(["pending", "cancelled"])("shows %s cancellation separately from carrier, payment and manual refund", async (status) => {
     fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod: "paymob", paymentStatus: "accepted", providerPaymentStatus: "succeeded",
       shipping: { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
@@ -88,7 +130,7 @@ describe("OrderDetailsPage", () => {
     expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
     expect(region.getByText("التحصيل مؤكد")).toBeInTheDocument();
     expect(region.getByText(/٢٠٠/)).toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toHaveValue("accepted");
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
   });
   it("shows staff and Bosta states separately while retaining independent payment, custody and collection evidence", async () => {
     fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shippingQuoteId: "quote", shippingAmountCents: 9700,
@@ -103,9 +145,9 @@ describe("OrderDetailsPage", () => {
     expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
     expect(region.getByText("التحصيل غير مؤكد")).toBeInTheDocument();
     expect(region.getByText("Staff report")).toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toHaveValue("pending");
-    expect(within(screen.getByRole("combobox")).getByRole("option", { name: "مقبول" })).toBeDisabled();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("pending");
+    expect(within(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).getByRole("option", { name: "مقبول" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
     expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
     expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
   });
@@ -154,7 +196,7 @@ describe("OrderDetailsPage", () => {
     expect(summary.getByText(/٥٠٫٢٥/)).toBeInTheDocument();
     expect(summary.getByText(/١٤٩٫٧٥/)).toBeInTheDocument();
     expect(summary.getByText(/٢٠٠/)).toBeInTheDocument();
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "حالة الدفع عند الاستلام" })).not.toBeInTheDocument();
   });
 
   it("waits for read permission before fetching and survives access changes", async () => {
@@ -167,7 +209,7 @@ describe("OrderDetailsPage", () => {
       hydrated: true, logout: vi.fn() });
     view.rerender(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
     expect(await screen.findByText("YMFI-005")).toBeInTheDocument();
-    expect(screen.getByRole("combobox")).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
   });
 
   it("prevents overlapping payment changes and preserves the saved status when an update fails", async () => {
@@ -175,7 +217,7 @@ describe("OrderDetailsPage", () => {
     let rejectUpdate!: (error: Error) => void;
     updateOrderPaymentStatus.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectUpdate = reject; }));
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
-    const select = await screen.findByRole("combobox");
+    const select = await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" });
     fireEvent.change(select, { target: { value: "accepted" } });
     expect(select).toBeDisabled();
     await act(async () => { rejectUpdate(new Error("Request failed")); });
@@ -191,7 +233,7 @@ describe("OrderDetailsPage", () => {
     render(createElement(OrderDetailsView, { orderId: 9, crumbLabel: "9" }));
     expect(await screen.findByText("PAY-009")).toBeInTheDocument();
     expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
-    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeNull();
     expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
   });
   it("disables payment-status mutation for staff without orders.update_payment_status", async () => {
@@ -216,8 +258,8 @@ describe("OrderDetailsPage", () => {
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
 
     await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
-    expect(await screen.findByRole("combobox")).toBeDisabled();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    expect(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
     expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
   });
 
@@ -259,10 +301,10 @@ describe("OrderDetailsPage", () => {
     expect((await screen.findAllByText(/YMFI-005/)).length).toBeGreaterThan(0);
     expect(await screen.findByText("100ml")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
 
     await waitFor(() => expect(updateOrderPaymentStatus).toHaveBeenCalledWith(5, "accepted"));
-    await waitFor(() => expect(screen.getByRole("combobox")).toHaveValue("accepted"));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted"));
   });
 
   it("locks payment-status changes when the order is already denied", async () => {
@@ -282,8 +324,8 @@ describe("OrderDetailsPage", () => {
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
 
     await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
-    expect(await screen.findByRole("combobox")).toBeDisabled();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "accepted" } });
+    expect(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
     expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
   });
 
@@ -292,9 +334,9 @@ describe("OrderDetailsPage", () => {
       paymentStatus: "accepted", updatedAt: "2026-09-21T11:00:00.000Z" });
     updateOrderPaymentStatus.mockResolvedValueOnce(undefined);
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
-    fireEvent.change(await screen.findByRole("combobox"), { target: { value: "accepted" } });
+    fireEvent.change(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
     await waitFor(() => expect(document.querySelector('time[datetime="2026-09-21T11:00:00.000Z"]')).not.toBeNull());
-    expect(screen.getByRole("combobox")).toHaveValue("accepted");
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
     expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
   });
 

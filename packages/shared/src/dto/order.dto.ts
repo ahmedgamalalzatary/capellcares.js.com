@@ -1,5 +1,6 @@
 import type { Order, OrderItem, OrderSummary } from "../types/index.js";
 import type { CheckoutRequestDto } from "./checkout.dto.js";
+import type { ShippingAddress } from "../schemas/shipping.schema.js";
 
 export type OrderItemDto = OrderItem;
 export type OrderDto = Order;
@@ -39,6 +40,12 @@ export interface AdminOrderReviewFlagDto {
 
 type ManualShippingState = "preparing" | "ready_for_pickup" | "printed" | "delivered" | "returned";
 export interface AdminOrderShippingStateDto {
+  workItem?: AdminShipmentListItemDto["workItem"];
+  flags?: Pick<AdminOrderReviewFlagDto, "id" | "flagType" | "reason">[];
+  destination?: ShippingAddress;
+  editEnabled?: boolean;
+  packingSize?: "small" | "medium" | "large" | null;
+  carrierSnapshot?: Record<string, unknown> | null;
   manualState: ManualShippingState | null;
   carrierState: "created" | "picked_up" | "in_transit" | "delivered" | "returned" | "cancelled" | "exception" | null;
   rawProviderCode: number | null;
@@ -77,7 +84,7 @@ export interface AdminShipmentListItemDto {
   cancellationStatus: "pending" | "cancelled" | null;
   openFlagTypes: AdminOrderReviewFlagDto["flagType"][];
   needsAttention: boolean;
-  workItem: { operation: "create_delivery" | "cancel_delivery" | "terminate_delivery" | "sync_delivery";
+  workItem: { operation: "create_delivery" | "cancel_delivery" | "terminate_delivery" | "sync_delivery" | "edit_delivery";
     status: "pending" | "processing" | "succeeded" | "failed" | "review_required"; lastError: string | null } | null;
 }
 

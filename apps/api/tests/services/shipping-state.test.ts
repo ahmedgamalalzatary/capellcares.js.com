@@ -5,6 +5,7 @@ import { db } from "@capella/database/src/db";
 import { orders, orderStateHistory, shipments, shipmentEvents, shippingWorkItems, orderReviewFlags, productVariants } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
+import { syncEnvironment } from "../helpers/bosta-sync.js";
 import { recordShippingObservation, processPendingShippingEvents } from "../../src/repositories/shipping-sync.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/repositories/order.repository.js";
@@ -17,6 +18,29 @@ async function service() {
 }
 const actor = () => createTestAdminUser({ name: "Shipping admin", email: "shipping-state@example.test", passwordHash: "unused", role: "admin" });
 const currentOrder = async (id: number) => (await db.select().from(orders).where(eq(orders.id, id)))[0];
+
+test("invalid edit settings disable editing without breaking linked order details", async t => {
+  const f = await shippingSyncFixture();
+  const api = await service();
+  const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true", BOSTA_EDIT_SETTINGS_JSON: "{}" };
+  const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  Object.assign(process.env, env);
+  const state = await api.getOrderShippingState(f.order);
+  assert.equal(state.editEnabled, false);
+  assert.equal(state.carrierState, "created");
+  assert.equal(state.packingSize, "small");
+  process.env.BOSTA_EDIT_SETTINGS_JSON = JSON.stringify({
+    accountVerified: true, accountEvidence: "controlled fixture only", accountId: "fixture",
+    readContract: { verified: true, evidence: "controlled fixture only", editablePath: ["editable"], prePickupPath: ["prePickup"] }
+  });
+  assert.equal((await api.getOrderShippingState(f.order)).editEnabled, true);
+});
 
 test("pre-link staff preparation records actor/time once, stops untouched eligibility and survives shipment linking", async () => {
   const f = await shippingSyncFixture(false);
@@ -37,19 +61,21 @@ test("pre-link staff preparation records actor/time once, stops untouched eligib
   await runShippingDispatchOnce({ provider: f.provider });
   assert.equal((await db.select().from(shipments))[0].manualState, "preparing");
 });
-test("manual delivery and return never fabricate carrier state, COD proof, custody or sellable stock", async () => {
+test("manual delivery never fabricates carrier state, COD proof, custody or sellable stock, and manual Returned is retired", async () => {
   const f = await shippingSyncFixture();
   const api = await service();
   const actorId = await actor();
-  for (const state of ["delivered", "returned"] as const) await api.recordOrderManualState(f.order.id, { state }, actorId);
+  // D08/S13: returns are reported by Bosta; staff can no longer write Returned manually.
+  await assert.rejects(api.recordOrderManualState(f.order.id, { state: "returned" }, actorId), /invalid|enum|returned/i);
+  await api.recordOrderManualState(f.order.id, { state: "delivered" }, actorId);
   const ship = (await db.select().from(shipments))[0];
-  assert.equal(ship.manualState, "returned");
+  assert.equal(ship.manualState, "delivered");
   assert.equal(ship.normalizedState, "created");
   assert.equal(ship.custodyState, "unknown");
   assert.equal(ship.collectionConfirmed, false);
   assert.equal((await currentOrder(f.order.id)).paymentStatus, "pending");
   assert.equal((await db.select().from(productVariants).where(eq(productVariants.id, f.ids.firstVariantId)))[0].stockQty, 9);
-  assert.equal((await db.select().from(orderStateHistory)).length, 2);
+  assert.equal((await db.select().from(orderStateHistory)).length, 1);
 });
 test("manual states reject unknown/inactive actors, denied orders and attempts to change money", async () => {
   const f = await shippingSyncFixture();

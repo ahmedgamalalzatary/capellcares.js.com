@@ -713,7 +713,7 @@ export const shippingWorkItems = mysqlTable("shipping_work_items", {
   id: int("id").autoincrement().primaryKey(),
   orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
   shipmentId: int("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),
-  operation: mysqlEnum("operation", ["create_delivery", "cancel_delivery", "terminate_delivery", "sync_delivery"]).notNull(),
+  operation: mysqlEnum("operation", ["create_delivery", "cancel_delivery", "terminate_delivery", "sync_delivery", "edit_delivery"]).notNull(),
   idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull(),
   status: mysqlEnum("status", ["pending", "processing", "succeeded", "failed", "review_required"]).notNull(),
   attemptCount: int("attempt_count").notNull().default(0),

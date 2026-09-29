@@ -61,6 +61,14 @@ export const shipmentManualStateSchema = z.enum([
   "returned"
 ]);
 
+/** D08: staff can no longer write Returned; it is reported by the carrier and kept in history. */
+export const shipmentManualStateWriteSchema = z.enum([
+  "preparing",
+  "ready_for_pickup",
+  "printed",
+  "delivered"
+]);
+
 export const shipmentStateSchema = z.object({
   rawProviderState: z.string().min(1),
   rawProviderCode: z.number().int(),
@@ -79,5 +87,18 @@ export const shipmentEditSchema = z.object({
 }).strict().refine(value => Object.values(value).some(entry => entry !== undefined), "Shipment edit is empty");
 export type ShipmentEdit = z.infer<typeof shipmentEditSchema>;
 
-export const shipmentManualStateRequestSchema = z.object({ state: shipmentManualStateSchema,
+export const shipmentManualStateRequestSchema = z.object({ state: shipmentManualStateWriteSchema,
   reason: z.string().trim().min(1).max(1000).optional() }).strict();
+
+export const shippingFlagResolutionSchema = z.object({ note: z.string().trim().min(1).max(1000) }).strict();
+export const shippingBulkActionSchema = z.object({
+  action: z.enum(["retry", "reconcile", "cancel", "manual_state", "shipment_edit", "resolve_flags"]),
+  orderIds: z.array(z.number().int().positive().max(2_147_483_647)).min(1).max(50),
+  state: shipmentManualStateWriteSchema.optional(), reason: z.string().trim().min(1).max(1000).optional(),
+  patch: shipmentEditSchema.optional(), note: z.string().trim().min(1).max(1000).optional(),
+  addressLines: z.object({ addressLine: z.string().trim().min(1).max(255), buildingApartment: z.string().trim().min(1).max(255) }).strict().optional()
+}).strict().refine(v => v.action !== "manual_state" || v.state !== undefined, "Manual state required")
+  .refine(v => v.action !== "shipment_edit" || v.patch !== undefined || v.addressLines !== undefined, "Edit required")
+  .refine(v => v.action !== "resolve_flags" || v.note !== undefined, "Resolution note required");
+export type ShippingBulkRequest = z.infer<typeof shippingBulkActionSchema>;
+export type ShippingBulkResult = { orderId: number; status: "ok" } | { orderId: number; status: "error"; message: string };

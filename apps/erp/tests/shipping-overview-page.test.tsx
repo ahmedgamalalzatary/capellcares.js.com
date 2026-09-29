@@ -1,10 +1,11 @@
 import { createElement } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 const mockedUseAdminAuth = vi.fn();
 const fetchShippingOverview = vi.hoisted(() => vi.fn());
+const runBulkShippingAction = vi.hoisted(() => vi.fn());
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => mockedUseAdminAuth()
@@ -18,6 +19,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 vi.mock("@/lib/store", () => ({
   getStore: () => ({
     fetchShippingOverview,
+    runBulkShippingAction,
     fetchOpenOrderReviewFlags: vi.fn().mockResolvedValue([])
   })
 }));
@@ -42,6 +44,7 @@ describe("shipping ERP surface", () => {
   beforeEach(() => {
     mockedUseAdminAuth.mockReset();
     fetchShippingOverview.mockReset();
+    runBulkShippingAction.mockReset();
   });
   afterEach(() => cleanup());
 
@@ -52,6 +55,33 @@ describe("shipping ERP surface", () => {
     render(createElement(Page));
     expect(await screen.findByText("CAP-007")).toBeInTheDocument();
     expect(screen.getByText("5108002")).toBeInTheDocument();
+  });
+
+  it("bulk selection includes outgoing orders only and keeps individual failure results visible", async () => {
+    fetchShippingOverview.mockResolvedValue({ items: [rowBase, { ...rowBase, orderId: 8, orderCode: "CAP-008" },
+      { ...rowBase, orderId: 9, orderCode: "CAP-009", kind: "return", shipmentId: 8 }], nextCursor: null });
+    runBulkShippingAction.mockResolvedValue({ results: [{ orderId: 7, status: "ok" }, { orderId: 8, status: "error", message: "Carrier restriction" }] });
+    mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
+    const { default: Page } = await import("@/app/shipping/page");
+    render(createElement(Page));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "تحديد CAP-007" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "تحديد CAP-008" }));
+    expect(screen.queryByRole("checkbox", { name: "تحديد CAP-009" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("إجراء الشحن"), { target: { value: "retry" } });
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(runBulkShippingAction).toHaveBeenCalledWith({ action: "retry", orderIds: [7, 8] }));
+    expect(await screen.findByText(/Carrier restriction/)).toBeInTheDocument();
+    expect(screen.getByText(/CAP-007: تم/)).toBeInTheDocument();
+  });
+
+  it("read-only shipping staff have no bulk mutation controls", async () => {
+    fetchShippingOverview.mockResolvedValue({ items: [rowBase], nextCursor: null });
+    mockedUseAdminAuth.mockReturnValue({ user: shippingStaff, hydrated: true, logout: vi.fn() });
+    const { default: Page } = await import("@/app/shipping/page");
+    render(createElement(Page));
+    await screen.findByText("CAP-007");
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("إجراء الشحن")).not.toBeInTheDocument();
   });
 
   it("denies the shipping page for staff without shipping.read", async () => {
@@ -145,7 +175,7 @@ describe("shipping ERP surface", () => {
   it("matches the cancelled filter only for unsent orders with a local cancellation", async () => {
     fetchShippingOverview.mockResolvedValue({ items: [
       { ...rowBase, orderCode: "CAP-007", carrierState: "in_transit" as const, cancellationStatus: "cancelled" as const },
-      { ...rowBase, orderCode: "CAP-008", carrierState: null, cancellationStatus: "cancelled" as const }
+      { ...rowBase, orderId: 8, shipmentId: null, orderCode: "CAP-008", carrierState: null, cancellationStatus: "cancelled" as const }
     ], nextCursor: null });
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
