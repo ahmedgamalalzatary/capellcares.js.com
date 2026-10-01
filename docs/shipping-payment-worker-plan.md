@@ -429,11 +429,28 @@ Implementation notes (2026-10-01):
 - **Specific bilingual codes replace the eventual generic dispatch failure:** `SHIPPING_ADDRESS_INVALID` and `SHIPPING_COD_LIMIT` (both 400) added to `CheckoutShippingError`, mapped to new `checkout.shippingAddressInvalid` / `checkout.shippingCodLimit` keys in **both** `en.ts` and `ar.ts` (`Dict` type-checks the two dictionaries against each other), and wired into both storefront code→message chains.
 - Legacy checkout with **no** shipping fields is untouched — verified by test, since the restriction only applies when shipping is active.
 
-### W03 — Enforce startup/adapter capability gates (B04)
+### W03 — Enforce startup/adapter capability gates (B04) — **Complete**
 
-- [ ] Add shared role-aware configuration validation and strict boolean/mode parsing. Enforce sending -> sync in the actual delivery adapter and worker startup, plus account/environment/origin checks.
-- [ ] API startup does not accidentally validate unused worker-only secrets; worker config doesn't require admin/JWT/intention keys. Neither startup performs a provider write.
-- [ ] Test enabled invalid config, valid disabled config, provider HTTP off with authenticated Bosta replay, sending off with create recovery, mismatched account/origin, mode typos and secret-free error output.
+- [x] Add shared role-aware configuration validation and strict boolean/mode parsing. Enforce sending -> sync in the actual delivery adapter and worker startup, plus account/environment/origin checks.
+- [x] API startup does not accidentally validate unused worker-only secrets; worker config doesn't require admin/JWT/intention keys. Neither startup performs a provider write.
+- [x] Test enabled invalid config, valid disabled config, provider HTTP off with authenticated Bosta replay, sending off with create recovery, mismatched account/origin, mode typos and secret-free error output.
+
+Implementation notes (2026-10-01):
+
+- **`checkShippingConfiguration` already existed and was already well tested.** The W03 gap was never the validator — it was that *nothing called it at boot* and *the adapter ignored the one rule the validator does check*. Recon first, then wrote tests against the real gap.
+- **The real defects fixed:**
+  1. **Sending without synchronization was permitted by the adapter.** `bostaDeliveryProviderFromEnvironment` never checked `BOSTA_SYNC_ENABLED`, so `buildRequest` happily produced a request for shipments whose outcome could never be learned. Now refused at the adapter with `New shipment sending requires synchronization`. Defence in depth: the config check still flags it at boot.
+  2. **The sending gate was parsed loosely.** `env.BOSTA_SHIPMENT_SENDING_ENABLED?.trim().toLowerCase() === "true"` silently treated a typo like `"tru"` as *sending disabled* — every queued order would then strand as an unexplained eventual failure instead of a loud boot error. Now strict, matching `resolveBostaSyncRuntime`/cancellation/edits.
+- **New `shipping-startup.ts`** exposes `shippingStartupReport` (pure) and `assertShippingStartup` (throws on invalid). It delegates to the existing side-effect-free check rather than duplicating logic, so the CLI, the API and any worker share one source of truth.
+- **Wired into `server.ts` before `ensureBootstrapAdmin` and before any worker starts**, so an invalid active setup refuses to boot rather than failing silently in the background.
+- **Role separation preserved:** the gate validates *only* shipping configuration, so it never requires `ADMIN_*`, `JWT_ACCESS_SECRET` or Paymob intention secrets — a worker-only process is not forced to carry admin credentials, and the API is not forced to carry intention secrets.
+- **Failure output is secret-free by construction:** the report contains error *codes* only (`SENDING_REQUIRES_SYNCHRONIZATION`, `QUOTE_CONFIGURATION_INVALID`, …), never secret material. Asserted for API key, webhook secret and a malformed-JSON sentinel.
+- **Read-only recovery deliberately still works with sync off** (`recoveryOnly` path, `canCreate: false`) — stopping synchronization must not strand already-created shipments whose state we still need to read. Tested explicitly.
+- **Where the gate belongs took two attempts, and the first was wrong.** I first put the sending→sync check in `buildRequest`, which produced **110 failures**. `buildRequest` is shared with **create recovery/reconcile** — pathologically, recovery exists precisely for shipments created before sync was turned off, so gating there broke the exact scenario it must serve. The gate now lives in **`create()`**, the actual provider write: creation is what needs sync; reading an existing shipment never does. Recovery is explicitly tested to still reach the provider with sync off.
+- **Enforcing the rule exposed a latent defect in the shared test fixture.** `deliveryEnvironment` set `BOSTA_SHIPMENT_SENDING_ENABLED=true` but never `BOSTA_SYNC_ENABLED` — i.e. every delivery test had been running against a configuration the validator already reports as `SENDING_REQUIRES_SYNCHRONIZATION`. The tests passed only because nothing enforced it. Fixed in the fixture (not by weakening the rule), so the suite now exercises a valid config. Worth remembering: **green tests do not prove the config under test was legal.**
+- **A note on my own process:** an intermediate "baseline" run reported identical failures to the run with my changes, which would have wrongly exonerated them. That run was invalid — the `git stash` had failed silently from the wrong working directory, so both runs had my changes. Re-ran the baseline from the repo root to get a trustworthy answer. Reading a green/red result without confirming the stash actually applied is worse than not checking.
+- One RED failure was also my own bad assertion (`providerCalls` means "configured", not "called"); corrected rather than weakening the test.
+- A weak test (`typeof reconcile === "function"`) was rewritten to actually drive a provider call and assert the request happened.
 
 ### W04 — Add additive inbox schema and trusted Paymob inquiry (P01/P02)
 

@@ -47,7 +47,13 @@ function atPath(value: unknown, path: string[]): unknown {
 
 export function bostaDeliveryProviderFromEnvironment(env: Record<string, string | undefined> = process.env,
   fetchImpl: typeof fetch = fetch, options: { recoveryOnly?: boolean } = {}): DeliveryProvider | null {
-  const canCreate = env.BOSTA_SHIPMENT_SENDING_ENABLED?.trim().toLowerCase() === "true";
+  // Strict: a typo must fail loudly rather than silently disabling sending, because
+// "sending off" would strand every queued order as an unexplained eventual failure.
+const sendingFlag = env.BOSTA_SHIPMENT_SENDING_ENABLED?.trim().toLowerCase();
+if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" && sendingFlag !== "false") {
+    throw new Error("BOSTA_SHIPMENT_SENDING_ENABLED must be true or false");
+  }
+  const canCreate = sendingFlag === "true";
   if (!canCreate && (!options.recoveryOnly || !env.BOSTA_DELIVERY_SETTINGS_JSON)) return null;
   const config = loadBostaConfig(env);
   if (!config.enabled) return null;
@@ -81,6 +87,8 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
   return {
     accountId: settings.accountId, environment, canCreate,
     buildRequest(order, items, reference) {
+      // NOTE: the sending -> sync gate lives in create(), not here. buildRequest is also
+      // used to reconcile already-created shipments, which must keep working with sync off.
       const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot ?? "null"));
       const quoteAccount = JSON.parse(env.BOSTA_QUOTE_SETTINGS_JSON ?? "null") as BostaQuoteSettings | null;
       if (!quoteAccount || quoteAccount.accountVerified !== true || !quoteAccount.accountEvidence?.trim() ||
@@ -128,6 +136,10 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
     },
     async create(request) {
       if (!canCreate) throw new Error("New shipment sending is disabled");
+      // Creating a shipment we can never synchronize is unrecoverable: the order would
+      // sit forever with no way to learn its outcome. Enforce at the provider write, so
+      // read-only recovery keeps working with synchronization off.
+      if (env.BOSTA_SYNC_ENABLED?.trim().toLowerCase() !== "true") throw new Error("New shipment sending requires synchronization");
       checkAccount(request);
       return parseResult(await client.post("/deliveries?apiVersion=1", request.payload));
     },

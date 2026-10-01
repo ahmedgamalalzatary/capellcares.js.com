@@ -10,7 +10,12 @@ const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-
 const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
 const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
 const { startShippingCancellationWorker } = await import("./modules/shipping/shipping-cancellation-worker.js");
+const { assertShippingStartup } = await import("./modules/shipping/shipping-startup.js");
 const { mysqlPool } = await import("@capella/database/src/db");
+
+// Refuse to boot on an invalid active shipping setup, before any worker can act on it.
+// Shipping validation is self-contained, so it never requires admin/JWT/intention secrets.
+assertShippingStartup(process.env);
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();

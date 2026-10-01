@@ -17,6 +17,8 @@ export const deliverySettings = { accountVerified: true, accountEvidence: "contr
   pickupDefaultsVerified: true, defaultPickupCity: "Cairo", noInsuranceVerified: true, codUnit: "major",
   sizeMapping: { small: "SMALL", medium: "MEDIUM", large: "LARGE" },
   lookupContract: { verified: true, evidence: "controlled fixture only", resultsPath: ["data", "deliveries"], totalPath: ["data", "total"] } };
-export const deliveryEnvironment = { BOSTA_ENABLED: "true", BOSTA_SHIPMENT_SENDING_ENABLED: "true", BOSTA_API_KEY: "fixture-secret-key",
+export const deliveryEnvironment = { BOSTA_ENABLED: "true", BOSTA_SHIPMENT_SENDING_ENABLED: "true",
+  // Sending is only valid with synchronization on; a sending-only fixture is an invalid config.
+  BOSTA_SYNC_ENABLED: "true", BOSTA_API_KEY: "fixture-secret-key",
   BOSTA_WEBHOOK_SECRET: "fixture-webhook-secret", BOSTA_BASE_URL: "https://stg-app.bosta.co/api/v2",
   BOSTA_DELIVERY_SETTINGS_JSON: JSON.stringify(deliverySettings), BOSTA_QUOTE_SETTINGS_JSON: JSON.stringify(deliveryQuoteSettings) };
