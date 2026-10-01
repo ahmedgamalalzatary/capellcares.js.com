@@ -10,8 +10,9 @@ import { BostaProviderError } from "../modules/shipping/bosta/bosta-client.js";
 import type { BostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
 import type { BostaObservation, BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
 import type { ShippingTransaction } from "./shipping-dispatch.repository.js";
+import { ShippingRuleError } from "./shipping-rule-error.js";
 
-export class ShippingEditError extends Error {}
+export class ShippingEditError extends ShippingRuleError {}
 export async function assertShippingActor(tx: ShippingTransaction, actorId: number) {
   const [actor] = await tx.select().from(adminUsers).where(eq(adminUsers.id, actorId)).limit(1);
   const grants = actor?.role === "staff" ? await tx.select({ key: permissions.key }).from(adminUserPermissions)

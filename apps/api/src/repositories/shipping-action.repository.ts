@@ -6,8 +6,9 @@ import { shippingFlagResolutionSchema, checkoutShippingQuoteSchema } from "@cape
 import { assertShippingActor, applyShippingNoMoneyEdit, reconcileShippingEdit } from "./shipping-edit.repository.js";
 import { resolveBostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
 import { resolveBostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
-import { requestShippingCancellation } from "./shipping-cancellation.repository.js";
+import { requestShippingCancellation, ShippingCancellationError } from "./shipping-cancellation.repository.js";
 import { recordOrderManualState } from "./shipping-state.repository.js";
+import { ShippingRuleError } from "./shipping-rule-error.js";
 
 type Order = typeof orders.$inferSelect;
 /** MySQL DATETIME(0) rounds fractional seconds, so align to whole seconds to keep due-now jobs claimable. */
@@ -27,14 +28,14 @@ export function editOrderShipment(orderId: number, patch: unknown, actorId: numb
 
 async function lockedShippingOrder(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], orderId: number): Promise<Order> {
   const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1).for("update");
-  if (!order?.shippingSnapshot) throw new Error("Shipping order not found");
+  if (!order?.shippingSnapshot) throw new ShippingRuleError("Shipping order not found");
   return order;
 }
 
 async function lockedCreateJob(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], orderId: number) {
   const [job] = await tx.select().from(shippingWorkItems).where(and(
     eq(shippingWorkItems.orderId, orderId), eq(shippingWorkItems.operation, "create_delivery"))).limit(1).for("update");
-  if (!job) throw new Error("No delivery creation work exists for this order");
+  if (!job) throw new ShippingRuleError("No delivery creation work exists for this order");
   return job;
 }
 
@@ -45,10 +46,10 @@ export async function retryOrderDeliveryCreation(orderId: number, actorId: numbe
     const order = await lockedShippingOrder(tx, orderId);
     await assertShippingActor(tx, actorId);
     if (order.cancellationStatus || order.paymentStatus === "denied" || order.refundedAmountCents > 0 ||
-      (order.paymentMethod === "paymob" && order.providerPaymentStatus !== "succeeded")) throw new Error("Denied/refunded/cancelling orders are locked");
+      (order.paymentMethod === "paymob" && order.providerPaymentStatus !== "succeeded")) throw new ShippingRuleError("Denied/refunded/cancelling orders are locked");
     const job = await lockedCreateJob(tx, orderId);
     if (job.status !== "failed") {
-      throw new Error("Only failed delivery creation can be retried; uncertain outcomes need reconciliation first");
+      throw new ShippingRuleError("Only failed delivery creation can be retried; uncertain outcomes need reconciliation first");
     }
     await tx.update(shippingWorkItems).set({ status: "pending", lastError: null, nextAttemptAt: dueNow(),
       attemptCount: 0, claimedBy: null, claimedAt: null }).where(eq(shippingWorkItems.id, job.id));
@@ -68,7 +69,7 @@ export async function reconcileOrderDeliveryCreation(orderId: number, actorId: n
     const job = await lockedCreateJob(tx, orderId);
     const uncertain = job.lastError === "CREATE_UNCERTAIN" || (job.lastError === "ATTEMPT_LIMIT_REVIEW" && job.requestSnapshot !== null);
     if (job.status !== "review_required" || !uncertain) {
-      throw new Error("Reconcile applies only to uncertain delivery creation outcomes");
+      throw new ShippingRuleError("Reconcile applies only to uncertain delivery creation outcomes");
     }
     if (job.nextAttemptAt.getTime() <= Date.now() && job.lastError === "CREATE_UNCERTAIN") return false;
     await tx.update(shippingWorkItems).set({ nextAttemptAt: dueNow(), lastError: "CREATE_UNCERTAIN", claimedBy: null, claimedAt: null })
@@ -85,7 +86,7 @@ export async function resolveShippingFlags(orderId: number, input: unknown, acto
     await assertShippingActor(tx, actorId);
     const flags = await tx.select().from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, orderId),
       flagId === undefined ? eq(orderReviewFlags.status, "open") : eq(orderReviewFlags.id, flagId))).for("update");
-    if (flagId !== undefined && !flags.length) throw new Error("Review flag not found for this order");
+    if (flagId !== undefined && !flags.length) throw new ShippingRuleError("Review flag not found for this order");
     let changed = 0;
     for (const flag of flags) if (flag.status === "open") {
       const now = new Date();
@@ -112,7 +113,7 @@ export async function runBulkShippingAction(action: ShippingBulkRequest["action"
         let patch = input.patch;
         if (input.addressLines) {
           const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-          if (!order?.shippingSnapshot) throw new Error("Shipping order not found");
+          if (!order?.shippingSnapshot) throw new ShippingRuleError("Shipping order not found");
           const { cityId, zoneId, districtId } = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot)).address;
           patch = { ...patch, address: { cityId, zoneId, districtId, ...input.addressLines } };
         }
@@ -121,7 +122,9 @@ export async function runBulkShippingAction(action: ShippingBulkRequest["action"
       else await resolveShippingFlags(orderId, { note: input.note }, input.actorId);
       results.push({ orderId, status: "ok" });
     } catch (error) {
-      results.push({ orderId, status: "error", message: error instanceof Error ? error.message : String(error) });
+      const expected = error instanceof ShippingRuleError || error instanceof ShippingCancellationError || error instanceof ShippingConfigurationError;
+      if (!expected && process.env.NODE_ENV !== "test") console.error("Unhandled bulk shipping error", error instanceof Error ? error.name : "unknown");
+      results.push({ orderId, status: "error", message: expected ? error.message : "Internal server error" });
     }
   }
   return results;

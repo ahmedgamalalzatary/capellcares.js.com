@@ -11,6 +11,45 @@ import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.
 
 beforeEach(resetApiTestDatabase);
 
+test("routine carrier sync jobs do not replace shipment actions in lists or order details", async () => {
+  const f = await shippingSyncFixture();
+  const [sync] = await db.insert(shippingWorkItems).values({ orderId: f.order.id, shipmentId: f.shipment.id,
+    operation: "sync_delivery", status: "pending", idempotencyKey: "routine-sync", nextAttemptAt: new Date() }).$returningId();
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    for (const status of ["pending", "processing", "succeeded"] as const) {
+      await db.update(shippingWorkItems).set({ status }).where(eq(shippingWorkItems.id, sync.id));
+      const overview = await request("/api/erp/shipping", { headers: auth });
+      const row = overview.json.items.find((item: { orderId: number }) => item.orderId === f.order.id);
+      assert.equal(row.workItem?.operation, "create_delivery", status);
+      assert.equal(row.workItem?.status, "succeeded", status);
+      assert.equal(row.needsAttention, false, status);
+      const detail = await request(`/api/erp/orders/${f.order.id}`, { headers: auth });
+      assert.equal(detail.json.shipping.workItem?.operation, "create_delivery", status);
+    }
+  });
+});
+
+test("carrier sync failures needing attention stay visible in lists and order details", async () => {
+  const f = await shippingSyncFixture();
+  const [sync] = await db.insert(shippingWorkItems).values({ orderId: f.order.id, shipmentId: f.shipment.id,
+    operation: "sync_delivery", status: "review_required", lastError: "SYNC_ACCOUNT_MISMATCH",
+    idempotencyKey: "attention-sync", nextAttemptAt: new Date() }).$returningId();
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    for (const status of ["failed", "review_required"] as const) {
+      await db.update(shippingWorkItems).set({ status }).where(eq(shippingWorkItems.id, sync.id));
+      const overview = await request("/api/erp/shipping", { headers: auth });
+      const row = overview.json.items.find((item: { orderId: number }) => item.orderId === f.order.id);
+      assert.equal(row.workItem?.operation, "sync_delivery");
+      assert.equal(row.needsAttention, true);
+      const detail = await request(`/api/erp/orders/${f.order.id}`, { headers: auth });
+      assert.equal(detail.json.shipping.workItem?.operation, "sync_delivery");
+      assert.equal(detail.json.shipping.workItem?.lastError, "SYNC_ACCOUNT_MISMATCH");
+    }
+  });
+});
+
 test("shipping overview rejects malformed queries, impossible dates and invalid cursor IDs with 400", async () => {
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);

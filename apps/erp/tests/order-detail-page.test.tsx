@@ -67,6 +67,24 @@ beforeEach(() => {
 });
 
 describe("OrderDetailsPage", () => {
+  it.each(["cod", "paymob"])("shows shipping refresh failures for %s and clears them on a new refresh", async paymentMethod => {
+    const shipping = { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true },
+      history: [], flags: [], workItem: null };
+    let resolveRefresh!: (value: unknown) => void;
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod, shipping })
+      .mockRejectedValueOnce(new Error("Refresh failed"))
+      .mockImplementationOnce(() => new Promise(resolve => { resolveRefresh = resolve; }));
+    performShippingAction.mockResolvedValue({ ok: true });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "manual_state" } });
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("تعذر تحميل البيانات المحدثة");
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    await act(async () => { resolveRefresh({ ...detailedOrder, paymentMethod, shipping: { ...shipping, manualState: "preparing" } }); });
+    expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
+  });
   it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
     fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
       rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },

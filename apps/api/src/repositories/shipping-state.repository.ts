@@ -8,6 +8,7 @@ import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch
 import type { BostaObservation } from "../modules/shipping/bosta/bosta-sync.service.js";
 import { cancellationRefundDue } from "./shipping-cancellation.repository.js";
 import { pickWorkItem } from "./shipping-overview.repository.js";
+import { ShippingRuleError } from "./shipping-rule-error.js";
 
 type Order = typeof orders.$inferSelect;
 type Shipment = typeof shipments.$inferSelect;
@@ -20,17 +21,17 @@ export const untouchedShippingExpiryApplies = (order: Pick<Order, "shippingPicku
 export async function recordOrderManualState(orderId: number, input: unknown, actorId: number, options: { now?: Date } = {}) {
   const body = shipmentManualStateRequestSchema.parse(input);
   const atMs = (options.now ?? new Date()).getTime();
-  if (!Number.isSafeInteger(atMs) || atMs <= 0) throw new Error("Invalid state event time");
+  if (!Number.isSafeInteger(atMs) || atMs <= 0) throw new ShippingRuleError("Invalid state event time");
   return db.transaction(async tx => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1).for("update");
-    if (!order?.shippingSnapshot) throw new Error("Shipping order not found");
-    if (order.paymentStatus === "denied" || order.cancellationStatus !== null) throw new Error("Denied/cancelling orders are locked");
+    if (!order?.shippingSnapshot) throw new ShippingRuleError("Shipping order not found");
+    if (order.paymentStatus === "denied" || order.cancellationStatus !== null) throw new ShippingRuleError("Denied/cancelling orders are locked");
     const [actor] = await tx.select().from(adminUsers).where(eq(adminUsers.id, actorId)).limit(1);
     const grants = actor?.role === "staff" ? await tx.select({ key: permissions.key }).from(adminUserPermissions)
       .innerJoin(permissions, eq(permissions.id, adminUserPermissions.permissionId))
       .where(eq(adminUserPermissions.adminUserId, actorId)) : [];
     if (!actor?.isActive || (actor.role !== "admin" && !["orders.read", "shipping.read", "shipping.update_state"].every(key => grants.some(grant => grant.key === key)))) {
-      throw new Error("Shipping state permission required; actor is not authorized");
+      throw new ShippingRuleError("Shipping state permission required; actor is not authorized");
     }
     if (order.manualShippingState === body.state) return false;
     const [ship] = await tx.select().from(shipments).where(and(eq(shipments.orderId, orderId), eq(shipments.kind, "outgoing"))).limit(1).for("update");
@@ -73,10 +74,10 @@ export type ShippingEditEvidence = { verified: true; editable: true; prePickup: 
 export async function assertShippingEditAllowed(tx: ShippingTransaction, orderId: number, input: unknown, evidence?: ShippingEditEvidence) {
   const patch = shipmentEditSchema.parse(input);
   const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1).for("update");
-  if (!order?.shippingSnapshot) throw new Error("Shipping order not found");
+  if (!order?.shippingSnapshot) throw new ShippingRuleError("Shipping order not found");
   if (order.paymentStatus === "denied" || order.cancellationStatus !== null || order.refundedAmountCents > 0 ||
-    (order.paymentMethod === "paymob" && order.providerPaymentStatus !== "succeeded")) throw new Error("Denied/refunded/unpaid orders are locked");
-  if (order.shippingPickupAtMs !== null || ["delivered", "returned"].includes(order.manualShippingState ?? "")) throw new Error("Shipping edits are locked after pickup or reported delivery/return");
+    (order.paymentMethod === "paymob" && order.providerPaymentStatus !== "succeeded")) throw new ShippingRuleError("Denied/refunded/unpaid orders are locked");
+  if (order.shippingPickupAtMs !== null || ["delivered", "returned"].includes(order.manualShippingState ?? "")) throw new ShippingRuleError("Shipping edits are locked after pickup or reported delivery/return");
   const [ship] = await tx.select().from(shipments).where(and(eq(shipments.orderId, orderId), eq(shipments.kind, "outgoing"))).limit(1).for("update");
   if (ship) {
     const [intent] = await tx.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.operation, "create_delivery"),
@@ -89,13 +90,13 @@ export async function assertShippingEditAllowed(tx: ShippingTransaction, orderId
     } catch { /* Corrupt/missing account evidence never authorizes an edit. */ }
     if (evidence?.verified !== true || evidence.editable !== true || evidence.prePickup !== true || evidence.trackingNumber !== ship.trackingNumber ||
       !accountMatches || evidence.stateCode !== ship.rawProviderCode || evidence.eventAtMs !== ship.providerEventAtMs || ![10, 11, 20, 22, 47].includes(ship.rawProviderCode ?? -1)) {
-      throw new Error("Fresh verified carrier pre-pickup edit availability is required");
+      throw new ShippingRuleError("Fresh verified carrier pre-pickup edit availability is required");
     }
   } else {
     const jobs = await tx.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.orderId, orderId), eq(shippingWorkItems.operation, "create_delivery"))).for("update");
     if (jobs.some(job => job.responseSnapshot !== null || ["processing", "review_required", "succeeded"].includes(job.status) ||
       (job.requestSnapshot !== null && !(job.status === "failed" && job.lastError === "CREATE_REJECTED")))) {
-      throw new Error("Frozen or uncertain delivery creation blocks edits until linked/reconciled");
+      throw new ShippingRuleError("Frozen or uncertain delivery creation blocks edits until linked/reconciled");
     }
   }
   return patch;
@@ -112,9 +113,7 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
     .from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open")));
   const jobs = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, order.id)).orderBy(desc(shippingWorkItems.id));
   const outgoingJobs = jobs.filter(job => job.shipmentId === null || job.shipmentId === ship?.id);
-  const actionable = outgoingJobs.filter(job => job.operation !== "sync_delivery" && !(job.operation === "create_delivery" && job.lastError === "ORDER_NOT_DISPATCHABLE"));
-  const work = actionable.find(job => ["failed", "review_required"].includes(job.status)) ?? actionable.find(job => job.status === "processing" || job.status === "pending") ?? actionable[0] ??
-    outgoingJobs.find(job => job.operation === "create_delivery" && job.status === "failed");
+  const work = pickWorkItem(outgoingJobs);
   const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot!));
   let editEnabled = !ship;
   if (ship) {

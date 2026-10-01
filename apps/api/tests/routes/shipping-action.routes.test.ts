@@ -13,6 +13,56 @@ import { syncEnvironment } from "../helpers/bosta-sync.js";
 
 beforeEach(resetApiTestDatabase);
 
+test("unexpected failures in single and bulk shipping actions never expose internal details", async t => {
+  const f = await shippingSyncFixture(false);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    t.mock.method(db, "transaction", async () => { throw new Error("Authorization table not found: private-sentinel"); });
+    for (const [path, body] of [
+      ["retry", {}], ["reconcile", {}], ["manual-state", { state: "preparing" }],
+      ["shipment-edit", { size: "medium" }], ["flags/1/resolve", { note: "Checked" }], ["cancel", {}]
+    ] as const) {
+      const single = await request(`/api/erp/shipping/orders/${f.order.id}/${path}`, { method: "POST",
+        headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify(body) });
+      assert.equal(single.status, 500, path);
+      assert.deepEqual(single.json, { error: "Internal server error" }, path);
+    }
+    for (const action of ["retry", "reconcile", "manual_state", "shipment_edit", "resolve_flags", "cancel"]) {
+      const bulk = await request("/api/erp/shipping/bulk", { method: "POST",
+        headers: { ...auth, "content-type": "application/json" },
+        body: JSON.stringify({ action, orderIds: [f.order.id], state: "preparing", patch: { size: "medium" }, note: "Checked" }) });
+      assert.equal(bulk.status, 200, action);
+      assert.deepEqual(bulk.json.results, [{ orderId: f.order.id, status: "error", message: "Internal server error" }], action);
+    }
+  });
+});
+
+test("unexpected bulk shipping failures return a generic per-order error", async t => {
+  const f = await shippingSyncFixture(false);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    t.mock.method(db, "transaction", async () => { throw new Error("Private database connection details"); });
+    const bulk = await request("/api/erp/shipping/bulk", { method: "POST",
+      headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", orderIds: [f.order.id] }) });
+    assert.equal(bulk.status, 200);
+    assert.deepEqual(bulk.json.results, [{ orderId: f.order.id, status: "error", message: "Internal server error" }]);
+  });
+});
+
+test("bulk shipping keeps expected rejection messages", async () => {
+  const f = await shippingSyncFixture(false);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    const bulk = await request("/api/erp/shipping/bulk", { method: "POST",
+      headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", orderIds: [f.order.id, 999999] }) });
+    assert.equal(bulk.status, 200);
+    assert.deepEqual(bulk.json.results, [
+      { orderId: f.order.id, status: "error", message: "Only failed delivery creation can be retried; uncertain outcomes need reconciliation first" },
+      { orderId: 999999, status: "error", message: "Shipping order not found" }
+    ]);
+  });
+});
+
 test("single and bulk edits never expose malformed server configuration", async t => {
   const f = await shippingSyncFixture(false);
   const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true", BOSTA_EDIT_SETTINGS_JSON: "private-sentinel" };

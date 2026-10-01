@@ -127,6 +127,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [shippingRefreshError, setShippingRefreshError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -250,7 +251,11 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
               {order.shipping && <ShippingStateDetails shipping={order.shipping} />}
               {order.shipping && <RelatedShipments parcels={order.shipping.relatedShipments ?? []} />}
               {order.shipping && canUpdateShipping && <ShippingActions orderIds={[order.id]} order={order}
-                onComplete={() => { void getStore().fetchOrder(orderId).then(setOrder).catch(() => setSaveError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب.")); }} />}
+                onComplete={() => {
+                  setShippingRefreshError(null);
+                  void getStore().fetchOrder(orderId).then(setOrder).catch(() => setShippingRefreshError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب."));
+                }} />}
+              {shippingRefreshError && <p className="c-error" role="alert">{shippingRefreshError}</p>}
 
               <section className="card" aria-labelledby="order-payment-heading">
                 <div className="card__head"><h3 id="order-payment-heading" className="card__title">تفاصيل الدفع</h3></div>

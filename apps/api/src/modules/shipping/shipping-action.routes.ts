@@ -6,6 +6,7 @@ import { requireErpPermission } from "../../middlewares/erp-permissions.middlewa
 import type { ErpAuthenticatedRequest } from "../../middlewares/admin-auth.middleware.js";
 import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
 import { recordOrderManualState } from "../../repositories/shipping-state.repository.js";
+import { ShippingRuleError } from "../../repositories/shipping-rule-error.js";
 import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags, editOrderShipment, ShippingConfigurationError } from "../../repositories/shipping-action.repository.js";
 import { shipmentManualStateRequestSchema, shipmentEditSchema, shippingFlagResolutionSchema, shippingBulkActionSchema } from "@capella/shared";
 
@@ -42,7 +43,8 @@ shippingActionRoutes.post("/orders/:id/cancel", requireErpPermission("shipping.u
 
 function mapActionError(error: unknown, res: Response) {
   if (error instanceof ShippingConfigurationError) return res.status(503).json({ message: error.message });
-  const message = error instanceof Error ? error.message : String(error);
+  if (!(error instanceof ShippingRuleError)) throw error;
+  const message = error.message;
   if (/not found/i.test(message)) return res.status(404).json({ message });
   if (/permission|authorized/i.test(message)) return res.status(403).json({ message });
   return res.status(409).json({ message });

@@ -67,9 +67,10 @@ function isExpectedStop(item: WorkItemRow): boolean {
 
 /** Prefer an unresolved job over a newer terminal one so a succeeded create never hides a failed cancel. */
 export function pickWorkItem(candidates: WorkItemRow[]): WorkItemRow | null {
-  if (candidates.length === 0) return null;
-  const actionable = candidates.filter((item) => !isExpectedStop(item));
-  const pool = actionable.length > 0 ? actionable : candidates;
+  const visible = candidates.filter((item) => item.operation !== "sync_delivery" || ATTENTION_WORK_STATUSES.has(item.status));
+  if (visible.length === 0) return null;
+  const actionable = visible.filter((item) => !isExpectedStop(item));
+  const pool = actionable.length > 0 ? actionable : visible;
   return pool.find((item) => ATTENTION_WORK_STATUSES.has(item.status)) ??
     pool.find((item) => UNRESOLVED_WORK_STATUSES.has(item.status)) ??
     pool[0];
