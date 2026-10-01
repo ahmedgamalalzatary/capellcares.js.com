@@ -20,18 +20,20 @@ COPY apps/api/ apps/api/
 COPY packages/database/ packages/database/
 COPY packages/shared/ packages/shared/
 # Bundle the API (inlining @capella/* TS + pure-JS deps) into a single
-# dist/server.js. Only mysql2 stays external, so the runtime node_modules is
-# just mysql2 + its transitive deps (~5 MB) instead of the whole workspace
+# dist/server.mjs. Only mysql2 stays external, so the runtime node_modules is
+# just mysql2 + its transitive deps instead of the whole workspace
 # dependency closure (which would drag in @capella/shared's React/Radix/Lucide).
 RUN pnpm --filter @capella/api build:bundle
-RUN mkdir -p /prod && cd /prod \
-    && npm init -y >/dev/null \
-    && npm install --omit=dev --no-audit --no-fund mysql2@^3.11.3
+
+FROM base AS runtime-deps
+WORKDIR /prod
+COPY docker/api-runtime/package.json docker/api-runtime/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 FROM base AS runner
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
-COPY --from=builder /prod/node_modules ./node_modules
+COPY --from=runtime-deps /prod/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./dist
 RUN mkdir -p uploads
 EXPOSE 4000

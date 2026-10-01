@@ -25,6 +25,49 @@ Local Docker uses:
 docker compose --env-file .env.docker ...
 ```
 
+## Container resources and lifecycle
+
+Compose sets runtime memory limits directly in `docker-compose.yml`:
+
+| Service | Recorded peak | Limit |
+| --- | --- | --- |
+| MySQL | 466 MiB | 768 MiB |
+| API | 414 MiB | 768 MiB |
+| Storefront | 760 MiB | 1280 MiB |
+| ERP | 79 MiB | 256 MiB |
+| Migrations | Not measured | 768 MiB (provisional) |
+
+No new environment settings are required. Recheck peaks after
+representative traffic and on the next migration run; peaks reset on container
+restart. These limits apply to running containers, not Docker image builds.
+
+Logging inherits the production Docker daemon settings verified on the VPS:
+`json-file`, `max-size=10m`, `max-file=3`. Compose intentionally does not override
+them. Other hosts must configure equivalent rotation. Daemon defaults apply when
+containers are created; existing containers keep their creation-time settings.
+To verify the effective settings for a container:
+
+```bash
+docker inspect --format '{{json .HostConfig.LogConfig}}' capella-api
+```
+
+The API's `/health` runs a database query and returns 503 if it fails. Storefront
+and ERP expose uncached `/api/health` endpoints that check their own HTTP servers;
+API/database readiness is checked separately by the API probe. A container marked
+unhealthy is not automatically restarted by `restart: unless-stopped`.
+
+Application containers and migrations use Docker's init process. API, storefront
+and ERP receive a 30-second stop grace period. On SIGTERM/SIGINT, the API stops
+accepting requests, stops scheduling worker sweeps, drains active requests and
+worker work, then closes MySQL. It exits with failure if shutdown exceeds 25 seconds.
+The frontends use Next.js's built-in signal handlers.
+
+The API runtime's external `mysql2` dependency and its transitive dependencies are
+installed with `npm ci` from `docker/api-runtime/package-lock.json`. Its manifest
+pins the same `mysql2` version currently used by the workspace lockfile. When
+updating `mysql2`, update this runtime manifest and lockfile together. Rebuilds
+install locked versions rather than resolving dependencies with `npm install`.
+
 ## Paymob (API container only)
 
 The API container receives the `PAYMOB_*` values from the Compose env file. Store real keys only in the VPS `.env.production` (or the local untracked `.env.docker`), never in Git or `NEXT_PUBLIC_*` variables. The storefront and ERP containers do not receive these secrets.

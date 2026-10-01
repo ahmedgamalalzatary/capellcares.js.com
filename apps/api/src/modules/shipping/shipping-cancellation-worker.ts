@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
@@ -123,17 +124,9 @@ export async function runShippingCancellationOnce(options: { runtime?: BostaCanc
   return true;
 }
 
-export function startShippingCancellationWorker(options: { intervalMs?: number } = {}): () => void {
-  let running = false;
-  let stopped = false;
-  const sweep = async () => {
-    if (running || stopped) return;
-    running = true;
-    try { for (let count = 0; count < 10 && !stopped; count++) if (!await runShippingCancellationOnce()) break; }
-    catch { console.error("Shipping cancellation needs attention; configuration or database operation failed"); }
-    finally { running = false; }
-  };
-  const timer = setInterval(() => { void sweep(); }, options.intervalMs ?? 30_000);
-  void sweep();
-  return () => { stopped = true; clearInterval(timer); };
+export function startShippingCancellationWorker(options: { intervalMs?: number } = {}): () => Promise<void> {
+  return startIntervalWorker(async (isStopped) => {
+    for (let count = 0; count < 10 && !isStopped(); count++) if (!await runShippingCancellationOnce()) break;
+  }, options.intervalMs ?? 30_000,
+  () => console.error("Shipping cancellation needs attention; configuration or database operation failed"));
 }

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orderItems, orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
@@ -172,18 +173,9 @@ export async function runShippingDispatchOnce(options: { provider?: DeliveryProv
   return true;
 }
 
-export function startShippingDispatchWorker(options: { intervalMs?: number } = {}): () => void {
-  let running = false;
-  let stopped = false;
-  const sweep = async () => {
-    if (running || stopped) return;
-    running = true;
-    try {
-      for (let count = 0; count < 10 && !stopped; count++) if (!await runShippingDispatchOnce()) break;
-    } catch { console.error("Shipping dispatch needs attention; configuration or database operation failed"); }
-    finally { running = false; }
-  };
-  const timer = setInterval(() => { void sweep(); }, options.intervalMs ?? 30_000);
-  void sweep();
-  return () => { stopped = true; clearInterval(timer); };
+export function startShippingDispatchWorker(options: { intervalMs?: number } = {}): () => Promise<void> {
+  return startIntervalWorker(async (isStopped) => {
+    for (let count = 0; count < 10 && !isStopped(); count++) if (!await runShippingDispatchOnce()) break;
+  }, options.intervalMs ?? 30_000,
+  () => console.error("Shipping dispatch needs attention; configuration or database operation failed"));
 }

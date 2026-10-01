@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql:8.4
     container_name: capella-mysql
+    mem_limit: 768m
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
@@ -28,6 +29,8 @@ services:
       dockerfile: Dockerfile.api
       target: builder
     container_name: capella-migrate
+    mem_limit: 768m
+    init: true
     restart: "no"
     working_dir: /app/packages/database
     environment:
@@ -42,6 +45,9 @@ services:
       context: .
       dockerfile: Dockerfile.api
     container_name: capella-api
+    mem_limit: 768m
+    init: true
+    stop_grace_period: 30s
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -98,7 +104,8 @@ services:
         - CMD
         - node
         - -e
-        - fetch('http://127.0.0.1:4000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+        - >-
+          fetch('http://127.0.0.1:4000/health', {signal: AbortSignal.timeout(3000), redirect: 'error'}).then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))
       interval: 15s
       timeout: 5s
       retries: 8
@@ -113,6 +120,9 @@ services:
         API_INTERNAL_URL: ${STOREFRONT_BUILD_API_URL:?set STOREFRONT_BUILD_API_URL in env file}
         STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
     container_name: capella-storefront
+    mem_limit: 1280m
+    init: true
+    stop_grace_period: 30s
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -123,6 +133,17 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3000/api/health', {signal: AbortSignal.timeout(3000), redirect: 'error'}).then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
 
   erp:
     build:
@@ -132,6 +153,9 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
         API_INTERNAL_URL: http://api:4000
     container_name: capella-erp
+    mem_limit: 256m
+    init: true
+    stop_grace_period: 30s
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -142,6 +166,17 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:3001:3001"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3001/api/health', {signal: AbortSignal.timeout(3000), redirect: 'error'}).then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
 
 volumes:
   mysql-data:
