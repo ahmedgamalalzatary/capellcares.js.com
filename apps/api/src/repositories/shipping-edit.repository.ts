@@ -8,6 +8,7 @@ import { assertShippingEditAllowed, type ShippingEditEvidence } from "./shipping
 import { recordShippingObservation } from "./shipping-sync.repository.js";
 import { BostaProviderError } from "../modules/shipping/bosta/bosta-client.js";
 import { assertAddressMatches, type NormalizedReadAddress } from "../modules/shipping/bosta/bosta-delivery-read.js";
+import { assertAddressAllowed, buildDropOffFirstLine } from "../modules/shipping/shipping-restrictions.js";
 import type { BostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
 import type { BostaObservation, BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
 import type { ShippingTransaction } from "./shipping-dispatch.repository.js";
@@ -43,7 +44,7 @@ function editPayload(patch: ShipmentEdit, city: string) {
       ...(patch.recipient.phone !== undefined ? { phone: phone(patch.recipient.phone) } : {}) };
   }
   if (patch.address) payload.dropOffAddress = { city, zoneId: patch.address.zoneId, districtId: patch.address.districtId,
-    firstLine: `${patch.address.addressLine}, ${patch.address.buildingApartment}` };
+    firstLine: buildDropOffFirstLine(patch.address.addressLine, patch.address.buildingApartment) };
   if (patch.notes !== undefined) payload.notes = patch.notes;
   if (patch.size) payload.specs = { size: { small: "SMALL", medium: "MEDIUM", large: "LARGE" }[patch.size] };
   return payload;
@@ -106,6 +107,9 @@ export async function applyShippingNoMoneyEdit(orderId: number, input: unknown, 
     if (patch.address && (patch.address.cityId !== snapshot.address.cityId || patch.address.zoneId !== snapshot.address.zoneId || patch.address.districtId !== snapshot.address.districtId)) {
       throw new ShippingEditError("Destination city/zone/district changes require cancellation and a new order");
     }
+    // Validate the address the carrier will receive BEFORE the PUT intent is saved, so
+    // an address the carrier would reject never becomes a pending work item.
+    if (patch.address) assertAddressAllowed(patch.address.addressLine, patch.address.buildingApartment);
     if (!ship) {
       await tx.update(shippingWorkItems).set({ requestSnapshot: null }).where(and(eq(shippingWorkItems.orderId, orderId),
         eq(shippingWorkItems.operation, "create_delivery"), eq(shippingWorkItems.status, "failed"), eq(shippingWorkItems.lastError, "CREATE_REJECTED")));

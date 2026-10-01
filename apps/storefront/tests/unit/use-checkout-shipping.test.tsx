@@ -109,6 +109,33 @@ it("explains an unsupported district in the selected language", async () => {
   await waitFor(() => expect(result.current.subtotal).toBe(35)); await fill(result);
   await waitFor(() => expect(result.current.shipping.error).toBe(getDict("ar").checkout.shippingUnsupported));
 });
+it("explains an over-limit cash on delivery total in the selected language", async () => {
+  state.quote.mockRejectedValue(Object.assign(new Error("provider error"), { code: "SHIPPING_COD_LIMIT" }));
+  const { result } = renderHook(() => useCheckout({ lang: "ar", dict: getDict("ar") }));
+  await waitFor(() => expect(result.current.subtotal).toBe(35)); await fill(result);
+  await waitFor(() => expect(result.current.shipping.error).toBe(getDict("ar").checkout.shippingCodLimit));
+});
+it("explains a too-short delivery address at submit time instead of showing a generic failure", async () => {
+  state.submit.mockRejectedValue(Object.assign(new Error("raw english"), { code: "SHIPPING_ADDRESS_INVALID" }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.subtotal).toBe(35)); await fill(result);
+  await act(async () => result.current.placeOrder());
+  expect(result.current.errors.submit).toBe(getDict("en").checkout.shippingAddressInvalid);
+});
+it("explains a too-short delivery address in Arabic", async () => {
+  state.submit.mockRejectedValue(Object.assign(new Error("raw english"), { code: "SHIPPING_ADDRESS_INVALID" }));
+  const { result } = renderHook(() => useCheckout({ lang: "ar", dict: getDict("ar") }));
+  await waitFor(() => expect(result.current.subtotal).toBe(35)); await fill(result);
+  await act(async () => result.current.placeOrder());
+  expect(result.current.errors.submit).toBe(getDict("ar").checkout.shippingAddressInvalid);
+});
+it("explains an over-limit cash on delivery total at submit time in Arabic", async () => {
+  state.submit.mockRejectedValue(Object.assign(new Error("raw english"), { code: "SHIPPING_COD_LIMIT" }));
+  const { result } = renderHook(() => useCheckout({ lang: "ar", dict: getDict("ar") }));
+  await waitFor(() => expect(result.current.subtotal).toBe(35)); await fill(result);
+  await act(async () => result.current.placeOrder());
+  expect(result.current.errors.submit).toBe(getDict("ar").checkout.shippingCodLimit);
+});
 it("explains online-payment availability failures in Arabic", async () => {
   state.submit.mockRejectedValue(Object.assign(new Error("Paymob checkout is not configured"), { code: "PAYMENT_UNAVAILABLE" }));
   const { result } = renderHook(() => useCheckout({ lang: "ar", dict: getDict("ar") }));

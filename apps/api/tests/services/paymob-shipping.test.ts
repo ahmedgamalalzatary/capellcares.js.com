@@ -120,6 +120,28 @@ async function setup() {
     } } };
 }
 
+test("a short address is refused before Paymob reserves stock, creates a session or an intention", async () => {
+  const ids = await getBaselineIds();
+  const shippingService = fixtureShippingService();
+  const payload = { ...shippingBuyer, addressLine: "a", buildingApartment: "b",
+    paymentMethod: "paymob" as const, shippingAddress: selectedDestination,
+    items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] };
+  // The address itself is invalid, so a quote cannot even be agreed.
+  await assert.rejects(shippingService.quoteCheckout(payload, await priceCheckout(payload)),
+    (error: any) => error.code === "SHIPPING_ADDRESS_INVALID");
+  let intentions = 0;
+  await assert.rejects(initiatePaymobCheckout({ ...urls,
+    payload: { ...payload, shippingQuoteId: "missing", expectedAmountCents: 13229 }, shippingService,
+    idempotencyKey: crypto.randomUUID(),
+    createIntention: async () => { intentions++; return { intentionId: "pi_x", orderId: 1, clientSecret: "s", checkoutUrl: "u" }; } } as any),
+    /quote|address/i);
+  assert.equal(intentions, 0, "no payment intention may be created for an invalid address");
+  assert.equal((await db.select().from(checkoutSessions)).length, 0);
+  assert.equal((await db.select().from(orders)).length, 0);
+  const [stock] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal(stock.stockQty, 10, "a refused address must not hold stock");
+});
+
 test("Paymob charges and persists the agreed shipping/address snapshot before any payment callback", async () => {
   const { input, quote } = await setup();
   const result = await initiatePaymobCheckout(input);

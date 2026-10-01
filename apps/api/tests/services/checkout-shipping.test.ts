@@ -113,3 +113,55 @@ test("a products-only expected amount cannot authorize a shipping-inclusive COD 
   const [stock] = await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, ids.firstVariantId));
   assert.equal(stock.stockQty, 10);
 });
+
+test("a shipping-inclusive COD above the carrier ceiling is refused before an order or stock is created", async () => {
+  // Products 3,500 + a delivery fee that pushes collection over EGP 30,000.
+  const { service, payload, ids } = await setup(() => 3_000_000);
+  const priced = await priceCheckout(payload);
+  await assert.rejects(service.quoteCheckout(payload, priced), (error: any) => error.code === "SHIPPING_COD_LIMIT");
+  assert.equal((await db.select().from(schema.orders)).length, 0);
+  const [stock] = await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, ids.firstVariantId));
+  assert.equal(stock.stockQty, 10, "a refused ceiling must not hold stock");
+});
+
+test("a COD total of exactly EGP 30,000 is accepted and 30,000.01 is refused", async () => {
+  const { service, payload } = await setup();
+  const priced = await priceCheckout(payload);
+  // Products 3,500 exactly, so the delivery fee must be 3,000,000 - 3,500 for the boundary.
+  const exact = await import("../../src/modules/shipping/checkout-shipping.service.js");
+  const at = (fee: number) => exact.createCheckoutShippingService({ codPricingPolicy: "collection_total",
+    listDestinations: async () => [address], quote: async () => ({ shippingAmountCents: fee, size: "small",
+      rateIdentity: `fixture:cod:${fee}`, source: "live", quotedAt: new Date().toISOString(), quoteId: "provider-quote" }) });
+  assert.equal((await at(3_000_000 - 3500).quoteCheckout(payload, priced)).codAmountCents, 3_000_000);
+  await assert.rejects(at(3_000_001 - 3500).quoteCheckout(payload, priced),
+    (error: any) => error.code === "SHIPPING_COD_LIMIT");
+  assert.ok(service);
+});
+
+test("a short combined address line is refused before an order or stock is created", async () => {
+  const { service, payload, ids } = await setup();
+  const short = { ...payload, addressLine: "a", buildingApartment: "b" };
+  const priced = await priceCheckout(short);
+  await assert.rejects(service.quoteCheckout(short, priced), (error: any) => error.code === "SHIPPING_ADDRESS_INVALID");
+  assert.equal((await db.select().from(schema.orders)).length, 0);
+  const [stock] = await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, ids.firstVariantId));
+  assert.equal(stock.stockQty, 10, "a refused address must not hold stock");
+});
+
+test("prepaid checkout is unaffected by the collection ceiling however large the paid total is", async () => {
+  const { service, payload } = await setup(() => 3_000_000);
+  const paid = { ...payload, paymentMethod: "paymob" as const };
+  const quote = await service.quoteCheckout(paid, await priceCheckout(paid));
+  assert.equal(quote.codAmountCents, 0, "prepaid never collects cash");
+  assert.ok(quote.amountCents > 3_000_000, "an above-ceiling paid total is still allowed");
+});
+
+test("checkout without an active shipping service keeps its legacy behaviour", async () => {
+  const { payload } = await setup();
+  // Legacy: no shipping fields at all, so the short-address rule must not apply.
+  const legacy = { addressLine: "a", buildingApartment: "b", fullName: payload.fullName, phone: payload.phone,
+    email: payload.email, governorate: payload.governorate, cityArea: payload.cityArea, paymentMethod: payload.paymentMethod,
+    items: payload.items };
+  const created = await createOrderFromCheckout(legacy, { idempotencyKey: crypto.randomUUID() });
+  assert.ok(created.id, "legacy checkout stays available when shipping is inactive");
+});

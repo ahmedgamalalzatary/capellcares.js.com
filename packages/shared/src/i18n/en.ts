@@ -238,6 +238,8 @@ export const en = {
     shippingUnavailable: "Delivery pricing is unavailable. Please try again.",
     shippingUnsupported: "Delivery is unavailable for this destination. Choose another district.",
     shippingChanged: "The delivery quote changed. Review the updated total before placing your order.",
+    shippingAddressInvalid: "Please enter more address detail so the courier can find you.",
+    shippingCodLimit: "Cash on delivery is limited to EGP 30,000 including delivery.",
     amountChanged: "Your cart prices changed. Refresh and review the total before paying.",
     retryShipping: "Refresh delivery cost", checkoutFailed: "We could not place your order. Please try again.",
     paymentUnavailable: "We could not start online payment. Please try again.",

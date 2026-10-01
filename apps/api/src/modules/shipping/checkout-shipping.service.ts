@@ -7,17 +7,34 @@ import { checkoutShippingQuoteSchema, shippingAddressSchema,
 import type { BostaQuoteInput } from "./bosta/bosta-quote-composition.js";
 import type { ShippingQuote } from "./bosta/bosta-quote.service.js";
 import { ShippingUnsupportedDestinationError } from "./bosta/bosta-quote.service.js";
+import { assertShippingRestrictionsAllowed, buildDropOffFirstLine } from "./shipping-restrictions.js";
+
+type CheckoutShippingErrorCode =
+  | "SHIPPING_QUOTE_CHANGED" | "SHIPPING_UNSUPPORTED" | "SHIPPING_UNAVAILABLE"
+  | "SHIPPING_ADDRESS_INVALID" | "SHIPPING_COD_LIMIT";
+
+const STATUS: Record<CheckoutShippingErrorCode, number> = {
+  SHIPPING_QUOTE_CHANGED: 409, SHIPPING_UNSUPPORTED: 400, SHIPPING_UNAVAILABLE: 503,
+  SHIPPING_ADDRESS_INVALID: 400, SHIPPING_COD_LIMIT: 400
+};
+
+const MESSAGE: Record<CheckoutShippingErrorCode, string> = {
+  SHIPPING_QUOTE_CHANGED: "Shipping quote changed; refresh and review the total before paying",
+  SHIPPING_UNSUPPORTED: "The selected destination is unavailable for delivery",
+  SHIPPING_UNAVAILABLE: "Shipping is temporarily unavailable; try again",
+  SHIPPING_ADDRESS_INVALID: "Enter a longer delivery address; the carrier requires more address detail",
+  SHIPPING_COD_LIMIT: "Cash on delivery is limited to EGP 30,000 including delivery"
+};
 
 export class CheckoutShippingError extends Error {
-  constructor(public readonly code: "SHIPPING_QUOTE_CHANGED" | "SHIPPING_UNSUPPORTED" | "SHIPPING_UNAVAILABLE",
-    public readonly status: number = code === "SHIPPING_QUOTE_CHANGED" ? 409 : code === "SHIPPING_UNSUPPORTED" ? 400 : 503) {
-    super(code === "SHIPPING_QUOTE_CHANGED" ? "Shipping quote changed; refresh and review the total before paying"
-      : code === "SHIPPING_UNSUPPORTED" ? "The selected destination is unavailable for delivery"
-        : "Shipping is temporarily unavailable; try again");
+  constructor(public readonly code: CheckoutShippingErrorCode,
+    public readonly status: number = STATUS[code]) {
+    super(MESSAGE[code]);
   }
 }
 
-type QuoteRequest = Pick<CheckoutRequestDto, "items" | "paymentMethod" | "shippingAddress" | "customerId">;
+type QuoteRequest = Pick<CheckoutRequestDto, "items" | "paymentMethod" | "shippingAddress" | "customerId">
+  & Partial<Pick<CheckoutRequestDto, "addressLine" | "buildingApartment">>;
 type PricedCheckout = { items: unknown[]; totalAmount: number };
 export type CheckoutShippingProvider = {
   codPricingPolicy: "collection_total";
@@ -53,6 +70,16 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
       const quote = checkoutShippingQuoteSchema.parse({ ...rate,
         productsTotalCents, amountCents: productsTotalCents + rate.shippingAmountCents,
         codAmountCents, paymentMethod: payload.paymentMethod, address });
+      // Enforce the carrier's collection ceiling on every iteration, including the
+      // final accepted one, before a quote can be agreed or checkout can proceed.
+      // The address lines are only known when the caller has the full checkout
+      // payload, so an absent line is validated later at checkout and dispatch
+      // rather than failing a quote that never saw the address.
+      assertShippingRestrictionsAllowed({
+        firstLine: payload.addressLine !== undefined || payload.buildingApartment !== undefined
+          ? buildDropOffFirstLine(payload.addressLine ?? "", payload.buildingApartment ?? "") : null,
+        paymentMethod: payload.paymentMethod, codAmountCents: quote.codAmountCents
+      });
       if (payload.paymentMethod === "paymob" || quote.amountCents === codAmountCents) return quote;
       codAmountCents = quote.amountCents;
     }

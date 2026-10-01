@@ -412,11 +412,22 @@ Implementation notes (2026-10-01):
 - **Sync now shares the type logic** (`normalizeDeliveryType`) instead of its own inline map, and carries `carrier.addressIdentity` (normalized) alongside the sanitized raw blob, which is preserved unchanged as evidence. Edit confirmation compares the normalized identity and treats a missing `addressIdentity` as *unconfirmed* rather than matching.
 - Recovery keeps the uniqueness contract intact: an empty search still returns `null` (no delivery), and a parse/correlation failure still throws — never permission to create again.
 
-### W02 — Enforce Bosta restrictions before checkout/edit writes (B03)
+### W02 — Enforce Bosta restrictions before checkout/edit writes (B03) — **Complete**
 
-- [ ] Share address assembly and validation. Validate active shipping checkout before COD stock mutation and before Paymob reservation/intention. Validate explicit address edits before saving their PUT intent.
-- [ ] Enforce shipping-inclusive final COD ceiling and quote iteration boundaries. Add specific shared bilingual error codes/messages in API/storefront and preserve inactive checkout/free-prepaid behavior.
-- [ ] Prove rejected cases create no order/reservation/intention/job and do not alter stock. Test 30,000/30,000.01, shipping crossing the ceiling, paid total above ceiling with zero COD, address length 5/6, whitespace-only values and edit validation. Rerun checkout/Paymob-shipping tests.
+- [x] Share address assembly and validation. Validate active shipping checkout before COD stock mutation and before Paymob reservation/intention. Validate explicit address edits before saving their PUT intent.
+- [x] Enforce shipping-inclusive final COD ceiling and quote iteration boundaries. Add specific shared bilingual error codes/messages in API/storefront and preserve inactive checkout/free-prepaid behavior.
+- [x] Prove rejected cases create no order/reservation/intention/job and do not alter stock. Test 30,000/30,000.01, shipping crossing the ceiling, paid total above ceiling with zero COD, address length 5/6, whitespace-only values and edit validation. Rerun checkout/Paymob-shipping tests.
+
+Implementation notes (2026-10-01):
+
+- **New `shipping-restrictions.ts`** is the single home for `MAX_COD_CENTS = 3_000_000`, `MIN_ADDRESS_LINE_LENGTH = 6`, `buildDropOffFirstLine` and `assertShippingRestrictionsAllowed`. Checkout, explicit edits and dispatch all use it, so the value validated is exactly the value the carrier receives.
+- **Enforced in `calculate`**, which is reached from both `quoteCheckout` and `resolve`. Because `resolve` re-runs `calculate`, the checkout recheck is genuine rather than trusting the stored snapshot — quotes *may* reject early, but checkout independently revalidates.
+- **Boundary semantics are exact:** EGP 30,000.00 accepted, 30,000.01 rejected (`>`, not `>=`). The ceiling is checked against products **plus** shipping because the quote iteration converges on the shipping-inclusive `amountCents`.
+- **Prepaid stays zero by construction.** `codAmountCents` is already forced to `0` for `paymentMethod !== "cod"`, and the ceiling check is conditional on `paymentMethod === "cod"`, so an above-ceiling *paid* total is never rejected. Verified by test.
+- **A subtle trap found and handled:** the quote endpoint (`checkoutShippingQuoteRequestSchema`) does not carry `addressLine`/`buildingApartment` — only items, payment method and destination. Validating the address unconditionally there would have rejected *every real quote*. `assertShippingRestrictionsAllowed` therefore takes `firstLine: string | null`, where `null` means "no address known yet"; money rules still apply, the address rule is deferred to checkout/dispatch where the full payload exists.
+- **Rejections happen before any write.** `resolveShippingForCheckout` is the single choke point ahead of order insertion, stock reservation and intention creation, so a rejected case leaves no order, no reservation, no session, no intention and untouched stock — asserted directly in tests for both the COD and Paymob paths.
+- **Specific bilingual codes replace the eventual generic dispatch failure:** `SHIPPING_ADDRESS_INVALID` and `SHIPPING_COD_LIMIT` (both 400) added to `CheckoutShippingError`, mapped to new `checkout.shippingAddressInvalid` / `checkout.shippingCodLimit` keys in **both** `en.ts` and `ar.ts` (`Dict` type-checks the two dictionaries against each other), and wired into both storefront code→message chains.
+- Legacy checkout with **no** shipping fields is untouched — verified by test, since the restriction only applies when shipping is active.
 
 ### W03 — Enforce startup/adapter capability gates (B04)
 

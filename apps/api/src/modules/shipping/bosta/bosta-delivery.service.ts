@@ -8,6 +8,7 @@ import { buildRateIdentity } from "./bosta-rate-context.js";
 import { validatePricingResponseContract } from "./bosta-pricing.service.js";
 import { assertDeliveryMatches, normalizeDeliveryRead } from "./bosta-delivery-read.js";
 import { BostaAddressService } from "./bosta-address.service.js";
+import { assertShippingRestrictionsAllowed, buildDropOffFirstLine } from "../shipping-restrictions.js";
 
 const settingsSchema = z.object({
   accountVerified: z.literal(true), accountEvidence: z.string().trim().min(1), accountId: z.string().trim().min(1),
@@ -102,7 +103,10 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
         throw new Error("Locked delivery amount/size/items snapshot mismatch");
       }
       const codCents = order.paymentMethod === "cod" ? totalCents : 0;
-      if (codCents > 3_000_000) throw new Error("Delivery COD exceeds Bosta's documented EGP 30,000 limit");
+      const firstLine = buildDropOffFirstLine(order.addressLine, order.buildingApartment);
+      // Defensive revalidation for old or corrupt snapshots: the same rules checkout
+      // and edits already enforce, so the value validated is the value we send.
+      assertShippingRestrictionsAllowed({ firstLine, paymentMethod: order.paymentMethod, codAmountCents: codCents });
       const names = order.fullName.trim().split(/\s+/);
       const descriptions: string[] = [];
       let itemsCount = 0;
@@ -113,8 +117,7 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
           .parse(JSON.parse(item.snapshotComponents)) : null;
         itemsCount += item.qty * (components ? components.reduce((sum, component) => sum + component.qty, 0) : 1);
       }
-      const firstLine = `${order.addressLine}, ${order.buildingApartment}`;
-      if (firstLine.length <= 5 || !Number.isSafeInteger(itemsCount)) throw new Error("Delivery address/contents snapshot is invalid");
+      if (!Number.isSafeInteger(itemsCount)) throw new Error("Delivery contents snapshot is invalid");
       return { accountId: settings.accountId, environment, payload: {
         type: 10, cod: codCents / 100, businessReference: reference, allowToOpenPackage: false, notes: order.notes ?? "",
         specs: { size: settings.sizeMapping[order.shippingSize!], packageType: "Parcel", packageDetails: { itemsCount, description: descriptions.join("; ") } },

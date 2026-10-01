@@ -162,13 +162,16 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       setShippingLoading(false);
     }).catch(error => {
       if (cancelled) return;
-      setShippingError((error as { code?: string })?.code === "SHIPPING_UNSUPPORTED"
-        ? dict.checkout.shippingUnsupported : dict.checkout.shippingUnavailable);
+      const code = (error as { code?: string })?.code;
+      setShippingError(code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
+        : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
+          : dict.checkout.shippingUnavailable);
       setShippingLoading(false);
     });
     return () => { cancelled = true; };
   // quoteKey binds the request to cart, selected destination, payment and customer.
-  }, [quoteKey, availability, shippingRetry, dict.checkout.amountChanged, dict.checkout.shippingUnavailable]);
+  }, [quoteKey, availability, shippingRetry, dict.checkout.amountChanged, dict.checkout.shippingUnavailable,
+      dict.checkout.shippingCodLimit, dict.checkout.shippingUnsupported]);
 
   const setField = <K extends keyof CheckoutFormState>(key: K, value: CheckoutFormState[K]) => {
     setForm((state) => {
@@ -245,8 +248,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         : code === "CHECKOUT_AMOUNT_CHANGED" ? dict.checkout.amountChanged
           : code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
             : code === "SHIPPING_UNAVAILABLE" ? dict.checkout.shippingUnavailable
-              : code === "PAYMENT_UNAVAILABLE" ? dict.checkout.paymentUnavailable
-              : error instanceof Error && error.message ? error.message : dict.checkout.checkoutFailed;
+              : code === "SHIPPING_ADDRESS_INVALID" ? dict.checkout.shippingAddressInvalid
+                : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
+                  : code === "PAYMENT_UNAVAILABLE" ? dict.checkout.paymentUnavailable
+                  : error instanceof Error && error.message ? error.message : dict.checkout.checkoutFailed;
       setErrors((state) => ({
         ...state,
         submit: message
