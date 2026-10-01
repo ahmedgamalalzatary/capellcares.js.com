@@ -90,6 +90,85 @@ test("uncertain creates correlate a unique search result to its complete deliver
   assert.equal(await provider!.reconcile(request), null);
 });
 
+test("creation recovery correlates the documented object delivery type, not only the bare numeric form", async () => {
+  for (const type of [{ code: 10, value: "Send" }, 10]) {
+    const provider = await adapter(env, async (input) => {
+      if (String(input).endsWith("/deliveries/search")) {
+        return Response.json({ success: true, data: { total: 1,
+          deliveries: [{ businessReference: "bosta_create_7", trackingNumber: "5108002" }] } });
+      }
+      return Response.json({ success: true, data: { type, businessReference: "bosta_create_7", trackingNumber: "5108002",
+        cod: 132.29, specs: { size: "SMALL" }, receiver: { phone: "+201012345678" },
+        dropOffAddress: { districtId: destination.districtId, firstLine: "Street 1, Building 2 apartment 3" },
+        state: { code: 10, value: "Pickup requested" } } });
+    });
+    const request = provider!.buildRequest(order as any, items as any, "bosta_create_7");
+    assert.equal((await provider!.reconcile(request))?.trackingNumber, "5108002",
+      "both documented type forms must correlate");
+  }
+});
+
+test("creation recovery rejects a delivery whose type is a different code, even when everything else matches", async () => {
+  const provider = await adapter(env, async (input) => {
+    if (String(input).endsWith("/deliveries/search")) {
+      return Response.json({ success: true, data: { total: 1,
+        deliveries: [{ businessReference: "bosta_create_7", trackingNumber: "5108002" }] } });
+    }
+    return Response.json({ success: true, data: { type: { code: 30, value: "Exchange" },
+      businessReference: "bosta_create_7", trackingNumber: "5108002",
+      cod: 132.29, specs: { size: "SMALL" }, receiver: { phone: "+201012345678" },
+      dropOffAddress: { districtId: destination.districtId, firstLine: "Street 1, Building 2 apartment 3" },
+      state: { code: 10, value: "Pickup requested" } } });
+  });
+  await assert.rejects(provider!.reconcile(provider!.buildRequest(order as any, items as any, "bosta_create_7")),
+    /correlation|type/i);
+});
+
+test("creation recovery resolves a documented district-name address through authoritative zoning proof", async () => {
+  const districts = { success: true, data: [{ cityId: destination.cityId, cityName: "Cairo", cityOtherName: "القاهرة",
+    districts: [{ districtId: destination.districtId, zoneId: destination.zoneId, zoneName: "Nasr City",
+      districtName: "District 1", dropOffAvailability: true }] }] };
+  // The provider returns a NAME and no district id; unique zoning proof must resolve it.
+  const provider = await adapter(env, async (input) => {
+    if (String(input).includes("/cities/getAllDistricts")) return Response.json(districts);
+    if (String(input).endsWith("/deliveries/search")) {
+      return Response.json({ success: true, data: { total: 1,
+        deliveries: [{ businessReference: "bosta_create_7", trackingNumber: "5108002" }] } });
+    }
+    return Response.json({ success: true, data: { type: { code: 10, value: "Send" },
+      businessReference: "bosta_create_7", trackingNumber: "5108002",
+      cod: 132.29, specs: { size: "SMALL" }, receiver: { phone: "+201012345678" },
+      dropOffAddress: { city: "Cairo", cityId: destination.cityId, districtName: "District 1",
+        firstLine: "Street 1, Building 2 apartment 3" }, state: { code: 10, value: "Pickup requested" } } });
+  });
+  const request = provider!.buildRequest(order as any, items as any, "bosta_create_7");
+  assert.equal((await provider!.reconcile(request))?.trackingNumber, "5108002",
+    "a documented name-only district address must still correlate");
+});
+
+test("creation recovery refuses an ambiguous district name rather than picking one arbitrarily", async () => {
+  const districts = { success: true, data: [
+    { cityId: destination.cityId, cityName: "Cairo", districts: [
+      { districtId: "district-a", zoneId: "zone-a", districtName: "Shared Name", dropOffAvailability: true }] },
+    { cityId: "city-giza", cityName: "Giza", districts: [
+      { districtId: "district-b", zoneId: "zone-b", districtName: "Shared Name", dropOffAvailability: true }] }
+  ] };
+  const provider = await adapter(env, async (input) => {
+    if (String(input).includes("/cities/getAllDistricts")) return Response.json(districts);
+    if (String(input).endsWith("/deliveries/search")) {
+      return Response.json({ success: true, data: { total: 1,
+        deliveries: [{ businessReference: "bosta_create_7", trackingNumber: "5108002" }] } });
+    }
+    return Response.json({ success: true, data: { type: { code: 10, value: "Send" },
+      businessReference: "bosta_create_7", trackingNumber: "5108002",
+      cod: 132.29, specs: { size: "SMALL" }, receiver: { phone: "+201012345678" },
+      dropOffAddress: { districtName: "Shared Name", firstLine: "Street 1, Building 2 apartment 3" },
+      state: { code: 10, value: "Pickup requested" } } });
+  });
+  await assert.rejects(provider!.reconcile(provider!.buildRequest(order as any, items as any, "bosta_create_7")),
+    /correlation|address/i, "an unprovable destination must stay unresolved, never guessed");
+});
+
 test("HTTP timeout/conflict during create remain uncertain rather than permitting an unsafe new delivery", async () => {
   for (const status of [408, 409]) {
     const provider = await adapter(env, async () => Response.json({ message: "outcome unknown" }, { status }));

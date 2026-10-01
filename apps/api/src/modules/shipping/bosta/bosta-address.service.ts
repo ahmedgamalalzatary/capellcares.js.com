@@ -13,6 +13,13 @@ export type DistrictAvailability = {
   dropOffAvailable: boolean;
 };
 
+export type DistrictNameCandidate = {
+  cityId: string;
+  zoneId: string | null;
+  districtId: string;
+  districtName: string;
+};
+
 type DistrictsPayload = {
   success?: boolean;
   data?: Array<{
@@ -107,5 +114,27 @@ export class BostaAddressService {
     const { districts } = await this.loadDistricts();
     const district = districts.get(districtId);
     return district ? { ...district } : null;
+  }
+
+  /**
+   * Resolves a district NAME to candidate ids using the authoritative zoning data.
+   * Returns every candidate, narrowed by city/zone when the provider proved them;
+   * the caller must treat anything other than a single match as unresolved. A
+   * name is never an identifier on its own.
+   */
+  async resolveDistrictsByName(query: { cityId: string | null; zoneId: string | null; districtName: string }): Promise<DistrictNameCandidate[]> {
+    const { payload } = await this.loadDistricts();
+    const matches: DistrictNameCandidate[] = [];
+    for (const city of payload!.data!) {
+      if (query.cityId && city.cityId !== query.cityId) continue;
+      for (const district of city.districts!) {
+        if (query.zoneId && district.zoneId !== query.zoneId) continue;
+        if (district.districtName !== query.districtName) continue;
+        if (!city.cityId) continue;
+        matches.push({ cityId: city.cityId, zoneId: district.zoneId ?? null,
+          districtId: district.districtId!, districtName: district.districtName! });
+      }
+    }
+    return matches;
   }
 }

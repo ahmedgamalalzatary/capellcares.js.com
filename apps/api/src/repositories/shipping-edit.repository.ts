@@ -7,6 +7,7 @@ import type { ShipmentEdit } from "@capella/shared";
 import { assertShippingEditAllowed, type ShippingEditEvidence } from "./shipping-state.repository.js";
 import { recordShippingObservation } from "./shipping-sync.repository.js";
 import { BostaProviderError } from "../modules/shipping/bosta/bosta-client.js";
+import { assertAddressMatches, type NormalizedReadAddress } from "../modules/shipping/bosta/bosta-delivery-read.js";
 import type { BostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
 import type { BostaObservation, BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
 import type { ShippingTransaction } from "./shipping-dispatch.repository.js";
@@ -24,6 +25,16 @@ export async function assertShippingActor(tx: ShippingTransaction, actorId: numb
 }
 
 const phone = (value: string) => value.startsWith("+20") ? value : value.startsWith("0020") ? `+20${value.slice(4)}` : `+20${value.replace(/^0/, "")}`;
+
+/** Shared strict comparison. A read without provable identity never confirms an edit. */
+const addressMatches = (actual: NormalizedReadAddress, requested: { zoneId: string | null; districtId: string | null; firstLine: string }) => {
+  try {
+    assertAddressMatches(actual, requested);
+    return true;
+  } catch {
+    return false;
+  }
+};
 function editPayload(patch: ShipmentEdit, city: string) {
   const payload: Record<string, unknown> = {};
   if (patch.recipient) {
@@ -49,12 +60,16 @@ export async function confirmShippingEdits(tx: ShippingTransaction, ship: typeof
     const saved = JSON.parse(job.requestSnapshot!);
     const patch = shipmentEditSchema.parse(saved.patch);
     const recipient = event.carrier.recipient as Record<string, unknown> | undefined;
-    const address = event.carrier.address as Record<string, unknown> | undefined;
+    // Identity comes from the shared normalizer, not from assuming flat provider fields:
+    // a documented address may carry a district name and no district id.
+    const addressIdentity = event.carrier.addressIdentity;
     const matched = (patch.notes === undefined || patch.notes === event.carrier.notes) &&
       (!patch.size || saved.payload.specs.size === event.carrier.size) &&
       (!patch.recipient?.fullName || recipient?.fullName === patch.recipient.fullName) &&
       (!patch.recipient?.phone || (typeof recipient?.phone === "string" && phone(recipient.phone) === phone(patch.recipient.phone))) &&
-      (!patch.address || (address?.firstLine === saved.payload.dropOffAddress.firstLine && address?.zoneId === patch.address.zoneId && address?.districtId === patch.address.districtId));
+      (!patch.address || (addressIdentity !== undefined && addressMatches(
+        addressIdentity, { zoneId: patch.address.zoneId, districtId: patch.address.districtId,
+          firstLine: saved.payload.dropOffAddress.firstLine })));
     if (!matched) continue;
     if (patch.size) await tx.update(shipments).set({ size: patch.size }).where(eq(shipments.id, ship.id));
     await tx.update(shippingWorkItems).set({ status: "succeeded", lastError: null, claimedBy: null, claimedAt: null,

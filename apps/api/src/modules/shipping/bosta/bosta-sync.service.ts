@@ -2,6 +2,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { BostaClient } from "./bosta-client.js";
 import { loadBostaConfig } from "./bosta-config.js";
+import { normalizeDeliveryType, normalizeReadAddress, type NormalizedReadAddress } from "./bosta-delivery-read.js";
+import { BostaAddressService } from "./bosta-address.service.js";
 
 const evidence = { verified: z.literal(true), evidence: z.string().trim().min(1) };
 const unit = z.enum(["major", "minor"]);
@@ -25,7 +27,8 @@ export type BostaObservation = {
   source: "webhook" | "read"; trackingNumber: string; businessReference: string | null; type: string;
   stateCode: number; stateName: string; atMs: number; collectedAmountCents: number | null;
   confirmedDelivery: boolean | null; exceptionCode: number | null;
-  carrier: { recipient?: unknown; address?: unknown; notes?: string; size?: string; requestedCodAmountCents?: number };
+  carrier: { recipient?: unknown; address?: unknown; addressIdentity?: NormalizedReadAddress; notes?: string;
+    size?: string; requestedCodAmountCents?: number };
   raw: unknown;
 };
 export type BostaSyncRuntime = {
@@ -87,6 +90,12 @@ export function resolveBostaSyncRuntime(env: Record<string, string | undefined> 
     if (value !== null && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, entry]) => [redact(key), sanitize(entry)]));
     return value;
   };
+  // Authoritative zoning data, so a documented district NAME can be resolved to its id.
+  const addresses = new BostaAddressService(() => client.get("/cities/getAllDistricts?countryId=60e4482c7cb7d4bc4849c4d5"));
+  const resolveDistrictByName = async (query: { cityId: string | null; zoneId: string | null; districtName: string | null }) =>
+    query.districtName
+      ? await addresses.resolveDistrictsByName({ cityId: query.cityId, zoneId: query.zoneId, districtName: query.districtName })
+      : [];
   return {
     accountId: settings.accountId, environment, accountKey: bostaAccountKey(settings.accountId, environment), canRead: config.canCallProvider,
     authenticate(received) {
@@ -113,19 +122,21 @@ export function resolveBostaSyncRuntime(env: Record<string, string | undefined> 
         specs: z.object({ size: z.string().min(1).max(64).optional() }).optional(), cod: z.union([z.number(), z.string()]).optional(),
         exceptionCode: z.number().int().nonnegative().optional() }).passthrough() }).parse(raw).data;
       if (parsed.trackingNumber !== trackingNumber || parsed.businessReference !== businessReference) throw new Error("Delivery correlation failed");
-      const code = typeof parsed.type === "number" ? parsed.type : parsed.type.code;
-      const providerType = typeof parsed.type === "object" ? parsed.type.value?.toUpperCase().replace(/ /g, "_") : undefined;
-      const type = ({ 10: "SEND", 25: "CUSTOMER_RETURN_PICKUP", 30: "EXCHANGE" } as Record<number, string>)[code]
-        ?? (typeName.safeParse(providerType).success ? providerType! : `UNKNOWN_${code}`);
+      const type = normalizeDeliveryType(parsed.type).label;
       const collected = atPath(parsed, settings.readContract.collectionPath);
       const confirmation = atPath(parsed, settings.readContract.confirmationPath);
       if (confirmation !== undefined && confirmation !== null && typeof confirmation !== "boolean") throw new Error("Invalid carrier delivery confirmation");
+      // The sanitized blob stays as raw evidence; identity is normalized separately so
+      // edit confirmation compares proven ids instead of assuming flat provider fields.
+      let addressIdentity: NormalizedReadAddress | undefined;
+      try { addressIdentity = await normalizeReadAddress(parsed.dropOffAddress, resolveDistrictByName); }
+      catch { addressIdentity = { cityId: null, zoneId: null, districtId: null, firstLine: "" }; }
       return { source: "read", trackingNumber, businessReference, type, stateCode: parsed.state.code, stateName: sanitize(parsed.state.value) as string,
         atMs: eventTime(atPath(parsed, settings.readContract.eventTimePath), settings.readContract.eventTimeFormat),
         collectedAmountCents: collected === undefined || collected === null ? null : money(collected, settings.readContract.collectionUnit),
         confirmedDelivery: typeof confirmation === "boolean" ? confirmation : null, exceptionCode: parsed.exceptionCode ?? null,
         carrier: { ...(parsed.receiver ? { recipient: sanitize(parsed.receiver) } : {}),
-          ...(parsed.dropOffAddress ? { address: sanitize(parsed.dropOffAddress) } : {}),
+          ...(addressIdentity ? { address: sanitize(parsed.dropOffAddress), addressIdentity } : {}),
           ...(parsed.notes !== undefined ? { notes: sanitize(parsed.notes) as string } : {}),
           ...(parsed.specs?.size ? { size: sanitize(parsed.specs.size) as string } : {}),
           ...(parsed.cod !== undefined ? { requestedCodAmountCents: money(parsed.cod, settings.readContract.requestedCodUnit) } : {}) }, raw: sanitize(raw) };

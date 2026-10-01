@@ -6,6 +6,7 @@ import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
+import { selectedDestination } from "../helpers/checkout-shipping.js";
 import { applyShippingNoMoneyEdit, ShippingEditError } from "../../src/repositories/shipping-edit.repository.js";
 import { BostaProviderError } from "../../src/modules/shipping/bosta/bosta-client.js";
 
@@ -159,6 +160,43 @@ test("a repeated carrier snapshot still confirms an idempotent edit", async () =
   await applyShippingNoMoneyEdit(f.order.id, { notes: "Original" }, await admin(), edit);
   const jobs = await shippingWorkItemsMeta(f.order.id);
   assert.equal(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded");
+});
+
+const editAddress = { address: { addressLine: "Street 1", buildingApartment: "1",
+    cityId: selectedDestination.cityId, zoneId: selectedDestination.zoneId, districtId: selectedDestination.districtId } };
+const editIdentity = { cityId: selectedDestination.cityId, zoneId: selectedDestination.zoneId,
+    districtId: selectedDestination.districtId, firstLine: "Street 1, 1" };
+
+test("an address edit is confirmed from normalized identity, not from assuming flat provider fields", async () => {
+  const f = await shippingSyncFixture();
+  const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
+    async update() { throw new Error("Connection lost after write"); } };
+  await assert.rejects(applyShippingNoMoneyEdit(f.order.id, editAddress, await admin(), edit), /uncertain|confirm/i);
+  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  await recordShippingObservation(f.runtime, { ...observation(f), atMs: 7_000,
+    carrier: { notes: "Original", size: "SMALL", addressIdentity: editIdentity } });
+  const jobs = await shippingWorkItemsMeta(f.order.id);
+  assert.equal(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded",
+    "a provable normalized address must confirm the edit");
+});
+
+test("an address edit is never confirmed by an observation whose destination identity is unproven", async () => {
+  const f = await shippingSyncFixture();
+  const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
+    async update() { throw new Error("Connection lost after write"); } };
+  await assert.rejects(applyShippingNoMoneyEdit(f.order.id, editAddress, await admin(), edit), /uncertain|confirm/i);
+  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  // No address evidence at all, and separately an unproven district identity.
+  for (const addressIdentity of [undefined,
+    { cityId: null, zoneId: null, districtId: null, firstLine: "Street 1, 1" },
+    { cityId: selectedDestination.cityId, zoneId: selectedDestination.zoneId, districtId: "district-other",
+      firstLine: "Street 1, 1" }]) {
+    await recordShippingObservation(f.runtime, { ...observation(f), atMs: 8_000,
+      carrier: { notes: "Original", size: "SMALL", ...(addressIdentity ? { addressIdentity } : {}) } });
+    const jobs = await shippingWorkItemsMeta(f.order.id);
+    assert.notEqual(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded",
+      "an unproven or different destination must never confirm an address edit");
+  }
 });
 
 test("carrier evidence closes a rejected edit after the requested correction is applied in Bosta", async () => {

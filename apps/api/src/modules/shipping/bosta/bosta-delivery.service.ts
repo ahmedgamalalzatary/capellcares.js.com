@@ -6,6 +6,8 @@ import { loadBostaConfig } from "./bosta-config.js";
 import { bostaPricingContractId, type BostaQuoteSettings } from "./bosta-quote-composition.js";
 import { buildRateIdentity } from "./bosta-rate-context.js";
 import { validatePricingResponseContract } from "./bosta-pricing.service.js";
+import { assertDeliveryMatches, normalizeDeliveryRead } from "./bosta-delivery-read.js";
+import { BostaAddressService } from "./bosta-address.service.js";
 
 const settingsSchema = z.object({
   accountVerified: z.literal(true), accountEvidence: z.string().trim().min(1), accountId: z.string().trim().min(1),
@@ -50,6 +52,7 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
   if (!config.enabled) return null;
   const settings = settingsSchema.parse(JSON.parse(env.BOSTA_DELIVERY_SETTINGS_JSON ?? "null"));
   const client = new BostaClient(config, fetchImpl);
+  const addresses = new BostaAddressService(() => client.get("/cities/getAllDistricts?countryId=60e4482c7cb7d4bc4849c4d5"));
   const environment = config.baseUrl!;
   const redact = (value: string) => {
     for (const secret of [config.apiKey, config.webhookSecret]) if (secret) value = value.split(secret).join("[redacted]");
@@ -134,15 +137,25 @@ export function bostaDeliveryProviderFromEnvironment(env: Record<string, string 
       if (!Array.isArray(rows) || !Number.isSafeInteger(total) || total !== rows.length) throw new Error("Delivery lookup must prove a complete unique result");
       if (rows.length === 0) return null;
       if (rows.length !== 1) throw new Error("Delivery lookup did not identify a unique match");
-      const row = z.object({ businessReference: z.literal(request.payload.businessReference), trackingNumber: z.string().min(1).max(64) }).parse(rows[0]);
+      const row = z.object({ businessReference: z.literal(request.payload.businessReference),
+        trackingNumber: z.union([z.string().trim().min(1).max(64), z.number().int().positive()])
+          .transform(value => String(value)) }).parse(rows[0]);
       const raw = await client.get(`/deliveries/business/${encodeURIComponent(row.trackingNumber)}`);
       const result = parseResult(raw);
-      const detail = (raw as { data: Record<string, any> }).data;
-      if (result.trackingNumber !== row.trackingNumber || detail.businessReference !== request.payload.businessReference ||
-        detail.type !== 10 || detail.cod !== request.payload.cod || detail.specs?.size !== request.payload.specs.size ||
-        typeof detail.receiver?.phone !== "string" || phone(detail.receiver.phone) !== request.payload.receiver.phone ||
-        detail.dropOffAddress?.districtId !== request.payload.dropOffAddress.districtId ||
-        detail.dropOffAddress?.firstLine !== request.payload.dropOffAddress.firstLine) throw new Error("Delivery correlation failed");
+      // Correlate through the shared normalizer: Bosta returns `type` as an integer or
+      // as { code, value }, and addresses with ids or with a district NAME. A parse or
+      // correlation failure stays an unresolved outcome — never permission to create again.
+      const detail = await normalizeDeliveryRead(raw, {
+        resolveByName: async (query) => query.districtName
+          ? await addresses.resolveDistrictsByName({ cityId: query.cityId, zoneId: query.zoneId, districtName: query.districtName })
+          : []
+      });
+      assertDeliveryMatches(detail, {
+        trackingNumber: row.trackingNumber, businessReference: request.payload.businessReference, typeCode: 10,
+        size: request.payload.specs.size, recipientPhone: request.payload.receiver.phone,
+        requestedCodCents: Math.round(request.payload.cod * 100),
+        address: { districtId: request.payload.dropOffAddress.districtId, firstLine: request.payload.dropOffAddress.firstLine }
+      });
       return result;
     }
   };
