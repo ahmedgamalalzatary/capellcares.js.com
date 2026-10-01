@@ -18,8 +18,10 @@ test("verified full shipping refund cancels unsent work and restores sold stock 
   await initiatePaymobCheckout(input);
   const created = await processPaymobTransaction(paid);
   const refunded = { ...paid, is_refunded: true, refunded_amount_cents: 13229 };
-  await processPaymobTransaction(refunded);
-  await processPaymobTransaction(refunded);
+  // Refund totals must come from authenticated inquiry evidence, never the unsigned body.
+  const refundEvidence = { verified: { is_refunded: true, refunded_amount_cents: 13229 } };
+  await processPaymobTransaction(refunded, refundEvidence);
+  await processPaymobTransaction(refunded, refundEvidence);
   const [stored] = await db.select().from(orders).where(eq(orders.id, created.orderId!));
   assert.equal(stored.cancellationStatus, "cancelled");
   assert.equal(stored.providerPaymentStatus, "refunded");
@@ -30,7 +32,8 @@ test("verified full shipping refund cancels unsent work and restores sold stock 
 test("refund-before-success uses the same cancellation operation after the paid order is created", async () => {
   const { input, ids } = await setup();
   await initiatePaymobCheckout(input);
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 });
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 },
+    { verified: { is_refunded: true, refunded_amount_cents: 13229 } });
   await processPaymobTransaction(paid);
   const [stored] = await db.select().from(orders);
   assert.equal(stored.cancellationStatus, "cancelled");
@@ -45,7 +48,8 @@ test("manual safe paid cancellation and a later verified full refund retain sepa
   const { requestShippingCancellation } = await import("../../src/repositories/shipping-cancellation.repository.js");
   const result = await requestShippingCancellation(created.orderId!, { source: "staff", actorId });
   assert.equal(result.refundRequiredCents, 13229);
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 });
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 },
+    { verified: { is_refunded: true, refunded_amount_cents: 13229 } });
   const [stored] = await db.select().from(orders).where(eq(orders.id, created.orderId!));
   assert.equal(stored.cancellationStatus, "cancelled");
   assert.equal(stored.paymentStatus, "denied");
@@ -190,10 +194,12 @@ test("payment retry and callback retain the original quote and products after cu
   assert.equal(jobs.length, 1);
   assert.equal(jobs[0].orderId, created.orderId);
   assert.equal(jobs[0].status, "pending");
-  await processPaymobTransaction({ ...transaction, is_refunded: true, refunded_amount_cents: 3500 });
+  await processPaymobTransaction({ ...transaction, is_refunded: true, refunded_amount_cents: 3500 },
+    { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
   const [partiallyRefunded] = await db.select().from(orders).where(eq(orders.id, order.id));
   assert.equal(partiallyRefunded.providerPaymentStatus, "partially_refunded");
-  await processPaymobTransaction({ ...transaction, is_refunded: true, refunded_amount_cents: 13229 });
+  await processPaymobTransaction({ ...transaction, is_refunded: true, refunded_amount_cents: 13229 },
+    { verified: { is_refunded: true, refunded_amount_cents: 13229 } });
   const [fullyRefunded] = await db.select().from(orders).where(eq(orders.id, order.id));
   assert.equal(fullyRefunded.refundedAmountCents, 13229);
   assert.equal(fullyRefunded.providerPaymentStatus, "refunded");
@@ -203,7 +209,8 @@ test("payment retry and callback retain the original quote and products after cu
 test("a full refund before success carries the original shipping-inclusive amount onto the eventual order", async () => {
   const { input, quote } = await setup();
   await initiatePaymobCheckout(input);
-  assert.equal((await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 })).outcome, "refund_pending_success");
+  assert.equal((await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 },
+    { verified: { is_refunded: true, refunded_amount_cents: 13229 } })).outcome, "refund_pending_success");
   const result = await processPaymobTransaction(paid);
   const [order] = await db.select().from(orders).where(eq(orders.id, result.orderId!));
   assert.equal(order.providerPaymentStatus, "refunded");
@@ -218,7 +225,8 @@ test("a full refund before success carries the original shipping-inclusive amoun
 test("a partial refund arriving before paid order creation blocks the delivery and raises a staff flag", async () => {
   const { input } = await setup();
   await initiatePaymobCheckout(input);
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 });
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 },
+    { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
   await processPaymobTransaction(paid);
   assert.equal((await db.select().from(shippingWorkItems))[0].status, "failed");
   assert.equal((await db.select().from(orderReviewFlags))[0]?.flagType, "refund_review");

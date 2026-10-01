@@ -4,13 +4,56 @@ import { verifyPaymobTransactionHmac } from "./paymob-hmac.js";
 import { recordPaymobTransaction } from "./paymob-webhook.service.js";
 import { processPaymobTransaction } from "./paymob-transaction.service.js";
 import { parsePaymobProcessedCallback } from "./paymob-callback.js";
+import { createPaymobInquiryClient, type PaymobInquiry } from "./paymob-inquiry.client.js";
+
+/**
+ * Injectable seam so route tests never reach the network. Injected per-request by the
+ * test app; production leaves it unset and gets the real authenticated client.
+ */
+let inquiryLookup: ((transactionId: string) => Promise<PaymobInquiry>) | null = null;
+
+/** Test-only: install a stand-in for the authenticated transaction inquiry. */
+export function setPaymobInquiryLookupForTests(
+  lookup: ((transactionId: string) => Promise<PaymobInquiry>) | null
+): void {
+  inquiryLookup = lookup;
+}
+
+/**
+ * Authenticated refund evidence for a callback.
+ *
+ * `refunded_amount_cents` is not covered by Paymob's HMAC, so it is only ever trusted
+ * when the provider confirms it. An inquiry outage is NOT treated as "no refund" and
+ * NOT treated as an error the buyer sees: the callback is still acknowledged, and any
+ * refund effect simply cannot be applied from an unverified number. Returning null means
+ * "no evidence", which makes a refund callback resolve to `rejected` downstream rather
+ * than to a forged total.
+ */
+async function verifiedRefundEvidence(
+  config: ReturnType<typeof resolvePaymobConfig>, transaction: Record<string, unknown>
+): Promise<{ is_refunded?: boolean; refunded_amount_cents?: number | null } | null> {
+  const transactionId = transaction.id;
+  if (transactionId === undefined || transactionId === null) return null;
+  try {
+    const lookup = inquiryLookup ?? ((id: string) => {
+      if (!config.secretKey) throw new Error("Paymob secret key is not configured");
+      return createPaymobInquiryClient({ baseUrl: config.baseUrl, secretKey: config.secretKey }).query(id);
+    });
+    const inquiry = await lookup(String(transactionId));
+    return { is_refunded: inquiry.refunded, refunded_amount_cents: inquiry.refundedAmountCents };
+  } catch {
+    // Provider unreachable or unparseable: no trusted evidence, and no guess.
+    return null;
+  }
+}
 
 export async function paymobWebhookController(req: Request, res: Response): Promise<void> {
   const hmac = typeof req.query.hmac === "string" ? req.query.hmac : "";
   const transaction = req.body?.type === "TRANSACTION" && req.body.obj && typeof req.body.obj === "object"
     ? req.body.obj
     : {};
-  const secret = resolvePaymobConfig().hmacSecret ?? "";
+  const config = resolvePaymobConfig();
+  const secret = config.hmacSecret ?? "";
   if (!verifyPaymobTransactionHmac({ transaction, receivedHmac: hmac, secret })) {
     res.status(401).json({ message: "Invalid Paymob callback signature" });
     return;
@@ -20,7 +63,8 @@ export async function paymobWebhookController(req: Request, res: Response): Prom
     res.status(422).json({ message: "Invalid Paymob transaction callback" });
     return;
   }
-  const result = await processPaymobTransaction(parsedTransaction);
+  const verified = await verifiedRefundEvidence(config, parsedTransaction);
+  const result = await processPaymobTransaction(parsedTransaction, { verified: verified ?? undefined });
   const processed = result.outcome === "succeeded" || result.outcome === "refunded" ||
     result.outcome === "failed" || result.outcome === "pending" || result.outcome === "refund_pending_success";
   await recordPaymobTransaction(parsedTransaction, processed ? "processed" : "rejected");

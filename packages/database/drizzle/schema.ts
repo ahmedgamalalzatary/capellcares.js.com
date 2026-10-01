@@ -795,6 +795,38 @@ export const paymentWebhookEvents = mysqlTable("payment_webhook_events", {
   processedAt: datetime("processed_at")
 });
 
+/**
+ * Durable intake for Paymob callbacks. Written and committed BEFORE any business
+ * processing, so a crash or a slow provider read cannot lose a notification that the
+ * provider considers delivered.
+ *
+ * The inbox is deliberately NOT a replay source for the old audit table: `payment_webhook_events`
+ * rows stay exactly as they were, and only this table carries a trusted receipt time.
+ */
+export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Semantic fingerprint of the allowlisted fields; identical redeliveries collapse to one row. */
+  eventFingerprint: varchar("event_fingerprint", { length: 64 }).notNull().unique(),
+  /** Bumped when the normalized field set changes, so old rows are never re-interpreted. */
+  fingerprintVersion: int("fingerprint_version").notNull().default(1),
+  /** Allowlisted, redacted snapshot. Never the raw signed body (it carries card data). */
+  normalizedPayload: json("normalized_payload").notNull(),
+  /** Transaction ID as an unsigned hint only: it is not proof and must be proven by inquiry. */
+  hintedTransactionId: varchar("hinted_transaction_id", { length: 64 }),
+  callbackType: mysqlEnum("callback_type", ["transaction", "card_token"]).notNull(),
+  processingStatus: mysqlEnum("processing_status", ["received", "processing", "processed", "rejected", "failed"]).notNull(),
+  /** Server time the callback was durably accepted. Trustworthy, unlike any provider timestamp. */
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  processedAt: datetime("processed_at"),
+  attempts: int("attempts").notNull().default(0),
+  lastError: varchar("last_error", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => [
+  index("paymob_callback_inbox_status_received_idx").on(table.processingStatus, table.receivedAt),
+  index("paymob_callback_inbox_transaction_idx").on(table.hintedTransactionId)
+]);
+
 export const reviews = mysqlTable(
   "reviews",
   {

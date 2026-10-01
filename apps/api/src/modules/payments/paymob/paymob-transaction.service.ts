@@ -10,7 +10,31 @@ type PaymobTransaction = Record<string, any> & {
   source_data?: { type?: unknown };
 };
 
-export async function processPaymobTransaction(transaction: PaymobTransaction) {
+/**
+ * Authenticated provider state for a callback. Supplied by the caller after a trusted
+ * inquiry read.
+ *
+ * This exists because `refunded_amount_cents` is NOT part of Paymob's HMAC input list,
+ * so the callback's copy is attacker-controllable. Every refund amount in this service
+ * is taken from `verified` and never from the callback body. A callback with no verified
+ * read cannot assert a refund amount at all.
+ */
+type VerifiedPaymobState = {
+  is_refunded?: boolean;
+  refunded_amount_cents?: number | null;
+};
+
+export type ProcessPaymobOptions = {
+  /** Trusted state from `queryPaymobTransaction`. Without it, no refund amount is trusted. */
+  verified?: VerifiedPaymobState;
+};
+
+export async function processPaymobTransaction(transaction: PaymobTransaction, options: ProcessPaymobOptions = {}) {
+  const verified = options.verified;
+  // The refund amount is authoritative only from the authenticated read.
+  const refundedAmountCents = verified?.is_refunded === true
+    ? Number(verified.refunded_amount_cents ?? 0)
+    : 0;
   return db.transaction(async (tx) => {
     const [match] = await tx.select({
       attempt: paymentAttempts,
@@ -42,7 +66,8 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
 
     if (match.attempt.status === "succeeded" && match.session.createdOrderId) {
       if (transaction.is_refunded === true) {
-        const refundedCents = Number(transaction.refunded_amount_cents);
+        // Trusted total only; the callback's own amount is unsigned and ignored.
+        const refundedCents = refundedAmountCents;
         if (String(transaction.id) !== match.attempt.paymobTransactionId ||
           Number(transaction.amount_cents) !== match.attempt.amountCents ||
           transaction.currency !== match.attempt.currency ||
@@ -81,7 +106,8 @@ export async function processPaymobTransaction(transaction: PaymobTransaction) {
       };
     }
     if (transaction.is_refunded === true) {
-      const refundedCents = Number(transaction.refunded_amount_cents);
+      // Trusted total only; the callback's own amount is unsigned and ignored.
+      const refundedCents = refundedAmountCents;
       if (!baseIdentity || transaction.success !== true || transaction.pending !== false ||
         !Number.isSafeInteger(refundedCents) || refundedCents <= 0 || refundedCents > match.attempt.amountCents ||
         (match.attempt.paymobTransactionId && match.attempt.paymobTransactionId !== String(transaction.id)) ||

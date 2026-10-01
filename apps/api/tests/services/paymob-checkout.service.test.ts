@@ -782,6 +782,64 @@ test("initiatePaymobCheckout does not return a payment link after its reservatio
   assert.equal(attempt?.paymobOrderId, "9018");
 });
 
+test("an unsigned refund amount in the callback is ignored; only authenticated inquiry sets the total", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Unsigned", phone: "01012345678", email: "unsigned@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => ({ intentionId: "pi_unsigned", orderId: 9021, clientSecret: "s", checkoutUrl: "https://checkout" })
+  });
+  const paid = { id: 7021, order: { id: 9021 }, amount_cents: 3500, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" } };
+  await processPaymobTransaction(paid, { verified: paid });
+  // `refunded_amount_cents` is NOT part of Paymob's HMAC input list. Claiming a full
+  // refund in the body must not be able to mark the order refunded on its own.
+  const forged = await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 },
+    { verified: { ...paid, is_refunded: false, refunded_amount_cents: 0 } });
+  const [order] = await db.select().from(orders).where(eq(orders.email, "unsigned@example.com"));
+  assert.equal(order.refundedAmountCents, 0, "an unauthenticated refund amount never changes the total");
+  assert.notEqual(order.providerPaymentStatus, "refunded");
+  assert.ok(forged, "the outcome is still returned for auditing");
+});
+
+test("a signed refund uses the authenticated inquiry total and ignores the callback amount", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Proven", phone: "01012345678", email: "proven@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
+    redirectionUrl: "https://capellacares.com/checkout/payment-result",
+    createIntention: async () => ({ intentionId: "pi_proven", orderId: 9022, clientSecret: "s", checkoutUrl: "https://checkout" })
+  });
+  const paid = { id: 7022, order: { id: 9022 }, amount_cents: 3500, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" } };
+  await processPaymobTransaction(paid, { verified: paid });
+  // The callback claims 3500 (a full refund); the authenticated provider read says 1200.
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 },
+    { verified: { ...paid, is_refunded: true, refunded_amount_cents: 1200 } });
+  const [order] = await db.select().from(orders).where(eq(orders.email, "proven@example.com"));
+  assert.equal(order.refundedAmountCents, 1200, "the proven amount wins over the unsigned callback value");
+  assert.equal(order.providerPaymentStatus, "partially_refunded");
+});
+
 test("processPaymobTransaction reflects a full dashboard refund without restocking the order", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
@@ -802,8 +860,11 @@ test("processPaymobTransaction reflects a full dashboard refund without restocki
     success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
     is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" } };
   await processPaymobTransaction(paid);
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 });
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 1200 });
+  // Refund totals must come from authenticated inquiry evidence, not the unsigned callback body.
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 },
+    { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 1200 },
+    { verified: { is_refunded: true, refunded_amount_cents: 1200 } });
   const [order] = await db.select().from(orders).where(eq(orders.email, "refunded@example.com"));
   const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
   assert.equal(order.providerPaymentStatus, "refunded");
@@ -832,7 +893,8 @@ test("processPaymobTransaction stores the cumulative amount refunded by Paymob",
     success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
     is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" } };
   await processPaymobTransaction(paid);
-  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 1200 });
+  await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 1200 },
+    { verified: { is_refunded: true, refunded_amount_cents: 1200 } });
   const [order] = await db.select().from(orders).where(eq(orders.email, "partial@example.com"));
   assert.equal(order.providerPaymentStatus, "partially_refunded");
   assert.equal((order as typeof order & { refundedAmountCents?: number }).refundedAmountCents, 1200);
@@ -968,7 +1030,8 @@ test("a signed refund arriving before success is applied to the eventual order",
     is_refunded: true, refunded_amount_cents: 3500, is_voided: false, has_parent_transaction: false,
     source_data: { type: "card" } };
 
-  const premature = await processPaymobTransaction(refund);
+  const premature = await processPaymobTransaction(refund,
+    { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
   assert.equal(premature.outcome, "refund_pending_success");
   assert.equal((await db.select().from(orders)).length, 0);
 
@@ -1103,7 +1166,7 @@ test("second-capture flag keeps the post-success flow intact for duplicates and 
 
   const refund = await processPaymobTransaction({
     ...paidTransaction(9307, 8310), is_refunded: true, refunded_amount_cents: 3500
-  });
+  }, { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
   assert.equal(refund.outcome, "refunded");
 
   const [attempt] = await db.select().from(paymentAttempts)
@@ -1125,7 +1188,7 @@ test("processPaymobTransaction rejects a failed refund callback after the paymen
 
   const result = await processPaymobTransaction({
     ...paidTransaction(9305, 8308), is_refunded: true, refunded_amount_cents: 3500, success: false
-  });
+  }, { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
 
   assert.equal(result.outcome, "rejected");
   const [order] = await db.select().from(orders)

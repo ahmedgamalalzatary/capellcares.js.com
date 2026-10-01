@@ -414,6 +414,13 @@
       "when": 1790683200000,
       "tag": "0058_shipping_edits",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "5",
+      "when": 1790888038120,
+      "tag": "0059_paymob_callback_inbox",
+      "breakpoints": true
     }
   ]
 }

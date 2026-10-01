@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test, { beforeEach } from "node:test";
+import test, { afterEach, beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
@@ -7,9 +7,20 @@ import { orders, paymentWebhookEvents } from "@capella/database/drizzle/schema";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { initiatePaymobCheckout } from "../../src/modules/checkout/paymob-checkout.service.js";
+import { setPaymobInquiryLookupForTests } from "../../src/modules/payments/paymob/paymob-webhook.controller.js";
 import { withTestServer } from "../helpers/request.js";
 
 beforeEach(resetApiTestDatabase);
+beforeEach(() => {
+  // Stand in for the authenticated Paymob read so route tests never reach the network.
+  // The callback's own refunded_amount_cents is unsigned, so the provider value is the
+  // only one the service is allowed to trust.
+  setPaymobInquiryLookupForTests(async (transactionId) => ({
+    transactionId, amountCents: 7000, currency: "EGP", success: true, pending: false,
+    refunded: true, refundedAmountCents: 7000
+  }));
+});
+afterEach(() => setPaymobInquiryLookupForTests(null));
 
 test("public Paymob availability exposes no secrets and stays off until methods are confirmed", async () => {
   await withTestServer(app, async (request) => {

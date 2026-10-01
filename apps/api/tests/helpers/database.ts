@@ -18,6 +18,7 @@ import {
   permissions,
   paymentAttempts,
   paymentWebhookEvents,
+  paymobCallbackInbox,
   advices,
   offers,
   productVariants,
@@ -40,6 +41,7 @@ export async function resetApiTestDatabase() {
   await db.delete(orderReviewFlags);
   await db.delete(orderStateHistory);
   await db.delete(shippingCheckoutQuotes);
+  await db.delete(paymobCallbackInbox);
   await db.delete(paymentWebhookEvents);
   await db.delete(paymentAttempts);
   await db.delete(checkoutReservations);
