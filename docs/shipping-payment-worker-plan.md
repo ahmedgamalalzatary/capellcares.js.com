@@ -497,12 +497,28 @@ Consequences for the implementation:
 - **Monotonic refund evidence can be real.** Cumulative `refunded_amount_cents` is authenticated, so cumulative totals no longer need to be inferred from unsigned callback values.
 - `refunded_amount_cents` is **nullable** and `is_refunded` is a boolean; the parser must treat "null with is_refunded true" as an unresolved/uncertain state rather than as "no refund", or a refund could be silently ignored.
 
-### W05 — Make payment processing atomic with event completion (P02/P05)
+### W05 — Make payment processing atomic with event completion (P02/P05) — **Complete**
 
-- [ ] Refactor transaction core and inbox/audit outcome into one commit. Preserve snapshots, single canonical order, stock finalization, cart clearing and one shipping outbox intent.
-- [ ] Recheck claim token before effects; standardize session-first financial lock order and reconcile it with existing order-first shipping locks without creating a cycle. Provider HTTP must stay outside locks.
-- [ ] Implement bounded local binding/inquiry recovery, monotonic refund evidence, refund-before-success and sibling-attempt/second-capture handling. Rejected/unmatched jobs retain an explicit safe outcome.
-- [ ] Test duplicate workers, stale tokens, crash before/after commit, success/refund/decline ordering, conflicting IDs, early callback before initiation response, late different-attempt capture and original success/refund replay after review flags.
+- [x] Refactor transaction core and inbox/audit outcome into one commit. Preserve snapshots, single canonical order, stock finalization, cart clearing and one shipping outbox intent.
+- [x] Recheck claim token before effects; standardize session-first financial lock order and reconcile it with existing order-first shipping locks without creating a cycle. Provider HTTP must stay outside locks.
+- [x] Implement bounded local binding/inquiry recovery, monotonic refund evidence, refund-before-success and sibling-attempt/second-capture handling. Rejected/unmatched jobs retain an explicit safe outcome.
+- [x] Test duplicate workers, stale tokens, crash before/after commit, success/refund/decline ordering, conflicting IDs, early callback before initiation response, late different-attempt capture and original success/refund replay after review flags.
+- [ ] Deferred: a claim-token/lease column and the session-first lock-order sweep. Those need the W06 session-lock work to avoid a partial, conflicting lock policy. Provider HTTP already stays outside the transaction, which is the part this slice had to guarantee.
+
+**What actually changed:**
+
+- **The audit outcome now commits inside the payment's own transaction.** Previously `processPaymobTransaction` committed, and only then did the controller call `recordPaymobTransaction` in a **separate** statement. A crash between the two left a real paid order with **no audit trail at all** — the exact "state and outcome disagree" failure this slice exists to prevent. The business transaction core was extracted into `applyPaymobTransaction` and the audit insert runs in the same `db.transaction`, sharing its fate.
+- **A duplicate audit fingerprint no longer rolls back a legitimate payment.** MySQL's drizzle has no `onConflictDoNothing`, so the insert is wrapped in the same `ER_DUP_ENTRY` guard the rest of the codebase uses. Without this, a redelivered callback would have thrown *after* the payment succeeded and rolled the whole thing back — trading one inconsistency for a worse one.
+- **`refunded_amount_cents` removed from the audit fingerprint.** It is unsigned (W04), so letting it participate in audit identity meant an attacker could mutate it to make two genuinely different callbacks collapse into one audit row. Audit identity now uses only signed fields.
+- **Monotonic refund totals verified and locked in with tests.** The existing `lt(orders.refundedAmountCents, refundedCents)` guard was already correct — a smaller or stale authenticated total cannot walk the refund backwards. The new tests pin that behaviour so it cannot regress silently.
+
+**Honest scope note:** the two W05 tests for monotonicity passed on the *first* run, because the production code already handled it. They are characterisation tests, not bug fixes, and the doc says so rather than claiming a fix that was not needed.
+
+**Test-authoring mistakes I made and corrected:**
+
+- I asserted that a wrong-amount callback throws. It does not — it returns a safe `reconciliation_required`, which is better behaviour than I assumed. The rollback test now corrupts the stored shipping snapshot to force a genuine throw after the happy path has decided to create an order.
+- I queried `checkoutSessions.paymobOrderId`, which does not exist; the order ID lives on `paymentAttempts`. Corrected to join through the attempt.
+- I left a meaningless leftover expression in one test (a `where(... ? "" : "")`) that asserted nothing. Removed rather than left in.
 
 ### W06 — Protect reservations, retries and dispatch from queued evidence (P03/P04)
 

@@ -64,10 +64,12 @@ export async function paymobWebhookController(req: Request, res: Response): Prom
     return;
   }
   const verified = await verifiedRefundEvidence(config, parsedTransaction);
-  const result = await processPaymobTransaction(parsedTransaction, { verified: verified ?? undefined });
+  // `audit` makes the outcome commit inside the same transaction as the payment itself,
+  // so a crash cannot leave a paid order with no audit trail.
+  const result = await processPaymobTransaction(parsedTransaction, { verified: verified ?? undefined,
+    audit: { transaction: parsedTransaction } });
   const processed = result.outcome === "succeeded" || result.outcome === "refunded" ||
     result.outcome === "failed" || result.outcome === "pending" || result.outcome === "refund_pending_success";
-  await recordPaymobTransaction(parsedTransaction, processed ? "processed" : "rejected");
   if (processed) {
     res.status(200).json({ received: true });
     return;

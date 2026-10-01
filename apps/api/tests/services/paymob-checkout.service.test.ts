@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 
@@ -1094,6 +1094,95 @@ async function createPaidSession(options: {
   assert.equal(first.outcome, "succeeded");
   return { ids, processPaymobTransaction };
 }
+
+test("the audit outcome commits atomically with the payment, so a crash cannot lose it", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Atomic", phone: "01012345678", email: "atomic@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "12121212-1212-4212-8212-121212121212",
+    config, notificationUrl, redirectionUrl,
+    createIntention: async () => ({ intentionId: "pi_atomic", orderId: 9411, clientSecret: "s", checkoutUrl: "https://checkout" })
+  });
+  const transaction = paidTransaction(9411, 8411);
+  const result = await processPaymobTransaction(transaction, { audit: { transaction } });
+  assert.equal(result.outcome, "succeeded");
+  // The order and its audit outcome must both exist, or both be absent. Previously the
+  // audit row was written by a separate call after the business transaction committed,
+  // so a crash in between lost the outcome while the order survived.
+  assert.equal((await db.select().from(paymentWebhookEvents)).length, 1, "exactly one audit row for the success");
+  assert.equal((await db.select().from(orders)).length, 1, "exactly one canonical order");
+});
+
+test("a rolled-back payment leaves no audit row claiming it was processed", async () => {
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Rollback", phone: "01012345678", email: "rollback@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "13131313-1313-4313-8313-131313131313",
+    config, notificationUrl, redirectionUrl,
+    createIntention: async () => ({ intentionId: "pi_rollback", orderId: 9412, clientSecret: "s", checkoutUrl: "https://checkout" })
+  });
+  // A wrong amount is a safe `reconciliation_required`, not a throw, so corrupt the stored
+  // snapshot instead: the happy path then fails after deciding to create an order, which
+  // is the rollback we need to observe.
+  const ids2 = await getBaselineIds();
+  await initiatePaymobCheckout({
+    payload: { fullName: "Rollback Two", phone: "01012345678", email: "rollback2@example.com", governorate: "Cairo",
+      cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
+      items: [{ type: "product", variantId: ids2.firstVariantId, qty: 1 }] },
+    idempotencyKey: "14141414-1414-4414-8414-141414141414",
+    config, notificationUrl, redirectionUrl,
+    createIntention: async () => ({ intentionId: "pi_rollback2", orderId: 9413, clientSecret: "s", checkoutUrl: "https://checkout" })
+  });
+  const duplicate = { ...paidTransaction(9413, 8413) };
+  // Corrupt the stored snapshot so the happy path throws after deciding to create an order.
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9413"));
+  await db.update(checkoutSessions).set({ shippingSnapshot: "not-valid-snapshot" })
+    .where(eq(checkoutSessions.id, attempt!.checkoutSessionId));
+  await assert.rejects(processPaymobTransaction(duplicate, { audit: { transaction: duplicate } }));
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "rollback2@example.com"))).length, 0,
+    "no order survives the rollback");
+  assert.equal((await db.select().from(paymentWebhookEvents)).length, 0,
+    "and no audit row claims it was processed");
+});
+
+test("a later, smaller authenticated refund never lowers a monotonic refund total", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "monotonic@example.com", idempotencyKey: "1b1b1b1b-1b1b-4b1b-8b1b-1b1b1b1b1b1b",
+    intentionId: "pi_monotonic", orderId: 9308, txnId: 8311
+  });
+  const base = { ...paidTransaction(9308, 8311), is_refunded: true, refunded_amount_cents: 3500 };
+  await processPaymobTransaction(base, { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
+  // An out-of-order or stale provider read reporting a smaller cumulative total must not
+  // walk the recorded refund backwards.
+  await processPaymobTransaction({ ...base, refunded_amount_cents: 1200 },
+    { verified: { is_refunded: true, refunded_amount_cents: 1200 } });
+  const [order] = await db.select().from(orders).where(eq(orders.email, "monotonic@example.com"));
+  assert.equal(order.refundedAmountCents, 3500, "the recorded refund total only ever increases");
+  assert.equal(order.providerPaymentStatus, "refunded", "a fully refunded order stays fully refunded");
+});
+
+test("a growing authenticated refund is applied cumulatively", async () => {
+  const { processPaymobTransaction } = await createPaidSession({
+    email: "cumulative@example.com", idempotencyKey: "1c1c1c1c-1c1c-4c1c-8c1c-1c1c1c1c1c1c",
+    intentionId: "pi_cumulative", orderId: 9309, txnId: 8312
+  });
+  const base = { ...paidTransaction(9309, 8312), is_refunded: true };
+  await processPaymobTransaction({ ...base, refunded_amount_cents: 1000 },
+    { verified: { is_refunded: true, refunded_amount_cents: 1000 } });
+  await processPaymobTransaction({ ...base, refunded_amount_cents: 2500 },
+    { verified: { is_refunded: true, refunded_amount_cents: 2500 } });
+  const [order] = await db.select().from(orders).where(eq(orders.email, "cumulative@example.com"));
+  assert.equal(order.refundedAmountCents, 2500);
+  assert.equal(order.providerPaymentStatus, "partially_refunded");
+});
 
 test("processPaymobTransaction rejects a wrong-amount callback after the payment already succeeded", async () => {
   const { processPaymobTransaction } = await createPaidSession({

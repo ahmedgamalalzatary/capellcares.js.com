@@ -1,6 +1,7 @@
 import { and, eq, lt, or, sql } from "drizzle-orm";
+import { createHash } from "node:crypto";
 import { db } from "@capella/database/src/db";
-import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../../repositories/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../../repositories/shipping-dispatch.repository.js";
@@ -24,10 +25,47 @@ type VerifiedPaymobState = {
   refunded_amount_cents?: number | null;
 };
 
+function isDuplicateEntry(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: string; cause?: { code?: string } };
+  return candidate.code === "ER_DUP_ENTRY" || candidate.cause?.code === "ER_DUP_ENTRY";
+}
+
 export type ProcessPaymobOptions = {
   /** Trusted state from `queryPaymobTransaction`. Without it, no refund amount is trusted. */
   verified?: VerifiedPaymobState;
+  /**
+   * When supplied, the audit outcome is written inside this same transaction instead of
+   * by a separate follow-up call. The order and its recorded outcome therefore commit
+   * together: a crash can no longer leave a paid order with no audit trail, nor an audit
+   * row claiming a payment that rolled back.
+   */
+  audit?: { transaction: Record<string, unknown> };
 };
+
+/**
+ * Audit identity for a callback. Deliberately excludes `refunded_amount_cents`: it is not
+ * covered by the HMAC, and an unsigned value must not be able to make two genuinely
+ * different callbacks collapse into one audit row.
+ */
+export function paymobAuditFingerprint(transaction: Record<string, unknown>): {
+  eventFingerprint: string; processingStatus: "processed" | "rejected";
+} {
+  const identity = JSON.stringify({
+    id: transaction.id,
+    order_id: (transaction.order as { id?: unknown } | undefined)?.id,
+    integration_id: transaction.integration_id,
+    is_live: transaction.is_live,
+    success: transaction.success,
+    pending: transaction.pending,
+    is_auth: transaction.is_auth,
+    is_capture: transaction.is_capture,
+    is_refunded: transaction.is_refunded,
+    is_voided: transaction.is_voided,
+    captured_amount: transaction.captured_amount
+  });
+  return { eventFingerprint: createHash("sha256").update(identity).digest("hex"), processingStatus: "processed" };
+}
 
 export async function processPaymobTransaction(transaction: PaymobTransaction, options: ProcessPaymobOptions = {}) {
   const verified = options.verified;
@@ -36,6 +74,29 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
     ? Number(verified.refunded_amount_cents ?? 0)
     : 0;
   return db.transaction(async (tx) => {
+    const outcome = await applyPaymobTransaction(tx, transaction, refundedAmountCents);
+    if (options.audit) {
+      // Inside the same transaction: the audit row and the effects it describes share one fate.
+      const { eventFingerprint } = paymobAuditFingerprint(options.audit.transaction);
+      try {
+        await tx.insert(paymentWebhookEvents).values({ provider: "paymob", callbackType: "transaction",
+          eventFingerprint, processingStatus: PROCESSED_OUTCOMES.has(outcome.outcome) ? "processed" : "rejected",
+          processedAt: new Date() });
+      } catch (error) {
+        // A redelivered callback has the same fingerprint. That is normal, and must never
+        // roll back a legitimate payment just because its audit row already exists.
+        if (!isDuplicateEntry(error)) throw error;
+      }
+    }
+    return outcome;
+  });
+}
+
+const PROCESSED_OUTCOMES = new Set(["succeeded", "refunded", "failed", "pending", "refund_pending_success"]);
+
+type PaymobTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransaction, refundedAmountCents: number) {
+  {
     const [match] = await tx.select({
       attempt: paymentAttempts,
       session: checkoutSessions
@@ -251,5 +312,5 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
       await tx.update(carts).set({ lines: [] }).where(eq(carts.customerId, match.session.customerId));
     }
     return { outcome: "succeeded" as const, orderId: order.id, paymentAttemptId: match.attempt.id, checkoutSessionId: match.session.id };
-  });
+  }
 }
