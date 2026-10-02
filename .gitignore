@@ -53,3 +53,5 @@ Thumbs.db
 
 # Test artifacts
 test-results/
+# Command Code scratch commit-message files
+.w*-msg.txt
