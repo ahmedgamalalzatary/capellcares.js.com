@@ -4,11 +4,11 @@ import { z } from "zod";
 import { wrapAsync } from "../../lib/async-route.js";
 import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
 import type { ErpAuthenticatedRequest } from "../../middlewares/admin-auth.middleware.js";
-import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
-import { recordOrderManualState } from "../../repositories/shipping-state.repository.js";
-import { ShippingRuleError } from "../../repositories/shipping-rule-error.js";
+import { requestShippingCancellation, ShippingCancellationError } from "./shipping-cancellation.repository.js";
+import { recordOrderManualState } from "./shipping-state.repository.js";
+import { ShippingRuleError } from "./shipping-rule-error.js";
 import { CheckoutShippingError } from "./checkout-shipping.service.js";
-import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags, editOrderShipment, ShippingConfigurationError } from "../../repositories/shipping-action.repository.js";
+import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags, editOrderShipment, ShippingConfigurationError } from "./shipping-action.repository.js";
 import { shipmentManualStateRequestSchema, shipmentEditSchema, shippingFlagResolutionSchema, shippingBulkActionSchema } from "@capella/shared";
 
 export const shippingActionRoutes = Router();

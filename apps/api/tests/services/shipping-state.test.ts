@@ -6,13 +6,13 @@ import { orders, orderStateHistory, shipments, shipmentEvents, shippingWorkItems
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { syncEnvironment } from "../helpers/bosta-sync.js";
-import { recordShippingObservation, processPendingShippingEvents } from "../../src/repositories/shipping-sync.repository.js";
+import { recordShippingObservation, processPendingShippingEvents } from "../../src/modules/shipping/shipping-sync.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/repositories/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 async function service() {
-  const module = await import("../../src/repositories/shipping-state.repository.js").catch(() => null);
+  const module = await import("../../src/modules/shipping/shipping-state.repository.js").catch(() => null);
   assert.ok(module?.recordOrderManualState, "transactional manual/processing state service is required");
   return module;
 }

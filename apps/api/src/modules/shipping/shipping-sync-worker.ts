@@ -3,10 +3,10 @@ import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, count, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
+import { flagShippingOrder } from "./shipping-dispatch.repository.js";
 import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
-import { isFullyResolvedTerminal, TERMINAL_FOLLOW_UP_MS } from "../../repositories/shipping-sync-policy.js";
-import { processPendingShippingEvents, recordShippingObservation, shippingRequestMatchesAccount } from "../../repositories/shipping-sync.repository.js";
+import { isFullyResolvedTerminal, TERMINAL_FOLLOW_UP_MS } from "./shipping-sync-policy.js";
+import { processPendingShippingEvents, recordShippingObservation, shippingRequestMatchesAccount } from "./shipping-sync.repository.js";
 import { resolveBostaSyncRuntime, type BostaObservation, type BostaSyncRuntime } from "./bosta/bosta-sync.service.js";
 
 const backoff = (attempt: number) => Math.min(900_000, 30_000 * 2 ** Math.max(0, attempt - 1));

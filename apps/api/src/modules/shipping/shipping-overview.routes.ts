@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { wrapAsync } from "../../lib/async-route.js";
 import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
-import { listShippingOverviewRepo } from "../../repositories/shipping-overview.repository.js";
+import { listShippingOverviewRepo } from "./shipping-overview.repository.js";
 
 export const shippingOverviewRoutes = Router();
 

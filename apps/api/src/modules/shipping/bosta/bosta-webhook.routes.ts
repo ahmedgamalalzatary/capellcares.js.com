@@ -1,7 +1,7 @@
 import express, { Router, type ErrorRequestHandler } from "express";
 import { rateLimit } from "../../../middlewares/rate-limit.middleware.js";
 import { resolveBostaSyncRuntime, type BostaSyncRuntime, type BostaObservation } from "./bosta-sync.service.js";
-import { recordShippingObservation } from "../../../repositories/shipping-sync.repository.js";
+import { recordShippingObservation } from "../shipping-sync.repository.js";
 
 export const bostaWebhookRoutes = Router();
 const path = "/api/v1/shipping/bosta/webhook";

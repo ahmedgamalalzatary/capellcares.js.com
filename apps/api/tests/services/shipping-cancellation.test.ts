@@ -5,14 +5,14 @@ import { db } from "@capella/database/src/db";
 import { orders, orderItems, orderReviewFlags, shippingWorkItems, productVariants } from "@capella/database/drizzle/schema";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { recordOrderManualState } from "../../src/repositories/shipping-state.repository.js";
+import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 import { expirePendingCodOrders, updateOrderPaymentStatusRepo } from "../../src/repositories/order.repository.js";
-import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
+import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 
 beforeEach(resetApiTestDatabase);
 async function api() {
-  const service = await import("../../src/repositories/shipping-cancellation.repository.js").catch(() => null);
+  const service = await import("../../src/modules/shipping/shipping-cancellation.repository.js").catch(() => null);
   assert.ok(service?.requestShippingCancellation, "shared durable cancellation operation is required");
   return service;
 }

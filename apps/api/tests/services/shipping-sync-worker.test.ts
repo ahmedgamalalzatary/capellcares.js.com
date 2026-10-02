@@ -7,8 +7,8 @@ import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { readFixture, syncEnvironment, webhookFixture } from "../helpers/bosta-sync.js";
 import { resolveBostaSyncRuntime } from "../../src/modules/shipping/bosta/bosta-sync.service.js";
-import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
-import { bindingEnvironment } from "../../src/repositories/shipment-binding.repository.js";
+import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
+import { bindingEnvironment } from "../../src/modules/shipping/shipment-binding.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 
 beforeEach(resetApiTestDatabase);

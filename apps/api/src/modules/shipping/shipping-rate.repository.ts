@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { shippingRates } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { buildRateIdentity, shippingRateAmountSchema,
-  type ShippingRateContext } from "../modules/shipping/bosta/bosta-rate-context.js";
-export type { ShippingRateContext } from "../modules/shipping/bosta/bosta-rate-context.js";
+  type ShippingRateContext } from "./bosta/bosta-rate-context.js";
+export type { ShippingRateContext } from "./bosta/bosta-rate-context.js";
 
 /**
  * Persists the last valid account rate as the fallback (D16). The structured

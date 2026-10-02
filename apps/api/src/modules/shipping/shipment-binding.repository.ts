@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { shipmentProviderBindings } from "@capella/database/drizzle/schema";
-import { isDuplicateEntryError } from "../modules/admin/shared/db-errors.js";
+import { isDuplicateEntryError } from "../admin/shared/db-errors.js";
 
 export type OutgoingBindingEvidence = {
   shipmentId: number;

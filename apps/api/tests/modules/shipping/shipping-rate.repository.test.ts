@@ -3,13 +3,13 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 import { shippingRates } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { resetApiTestDatabase } from "../helpers/database.js";
+import { resetApiTestDatabase } from "../../helpers/database.js";
 import {
   loadSavedShippingRate,
   saveShippingRate
-} from "../../src/repositories/shipping-rate.repository.js";
-import { buildRateIdentity } from "../../src/modules/shipping/bosta/bosta-rate-context.js";
-import { BOSTA_RATE_CONTEXT } from "../helpers/bosta.js";
+} from "../../../src/modules/shipping/shipping-rate.repository.js";
+import { buildRateIdentity } from "../../../src/modules/shipping/bosta/bosta-rate-context.js";
+import { BOSTA_RATE_CONTEXT } from "../../helpers/bosta.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

@@ -8,7 +8,7 @@ import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.j
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
-import { recordOrderManualState } from "../../src/repositories/shipping-state.repository.js";
+import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
 import { syncEnvironment } from "../helpers/bosta-sync.js";
 
 beforeEach(resetApiTestDatabase);
@@ -227,7 +227,7 @@ test("bulk packing edits and flag resolution keep each order's guards", async ()
 test("retry repository checks current actor permission and refuses cancelled orders", async () => {
   const f = await shippingSyncFixture(false);
   await db.update(shippingWorkItems).set({ status: "failed", lastError: "CREATE_REJECTED" }).where(eq(shippingWorkItems.id, f.job.id));
-  const { retryOrderDeliveryCreation } = await import("../../src/repositories/shipping-action.repository.js");
+  const { retryOrderDeliveryCreation } = await import("../../src/modules/shipping/shipping-action.repository.js");
   await assert.rejects(retryOrderDeliveryCreation(f.order.id, 999999), /permission|authorized/i);
   await db.update(orders).set({ cancellationStatus: "cancelled" }).where(eq(orders.id, f.order.id));
   await withTestServer(app, async request => {

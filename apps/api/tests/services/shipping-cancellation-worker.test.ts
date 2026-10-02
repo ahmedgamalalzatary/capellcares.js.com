@@ -7,8 +7,8 @@ import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.j
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { cancellationEnvironment } from "../helpers/bosta-cancellation.js";
 import { readFixture } from "../helpers/bosta-sync.js";
-import { requestShippingCancellation } from "../../src/repositories/shipping-cancellation.repository.js";
-import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
+import { requestShippingCancellation } from "../../src/modules/shipping/shipping-cancellation.repository.js";
+import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 
 beforeEach(resetApiTestDatabase);

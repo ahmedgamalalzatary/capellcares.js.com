@@ -4,7 +4,7 @@ import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../../repositories/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
-import { enqueueOrderDelivery, blockRefundedDelivery } from "../../../repositories/shipping-dispatch.repository.js";
+import { enqueueOrderDelivery, blockRefundedDelivery } from "../../shipping/shipping-dispatch.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../../repositories/checkout/financial-evidence.repository.js";
 
 type PaymobTransaction = Record<string, any> & {

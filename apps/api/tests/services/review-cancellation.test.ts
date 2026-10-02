@@ -5,7 +5,7 @@ import { db } from "@capella/database/src/db";
 import { orders, orderItems } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { requestShippingCancellation } from "../../src/repositories/shipping-cancellation.repository.js";
+import { requestShippingCancellation } from "../../src/modules/shipping/shipping-cancellation.repository.js";
 import { findOrderByIdRepo } from "../../src/repositories/order.repository.js";
 import { attachReviewEligibilityToOrder, claimReviewPrompt, createVerifiedReview, ReviewEligibilityError } from "../../src/repositories/review.repository.js";
 

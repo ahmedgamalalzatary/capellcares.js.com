@@ -3,9 +3,9 @@ import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { directCancellationBlocked, finishShippingCancellation } from "../../repositories/shipping-cancellation.repository.js";
-import { flagShippingOrder, stopUnsentDelivery } from "../../repositories/shipping-dispatch.repository.js";
-import { recordShippingObservation, shippingRequestMatchesAccount } from "../../repositories/shipping-sync.repository.js";
+import { directCancellationBlocked, finishShippingCancellation } from "./shipping-cancellation.repository.js";
+import { flagShippingOrder, stopUnsentDelivery } from "./shipping-dispatch.repository.js";
+import { recordShippingObservation, shippingRequestMatchesAccount } from "./shipping-sync.repository.js";
 import { BostaProviderError } from "./bosta/bosta-client.js";
 import { resolveBostaCancellationRuntime, type BostaCancellationRuntime, type CancellationObservation } from "./bosta/bosta-cancellation.service.js";
 

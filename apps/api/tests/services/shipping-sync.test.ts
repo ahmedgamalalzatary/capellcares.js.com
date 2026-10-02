@@ -11,7 +11,7 @@ import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dis
 
 beforeEach(resetApiTestDatabase);
 async function service() {
-  const module = await import("../../src/repositories/shipping-sync.repository.js").catch(() => null);
+  const module = await import("../../src/modules/shipping/shipping-sync.repository.js").catch(() => null);
   assert.ok(module?.recordShippingObservation, "transactional carrier event processing is required");
   return module;
 }

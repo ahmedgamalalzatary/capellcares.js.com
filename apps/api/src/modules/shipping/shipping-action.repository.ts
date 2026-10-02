@@ -4,8 +4,8 @@ import { orders, shippingWorkItems, orderReviewFlags } from "@capella/database/d
 import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import { shippingFlagResolutionSchema, checkoutShippingQuoteSchema } from "@capella/shared";
 import { assertShippingActor, applyShippingNoMoneyEdit, reconcileShippingEdit } from "./shipping-edit.repository.js";
-import { resolveBostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
-import { resolveBostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
+import { resolveBostaEditRuntime } from "./bosta/bosta-edit.service.js";
+import { resolveBostaSyncRuntime } from "./bosta/bosta-sync.service.js";
 import { requestShippingCancellation, ShippingCancellationError } from "./shipping-cancellation.repository.js";
 import { recordOrderManualState } from "./shipping-state.repository.js";
 import { ShippingRuleError } from "./shipping-rule-error.js";

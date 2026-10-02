@@ -8,7 +8,7 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { expirePendingCodOrders } from "../../src/repositories/order.repository.js";
 import { resolveOrderReviewFlagRepo } from "../../src/repositories/order-review-flag.repository.js";
-import { enqueueOrderDelivery } from "../../src/repositories/shipping-dispatch.repository.js";
+import { enqueueOrderDelivery } from "../../src/modules/shipping/shipping-dispatch.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 import { bostaDeliveryProviderFromEnvironment } from "../../src/modules/shipping/bosta/bosta-delivery.service.js";
 import { deliveryEnvironment, deliveryRateIdentity } from "../helpers/bosta-delivery.js";

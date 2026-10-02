@@ -5,11 +5,11 @@ import { db } from "@capella/database/src/db";
 import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
+import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 
 beforeEach(resetApiTestDatabase);
 async function guard(orderId: number, patch: unknown, evidence?: unknown) {
-  const module = await import("../../src/repositories/shipping-state.repository.js");
+  const module = await import("../../src/modules/shipping/shipping-state.repository.js");
   assert.ok((module as any).assertShippingEditAllowed, "atomic no-money shipping edit guard is required");
   return db.transaction(tx => (module as any).assertShippingEditAllowed(tx, orderId, patch, evidence));
 }

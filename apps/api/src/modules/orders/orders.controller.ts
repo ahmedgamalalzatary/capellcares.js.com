@@ -16,7 +16,7 @@ import {
 import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "../../repositories/order-review-flag.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
-import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
+import { requestShippingCancellation, ShippingCancellationError } from "../shipping/shipping-cancellation.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
 const paymentChangeSchema = z.object({ paymentStatus: z.enum(allowedPaymentStatuses) }).strict();

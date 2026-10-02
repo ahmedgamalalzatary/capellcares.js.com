@@ -2,9 +2,9 @@ import { db } from "@capella/database/src/db";
 import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gte, isNotNull, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
-import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../shipping-dispatch.repository.js";
-import { untouchedShippingExpiryApplies } from "../shipping-state.repository.js";
-import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../shipping-cancellation.repository.js";
+import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../../modules/shipping/shipping-dispatch.repository.js";
+import { untouchedShippingExpiryApplies } from "../../modules/shipping/shipping-state.repository.js";
+import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../../modules/shipping/shipping-cancellation.repository.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

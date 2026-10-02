@@ -3,7 +3,7 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, shipments, shipmentEvents, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch.repository.js";
-import { normalizeBostaState, type BostaObservation, type BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
+import { normalizeBostaState, type BostaObservation, type BostaSyncRuntime } from "./bosta/bosta-sync.service.js";
 import { recordCarrierShippingFacts, shippingAddressException } from "./shipping-state.repository.js";
 import { confirmShippingEdits } from "./shipping-edit.repository.js";
 import { bindingEnvironment, recordOutgoingBinding } from "./shipment-binding.repository.js";

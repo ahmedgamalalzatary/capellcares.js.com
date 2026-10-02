@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { shippingMoneyCentsSchema } from "@capella/shared";
-import { loadSavedShippingRate, saveShippingRate } from "../../../repositories/shipping-rate.repository.js";
+import { loadSavedShippingRate, saveShippingRate } from "../shipping-rate.repository.js";
 import { BostaAddressService } from "./bosta-address.service.js";
 import { BostaClient, BostaResponseValidationError } from "./bosta-client.js";
 import type { BostaConfig } from "./bosta-config.js";

@@ -1,4 +1,4 @@
-import type { BostaObservation } from "../modules/shipping/bosta/bosta-sync.service.js";
+import type { BostaObservation } from "./bosta/bosta-sync.service.js";
 
 /** Follow-up read delay before a fully resolved terminal parcel is parked (W07 B05). */
 export const TERMINAL_FOLLOW_UP_MS = 24 * 60 * 60_000;

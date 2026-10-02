@@ -9,7 +9,7 @@ import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { fixtureShippingService, selectedDestination, shippingBuyer, destination } from "../helpers/checkout-shipping.js";
 import { deliveryEnvironment, deliveryRateIdentity } from "../helpers/bosta-delivery.js";
 import { bostaDeliveryProviderFromEnvironment } from "../../src/modules/shipping/bosta/bosta-delivery.service.js";
-import { blockRefundedDelivery } from "../../src/repositories/shipping-dispatch.repository.js";
+import { blockRefundedDelivery } from "../../src/modules/shipping/shipping-dispatch.repository.js";
 
 beforeEach(resetApiTestDatabase);
 async function setup(fetchImpl: typeof fetch = async () => Response.json({ success: true,

@@ -206,7 +206,7 @@ test("linked return rows do not inherit the order cancellation", async () => {
 test("shipping overview paginates by cursor", async () => {
   const f1 = await shippingSyncFixture();
   await shippingSyncFixture();
-  const { listShippingOverviewRepo } = await import("../../src/repositories/shipping-overview.repository.js");
+  const { listShippingOverviewRepo } = await import("../../src/modules/shipping/shipping-overview.repository.js");
   const page1 = await listShippingOverviewRepo(null, 1);
   assert.equal(page1.items.length, 1);
   assert.ok(page1.nextCursor, "page 1 must expose a cursor when more rows exist");

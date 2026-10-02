@@ -6,11 +6,11 @@ import { shipmentEditSchema, checkoutShippingQuoteSchema } from "@capella/shared
 import type { ShipmentEdit } from "@capella/shared";
 import { assertShippingEditAllowed, type ShippingEditEvidence } from "./shipping-state.repository.js";
 import { recordShippingObservation } from "./shipping-sync.repository.js";
-import { BostaProviderError } from "../modules/shipping/bosta/bosta-client.js";
-import { assertAddressMatches, type NormalizedReadAddress } from "../modules/shipping/bosta/bosta-delivery-read.js";
-import { assertAddressAllowed, buildDropOffFirstLine } from "../modules/shipping/shipping-restrictions.js";
-import type { BostaEditRuntime } from "../modules/shipping/bosta/bosta-edit.service.js";
-import type { BostaObservation, BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
+import { BostaProviderError } from "./bosta/bosta-client.js";
+import { assertAddressMatches, type NormalizedReadAddress } from "./bosta/bosta-delivery-read.js";
+import { assertAddressAllowed, buildDropOffFirstLine } from "./shipping-restrictions.js";
+import type { BostaEditRuntime } from "./bosta/bosta-edit.service.js";
+import type { BostaObservation, BostaSyncRuntime } from "./bosta/bosta-sync.service.js";
 import type { ShippingTransaction } from "./shipping-dispatch.repository.js";
 import { ShippingRuleError } from "./shipping-rule-error.js";
 

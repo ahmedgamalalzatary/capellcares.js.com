@@ -8,8 +8,8 @@ import { app } from "../../src/app.js";
 import { withTestServer } from "../helpers/request.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { recordOrderManualState } from "../../src/repositories/shipping-state.repository.js";
-import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
+import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
+import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 
 beforeEach(resetApiTestDatabase);
 const headers = (id: number) => ({ authorization: `Bearer ${jwt.sign({ sub: id, role: "customer" }, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret", { expiresIn: "15m" })}` });

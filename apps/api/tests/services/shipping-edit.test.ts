@@ -7,7 +7,7 @@ import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { selectedDestination } from "../helpers/checkout-shipping.js";
-import { applyShippingNoMoneyEdit, ShippingEditError } from "../../src/repositories/shipping-edit.repository.js";
+import { applyShippingNoMoneyEdit, ShippingEditError } from "../../src/modules/shipping/shipping-edit.repository.js";
 import { BostaProviderError } from "../../src/modules/shipping/bosta/bosta-client.js";
 
 beforeEach(resetApiTestDatabase);
@@ -122,9 +122,9 @@ test("uncertain linked edits block another write and synchronization confirms th
     async update() { throw new Error("Connection lost after write"); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { size: "medium", notes: "Handle with care" }, actor, edit), /uncertain|confirm/i);
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { notes: "Another edit" }, actor, edit), /pending|unresolved/i);
-  const { requestShippingCancellation } = await import("../../src/repositories/shipping-cancellation.repository.js");
+  const { requestShippingCancellation } = await import("../../src/modules/shipping/shipping-cancellation.repository.js");
   await assert.rejects(requestShippingCancellation(f.order.id, { source: "staff", actorId: actor }), /edit|pending/i);
-  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  const { recordShippingObservation } = await import("../../src/modules/shipping/shipping-sync.repository.js");
   await recordShippingObservation(f.runtime, { ...observation(f, true), atMs: 6_000 });
   const jobs = await shippingWorkItemsMeta(f.order.id);
   assert.equal(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded");
@@ -172,7 +172,7 @@ test("an address edit is confirmed from normalized identity, not from assuming f
   const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new Error("Connection lost after write"); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, editAddress, await admin(), edit), /uncertain|confirm/i);
-  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  const { recordShippingObservation } = await import("../../src/modules/shipping/shipping-sync.repository.js");
   await recordShippingObservation(f.runtime, { ...observation(f), atMs: 7_000,
     carrier: { notes: "Original", size: "SMALL", addressIdentity: editIdentity } });
   const jobs = await shippingWorkItemsMeta(f.order.id);
@@ -185,7 +185,7 @@ test("an address edit is never confirmed by an observation whose destination ide
   const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new Error("Connection lost after write"); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, editAddress, await admin(), edit), /uncertain|confirm/i);
-  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  const { recordShippingObservation } = await import("../../src/modules/shipping/shipping-sync.repository.js");
   // No address evidence at all, and separately an unproven district identity.
   for (const addressIdentity of [undefined,
     { cityId: null, zoneId: null, districtId: null, firstLine: "Street 1, 1" },
@@ -204,7 +204,7 @@ test("carrier evidence closes a rejected edit after the requested correction is 
   const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new BostaProviderError("Edit unavailable", "definitive", 400); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { size: "medium", notes: "Handle with care" }, await admin(), edit), /rejected/i);
-  const { recordShippingObservation } = await import("../../src/repositories/shipping-sync.repository.js");
+  const { recordShippingObservation } = await import("../../src/modules/shipping/shipping-sync.repository.js");
   await recordShippingObservation(f.runtime, { ...observation(f, true), atMs: 6_000 });
   const jobs = await shippingWorkItemsMeta(f.order.id);
   assert.equal(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded");

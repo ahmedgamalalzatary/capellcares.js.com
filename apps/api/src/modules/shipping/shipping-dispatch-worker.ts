@@ -4,9 +4,9 @@ import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orderItems, orders, orderReviewFlags, paymentAttempts, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
-import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
+import { flagShippingOrder } from "./shipping-dispatch.repository.js";
 import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
-import { untouchedShippingExpiryApplies } from "../../repositories/shipping-state.repository.js";
+import { untouchedShippingExpiryApplies } from "./shipping-state.repository.js";
 import { BostaProviderError } from "./bosta/bosta-client.js";
 import { bostaDeliveryProviderFromEnvironment, type DeliveryProvider, type DeliveryRequest, type DeliveryResult } from "./bosta/bosta-delivery.service.js";
 

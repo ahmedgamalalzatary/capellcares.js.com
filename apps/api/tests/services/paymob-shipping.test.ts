@@ -45,7 +45,7 @@ test("manual safe paid cancellation and a later verified full refund retain sepa
   await initiatePaymobCheckout(input);
   const created = await processPaymobTransaction(paid);
   const actorId = await createTestAdminUser({ name: "Refund admin", email: "refund-cancel@example.test", passwordHash: "unused", role: "admin" });
-  const { requestShippingCancellation } = await import("../../src/repositories/shipping-cancellation.repository.js");
+  const { requestShippingCancellation } = await import("../../src/modules/shipping/shipping-cancellation.repository.js");
   const result = await requestShippingCancellation(created.orderId!, { source: "staff", actorId });
   assert.equal(result.refundRequiredCents, 13229);
   await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 13229 },
