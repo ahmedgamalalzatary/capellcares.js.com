@@ -9,6 +9,29 @@ import { confirmShippingEdits } from "./shipping-edit.repository.js";
 import { bindingEnvironment, recordOutgoingBinding } from "./shipment-binding.repository.js";
 
 type Shipment = typeof shipments.$inferSelect;
+
+/** Read a nested value by own-property path, tolerating missing links. */
+function atPath(value: unknown, parts: string[]): unknown {
+  for (const part of parts) value = value !== null && typeof value === "object" && Object.hasOwn(value, part)
+    ? (value as Record<string, unknown>)[part] : undefined;
+  return value;
+}
+
+/**
+ * The provider's own delivery id, read from whichever shape this observation arrived in.
+ *
+ * A WEBHOOK body carries `_id` at the top level, while a POLLED READ wraps the delivery in
+ * `{success, data}` so the id sits at `data._id`. Reading only the top level recorded null
+ * on every polled observation - which is precisely when the sync worker is the one creating
+ * the binding. Both shapes are accepted, because neither is a guess: the value is still the
+ * provider's own id, just reached through the envelope that carried it.
+ */
+function providerReferenceFromObservation(event: { raw: unknown }): string | null {
+  const fromRead = atPath(event.raw, ["data", "_id"]);
+  if (typeof fromRead === "string" && fromRead.length > 0) return fromRead;
+  const fromWebhook = atPath(event.raw, ["_id"]);
+  return typeof fromWebhook === "string" && fromWebhook.length > 0 ? fromWebhook : null;
+}
 type Order = typeof orders.$inferSelect;
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
@@ -136,10 +159,7 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
       accountKey: runtime.accountKey,
       environment: bindingEnvironment(runtime.environment),
       providerTrackingId: ship.trackingNumber,
-      providerReference: typeof event.raw === "object" && event.raw !== null &&
-        typeof (event.raw as { _id?: unknown })._id === "string"
-  ? (event.raw as { _id: string })._id
-  : null,
+      providerReference: providerReferenceFromObservation(event),
       businessReference: reference
     });
     // W07 B05 reopen: a parked job stopped reading, so an authenticated callback is the

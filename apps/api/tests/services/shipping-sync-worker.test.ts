@@ -8,6 +8,7 @@ import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { readFixture, syncEnvironment, webhookFixture } from "../helpers/bosta-sync.js";
 import { resolveBostaSyncRuntime } from "../../src/modules/shipping/bosta/bosta-sync.service.js";
 import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
+import { bindingEnvironment } from "../../src/repositories/shipment-binding.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
 
 beforeEach(resetApiTestDatabase);
@@ -83,6 +84,32 @@ test("a parked job reopens when an authenticated callback arrives, so a terminal
   await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
     type: "SEND", state: 30, isConfirmedDelivery: false, cod: 0 })));
   assert.equal((await syncJob()).syncPhase, "active", "an authenticated callback must reopen a parked job");
+});
+
+test("bindingEnvironment refuses an unrecognised provider host instead of guessing test", () => {
+  // Substring matching is why this must not ship: an unknown or typo'd host silently
+  // became `test`, which would file live evidence under the test environment.
+  assert.throws(() => bindingEnvironment("https://evil.example.com/api"),
+    /unrecognised|unrecognized/i, "an unknown host must never be recorded as a known environment");
+  assert.equal(bindingEnvironment("https://stg-app.bosta.co/api/v2"), "test");
+  assert.equal(bindingEnvironment("https://app.bosta.co/api/v2"), "live");
+});
+
+test("a polling read records the provider's own delivery id from the response envelope", async () => {
+  // A READ and a WEBHOOK have different shapes: the read wraps the delivery in
+  // `{success, data}`, so the provider's own `_id` lives at raw.data._id. Reading it from
+  // raw._id (the webhook shape) silently yielded null on every polled observation, which
+  // is exactly when the binding is being created.
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey)))!;
+  const run = await worker();
+  await run({ runtime, now: new Date() });
+
+  const [binding] = await db.select().from(shipmentProviderBindings)
+    .where(eq(shipmentProviderBindings.shipmentId, f.shipment.id));
+  assert.equal(binding.providerReference, "provider-delivery",
+    "the provider's own delivery id must be captured from a polled read");
 });
 
 test("normal delivery completion records an outgoing provider binding as evidence", async () => {

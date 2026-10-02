@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { and, eq } from "drizzle-orm";
 import { db, mysqlPool } from "@capella/database/src/db";
 import { checkoutSessions, orderReviewFlags, orders, paymentAttempts, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
+import { createReservedCheckout, discoverExpiredSessionIds, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { expirePendingCodOrders } from "../../src/repositories/order.repository.js";
@@ -465,7 +465,14 @@ test("dispatch holds an order while refund evidence for its session is still unr
   // courier now would deliver goods to someone whose money is being returned, and the
   // refund may then be spent again. Dispatch must wait for the authenticated answer.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
-  await db.update(paymentAttempts).set({ status: "pending", paymobOrderId: "9701" })
+  // Only the provider order id is set here. The attempt keeps whatever status the paid
+  // path actually left it at ('succeeded'), because forcing it back to 'pending' made this
+  // test exercise a shape that does not occur in production: a refund never arrives
+  // against an open attempt.
+  const [before] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.checkoutSessionId, sessionId));
+  assert.equal(before.status, "succeeded", "the refund must arrive against a settled attempt");
+  await db.update(paymentAttempts).set({ paymobOrderId: "9701" })
     .where(eq(paymentAttempts.checkoutSessionId, sessionId));
   await receivePaymobCallback({ callbackType: "transaction", transaction: {
     id: 7301, order: { id: 9701 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
@@ -482,6 +489,99 @@ test("dispatch holds an order while refund evidence for its session is still unr
   assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 0,
     "nothing is handed to the courier while the refund is unresolved");
 });
+
+test("dispatch holds a PAID order whose refund evidence arrives after the attempt succeeded", async () => {
+  const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "late-refund-blocks@example.test");
+  // The attempt is genuinely succeeded - the order was paid and created. Only now does a
+  // refund callback land, durably received but not yet resolved. Handing this order to a
+  // courier now would deliver goods to someone whose money is being returned.
+  //
+  // This is the case that a guard scoped to "created/pending" attempts misses entirely,
+  // because a refund normally arrives hours after the payment that it reverses.
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  const [attempt] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.checkoutSessionId, sessionId));
+  assert.equal(attempt.status, "succeeded", "the paid fixture must leave the attempt succeeded");
+  await db.update(paymentAttempts).set({ paymobOrderId: "9702" })
+    .where(eq(paymentAttempts.checkoutSessionId, sessionId));
+  await receivePaymobCallback({ callbackType: "transaction", transaction: {
+    id: 7302, order: { id: 9702 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: true,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+
+  await db.update(shippingWorkItems).set({ nextAttemptAt: new Date(Date.now() - 2000) })
+    .where(eq(shippingWorkItems.orderId, orderId));
+  await runShippingDispatchOnce({ provider: dispatchProvider() });
+
+  const [job] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
+  assert.equal(job.status, "failed", "an unresolved refund on a paid attempt must still hold the shipment");
+  assert.equal(job.lastError, "ORDER_NOT_DISPATCHABLE");
+  assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 0,
+    "a refund that arrives after payment must still stop the parcel leaving");
+});
+
+test("expiry discovery does not spend its batch on sessions that are only held", async () => {
+  // A session held by unresolved payment evidence is correctly skipped under its lock -
+  // but it must not CONSUME a discovery slot. If held sessions occupy the batch, an
+  // eligible session behind them is never examined and its stock is never released, so
+  // the sweep silently stops making progress while held sessions pile up in front of it.
+  //
+  // The batch size is deliberately 2 here, not the production 50: starvation is a
+  // ratio problem, and testing it at production scale would need 51 fixtures to prove
+  // the same thing.
+  const held: number[] = [];
+  // The held ones expire EARLIER, so they take the first discovery slots and can push the
+  // eligible session out of the batch. That ordering is the whole point of the test.
+  for (let index = 0; index < 2; index += 1) {
+    held.push(await createExpiredHeldSession(`starved-held-${index}@example.test`, 8100 + index, true, 120_000 + index * 1000));
+  }
+  const eligible = await createExpiredHeldSession("starved-eligible@example.test", 8199, false, 1000);
+
+  const discovered = await discoverExpiredSessionIds(new Date(), 2);
+  assert.ok(discovered.includes(eligible),
+    `the eligible session must survive discovery behind held ones (discovered ${discovered.length})`);
+
+  await releaseExpiredCheckoutReservations(new Date());
+
+  const [released] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, eligible));
+  assert.equal(released.state, "expired",
+    "an eligible session behind held ones must still be released in the same sweep");
+  for (const sessionId of held) {
+    const [session] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, sessionId));
+    assert.equal(session.state, "payment_pending", "a held session must not be released");
+  }
+});
+
+/**
+ * An already-expired checkout session, optionally holding unresolved payment evidence so
+ * it is skipped under its own lock.
+ */
+async function createExpiredHeldSession(email: string, paymobOrderId: number, held = true, expiryOffsetMs = 60_000) {
+  const ids = await getBaselineIds();
+  const created = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "Starved", phone: "+201012345678", email,
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    // The larger the offset, the earlier this session expired, so it sorts ahead of the
+    // others in discovery order.
+    reservationExpiresAt: new Date(Date.now() - expiryOffsetMs),
+    reservations: [{ variantId: ids.firstVariantId, qty: 1 }],
+    initialAttempt: { merchantReference: `pi_${paymobOrderId}`, environment: "test", allowedIntegrationIds: [123],
+      expiresAt: new Date(Date.now() - 1000) }
+  });
+  if (held) {
+    const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+    await db.update(paymentAttempts).set({ paymobOrderId: String(paymobOrderId) })
+      .where(eq(paymentAttempts.checkoutSessionId, created.id));
+    await receivePaymobCallback({ callbackType: "transaction",
+      transaction: { id: paymobOrderId + 5000, order: { id: paymobOrderId }, amount_cents: 3500, currency: "EGP",
+        integration_id: 123, success: true, pending: false, is_live: false, is_auth: false,
+        is_capture: false, is_refunded: false, is_voided: false, has_parent_transaction: false,
+        source_data: { type: "card" } } });
+  }
+  return created.id;
+}
 
 test("the real dispatch worker still refuses an order carrying a safety flag", async () => {
   const { orderId } = await paidOrderWithDeliveryIntent(97, "safety-flag-blocks@example.test");

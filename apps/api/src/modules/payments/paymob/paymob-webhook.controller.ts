@@ -32,19 +32,42 @@ export function setPaymobInquiryLookupForTests(
 async function verifiedRefundEvidence(
   config: ReturnType<typeof resolvePaymobConfig>, transaction: Record<string, unknown>
 ): Promise<{ is_refunded?: boolean; refunded_amount_cents?: number | null } | null> {
+  // Only a callback that CLAIMS a refund needs the authenticated read.
+  //
+  // `is_refunded` IS covered by Paymob's HMAC, so by the time we get here the flag is
+  // trustworthy; only the refund AMOUNT is not. Inquiring on every successful payment
+  // cost a provider round trip per order for a value that callback could never have
+  // contributed, and it put the whole payment path at the mercy of the inquiry endpoint.
+  if (transaction.is_refunded !== true) return null;
   const transactionId = transaction.id;
   if (transactionId === undefined || transactionId === null) return null;
   try {
-    const lookup = inquiryLookup ?? ((id: string) => {
-      if (!config.secretKey) throw new Error("Paymob secret key is not configured");
-      return createPaymobInquiryClient({ baseUrl: config.baseUrl, secretKey: config.secretKey }).query(id);
-    });
+    const lookup = inquiryLookup ?? cachedInquiryLookup(config);
     const inquiry = await lookup(String(transactionId));
     return { is_refunded: inquiry.refunded, refunded_amount_cents: inquiry.refundedAmountCents };
   } catch {
     // Provider unreachable or unparseable: no trusted evidence, and no guess.
     return null;
   }
+}
+
+/**
+ * Memoised production inquiry client, keyed by endpoint and secret.
+ *
+ * The client was previously rebuilt for every single callback. A module-level cache keeps
+ * one client per configuration, so the cost is paid once per configuration rather than once
+ * per payment.
+ */
+let cachedLookup: { key: string; lookup: (transactionId: string) => Promise<PaymobInquiry> } | null = null;
+
+function cachedInquiryLookup(config: ReturnType<typeof resolvePaymobConfig>) {
+  if (!config.secretKey) throw new Error("Paymob secret key is not configured");
+  const key = `${config.baseUrl}|${config.secretKey}`;
+  if (cachedLookup?.key !== key) {
+    const client = createPaymobInquiryClient({ baseUrl: config.baseUrl, secretKey: config.secretKey });
+    cachedLookup = { key, lookup: (transactionId: string) => client.query(transactionId) };
+  }
+  return cachedLookup.lookup;
 }
 
 export async function paymobWebhookController(req: Request, res: Response): Promise<void> {

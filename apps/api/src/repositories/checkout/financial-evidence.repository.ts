@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { paymentAttempts, paymobCallbackInbox } from "@capella/database/drizzle/schema";
 
@@ -26,22 +26,56 @@ function signedOrderId(payload: unknown): string | null {
 /**
  * Provider order ids that have durably-received but unresolved payment evidence.
  *
+ * Scoped to the ids the caller actually cares about. The earlier version scanned the
+ * whole inbox under a fixed limit, which was wrong twice over: it let an unrelated
+ * backlog silently hide a real match for THIS order, and the limit made that failure
+ * invisible. Callers know their own ids - the status controller and dispatch both hold
+ * exactly the attempt rows they are judging - so the lookup is exact instead of best
+ * effort.
+ *
  * Correlation happens in application code rather than in SQL JSON functions on purpose:
  * the engine here is MySQL 8.4, which has neither `JSON_UNNEST` nor MariaDB's
- * `IS NOT NULL(expr)` form, and the set is bounded by the inbox backlog.
+ * `IS NOT NULL(expr)` form. Filtering by the candidate rows first keeps the result set
+ * to the caller's own attempts, so the in-memory pass stays small and cannot be starved.
  */
-export async function unresolvedInboxOrderIds(limit = 1000): Promise<Set<string>> {
+export async function unresolvedInboxOrderIds(candidateOrderIds: readonly string[]): Promise<Set<string>> {
+  if (candidateOrderIds.length === 0) return new Set();
   const rows = await db
     .select({ payload: paymobCallbackInbox.normalizedPayload })
     .from(paymobCallbackInbox)
-    .where(inArray(paymobCallbackInbox.processingStatus, [...UNRESOLVED_INBOX_STATUSES]))
-    .limit(limit);
+    .where(and(
+      inArray(paymobCallbackInbox.processingStatus, [...UNRESOLVED_INBOX_STATUSES]),
+      jsonContainsCandidateIds(paymobCallbackInbox.normalizedPayload, candidateOrderIds)
+    ));
   const ids = new Set<string>();
   for (const row of rows) {
     const orderId = signedOrderId(row.payload);
-    if (orderId !== null) ids.add(orderId);
+    // Only an id the caller asked about may be returned. A row whose payload names some
+    // other order must not widen the caller's evidence set.
+    if (orderId !== null && candidateOrderIds.includes(orderId)) ids.add(orderId);
   }
   return ids;
+}
+
+/**
+ * Narrow unresolved inbox rows to those whose payload could name one of `ids`.
+ *
+ * `JSON_UNQUOTE(JSON_EXTRACT(...))` rather than `JSON_CONTAINS`, for two reasons that
+ * both bit in practice:
+ *   - `JSON_CONTAINS(col, '"9501"', '$.order.id')` compares a JSON string against a JSON
+ *     number and silently matches nothing, because the provider sends the id numerically.
+ *   - `JSON_CONTAINS(col, id, '$.order')` compares the whole order OBJECT to a string and
+ *     also matches nothing.
+ * Unquoting the extracted scalar compares as text on both sides, so numeric and string
+ * payloads are handled identically.
+ *
+ * The exact per-id confirmation still happens in application code above; this only reduces
+ * the candidate rows, it never decides on its own what a payload claims.
+ */
+function jsonContainsCandidateIds(column: typeof paymobCallbackInbox.normalizedPayload, ids: readonly string[]) {
+  const extracted = sql`json_unquote(json_extract(${column}, '$.order.id'))`;
+  const matches = ids.map((id) => sql`${extracted} = ${id}`);
+  return sql`(${sql.join(matches, sql` or `)})`;
 }
 
 /**
@@ -81,33 +115,52 @@ export async function unresolvedInboxOrderIds(limit = 1000): Promise<Set<string>
 export async function hasUnresolvedFinancialEvidence(
   tx: Pick<typeof db, "select">,
   checkoutSessionId: number,
-  unresolvedOrderIds: Set<string>
+  unresolvedOrderIds: ReadonlySet<string>
 ): Promise<boolean> {
   if (unresolvedOrderIds.size === 0) return false;
   const attempts = await tx
     .select({ paymobOrderId: paymentAttempts.paymobOrderId, status: paymentAttempts.status })
     .from(paymentAttempts)
-    .where(and(
-      eq(paymentAttempts.checkoutSessionId, checkoutSessionId),
-      inArray(paymentAttempts.status, [...OPEN_ATTEMPT_STATUSES])
-    ));
+    .where(eq(paymentAttempts.checkoutSessionId, checkoutSessionId));
   return attempts.some((attempt) => attempt.paymobOrderId !== null &&
     unresolvedOrderIds.has(String(attempt.paymobOrderId)));
+}
+
+/** Every provider order id a session's attempts hold, for scoping an inbox lookup. */
+export async function sessionPaymobOrderIds(
+  tx: Pick<typeof db, "select">,
+  checkoutSessionId: number
+): Promise<string[]> {
+  const attempts = await tx
+    .select({ paymobOrderId: paymentAttempts.paymobOrderId })
+    .from(paymentAttempts)
+    .where(and(
+      eq(paymentAttempts.checkoutSessionId, checkoutSessionId),
+      isNotNull(paymentAttempts.paymobOrderId)
+    ));
+  return attempts.map((attempt) => String(attempt.paymobOrderId));
 }
 
 /**
  * Sessions with unresolved payment evidence, for staff reconciliation and any future
  * caller that needs the whole set rather than one session.
+ *
+ * The lookup is driven by the attempt table rather than the inbox: the set of provider
+ * order ids actually worth asking about is the set an open attempt holds, which is a
+ * much smaller and more meaningful input than scanning the inbox wholesale.
  */
 export async function sessionsWithUnresolvedEvidence(limit = 1000): Promise<Set<number>> {
-  const unresolved = await unresolvedInboxOrderIds(limit);
-  if (unresolved.size === 0) return new Set();
   const attempts = await db
     .select({ sessionId: paymentAttempts.checkoutSessionId, paymobOrderId: paymentAttempts.paymobOrderId })
     .from(paymentAttempts)
     .where(and(
       inArray(paymentAttempts.status, [...OPEN_ATTEMPT_STATUSES]),
-      inArray(paymentAttempts.paymobOrderId, [...unresolved])
-    ));
-  return new Set(attempts.map((attempt) => attempt.sessionId));
+      isNotNull(paymentAttempts.paymobOrderId)
+    )).limit(limit);
+  const ids = [...new Set(attempts.map((attempt) => String(attempt.paymobOrderId)))];
+  const unresolved = await unresolvedInboxOrderIds(ids);
+  if (unresolved.size === 0) return new Set();
+  return new Set(attempts
+    .filter((attempt) => unresolved.has(String(attempt.paymobOrderId)))
+    .map((attempt) => attempt.sessionId));
 }

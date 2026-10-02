@@ -36,6 +36,22 @@ function transactionHmacInput(transaction: PaymobTransaction): string {
   ].map(serialize).join("");
 }
 
+/**
+ * The digest Paymob expects for a transaction callback.
+ *
+ * Exported so tests can sign a payload they construct rather than pasting a digest
+ * computed for some earlier payload: a stale hardcoded digest fails as a signature error
+ * and hides the behaviour actually under test.
+ */
+export function computePaymobTransactionHmac(input: {
+  transaction: PaymobTransaction;
+  secret: string;
+}): string {
+  return createHmac("sha512", input.secret)
+    .update(transactionHmacInput(input.transaction), "utf8")
+    .digest("hex");
+}
+
 export function verifyPaymobTransactionHmac(input: {
   transaction: PaymobTransaction;
   receivedHmac: string;
@@ -45,9 +61,7 @@ export function verifyPaymobTransactionHmac(input: {
     return false;
   }
 
-  const calculated = createHmac("sha512", input.secret)
-    .update(transactionHmacInput(input.transaction), "utf8")
-    .digest();
+  const calculated = Buffer.from(computePaymobTransactionHmac(input), "hex");
   const received = Buffer.from(input.receivedHmac, "hex");
   return received.length === calculated.length && timingSafeEqual(received, calculated);
 }

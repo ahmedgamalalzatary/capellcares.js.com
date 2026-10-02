@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutSessions, orders, paymentAttempts } from "@capella/database/drizzle/schema";
-import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
 
 export async function getCheckoutStatusController(req: Request, res: Response): Promise<void> {
   const checkoutId = req.params.checkoutId;
@@ -33,7 +33,11 @@ export async function getCheckoutStatusController(req: Request, res: Response): 
   // customer whose first payment is merely queued cannot be charged a second time.
   // Derived from the same shared definition expiry and dispatch use, so the customer is
   // never offered an action the mutation paths would refuse.
-  const unresolved = await hasUnresolvedFinancialEvidence(db, session.sessionId, await unresolvedInboxOrderIds());
+  // Scoped to THIS session's own provider order ids. The previous global inbox scan could
+  // be silently truncated by unrelated backlog, which would offer a customer a retry the
+  // mutation path would then refuse.
+  const unresolved = await hasUnresolvedFinancialEvidence(
+    db, session.sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(db, session.sessionId)));
   res.status(200).json({
     checkoutId: session.checkoutId,
     status: session.status,

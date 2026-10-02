@@ -594,6 +594,28 @@ Item 4 needs the `relatedContract`, and its fields must come from **real merchan
 
 So the remaining items (4–7) will be built **inert by default**: the parser, validator and discovery path will exist and be tested for the disabled case, and for an enabled case driven by an explicitly configured contract — but with no contract configured, no related parcel can ever be created. **External E04 stays unchecked.** That is the honest state, not a shortcut: the infrastructure ships, and the last step genuinely needs your Bosta account data.
 
+**CodeRabbit review of W01–W07 (10 findings, all fixed):**
+
+A first run returned 0 findings, which was wrong — the branch move that produced it came *after* the review, and the same diff reviewed correctly reports 10. Recording the ones that mattered, because most are silent-failure defects rather than crashes:
+
+- **Dispatch ignored refunds against paid orders (critical).** The evidence guard was scoped to `created`/`pending` attempts, so a refund arriving after a *successful* payment — the normal case, since refunds follow payments — did not hold the shipment. A paid order with an unresolved refund was handed to the courier. Verified RED before fixing: the job went to `succeeded`.
+- **The evidence lookup scanned the whole inbox under a fixed limit.** An unrelated backlog could silently hide a real match for the order being judged, and the limit made that invisible. Now scoped to the caller's own provider order ids, via `sessionPaymobOrderIds`.
+- **Expiry discovery spent its batch on held sessions.** Sessions held by pending evidence are skipped under their lock anyway, but they still consumed discovery slots, so a run of held sessions could push every eligible session out of the batch — stock never released, sweep silently making no progress. Held sessions are now excluded before the limit; the per-session recheck under the lock remains the authority.
+- **A provider inquiry ran on every payment callback.** Only the refund *amount* is unsigned — `is_refunded` is HMAC-covered — so paying for an authenticated read on every success was a wasted round trip that also put the payment path at the mercy of the inquiry endpoint. The client is now memoised per configuration rather than rebuilt per callback.
+- **The audit fingerprint ignored the verified refund amount,** so a partial refund followed by a larger one collapsed onto one fingerprint and the second was discarded as a duplicate.
+- **`bindingEnvironment` used substring matching,** filing any unrecognised host under `test` — a typo'd endpoint would record live evidence in the test environment and look normal. Now an explicit host allowlist that throws on anything unknown.
+- **`providerReference` was read from the webhook shape only.** A polled read wraps the delivery in `{success, data}`, so every polled observation recorded `null` — exactly when the sync worker is the one creating the binding.
+
+Three of my own mistakes while fixing these, all caught by tests rather than by reading:
+
+- `JSON_CONTAINS(col, '"9501"', '$.order.id')` silently matched **nothing**, because the provider sends the id as a JSON *number*. It failed silently, which is why the stock-hold guard appeared to regress rather than error. Fixed with `JSON_UNQUOTE(JSON_EXTRACT(...))` so numeric and string payloads behave identically.
+- I first wrote `JSON_CONTAINS(col, id, '$.order')`, comparing the whole order *object* to a string — also always false, also silent.
+- My starvation test initially **passed for the wrong reason**: the batch is 50 and I had made 4 sessions, so nothing was actually starved. It only reproduced once the held sessions were ordered to expire *earlier* and the batch shrunk to 2. A concurrency-style test that never contends proves nothing — the same trap as the W03 test.
+
+Two test-quality fixes that made existing tests honest rather than merely green: the dispatch refund test forced the attempt back to `pending`, a shape that does not occur in production, so it now stays `succeeded` and asserts that; and the plan ledger referenced four names that no longer exist (`shipping-capabilities.ts`, `paymob-inquiry.service.ts`, `checkout-payment-evidence.repository.ts`, `processPaymobTransactionInTx`), all corrected against the shipped files.
+
+**945/945 API tests pass** (was 934; +11 new), all six workspace projects typecheck clean.
+
 ### W08 — Extract existing runners and add payment runner
 
 - [ ] Move the four runner files exactly as section 9 specifies; fix every code/test import using `rg`. Retain pure one-sweep functions and dependency injection for focused tests.

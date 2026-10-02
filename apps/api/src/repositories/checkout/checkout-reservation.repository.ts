@@ -1,7 +1,16 @@
-import { and, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, lte, notInArray, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
+import { OPEN_ATTEMPT_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
+
+/**
+ * Upper bound on how many provider order ids discovery will consider while working out
+ * which expired sessions are already held. Generous relative to real traffic, and it
+ * bounds the query rather than deciding correctness: a session beyond this bound is
+ * simply examined normally, and the per-session recheck under its lock remains the
+ * authority on whether it may be released.
+ */
+const EVIDENCE_SCAN_SIZE = 5000;
 
 interface ReservedCheckoutInput {
   publicId: string;
@@ -103,11 +112,40 @@ export const EXPIRY_BATCH_SIZE = 50;
  * bounded batch; each candidate is then locked and rechecked on its own.
  */
 export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_SIZE): Promise<number[]> {
+  // Candidates are the expired sessions whose provider order ids are NOT already sitting
+  // in unresolved evidence. Sessions that are only HELD must not consume a discovery slot:
+  // they are skipped under their own lock anyway, so counting them here means a run of
+  // held sessions can fill the whole batch and the eligible sessions behind them are never
+  // examined at all - their stock is never released and the sweep quietly stops progressing.
+  //
+  // Read without locks, and rechecked per session under its lock afterwards. The exclusion
+  // is a scheduling optimisation, never a safety decision: a session that gains evidence
+  // between this read and its lock is still caught by the per-session recheck below.
+  const open = await db
+    .select({ sessionId: paymentAttempts.checkoutSessionId, paymobOrderId: paymentAttempts.paymobOrderId })
+    .from(paymentAttempts)
+    .where(isNotNull(paymentAttempts.paymobOrderId))
+    .limit(EVIDENCE_SCAN_SIZE);
+  const unresolved = await unresolvedInboxOrderIds(
+    [...new Set(open.map((attempt) => String(attempt.paymobOrderId)))]);
+  const heldSessions = new Set<number>();
+  if (unresolved.size > 0) {
+    const held = await db
+      .select({ sessionId: paymentAttempts.checkoutSessionId })
+      .from(paymentAttempts)
+      .where(and(
+        inArray(paymentAttempts.status, [...OPEN_ATTEMPT_STATUSES]),
+        isNotNull(paymentAttempts.paymobOrderId),
+        inArray(paymentAttempts.paymobOrderId, [...unresolved])
+      ));
+    for (const attempt of held) heldSessions.add(attempt.sessionId);
+  }
   const candidates = await db.select({ id: checkoutSessions.id })
     .from(checkoutSessions)
     .where(and(
       eq(checkoutSessions.state, "payment_pending"),
-      lte(checkoutSessions.reservationExpiresAt, now)
+      lte(checkoutSessions.reservationExpiresAt, now),
+      heldSessions.size === 0 ? undefined : notInArray(checkoutSessions.id, [...heldSessions])
     ))
     .orderBy(checkoutSessions.reservationExpiresAt)
     .limit(limit);
@@ -118,12 +156,14 @@ export async function releaseExpiredCheckoutReservations(now: Date): Promise<voi
   // Pass 1: cheap unlocked discovery of a bounded candidate set.
   const candidates = await discoverExpiredSessionIds(now);
   if (candidates.length === 0) return;
-  // Read the unresolved set once, before taking any locks, then recheck per session under
-  // the session lock. Provider/DB work stays outside the locked region.
-  const unresolvedOrderIds = await unresolvedInboxOrderIds();
 
   // Pass 2: one short transaction per candidate, so no lock is held across the batch.
   for (const sessionId of candidates) {
+    // The unresolved set is read per candidate and BEFORE the lock is taken, so the inbox
+    // read stays outside every lock. Scoped to this session's own provider order ids, so
+    // an unrelated backlog cannot decide whether this session is released.
+    const paymobOrderIds = await sessionPaymobOrderIds(db, sessionId);
+    const unresolvedOrderIds = await unresolvedInboxOrderIds(paymobOrderIds);
     await db.transaction(async (tx) => {
     // Recheck under the session lock: the row may have changed since discovery, in which
     // case it is simply skipped and the next sweep re-evaluates it against fresh data.

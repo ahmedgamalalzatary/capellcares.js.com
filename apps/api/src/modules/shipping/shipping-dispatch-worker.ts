@@ -3,7 +3,7 @@ import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orderItems, orders, orderReviewFlags, paymentAttempts, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
 import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
 import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
 import { untouchedShippingExpiryApplies } from "../../repositories/shipping-state.repository.js";
@@ -76,13 +76,23 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
       // the shipment. Creating a delivery now could send goods to a customer whose money is
       // being returned, who could then spend the refund a second time.
       //
+      // The evidence set is scoped to THIS order's own provider order ids rather than a
+      // global inbox scan, so an unrelated backlog can neither hide a real refund nor
+      // decide this order's fate.
+      //
+      // Every attempt of the session is consulted, not only the open ones. A refund
+      // normally lands hours or days AFTER the payment it reverses, by which point the
+      // attempt is long 'succeeded' - scoping this to created/pending missed exactly the
+      // case that matters most and shipped goods to customers being refunded.
+      //
       // This consults the shared evidence check, which is deliberately lock-free (W06
       // problem 2). That is what makes it safe to call here: the order lock is held, and
       // adding a payment-side lock at this point would complete the session/order cycle.
       // The cost is that this is a point-in-time read, so a refund arriving moments later is
       // caught by blockRefundedDelivery on the order lock instead.
+      const sessionId = await sessionIdForOrder(tx, order.id);
       const unresolvedRefund = await hasUnresolvedFinancialEvidence(
-        tx, await sessionIdForOrder(tx, order.id), await unresolvedInboxOrderIds());
+        tx, sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId)));
       if (blocked(order) || deadlineBlocks || safetyFlagOpen || unresolvedRefund) {
         await tx.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.id, job.id));
         return null;

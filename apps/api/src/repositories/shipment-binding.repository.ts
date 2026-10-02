@@ -64,12 +64,27 @@ export async function findShipmentBinding(shipmentId: number) {
  * Map the runtime's provider base URL onto the stored environment enum.
  *
  * The sync runtime identifies an environment by its endpoint, but the column is a
- * two-value enum. Deriving it from the URL rather than trusting a cast keeps the
- * binding honest: a live URL can never be recorded as `test`, which is the whole point
- * of storing the environment on the row.
+ * two-value enum. An explicit host allowlist is used rather than substring matching:
+ * substring matching quietly filed any unrecognised host under `test`, so a typo'd or
+ * wholly unexpected endpoint would have recorded live evidence in the test environment
+ * and looked entirely normal. An unknown host is a configuration fault and is thrown, so
+ * it surfaces at startup instead of corrupting evidence silently.
  */
+const BOSTA_ENVIRONMENT_HOSTS: Record<string, "test" | "live"> = {
+  "stg-app.bosta.co": "test",
+  "app.bosta.co": "live"
+};
+
 export function bindingEnvironment(runtimeEnvironment: string): "test" | "live" {
-  return runtimeEnvironment.includes("prod") || runtimeEnvironment.includes("live")
-    ? "live"
-    : "test";
+  let host: string;
+  try {
+    host = new URL(runtimeEnvironment).host.toLowerCase();
+  } catch {
+    throw new Error(`Bosta runtime environment is not an absolute URL: ${runtimeEnvironment}`);
+  }
+  const resolved = BOSTA_ENVIRONMENT_HOSTS[host];
+  if (!resolved) {
+    throw new Error(`Unrecognised Bosta environment host "${host}"; refusing to record a binding under a guessed environment`);
+  }
+  return resolved;
 }

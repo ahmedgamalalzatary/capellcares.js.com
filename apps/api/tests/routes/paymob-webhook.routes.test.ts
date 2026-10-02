@@ -22,6 +22,76 @@ beforeEach(() => {
 });
 afterEach(() => setPaymobInquiryLookupForTests(null));
 
+/**
+ * Post a signed callback. The HMAC is computed for the exact payload rather than pasted,
+ * because these tests vary the payload and a stale hardcoded digest would fail as a
+ * signature error instead of the behaviour under test.
+ */
+async function postSignedCallback(request: (path: string, init?: RequestInit) => Promise<{ status: number; json: unknown }>,
+  obj: Record<string, unknown>) {
+  const { computePaymobTransactionHmac } = await import("../../src/modules/payments/paymob/paymob-hmac.js");
+  const callback = { type: "TRANSACTION", obj };
+  const hmac = computePaymobTransactionHmac({ transaction: obj, secret: process.env.PAYMOB_HMAC_SECRET ?? "" });
+  return request(`/api/v1/payments/paymob/webhook?hmac=${hmac}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(callback)
+  });
+}
+
+const inquiryCallback = (overrides: Record<string, unknown> = {}) => ({
+  amount_cents: 10000, created_at: "2026-09-11T12:00:00Z", currency: "EGP",
+  error_occured: false, has_parent_transaction: false, id: 42, integration_id: 5885253,
+  is_3d_secure: true, is_auth: false, is_capture: false, is_refunded: false,
+  is_standalone_payment: true, is_voided: false, order: { id: 9001 }, owner: 7,
+  pending: false, source_data: { pan: "1234", sub_type: "MasterCard", type: "card" },
+  success: true, is_live: false, ...overrides
+});
+
+test("a non-refund callback never triggers an authenticated inquiry", async () => {
+  // The refund flag IS covered by Paymob's HMAC, so the callback's own claim is
+  // trustworthy. Paying for an authenticated inquiry on EVERY successful payment is a
+  // wasted provider round trip per order; the inquiry only earns its cost when a refund
+  // is actually claimed, and the refund AMOUNT remains the only unsigned part.
+  let inquiries = 0;
+  setPaymobInquiryLookupForTests(async (transactionId) => {
+    inquiries += 1;
+    return { transactionId, amountCents: 10000, currency: "EGP", success: true, pending: false,
+      refunded: false, refundedAmountCents: 0 };
+  });
+  const previous = process.env.PAYMOB_HMAC_SECRET;
+  process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  try {
+    await withTestServer(app, async (request) => {
+      const response = await postSignedCallback(request, inquiryCallback());
+      assert.equal(response.status, 202);
+    });
+    assert.equal(inquiries, 0, "a plain success callback must not cause a provider inquiry");
+  } finally {
+    if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET;
+    else process.env.PAYMOB_HMAC_SECRET = previous;
+  }
+});
+
+test("a refund callback does trigger exactly one authenticated inquiry", async () => {
+  let inquiries = 0;
+  setPaymobInquiryLookupForTests(async (transactionId) => {
+    inquiries += 1;
+    return { transactionId, amountCents: 10000, currency: "EGP", success: true, pending: false,
+      refunded: true, refundedAmountCents: 10000 };
+  });
+  const previous = process.env.PAYMOB_HMAC_SECRET;
+  process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  try {
+    await withTestServer(app, async (request) => {
+      const response = await postSignedCallback(request, inquiryCallback({ is_refunded: true }));
+      assert.equal(response.status === 200 || response.status === 202, true);
+    });
+    assert.equal(inquiries, 1, "a refund claim must be confirmed with the provider");
+  } finally {
+    if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET;
+    else process.env.PAYMOB_HMAC_SECRET = previous;
+  }
+});
+
 test("public Paymob availability exposes no secrets and stays off until methods are confirmed", async () => {
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/payments/paymob/methods");

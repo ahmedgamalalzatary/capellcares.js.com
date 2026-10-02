@@ -44,11 +44,16 @@ export type ProcessPaymobOptions = {
 };
 
 /**
- * Audit identity for a callback. Deliberately excludes `refunded_amount_cents`: it is not
- * covered by the HMAC, and an unsigned value must not be able to make two genuinely
- * different callbacks collapse into one audit row.
+ * Audit identity for a callback. Deliberately excludes the CALLBACK's
+ * `refunded_amount_cents`: it is not covered by the HMAC, and an unsigned value must not
+ * be able to make two genuinely different callbacks collapse into one audit row.
+ *
+ * The VERIFIED refund amount is included, and that is a different thing. A partial refund
+ * followed by a larger one are two distinct real-world events; leaving the verified amount
+ * out of the identity meant the second was discarded as a duplicate and the audit trail
+ * silently lost the fact that the refund had grown.
  */
-export function paymobAuditFingerprint(transaction: Record<string, unknown>): {
+export function paymobAuditFingerprint(transaction: Record<string, unknown>, verified?: VerifiedPaymobState): {
   eventFingerprint: string; processingStatus: "processed" | "rejected";
 } {
   const identity = JSON.stringify({
@@ -62,7 +67,12 @@ export function paymobAuditFingerprint(transaction: Record<string, unknown>): {
     is_capture: transaction.is_capture,
     is_refunded: transaction.is_refunded,
     is_voided: transaction.is_voided,
-    captured_amount: transaction.captured_amount
+    captured_amount: transaction.captured_amount,
+    // Trusted value only, so it distinguishes real refund progression without ever
+    // letting an unsigned amount steer the audit identity.
+    verified_refunded_amount_cents: verified?.is_refunded === true
+      ? Number(verified.refunded_amount_cents ?? 0)
+      : null
   });
   return { eventFingerprint: createHash("sha256").update(identity).digest("hex"), processingStatus: "processed" };
 }
@@ -77,7 +87,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
     const outcome = await applyPaymobTransaction(tx, transaction, refundedAmountCents);
     if (options.audit) {
       // Inside the same transaction: the audit row and the effects it describes share one fate.
-      const { eventFingerprint } = paymobAuditFingerprint(options.audit.transaction);
+      const { eventFingerprint } = paymobAuditFingerprint(options.audit.transaction, verified);
       try {
         await tx.insert(paymentWebhookEvents).values({ provider: "paymob", callbackType: "transaction",
           eventFingerprint, processingStatus: PROCESSED_OUTCOMES.has(outcome.outcome) ? "processed" : "rejected",
