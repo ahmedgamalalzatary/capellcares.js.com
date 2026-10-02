@@ -4,7 +4,7 @@ import { and, asc, count, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { flagShippingOrder } from "./shipping-dispatch.repository.js";
-import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
+import { isSafetyReviewFlag } from "../orders/order-review-flag.repository.js";
 import { isFullyResolvedTerminal, TERMINAL_FOLLOW_UP_MS } from "./shipping-sync-policy.js";
 import { processPendingShippingEvents, recordShippingObservation, shippingRequestMatchesAccount } from "./shipping-sync.repository.js";
 import { resolveBostaSyncRuntime, type BostaObservation, type BostaSyncRuntime } from "./bosta/bosta-sync.service.js";

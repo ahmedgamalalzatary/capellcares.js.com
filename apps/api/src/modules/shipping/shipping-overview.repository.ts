@@ -2,7 +2,7 @@ import { db } from "@capella/database/src/db";
 import { orderReviewFlags, orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray, isNotNull, lt, or } from "drizzle-orm";
 import type { AdminShipmentListItemDto } from "@capella/shared";
-import { toNumber } from "../../repositories/order/shared.js";
+import { toNumber } from "../orders/order/shared.js";
 
 type Order = typeof orders.$inferSelect;
 type ShipmentRow = typeof shipments.$inferSelect;

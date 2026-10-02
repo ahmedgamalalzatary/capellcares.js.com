@@ -12,10 +12,10 @@ import {
   ShippingCustodyRequiredError,
   ShippingCodPaymentManagedError,
   updateOrderPaymentStatusRepo
-} from "../../repositories/order.repository.js";
-import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "../../repositories/order-review-flag.repository.js";
+} from "./order.repository.js";
+import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "./order-review-flag.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
-import { attachReviewEligibilityToOrder } from "../../repositories/review.repository.js";
+import { attachReviewEligibilityToOrder } from "../reviews/review.repository.js";
 import { requestShippingCancellation, ShippingCancellationError } from "../shipping/shipping-cancellation.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;

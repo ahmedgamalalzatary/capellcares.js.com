@@ -2,10 +2,10 @@ import { and, eq, lt, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
-import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../../repositories/order/shared.js";
+import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../orders/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../shipping/shipping-dispatch.repository.js";
-import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../../repositories/checkout/financial-evidence.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../checkout/financial-evidence.repository.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };

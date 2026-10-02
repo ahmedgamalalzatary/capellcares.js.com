@@ -1,5 +1,5 @@
 import { startIntervalWorker } from "../../../services/interval-worker.js";
-import { claimPaymobCallback } from "../../../repositories/paymob-callback.repository.js";
+import { claimPaymobCallback } from "./paymob-callback.repository.js";
 import { processPaymobCallbackClaim, type PaymobCallbackProcessingOptions } from "./paymob-callback-processing.service.js";
 
 export async function runPaymobCallbackOnce(options: PaymobCallbackProcessingOptions = {}): Promise<boolean> {

@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { orderItems, orders, reviews } from "@capella/database/drizzle/schema";
 import { db, mysqlPool } from "@capella/database/src/db";
-import { permanentlyDeleteReview } from "../../src/repositories/review.repository.js";
+import { permanentlyDeleteReview } from "../../src/modules/reviews/review.repository.js";
 import { app } from "../../src/app.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";

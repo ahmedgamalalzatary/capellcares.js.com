@@ -8,7 +8,7 @@ import {
   softDeleteReview,
   toggleReviewStatus,
   type ReviewEntityType
-} from "../../../repositories/review.repository.js";
+} from "../../reviews/review.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 
 async function captureReviewTarget(id: number) {

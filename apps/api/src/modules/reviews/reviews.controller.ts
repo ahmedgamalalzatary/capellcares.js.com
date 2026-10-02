@@ -10,7 +10,7 @@ import {
   ReviewAlreadyExistsError,
   ReviewEligibilityError,
   type ReviewEntityType
-} from "../../repositories/review.repository.js";
+} from "./review.repository.js";
 import { triggerStorefrontRevalidation } from "../admin/storefront-revalidation.js";
 
 async function revalidateReviewTarget(entityType: ReviewEntityType, entityId: number) {

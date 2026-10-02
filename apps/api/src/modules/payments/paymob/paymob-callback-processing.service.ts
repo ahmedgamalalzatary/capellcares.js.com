@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { paymobCallbackInbox } from "@capella/database/drizzle/schema";
 import { claimPaymobCallback, deferPaymobCallback, rejectPaymobCallback, PAYMOB_CALLBACK_LEASE_MS,
-  type PaymobCallbackClaim } from "../../../repositories/paymob-callback.repository.js";
+  type PaymobCallbackClaim } from "./paymob-callback.repository.js";
 import { parsePaymobProcessedCallback } from "./paymob-callback.js";
 import { resolvePaymobConfig } from "./paymob-config.js";
 import { createPaymobInquiryClient, type PaymobInquiry } from "./paymob-inquiry.client.js";

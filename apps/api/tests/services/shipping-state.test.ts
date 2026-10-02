@@ -8,7 +8,7 @@ import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { syncEnvironment } from "../helpers/bosta-sync.js";
 import { recordShippingObservation, processPendingShippingEvents } from "../../src/modules/shipping/shipping-sync.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
-import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/repositories/order.repository.js";
+import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/modules/orders/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 async function service() {

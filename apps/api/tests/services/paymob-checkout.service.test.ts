@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
-import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
+import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/modules/checkout/checkout-reservation.repository.js";
 
 beforeEach(resetApiTestDatabase);
 
@@ -1057,7 +1057,7 @@ test("a third decline does not release reserved stock while evidence is unresolv
   // have paid for. With an unresolved callback outstanding the release must wait, or the
   // eventual success has nothing left to fulfil and the stock is sold twice.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
-  const { releaseExpiredCheckoutReservations } = await import("../../src/repositories/checkout/checkout-reservation.repository.js");
+  const { releaseExpiredCheckoutReservations } = await import("../../src/modules/checkout/checkout-reservation.repository.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,

@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, shippingWorkItems, productVariants, orderReviewFlags } from "@capella/database/drizzle/schema";
-import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/repositories/order.repository.js";
+import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/modules/orders/order.repository.js";
 import { enqueueOrderDelivery } from "../../src/modules/shipping/shipping-dispatch.repository.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";

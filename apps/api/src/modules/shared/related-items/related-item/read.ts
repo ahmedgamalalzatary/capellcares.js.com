@@ -3,7 +3,7 @@ import { categories, collectionItems, collections, offerItems, offers, productVa
 import { db } from "@capella/database/src/db";
 import { loadBundleDiscountsRepo } from "../../../catalog/offers/bundle-discount.repository.js";
 import { getEffectiveVariantPrice, type Language } from "@capella/shared";
-import { EMPTY_RATING, safeRatingSummaries } from "../../../../repositories/review.repository.js";
+import { EMPTY_RATING, safeRatingSummaries } from "../../../reviews/review.repository.js";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,

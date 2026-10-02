@@ -386,7 +386,7 @@ test("bundle order snapshots preserve every unique size label beyond 64 characte
 
 test("denying a COD bundle restores the checkout-time components after catalog edits", async () => {
   const ids = await getBaselineIds();
-  const { updateOrderPaymentStatusRepo } = await import("../../src/repositories/order.repository.js");
+  const { updateOrderPaymentStatusRepo } = await import("../../src/modules/orders/order.repository.js");
   const created = await createOrderFromCheckout({
     fullName: "Bundle buyer", phone: "01012345678", email: "bundle-snapshot@example.com",
     governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",

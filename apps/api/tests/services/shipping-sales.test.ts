@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { db } from "@capella/database/src/db";
 import { orders, orderItems } from "@capella/database/drizzle/schema";
-import { getSalesAnalyticsRepo } from "../../src/repositories/order.repository.js";
+import { getSalesAnalyticsRepo } from "../../src/modules/orders/order.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 beforeEach(resetApiTestDatabase);
 test("shipping income cannot be assigned to the final product in sales totals", async () => {

@@ -9,7 +9,7 @@ import { priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { submitCheckout } from "../../src/modules/checkout/checkout.service.js";
 import { getBaselineIds, resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
 import { fixtureShippingService, selectedDestination, shippingBuyer, withShippingEnvironment } from "../helpers/checkout-shipping.js";
-import { expirePendingCodOrders } from "../../src/repositories/order.repository.js";
+import { expirePendingCodOrders } from "../../src/modules/orders/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 

@@ -10,7 +10,7 @@ import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
 import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
 import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
-import { findOrderByIdRepo, listOrdersRepo } from "../../src/repositories/order.repository.js";
+import { findOrderByIdRepo, listOrdersRepo } from "../../src/modules/orders/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 test("ERP details show only this order's linked return/exchange evidence without changing money or stock", async () => {

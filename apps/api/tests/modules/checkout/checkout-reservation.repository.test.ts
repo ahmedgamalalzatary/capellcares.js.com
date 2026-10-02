@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { db, mysqlPool } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, productVariants } from "@capella/database/drizzle/schema";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../helpers/database.js";
 
 beforeEach(resetApiTestDatabase);
 
@@ -30,7 +30,7 @@ function sessionInput(variantId: number) {
 }
 
 test("createReservedCheckout atomically removes reserved stock", async () => {
-  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const module = await import("../../../src/modules/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
 
   const result = await module?.createReservedCheckout(sessionInput(ids.firstVariantId));
@@ -45,7 +45,7 @@ test("createReservedCheckout atomically removes reserved stock", async () => {
 });
 
 test("expiry sweeps a bounded batch of candidates instead of locking every expired session", async () => {
-  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const module = await import("../../../src/modules/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
   // Three expired sessions exist; the batch size is deliberately smaller than that.
   for (let index = 0; index < 3; index += 1) {
@@ -58,7 +58,7 @@ test("expiry sweeps a bounded batch of candidates instead of locking every expir
 });
 
 test("expiry skips a candidate whose state changed after discovery instead of acting on stale data", async () => {
-  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const module = await import("../../../src/modules/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
   const created = await module?.createReservedCheckout({ ...sessionInput(ids.firstVariantId),
     reservations: [{ variantId: ids.firstVariantId, qty: 2 }],
@@ -81,7 +81,7 @@ test("expiry skips a candidate whose state changed after discovery instead of ac
 });
 
 test("expiry waits for the payment session lock before releasing any stock", async () => {
-  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const module = await import("../../../src/modules/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
   const input = sessionInput(ids.firstVariantId);
   input.reservationExpiresAt = new Date(Date.now() - 1000);
@@ -128,7 +128,7 @@ test("expiry waits for the payment session lock before releasing any stock", asy
 });
 
 test("releaseExpiredCheckoutReservations restores stock only once", async () => {
-  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const module = await import("../../../src/modules/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
   const input = sessionInput(ids.firstVariantId);
   input.reservationExpiresAt = new Date(Date.now() - 1000);

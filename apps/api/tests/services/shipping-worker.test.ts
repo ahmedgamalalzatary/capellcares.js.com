@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { orders, orderItems, shippingWorkItems, shipments, productVariants, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
-import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/repositories/order.repository.js";
+import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/modules/orders/order.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { fixtureShippingService, selectedDestination, shippingBuyer, destination } from "../helpers/checkout-shipping.js";
 import { deliveryEnvironment, deliveryRateIdentity } from "../helpers/bosta-delivery.js";

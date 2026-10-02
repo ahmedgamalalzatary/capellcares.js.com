@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { generatePendingOrderCode } from "../../src/repositories/order/shared.js";
+import { generatePendingOrderCode } from "../../../src/modules/orders/order/shared.js";
 
 test("generatePendingOrderCode returns a non-empty provisional order code", () => {
   const pendingCode = generatePendingOrderCode();

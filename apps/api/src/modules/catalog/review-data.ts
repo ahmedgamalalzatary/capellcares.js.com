@@ -4,7 +4,7 @@ import {
   listPublicReviews,
   safeRatingSummaries,
   type ReviewEntityType
-} from "../../repositories/review.repository.js";
+} from "../reviews/review.repository.js";
 
 /**
  * Gives every item in a listing the rating its card draws. Resolved in one

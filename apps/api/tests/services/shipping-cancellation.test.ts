@@ -7,7 +7,7 @@ import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.j
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
-import { expirePendingCodOrders, updateOrderPaymentStatusRepo } from "../../src/repositories/order.repository.js";
+import { expirePendingCodOrders, updateOrderPaymentStatusRepo } from "../../src/modules/orders/order.repository.js";
 import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 
 beforeEach(resetApiTestDatabase);

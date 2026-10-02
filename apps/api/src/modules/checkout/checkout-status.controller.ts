@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutSessions, orders, paymentAttempts } from "@capella/database/drizzle/schema";
-import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 
 export async function getCheckoutStatusController(req: Request, res: Response): Promise<void> {
   const checkoutId = req.params.checkoutId;

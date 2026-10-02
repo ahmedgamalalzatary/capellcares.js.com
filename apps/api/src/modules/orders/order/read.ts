@@ -1,8 +1,8 @@
 import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { getOrderShippingState } from "../../modules/shipping/shipping-state.repository.js";
-import { customerShippingStates } from "../../modules/shipping/customer-shipping.repository.js";
+import { getOrderShippingState } from "../../shipping/shipping-state.repository.js";
+import { customerShippingStates } from "../../shipping/customer-shipping.repository.js";
 import {
   mergeProductTotal,
   mergeVariantTotal,

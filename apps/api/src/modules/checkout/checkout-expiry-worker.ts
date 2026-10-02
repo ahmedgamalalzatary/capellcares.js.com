@@ -1,5 +1,5 @@
-import { releaseExpiredCheckoutReservations } from "../../repositories/checkout/checkout-reservation.repository.js";
-import { expirePendingCodOrders } from "../../repositories/order.repository.js";
+import { releaseExpiredCheckoutReservations } from "./checkout-reservation.repository.js";
+import { expirePendingCodOrders } from "../orders/order.repository.js";
 import { startIntervalWorker } from "../../services/interval-worker.js";
 
 export function startCheckoutExpiryWorker(options: { intervalMs?: number } = {}): () => Promise<void> {

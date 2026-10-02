@@ -4,8 +4,8 @@ import test, { beforeEach } from "node:test";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, collectionItems, collections, orderItems, orders, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { createOrderWithItems, updateOrderPaymentStatusRepo } from "../../src/repositories/order.repository.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { createOrderWithItems, updateOrderPaymentStatusRepo } from "../../../src/modules/orders/order.repository.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

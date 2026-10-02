@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { orderItems, orders } from "@capella/database/drizzle/schema";
 import { db, mysqlPool } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
-import { createVerifiedReview, ReviewEligibilityError } from "../../src/repositories/review.repository.js";
+import { createVerifiedReview, ReviewEligibilityError } from "../../src/modules/reviews/review.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { withTestServer } from "../helpers/request.js";
 
