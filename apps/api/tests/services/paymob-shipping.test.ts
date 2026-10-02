@@ -104,7 +104,7 @@ test("a paid order with genuine processing never raises the untouched alert", as
 });
 
 const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-  hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
+  hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
 const urls = { config, notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook", redirectionUrl: "https://capellacares.com/checkout/payment-result" };
 const paid = { id: 8801, order: { id: 9801 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
   success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,

@@ -1,9 +1,9 @@
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { paymentAttempts, paymobCallbackInbox } from "@capella/database/drizzle/schema";
 
 /** Inbox states that still represent work a worker has not finished. */
-export const UNRESOLVED_INBOX_STATUSES = ["received", "processing", "failed"] as const;
+export const UNRESOLVED_INBOX_STATUSES = ["received", "processing", "failed", "review_required"] as const;
 
 /** Attempt states that mean the attempt is still legitimately in play. */
 export const OPEN_ATTEMPT_STATUSES = ["created", "pending"] as const;
@@ -38,13 +38,15 @@ function signedOrderId(payload: unknown): string | null {
  * `IS NOT NULL(expr)` form. Filtering by the candidate rows first keeps the result set
  * to the caller's own attempts, so the in-memory pass stays small and cannot be starved.
  */
-export async function unresolvedInboxOrderIds(candidateOrderIds: readonly string[]): Promise<Set<string>> {
+export async function unresolvedInboxOrderIds(candidateOrderIds: readonly string[],
+  options: { tx?: Pick<typeof db, "select">; excludeInboxId?: number } = {}): Promise<Set<string>> {
   if (candidateOrderIds.length === 0) return new Set();
-  const rows = await db
+  const rows = await (options.tx ?? db)
     .select({ payload: paymobCallbackInbox.normalizedPayload })
     .from(paymobCallbackInbox)
     .where(and(
       inArray(paymobCallbackInbox.processingStatus, [...UNRESOLVED_INBOX_STATUSES]),
+      options.excludeInboxId === undefined ? undefined : ne(paymobCallbackInbox.id, options.excludeInboxId),
       jsonContainsCandidateIds(paymobCallbackInbox.normalizedPayload, candidateOrderIds)
     ));
   const ids = new Set<string>();
@@ -101,9 +103,11 @@ function jsonContainsCandidateIds(column: typeof paymobCallbackInbox.normalizedP
  * the evidence. Neither could proceed.
  *
  * The safe discipline it relies on:
- *   - The inbox read is outside every lock; `unresolvedOrderIds` is fetched first.
- *   - The attempt read below is a plain SELECT inside the caller's existing transaction,
- *     so it adds no new lock edge and follows whatever order the caller already uses.
+ *   - Guard queries never acquire their own row locks. Mutation callers read
+ *     inbox/attempt evidence on their existing transaction connection after the
+ *     session/order lock, avoiding both stale pre-lock snapshots and pool starvation.
+ *   - Status/discovery callers may read without a transaction; their answers are
+ *     advisory and are rechecked by the mutation under the shared lock.
  *
  * If a future change needs stronger guarantees here, add a `lockOrder` note and the
  * corresponding concurrency test rather than reaching for `.for("update")`.

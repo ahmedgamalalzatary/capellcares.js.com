@@ -3,9 +3,9 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
-import { releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
+import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 
 beforeEach(resetApiTestDatabase);
 
@@ -24,7 +24,7 @@ test("initiatePaymobCheckout reserves stock and persists provider IDs without cr
     now,
     config: {
       mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800
     },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
@@ -66,7 +66,7 @@ test("initiatePaymobCheckout reuses a completed initiation for the same idempote
     now: new Date("2026-09-11T12:00:00Z"),
     config: {
       mode: "test" as const, baseUrl: "https://accept.paymob.com" as const, secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 as const
     },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
@@ -101,7 +101,7 @@ test("processPaymobTransaction creates one paid order and finalizes reserved sto
     },
     idempotencyKey: "33333333-3333-4333-8333-333333333333",
     config: {
-      mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+      mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
       enabledMethods: [{ method: "card", integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800
     },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
@@ -149,7 +149,7 @@ test("processPaymobTransaction clears a registered customer's stored cart after 
     idempotencyKey: "34343434-3434-4434-8434-343434343434",
     config: {
       mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800
     },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
@@ -177,7 +177,7 @@ test("initiatePaymobCheckout rejects reusing an idempotency key for a different 
       items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "55555555-5555-4555-8555-555555555555",
     config: { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const, secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true,
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true,
       intentionExpirationSeconds: 1800 as const },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -200,7 +200,7 @@ test("initiatePaymobCheckout never reopens a completed payment on idempotent rep
       items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 2 }] },
     idempotencyKey: "66666666-6666-4666-8666-666666666666",
     config: { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const, secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 as const },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -223,7 +223,7 @@ test("initiatePaymobCheckout never reopens an expired reservation on idempotent 
       items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "77777777-7777-4777-8777-777777777777",
     config: { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const, secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 as const },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -245,7 +245,7 @@ test("processPaymobTransaction accepts the wallet integration offered alongside 
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "88888888-8888-4888-8888-888888888888",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }, { method: "wallet", integrationId: 456 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }, { method: "wallet", integrationId: 456 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -268,7 +268,7 @@ test("initiatePaymobCheckout sends the processed callback when wallets are offer
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "99999999-9999-4999-8999-999999999999",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }, { method: "wallet", integrationId: 456 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }, { method: "wallet", integrationId: 456 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -290,7 +290,7 @@ test("initiatePaymobCheckout gives Paymob a return URL that identifies the check
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "19191919-1919-4919-8919-191919191919",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result?campaign=fall",
@@ -304,7 +304,7 @@ test("initiatePaymobCheckout gives Paymob a return URL that identifies the check
     `https://capellacares.com/checkout/payment-result?campaign=fall&checkoutId=${encodeURIComponent(result.checkoutId)}`);
 });
 
-test("processPaymobTransaction matches an early callback by merchant reference before the Paymob order ID is saved", async () => {
+test("an early callback cannot settle by an unsigned reference before signed order binding", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
@@ -316,7 +316,7 @@ test("processPaymobTransaction matches an early callback by merchant reference b
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "12121212-1212-4212-8212-121212121212",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -330,8 +330,78 @@ test("processPaymobTransaction matches an early callback by merchant reference b
     }
   });
 
-  assert.equal(earlyOutcome, "succeeded");
-  assert.equal((await db.select().from(orders).where(eq(orders.email, "fast@example.com"))).length, 1);
+  assert.notEqual(earlyOutcome, "succeeded",
+    "a callback whose signed order id is not yet recorded must NOT be settled via the unsigned reference");
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "fast@example.com"))).length, 0,
+    "no order may be created while the signed provider order id is unknown");
+  // Durable intake is the controller's job (verified in paymob-webhook.routes.test.ts): a
+  // real callback always lands in the inbox before processing, so this early notification is
+  // retained and reprocessed rather than lost. What must never happen is settling it here,
+  // on the strength of an unsigned field.
+  const [stored] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobOrderId, "9112"));
+  assert.ok(stored, "the attempt is recorded and will match this callback once its id is saved");
+});
+
+test("a callback cannot be re-pointed at another checkout by rewriting an unsigned field", async () => {
+  // `order.id` IS covered by Paymob's HMAC; `order.merchant_order_id` is NOT. Matching a
+  // callback by the merchant reference therefore let anyone holding one validly-signed
+  // callback rewrite that field and have it still verify - redirecting the payment at will
+  // onto a checkout they do not own. Correlation must rest only on signed fields.
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const ids = await getBaselineIds();
+  const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
+    enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+    canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
+  const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
+  const redirectionUrl = "https://capellacares.com/checkout/payment-result";
+
+  const victim = await initiatePaymobCheckout({
+    payload: { fullName: "Victim", phone: "01012345678", email: "victim@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "ccccccc1-2345-4ccc-8ccc-cccccccccccc", now: new Date("2026-09-11T12:00:00Z"),
+    config, notificationUrl, redirectionUrl,
+    createIntention: async (request) => ({ intentionId: "pi_victim", orderId: 9901,
+      clientSecret: "victim_secret", checkoutUrl: "https://checkout/victim",
+      specialReference: request.specialReference })
+  });
+  const attacker = await initiatePaymobCheckout({
+    payload: { fullName: "Attacker", phone: "01012345679", email: "attacker@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 2", buildingApartment: "2",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "ccccccc2-2345-4ccc-8ccc-cccccccccccc", now: new Date("2026-09-11T12:00:00Z"),
+    config, notificationUrl, redirectionUrl,
+    createIntention: async (request) => ({ intentionId: "pi_attacker", orderId: 9902,
+      clientSecret: "attacker_secret", checkoutUrl: "https://checkout/attacker",
+      specialReference: request.specialReference })
+  });
+
+  // The attacker holds a genuinely valid callback for their OWN order, then rewrites the
+  // unsigned merchant reference to point at the victim's checkout.
+  const [attackerAttempt] = await db.select().from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobIntentionId, "pi_attacker"));
+  // Blanking the SIGNED id is what forces correlation onto the unsigned field. Any attempt
+  // whose provider order id is unknown - an intention created before it was recorded, a
+  // legacy row, or one deliberately cleared - currently falls back to merchant_order_id,
+  // and that fallback is attacker-reachable precisely because the field is unsigned.
+  await db.update(paymentAttempts).set({ paymobOrderId: null })
+    .where(eq(paymentAttempts.checkoutSessionId, victim.sessionId));
+  const result = await processPaymobTransaction({
+    id: 7901, order: { id: 9999, merchant_order_id: attackerAttempt!.merchantReference },
+    amount_cents: 3500, currency: "EGP", integration_id: 123, success: true, pending: false, is_live: false,
+    is_auth: false, is_capture: false, is_refunded: false, is_voided: false,
+    has_parent_transaction: false, source_data: { type: "card" }
+  });
+
+  assert.notEqual(result.outcome, "succeeded",
+    "an unsigned merchant reference must never be able to settle a checkout");
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "victim@example.com"))).length, 0,
+    "a rewritten unsigned reference must never settle someone else's checkout");
+  assert.equal((await db.select().from(orders).where(eq(orders.email, "attacker@example.com"))).length, 0,
+    "nor may it settle the attacker's own checkout when the signed id does not match");
 });
 
 test("processPaymobTransaction records a matching decline without creating an order or releasing the reservation", async () => {
@@ -344,7 +414,7 @@ test("processPaymobTransaction records a matching decline without creating an or
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -369,7 +439,7 @@ test("retryPaymobCheckout allocates one new attempt against the existing reserva
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const initial = await module.initiatePaymobCheckout({
@@ -414,7 +484,7 @@ test("initiatePaymobCheckout replays the latest attempt for an idempotency key",
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
@@ -451,7 +521,7 @@ test("initiatePaymobCheckout releases the reservation and retries after intentio
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
@@ -491,7 +561,7 @@ test("initiatePaymobCheckout fails a definitive rejection without calling an uns
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const idempotencyKey = "d4d4d4d4-d4d4-44d4-84d4-d4d4d4d4d4d4";
@@ -519,7 +589,7 @@ test("initiatePaymobCheckout keeps stock held after an ambiguous failure without
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const payload = { fullName: "Ambiguous Fail", phone: "01012345678", email: "ambiguous@example.com",
@@ -594,7 +664,7 @@ test("initiatePaymobCheckout keeps the checkout recoverable when Paymob throttle
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const payload = { fullName: "Throttled", phone: "01012345678", email: "throttled@example.com",
@@ -663,7 +733,7 @@ test("concurrent Paymob initiations with one idempotency key never leak a duplic
   const module = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const input = {
@@ -700,7 +770,7 @@ test("initiatePaymobCheckout does not recycle a failed attempt for a different c
   const { PaymobProviderError } = await import("../../src/modules/payments/paymob/paymob-client.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
@@ -739,7 +809,7 @@ test("processPaymobTransaction flags a paid checkout for reconciliation after it
     idempotencyKey: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     now: new Date("2026-09-11T12:00:00Z"),
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -769,7 +839,7 @@ test("initiatePaymobCheckout does not return a payment link after its reservatio
     idempotencyKey: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     now: new Date("2026-09-11T12:00:00Z"),
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -792,7 +862,7 @@ test("an unsigned refund amount in the callback is ignored; only authenticated i
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "ffffffff-ffff-4fff-8fff-ffffffffffff",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -822,7 +892,7 @@ test("a signed refund uses the authenticated inquiry total and ignores the callb
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -850,7 +920,7 @@ test("processPaymobTransaction reflects a full dashboard refund without restocki
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -882,7 +952,7 @@ test("processPaymobTransaction stores the cumulative amount refunded by Paymob",
       paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "34343434-3434-4434-8434-343434343434",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -905,7 +975,7 @@ test("retryPaymobCheckout does not return a payment link after its reservation i
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
@@ -937,6 +1007,99 @@ test("retryPaymobCheckout does not return a payment link after its reservation i
   assert.equal(attempt?.paymobOrderId, "9021");
 });
 
+test("retryPaymobCheckout refuses a retry while a sibling attempt's evidence is unresolved", async () => {
+  // The customer-facing button is hidden in this state, but the mutation itself was not
+  // guarded: a direct POST still created a fresh intention while the FIRST payment's
+  // success callback was durably received but not yet applied. The customer then pays
+  // twice - and the second payment wins, with stock reserved for only one of them.
+  const { initiatePaymobCheckout, retryPaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  const ids = await getBaselineIds();
+  const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
+    enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+    canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
+  const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
+  const redirectionUrl = "https://capellacares.com/checkout/payment-result";
+  const first = await initiatePaymobCheckout({
+    payload: { fullName: "Retry Guarded", phone: "01012345678", email: "retryguarded@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
+    idempotencyKey: "abababab-1234-4abc-8abc-abababababab", now: new Date("2026-09-11T12:00:00Z"),
+    config, notificationUrl, redirectionUrl,
+    createIntention: async () => ({ intentionId: "pi_retry_guard_first", orderId: 9410,
+      clientSecret: "first_secret", checkoutUrl: "https://checkout/first" })
+  });
+  // The first attempt fails, so the session IS retryable by status alone.
+  await processPaymobTransaction({ id: 7410, order: { id: 9410 }, amount_cents: 3500,
+    currency: "EGP", integration_id: 123, success: false, pending: false, is_live: false,
+    is_auth: false, is_capture: false, is_refunded: false, is_voided: false,
+    has_parent_transaction: false, source_data: { type: "card" } });
+  // ...yet a SUCCESS callback for that same attempt is received and left unresolved.
+  await receivePaymobCallback({ callbackType: "transaction", transaction: { id: 7410,
+    order: { id: 9410 }, amount_cents: 3500, currency: "EGP", integration_id: 123, success: true,
+    pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+
+  let intentions = 0;
+  await assert.rejects(retryPaymobCheckout({
+    checkoutId: first.checkoutId, config, notificationUrl, redirectionUrl,
+    now: new Date("2026-09-11T12:01:00Z"),
+    createIntention: async () => { intentions += 1; return { intentionId: "pi_retry_guard_second",
+      orderId: 9411, clientSecret: "second_secret", checkoutUrl: "https://checkout/second" }; }
+  }), /evidence|pending|received|retry/i);
+  assert.equal(intentions, 0, "no second intention may be created while evidence is unresolved");
+});
+
+test("a third decline does not release reserved stock while evidence is unresolved", async () => {
+  // Third decline releases the reservation, which frees stock the customer may already
+  // have paid for. With an unresolved callback outstanding the release must wait, or the
+  // eventual success has nothing left to fulfil and the stock is sold twice.
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  const { releaseExpiredCheckoutReservations } = await import("../../src/repositories/checkout/checkout-reservation.repository.js");
+  const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
+  const ids = await getBaselineIds();
+  const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
+    enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+    canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
+  const session = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "Third Decline", phone: "+201012345678", email: "thirddecline@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    reservationExpiresAt: new Date(Date.now() + 600_000),
+    reservations: [{ variantId: ids.firstVariantId, qty: 2 }],
+    initialAttempt: { merchantReference: "pi_third_decline", environment: "test", allowedIntegrationIds: [123],
+      expiresAt: new Date(Date.now() + 600_000) }
+  });
+  // Three attempts used, the third declines, and an unrelated success callback for the same
+  // provider order is sitting unresolved in the inbox.
+  await db.update(paymentAttempts).set({ attemptNumber: 3, paymobOrderId: "9510" })
+    .where(eq(paymentAttempts.checkoutSessionId, session.id));
+  await db.update(checkoutSessions).set({ attemptCount: 3 }).where(eq(checkoutSessions.id, session.id));
+  await receivePaymobCallback({ callbackType: "transaction", transaction: { id: 7510,
+    order: { id: 9510 }, amount_cents: 3500, currency: "EGP", integration_id: 123, success: true,
+    pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+
+  await processPaymobTransaction({ id: 7510, order: { id: 9510 }, amount_cents: 3500, currency: "EGP",
+    integration_id: 123, success: false, pending: false, is_live: false, is_auth: false,
+    is_capture: false, is_refunded: false, is_voided: false, has_parent_transaction: false,
+    source_data: { type: "card" } });
+
+  const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal(variant.stockQty, 8, "stock must stay reserved while a success callback is unresolved");
+  const [checkout] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, session.id));
+  assert.equal(checkout.state, "payment_pending", "the session must not expire while evidence is unresolved");
+  await releaseExpiredCheckoutReservations(new Date(Date.now() + 3_600_000));
+  const [afterExpiryVariant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  const [afterExpiryCheckout] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, session.id));
+  assert.equal(afterExpiryVariant.stockQty, 8, "expiry must not release stock behind queued financial evidence");
+  assert.equal(afterExpiryCheckout.state, "payment_pending", "expiry must retain the held checkout for recovery");
+});
+
 test("initiatePaymobCheckout rejects an elapsed idempotent replay even before the expiry worker runs", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const ids = await getBaselineIds();
@@ -947,7 +1110,7 @@ test("initiatePaymobCheckout rejects an elapsed idempotent replay even before th
       items: [{ type: "product" as const, variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "12121212-1212-4212-8212-121212121212",
     config: { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-      secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+      secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
       enabledMethods: [{ method: "card" as const, integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 as const },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
@@ -967,7 +1130,7 @@ test("a third declined Paymob attempt releases the stock hold so the customer ca
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
   const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
     enabledMethods: [{ method: "card" as const, integrationId: 123 }],
     canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";
@@ -1018,7 +1181,7 @@ test("a signed refund arriving before success is applied to the eventual order",
       paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
     idempotencyKey: "90909090-9090-4090-8090-909090909090",
     config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-      hmacSecret: "hmac", enabledMethods: [{ method: "card", integrationId: 123 }],
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
       canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -1056,7 +1219,7 @@ test("a signed refund arriving before success is applied to the eventual order",
 
 const config = {
   mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-  hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }],
+  hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }],
   canInitiatePayments: true, intentionExpirationSeconds: 1800 as const
 };
 const notificationUrl = "https://api.capellacares.com/api/v1/payments/paymob/webhook";

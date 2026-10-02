@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, count, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
+import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
 import { isFullyResolvedTerminal, TERMINAL_FOLLOW_UP_MS } from "../../repositories/shipping-sync-policy.js";
 import { processPendingShippingEvents, recordShippingObservation, shippingRequestMatchesAccount } from "../../repositories/shipping-sync.repository.js";
 import { resolveBostaSyncRuntime, type BostaObservation, type BostaSyncRuntime } from "./bosta/bosta-sync.service.js";
@@ -111,11 +112,22 @@ async function nextSyncPhase(
   observation: BostaObservation,
   now: Date
 ): Promise<"active" | "terminal_followup" | "parked"> {
+  const [ship] = await tx.select().from(shipments).where(eq(shipments.id, job.shipmentId ?? -1)).limit(1).for("update");
+  // A processed event can still be stale/rejected, or a newer webhook can have won
+  // since the read. Only the accepted current observation may establish completion.
+  if (!ship || ship.providerEventAtMs !== observation.atMs || ship.rawProviderCode !== observation.stateCode ||
+    ship.collectedAmountCents !== observation.collectedAmountCents ||
+    ship.collectionConfirmed !== observation.confirmedDelivery) return "active";
   const [pending] = await tx.select({ total: count() }).from(shippingWorkItems).where(and(
     eq(shippingWorkItems.orderId, job.orderId),
     inArray(shippingWorkItems.operation, ["edit_delivery", "cancel_delivery", "terminate_delivery"]),
     inArray(shippingWorkItems.status, ["pending", "processing", "review_required"])));
-  const resolved = isFullyResolvedTerminal(observation, pending?.total ?? 0);
+  // Open safety flags are unresolved money or custody questions. A parcel carrying one must
+  // keep polling, or parking would retire the job and no automatic path would ever revisit
+  // the discrepancy that the flag was raised to describe.
+  const flags = await tx.select({ flagType: orderReviewFlags.flagType }).from(orderReviewFlags).where(and(
+    eq(orderReviewFlags.orderId, job.orderId), eq(orderReviewFlags.status, "open")));
+  const resolved = isFullyResolvedTerminal(observation, pending?.total ?? 0, flags.filter(flag => isSafetyReviewFlag(flag.flagType)).length);
   if (!resolved) return "active";
   // Arriving at the follow-up means the day has already elapsed; park if still resolved.
   return job.syncPhase === "terminal_followup" ? "parked" : "terminal_followup";

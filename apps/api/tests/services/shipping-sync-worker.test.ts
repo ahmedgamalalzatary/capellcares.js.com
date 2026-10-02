@@ -19,6 +19,37 @@ async function worker() {
 }
 const syncJob = async () => (await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.operation, "sync_delivery")))[0];
 
+test("an informational untouched-paid alert does not prevent terminal parking", async () => {
+  const f = await shippingSyncFixture();
+  await db.insert(orderReviewFlags).values({ orderId: f.order.id, flagType: "untouched_paid", reason: "Informational age alert" });
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () => Response.json(readFixture(f.job.idempotencyKey, { cod: 132.29 })))!;
+  const run = await worker();
+  const now = new Date();
+  await run({ runtime, now });
+  await run({ runtime, now: new Date(now.getTime() + 24 * 3600_000) });
+  assert.deepEqual((await db.select().from(orderReviewFlags)).map(flag => flag.flagType), ["untouched_paid"]);
+  assert.equal((await syncJob()).syncPhase, "parked");
+});
+
+test("a stale delivered read cannot park a shipment whose accepted state is in transit", async () => {
+  const f = await shippingSyncFixture();
+  await db.update(orders).set({ paymentMethod: "paymob", paymentStatus: "accepted", providerPaymentStatus: "succeeded" })
+    .where(eq(orders.id, f.order.id));
+  const terminal = readFixture(f.job.idempotencyKey, { cod: 0, collection: { amount: 0, confirmed: true } });
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () => Response.json(terminal))!;
+  const run = await worker();
+  await run({ runtime });
+  await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
+    timeStamp: Date.now(), state: 30, isConfirmedDelivery: false, cod: 0
+  })));
+  const job = await syncJob();
+  await db.update(shippingWorkItems).set({ syncPhase: "terminal_followup", nextAttemptAt: new Date(Date.now() - 1000) })
+    .where(eq(shippingWorkItems.id, job.id));
+  await run({ runtime });
+  assert.equal((await db.select().from(shipments))[0].normalizedState, "in_transit");
+  assert.equal((await syncJob()).syncPhase, "active", "a rejected old terminal observation is not current completion evidence");
+});
+
 test("a delivered parcel stops competing with active reads: one 24h follow-up, then it parks", async () => {
   const f = await shippingSyncFixture();
   const calls: string[] = [];
@@ -84,6 +115,42 @@ test("a parked job reopens when an authenticated callback arrives, so a terminal
   await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
     type: "SEND", state: 30, isConfirmedDelivery: false, cod: 0 })));
   assert.equal((await syncJob()).syncPhase, "active", "an authenticated callback must reopen a parked job");
+});
+
+test("a delivered parcel with an OPEN safety flag never parks", async () => {
+  // Staff raised a custody_review on this order. Parking would remove the job from every
+  // sweep and with it the only automatic way the open question would ever be revisited -
+  // so the open flag itself must veto parking, whatever the carrier says.
+  const f = await shippingSyncFixture();
+  await db.insert(orderReviewFlags).values({ orderId: f.order.id, flagType: "custody_review",
+    reason: "Delivery reported but collection does not match the locked total" });
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey)))!;
+  const run = await worker();
+  await run({ runtime, now: new Date() });
+  await run({ runtime, now: new Date(Date.now() + 24 * 3600_000) });
+
+  assert.notEqual((await syncJob()).syncPhase, "parked",
+    "an open review flag must keep the parcel under automatic polling");
+});
+
+test("a delivered parcel whose collection amount is DISPUTED never parks", async () => {
+  // The carrier confirms delivery but the collected amount differs from the locked total.
+  // The observation raises amount_mismatch, so the money question is explicitly open - yet
+  // every other condition for parking is satisfied. Parking here would file a known
+  // financial discrepancy as finished business and stop ever looking again.
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey, { collection: { amount: 99.99, confirmed: true } })))!;
+  const run = await worker();
+  await run({ runtime, now: new Date() });
+  await run({ runtime, now: new Date(Date.now() + 24 * 3600_000) });
+
+  const flags = await db.select().from(orderReviewFlags).where(eq(orderReviewFlags.orderId, f.order.id));
+  assert.ok(flags.some((flag) => flag.flagType === "amount_mismatch"),
+    "the mismatched collection must be raised for staff");
+  assert.notEqual((await syncJob()).syncPhase, "parked",
+    "a disputed collection amount must keep the parcel under automatic polling");
 });
 
 test("bindingEnvironment refuses an unrecognised provider host instead of guessing test", () => {

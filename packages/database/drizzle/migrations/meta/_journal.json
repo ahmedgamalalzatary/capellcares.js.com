@@ -435,6 +435,13 @@
       "when": 1790923971670,
       "tag": "0061_shipment_provider_bindings",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1790932198745,
+      "tag": "0062_paymob_callback_recovery",
+      "breakpoints": true
     }
   ]
 }

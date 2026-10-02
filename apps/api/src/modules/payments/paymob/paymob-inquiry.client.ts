@@ -8,12 +8,21 @@ import { z } from "zod";
  * therefore attacker-controllable, so refund totals must come from this authenticated
  * read instead.
  *
- * Contract verified against Paymob's official docs (developers.paymob.com "Authentication
- * Request (Generate Auth Token)", last updated 2026-06-01) and the official
- * PaymobAccept/API-Postman-Collections "Transaction Inquiry API":
- *   POST {base}/api/auth/tokens            body {"api_key": "..."} -> {"token": "..."}
+ * CREDENTIALS (Paymob official docs, "Setup & Authentication", and the official
+ * PaymobAccept/API-Postman-Collections README):
+ *   POST {base}/api/auth/tokens   body {"api_key": "<API KEY>"}  -> {"token": "..."}
  *   GET  {base}/api/acceptance/transactions/{id}   Authorization: Bearer {token}
- * The token expires after 60 minutes, so it is cached with a safety margin.
+ *
+ * The credential that mints this token is the merchant **API Key**, NOT the **Secret Key**.
+ * Paymob defines these as two separate credentials: the Secret Key authenticates Intentions
+ * and post-pay APIs as `Authorization: Token <secret_key>`, while the API Key mints the
+ * 60-minute bearer token used by Subscriptions, Transaction Inquiry and QuickLink.
+ *
+ * This file previously sent the Secret Key as `api_key` while its own comment claimed the
+ * contract was verified against those docs. That combination is the worst of both: the
+ * inquiry could never authenticate in production, and the failure did not surface as an
+ * error - it surfaced as "refunds never verify", so every refund degraded to "no evidence"
+ * and the guards built on that evidence waved payments through.
  */
 
 export const PAYMOB_TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -56,7 +65,12 @@ export class PaymobInquiryError extends Error {
 export type PaymobInquiryClientOptions = {
   fetchImpl?: typeof fetch;
   baseUrl: string;
-  secretKey: string;
+  /**
+   * The merchant API Key that mints the inquiry bearer token. Distinct from the Secret
+   * Key used for intentions, and required - there is deliberately no fallback to it,
+   * because a silent fallback would restore the exact defect this replaces.
+   */
+  apiKey: string;
   timeoutMs?: number;
   /** Injectable clock so token caching is testable without real waiting. */
   now?: () => Date;
@@ -65,6 +79,14 @@ export type PaymobInquiryClientOptions = {
 export type PaymobInquiryClient = { query(transactionId: string): Promise<PaymobInquiry> };
 
 export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): PaymobInquiryClient {
+  const apiKey = typeof options.apiKey === "string" ? options.apiKey.trim() : "";
+  if (apiKey.length === 0) {
+    // Fail closed at the boundary. Attempting the request anyway produced a call the
+    // provider cannot authenticate, which surfaced far downstream as "refunds never
+    // verify" rather than as the configuration fault it actually is.
+    throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE",
+      "Paymob API key is not configured; transaction inquiry cannot authenticate");
+  }
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? (() => new Date());
   const base = options.baseUrl.replace(/\/+$/, "");
@@ -77,7 +99,7 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
       response = await fetchImpl(`${base}/api/auth/tokens`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ api_key: options.secretKey }),
+        body: JSON.stringify({ api_key: apiKey }),
         signal: AbortSignal.timeout(options.timeoutMs ?? 10_000)
       });
     } catch {

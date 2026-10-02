@@ -38,6 +38,53 @@ const callback = (overrides: Record<string, unknown> = {}) => ({
   source_data: { type: "card", pan: "2346", sub_type: "MasterCard" }, ...overrides
 });
 
+test("unsigned merchant references cannot carry nested data into the inbox", async () => {
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({
+    order: { id: 9001, merchant_order_id: { pan: "synthetic-card-data" } }
+  }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.deepEqual((row.normalizedPayload as any).order, { id: 9001 });
+});
+
+test("successive refunds of growing amount produce distinct inbox events", async () => {
+  // A partial refund followed by a larger one are genuinely different events. The
+  // fingerprint deliberately excludes the refund AMOUNT because it is unsigned, but that
+  // must not collapse every refund of the same payment into ONE receipt - once the first
+  // is processed, the later notification resolves to that completed row and the refund
+  // progression is silently dropped.
+  const first = await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ is_refunded: true, refunded_amount_cents: 1200 }) });
+  const second = await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ is_refunded: true, refunded_amount_cents: 3500 }) });
+  assert.notEqual(first.id, second.id, "a growing refund must not collapse onto the first receipt");
+  const rows = await db.select().from(paymobCallbackInbox);
+  assert.equal(rows.length, 2, "each refund progression is retained for inquiry scheduling");
+});
+
+test("an identical refund redelivery still collapses to one inbox row", async () => {
+  // The hint must distinguish EVENTS, not deliveries: the same notification repeated must
+  // not look like new work, or a retry storm becomes unbounded duplicate processing.
+  const first = await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ is_refunded: true, refunded_amount_cents: 1200 }) });
+  const again = await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ is_refunded: true, refunded_amount_cents: 1200 }) });
+  assert.equal(first.id, again.id, "an unchanged redelivery is the same event");
+  assert.equal(again.duplicate, true);
+  assert.equal((await db.select().from(paymobCallbackInbox)).length, 1);
+});
+
+test("an unsigned refund hint is stored separately and never as trusted evidence", async () => {
+  // The amount is attacker-controlled, so it may only ever be a scheduling hint. It must be
+  // recorded somewhere that cannot be mistaken for a verified figure.
+  await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ is_refunded: true, refunded_amount_cents: 7777 }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.processingStatus, "received");
+  const payload = row!.normalizedPayload as Record<string, unknown>;
+  assert.equal(payload.refunded_amount_cents, undefined,
+    "the unsigned amount must not sit in the normalized payload used for correlation");
+});
+
 test("a callback is durably received before processing, and redelivery never duplicates the inbox row", async () => {
   const first = await receivePaymobCallback({ callbackType: "transaction", transaction: callback() });
   const second = await receivePaymobCallback({ callbackType: "transaction", transaction: callback() });

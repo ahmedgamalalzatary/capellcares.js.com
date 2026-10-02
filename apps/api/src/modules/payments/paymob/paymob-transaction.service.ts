@@ -1,10 +1,11 @@
-import { and, eq, lt, or, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db } from "@capella/database/src/db";
-import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from "../../../repositories/order/shared.js";
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../../repositories/shipping-dispatch.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../../repositories/checkout/financial-evidence.repository.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -41,6 +42,7 @@ export type ProcessPaymobOptions = {
    * row claiming a payment that rolled back.
    */
   audit?: { transaction: Record<string, unknown> };
+  inbox?: { id: number; claimedBy: string; now: Date; leaseMs: number };
 };
 
 /**
@@ -83,9 +85,23 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
   const refundedAmountCents = verified?.is_refunded === true
     ? Number(verified.refunded_amount_cents ?? 0)
     : 0;
+  const [bound] = await db.select({ sessionId: paymentAttempts.checkoutSessionId }).from(paymentAttempts)
+    .where(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? ""))).limit(1);
   return db.transaction(async (tx) => {
-    const outcome = await applyPaymobTransaction(tx, transaction, refundedAmountCents);
-    if (options.audit) {
+    // All financial paths serialize on the session before taking attempt/order or
+    // inbox locks. Unbound events take only their inbox lock and cannot affect money.
+    if (bound) await tx.select({ id: checkoutSessions.id }).from(checkoutSessions)
+      .where(eq(checkoutSessions.id, bound.sessionId)).for("update");
+    if (options.inbox) {
+      const [receipt] = await tx.select().from(paymobCallbackInbox).where(eq(paymobCallbackInbox.id, options.inbox.id)).for("update");
+      if (!receipt || receipt.processingStatus !== "processing" || receipt.claimedBy !== options.inbox.claimedBy ||
+        !receipt.claimedAt || receipt.claimedAt.getTime() + options.inbox.leaseMs <= options.inbox.now.getTime()) {
+        return { outcome: "stale_claim" as const };
+      }
+    }
+    const outcome = bound ? await applyPaymobTransaction(tx, transaction, refundedAmountCents, bound.sessionId, options.inbox?.id)
+      : { outcome: "unmatched" as const };
+    if (options.audit && outcome.outcome !== "unmatched") {
       // Inside the same transaction: the audit row and the effects it describes share one fate.
       const { eventFingerprint } = paymobAuditFingerprint(options.audit.transaction, verified);
       try {
@@ -98,6 +114,13 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
         if (!isDuplicateEntry(error)) throw error;
       }
     }
+    if (options.inbox && outcome.outcome !== "unmatched") {
+      await tx.update(paymobCallbackInbox).set({ processingStatus: outcome.outcome === "reconciliation_required"
+        ? "review_required" : PROCESSED_OUTCOMES.has(outcome.outcome) ? "processed" : "rejected",
+        processedAt: options.inbox.now, claimedBy: null, claimedAt: null,
+        lastError: outcome.outcome === "reconciliation_required" ? "PAYMENT_RECONCILIATION_REQUIRED" : null
+      }).where(eq(paymobCallbackInbox.id, options.inbox.id));
+    }
     return outcome;
   });
 }
@@ -105,17 +128,22 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
 const PROCESSED_OUTCOMES = new Set(["succeeded", "refunded", "failed", "pending", "refund_pending_success"]);
 
 type PaymobTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransaction, refundedAmountCents: number) {
+async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransaction, refundedAmountCents: number,
+  sessionId: number, inboxId?: number) {
   {
     const [match] = await tx.select({
       attempt: paymentAttempts,
       session: checkoutSessions
     }).from(paymentAttempts)
       .innerJoin(checkoutSessions, eq(checkoutSessions.id, paymentAttempts.checkoutSessionId))
-      .where(or(
-        eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? "")),
-        eq(paymentAttempts.merchantReference, String(transaction.order?.merchant_order_id ?? ""))
-      ))
+      // Correlation rests ONLY on `order.id`, which is covered by Paymob's HMAC.
+      //
+      // `order.merchant_order_id` is NOT in the HMAC input list, so it was previously an
+      // accepted fallback - which meant anyone holding one validly-signed callback could
+      // rewrite that field and have it still verify, settling a checkout they do not own.
+      // An attempt whose signed id does not match is unmatched; it is never resolved by an
+      // unsigned value.
+      .where(and(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? "")), eq(checkoutSessions.id, sessionId)))
       .limit(1)
       .for("update");
     if (!match) return { outcome: "unmatched" as const };
@@ -210,17 +238,28 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
         .where(eq(paymentAttempts.id, match.attempt.id));
       if (match.attempt.attemptNumber === match.session.attemptCount &&
         match.session.attemptCount >= 3 && match.session.state === "payment_pending") {
-        const reservations = await tx.select().from(checkoutReservations)
-          .where(and(eq(checkoutReservations.checkoutSessionId, match.session.id),
-            eq(checkoutReservations.state, "reserved"))).for("update");
-        for (const reservation of reservations) {
-          await tx.update(productVariants).set({ stockQty: sql`${productVariants.stockQty} + ${reservation.qty}` })
-            .where(eq(productVariants.id, reservation.variantId));
-          await tx.update(checkoutReservations).set({ state: "released" })
-            .where(eq(checkoutReservations.id, reservation.id));
+        // W06 P04: a third decline normally releases the reservation, but not while any
+        // attempt of this session still has durably-received, unresolved evidence. A
+        // success callback in flight means the customer may already have paid; releasing
+        // now frees that stock and leaves the eventual success with nothing to fulfil.
+        //
+        // The inbox lookup is lock-free (W06 problem 2), so consulting it here adds no
+        // payment-side lock edge and cannot form the session/order cycle.
+        const unresolvedOrderIds = await unresolvedInboxOrderIds(
+          await sessionPaymobOrderIds(tx, match.session.id), { tx, excludeInboxId: inboxId });
+        if (!await hasUnresolvedFinancialEvidence(tx, match.session.id, unresolvedOrderIds)) {
+          const reservations = await tx.select().from(checkoutReservations)
+            .where(and(eq(checkoutReservations.checkoutSessionId, match.session.id),
+              eq(checkoutReservations.state, "reserved"))).for("update");
+          for (const reservation of reservations) {
+            await tx.update(productVariants).set({ stockQty: sql`${productVariants.stockQty} + ${reservation.qty}` })
+              .where(eq(productVariants.id, reservation.variantId));
+            await tx.update(checkoutReservations).set({ state: "released" })
+              .where(eq(checkoutReservations.id, reservation.id));
+          }
+          await tx.update(checkoutSessions).set({ state: "expired" })
+            .where(eq(checkoutSessions.id, match.session.id));
         }
-        await tx.update(checkoutSessions).set({ state: "expired" })
-          .where(eq(checkoutSessions.id, match.session.id));
       }
       return { outcome: "failed" as const };
     }

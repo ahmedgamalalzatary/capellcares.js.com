@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
-import { db } from "@capella/database/src/db";
+import { db, mysqlPool } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -80,32 +80,44 @@ test("expiry skips a candidate whose state changed after discovery instead of ac
   assert.equal(reservation?.state, "reserved", "the reservation is untouched by the stale candidate");
 });
 
-test("concurrent payment application and expiry of the same session do not deadlock", async () => {
+test("expiry waits for the payment session lock before releasing any stock", async () => {
   const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
   const input = sessionInput(ids.firstVariantId);
   input.reservationExpiresAt = new Date(Date.now() - 1000);
   const session = await module?.createReservedCheckout(input);
 
-  // Payment applies session-first; expiry also takes the session lock. The payment path
-  // deliberately HOLDS its lock while expiry runs, so the two genuinely overlap: if the
-  // evidence check ever began taking a lock of its own, this is where the cycle appears.
-  let releasePaymentLock: () => void = () => {};
-  const holdingLock = new Promise<void>((resolve) => { releasePaymentLock = resolve; });
-  const payment = db.transaction(async (tx) => {
-    const [locked] = await tx.select({ id: checkoutSessions.id }).from(checkoutSessions)
-      .where(eq(checkoutSessions.id, session!.id)).limit(1).for("update");
-    assert.ok(locked, "the payment path holds a real row lock before expiry runs");
-    await holdingLock;
-  });
-  // Give the payment transaction time to actually acquire its lock first.
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  const expiry = module?.releaseExpiredCheckoutReservations(new Date());
-  releasePaymentLock();
-  const results = await Promise.allSettled([payment, expiry]);
-
-  assert.equal(results.filter((result) => result.status === "fulfilled").length, 2,
-    "both transactions complete; neither is killed as a deadlock victim");
+  // A real MySQL lock-wait timeout establishes contention, unlike an arbitrary
+  // sleep. Apply the short timeout only to expiry's real transaction connection.
+  const getConnection = mysqlPool.getConnection;
+  const payment = await mysqlPool.getConnection();
+  let expiryConnection: Awaited<ReturnType<typeof mysqlPool.getConnection>> | undefined;
+  try {
+    await payment.beginTransaction();
+    await payment.query("SELECT id FROM checkout_sessions WHERE id = ? FOR UPDATE", [session!.id]);
+    mysqlPool.getConnection = async () => {
+      expiryConnection = await getConnection.call(mysqlPool);
+      await expiryConnection.query("SET SESSION innodb_lock_wait_timeout = 1");
+      return expiryConnection;
+    };
+    await assert.rejects(module!.releaseExpiredCheckoutReservations(new Date()), (error: any) => {
+      assert.equal(error.cause?.code ?? error.code, "ER_LOCK_WAIT_TIMEOUT", "MySQL must confirm an actual session-row lock wait");
+      assert.match(error.query ?? error.cause?.sql, /select.*checkout_sessions.*for update/i,
+        "expiry must wait at the initial locking read, before any stock writes");
+      return true;
+    });
+    const [held] = await db.select().from(checkoutReservations)
+      .where(eq(checkoutReservations.checkoutSessionId, session!.id));
+    assert.equal(held.state, "reserved", "a blocked expiry performs no stock effect");
+  } finally {
+    mysqlPool.getConnection = getConnection;
+    await payment.rollback();
+    payment.release();
+    // The connection has already been returned by Drizzle. Restore its session
+    // setting on that connection before the next test uses the pool.
+    if (expiryConnection) await expiryConnection.query("SET SESSION innodb_lock_wait_timeout = DEFAULT");
+  }
+  await module!.releaseExpiredCheckoutReservations(new Date());
   const [variant] = await db.select({ stockQty: productVariants.stockQty })
     .from(productVariants).where(eq(productVariants.id, ids.firstVariantId)).limit(1);
   assert.equal(variant?.stockQty, 10, "stock is restored exactly once across both paths");

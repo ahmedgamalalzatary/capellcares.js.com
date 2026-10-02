@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
-import { retryPaymobCheckout } from "./paymob-checkout.service.js";
+import { PaymentEvidenceUnresolvedError, retryPaymobCheckout } from "./paymob-checkout.service.js";
 import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 
 export async function retryCheckoutController(req: Request, res: Response): Promise<void> {
@@ -20,6 +20,10 @@ export async function retryCheckoutController(req: Request, res: Response): Prom
     });
     res.status(201).json(result);
   } catch (error) {
+    if (error instanceof PaymentEvidenceUnresolvedError) {
+      res.status(409).json({ message: error.message, code: error.code });
+      return;
+    }
     if (error instanceof PaymobProviderError) {
       res.status(502).json({ message: "Payment provider is temporarily unavailable" });
       return;

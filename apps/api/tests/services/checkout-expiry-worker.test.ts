@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { and, eq } from "drizzle-orm";
 import { db, mysqlPool } from "@capella/database/src/db";
-import { checkoutSessions, orderReviewFlags, orders, paymentAttempts, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { checkoutSessions, orderReviewFlags, orders, paymentAttempts, paymobCallbackInbox, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { createReservedCheckout, discoverExpiredSessionIds, releaseExpiredCheckoutReservations } from "../../src/repositories/checkout/checkout-reservation.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
@@ -17,7 +17,7 @@ import { initiatePaymobCheckout } from "../../src/modules/checkout/paymob-checko
 import { processPaymobTransaction } from "../../src/modules/payments/paymob/paymob-transaction.service.js";
 
 const paymobConfig = { mode: "test" as const, baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
-  hmacSecret: "hmac", enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true,
+  hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card" as const, integrationId: 123 }], canInitiatePayments: true,
   intentionExpirationSeconds: 1800 as const };
 // Amount 13229 is one variant plus 97.29 shipping, matching the fixture shipping service.
 const paidDispatchTransaction = { id: 8801, order: { id: 9801 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
@@ -484,8 +484,8 @@ test("dispatch holds an order while refund evidence for its session is still unr
   await runShippingDispatchOnce({ provider: dispatchProvider() });
 
   const [job] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
-  assert.equal(job.status, "failed", "unresolved refund evidence must hold the shipment");
-  assert.equal(job.lastError, "ORDER_NOT_DISPATCHABLE");
+  assert.equal(job.lastError, "AWAITING_PAYMENT_EVIDENCE",
+    "unresolved refund evidence must hold the shipment, retryably");
   assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 0,
     "nothing is handed to the courier while the refund is unresolved");
 });
@@ -514,8 +514,8 @@ test("dispatch holds a PAID order whose refund evidence arrives after the attemp
   await runShippingDispatchOnce({ provider: dispatchProvider() });
 
   const [job] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
-  assert.equal(job.status, "failed", "an unresolved refund on a paid attempt must still hold the shipment");
-  assert.equal(job.lastError, "ORDER_NOT_DISPATCHABLE");
+  assert.equal(job.lastError, "AWAITING_PAYMENT_EVIDENCE",
+    "an unresolved refund on a paid attempt must still hold the shipment");
   assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 0,
     "a refund that arrives after payment must still stop the parcel leaving");
 });
@@ -556,7 +556,7 @@ test("expiry discovery does not spend its batch on sessions that are only held",
  * An already-expired checkout session, optionally holding unresolved payment evidence so
  * it is skipped under its own lock.
  */
-async function createExpiredHeldSession(email: string, paymobOrderId: number, held = true, expiryOffsetMs = 60_000) {
+async function createExpiredHeldSession(email: string, paymobOrderId: number, held = true, expiryOffsetMs = 60_000, qty = 1) {
   const ids = await getBaselineIds();
   const created = await createReservedCheckout({
     publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
@@ -566,7 +566,7 @@ async function createExpiredHeldSession(email: string, paymobOrderId: number, he
     // The larger the offset, the earlier this session expired, so it sorts ahead of the
     // others in discovery order.
     reservationExpiresAt: new Date(Date.now() - expiryOffsetMs),
-    reservations: [{ variantId: ids.firstVariantId, qty: 1 }],
+    reservations: qty > 0 ? [{ variantId: ids.firstVariantId, qty }] : [],
     initialAttempt: { merchantReference: `pi_${paymobOrderId}`, environment: "test", allowedIntegrationIds: [123],
       expiresAt: new Date(Date.now() - 1000) }
   });
@@ -582,6 +582,65 @@ async function createExpiredHeldSession(email: string, paymobOrderId: number, he
   }
   return created.id;
 }
+
+test("expiry discovery is not starved by held sessions even when history dwarfs the batch", async () => {
+  // The exclusion was computed from a CAPPED scan of all payment attempts. Once history
+  // exceeded that cap, held sessions fell outside it and stopped being excluded, so they
+  // could occupy the earliest batch slots indefinitely and eligible sessions behind them
+  // were never examined - stock never released, sweep silently idle.
+  //
+  // Scoping the evidence lookup to the actual candidates bounds the relevant input by the
+  // batch instead of by total history. The history here is deliberately larger than any
+  // fixed cap a candidate-scoped implementation would need.
+  const held: number[] = [];
+  for (let index = 0; index < 2; index += 1) {
+    held.push(await createExpiredHeldSession(`f7-held-${index}@example.test`, 9600 + index, true, 240_000 + index * 1000));
+  }
+  const eligible = await createExpiredHeldSession("f7-eligible@example.test", 9699, false, 1000);
+
+  // Historical held sessions, all expiring EARLIER than the eligible one, pushing total
+  // history past the 5,000-row cap the previous implementation relied on and filling more
+  // than the over-fetch window. They reserve no stock - they exist purely as history.
+  for (let index = 0; index < 100; index += 1) {
+    await createExpiredHeldSession(`f7-history-${index}@example.test`, 20_000 + index, true, 300_000 + index, 0);
+  }
+
+  const discovered = await discoverExpiredSessionIds(new Date(), 2);
+  assert.ok(discovered.includes(eligible),
+    `an eligible session behind held ones must survive discovery (got ${discovered.length})`);
+});
+
+test("a temporary evidence hold resumes automatically once the evidence resolves", async () => {
+  // A refund still being verified is a TEMPORARY condition. Writing `failed` made the
+  // stranded order depend on a member of staff pressing retry by hand, and the projections
+  // treat this error as an expected stop, so nothing surfaces it as needing attention.
+  const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "hold-recovers@example.test");
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await db.update(paymentAttempts).set({ paymobOrderId: "9703" })
+    .where(eq(paymentAttempts.checkoutSessionId, sessionId));
+  await receivePaymobCallback({ callbackType: "transaction", transaction: {
+    id: 7303, order: { id: 9703 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+  await db.update(shippingWorkItems).set({ nextAttemptAt: new Date(Date.now() - 2000) })
+    .where(eq(shippingWorkItems.orderId, orderId));
+  await runShippingDispatchOnce({ provider: dispatchProvider() });
+
+  const [held] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
+  assert.notEqual(held.status, "failed",
+    "a temporary evidence hold must not permanently fail the delivery job");
+
+  // The payment evidence resolves: the inbox row is marked processed.
+  await db.update(paymobCallbackInbox).set({ processingStatus: "processed" });
+  await db.update(shippingWorkItems).set({ nextAttemptAt: new Date(Date.now() - 2000) })
+    .where(eq(shippingWorkItems.orderId, orderId));
+  await runShippingDispatchOnce({ provider: dispatchProvider() });
+
+  const [after] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
+  assert.equal(after.status, "succeeded",
+    "once the evidence resolves the order must dispatch without staff intervention");
+  assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 1);
+});
 
 test("the real dispatch worker still refuses an order carrying a safety flag", async () => {
   const { orderId } = await paidOrderWithDeliveryIntent(97, "safety-flag-blocks@example.test");

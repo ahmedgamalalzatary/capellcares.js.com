@@ -63,6 +63,35 @@ test("bulk shipping keeps expected rejection messages", async () => {
   });
 });
 
+test("an address the carrier would reject is a client error, not a 500", async t => {
+  // The address validator throws a checkout-shipping error, which the action routes did not
+  // recognise. A schema-valid but carrier-invalid address therefore fell through to the
+  // generic handler and surfaced as "Internal server error" - telling staff the platform
+  // broke when the truth is simply that their address input was wrong.
+  const f = await shippingSyncFixture(false);
+  const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true",
+    BOSTA_EDIT_SETTINGS_JSON: JSON.stringify({ accountVerified: true, accountEvidence: "controlled fixture only",
+      accountId: "fixture", readContract: { verified: true, evidence: "controlled fixture only",
+        editablePath: ["editAvailability", "editable"], prePickupPath: ["editAvailability", "prePickup"] } }) };
+  const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  Object.assign(process.env, env);
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    // The destination ids must MATCH the order's locked snapshot: a mismatch is caught by an
+    // earlier, different guard (cancellation required). Only a same-destination edit with a
+    // too-short first line reaches the carrier-side address check under test.
+    const snapshot = JSON.parse((await db.select({ shippingSnapshot: orders.shippingSnapshot })
+      .from(orders).where(eq(orders.id, f.order.id)))[0].shippingSnapshot!);
+    const response = await request(`/api/erp/shipping/orders/${f.order.id}/shipment-edit`, {
+      method: "POST", headers: { ...auth, "content-type": "application/json" },
+      body: JSON.stringify({ address: { cityId: snapshot.address.cityId, zoneId: snapshot.address.zoneId,
+        districtId: snapshot.address.districtId, addressLine: "x", buildingApartment: "1" } }) });
+    assert.notEqual(response.status, 500, `an invalid address must never be reported as a server fault (got ${response.status}: ${JSON.stringify(response.json)})`);
+    assert.equal(response.status, 400);
+  });
+});
+
 test("single and bulk edits never expose malformed server configuration", async t => {
   const f = await shippingSyncFixture(false);
   const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true", BOSTA_EDIT_SETTINGS_JSON: "private-sentinel" };

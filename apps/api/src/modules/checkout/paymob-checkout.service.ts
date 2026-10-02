@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import type { CheckoutPayload } from "../../types/domain.js";
 import { createReservedCheckout } from "../../repositories/checkout/checkout-reservation.repository.js";
+import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
 import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
@@ -21,6 +22,18 @@ type PaymobIntention = {
 type IntentionCreator = (input: CreatePaymobIntentionInput) => Promise<PaymobIntention>;
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export class PaymentEvidenceUnresolvedError extends Error {
+  readonly code = "PAYMENT_EVIDENCE_UNRESOLVED";
+  constructor() {
+    super("A payment for this checkout is already received and awaiting confirmation; retry is not available yet");
+  }
+}
+
+async function paymentEvidenceUnresolved(tx: DbTransaction, sessionId: number) {
+  return hasUnresolvedFinancialEvidence(tx, sessionId,
+    await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx }));
+}
 
 /**
  * Returns the stock held by a checkout's still-reserved lines and marks those lines released.
@@ -62,9 +75,12 @@ function isDuplicateEntryError(error: unknown): boolean {
  */
 async function failPaymobInitiation(sessionId: number, attemptId: number) {
   await db.transaction(async (tx) => {
+    const [session] = await tx.select().from(checkoutSessions).where(eq(checkoutSessions.id, sessionId)).for("update");
+    if (!session) return;
     await tx.update(paymentAttempts)
       .set({ status: "failed", failureCode: "INTENTION_CREATION_FAILED" })
       .where(eq(paymentAttempts.id, attemptId));
+    if (session.state === "completed" || await paymentEvidenceUnresolved(tx, sessionId)) return;
     await releaseReservedStock(tx, sessionId);
     await tx.update(checkoutSessions).set({ state: "failed" })
       .where(eq(checkoutSessions.id, sessionId));
@@ -211,6 +227,7 @@ export async function initiatePaymobCheckout(input: {
         .orderBy(desc(paymentAttempts.attemptNumber)).limit(1).for("update");
       if (!latest || latest.status !== "failed" || latest.clientSecret !== null ||
         latest.failureCode !== "INTENTION_CREATION_THROTTLED") return null;
+      if (await paymentEvidenceUnresolved(tx, session.id)) throw new PaymentEvidenceUnresolvedError();
       if (session.attemptCount >= 3) throw new Error("Payment attempt limit reached");
       const [attempt] = await tx.insert(paymentAttempts).values({
         checkoutSessionId: session.id,
@@ -247,6 +264,7 @@ export async function initiatePaymobCheckout(input: {
           latest?.status === "reconciliation_required") {
           throw new Error("Paymob checkout initiation is still in progress");
         }
+        if (await paymentEvidenceUnresolved(tx, session.id)) throw new PaymentEvidenceUnresolvedError();
         await releaseReservedStock(tx, existing.sessionId);
         await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
       });
@@ -374,6 +392,17 @@ export async function retryPaymobCheckout(input: {
       !(latest.status === "reconciliation_required" &&
         latest.failureCode === "INTENTION_CREATION_AMBIGUOUS" && !latest.clientSecret))) {
       throw new Error("Previous payment attempt has not failed");
+    }
+    // W06 P04: hiding the retry button is not the guard. The mutation itself must refuse,
+    // because a direct request can otherwise create a SECOND intention while the first
+    // attempt's success callback is durably received but not yet applied - the customer
+    // pays twice, and the second payment wins with stock reserved for only one.
+    //
+    // Read inside the existing session lock. The inbox lookup is deliberately lock-free
+    // (financial-evidence.repository.ts), so this adds no new lock edge and cannot form the
+    // session/order cycle W06 problem 2 documents.
+    if (await paymentEvidenceUnresolved(tx, session.id)) {
+      throw new PaymentEvidenceUnresolvedError();
     }
     const [attempt] = await tx.insert(paymentAttempts).values({
       checkoutSessionId: session.id,

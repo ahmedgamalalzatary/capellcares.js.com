@@ -3,7 +3,7 @@ import test, { afterEach, beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { orders, paymentWebhookEvents } from "@capella/database/drizzle/schema";
+import { orders, paymentWebhookEvents, paymobCallbackInbox } from "@capella/database/drizzle/schema";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { initiatePaymobCheckout } from "../../src/modules/checkout/paymob-checkout.service.js";
@@ -92,6 +92,30 @@ test("a refund callback does trigger exactly one authenticated inquiry", async (
   }
 });
 
+test("a refund whose verification fails leaves durable retryable work rather than being acknowledged", async () => {
+  // A transient provider outage must not permanently lose a refund notification. The old
+  // shape caught the failure, answered 202, and created nothing - so the callback was
+  // treated as handled while no evidence existed and no work was queued. The refund then
+  // simply never applied.
+  setPaymobInquiryLookupForTests(async () => { throw new Error("provider unavailable"); });
+  const previous = process.env.PAYMOB_HMAC_SECRET;
+  process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  try {
+    await withTestServer(app, async (request) => {
+      const response = await postSignedCallback(request, inquiryCallback({ is_refunded: true }));
+      // Accepted for redelivery is fine; the requirement is that WORK EXISTS afterwards.
+      assert.equal(response.status === 200 || response.status === 202, true);
+    });
+    const rows = await db.select().from(paymobCallbackInbox);
+    assert.equal(rows.length, 1, "the unverified refund must leave a durable inbox row");
+    assert.equal(rows[0]!.processingStatus, "failed",
+      "an unverified refund stays retryable instead of being marked handled");
+  } finally {
+    if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET;
+    else process.env.PAYMOB_HMAC_SECRET = previous;
+  }
+});
+
 test("public Paymob availability exposes no secrets and stays off until methods are confirmed", async () => {
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/payments/paymob/methods");
@@ -120,7 +144,7 @@ test("Paymob webhook rejects an invalid HMAC before recording a processed event"
   }
 });
 
-test("Paymob webhook records a valid unknown transaction once across duplicate delivery", async () => {
+test("Paymob webhook retains a valid unknown transaction once for later binding", async () => {
   const previous = process.env.PAYMOB_HMAC_SECRET;
   process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
   const callback = {
@@ -144,8 +168,10 @@ test("Paymob webhook records a valid unknown transaction once across duplicate d
       }
     });
     const events = await db.select().from(paymentWebhookEvents);
-    assert.equal(events.length, 1);
-    assert.equal(events[0]?.processingStatus, "rejected");
+    assert.equal(events.length, 0, "unbound work has no final financial audit outcome yet");
+    const receipts = await db.select().from(paymobCallbackInbox);
+    assert.equal(receipts.length, 1);
+    assert.equal(receipts[0].lastError, "PAYMENT_BINDING_UNRESOLVED");
   } finally {
     if (previous === undefined) delete process.env.PAYMOB_HMAC_SECRET;
     else process.env.PAYMOB_HMAC_SECRET = previous;
@@ -184,7 +210,7 @@ test("Paymob webhook creates the order from a verified matching transaction", as
       cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "paymob",
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }] },
     idempotencyKey: "44444444-4444-4444-8444-444444444444",
-    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
       enabledMethods: [{ method: "card", integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",
@@ -202,6 +228,9 @@ test("Paymob webhook creates the order from a verified matching transaction", as
           order: { id: 9003 }, owner: 7, pending: false, source_data: { pan: "1234", sub_type: "MasterCard", type: "card" }, success: true, is_live: false } })
       });
       assert.equal(response.status, 200);
+      const receipts = await db.select().from(paymobCallbackInbox);
+      assert.equal(receipts.length, 1);
+      assert.equal(receipts[0].processingStatus, "processed", "the paid order and completed receipt must commit together");
       const refund = await request("/api/v1/payments/paymob/webhook?hmac=33b43e82670513625e887a1a7a461bd7d2e19fb44253e3bfe0d13698e6b8e13704ae8761cee3ed7c2a922ffcba3c649611258e018bce53b84ab18b35069a7db3", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ type: "TRANSACTION", obj: { amount_cents: 7000, created_at: "2026-09-11T12:00:00Z", currency: "EGP",
@@ -229,7 +258,7 @@ test("Paymob webhook acknowledges an early refund and creates a refunded order a
       governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
       paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }] },
     idempotencyKey: "54545454-5454-4454-8454-545454545454",
-    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac",
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
       enabledMethods: [{ method: "card", integrationId: 123 }], canInitiatePayments: true, intentionExpirationSeconds: 1800 },
     notificationUrl: "https://api.capellacares.com/api/v1/payments/paymob/webhook",
     redirectionUrl: "https://capellacares.com/checkout/payment-result",

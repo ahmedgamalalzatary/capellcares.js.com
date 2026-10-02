@@ -1,16 +1,7 @@
-import { and, eq, gt, gte, inArray, isNotNull, lte, notInArray, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lte, notExists, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { OPEN_ATTEMPT_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
-
-/**
- * Upper bound on how many provider order ids discovery will consider while working out
- * which expired sessions are already held. Generous relative to real traffic, and it
- * bounds the query rather than deciding correctness: a session beyond this bound is
- * simply examined normally, and the per-session recheck under its lock remains the
- * authority on whether it may be released.
- */
-const EVIDENCE_SCAN_SIZE = 5000;
+import { checkoutReservations, checkoutSessions, paymentAttempts, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
+import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 
 interface ReservedCheckoutInput {
   publicId: string;
@@ -118,38 +109,22 @@ export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_
   // held sessions can fill the whole batch and the eligible sessions behind them are never
   // examined at all - their stock is never released and the sweep quietly stops progressing.
   //
-  // Read without locks, and rechecked per session under its lock afterwards. The exclusion
-  // is a scheduling optimisation, never a safety decision: a session that gains evidence
-  // between this read and its lock is still caught by the per-session recheck below.
-  const open = await db
-    .select({ sessionId: paymentAttempts.checkoutSessionId, paymobOrderId: paymentAttempts.paymobOrderId })
-    .from(paymentAttempts)
-    .where(isNotNull(paymentAttempts.paymobOrderId))
-    .limit(EVIDENCE_SCAN_SIZE);
-  const unresolved = await unresolvedInboxOrderIds(
-    [...new Set(open.map((attempt) => String(attempt.paymobOrderId)))]);
-  const heldSessions = new Set<number>();
-  if (unresolved.size > 0) {
-    const held = await db
-      .select({ sessionId: paymentAttempts.checkoutSessionId })
-      .from(paymentAttempts)
-      .where(and(
-        inArray(paymentAttempts.status, [...OPEN_ATTEMPT_STATUSES]),
-        isNotNull(paymentAttempts.paymobOrderId),
-        inArray(paymentAttempts.paymobOrderId, [...unresolved])
-      ));
-    for (const attempt of held) heldSessions.add(attempt.sessionId);
-  }
+  // Exclude held sessions BEFORE limiting. Any finite oversample can be filled
+  // by held rows and repeatedly starve eligible sessions behind it.
+  const evidence = db.select({ id: paymobCallbackInbox.id }).from(paymentAttempts)
+    .innerJoin(paymobCallbackInbox, sql`json_unquote(json_extract(${paymobCallbackInbox.normalizedPayload}, '$.order.id')) = ${paymentAttempts.paymobOrderId}`)
+    .where(and(eq(paymentAttempts.checkoutSessionId, checkoutSessions.id),
+      sql`${paymobCallbackInbox.processingStatus} in (${sql.join(UNRESOLVED_INBOX_STATUSES.map(status => sql`${status}`), sql`, `)})`));
   const candidates = await db.select({ id: checkoutSessions.id })
     .from(checkoutSessions)
     .where(and(
       eq(checkoutSessions.state, "payment_pending"),
       lte(checkoutSessions.reservationExpiresAt, now),
-      heldSessions.size === 0 ? undefined : notInArray(checkoutSessions.id, [...heldSessions])
+      notExists(evidence)
     ))
     .orderBy(checkoutSessions.reservationExpiresAt)
     .limit(limit);
-  return candidates.map((candidate) => candidate.id);
+  return candidates.map(candidate => candidate.id);
 }
 
 export async function releaseExpiredCheckoutReservations(now: Date): Promise<void> {
@@ -159,24 +134,23 @@ export async function releaseExpiredCheckoutReservations(now: Date): Promise<voi
 
   // Pass 2: one short transaction per candidate, so no lock is held across the batch.
   for (const sessionId of candidates) {
-    // The unresolved set is read per candidate and BEFORE the lock is taken, so the inbox
-    // read stays outside every lock. Scoped to this session's own provider order ids, so
-    // an unrelated backlog cannot decide whether this session is released.
-    const paymobOrderIds = await sessionPaymobOrderIds(db, sessionId);
-    const unresolvedOrderIds = await unresolvedInboxOrderIds(paymobOrderIds);
     await db.transaction(async (tx) => {
-    // Recheck under the session lock: the row may have changed since discovery, in which
-    // case it is simply skipped and the next sweep re-evaluates it against fresh data.
-    const [session] = await tx.select({ id: checkoutSessions.id, state: checkoutSessions.state,
-      expiresAt: checkoutSessions.reservationExpiresAt })
-      .from(checkoutSessions)
-      .where(and(
-        eq(checkoutSessions.id, sessionId),
-        eq(checkoutSessions.state, "payment_pending"),
-        lte(checkoutSessions.reservationExpiresAt, now)
-      ))
-      .for("update");
-    if (!session) return;
+      // Recheck under the session lock: the row may have changed since discovery, in which
+      // case it is simply skipped and the next sweep re-evaluates it against fresh data.
+      const [session] = await tx.select({ id: checkoutSessions.id, state: checkoutSessions.state,
+        expiresAt: checkoutSessions.reservationExpiresAt })
+        .from(checkoutSessions)
+        .where(and(
+          eq(checkoutSessions.id, sessionId),
+          eq(checkoutSessions.state, "payment_pending"),
+          lte(checkoutSessions.reservationExpiresAt, now)
+        ))
+        .for("update");
+      if (!session) return;
+
+      // Take a fresh snapshot after acquiring the shared intake/session lock.
+      // Use this transaction's connection, not a second pool connection under locks.
+      const unresolvedOrderIds = await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx });
 
       // P03: a verified callback may already be durably received while its effects are
       // still queued. Releasing the reservation then would free stock the customer has

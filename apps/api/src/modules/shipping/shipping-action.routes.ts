@@ -7,6 +7,7 @@ import type { ErpAuthenticatedRequest } from "../../middlewares/admin-auth.middl
 import { requestShippingCancellation, ShippingCancellationError } from "../../repositories/shipping-cancellation.repository.js";
 import { recordOrderManualState } from "../../repositories/shipping-state.repository.js";
 import { ShippingRuleError } from "../../repositories/shipping-rule-error.js";
+import { CheckoutShippingError } from "./checkout-shipping.service.js";
 import { reconcileOrderDeliveryCreation, retryOrderDeliveryCreation, runBulkShippingAction, resolveShippingFlags, editOrderShipment, ShippingConfigurationError } from "../../repositories/shipping-action.repository.js";
 import { shipmentManualStateRequestSchema, shipmentEditSchema, shippingFlagResolutionSchema, shippingBulkActionSchema } from "@capella/shared";
 
@@ -43,6 +44,10 @@ shippingActionRoutes.post("/orders/:id/cancel", requireErpPermission("shipping.u
 
 function mapActionError(error: unknown, res: Response) {
   if (error instanceof ShippingConfigurationError) return res.status(503).json({ message: error.message });
+  // A carrier address the platform refuses is bad staff input, not a broken platform.
+  // Left unhandled it reached the generic middleware and answered 500, telling staff the
+  // system had failed when the truth is simply that the address cannot be delivered to.
+  if (error instanceof CheckoutShippingError) return res.status(400).json({ message: error.message });
   if (!(error instanceof ShippingRuleError)) throw error;
   const message = error.message;
   if (/not found/i.test(message)) return res.status(404).json({ message });

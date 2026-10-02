@@ -28,7 +28,8 @@ export function isTerminalShippingState(stateCode: number): boolean {
  */
 export function isFullyResolvedTerminal(
   observation: BostaObservation,
-  pendingOperations: number
+  pendingOperations: number,
+  openSafetyFlags = 0
 ): boolean {
   if (!isTerminalShippingState(observation.stateCode)) return false;
   if (STAFF_REQUIRED_STATE_CODES.has(observation.stateCode)) return false;
@@ -36,6 +37,11 @@ export function isFullyResolvedTerminal(
   if (observation.exceptionCode != null) return false;
   // A pending edit/cancel/terminate that has not been confirmed is unresolved work.
   if (pendingOperations > 0) return false;
+  // An OPEN safety flag is an unresolved money or custody question by definition - it was
+  // raised precisely because something about this parcel does not add up. Parking here
+  // would drop the job from every sweep and with it the only automatic way the question
+  // would ever be revisited, filing a known discrepancy as finished business.
+  if (openSafetyFlags > 0) return false;
   // COD must be positively settled. `confirmedDelivery` is the carrier's own statement
   // that collection is verified; null means the provider told us nothing, which is not
   // the same as "nothing outstanding". Amount 0 is legitimate for prepaid orders, so the

@@ -300,6 +300,20 @@ test("checkout status withdraws retry while a sibling attempt's payment evidence
     assert.equal(response.json.latestAttemptStatus, "failed");
     assert.equal(response.json.canRetry, false,
       "an unresolved sibling payment must withdraw retry, or the customer can be charged twice");
+    const env = { PAYMOB_CARD_INTEGRATION_CONFIRMED: "true", PAYMOB_CARD_INTEGRATION_ID: "123",
+      PAYMOB_SECRET_KEY: "synthetic", PAYMOB_PUBLIC_KEY: "synthetic", PAYMOB_HMAC_SECRET: "synthetic",
+      PAYMOB_NOTIFICATION_URL: "https://example.invalid/webhook", PAYMOB_REDIRECTION_URL: "https://example.invalid/result" };
+    const before = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+    Object.assign(process.env, env);
+    try {
+      const retry = await request(`/api/v1/checkout/${publicId}/retry`, { method: "POST" });
+      assert.equal(retry.status, 409, "received payment evidence is a business conflict, not a server failure");
+      assert.equal(retry.json.code, "PAYMENT_EVIDENCE_UNRESOLVED");
+    } finally {
+      for (const [key, value] of Object.entries(before)) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    }
   });
 });
 

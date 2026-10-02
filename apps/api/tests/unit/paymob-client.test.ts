@@ -6,7 +6,7 @@ test("Paymob client does not expose the unsupported intention lookup", async () 
   assert.equal("lookupPaymobIntentionBySpecialReference" in module, false);
 });
 
-test("Paymob inquiry authenticates with a POST api_key token and reads a transaction by ID", async () => {
+test("Paymob inquiry authenticates with the API KEY, never the secret key", async () => {
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js").catch(() => null);
   assert.ok(module?.queryPaymobTransaction, "a trusted inquiry client is required");
   const calls: Array<{ url: string; init?: RequestInit }> = [];
@@ -19,16 +19,36 @@ test("Paymob inquiry authenticates with a POST api_key token and reads a transac
       pending: false, is_refunded: false, refunded_amount_cents: null }), { status: 200 });
   };
   const result = await module.queryPaymobTransaction({ fetchImpl, baseUrl: "https://accept.paymob.com",
-    secretKey: "sk_secret", transactionId: "574588" });
-  // Official contract: POST body { api_key }, then GET with a Bearer token.
+    apiKey: "pk_api", transactionId: "574588" });
+  // Official contract: the API KEY mints the bearer token used by Transaction Inquiry.
+  // The SECRET KEY is a different credential, sent as `Authorization: Token ...` for
+  // Intentions - so sending it here means the inquiry can never authenticate.
   assert.equal(calls[0]!.url, "https://accept.paymob.com/api/auth/tokens");
   assert.equal(calls[0]!.init?.method, "POST");
-  assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), { api_key: "sk_secret" });
+  assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), { api_key: "pk_api" });
   assert.equal(calls[1]!.url, "https://accept.paymob.com/api/acceptance/transactions/574588");
   assert.equal(calls[1]!.init?.method, "GET");
   assert.equal(String(calls[1]!.init?.headers && new Headers(calls[1]!.init!.headers as HeadersInit).get("authorization")), "Bearer tok_123");
   assert.equal(result.refundedAmountCents, 0);
   assert.equal(result.amountCents, 13229);
+});
+
+test("a secret key in place of an API key fails closed instead of authenticating", async () => {
+  // The defect this replaces was silent: the wrong credential produced a request the
+  // provider cannot authenticate, which surfaced far downstream as "refunds never verify"
+  // rather than as a configuration error. Failing closed makes it obvious at the boundary.
+  const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
+  let attempted = false;
+  const fetchImpl: typeof fetch = async () => {
+    attempted = true;
+    return new Response(JSON.stringify({ token: "tok" }), { status: 200 });
+  };
+  await assert.rejects(
+    () => module.queryPaymobTransaction({ fetchImpl, baseUrl: "https://accept.paymob.com",
+      secretKey: "sk_secret", transactionId: "574588" } as never),
+    /API key/i,
+    "the inquiry must refuse to run without an explicit API key");
+  assert.equal(attempted, false, "no request may be attempted with the wrong credential");
 });
 
 test("the auth token is cached across inquiries instead of minted per callback", async () => {
@@ -40,7 +60,7 @@ test("the auth token is cached across inquiries instead of minted per callback",
       success: true, pending: false, is_refunded: false, refunded_amount_cents: null }), { status: 200 });
   };
   const client = module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com",
-    secretKey: "sk_secret", now: () => new Date("2026-10-01T00:00:00Z") });
+    apiKey: "pk_api", now: () => new Date("2026-10-01T00:00:00Z") });
   await client.query("1");
   await client.query("2");
   assert.equal(authCalls, 1, "one token serves both lookups");
@@ -53,7 +73,7 @@ test("an inquiry response missing identity, currency or amount is rejected rathe
     const fetchImpl: typeof fetch = async (url) => String(url).endsWith("/api/auth/tokens")
       ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
       : new Response(JSON.stringify(bad), { status: 200 });
-    const client = module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com", secretKey: "s" });
+    const client = module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com", apiKey: "pk_api" });
     await assert.rejects(client.query("5"), /invalid|unavailable|mismatch/i, JSON.stringify(bad));
   }
 });
@@ -62,7 +82,7 @@ test("a nullable refund amount is only treated as zero when the provider also sa
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   const build = (body: unknown) => module.createPaymobInquiryClient({ fetchImpl: async (url: any) =>
     String(url).endsWith("/api/auth/tokens") ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
-      : new Response(JSON.stringify(body), { status: 200 }), baseUrl: "https://accept.paymob.com", secretKey: "s" });
+      : new Response(JSON.stringify(body), { status: 200 }), baseUrl: "https://accept.paymob.com", apiKey: "pk_api" });
   const plain = await build({ id: 5, amount_cents: 100, currency: "EGP", success: true, pending: false,
     is_refunded: false, refunded_amount_cents: null }).query("5");
   assert.equal(plain.refundedAmountCents, 0, "not refunded means zero refunded");
@@ -78,7 +98,7 @@ test("a provider outage or malformed response yields an unresolved inquiry, neve
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   const build = (respond: () => Response) => module.createPaymobInquiryClient({
     fetchImpl: async (url: any) => String(url).endsWith("/api/auth/tokens")
-      ? new Response(JSON.stringify({ token: "t" }), { status: 200 }) : respond(), baseUrl: "https://accept.paymob.com", secretKey: "s" });
+      ? new Response(JSON.stringify({ token: "t" }), { status: 200 }) : respond(), baseUrl: "https://accept.paymob.com", apiKey: "pk_api" });
   for (const [label, respond] of [
     ["503", () => new Response("unavailable", { status: 503 })],
     ["500", () => new Response("{}", { status: 500 })],
@@ -89,13 +109,13 @@ test("a provider outage or malformed response yields an unresolved inquiry, neve
   }
 });
 
-test("inquiry output never carries the secret key or auth token", async () => {
+test("inquiry output never carries the api key or auth token", async () => {
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   const fetchImpl: typeof fetch = async (url) => String(url).endsWith("/api/auth/tokens")
     ? new Response(JSON.stringify({ token: "super_secret_token" }), { status: 200 })
     : new Response(JSON.stringify({ id: 5, amount_cents: 100, currency: "EGP", success: true, pending: false,
       is_refunded: false, refunded_amount_cents: null }), { status: 200 });
-  const client = module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com", secretKey: "super_secret_key" });
+  const client = module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com", apiKey: "super_secret_key" });
   const result = await client.query("5");
   const text = JSON.stringify(result);
   assert.equal(text.includes("super_secret_key"), false);

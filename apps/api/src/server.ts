@@ -10,6 +10,7 @@ const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-
 const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
 const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
 const { startShippingCancellationWorker } = await import("./modules/shipping/shipping-cancellation-worker.js");
+const { startPaymobCallbackWorker } = await import("./modules/payments/paymob/paymob-callback-worker.js");
 const { assertShippingStartup } = await import("./modules/shipping/shipping-startup.js");
 const { mysqlPool } = await import("@capella/database/src/db");
 
@@ -20,6 +21,7 @@ assertShippingStartup(process.env);
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
 const stopWorkers = [
+  startPaymobCallbackWorker(),
   startCheckoutExpiryWorker(),
   startShippingDispatchWorker(),
   startShippingSyncWorker(),

@@ -4,6 +4,7 @@ import { PaymobUnavailableError, submitCheckout } from "./checkout.service.js";
 import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 import { CheckoutAmountChangedError } from "../orders/orders.service.js";
 import { CheckoutShippingError } from "../shipping/checkout-shipping.service.js";
+import { PaymentEvidenceUnresolvedError } from "./paymob-checkout.service.js";
 
 export function checkoutController(req: AuthenticatedRequest, res: Response) {
   submitCheckout({
@@ -19,6 +20,10 @@ export function checkoutController(req: AuthenticatedRequest, res: Response) {
       res.status(201).json(order);
     })
     .catch((error: Error) => {
+      if (error instanceof PaymentEvidenceUnresolvedError) {
+        res.status(409).json({ code: error.code, message: error.message });
+        return;
+      }
       if (error instanceof CheckoutShippingError) {
         res.status(error.status).json({ code: error.code, message: error.message });
         return;

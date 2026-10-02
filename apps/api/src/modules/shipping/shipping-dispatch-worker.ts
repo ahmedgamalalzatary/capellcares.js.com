@@ -92,8 +92,18 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
       // caught by blockRefundedDelivery on the order lock instead.
       const sessionId = await sessionIdForOrder(tx, order.id);
       const unresolvedRefund = await hasUnresolvedFinancialEvidence(
-        tx, sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId)));
-      if (blocked(order) || deadlineBlocks || safetyFlagOpen || unresolvedRefund) {
+        tx, sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx }));
+      if (unresolvedRefund) {
+        // A TEMPORARY hold, not a failure. Writing `failed` stranded the order until a
+        // member of staff pressed retry by hand, and the projections treat this error as an
+        // expected stop, so nothing surfaced the stranded order as needing attention. The
+        // job stays pending on a backoff and dispatches by itself once the refund resolves.
+        await tx.update(shippingWorkItems).set({ status: "pending", claimedBy: null, claimedAt: null,
+          lastError: "AWAITING_PAYMENT_EVIDENCE", nextAttemptAt: new Date(now.getTime() + 60_000) })
+          .where(eq(shippingWorkItems.id, job.id));
+        return null;
+      }
+      if (blocked(order) || deadlineBlocks || safetyFlagOpen) {
         await tx.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.id, job.id));
         return null;
       }

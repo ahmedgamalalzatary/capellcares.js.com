@@ -862,16 +862,20 @@ export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
   /** Transaction ID as an unsigned hint only: it is not proof and must be proven by inquiry. */
   hintedTransactionId: varchar("hinted_transaction_id", { length: 64 }),
   callbackType: mysqlEnum("callback_type", ["transaction", "card_token"]).notNull(),
-  processingStatus: mysqlEnum("processing_status", ["received", "processing", "processed", "rejected", "failed"]).notNull(),
+  processingStatus: mysqlEnum("processing_status", ["received", "processing", "processed", "rejected", "failed", "review_required"]).notNull(),
   /** Server time the callback was durably accepted. Trustworthy, unlike any provider timestamp. */
   receivedAt: timestamp("received_at").defaultNow().notNull(),
   processedAt: datetime("processed_at"),
   attempts: int("attempts").notNull().default(0),
+  claimedBy: varchar("claimed_by", { length: 36 }),
+  claimedAt: datetime("claimed_at", { fsp: 3 }),
+  nextAttemptAt: datetime("next_attempt_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   lastError: varchar("last_error", { length: 128 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => [
   index("paymob_callback_inbox_status_received_idx").on(table.processingStatus, table.receivedAt),
+  index("paymob_callback_inbox_due_idx").on(table.processingStatus, table.nextAttemptAt, table.id),
   index("paymob_callback_inbox_transaction_idx").on(table.hintedTransactionId)
 ]);
 
