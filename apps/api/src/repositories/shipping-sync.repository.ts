@@ -6,6 +6,7 @@ import { flagShippingOrder, type ShippingTransaction } from "./shipping-dispatch
 import { normalizeBostaState, type BostaObservation, type BostaSyncRuntime } from "../modules/shipping/bosta/bosta-sync.service.js";
 import { recordCarrierShippingFacts, shippingAddressException } from "./shipping-state.repository.js";
 import { confirmShippingEdits } from "./shipping-edit.repository.js";
+import { bindingEnvironment, recordOutgoingBinding } from "./shipment-binding.repository.js";
 
 type Shipment = typeof shipments.$inferSelect;
 type Order = typeof orders.$inferSelect;
@@ -125,6 +126,22 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
     if (!ship) return "pending";
     const processingError = await apply(tx, order, ship, event);
     await tx.update(shipmentEvents).set({ shipmentId: ship.id, processedAt: new Date(), stateRecordedAt: new Date(), processingError }).where(eq(shipmentEvents.id, eventId));
+    // W07 B06: a delivery that actually reached the provider is now bound to it. Recording
+    // this is what later lets a return/exchange be tied back to a specific original, and
+    // it must only happen from a read that genuinely correlated - never from a guess.
+    await recordOutgoingBinding(tx, {
+      shipmentId: ship.id,
+      orderId: order.id,
+      accountId: runtime.accountId,
+      accountKey: runtime.accountKey,
+      environment: bindingEnvironment(runtime.environment),
+      providerTrackingId: ship.trackingNumber,
+      providerReference: typeof event.raw === "object" && event.raw !== null &&
+        typeof (event.raw as { _id?: unknown })._id === "string"
+  ? (event.raw as { _id: string })._id
+  : null,
+      businessReference: reference
+    });
     // W07 B05 reopen: a parked job stopped reading, so an authenticated callback is the
     // only way a late correction can reach it. Without this, parking would be permanent
     // blindness rather than a scheduling decision. Staff reconcile the same way.

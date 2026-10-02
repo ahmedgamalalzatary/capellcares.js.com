@@ -10,6 +10,7 @@ import {
   shippingCheckoutQuotes,
   shipments,
   shipmentEvents,
+  shipmentProviderBindings,
   shippingWorkItems,
   orderReviewFlags,
   orderStateHistory,
@@ -36,6 +37,7 @@ import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.se
 
 export async function resetApiTestDatabase() {
   await db.delete(shipmentEvents);
+  await db.delete(shipmentProviderBindings);
   await db.delete(shipments);
   await db.delete(shippingWorkItems);
   await db.delete(orderReviewFlags);

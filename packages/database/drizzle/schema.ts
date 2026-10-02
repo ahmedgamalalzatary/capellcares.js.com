@@ -687,6 +687,49 @@ export const shipments = mysqlTable("shipments", {
   orderIndex: index("shipments_order_idx").on(table.orderId, table.kind)
 }));
 
+/**
+ * W07 B06: what a shipment is actually bound to at the provider, and how that was proven.
+ *
+ * A binding is evidence, not a convenience index. `outgoing` rows record the create
+ * intent we sent and the tracking id the provider returned; `related` rows record a
+ * return/exchange parcel proven to descend from a specific original. Both keep the
+ * sanitized proof and when it was verified, because a later reader has to be able to
+ * re-check the claim rather than trust it.
+ *
+ * Identity is deliberately two-fold: one binding per shipment, and at most one shipment
+ * per account+environment+tracking. The second constraint is what stops two local orders
+ * from ever claiming the same courier parcel.
+ */
+export const shipmentProviderBindings = mysqlTable("shipment_provider_bindings", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
+  provider: mysqlEnum("provider", ["bosta"]).notNull().default("bosta"),
+  accountId: varchar("account_id", { length: 128 }).notNull(),
+  accountKey: varchar("account_key", { length: 64 }).notNull(),
+  environment: mysqlEnum("environment", ["test", "live"]).notNull(),
+  /** The provider's own delivery/parcel id, when it supplies one. Null is normal, not a gap. */
+  providerReference: varchar("provider_reference", { length: 128 }),
+  providerTrackingId: varchar("provider_tracking_id", { length: 64 }).notNull(),
+  /** The outgoing shipment a return/exchange descends from. Null for outgoing bindings. */
+  originalShipmentId: int("original_shipment_id").references(() => shipments.id, { onDelete: "restrict" }),
+  relationKind: mysqlEnum("relation_kind", ["outgoing", "related"]).notNull(),
+  /** The business reference we created this parcel with, preserved as evidence. */
+  businessReference: varchar("business_reference", { length: 64 }),
+  /** Sanitized proof of the relationship and the contract version used to read it. */
+  proof: text("proof"),
+  proofVersion: varchar("proof_version", { length: 32 }),
+  verifiedAt: timestamp("verified_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  shipmentUnique: unique("shipment_provider_bindings_shipment_unique").on(table.shipmentId),
+  trackingIdentityUnique: unique("shipment_provider_bindings_account_tracking_unique")
+    .on(table.accountId, table.environment, table.providerTrackingId),
+  orderIndex: index("shipment_provider_bindings_order_idx").on(table.orderId, table.relationKind),
+  originalIndex: index("shipment_provider_bindings_original_idx").on(table.originalShipmentId)
+}));
+
 export const shipmentEvents = mysqlTable("shipment_events", {
   id: int("id").autoincrement().primaryKey(),
   shipmentId: int("shipment_id").references(() => shipments.id, { onDelete: "cascade" }),

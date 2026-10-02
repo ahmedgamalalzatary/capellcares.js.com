@@ -552,15 +552,47 @@ The plan warned against creating a lock cycle. Surveying every `.for("update")` 
 - My first concurrency test passed in 69ms. I did not trust it — a passing concurrency test that never contends proves nothing. Rewritten so the payment path genuinely holds the session lock; it now takes 130ms, which is the contention being real.
 - The type-level narrowing cannot fully forbid a lock, because `for("update")` is a method on the query result rather than the session. The docblock and the concurrency test are the real enforcement; the narrowing is documentation at the call site.
 
-### W07 — Persist Bosta polling policy and complete gated related bindings (B05/B06)
+### W07 — Persist Bosta polling policy and complete gated related bindings (B05/B06) — **In progress: 2 of 7 complete**
 
-- [ ] Add persisted `syncPhase` (`active`, `terminal_followup`, `parked`) and necessary follow-up timestamp to shipping work, with additive migration/defaults. Implement the exact active/24-hour-followup/park/reopen policy in B05. Add a separate `discover_related` operation only when a verified discovery contract exists; once-daily cadence.
-- [ ] Add `shipment_provider_bindings`: one row per shipment, account ID/environment/account key, actual provider reference if supplied, provider tracking ID, order ID, nullable original shipment ID, relation kind, sanitized proof/version and verification timestamp. Unique shipment binding and account+environment+tracking identity. Outgoing bindings preserve original create intent as evidence; related bindings never fabricate a `create_delivery` job.
-- [ ] Populate outgoing bindings on normal completion. Safely backfill **already-linked local outgoing shipments** from intact frozen create intent evidence; unmatched/corrupt records go to review. This is not a historical order/provider import. Test existing data and repeat execution.
-- [ ] Extend verified sync settings with optional `relatedContract`: explicit evidence, known child-ID list path on an original read and/or exact original-link path/type on a candidate read. Fields must come from real merchant evidence; absent contract means discovery/linkage disabled. Implement a tested pure contract parser/relationship validator without asserting fabricated sample keys are real.
+- [x] Add persisted `syncPhase` (`active`, `terminal_followup`, `parked`) and necessary follow-up timestamp to shipping work, with additive migration/defaults. Implement the exact active/24-hour-followup/park/reopen policy in B05. *Done except the `discover_related` operation, which is deferred to the gated contract item below — there is no verified discovery contract to drive it.*
+- [x] Add `shipment_provider_bindings`: one row per shipment, account ID/environment/account key, actual provider reference if supplied, provider tracking ID, order ID, nullable original shipment ID, relation kind, sanitized proof/version and verification timestamp. Unique shipment binding and account+environment+tracking identity. Outgoing bindings preserve original create intent as evidence; related bindings never fabricate a `create_delivery` job.
+- [~] Populate outgoing bindings on normal completion. *The insert path is done and tested. The backfill of already-linked outgoing shipments is NOT done yet.*
+- [ ] Extend verified sync settings with optional `relatedContract`: explicit evidence, known child-ID list path on an original read and/or exact original-link path/type on a candidate read. Fields must come from real merchant evidence; absent contract means discovery/linkage disabled. Implement a tested pure contract parser/relationship validator without asserting fabricated sample keys are real. **This is the gate for the rest of W07 — see the evidence note below.**
 - [ ] Discover candidates only from an authenticated event anchored to a known local original, or a verified child list on that original. Read/verify candidate account, original tracking/provider ID, supported return/exchange type and identity. Insert parcel+binding+sync job atomically under the original order lock. Allocate an independent local idempotency key for each related tracking ID; actual provider references may differ/share the root reference.
 - [ ] Refactor sync reads/event replay/account matching to use verified bindings for related parcels, while retaining strict outgoing-reference checks. If related provider references are absent, an independently proven original relationship is required; don't force a fake business reference into the normalizer.
 - [ ] Verify ERP/customer projections, unrelated tracking rejection, duplicate linkage, same customer/different order, late return after original parking, no refund inference and no automatic return restocking. Keep related rows read-only. Without real relationship evidence, finish disabled infrastructure/tests and leave external E04 unchecked.
+
+**What the two completed items actually do:**
+
+- **`syncPhase` (B05).** `finish()` previously rescheduled every successful read to now+5min forever, so completed parcels competed with the ones customers were waiting on. A fully resolved terminal read now schedules ONE follow-up 24h out; that follow-up parks the job only if it is *still* terminal and *still* resolved. Parked jobs are excluded from `claim()` — rescheduling alone would not have freed any capacity. An authenticated observation reopens a parked job, so parking is a scheduling decision rather than permanent blindness.
+- **`shipment_provider_bindings` (B06).** The missing primitive: nothing durable recorded what a delivery was bound to at Bosta, so a return/exchange could never be tied back to a specific original. Two uniqueness constraints do the real work — one binding per shipment, and one shipment per account+environment+tracking, which is what stops two local orders claiming the same parcel. `ER_DUP_ENTRY` is swallowed on insert because the only way to reach it is "already recorded", and an unhandled throw there would roll back a real delivery state change inside the caller's transaction.
+
+**Design decisions worth keeping:**
+
+- **Resolution requires positive confirmation.** `isFullyResolvedTerminal` demands `confirmedDelivery === true`, not merely "not false": null means the provider told us nothing, which is not the same as "nothing outstanding". A `0` amount is legitimate for prepaid orders, so the amount alone can never establish resolution. The plan's rule that a raw terminal code is never sufficient is enforced in code, not just in a comment.
+- **The stored environment is derived, not cast.** The sync runtime identifies an environment by its base URL, but the column is a two-value enum, so `bindingEnvironment()` maps it. A live URL can never be recorded as `test`, which is the entire reason that column exists.
+
+**Mistakes I made and corrected:**
+
+- `active` jobs were being scheduled with the 24-hour follow-up delay instead of the 5-minute cadence — exactly backwards, an unresolved parcel would have waited a day for its next read. Caught by the tests.
+- My first duplicate-key check only inspected `error.code` and missed drizzle's cause-wrapped driver error, so a repeated observation threw and rolled back the whole observation transaction. The codebase already had `isDuplicateEntryError` in `modules/admin/shared/db-errors.ts`; I should have found and reused it first.
+- I cast `runtime.environment` to the enum directly; MySQL rejected it with "Data truncated for column 'environment'".
+
+**Environment note — this has now bitten three times and is worth knowing about:**
+
+The **test** database is `.env.test`, *not* `.env`. Both had drifted, and `drizzle-kit migrate` fails silently: the spinner swallows the real error and exits 1 with no message. Found and resolved:
+
+- `.env` contained a stale `paymob_callback_inbox` from the destroyed first W04 attempt, with a completely different column set (`account_key`, `signature_verified_at_ms`, …). Dropped after confirming 2 fixture rows and a non-0059 shape.
+- `.env.test` contained an orphaned `terminal_followup_at` column (zero rows, not in `schema.ts`) and was missing `terminal_follow_up_at` plus `shipping_work_items_sync_phase_idx` from 0060. Applied exactly the two statements the generated migration specifies; left the zero-row orphan alone.
+- `.env.test` also had a stale `shipment_provider_bindings` (13 columns, not the generated 17, zero rows). Dropped and recreated from the generated SQL.
+
+Every drop was guarded on shape + row count. **Lesson: run `drizzle-kit migrate` against `.env.test` explicitly, and treat a silent exit 1 as "already-exists", not "connection problem".**
+
+**Why the rest of W07 is blocked, plainly:**
+
+Item 4 needs the `relatedContract`, and its fields must come from **real merchant evidence from Bosta** — which is not in this repository and which I have no access to. The plan is explicit that absent a contract, discovery and linkage stay *disabled*, and that fabricated sample keys must not be asserted as real.
+
+So the remaining items (4–7) will be built **inert by default**: the parser, validator and discovery path will exist and be tested for the disabled case, and for an enabled case driven by an explicitly configured contract — but with no contract configured, no related parcel can ever be created. **External E04 stays unchecked.** That is the honest state, not a shortcut: the infrastructure ships, and the last step genuinely needs your Bosta account data.
 
 ### W08 — Extract existing runners and add payment runner
 

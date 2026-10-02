@@ -428,6 +428,13 @@
       "when": 1790923312842,
       "tag": "0060_shipping_sync_phase",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "5",
+      "when": 1790923971670,
+      "tag": "0061_shipment_provider_bindings",
+      "breakpoints": true
     }
   ]
 }

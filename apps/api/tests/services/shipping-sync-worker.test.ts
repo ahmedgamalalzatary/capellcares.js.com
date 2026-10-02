@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { orders, shipments, shippingWorkItems, shipmentEvents, orderReviewFlags } from "@capella/database/drizzle/schema";
+import { orders, shipments, shippingWorkItems, shipmentEvents, shipmentProviderBindings, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { readFixture, syncEnvironment, webhookFixture } from "../helpers/bosta-sync.js";
@@ -83,6 +83,38 @@ test("a parked job reopens when an authenticated callback arrives, so a terminal
   await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
     type: "SEND", state: 30, isConfirmedDelivery: false, cod: 0 })));
   assert.equal((await syncJob()).syncPhase, "active", "an authenticated callback must reopen a parked job");
+});
+
+test("normal delivery completion records an outgoing provider binding as evidence", async () => {
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey)))!;
+  const run = await worker();
+  await run({ runtime, now: new Date() });
+
+  const [binding] = await db.select().from(shipmentProviderBindings)
+    .where(eq(shipmentProviderBindings.shipmentId, f.shipment.id));
+  assert.ok(binding, "a completed delivery must record what it is bound to at the provider");
+  assert.equal(binding.relationKind, "outgoing");
+  assert.equal(binding.orderId, f.order.id);
+  assert.equal(binding.providerTrackingId, "5108002");
+  assert.equal(binding.accountId, syncEnvironment.BOSTA_ACCOUNT_ID ?? runtime.accountId);
+  assert.equal(binding.environment, "test");
+  assert.equal(binding.originalShipmentId, null, "an outgoing parcel has no original");
+  assert.equal(binding.businessReference, f.job.idempotencyKey,
+    "the outgoing binding preserves the original create intent as evidence");
+  assert.ok(binding.verifiedAt, "a binding records when it was proven");
+});
+
+test("a binding is written once even when the same completion is observed twice", async () => {
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey)))!;
+  await recordShippingObservation(runtime, runtime.parseWebhook(f.body()));
+  await recordShippingObservation(runtime, runtime.parseWebhook(f.body()));
+  const rows = await db.select().from(shipmentProviderBindings)
+    .where(eq(shipmentProviderBindings.shipmentId, f.shipment.id));
+  assert.equal(rows.length, 1, "re-observing a delivery must not duplicate its binding");
 });
 
 test("linked-shipment polling persists a job and collection evidence, then waits until the next due time", async () => {
