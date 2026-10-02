@@ -91,24 +91,57 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
   });
 }
 
+/** How many expired sessions one sweep may examine. Keeps lock hold time bounded. */
+export const EXPIRY_BATCH_SIZE = 50;
+
+/**
+ * Candidate ids for expiry, discovered WITHOUT any locks.
+ *
+ * The previous implementation ran a locking range scan over every expired session and
+ * held all those row locks until the whole sweep finished, so one slow pass could block
+ * customers who were paying at that moment. Discovery is now a cheap unlocked read of a
+ * bounded batch; each candidate is then locked and rechecked on its own.
+ */
+export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_SIZE): Promise<number[]> {
+  const candidates = await db.select({ id: checkoutSessions.id })
+    .from(checkoutSessions)
+    .where(and(
+      eq(checkoutSessions.state, "payment_pending"),
+      lte(checkoutSessions.reservationExpiresAt, now)
+    ))
+    .orderBy(checkoutSessions.reservationExpiresAt)
+    .limit(limit);
+  return candidates.map((candidate) => candidate.id);
+}
+
 export async function releaseExpiredCheckoutReservations(now: Date): Promise<void> {
+  // Pass 1: cheap unlocked discovery of a bounded candidate set.
+  const candidates = await discoverExpiredSessionIds(now);
+  if (candidates.length === 0) return;
   // Read the unresolved set once, before taking any locks, then recheck per session under
-    // the session lock. Provider/DB work stays outside the locked region.
-    const unresolvedOrderIds = await unresolvedInboxOrderIds();
+  // the session lock. Provider/DB work stays outside the locked region.
+  const unresolvedOrderIds = await unresolvedInboxOrderIds();
+
+  // Pass 2: one short transaction per candidate, so no lock is held across the batch.
+  for (const sessionId of candidates) {
     await db.transaction(async (tx) => {
-    const expired = await tx.select({ id: checkoutSessions.id })
+    // Recheck under the session lock: the row may have changed since discovery, in which
+    // case it is simply skipped and the next sweep re-evaluates it against fresh data.
+    const [session] = await tx.select({ id: checkoutSessions.id, state: checkoutSessions.state,
+      expiresAt: checkoutSessions.reservationExpiresAt })
       .from(checkoutSessions)
       .where(and(
+        eq(checkoutSessions.id, sessionId),
         eq(checkoutSessions.state, "payment_pending"),
         lte(checkoutSessions.reservationExpiresAt, now)
       ))
       .for("update");
+    if (!session) return;
 
-    for (const session of expired) {
       // P03: a verified callback may already be durably received while its effects are
       // still queued. Releasing the reservation then would free stock the customer has
       // already paid for and leave the eventual success with nothing to fulfil.
-      if (await hasUnresolvedFinancialEvidence(tx, session.id, unresolvedOrderIds)) continue;
+      if (await hasUnresolvedFinancialEvidence(tx, session.id, unresolvedOrderIds)) return;
       const reservations = await tx.select()
         .from(checkoutReservations)
         .where(and(
@@ -136,6 +169,6 @@ export async function releaseExpiredCheckoutReservations(now: Date): Promise<voi
       await tx.update(checkoutSessions)
         .set({ state: "expired" })
         .where(eq(checkoutSessions.id, session.id));
-    }
-  });
+    });
+  }
 }

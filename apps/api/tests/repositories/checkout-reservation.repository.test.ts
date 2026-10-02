@@ -44,6 +44,42 @@ test("createReservedCheckout atomically removes reserved stock", async () => {
   assert.equal(reservation?.state, "reserved");
 });
 
+test("expiry sweeps a bounded batch of candidates instead of locking every expired session", async () => {
+  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const ids = await getBaselineIds();
+  // Three expired sessions exist; the batch size is deliberately smaller than that.
+  for (let index = 0; index < 3; index += 1) {
+    await module?.createReservedCheckout({ ...sessionInput(ids.firstVariantId),
+      reservations: [{ variantId: ids.firstVariantId, qty: 1 }],
+      reservationExpiresAt: new Date(Date.now() - 60_000) });
+  }
+  const candidates = await module?.discoverExpiredSessionIds(new Date(), 2);
+  assert.equal(candidates?.length, 2, "discovery is bounded by the batch size, never a full range scan");
+});
+
+test("expiry skips a candidate whose state changed after discovery instead of acting on stale data", async () => {
+  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const ids = await getBaselineIds();
+  const created = await module?.createReservedCheckout({ ...sessionInput(ids.firstVariantId),
+    reservations: [{ variantId: ids.firstVariantId, qty: 2 }],
+    reservationExpiresAt: new Date(Date.now() - 60_000) });
+  const candidateIds = await module?.discoverExpiredSessionIds(new Date(), 10);
+  assert.ok(candidateIds?.includes(created!.id), "the expired session is a candidate");
+
+  // The customer completes checkout between discovery and the per-session recheck.
+  await db.update(checkoutSessions).set({ state: "completed" })
+    .where(eq(checkoutSessions.id, created!.id));
+
+  await module?.releaseExpiredCheckoutReservations(new Date());
+
+  const [variant] = await db.select({ stockQty: productVariants.stockQty })
+    .from(productVariants).where(eq(productVariants.id, ids.firstVariantId)).limit(1);
+  assert.equal(variant?.stockQty, 8, "a completed checkout keeps its reserved stock; the next sweep re-evaluates it");
+  const [reservation] = await db.select().from(checkoutReservations)
+    .where(eq(checkoutReservations.checkoutSessionId, created!.id)).limit(1);
+  assert.equal(reservation?.state, "reserved", "the reservation is untouched by the stale candidate");
+});
+
 test("releaseExpiredCheckoutReservations restores stock only once", async () => {
   const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();
