@@ -125,6 +125,12 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
     if (!ship) return "pending";
     const processingError = await apply(tx, order, ship, event);
     await tx.update(shipmentEvents).set({ shipmentId: ship.id, processedAt: new Date(), stateRecordedAt: new Date(), processingError }).where(eq(shipmentEvents.id, eventId));
+    // W07 B05 reopen: a parked job stopped reading, so an authenticated callback is the
+    // only way a late correction can reach it. Without this, parking would be permanent
+    // blindness rather than a scheduling decision. Staff reconcile the same way.
+    await tx.update(shippingWorkItems).set({ syncPhase: "active", status: "pending", terminalFollowUpAt: null,
+      nextAttemptAt: new Date() }).where(and(eq(shippingWorkItems.shipmentId, ship.id),
+      eq(shippingWorkItems.operation, "sync_delivery"), eq(shippingWorkItems.syncPhase, "parked")));
     return "processed";
   });
 }

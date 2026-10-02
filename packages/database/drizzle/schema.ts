@@ -723,11 +723,16 @@ export const shippingWorkItems = mysqlTable("shipping_work_items", {
   lastError: text("last_error"),
   requestSnapshot: text("request_snapshot"),
   responseSnapshot: text("response_snapshot"),
+  /** W07 B05: persisted polling decision, so historical parcels stop competing with active reads. */
+  syncPhase: mysqlEnum("sync_phase", ["active", "terminal_followup", "parked"]).notNull().default("active"),
+  /** Set when verified terminal evidence was first seen; the one 24h follow-up is due at this time. */
+  terminalFollowUpAt: datetime("terminal_follow_up_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
   idempotencyKeyUnique: unique("shipping_work_items_idempotency_key_unique").on(table.idempotencyKey),
-  statusIndex: index("shipping_work_items_status_idx").on(table.status, table.nextAttemptAt)
+  statusIndex: index("shipping_work_items_status_idx").on(table.status, table.nextAttemptAt),
+  syncPhaseIndex: index("shipping_work_items_sync_phase_idx").on(table.operation, table.syncPhase, table.nextAttemptAt)
 }));
 
 export const shippingRates = mysqlTable("shipping_rates", {

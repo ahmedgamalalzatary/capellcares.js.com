@@ -5,7 +5,7 @@ import { db } from "@capella/database/src/db";
 import { orders, shipments, shippingWorkItems, shipmentEvents, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { readFixture, syncEnvironment } from "../helpers/bosta-sync.js";
+import { readFixture, syncEnvironment, webhookFixture } from "../helpers/bosta-sync.js";
 import { resolveBostaSyncRuntime } from "../../src/modules/shipping/bosta/bosta-sync.service.js";
 import { recordShippingObservation } from "../../src/repositories/shipping-sync.repository.js";
 import { runShippingDispatchOnce } from "../../src/modules/shipping/shipping-dispatch-worker.js";
@@ -17,6 +17,73 @@ async function worker() {
   return module.runShippingSyncOnce;
 }
 const syncJob = async () => (await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.operation, "sync_delivery")))[0];
+
+test("a delivered parcel stops competing with active reads: one 24h follow-up, then it parks", async () => {
+  const f = await shippingSyncFixture();
+  const calls: string[] = [];
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async (url, init) => {
+    calls.push(`${init?.method} ${url}`);
+    return Response.json(readFixture(f.job.idempotencyKey, { cod: 132.29 }));
+  })!;
+  const run = await worker();
+  const t0 = new Date();
+  // Sweep 1: the terminal "Delivered" read. The parcel is NOT yet parked - terminal code
+  // alone is never enough, because a missing COD confirmation or a pending edit still
+  // needs resolution, so the follow-up read is scheduled a full day out.
+  await run({ runtime, now: t0 });
+  let job = await syncJob();
+  assert.equal(job.status, "pending", "a terminal read schedules a follow-up rather than parking");
+  assert.equal(job.syncPhase, "terminal_followup");
+  // datetime columns store whole seconds, so compare at second resolution.
+  assert.equal(job.terminalFollowUpAt?.getTime(), Math.floor((t0.getTime() + 24 * 3600_000) / 1000) * 1000);
+
+  // Before the follow-up is due the parcel must consume no read capacity at all.
+  await run({ runtime, now: new Date(t0.getTime() + 3600_000) });
+  assert.equal(calls.length, 1, "no read happens before the follow-up is due");
+
+  // Sweep 2 (the 24h follow-up): still terminal and fully resolved, so the job parks.
+  await run({ runtime, now: new Date(t0.getTime() + 24 * 3600_000) });
+  job = await syncJob();
+  assert.equal(job.status, "succeeded", "the follow-up is the last automatic read");
+  assert.equal(job.syncPhase, "parked");
+  assert.equal(calls.length, 2, "exactly two reads total for a fully resolved delivery");
+
+  // Once parked, later sweeps must never spend capacity on it again.
+  await run({ runtime, now: new Date(t0.getTime() + 30 * 24 * 3600_000) });
+  assert.equal(calls.length, 2, "a parked job is never read again automatically");
+});
+
+test("an unfinished delivery keeps polling on the active cadence instead of parking", async () => {
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey, {
+      state: { code: 10, value: "Delivered" }, cod: 0, collection: { amount: 0, confirmed: false } })))!;
+  const run = await worker();
+  const t0 = new Date();
+  await run({ runtime, now: t0 });
+  const job = await syncJob();
+  assert.equal(job.syncPhase, "active", "a raw terminal code with unconfirmed COD is not resolution");
+  assert.equal(job.status, "pending");
+  assert.ok(job.nextAttemptAt.getTime() <= new Date(t0.getTime() + 300_000).getTime(),
+    "an unresolved delivery stays on the five-minute cadence");
+  assert.equal(job.terminalFollowUpAt, null, "no follow-up is scheduled for an unresolved parcel");
+});
+
+test("a parked job reopens when an authenticated callback arrives, so a terminal correction is not missed", async () => {
+  const f = await shippingSyncFixture();
+  const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
+    Response.json(readFixture(f.job.idempotencyKey, { cod: 132.29 })))!;
+  const run = await worker();
+  await run({ runtime, now: new Date() });
+  await run({ runtime, now: new Date(Date.now() + 24 * 3600_000) });
+  assert.equal((await syncJob()).syncPhase, "parked");
+
+  // A provider webhook is authenticated evidence that something changed after parking.
+  // Returning to an in-transit state is exactly the late correction parking risks missing.
+  await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
+    type: "SEND", state: 30, isConfirmedDelivery: false, cod: 0 })));
+  assert.equal((await syncJob()).syncPhase, "active", "an authenticated callback must reopen a parked job");
+});
 
 test("linked-shipment polling persists a job and collection evidence, then waits until the next due time", async () => {
   const f = await shippingSyncFixture();
