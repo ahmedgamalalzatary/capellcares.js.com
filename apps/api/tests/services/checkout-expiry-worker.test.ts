@@ -432,7 +432,11 @@ async function paidOrderWithDeliveryIntent(hours: number, email: string) {
   await db.update(orders).set({ createdAt, codExpiresAt: new Date(createdAt.getTime() + 96 * HOUR) })
     .where(eq(orders.id, orderId));
   await db.transaction(tx => enqueueOrderDelivery(tx, orderId));
-  return { ids, orderId, createdAt };
+  const [order] = await db.select({ paymentAttemptId: orders.paymentAttemptId })
+    .from(orders).where(eq(orders.id, orderId)).limit(1);
+  const [attempt] = await db.select({ checkoutSessionId: paymentAttempts.checkoutSessionId })
+    .from(paymentAttempts).where(eq(paymentAttempts.id, order!.paymentAttemptId ?? -1)).limit(1);
+  return { ids, orderId, createdAt, sessionId: attempt!.checkoutSessionId };
 }
 
 test("the real dispatch worker ships an order carrying only the informational untouched alert", async () => {
@@ -453,6 +457,30 @@ test("the real dispatch worker ships an order carrying only the informational un
   const [created] = await db.select().from(shipments).where(eq(shipments.orderId, orderId));
   assert.equal(created.trackingNumber, "5108002", "the delivery must actually be created");
   assert.equal(await stockOf(ids.firstVariantId), 9, "the untouched paid alert must not restock");
+});
+
+test("dispatch holds an order while refund evidence for its session is still unresolved", async () => {
+  const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "unresolved-refund-blocks@example.test");
+  // A refund callback is durably received but not yet resolved. Handing this order to a
+  // courier now would deliver goods to someone whose money is being returned, and the
+  // refund may then be spent again. Dispatch must wait for the authenticated answer.
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await db.update(paymentAttempts).set({ status: "pending", paymobOrderId: "9701" })
+    .where(eq(paymentAttempts.checkoutSessionId, sessionId));
+  await receivePaymobCallback({ callbackType: "transaction", transaction: {
+    id: 7301, order: { id: 9701 }, amount_cents: 13229, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: true,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+
+  await db.update(shippingWorkItems).set({ nextAttemptAt: new Date(Date.now() - 2000) })
+    .where(eq(shippingWorkItems.orderId, orderId));
+  await runShippingDispatchOnce({ provider: dispatchProvider() });
+
+  const [job] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, orderId));
+  assert.equal(job.status, "failed", "unresolved refund evidence must hold the shipment");
+  assert.equal(job.lastError, "ORDER_NOT_DISPATCHABLE");
+  assert.equal((await db.select().from(shipments).where(eq(shipments.orderId, orderId))).length, 0,
+    "nothing is handed to the courier while the refund is unresolved");
 });
 
 test("the real dispatch worker still refuses an order carrying a safety flag", async () => {

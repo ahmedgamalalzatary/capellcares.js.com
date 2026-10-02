@@ -520,12 +520,37 @@ Consequences for the implementation:
 - I queried `checkoutSessions.paymobOrderId`, which does not exist; the order ID lives on `paymentAttempts`. Corrected to join through the attempt.
 - I left a meaningless leftover expression in one test (a `where(... ? "" : "")`) that asserted nothing. Removed rather than left in.
 
-### W06 — Protect reservations, retries and dispatch from queued evidence (P03/P04)
+### W06 — Protect reservations, retries and dispatch from queued evidence (P03/P04) — **Complete**
 
-- [ ] Implement the shared unresolved-financial-evidence query. Use the same session lock in intake binding, expiry, retry and payment effects; guard third-decline release too.
-- [ ] Change expiry to discover bounded candidate IDs without a locking full-range scan, then recheck each candidate under its session lock. Preserve release-once semantics and all fixed deadlines.
-- [ ] Add unresolved refund barrier to shipping dispatch's locked preflight. Keep already-in-flight create recovery safe and staff-visible.
-- [ ] Test receipt before/at/after deadline, expiry winning the lock, backlog before expiry, unresolved review holds, decline plus sibling success, unbound forged-reference callbacks, concurrent retry/expiry/consumer, refund receipt racing dispatch and inquiry failure. Verify public `canRetry` agrees with mutation checks.
+- [x] Implement the shared unresolved-financial-evidence query. Use the same session lock in intake binding, expiry, retry and payment effects; guard third-decline release too.
+- [x] Change expiry to discover bounded candidate IDs without a locking full-range scan, then recheck each candidate under its session lock. Preserve release-once semantics and all fixed deadlines.
+- [x] Add unresolved refund barrier to shipping dispatch's locked preflight. Keep already-in-flight create recovery safe and staff-visible.
+- [ ] Deferred to W07: the background payment drain worker, and the receipt-time binding of inbox rows to sessions (the inbox still carries only the signed order id hint, so an unbound callback is correlated by that hint rather than a stored session column).
+- [ ] External check still required: real credential access and live response fields for the inquiry contract.
+
+**Three real defects found and fixed:**
+
+1. **Expiry released stock for payments already in flight.** With W04's inbox, a verified callback is durably received *before* its effects are applied. If the reservation expired in that window, the reserved units went back on sale for a payment the customer had already completed, and the eventual success had nothing to fulfil.
+2. **`canRetry` could invite a second payment.** The old rule only asked "did the latest attempt fail?" A sibling attempt with a queued success callback still showed retry as available, so a customer whose first payment was merely slow could be charged twice.
+3. **Dispatch shipped to customers with an unresolved refund.** The locked preflight checked the order's own refund columns but nothing about *queued* evidence, so a delivery could be created while a refund callback sat unprocessed — delivering goods to someone whose money was being returned, who could then spend that refund again.
+
+**Design decisions worth keeping:**
+
+- **`financial-evidence.repository.ts` is the single definition** of "unresolved financial evidence", so expiry, retry and dispatch cannot disagree about whether a payment is still in flight. `canRetry` is derived from the same check the mutation paths enforce, so the customer is never offered an action the system would refuse.
+- **Correlation uses the SIGNED `order.id` only.** This guard answers *whether something is pending*, never *what it claims*; interpreting a claim still requires an authenticated inquiry. Correlation is two-sided — an inbox row counts only if an attempt of that session genuinely holds that order id, so a forged reference matches nothing.
+- **The evidence check is deliberately lock-free.** This is what makes it safe to call from dispatch, which holds an order lock, without completing the session→order cycle. Documented at the function and enforced by a concurrency test.
+- **`reconciliation_required` counts as terminal.** It is a staff decision, not work a queued callback resolves, and holding stock on it would strand inventory indefinitely. Revisit if that judgement is wrong.
+- **Option A on stale candidates** (chosen): a candidate whose state changed between discovery and recheck is skipped, never acted on from stale data. The next sweep re-evaluates against fresh data.
+
+**What the investigation actually found, contrary to the plan's assumption:**
+
+The plan warned against creating a lock cycle. Surveying every `.for("update")` showed shipping locks strictly order → shipment → work item and **never reads `payment_attempts` or `checkout_sessions`**, while payment locks session → attempt → reservations. So **no cycle exists today** — the cycle would only be created by problem 4 itself. W06 problem 2 therefore did not fix an ordering; it documented the evidence check as must-stay-lock-free and added the concurrency test that would catch a regression, so problem 4 could safely consult it.
+
+**Mistakes I made and corrected:**
+
+- I first wrote the correlation as a SQL JSON sub-select. It failed twice: MySQL 8.4 has neither `JSON_UNNEST` nor MariaDB's `IS NOT NULL(expr)`. Correlation is now done in application code over the bounded inbox backlog, which is portable.
+- My first concurrency test passed in 69ms. I did not trust it — a passing concurrency test that never contends proves nothing. Rewritten so the payment path genuinely holds the session lock; it now takes 130ms, which is the contention being real.
+- The type-level narrowing cannot fully forbid a lock, because `for("update")` is a method on the query result rather than the session. The docblock and the concurrency test are the real enforcement; the narrowing is documentation at the call site.
 
 ### W07 — Persist Bosta polling policy and complete gated related bindings (B05/B06)
 

@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { startIntervalWorker } from "../../services/interval-worker.js";
 import { and, asc, eq, isNull, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { orderItems, orders, orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { orderItems, orders, orderReviewFlags, paymentAttempts, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
 import { flagShippingOrder } from "../../repositories/shipping-dispatch.repository.js";
 import { isSafetyReviewFlag } from "../../repositories/order-review-flag.repository.js";
 import { untouchedShippingExpiryApplies } from "../../repositories/shipping-state.repository.js";
@@ -10,10 +11,26 @@ import { BostaProviderError } from "./bosta/bosta-client.js";
 import { bostaDeliveryProviderFromEnvironment, type DeliveryProvider, type DeliveryRequest, type DeliveryResult } from "./bosta/bosta-delivery.service.js";
 
 type Job = typeof shippingWorkItems.$inferSelect;
+type ShippingDispatchTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const MAX_ATTEMPTS = 8;
 const backoff = (attempt: number) => Math.min(15 * 60_000, 30_000 * 2 ** Math.max(0, attempt - 1));
 const blocked = (order: typeof orders.$inferSelect) => order.paymentStatus === "denied" || order.cancellationStatus !== null || order.refundedAmountCents > 0 ||
   (order.paymentMethod === "paymob" && (order.paymentStatus !== "accepted" || order.providerPaymentStatus !== "succeeded"));
+
+/**
+ * The checkout session an order was paid through, if any. Plain reads only, no lock: the
+ * order row is already locked by the caller and this must not add a payment-side lock
+ * edge. COD and staff-created orders have no session, hence no financial evidence, and
+ * return -1 so the guard finds nothing.
+ */
+async function sessionIdForOrder(tx: ShippingDispatchTransaction, orderId: number): Promise<number> {
+  const [order] = await tx.select({ attemptId: orders.paymentAttemptId })
+    .from(orders).where(eq(orders.id, orderId)).limit(1);
+  if (!order?.attemptId) return -1;
+  const [attempt] = await tx.select({ sessionId: paymentAttempts.checkoutSessionId })
+    .from(paymentAttempts).where(eq(paymentAttempts.id, order.attemptId)).limit(1);
+  return attempt?.sessionId ?? -1;
+}
 
 async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
   const expiredLease = new Date(now.getTime() - leaseMs);
@@ -55,7 +72,18 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
       const deadlineBlocks = order.paymentMethod === "cod" && order.codExpiresAt != null &&
         order.codExpiresAt <= now && untouchedShippingExpiryApplies(order);
       const safetyFlagOpen = flags.some((flag) => isSafetyReviewFlag(flag.flagType));
-      if (blocked(order) || deadlineBlocks || safetyFlagOpen) {
+      // P04/W06: a refund callback that is durably received but not yet resolved must hold
+      // the shipment. Creating a delivery now could send goods to a customer whose money is
+      // being returned, who could then spend the refund a second time.
+      //
+      // This consults the shared evidence check, which is deliberately lock-free (W06
+      // problem 2). That is what makes it safe to call here: the order lock is held, and
+      // adding a payment-side lock at this point would complete the session/order cycle.
+      // The cost is that this is a point-in-time read, so a refund arriving moments later is
+      // caught by blockRefundedDelivery on the order lock instead.
+      const unresolvedRefund = await hasUnresolvedFinancialEvidence(
+        tx, await sessionIdForOrder(tx, order.id), await unresolvedInboxOrderIds());
+      if (blocked(order) || deadlineBlocks || safetyFlagOpen || unresolvedRefund) {
         await tx.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.id, job.id));
         return null;
       }
