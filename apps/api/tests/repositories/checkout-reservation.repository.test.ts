@@ -80,6 +80,41 @@ test("expiry skips a candidate whose state changed after discovery instead of ac
   assert.equal(reservation?.state, "reserved", "the reservation is untouched by the stale candidate");
 });
 
+test("concurrent payment application and expiry of the same session do not deadlock", async () => {
+  const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
+  const ids = await getBaselineIds();
+  const input = sessionInput(ids.firstVariantId);
+  input.reservationExpiresAt = new Date(Date.now() - 1000);
+  const session = await module?.createReservedCheckout(input);
+
+  // Payment applies session-first; expiry also takes the session lock. The payment path
+  // deliberately HOLDS its lock while expiry runs, so the two genuinely overlap: if the
+  // evidence check ever began taking a lock of its own, this is where the cycle appears.
+  let releasePaymentLock: () => void = () => {};
+  const holdingLock = new Promise<void>((resolve) => { releasePaymentLock = resolve; });
+  const payment = db.transaction(async (tx) => {
+    const [locked] = await tx.select({ id: checkoutSessions.id }).from(checkoutSessions)
+      .where(eq(checkoutSessions.id, session!.id)).limit(1).for("update");
+    assert.ok(locked, "the payment path holds a real row lock before expiry runs");
+    await holdingLock;
+  });
+  // Give the payment transaction time to actually acquire its lock first.
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  const expiry = module?.releaseExpiredCheckoutReservations(new Date());
+  releasePaymentLock();
+  const results = await Promise.allSettled([payment, expiry]);
+
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 2,
+    "both transactions complete; neither is killed as a deadlock victim");
+  const [variant] = await db.select({ stockQty: productVariants.stockQty })
+    .from(productVariants).where(eq(productVariants.id, ids.firstVariantId)).limit(1);
+  assert.equal(variant?.stockQty, 10, "stock is restored exactly once across both paths");
+  const reservations = await db.select().from(checkoutReservations)
+    .where(eq(checkoutReservations.checkoutSessionId, session!.id));
+  assert.equal(reservations.filter((row) => row.state === "released").length, 1,
+    "the reservation is released once, never twice");
+});
+
 test("releaseExpiredCheckoutReservations restores stock only once", async () => {
   const module = await import("../../src/repositories/checkout/checkout-reservation.repository.js").catch(() => null);
   const ids = await getBaselineIds();

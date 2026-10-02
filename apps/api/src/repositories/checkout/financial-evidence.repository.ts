@@ -59,6 +59,24 @@ export async function unresolvedInboxOrderIds(limit = 1000): Promise<Set<string>
  *
  * Call this while holding the session lock. The answer is a read, not a claim: another
  * worker may still be applying the effects it describes.
+ *
+ * LOCK ORDER (W06 problem 2). This function MUST stay lock-free. It is the one helper
+ * that both the session-first payment paths AND the order-first shipping paths need, so
+ * if it ever took a lock of its own it would inherit a cycle the moment dispatch starts
+ * consulting it: payment holds session and wants order, shipping holds order and wants
+ * the evidence. Neither could proceed.
+ *
+ * The safe discipline it relies on:
+ *   - The inbox read is outside every lock; `unresolvedOrderIds` is fetched first.
+ *   - The attempt read below is a plain SELECT inside the caller's existing transaction,
+ *     so it adds no new lock edge and follows whatever order the caller already uses.
+ *
+ * If a future change needs stronger guarantees here, add a `lockOrder` note and the
+ * corresponding concurrency test rather than reaching for `.for("update")`.
+ *
+ * `tx` is narrowed to `select` only: `for("update")` lives on the query result rather
+ * than the session, so this cannot fully forbid a lock at the type level, but it records
+ * the contract where a future edit is most likely to look.
  */
 export async function hasUnresolvedFinancialEvidence(
   tx: Pick<typeof db, "select">,
