@@ -1,5 +1,5 @@
 import type { StoredCartLine } from "@capella/database/drizzle/schema";
-import { getCartLinesByCustomer, saveCartLinesForCustomer } from "../../repositories/cart.repository.js";
+import { getCartLinesByCustomer, saveCartLinesForCustomer } from "./cart.repository.js";
 
 export function getCart(customerId: number) {
   return getCartLinesByCustomer(customerId);

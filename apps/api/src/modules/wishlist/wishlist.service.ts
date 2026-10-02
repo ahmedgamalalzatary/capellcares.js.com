@@ -1,5 +1,5 @@
 import type { Language, WishlistItemDto } from "@capella/shared";
-import { addWishlistItem, listWishlistEntriesByCustomer, removeWishlistItem } from "../../repositories/wishlist.repository.js";
+import { addWishlistItem, listWishlistEntriesByCustomer, removeWishlistItem } from "./wishlist.repository.js";
 
 export function getWishlist(customerId: number, lang: Language = "ar") {
   return listWishlistEntriesByCustomer(customerId, lang);

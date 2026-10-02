@@ -3,7 +3,7 @@ import { announcementReplacePayloadSchema } from "@capella/shared";
 import {
   listAnnouncementStateRepo,
   replaceAnnouncementsRepo
-} from "../../../repositories/announcement.repository.js";
+} from "../../announcements/announcement.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 
 async function safeTriggerAnnouncementRevalidation() {

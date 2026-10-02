@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { addToWishlist, deleteFromWishlist, getWishlist } from "./wishlist.service.js";
 import type { WishlistItemDto } from "@capella/shared";
-import { WishlistEntityValidationError } from "../../repositories/wishlist.repository.js";
+import { WishlistEntityValidationError } from "./wishlist.repository.js";
 import type { LocalizedRequest } from "../../middlewares/locale.middleware.js";
 
 function userId(req: Request) {

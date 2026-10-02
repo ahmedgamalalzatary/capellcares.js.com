@@ -5,7 +5,7 @@ import {
   reorderAdvicesRepo,
   toggleAdviceStatusRepo,
   upsertAdviceRepo
-} from "../../../repositories/advice.repository.js";
+} from "./advice.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 
 function isBilingualText(value: unknown): value is { ar: string; en: string } {

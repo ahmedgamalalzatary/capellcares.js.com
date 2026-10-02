@@ -3,8 +3,8 @@ import test, { beforeEach } from "node:test";
 
 import { db } from "@capella/database/src/db";
 import { customers, type StoredCartLine } from "@capella/database/drizzle/schema";
-import { getCartLinesByCustomer, saveCartLinesForCustomer } from "../../src/repositories/cart.repository.js";
-import { resetApiTestDatabase } from "../helpers/database.js";
+import { getCartLinesByCustomer, saveCartLinesForCustomer } from "../../../src/modules/cart/cart.repository.js";
+import { resetApiTestDatabase } from "../../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

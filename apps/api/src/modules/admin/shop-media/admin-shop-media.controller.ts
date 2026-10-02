@@ -3,7 +3,7 @@ import {
   listShopMediaSectionsRepo,
   replaceShopMediaSectionRepo,
   shopMediaTargetExists
-} from "../../../repositories/shop-media-section.repository.js";
+} from "../../shop-media/shop-media-section.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { isDetailTargetType, isListingTargetType, shopMediaTargetTypes } from "../../shop-media/shop-media.shared.js";
 
