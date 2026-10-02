@@ -1373,17 +1373,32 @@ test("processPaymobTransaction rejects an out-of-order decline after the payment
   assert.equal(result.outcome, "rejected");
 });
 
-test("processPaymobTransaction rejects a wrong-environment callback after the payment already succeeded", async () => {
+test("an unsigned environment claim cannot settle or block a payment after success", async () => {
+  // `is_live` is outside Paymob's HMAC input list, so it is not evidence of anything. It
+  // previously decided acceptance: flipping it rejected a genuine payment, and holding the
+  // HMAC secret would have let an attacker do the same. The environment that governs the
+  // callback is the one recorded on the local attempt.
   const { processPaymobTransaction } = await createPaidSession({
     email: "post-success-env@example.com", idempotencyKey: "c4c4c4c4-c4c4-4c4c-8c4c-c4c4c4c4c4c4",
     intentionId: "pi_post_success_env", orderId: 9303, txnId: 8305
   });
 
-  const result = await processPaymobTransaction({
+  // A duplicate success whose flag claims "live" is still the same genuine payment.
+  assert.equal((await processPaymobTransaction({
     ...paidTransaction(9303, 8305), is_live: true
-  });
+  })).outcome, "succeeded", "an unsigned flag must not reject a real payment");
+  // And a refund is still applied on its verified amount regardless of the flag.
+  assert.equal((await processPaymobTransaction({
+    ...paidTransaction(9303, 8305), is_live: true, is_refunded: true, refunded_amount_cents: 3500
+  }, { verified: { is_refunded: true, refunded_amount_cents: 3500 } })).outcome, "refunded",
+    "an unsigned flag must not block a real refund");
 
-  assert.equal(result.outcome, "rejected");
+  // A genuinely mismatched environment is still caught, but only from the AUTHENTICATED
+  // inquiry, which is evidence rather than an unsigned callback field.
+  assert.equal((await processPaymobTransaction({
+    ...paidTransaction(9303, 8305), is_live: false, is_refunded: true, refunded_amount_cents: 3500
+  }, { verified: { is_refunded: true, refunded_amount_cents: 3500, environment: "live" } })).outcome, "rejected",
+    "a verified environment that disagrees with the local attempt must reject");
 });
 
 test("processPaymobTransaction flags a second distinct capture for reconciliation instead of acknowledging success", async () => {

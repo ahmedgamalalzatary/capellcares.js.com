@@ -7,7 +7,7 @@ import { checkoutSessions, orders, paymentAttempts, paymentWebhookEvents, paymob
  * Bump when the normalized field set changes. Old rows are never re-interpreted under a
  * new fingerprint definition, so a version bump cannot silently re-deduplicate history.
  */
-export const PAYMOB_INBOX_FINGERPRINT_VERSION = 2;
+export const PAYMOB_INBOX_FINGERPRINT_VERSION = 3;
 
 /**
  * Only these fields are retained. Three deliberate exclusions:
@@ -16,6 +16,12 @@ export const PAYMOB_INBOX_FINGERPRINT_VERSION = 2;
  *  - `source_data.pan` is card data; only the payment method type is kept.
  *  - `order` is rebuilt from a scalar allowlist rather than copied, so extra nested
  *    properties a callback chooses to include cannot survive into stored evidence.
+ *
+ * `is_live` is retained in the payload (it is harmless descriptive data) but is deliberately
+ * EXCLUDED from the fingerprint below, because it is unsigned. Leaving it in the identity let
+ * anyone holding one validly signed callback replay it with the flag flipped and mint an
+ * unlimited number of distinct receipts - each of which would then be independently claimed,
+ * retried and eventually surfaced for staff review.
  */
 const NORMALIZED_FIELDS = ["id", "integration_id", "amount_cents", "currency", "success", "pending",
   "is_auth", "is_capture", "is_voided", "is_refunded", "has_parent_transaction", "is_live",
@@ -72,8 +78,13 @@ export async function receivePaymobCallback(input: {
   transaction: Record<string, unknown>;
 }): Promise<ReceivedPaymobCallback> {
   const normalized = normalizeCallback(input.transaction);
+  // The fingerprint runs over the same allowlisted payload, minus the fields Paymob's HMAC
+  // does not cover. `is_live` is the one such field retained in the payload: keeping it in
+  // the identity would let a single validly signed callback be replayed with the flag
+  // flipped to manufacture unlimited distinct receipts.
+  const { is_live: _unsignedEnvironmentFlag, ...fingerprintPayload } = normalized;
   const eventFingerprint = createHash("sha256").update(JSON.stringify({
-    v: PAYMOB_INBOX_FINGERPRINT_VERSION, type: input.callbackType, payload: normalized,
+    v: PAYMOB_INBOX_FINGERPRINT_VERSION, type: input.callbackType, payload: fingerprintPayload,
     // Scheduling hint only - see unsignedRefundHint. It separates distinct refund events
     // without ever contributing evidence.
     refund_hint: unsignedRefundHint(input.transaction)
@@ -117,7 +128,12 @@ function isDuplicateEntry(error: unknown): boolean {
   return candidate.code === "ER_DUP_ENTRY" || candidate.cause?.code === "ER_DUP_ENTRY";
 }
 
-/** Legacy audit writer for historical consumers; production processing writes audit atomically. */
+/**
+ * Legacy audit writer for historical consumers; production processing writes audit atomically.
+ *
+ * Excludes `is_live` for the same reason the production audit identity does: it is outside
+ * Paymob's HMAC input list, so it is not evidence of a distinct real-world event.
+ */
 export async function recordPaymobTransaction(
   transaction: Record<string, unknown>,
   processingStatus: "processed" | "rejected"
@@ -126,7 +142,6 @@ export async function recordPaymobTransaction(
     id: transaction.id,
     order_id: (transaction.order as { id?: unknown } | undefined)?.id,
     integration_id: transaction.integration_id,
-    is_live: transaction.is_live,
     success: transaction.success,
     pending: transaction.pending,
     is_auth: transaction.is_auth,

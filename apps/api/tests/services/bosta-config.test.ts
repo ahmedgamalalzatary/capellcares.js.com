@@ -83,6 +83,34 @@ test("R05: a valid timeout and staging/production base paths are accepted", () =
   assert.equal(prod.baseUrl, "https://app.bosta.co/api/v2");
 });
 
+// --- F12: verified host and timeout budget ---
+
+test("F12: only Bosta's own hosts are accepted, so a typo cannot redirect API keys elsewhere", () => {
+  // Any HTTPS host parsed fine, so a single mistyped character sent the merchant API key
+  // and webhook secret to a third party. The provider host is part of the verified identity
+  // of the integration, so it is pinned to Bosta's own domains.
+  for (const baseUrl of ["https://app.bosta.co.example.com/api/v2", "https://bosta.co.evil.test/api/v2",
+    "https://stg-app.bosta.co.evil.test/api/v2", "https://localhost/api/v2"]) {
+    assert.throws(() => loadWith({ BOSTA_ENABLED: "true", BOSTA_BASE_URL: baseUrl }),
+      /BOSTA_BASE_URL|host/i, `${baseUrl} must be rejected`);
+  }
+  // The documented production and staging hosts remain usable.
+  for (const baseUrl of ["https://app.bosta.co/api/v2", "https://stg-app.bosta.co/api/v2"]) {
+    assert.equal(loadWith({ BOSTA_ENABLED: "true", BOSTA_BASE_URL: baseUrl }).baseUrl, baseUrl);
+  }
+});
+
+test("F12: a provider timeout that outlasts the work lease is rejected", () => {
+  // The recovery workers hold a two-minute lease. A provider timeout longer than that means
+  // the work is reclaimed by another instance while the first is still waiting on HTTP, so
+  // two consumers can act on the same record. The budget must fit inside the lease.
+  assert.throws(() => loadWith({ BOSTA_ENABLED: "true", BOSTA_TIMEOUT_MS: "300000" }),
+    /BOSTA_TIMEOUT_MS|lease|budget/i, "a timeout beyond the lease must be rejected");
+  // A value that fits is accepted, and the default stays well inside the budget.
+  assert.equal(loadWith({ BOSTA_ENABLED: "true", BOSTA_TIMEOUT_MS: "30000" }).timeoutMs, 30000);
+  assert.ok(loadWith({ BOSTA_ENABLED: "true" }).timeoutMs <= 60_000, "the default must fit the lease");
+});
+
 // --- R04: ordinary Node inspection must not expose credentials ---
 
 test("R04: node:util inspect does not expose the API key or webhook secret", () => {

@@ -52,21 +52,30 @@ export type NormalizedReadAddress = {
 export type ZoningRow = { cityId: string; zoneId: string | null; districtId: string; districtName: string };
 export type ResolveByName = (query: { cityId: string | null; zoneId: string | null; districtName: string | null }) => ZoningRow[] | Promise<ZoningRow[]>;
 
-/** Reads a flat id field, which the provider sends as a bare string. */
+/**
+ * Reads a flat id field, which the provider documents as a bare string. An object here is
+ * not the documented shape, so it is never mined for an identifier.
+ */
 function idOf(value: unknown): string | null {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (value !== null && typeof value === "object") {
-    const id = (value as { id?: unknown }).id;
-    if (typeof id === "string" && id.trim()) return id.trim();
-  }
-  return null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-/** Reads a nested `city`/`zone` object. A bare string there is a display NAME. */
-function nestedIdOf(value: unknown): string | null {
-  if (value === null || typeof value !== "object") return null;
-  const id = (value as { id?: unknown }).id;
-  return typeof id === "string" && id.trim() ? id.trim() : null;
+/**
+ * Reads a nested `city`/`zone` reference. A bare string there is a display NAME, not an id.
+ *
+ * Only the documented `_id` is believed; a bare `id` alias is captured separately so a
+ * response carrying two disagreeing identities is reported as a contradiction instead of
+ * being resolved by preferring whichever field happened to be read first.
+ */
+function nestedReference(value: unknown): { documentedId: string | null; aliasId: string | null } {
+  if (value === null || typeof value !== "object") return { documentedId: null, aliasId: null };
+  const record = value as Record<string, unknown>;
+  const documented = record._id;
+  const alias = record.id;
+  return {
+    documentedId: typeof documented === "string" && documented.trim() ? documented.trim() : null,
+    aliasId: typeof alias === "string" && alias.trim() ? alias.trim() : null
+  };
 }
 
 function nameOf(value: unknown): string | null {
@@ -79,37 +88,45 @@ function nameOf(value: unknown): string | null {
 }
 
 /**
- * Preserves flat ids when present and extracts validated nested city/zone ids
- * when present. A district display name is not an id: it resolves only through
- * a unique authoritative match under the proven city/zone.
+ * Combines a flat id with the documented nested `_id`.
+ *
+ * A non-documented nested `id` alias contributes ONLY to contradiction detection: a response
+ * carrying `_id: A` and `id: B` is an unresolved read, but a response carrying only the alias
+ * proves nothing and stays unresolved rather than being believed as identity.
+ */
+function reconcileIdentity(label: string, flat: string | null, reference: { documentedId: string | null; aliasId: string | null }): string | null {
+  if (reference.aliasId !== null && reference.documentedId !== null && reference.aliasId !== reference.documentedId) {
+    throw new Error(`Bosta address ${label} identifiers contradict each other`);
+  }
+  const present = [flat, reference.documentedId].filter((value): value is string => value !== null);
+  if (new Set(present).size > 1) throw new Error(`Bosta address ${label} identifiers contradict each other`);
+  return present[0] ?? null;
+}
+
+/**
+ * Preserves flat ids when present and extracts the documented nested `_id` when present. A
+ * district display name is not an id: it resolves only through a unique authoritative match
+ * under the proven city/zone.
  */
 export async function normalizeReadAddress(value: unknown, resolveByName: ResolveByName): Promise<NormalizedReadAddress> {
   const record = value !== null && typeof value === "object" ? value as Record<string, unknown> : {};
   const firstLine = typeof record.firstLine === "string" ? record.firstLine.trim() : "";
 
-  const flatZone = idOf(record.zoneId);
-  const nestedZone = nestedIdOf(record.zone);
-  const flatCity = idOf(record.cityId);
-  const nestedCity = nestedIdOf(record.city);
-  const flatDistrict = idOf(record.districtId);
+  const zoneId = reconcileIdentity("zone", idOf(record.zoneId), nestedReference(record.zone));
+  const cityId = reconcileIdentity("city", idOf(record.cityId), nestedReference(record.city));
+  const districtId = idOf(record.districtId);
   const districtName = nameOf(record.districtName) ?? nameOf(record.district);
 
-  // Contradictory identities are never resolved by preferring one source.
-  if (flatZone && nestedZone && flatZone !== nestedZone) throw new Error("Bosta address zone identifiers contradict each other");
-  if (flatCity && nestedCity && flatCity !== nestedCity) throw new Error("Bosta address city identifiers contradict each other");
-  const zoneId = flatZone ?? nestedZone;
-  const cityId = flatCity ?? nestedCity;
-
-  let districtId = flatDistrict;
-  if (!districtId && districtName) {
+  let resolvedDistrictId = districtId;
+  if (!resolvedDistrictId && districtName) {
     const matches = await resolveByName({ cityId, zoneId, districtName });
     // Ambiguity or no authoritative match stays unresolved. A single match is only
     // believed when it does not contradict the identity the provider already gave us.
     if (matches.length === 1
       && (!cityId || matches[0].cityId === cityId)
-      && (!zoneId || matches[0].zoneId === zoneId)) districtId = matches[0].districtId;
+      && (!zoneId || matches[0].zoneId === zoneId)) resolvedDistrictId = matches[0].districtId;
   }
-  return { cityId, zoneId, districtId, firstLine };
+  return { cityId, zoneId, districtId: resolvedDistrictId, firstLine };
 }
 
 export type RequestedAddress = { cityId?: string | null; zoneId?: string | null; districtId: string | null; firstLine: string };

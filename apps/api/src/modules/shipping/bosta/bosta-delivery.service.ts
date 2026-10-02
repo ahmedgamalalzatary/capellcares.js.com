@@ -6,7 +6,7 @@ import { loadBostaConfig } from "./bosta-config.js";
 import { bostaPricingContractId, type BostaQuoteSettings } from "./bosta-quote-composition.js";
 import { buildRateIdentity } from "./bosta-rate-context.js";
 import { validatePricingResponseContract } from "./bosta-pricing.service.js";
-import { assertDeliveryMatches, normalizeDeliveryRead } from "./bosta-delivery-read.js";
+import { assertDeliveryMatches, normalizeDeliveryRead, normalizeTrackingIdentifier } from "./bosta-delivery-read.js";
 import { BostaAddressService } from "./bosta-address.service.js";
 import { assertShippingRestrictionsAllowed, buildDropOffFirstLine } from "../shipping-restrictions.js";
 
@@ -72,13 +72,26 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
       Object.entries(value).map(([key, entry]) => [redact(key), sanitize(entry)]));
     return value;
   };
+  // The tracking number is accepted in every form the shared normalizer supports and is
+  // normalized ONCE, through that same normalizer. The shared business read normalizes the
+  // value again during recovery, so create and recovery can never disagree about which
+  // identifier they are talking about. A form the normalizer rejects is not proof that the
+  // shipment failed to be created, so it stays an uncertain outcome like any other
+  // unparseable create response.
   const resultSchema = z.object({ success: z.literal(true), data: z.object({
-    trackingNumber: z.string().trim().min(1).max(64), state: z.object({ code: z.number().int(), value: z.string().min(1).max(64) })
+    trackingNumber: z.union([z.string(), z.number().int().positive()]),
+    state: z.object({ code: z.number().int(), value: z.string().min(1).max(64) })
   }) });
   const parseResult = (raw: unknown): DeliveryResult => {
     const parsed = resultSchema.safeParse(raw);
     if (!parsed.success) throw new BostaProviderError("Bosta create outcome is uncertain; tracking/state response is invalid", "ambiguous", null);
-    return { trackingNumber: parsed.data.data.trackingNumber, rawProviderState: parsed.data.data.state.value,
+    let trackingNumber: string;
+    try {
+      trackingNumber = normalizeTrackingIdentifier(parsed.data.data.trackingNumber);
+    } catch {
+      throw new BostaProviderError("Bosta create outcome is uncertain; tracking identifier is invalid", "ambiguous", null);
+    }
+    return { trackingNumber, rawProviderState: parsed.data.data.state.value,
       rawProviderCode: parsed.data.data.state.code, rawResponse: sanitize(raw) };
   };
   const checkAccount = (request: DeliveryRequest) => {

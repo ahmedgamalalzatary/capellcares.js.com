@@ -31,9 +31,24 @@ const TOKEN_EXPIRY_MARGIN_MS = 60_000;
 
 const tokenSchema = z.object({ token: z.string().trim().min(1) });
 
-// Only the fields we actually act on are modelled; everything else is ignored on purpose.
+/**
+ * Only the fields we actually act on are modelled; everything else is ignored on purpose.
+ *
+ * The identity fields (`order.id`, `integration_id`, `owner`, `is_live`) are required, not
+ * optional. A refund total on its own is not enough: without them the caller cannot tell
+ * whether the authenticated read describes the payment it holds a signed callback for, or
+ * some other transaction on the same account. Refusing to parse a response that omits them
+ * turns that into an unresolved read instead of a verified amount with unknown provenance.
+ *
+ * `owner` is the merchant/account identifier the provider reports for the transaction. It is
+ * carried through as opaque evidence only: nothing here assumes it equals any local value.
+ */
 const transactionSchema = z.object({
   id: z.union([z.string().trim().min(1), z.number().int().positive()]).transform(String),
+  order: z.object({ id: z.union([z.string().trim().min(1), z.number().int().positive()]).transform(String) }),
+  integration_id: z.number().int().positive(),
+  owner: z.union([z.string().trim().min(1), z.number().int().positive()]).transform(String),
+  is_live: z.boolean(),
   amount_cents: z.number().int().nonnegative(),
   currency: z.string().trim().min(1),
   success: z.boolean(),
@@ -46,6 +61,12 @@ const transactionSchema = z.object({
 
 export type PaymobInquiry = {
   transactionId: string;
+  /** The provider's Paymob order id, which is the field the HMAC actually covers. */
+  paymobOrderId: string;
+  integrationId: number;
+  /** Merchant/account identifier as reported by the provider. Opaque evidence, never assumed. */
+  owner: string;
+  environment: "test" | "live";
   amountCents: number;
   currency: string;
   success: boolean;
@@ -117,19 +138,8 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
     async query(transactionId: string): Promise<PaymobInquiry> {
       const id = String(transactionId ?? "").trim();
       if (!id) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob inquiry requires a transaction ID");
-      const token = await authToken();
-      let response: Response;
-      try {
-        response = await fetchImpl(`${base}/api/acceptance/transactions/${encodeURIComponent(id)}`, {
-          method: "GET",
-          headers: { authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(options.timeoutMs ?? 10_000)
-        });
-      } catch {
-        throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
-      }
-      if (!response.ok) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
-      const parsed = transactionSchema.safeParse(await response.json().catch(() => null));
+      const body = await authenticatedRead(`${base}/api/acceptance/transactions/${encodeURIComponent(id)}`);
+      const parsed = transactionSchema.safeParse(body);
       if (!parsed.success) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob transaction inquiry response is invalid");
       const raw = parsed.data;
       // The queried transaction must be the one the provider returned, otherwise the
@@ -145,10 +155,45 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
       if (refundedAmountCents > raw.amount_cents) {
         throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob refund exceeds the transaction amount");
       }
-      return { transactionId: raw.id, amountCents: raw.amount_cents, currency: raw.currency, success: raw.success,
-        pending: raw.pending, refunded, refundedAmountCents };
+      return { transactionId: raw.id, paymobOrderId: raw.order.id, integrationId: raw.integration_id,
+        owner: raw.owner, environment: raw.is_live ? "live" : "test", amountCents: raw.amount_cents,
+        currency: raw.currency, success: raw.success, pending: raw.pending, refunded, refundedAmountCents };
     }
   };
+
+  /**
+   * Performs the authenticated read, refreshing the cached bearer token exactly once if the
+   * provider rejects it.
+   *
+   * The cached token previously survived a 401, so a single expiry made every refund inquiry
+   * fail for the remainder of the hour. One refresh is enough to cover a genuinely stale
+   * token; more than that would turn a wrong credential into a request loop, so a second
+   * rejection is reported as an unresolved read.
+   */
+  async function authenticatedRead(url: string): Promise<unknown> {
+    const attempt = async (token: string): Promise<Response> => {
+      try {
+        return await fetchImpl(url, { method: "GET", headers: { authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(options.timeoutMs ?? 10_000) });
+      } catch {
+        throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
+      }
+    };
+    let response = await attempt(await authToken());
+    if (response.status !== 401) return readBody(response);
+    // Drop the rejected token before minting a replacement, so the refresh is guaranteed to
+    // be a fresh credential rather than the same rejected one.
+    cachedToken = null;
+    response = await attempt(await authToken());
+    if (response.status === 401) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
+    return readBody(response);
+  }
+
+  /** Parses a 2xx inquiry body. A non-2xx or unparseable body is an unresolved read. */
+  async function readBody(response: Response): Promise<unknown> {
+    if (!response.ok) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
+    return response.json().catch(() => null);
+  }
 }
 
 /** One-shot convenience wrapper; prefer `createPaymobInquiryClient` to reuse the cached token. */

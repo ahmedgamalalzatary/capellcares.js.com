@@ -63,8 +63,8 @@ test("flat address identifiers are preserved exactly as the provider returned th
 test("documented nested city and zone objects resolve to identifiers, and a name-only district resolves by unique proof", async () => {
   const { normalizeReadAddress } = await read();
   assert.deepEqual(await normalizeReadAddress({
-    city: { id: "city-cairo", name: "Cairo" },
-    zone: { id: "zone-nasr", name: "Nasr City" },
+    city: { _id: "city-cairo", name: "cairo" },
+    zone: { _id: "zone-nasr", name: "Nasr City" },
     districtName: "District 1",
     firstLine: "Street 1, Building 2 apartment 3"
   }, resolveByName), {
@@ -78,9 +78,57 @@ test("a district name that is ambiguous across zones or cities stays unresolved 
   const unqualified = await normalizeReadAddress({ districtName: "Shared Name", firstLine: "Street 1" }, resolveByName);
   assert.equal(unqualified.districtId, null, "an ambiguous district name must never be invented");
   // City+zone proven and unique under them: resolvable.
-  const proven = await normalizeReadAddress({ city: { id: "city-cairo" }, zone: { id: "zone-nasr" },
+  const proven = await normalizeReadAddress({ city: { _id: "city-cairo" }, zone: { _id: "zone-nasr" },
     districtName: "District 1", firstLine: "Street 1" }, resolveByName);
   assert.equal(proven.districtId, "district-nasr");
+});
+
+test("the documented nested `_id` form is believed, and a non-documented alias is not an identifier", async () => {
+  const { normalizeReadAddress, assertAddressMatches } = await read();
+  // Bosta's City/CityRef/ZoneRef schemas all document `_id` (docs.bosta.co/api/api.yaml).
+  assert.deepEqual(await normalizeReadAddress({
+    city: { _id: "city-cairo", name: "cairo" },
+    zone: { _id: "zone-nasr", name: "Nasr City" },
+    districtId: "district-nasr",
+    firstLine: "Street 1, Building 2 apartment 3"
+  }, resolveByName), {
+    cityId: "city-cairo", zoneId: "zone-nasr", districtId: "district-nasr", firstLine: "Street 1, Building 2 apartment 3"
+  });
+  // `id` is not the documented nested field. It must never be silently promoted to
+  // identity, so a requested city can never correlate against an alias-only read.
+  const aliasOnly = await normalizeReadAddress({ city: { id: "city-cairo" }, districtId: "district-nasr",
+    firstLine: "Street 1" }, resolveByName);
+  assert.equal(aliasOnly.cityId, null, "an undocumented nested alias is not proof of city identity");
+  assert.throws(() => assertAddressMatches(aliasOnly, { cityId: "city-cairo", districtId: "district-nasr",
+    firstLine: "Street 1" }), /city|correlat/i);
+});
+
+test("a nested alias and a flat id that disagree are a contradiction, not a preference", async () => {
+  const { normalizeReadAddress } = await read();
+  // Documented `_id` and an alias `id` naming different cities must not be resolved by
+  // picking one: a response carrying two identities is an unresolved read.
+  await assert.rejects(normalizeReadAddress({ city: { _id: "city-cairo", id: "city-giza" },
+    districtId: "district-nasr", firstLine: "Street 1" }, resolveByName), /contradict/i);
+  await assert.rejects(normalizeReadAddress({ cityId: "city-cairo", city: { _id: "city-giza" },
+    districtId: "district-nasr", firstLine: "Street 1" }, resolveByName), /contradict/i);
+  await assert.rejects(normalizeReadAddress({ zoneId: "zone-nasr", zone: { _id: "zone-masr" },
+    districtId: "district-nasr", firstLine: "Street 1" }, resolveByName), /contradict/i);
+});
+
+test("a district name resolves only under a city/zone the response actually proved", async () => {
+  const { normalizeReadAddress } = await read();
+  // With the documented `_id`, "District 1" is uniquely resolvable under Cairo/Nasr City.
+  assert.equal((await normalizeReadAddress({ city: { _id: "city-cairo" }, zone: { _id: "zone-nasr" },
+    districtName: "District 1", firstLine: "Street 1" }, resolveByName)).districtId, "district-nasr");
+  // A flat zone id is proof too, and a matching district resolves under it.
+  assert.equal((await normalizeReadAddress({ zoneId: "zone-nasr", districtName: "District 1",
+    firstLine: "Street 1" }, resolveByName)).districtId, "district-nasr");
+  // No city or zone at all: a name shared by two cities must stay unresolved.
+  assert.equal((await normalizeReadAddress({ districtName: "Shared Name", firstLine: "Street 1" },
+    resolveByName)).districtId, null);
+  // An alias-only city does not narrow the search either.
+  assert.equal((await normalizeReadAddress({ city: { id: "city-cairo" }, districtName: "Shared Name",
+    firstLine: "Street 1" }, resolveByName)).districtId, null);
 });
 
 test("a district name with no authoritative match and a missing address both remain unresolved", async () => {
@@ -91,9 +139,9 @@ test("a district name with no authoritative match and a missing address both rem
 
 test("flat and nested identifiers that contradict each other fail closed rather than preferring one", async () => {
   const { normalizeReadAddress } = await read();
-  await assert.rejects(normalizeReadAddress({ zoneId: "zone-masr", zone: { id: "zone-nasr" }, districtId: "district-nasr",
+  await assert.rejects(normalizeReadAddress({ zoneId: "zone-masr", zone: { _id: "zone-nasr" }, districtId: "district-nasr",
     firstLine: "Street 1" }, resolveByName), /contradict/i);
-  await assert.rejects(normalizeReadAddress({ cityId: "city-cairo", city: { id: "city-giza" },
+  await assert.rejects(normalizeReadAddress({ cityId: "city-cairo", city: { _id: "city-giza" },
     districtId: "district-nasr", firstLine: "Street 1" }, resolveByName), /contradict/i);
 });
 
@@ -111,8 +159,8 @@ test("the documented create/drop-off form using a flat cityId and a district nam
 
 test("address comparison requires the normalized identifiers and the complete requested line together", async () => {
   const { normalizeReadAddress, assertAddressMatches } = await read();
-  const address = await normalizeReadAddress({ city: { id: "city-cairo" }, zone: { id: "zone-nasr" }, districtId: "district-nasr",
-    firstLine: "Street 1, Building 2 apartment 3" }, resolveByName);
+  const address = await normalizeReadAddress({ city: { _id: "city-cairo" }, zone: { _id: "zone-nasr" },
+    districtId: "district-nasr", firstLine: "Street 1, Building 2 apartment 3" }, resolveByName);
   const requested = { zoneId: "zone-nasr", districtId: "district-nasr", firstLine: "Street 1, Building 2 apartment 3" };
   assert.doesNotThrow(() => assertAddressMatches(address, requested));
   assert.throws(() => assertAddressMatches(address, { ...requested, firstLine: "Street 1" }), /address|correlat/i);
@@ -135,7 +183,7 @@ test("a complete delivery read normalizes the documented shape and rejects contr
       _id: "provider-delivery", trackingNumber: 5108002, businessReference: "bosta_create_7",
       type: { code: 10, value: "Send" }, state: { code: 45, value: "Delivered" },
       cod: 132.29, collection: { amount: 132.29, confirmed: true }, specs: { size: "SMALL" }, receiver: { phone: "01012345678" },
-      dropOffAddress: { city: { id: "city-cairo" }, zone: { id: "zone-nasr" }, districtId: "district-nasr",
+      dropOffAddress: { city: { _id: "city-cairo" }, zone: { _id: "zone-nasr" }, districtId: "district-nasr",
         firstLine: "Street 1, Building 2 apartment 3" }
     }
   }, { resolveByName });
@@ -159,7 +207,7 @@ test("a complete delivery read normalizes the documented shape and rejects contr
       data: { trackingNumber: 5108002, businessReference: "bosta_create_7", type: { code: 10, value: "Send" },
         state: { code: 45, value: "Delivered" }, cod: 132.29, specs: { size: "SMALL" },
         receiver: { phone: "01012345678" },
-        dropOffAddress: { zone: { id: "zone-nasr" }, districtId: "district-nasr",
+        dropOffAddress: { zone: { _id: "zone-nasr" }, districtId: "district-nasr",
           firstLine: "Street 1, Building 2 apartment 3" }, ...changes } }, { resolveByName });
     assert.throws(() => assertDeliveryMatches(read, request), pattern);
   }
@@ -169,7 +217,7 @@ test("a complete delivery read normalizes the documented shape and rejects contr
     data: { trackingNumber: "5108003", businessReference: "bosta_create_7", type: { code: 10, value: "Send" },
       state: { code: 45, value: "Delivered" }, cod: 132.29, specs: { size: "SMALL" },
       receiver: { phone: "01012345678" },
-      dropOffAddress: { zone: { id: "zone-nasr" }, districtId: "district-nasr",
+      dropOffAddress: { zone: { _id: "zone-nasr" }, districtId: "district-nasr",
         firstLine: "Street 1, Building 2 apartment 3" } } }, { resolveByName });
   assert.throws(() => assertDeliveryMatches(otherTracking, request), /tracking|correlat/i);
 

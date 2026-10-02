@@ -14,9 +14,11 @@ beforeEach(resetApiTestDatabase);
 beforeEach(() => {
   // Stand in for the authenticated Paymob read so route tests never reach the network.
   // The callback's own refunded_amount_cents is unsigned, so the provider value is the
-  // only one the service is allowed to trust.
+  // only one the service is allowed to trust. The identity fields matter too: the
+  // processor cross-checks the authenticated read against the signed callback.
   setPaymobInquiryLookupForTests(async (transactionId) => ({
-    transactionId, amountCents: 7000, currency: "EGP", success: true, pending: false,
+    transactionId, paymobOrderId: "9001", integrationId: 5885253, owner: "7", environment: "test",
+    amountCents: 7000, currency: "EGP", success: true, pending: false,
     refunded: true, refundedAmountCents: 7000
   }));
 });
@@ -54,7 +56,8 @@ test("a non-refund callback never triggers an authenticated inquiry", async () =
   let inquiries = 0;
   setPaymobInquiryLookupForTests(async (transactionId) => {
     inquiries += 1;
-    return { transactionId, amountCents: 10000, currency: "EGP", success: true, pending: false,
+    return { transactionId, paymobOrderId: "9001", integrationId: 5885253, owner: "7", environment: "test",
+      amountCents: 10000, currency: "EGP", success: true, pending: false,
       refunded: false, refundedAmountCents: 0 };
   });
   const previous = process.env.PAYMOB_HMAC_SECRET;
@@ -75,7 +78,8 @@ test("a refund callback does trigger exactly one authenticated inquiry", async (
   let inquiries = 0;
   setPaymobInquiryLookupForTests(async (transactionId) => {
     inquiries += 1;
-    return { transactionId, amountCents: 10000, currency: "EGP", success: true, pending: false,
+    return { transactionId, paymobOrderId: "9001", integrationId: 5885253, owner: "7", environment: "test",
+      amountCents: 10000, currency: "EGP", success: true, pending: false,
       refunded: true, refundedAmountCents: 10000 };
   });
   const previous = process.env.PAYMOB_HMAC_SECRET;
@@ -218,6 +222,11 @@ test("Paymob webhook creates the order from a verified matching transaction", as
   });
   const previous = process.env.PAYMOB_HMAC_SECRET;
   process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  // The authenticated read must describe the same payment the signed callback describes.
+  setPaymobInquiryLookupForTests(async (transactionId) => ({
+    transactionId, paymobOrderId: "9003", integrationId: 123, owner: "7", environment: "test",
+    amountCents: 7000, currency: "EGP", success: true, pending: false, refunded: true, refundedAmountCents: 7000
+  }));
   try {
     await withTestServer(app, async (request) => {
       const response = await request("/api/v1/payments/paymob/webhook?hmac=a44fd6a394da82d22a90f97102bb7b20d084266359ca1d59922016d4d07f66ca51a94b9da0bf13d352621e1f912396fd73d014f3275854a94f1b9bb8f641b30f", {
@@ -267,6 +276,11 @@ test("Paymob webhook acknowledges an early refund and creates a refunded order a
   });
   const previous = process.env.PAYMOB_HMAC_SECRET;
   process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";
+  // The authenticated read must describe the same payment the signed callback describes.
+  setPaymobInquiryLookupForTests(async (transactionId) => ({
+    transactionId, paymobOrderId: "9003", integrationId: 123, owner: "7", environment: "test",
+    amountCents: 7000, currency: "EGP", success: true, pending: false, refunded: true, refundedAmountCents: 7000
+  }));
   const base = { amount_cents: 7000, created_at: "2026-09-11T12:00:00Z", currency: "EGP",
     error_occured: false, has_parent_transaction: false, id: 7001, integration_id: 123, is_3d_secure: true,
     is_auth: false, is_capture: false, is_standalone_payment: true, is_voided: false,

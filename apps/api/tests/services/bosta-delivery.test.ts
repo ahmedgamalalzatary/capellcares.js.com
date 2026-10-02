@@ -66,6 +66,26 @@ test("create stores initial tracking/state/response and a malformed success rema
   await assert.rejects(malformed!.create(request), (error: any) => error.kind === "ambiguous");
 });
 
+test("a numeric tracking number normalizes to the same identifier the business read produces", async () => {
+  // Bosta documents trackingNumber as a string but returns a number in some responses.
+  // Before this, `parseResult` demanded a string, so a create that genuinely succeeded came
+  // back "uncertain" and the shipment was later recovered under a different identity.
+  const provider = await adapter(env, async () => Response.json({ success: true,
+    data: { trackingNumber: 5108002, state: { code: 10, value: "Pickup requested" } } }));
+  const request = provider!.buildRequest(order as any, items as any, "bosta_create_7");
+  assert.equal((await provider!.create(request)).trackingNumber, "5108002");
+});
+
+test("a tracking number the normalizer rejects stays an uncertain outcome, never a proven failure", async () => {
+  const request = (await adapter())!.buildRequest(order as any, items as any, "bosta_create_7");
+  for (const trackingNumber of ["", "   ", 0, -1, 1.5, "x".repeat(65)]) {
+    const provider = await adapter(env, async () => Response.json({ success: true,
+      data: { trackingNumber, state: { code: 10, value: "Pickup requested" } } }));
+    await assert.rejects(provider!.create(request), (error: any) => error.kind === "ambiguous",
+      `tracking ${JSON.stringify(trackingNumber)} must not be treated as a definite outcome`);
+  }
+});
+
 test("uncertain creates correlate a unique search result to its complete delivery, never trusting reference uniqueness alone", async () => {
   let matches = 1;
   let cod = 132.29;

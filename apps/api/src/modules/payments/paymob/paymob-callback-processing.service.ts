@@ -28,22 +28,38 @@ export async function processPaymobCallbackClaim(claim: PaymobCallbackClaim, opt
   const now = () => options.now ?? new Date();
   const payload = claim.normalizedPayload as Record<string, unknown>;
   const transaction = parsePaymobProcessedCallback({ ...payload, source_data: { type: payload.payment_method } });
-  if (claim.callbackType !== "transaction" || ![1, 2].includes(claim.fingerprintVersion) || !transaction) {
+  // Version 3 is the current fingerprint definition. Versions 1 and 2 remain processable:
+  // receipts already durably stored under the older definitions carry the same normalized
+  // payload shape and must still reach an outcome rather than be rejected outright. A row
+  // written under a definition this code no longer understands would have to be rejected, so
+  // any FUTURE version must be added here explicitly rather than assumed compatible.
+  if (claim.callbackType !== "transaction" || ![1, 2, 3].includes(claim.fingerprintVersion) || !transaction) {
     await rejectPaymobCallback(claim, "PAYMENT_CALLBACK_INVALID", now());
     return false;
   }
   try {
-    let verified: { is_refunded: boolean; refunded_amount_cents: number } | undefined;
+    let verified: { is_refunded: boolean; refunded_amount_cents: number; environment: "test" | "live" } | undefined;
     if (transaction.is_refunded) {
       const inquiry = await (options.inquiryLookup ?? inquiryLookup())(String(transaction.id));
-      if (inquiry.transactionId !== String(transaction.id) || inquiry.amountCents !== transaction.amount_cents ||
+      // The authenticated read must describe the SAME payment the signed callback describes.
+      // `order.id` and `integration_id` are both covered by Paymob's HMAC, so a mismatch here
+      // means the inquiry answered about a different transaction - applying its refund total
+      // would move money on the strength of an unrelated read.
+      if (inquiry.transactionId !== String(transaction.id) || inquiry.paymobOrderId !== String(transaction.order?.id ?? "") ||
+        inquiry.integrationId !== Number(transaction.integration_id) ||
+        inquiry.amountCents !== transaction.amount_cents ||
         inquiry.currency !== transaction.currency || !inquiry.success || inquiry.pending || !inquiry.refunded ||
         !Number.isSafeInteger(inquiry.refundedAmountCents) || inquiry.refundedAmountCents <= 0 ||
         inquiry.refundedAmountCents > transaction.amount_cents) {
         await deferPaymobCallback(claim, "REFUND_VERIFICATION_UNRESOLVED", now());
         return false;
       }
-      verified = { is_refunded: true, refunded_amount_cents: inquiry.refundedAmountCents };
+      // The environment comes from the AUTHENTICATED inquiry response, never from the
+      // callback body: `is_live` is outside Paymob's HMAC input list, so the callback's own
+      // copy of it is not evidence. The processor cross-checks it against the environment
+      // recorded on the locked local attempt.
+      verified = { is_refunded: true, refunded_amount_cents: inquiry.refundedAmountCents,
+        environment: inquiry.environment };
     }
     const result = await processPaymobTransaction(transaction, { verified, audit: { transaction },
       inbox: { id: claim.id, claimedBy: claim.claimedBy, leaseMs: PAYMOB_CALLBACK_LEASE_MS, now: now() } });

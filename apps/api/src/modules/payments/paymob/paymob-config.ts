@@ -17,13 +17,27 @@ export interface PaymobConfig {
   intentionExpirationSeconds: 1800;
 }
 
+/**
+ * Reads one of the two documented booleans. A typo must fail loudly.
+ *
+ * This flag is the only thing standing between a half-configured integration and silently
+ * disabling a payment method, so an unrecognized value is an error rather than a "no".
+ */
+function confirmedFlag(env: NodeJS.ProcessEnv, name: string): boolean {
+  const raw = env[name]?.trim();
+  if (raw === undefined || raw === "") return false;
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  throw new Error(`${name} must be "true" or "false", got an unrecognized value`);
+}
+
 function confirmedIntegration(
   env: NodeJS.ProcessEnv,
   method: PaymobMethod,
   idName: string,
   confirmationName: string
 ): { method: PaymobMethod; integrationId: number } | null {
-  if (env[confirmationName] !== "true") return null;
+  if (!confirmedFlag(env, confirmationName)) return null;
   const integrationId = Number(env[idName]);
   if (!Number.isSafeInteger(integrationId) || integrationId <= 0) {
     throw new Error(`${idName} must be a positive integer when ${confirmationName}=true`);
@@ -32,7 +46,14 @@ function confirmedIntegration(
 }
 
 export function resolvePaymobConfig(env: NodeJS.ProcessEnv = process.env): PaymobConfig {
-  const mode = env.PAYMOB_MODE === "live" ? "live" : "test";
+  // Only the two documented environments exist. Anything else used to fall through to
+  // "test", which is indistinguishable from a deliberately sandboxed deployment: a live
+  // deployment with a typo in this value would aim real payments at the sandbox.
+  const rawMode = env.PAYMOB_MODE?.trim();
+  if (rawMode !== undefined && rawMode !== "" && rawMode !== "live" && rawMode !== "test") {
+    throw new Error(`PAYMOB_MODE must be "test" or "live", got an unrecognized value`);
+  }
+  const mode = rawMode === "live" ? "live" : "test";
   const enabledMethods = [
     confirmedIntegration(env, "card", "PAYMOB_CARD_INTEGRATION_ID", "PAYMOB_CARD_INTEGRATION_CONFIRMED"),
     confirmedIntegration(env, "wallet", "PAYMOB_WALLET_INTEGRATION_ID", "PAYMOB_WALLET_INTEGRATION_CONFIRMED")

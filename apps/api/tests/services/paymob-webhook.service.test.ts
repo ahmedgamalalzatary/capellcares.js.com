@@ -8,7 +8,7 @@ import { resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(resetApiTestDatabase);
 
-test("recordPaymobTransaction keeps test and live callbacks with the same id distinct", async () => {
+test("recordPaymobTransaction does not let an unsigned is_live flag split one event in two", async () => {
   const base = {
     id: 42,
     success: true,
@@ -23,12 +23,15 @@ test("recordPaymobTransaction keeps test and live callbacks with the same id dis
     integration_id: 123
   };
 
+  // `is_live` is outside Paymob's HMAC input list, so it is not evidence that two callbacks
+  // are two different events. It must not participate in the audit identity: otherwise one
+  // validly signed callback replayed with the flag flipped writes a fresh audit row every time.
   await recordPaymobTransaction({ ...base, is_live: false }, "rejected");
   await recordPaymobTransaction({ ...base, is_live: false }, "rejected");
   await recordPaymobTransaction({ ...base, is_live: true }, "rejected");
 
   const events = await db.select().from(paymentWebhookEvents);
-  assert.equal(events.length, 2, "a duplicate test callback is deduplicated, the live one is not");
+  assert.equal(events.length, 1, "an unsigned environment flag is deduplicated like any redelivery");
 });
 
 const callback = (overrides: Record<string, unknown> = {}) => ({
@@ -109,8 +112,25 @@ test("the inbox stores only allowlisted fields and never the raw signed body", a
 test("a callback whose meaningful fields differ gets its own inbox row", async () => {
   await receivePaymobCallback({ callbackType: "transaction", transaction: callback() });
   await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ amount_cents: 9999 }) });
-  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ is_live: true }) });
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ success: false }) });
   assert.equal((await db.select().from(paymobCallbackInbox)).length, 3, "distinct events are not collapsed");
+});
+
+test("an unsigned is_live flag does not split one signed event into two receipts", async () => {
+  // is_live is outside the HMAC input list. A single validly signed callback replayed with
+  // the flag flipped must not become extra work for the recovery sweep to claim and review.
+  const first = await receivePaymobCallback({ callbackType: "transaction", transaction: callback() });
+  const replayed = await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ is_live: true }) });
+  assert.equal(replayed.id, first.id, "the flipped-flag replay resolves to the original receipt");
+  assert.equal(replayed.duplicate, true);
+  assert.equal((await db.select().from(paymobCallbackInbox)).length, 1);
+});
+
+test("the receipt still records the flag it received even though it is not part of identity", async () => {
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ is_live: true }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal((row!.normalizedPayload as Record<string, unknown>).is_live, true,
+    "descriptive payload data is retained; only its power to create distinct events is removed");
 });
 
 test("receiving a callback does not write to the legacy audit table, and old rows stay readable", async () => {

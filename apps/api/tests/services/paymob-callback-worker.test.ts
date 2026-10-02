@@ -75,6 +75,76 @@ for (const applied of [false, true]) test(`a later initiation rejection preserve
   assert.equal((await db.select().from(orders)).length, 1, "the older real payment retains its stock and fulfillment");
 });
 
+test("an unsigned is_live flag cannot steer acceptance in either direction", async () => {
+  // `is_live` is NOT in Paymob's HMAC input list. The environment that governs a callback
+  // is therefore the one recorded on the LOCAL attempt that created the intention, never the
+  // callback's own unsigned claim. Flipping the flag must change no outcome at all: it can
+  // neither force acceptance nor block a genuine payment.
+  await checkout();
+  assert.equal((await processPaymobTransaction(transaction({ is_live: true }))).outcome, "succeeded",
+    "a callback claiming live must not reject a test attempt created against test");
+  assert.equal((await db.select().from(orders)).length, 1);
+
+  // And a live attempt is equally unsteered: a callback whose flag claims "test" must not
+  // block a genuine live refund.
+  await db.update(paymentAttempts).set({ environment: "live" });
+  assert.equal((await processPaymobTransaction(transaction({ is_refunded: true, is_live: false }),
+    { verified: { is_refunded: true, refunded_amount_cents: 3500, environment: "live" } })).outcome, "refunded",
+    "a callback claiming test must not block a refund on a live attempt");
+});
+
+test("the audit fingerprint does not let an unsigned environment flag mint a distinct event", async () => {
+  // Because is_live is unsigned, one validly signed callback could be replayed with the flag
+  // flipped to manufacture unlimited distinct receipts and audit rows. The flag must not
+  // participate in the audit identity at all.
+  await checkout();
+  await processPaymobTransaction(transaction(), { audit: { transaction: transaction() } });
+  await processPaymobTransaction(transaction({ is_live: true }), { audit: { transaction: transaction({ is_live: true }) } });
+  assert.equal((await db.select().from(paymentWebhookEvents)).length, 1,
+    "an unsigned environment flag must not create a second audit identity");
+});
+
+test("the inbox fingerprint does not let an unsigned environment flag mint a distinct receipt", async () => {
+  await receivePaymobCallback({ callbackType: "transaction", transaction: transaction() });
+  await receivePaymobCallback({ callbackType: "transaction", transaction: transaction({ is_live: true }) });
+  assert.equal((await db.select().from(paymobCallbackInbox)).length, 1,
+    "one signed callback replayed with a flipped flag is one event, not two pieces of work");
+});
+
+test("a refund is applied on verified evidence even when the unsigned environment claim disagrees", async () => {
+  await checkout();
+  await processPaymobTransaction(transaction());
+  const outcome = await processPaymobTransaction(transaction({ is_refunded: true, is_live: true,
+    refunded_amount_cents: 3500 }), { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
+  assert.equal(outcome.outcome, "refunded");
+  assert.equal((await db.select().from(orders))[0].refundedAmountCents, 3500,
+    "an unsigned flag must not block a genuine refund");
+});
+
+test("a refund inquiry answering about a different transaction is never applied", async () => {
+  // The authenticated read must describe the same payment the SIGNED callback describes.
+  // `order.id` and `integration_id` are both inside the HMAC input list, so a disagreement
+  // means the provider answered about something else - applying its total would move money
+  // on the strength of an unrelated read.
+  const run = await runner();
+  await checkout();
+  await receivePaymobCallback({ callbackType: "transaction", transaction: transaction() });
+  await run();
+  await receivePaymobCallback({ callbackType: "transaction",
+    transaction: transaction({ is_refunded: true, refunded_amount_cents: 3500 }) });
+  const good = { transactionId: "7401", paymobOrderId: "9401", integrationId: 123, owner: "211",
+    environment: "test" as const, amountCents: 3500, currency: "EGP", success: true, pending: false,
+    refunded: true, refundedAmountCents: 3500 };
+  for (const mismatch of [{ paymobOrderId: "9999" }, { integrationId: 999 }, { transactionId: "9999" }]) {
+    await run({ inquiryLookup: async () => ({ ...good, ...mismatch }) });
+    assert.equal((await db.select().from(orders))[0].refundedAmountCents, 0,
+      `a mismatched inquiry must not move the refund total: ${JSON.stringify(mismatch)}`);
+    const [receipt] = await db.select().from(paymobCallbackInbox).where(eq(paymobCallbackInbox.processingStatus, "failed"));
+    assert.equal(receipt?.lastError, "REFUND_VERIFICATION_UNRESOLVED",
+      "the receipt stays unresolved and retryable rather than being acknowledged as handled");
+  }
+});
+
 test("a refund inquiry outage recovers without provider redelivery and completes the receipt", async () => {
   const run = await runner();
   await checkout();
@@ -84,7 +154,8 @@ test("a refund inquiry outage recovers without provider redelivery and completes
   await run({ inquiryLookup: async () => { throw new Error("synthetic outage"); } });
   assert.equal((await db.select().from(orders))[0].refundedAmountCents, 0);
   const recovered = await run({ now: new Date(Date.now() + 60_000), inquiryLookup: async () => ({
-    transactionId: "7401", amountCents: 3500, currency: "EGP", success: true, pending: false,
+    transactionId: "7401", paymobOrderId: "9401", integrationId: 123, owner: "211", environment: "test",
+    amountCents: 3500, currency: "EGP", success: true, pending: false,
     refunded: true, refundedAmountCents: 3500 }) });
   assert.equal(recovered, true);
   assert.equal((await db.select().from(orders))[0].refundedAmountCents, 3500);
@@ -144,7 +215,8 @@ test("a consumer whose lease was reclaimed cannot commit another refund audit", 
   let started: () => void = () => {};
   const entered = new Promise<void>(resolve => { started = resolve; });
   const now = new Date();
-  const inquiry = (amount: number) => ({ transactionId: "7401", amountCents: 3500, currency: "EGP", success: true,
+  const inquiry = (amount: number) => ({ transactionId: "7401", paymobOrderId: "9401", integrationId: 123,
+    owner: "211", environment: "test" as const, amountCents: 3500, currency: "EGP", success: true,
     pending: false, refunded: true, refundedAmountCents: amount });
   const original = run({ now, inquiryLookup: async () => { started(); await waiting; return inquiry(1200); } });
   await entered;

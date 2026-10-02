@@ -14,6 +14,19 @@ export type BostaConfig = {
 const DEFAULT_TIMEOUT_MS = 10_000;
 // Node setTimeout clamps above the signed 32-bit range; keep timeouts sane.
 const MAX_TIMEOUT_MS = 2_147_483_647;
+/**
+ * Provider HTTP must finish comfortably inside the two-minute work lease the recovery
+ * workers hold. A longer timeout means the record is reclaimed by another instance while
+ * this one is still waiting, so two consumers can act on the same shipment.
+ */
+const MAX_TIMEOUT_WITHIN_LEASE_MS = 60_000;
+
+/**
+ * Bosta's own API hosts. The provider host is part of the integration's identity: accepting
+ * any HTTPS URL meant one mistyped character could send the merchant API key and webhook
+ * secret to a third party, while still reporting a perfectly valid configuration.
+ */
+const ALLOWED_HOSTS: ReadonlySet<string> = new Set(["app.bosta.co", "stg-app.bosta.co"]);
 
 function requireEnabled(env: Record<string, string | undefined>, key: string): string {
   const value = env[key]?.trim();
@@ -43,6 +56,9 @@ function parseTimeout(env: Record<string, string | undefined>): number {
   if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0 || value > MAX_TIMEOUT_MS) {
     throw new Error("BOSTA_TIMEOUT_MS must be a positive integer within Node's timer range");
   }
+  if (value > MAX_TIMEOUT_WITHIN_LEASE_MS) {
+    throw new Error(`BOSTA_TIMEOUT_MS must not exceed ${MAX_TIMEOUT_WITHIN_LEASE_MS}ms so provider HTTP finishes inside the work lease`);
+  }
   return value;
 }
 
@@ -55,6 +71,9 @@ function parseBaseUrl(raw: string): string {
   }
   if (url.protocol !== "https:") {
     throw new Error("BOSTA_BASE_URL must use HTTPS");
+  }
+  if (!ALLOWED_HOSTS.has(url.hostname)) {
+    throw new Error(`BOSTA_BASE_URL must be one of Bosta's own hosts: ${[...ALLOWED_HOSTS].join(", ")}`);
   }
   if (url.username || url.password || url.search || url.hash) {
     throw new Error("BOSTA_BASE_URL must not contain credentials, a query string or a fragment");

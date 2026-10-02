@@ -20,10 +20,16 @@ type PaymobTransaction = Record<string, any> & {
  * so the callback's copy is attacker-controllable. Every refund amount in this service
  * is taken from `verified` and never from the callback body. A callback with no verified
  * read cannot assert a refund amount at all.
+ *
+ * `environment` is the authenticated read's own environment (`is_live` from the inquiry
+ * response, which comes from the provider rather than from the callback body). When present
+ * it must agree with the environment recorded on the local attempt. It is an additional
+ * cross-check, never a substitute for the local value.
  */
 type VerifiedPaymobState = {
   is_refunded?: boolean;
   refunded_amount_cents?: number | null;
+  environment?: "test" | "live";
 };
 
 function isDuplicateEntry(error: unknown): boolean {
@@ -50,6 +56,11 @@ export type ProcessPaymobOptions = {
  * `refunded_amount_cents`: it is not covered by the HMAC, and an unsigned value must not
  * be able to make two genuinely different callbacks collapse into one audit row.
  *
+ * It ALSO excludes `is_live`. That flag is likewise outside the HMAC input list, so it is not
+ * evidence of anything: including it let anyone holding one validly signed callback replay it
+ * with the flag flipped and mint an unlimited number of distinct receipts and audit rows, and
+ * made the audit trail assert an environment the signature never protected.
+ *
  * The VERIFIED refund amount is included, and that is a different thing. A partial refund
  * followed by a larger one are two distinct real-world events; leaving the verified amount
  * out of the identity meant the second was discarded as a duplicate and the audit trail
@@ -62,7 +73,6 @@ export function paymobAuditFingerprint(transaction: Record<string, unknown>, ver
     id: transaction.id,
     order_id: (transaction.order as { id?: unknown } | undefined)?.id,
     integration_id: transaction.integration_id,
-    is_live: transaction.is_live,
     success: transaction.success,
     pending: transaction.pending,
     is_auth: transaction.is_auth,
@@ -99,7 +109,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
         return { outcome: "stale_claim" as const };
       }
     }
-    const outcome = bound ? await applyPaymobTransaction(tx, transaction, refundedAmountCents, bound.sessionId, options.inbox?.id)
+    const outcome = bound ? await applyPaymobTransaction(tx, transaction, verified, bound.sessionId, options.inbox?.id)
       : { outcome: "unmatched" as const };
     if (options.audit && outcome.outcome !== "unmatched") {
       // Inside the same transaction: the audit row and the effects it describes share one fate.
@@ -128,8 +138,12 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
 const PROCESSED_OUTCOMES = new Set(["succeeded", "refunded", "failed", "pending", "refund_pending_success"]);
 
 type PaymobTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransaction, refundedAmountCents: number,
+async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransaction, verified: VerifiedPaymobState | undefined,
   sessionId: number, inboxId?: number) {
+  // The refund amount is authoritative only from the authenticated read.
+  const refundedAmountCents = verified?.is_refunded === true
+    ? Number(verified.refunded_amount_cents ?? 0)
+    : 0;
   {
     const [match] = await tx.select({
       attempt: paymentAttempts,
@@ -148,7 +162,17 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       .for("update");
     if (!match) return { outcome: "unmatched" as const };
 
-    const environmentMatches = match.attempt.environment === (transaction.is_live === true ? "live" : "test");
+    // The environment is the one recorded on the LOCAL attempt that created the intention.
+    //
+    // The callback's `is_live` flag is deliberately NOT consulted. It is outside Paymob's
+    // HMAC input list, so it is not evidence: deriving acceptance from it meant anyone
+    // holding one validly signed callback could flip the flag to steer whether the payment
+    // was accepted, refunded, or turned into a financial hold. The locally recorded
+    // environment is the only value that was actually fixed before the provider was called.
+    // When the authenticated inquiry was used, its environment is additionally required to
+    // agree with the local attempt.
+    const environmentMatches = verified?.environment === undefined
+      || match.attempt.environment === verified.environment;
     const allowedIntegrationIds = match.attempt.allowedIntegrationIds
       ? JSON.parse(match.attempt.allowedIntegrationIds) as unknown
       : [match.attempt.integrationId];
