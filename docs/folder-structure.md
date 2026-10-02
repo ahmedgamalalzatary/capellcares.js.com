@@ -458,21 +458,37 @@ capella/
 │     │  │  │  ├─ auth.controller.ts
 │     │  │  │  ├─ auth.routes.ts
 │     │  │  │  ├─ auth.service.ts
-│     │  │  │  └─ cookie-options.ts
+│     │  │  │  ├─ cookie-options.ts
+│     │  │  │  ├─ auth-session.repository.ts
+│     │  │  │  └─ customer.repository.ts
 │     │  │  ├─ catalog/
 │     │  │  │  ├─ catalog.controller.ts
 │     │  │  │  ├─ collections/
 │     │  │  │  │  ├─ collections.controller.ts
 │     │  │  │  │  ├─ collections.mapper.ts
 │     │  │  │  │  ├─ collections.routes.ts
-│     │  │  │  │  └─ collections.service.ts
+│     │  │  │  │  ├─ collections.service.ts
+│     │  │  │  │  └─ collection.repository.ts
+│     │  │  │  ├─ categories/
+│     │  │  │  │  ├─ category-tree.ts
+│     │  │  │  │  ├─ category.repository.ts
+│     │  │  │  │  └─ categories.controller.ts
 │     │  │  │  ├─ offers/
-│     │  │  │  │  └─ offers.mapper.ts
+│     │  │  │  │  ├─ offers.mapper.ts
+│     │  │  │  │  ├─ offer.repository.ts
+│     │  │  │  │  ├─ bundle-discount.repository.ts
+│     │  │  │  │  └─ bundle-discount-price.repository.ts
 │     │  │  │  └─ products/
 │     │  │  │     ├─ products.controller.ts
 │     │  │  │     ├─ products.mapper.ts
 │     │  │  │     ├─ products.routes.ts
-│     │  │  │     └─ products.service.ts
+│     │  │  │     ├─ products.service.ts
+│     │  │  │     ├─ product.repository.ts
+│     │  │  │     └─ product/
+│     │  │  │        ├─ read.ts
+│     │  │  │        ├─ shared.ts
+│     │  │  │        ├─ write.ts
+│     │  │  │        └─ ordering.ts
 │     │  │  ├─ checkout/
 │     │  │  │  ├─ checkout.controller.ts
 │     │  │  │  ├─ checkout-expiry-worker.ts
@@ -481,7 +497,9 @@ capella/
 │     │  │  │  ├─ checkout.schemas.ts
 │     │  │  │  ├─ checkout-status.controller.ts
 │     │  │  │  ├─ checkout.service.ts
-│     │  │  │  └─ paymob-checkout.service.ts
+│     │  │  │  ├─ paymob-checkout.service.ts
+│     │  │  │  ├─ checkout-reservation.repository.ts
+│     │  │  │  └─ financial-evidence.repository.ts
 │     │  │  ├─ collections/
 │     │  │  │  └─ collection-mapper.shared.ts
 │     │  │  ├─ inventory/
@@ -492,17 +510,51 @@ capella/
 │     │  │  │  ├─ admin-orders.routes.ts
 │     │  │  │  ├─ orders.controller.ts
 │     │  │  │  ├─ orders.routes.ts
-│     │  │  │  └─ orders.service.ts
+│     │  │  │  ├─ orders.service.ts
+│     │  │  │  ├─ order-review-flag.repository.ts
+│     │  │  │  ├─ order.repository.ts
+│     │  │  │  └─ order/
+│     │  │  │     ├─ read.ts
+│     │  │  │     ├─ shared.ts
+│     │  │  │     └─ write.ts
 │     │  │  ├─ payments/
 │     │  │  │  └─ paymob/
-│     │  │  │     ├─ paymob-callback.ts
-│     │  │  │     ├─ paymob-client.ts
-│     │  │  │     ├─ paymob-config.ts
-│     │  │  │     ├─ paymob-hmac.ts
-│     │  │  │     ├─ paymob-transaction.service.ts
-│     │  │  │     ├─ paymob-webhook.controller.ts
-│     │  │  │     ├─ paymob-webhook.routes.ts
-│     │  │  │     └─ paymob-webhook.service.ts
+│     │  │  │  ├─ paymob-callback.ts
+│     │  │  │  ├─ paymob-client.ts
+│     │  │  │  ├─ paymob-config.ts
+│     │  │  │  ├─ paymob-hmac.ts
+│     │  │  │  ├─ paymob-transaction.service.ts
+│     │  │  │  ├─ paymob-webhook.controller.ts
+│     │  │  │  ├─ paymob-webhook.routes.ts
+│     │  │  │  ├─ paymob-webhook.service.ts
+│     │  │  │  └─ paymob-callback.repository.ts
+│     │  │  ├─ reviews/
+│     │  │  │  └─ review.repository.ts
+│     │  │  ├─ shipping/
+│     │  │  │  ├─ shipping-dispatch.repository.ts
+│     │  │  │  ├─ shipping-state.repository.ts
+│     │  │  │  ├─ shipping-cancellation.repository.ts
+│     │  │  │  ├─ shipping-action.repository.ts
+│     │  │  │  ├─ shipping-edit.repository.ts
+│     │  │  │  ├─ shipping-overview.repository.ts
+│     │  │  │  ├─ shipping-rate.repository.ts
+│     │  │  │  ├─ shipping-sync.repository.ts
+│     │  │  │  ├─ shipment-binding.repository.ts
+│     │  │  │  ├─ customer-shipping.repository.ts
+│     │  │  │  ├─ shipping-rule-error.ts
+│     │  │  │  ├─ shipping-sync-policy.ts
+│     │  │  │  └─ bosta/
+│     │  │  ├─ shared/
+│     │  │  │  ├─ entity-media/
+│     │  │  │  │  └─ entity-media.repository.ts
+│     │  │  │  ├─ entity-ordering/
+│     │  │  │  │  └─ entity-ordering.repository.ts
+│     │  │  │  └─ related-items/
+│     │  │  │     ├─ related-item.repository.ts
+│     │  │  │     └─ related-item/
+│     │  │  │        ├─ read.ts
+│     │  │  │        ├─ shared.ts
+│     │  │  │        └─ write.ts
 │     │  │  ├─ uploads/
 │     │  │  │  ├─ uploads.controller.ts
 │     │  │  │  ├─ uploads.permissions.ts
@@ -518,32 +570,6 @@ capella/
 │     │  │  ├─ erp-permissions.service.ts
 │     │  │  ├─ category.service.ts
 │     │  │  └─ slug.service.ts
-│     │  ├─ modules/
-│     │  │  ├─ admin/
-│     │  │  ├─ announcements/
-│     │  │  ├─ auth/
-│     │  │  ├─ cart/
-│     │  │  ├─ catalog/
-│     │  │  │  ├─ categories/
-│     │  │  │  ├─ collections/
-│     │  │  │  ├─ offers/
-│     │  │  │  └─ products/
-│     │  │  ├─ checkout/
-│     │  │  ├─ collections/
-│     │  │  ├─ inventory/
-│     │  │  ├─ offers/
-│     │  │  ├─ orders/
-│     │  │  ├─ payments/
-│     │  │  ├─ reviews/
-│     │  │  ├─ shipping/
-│     │  │  │  └─ bosta/
-│     │  │  ├─ shop-media/
-│     │  │  ├─ shared/
-│     │  │  │  ├─ entity-media/
-│     │  │  │  ├─ entity-ordering/
-│     │  │  │  └─ related-items/
-│     │  │  ├─ uploads/
-│     │  │  └─ wishlist/
 │     │  ├─ routes/
 │     │  │  ├─ erp.routes.ts
 │     │  │  ├─ index.ts
@@ -557,20 +583,6 @@ capella/
 │     │  │  ├─ admin-auth.ts
 │     │  │  ├─ database.ts
 │     │  │  └─ request.ts
-│     │  ├─ modules/
-│     │  │  ├─ admin/
-│     │  │  ├─ cart/
-│     │  │  ├─ catalog/
-│     │  │  │  ├─ categories/
-│     │  │  │  ├─ offers/
-│     │  │  │  └─ products/
-│     │  │  ├─ checkout/
-│     │  │  ├─ orders/
-│     │  │  ├─ reviews/
-│     │  │  ├─ shared/
-│     │  │  │  ├─ entity-media/
-│     │  │  │  └─ related-items/
-│     │  │  └─ shipping/
 │     │  ├─ routes/
 │     │  │  ├─ admin-auth.routes.test.ts
 │     │  │  ├─ admin-categories.routes.test.ts
