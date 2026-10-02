@@ -1,6 +1,7 @@
 import { and, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 
 interface ReservedCheckoutInput {
   publicId: string;
@@ -91,7 +92,10 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
 }
 
 export async function releaseExpiredCheckoutReservations(now: Date): Promise<void> {
-  await db.transaction(async (tx) => {
+  // Read the unresolved set once, before taking any locks, then recheck per session under
+    // the session lock. Provider/DB work stays outside the locked region.
+    const unresolvedOrderIds = await unresolvedInboxOrderIds();
+    await db.transaction(async (tx) => {
     const expired = await tx.select({ id: checkoutSessions.id })
       .from(checkoutSessions)
       .where(and(
@@ -101,6 +105,10 @@ export async function releaseExpiredCheckoutReservations(now: Date): Promise<voi
       .for("update");
 
     for (const session of expired) {
+      // P03: a verified callback may already be durably received while its effects are
+      // still queued. Releasing the reservation then would free stock the customer has
+      // already paid for and leave the eventual success with nothing to fulfil.
+      if (await hasUnresolvedFinancialEvidence(tx, session.id, unresolvedOrderIds)) continue;
       const reservations = await tx.select()
         .from(checkoutReservations)
         .where(and(

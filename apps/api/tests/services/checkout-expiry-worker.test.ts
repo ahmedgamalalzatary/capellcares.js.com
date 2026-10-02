@@ -26,6 +26,60 @@ const paidDispatchTransaction = { id: 8801, order: { id: 9801 }, amount_cents: 1
 
 beforeEach(resetApiTestDatabase);
 
+test("expiry does not release stock while a durably received success callback is still unprocessed", async () => {
+  const ids = await getBaselineIds();
+  const session = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "In Flight", phone: "+201012345678", email: "in-flight@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    reservationExpiresAt: new Date(Date.now() - 1000),
+    reservations: [{ variantId: ids.firstVariantId, qty: 2 }],
+    initialAttempt: { merchantReference: "pi_in_flight", environment: "test", allowedIntegrationIds: [123],
+      expiresAt: new Date(Date.now() + 60_000) }
+  });
+  // The callback was durably accepted (HMAC-verified) but its effects are not applied yet.
+  // Releasing the reservation here would free stock the customer already paid for and
+  // leave the eventual success with nothing to fulfil.
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await receivePaymobCallback({ callbackType: "transaction",
+    transaction: { id: 7101, order: { id: 9501 }, amount_cents: 3500, currency: "EGP", integration_id: 123,
+      success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,
+      is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+  await db.update(paymentAttempts).set({ paymobOrderId: "9501" })
+    .where(eq(paymentAttempts.checkoutSessionId, session.id));
+
+  await releaseExpiredCheckoutReservations(new Date());
+
+  const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal(variant.stockQty, 8, "reserved stock stays held while payment evidence is in flight");
+  const [checkout] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, session.id));
+  assert.equal(checkout.state, "payment_pending", "the session is held for the in-flight payment");
+});
+
+test("expiry releases stock normally once the queued callback has been fully processed", async () => {
+  const ids = await getBaselineIds();
+  const session = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "Settled", phone: "+201012345678", email: "settled@example.com",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    reservationExpiresAt: new Date(Date.now() - 1000),
+    reservations: [{ variantId: ids.firstVariantId, qty: 2 }],
+    initialAttempt: { merchantReference: "pi_settled", environment: "test", allowedIntegrationIds: [123],
+      expiresAt: new Date(Date.now() + 60_000) }
+  });
+  await db.update(paymentAttempts).set({ paymobOrderId: "9502", status: "succeeded", paymobTransactionId: "7102" })
+    .where(eq(paymentAttempts.checkoutSessionId, session.id));
+
+  await releaseExpiredCheckoutReservations(new Date());
+
+  const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal(variant.stockQty, 10, "stock returns once no unresolved payment evidence remains");
+  const [checkout] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, session.id));
+  assert.equal(checkout.state, "expired");
+});
+
 test("checkout expiry worker restores an abandoned reservation without a customer request", async () => {
   const module = await import("../../src/modules/checkout/checkout-expiry-worker.js").catch(() => null);
   const ids = await getBaselineIds();

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutSessions, orders, paymentAttempts } from "@capella/database/drizzle/schema";
+import { hasUnresolvedFinancialEvidence, unresolvedInboxOrderIds } from "../../repositories/checkout/financial-evidence.repository.js";
 
 export async function getCheckoutStatusController(req: Request, res: Response): Promise<void> {
   const checkoutId = req.params.checkoutId;
@@ -27,13 +28,19 @@ export async function getCheckoutStatusController(req: Request, res: Response): 
   const [latestAttempt] = await db.select({ status: paymentAttempts.status }).from(paymentAttempts)
     .where(eq(paymentAttempts.checkoutSessionId, session.sessionId))
     .orderBy(desc(paymentAttempts.attemptNumber)).limit(1);
+  // P04: the latest attempt declining is not on its own permission to pay again. Any
+  // attempt of this session still carrying unresolved evidence withholds retry, so a
+  // customer whose first payment is merely queued cannot be charged a second time.
+  // Derived from the same shared definition expiry and dispatch use, so the customer is
+  // never offered an action the mutation paths would refuse.
+  const unresolved = await hasUnresolvedFinancialEvidence(db, session.sessionId, await unresolvedInboxOrderIds());
   res.status(200).json({
     checkoutId: session.checkoutId,
     status: session.status,
     expiresAt: session.expiresAt.toISOString(),
     attemptsUsed: session.attemptsUsed,
     latestAttemptStatus: latestAttempt?.status ?? null,
-    canRetry: session.status === "payment_pending" && latestAttempt?.status === "failed" &&
+    canRetry: !unresolved && session.status === "payment_pending" && latestAttempt?.status === "failed" &&
       session.attemptsUsed < 3 && session.expiresAt > new Date(),
     order: session.orderId && session.orderCode ? { id: session.orderId, orderCode: session.orderCode } : null
   });

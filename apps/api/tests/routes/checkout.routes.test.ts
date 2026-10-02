@@ -267,6 +267,42 @@ test("checkout status offers retry only after the latest attempt fails with time
   });
 });
 
+test("checkout status withdraws retry while a sibling attempt's payment evidence is still unresolved", async () => {
+  const publicId = `checkout_${crypto.randomUUID()}`;
+  const [session] = await db.insert(checkoutSessions).values({
+    publicId, idempotencyKey: crypto.randomUUID(), customerType: "guest", fullName: "Retry Guard",
+    phone: "+201012345678", email: "retry-guard@capella.test", governorate: "Cairo", cityArea: "Nasr City",
+    addressLine: "Street 1", buildingApartment: "1", cartSnapshot: "[]", amountCents: 1000,
+    shippingAmountCents: 0, currency: "EGP", state: "payment_pending", attemptCount: 2,
+    reservationExpiresAt: new Date(Date.now() + 30 * 60 * 1000)
+  }).$returningId();
+  const orderId = 9601;
+  // The latest attempt declined, so the existing rule would offer a retry.
+  await db.insert(paymentAttempts).values({
+    checkoutSessionId: session.id, attemptNumber: 2, merchantReference: `capella_${crypto.randomUUID()}`,
+    amountCents: 1000, currency: "EGP", environment: "test", status: "failed"
+  });
+  // But attempt 1's callback is still queued. Paying again could double-charge a customer
+  // whose first payment is about to succeed, so retry must be withheld (P04).
+  await db.insert(paymentAttempts).values({
+    checkoutSessionId: session.id, attemptNumber: 1, merchantReference: `capella_${crypto.randomUUID()}`,
+    amountCents: 1000, currency: "EGP", environment: "test", status: "pending", paymobOrderId: String(orderId)
+  });
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await receivePaymobCallback({ callbackType: "transaction", transaction: {
+    id: 7201, order: { id: orderId }, amount_cents: 1000, currency: "EGP", integration_id: 123,
+    success: true, pending: false, is_live: false, is_auth: false, is_capture: false, is_refunded: false,
+    is_voided: false, has_parent_transaction: false, source_data: { type: "card" } } });
+
+  await withTestServer(app, async (request) => {
+    const response = await request(`/api/v1/checkout/${publicId}/status`);
+    assert.equal(response.status, 200);
+    assert.equal(response.json.latestAttemptStatus, "failed");
+    assert.equal(response.json.canRetry, false,
+      "an unresolved sibling payment must withdraw retry, or the customer can be charged twice");
+  });
+});
+
 test("checkout reports Paymob provider failure without exposing provider details as a validation error", async () => {
   const ids = await getBaselineIds();
   const originalFetch = global.fetch;
