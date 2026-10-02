@@ -2,15 +2,15 @@ import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { entityMedia, products } from "@capella/database/drizzle/schema";
-import { listCategoriesRepo } from "../../../repositories/category.repository.js";
-import { buildLineage } from "../../../repositories/category-tree.js";
+import { listCategoriesRepo } from "../../catalog/categories/category.repository.js";
+import { buildLineage } from "../../catalog/categories/category-tree.js";
 import {
   createAdminProductRepo,
   findAdminProductByIdRepo,
   listAdminProductsRepo,
   reorderProductsRepo,
   replaceVariantsRepo
-} from "../../../repositories/product.repository.js";
+} from "../../catalog/products/product.repository.js";
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
@@ -301,7 +301,7 @@ export async function adminReorderProducts(req: Request, res: Response, next: Ne
 }
 
 export async function adminSoftDeleteProduct(req: Request, res: Response, next: NextFunction) {
-  const { softDeleteProductRepo } = await import("../../../repositories/product.repository.js");
+  const { softDeleteProductRepo } = await import("../../catalog/products/product.repository.js");
   const revalidation = await findProductRevalidationData(Number(req.params.id));
   try {
     await softDeleteProductRepo(Number(req.params.id));
@@ -321,7 +321,7 @@ export async function adminSoftDeleteProduct(req: Request, res: Response, next: 
 }
 
 export async function adminRestoreProduct(req: Request, res: Response) {
-  const { restoreProductRepo } = await import("../../../repositories/product.repository.js");
+  const { restoreProductRepo } = await import("../../catalog/products/product.repository.js");
   const revalidation = await findProductRevalidationData(Number(req.params.id));
   await restoreProductRepo(Number(req.params.id));
   if (revalidation) {
@@ -331,7 +331,7 @@ export async function adminRestoreProduct(req: Request, res: Response) {
 }
 
 export async function adminHardDeleteProduct(req: Request, res: Response, next: NextFunction) {
-  const { hardDeleteProductRepo } = await import("../../../repositories/product.repository.js");
+  const { hardDeleteProductRepo } = await import("../../catalog/products/product.repository.js");
   const revalidation = await findProductRevalidationData(Number(req.params.id));
   let result;
   try {
@@ -360,7 +360,7 @@ export async function adminHardDeleteProduct(req: Request, res: Response, next: 
 }
 
 export async function adminToggleProductStatus(req: Request, res: Response) {
-  const { toggleProductStatusRepo } = await import("../../../repositories/product.repository.js");
+  const { toggleProductStatusRepo } = await import("../../catalog/products/product.repository.js");
   const revalidation = await findProductRevalidationData(Number(req.params.id));
   await toggleProductStatusRepo(Number(req.params.id));
   if (revalidation) {
@@ -373,7 +373,7 @@ export async function adminSetVariantStock(req: Request, res: Response) {
   const productId = Number(req.params.id);
   const variantId = Number(req.params.variantId);
   const stock = Math.max(0, Number(req.body?.stock ?? 0));
-  const { setVariantStockRepo } = await import("../../../repositories/product.repository.js");
+  const { setVariantStockRepo } = await import("../../catalog/products/product.repository.js");
   const updated = await setVariantStockRepo(productId, variantId, stock);
   if (!updated) {
     return res.status(404).json({ message: "Variant not found" });

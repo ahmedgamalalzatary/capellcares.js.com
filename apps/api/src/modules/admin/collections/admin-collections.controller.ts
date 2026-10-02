@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, productVariants, products } from "@capella/database/drizzle/schema";
-import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
+import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../catalog/categories/category.repository.js";
 import {
   findCollectionByIdRepo,
   hardDeleteCollectionRepo,
@@ -12,7 +12,7 @@ import {
   softDeleteCollectionRepo,
   toggleCollectionStatusRepo,
   upsertCollectionRepo
-} from "../../../repositories/collection.repository.js";
+} from "../../catalog/collections/collection.repository.js";
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
@@ -24,7 +24,7 @@ import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
-import { BundleDiscountPriceError } from "../../../repositories/bundle-discount-price.repository.js";
+import { BundleDiscountPriceError } from "../../catalog/offers/bundle-discount-price.repository.js";
 
 async function findCollectionRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
   const [collection] = await db.select({ slug: collections.slug }).from(collections).where(eq(collections.id, id)).limit(1);

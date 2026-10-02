@@ -1,4 +1,4 @@
-import { findVisibleProductBySlug, findVisibleProducts } from "../../../repositories/product.repository.js";
+import { findVisibleProductBySlug, findVisibleProducts } from "./product.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../../shared/related-items/related-item.repository.js";
 import type { Language } from "../../../types/domain.js";
 import { attachRatings, loadReviewData, ratingFromReviewData } from "../review-data.js";

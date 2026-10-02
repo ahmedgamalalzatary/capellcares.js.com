@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
 import { categories, offerItems, offers } from "@capella/database/drizzle/schema";
-import { upsertOfferRepo } from "../../src/repositories/offer.repository.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { upsertOfferRepo } from "../../../../src/modules/catalog/offers/offer.repository.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

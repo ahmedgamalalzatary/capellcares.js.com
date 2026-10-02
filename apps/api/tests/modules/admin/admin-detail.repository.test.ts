@@ -4,10 +4,10 @@ import test, { beforeEach } from "node:test";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections } from "@capella/database/drizzle/schema";
 import { sql } from "drizzle-orm";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
-import { findAdminProductByIdRepo } from "../../src/repositories/product.repository.js";
-import { findOfferByIdRepo } from "../../src/repositories/offer.repository.js";
-import { findCollectionByIdRepo } from "../../src/repositories/collection.repository.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../helpers/database.js";
+import { findAdminProductByIdRepo } from "../../../src/modules/catalog/products/product.repository.js";
+import { findOfferByIdRepo } from "../../../src/modules/catalog/offers/offer.repository.js";
+import { findCollectionByIdRepo } from "../../../src/modules/catalog/collections/collection.repository.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

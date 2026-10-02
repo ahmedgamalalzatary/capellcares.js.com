@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { listCategoriesRepo } from "../../repositories/category.repository.js";
-import { findOfferBySlugRepo, listVisibleOffersRepo } from "../../repositories/offer.repository.js";
+import { listCategoriesRepo } from "./categories/category.repository.js";
+import { findOfferBySlugRepo, listVisibleOffersRepo } from "./offers/offer.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../shared/related-items/related-item.repository.js";
 import {
   calculateBundleInventory,

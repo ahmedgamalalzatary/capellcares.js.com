@@ -3,7 +3,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "../../repositories/order.repository.js";
-import { loadBundleDiscountsRepo } from "../../repositories/bundle-discount.repository.js";
+import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repository.js";
 import { UNTOUCHED_EXPIRY_MS } from "../../repositories/order/shared.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";

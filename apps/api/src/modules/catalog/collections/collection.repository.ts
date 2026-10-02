@@ -1,8 +1,8 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering, type Language, type OrderingSurface } from "@capella/shared";
 import { db } from "@capella/database/src/db";
-import { loadBundleDiscountsRepo } from "./bundle-discount.repository.js";
-import { validateExistingBundleDiscountPrice } from "./bundle-discount-price.repository.js";
+import { loadBundleDiscountsRepo } from "../offers/bundle-discount.repository.js";
+import { validateExistingBundleDiscountPrice } from "../offers/bundle-discount-price.repository.js";
 import {
   categories,
   collectionItems,
@@ -20,14 +20,14 @@ import {
   loadScopedRanksRepo,
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
-} from "../modules/shared/entity-ordering/entity-ordering.repository.js";
+} from "../../shared/entity-ordering/entity-ordering.repository.js";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   replaceEntityMediaRepo,
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
-} from "../modules/shared/entity-media/entity-media.repository.js";
+} from "../../shared/entity-media/entity-media.repository.js";
 
 async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByCollection = await loadEntityMediaRows("collection", rows.map((row) => row.id));

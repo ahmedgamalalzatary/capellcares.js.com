@@ -5,7 +5,7 @@ import {
   parseEntityMediaInput,
   resolvePrimaryEntityImagePath
 } from "../../../../src/modules/shared/entity-media/entity-media.repository.js";
-import * as productMedia from "../../../../src/repositories/product/shared.js";
+import * as productMedia from "../../../../src/modules/catalog/products/product/shared.js";
 
 test("parseEntityMediaInput rejects more than one video", () => {
   assert.throws(

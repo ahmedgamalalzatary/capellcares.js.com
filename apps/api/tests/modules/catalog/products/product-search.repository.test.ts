@@ -3,8 +3,8 @@ import test, { beforeEach } from "node:test";
 
 import { categories, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { findVisibleProducts } from "../../src/repositories/product.repository.js";
-import { resetApiTestDatabase } from "../helpers/database.js";
+import { findVisibleProducts } from "../../../../src/modules/catalog/products/product.repository.js";
+import { resetApiTestDatabase } from "../../../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

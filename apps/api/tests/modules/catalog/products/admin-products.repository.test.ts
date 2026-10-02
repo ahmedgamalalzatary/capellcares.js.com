@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { loadWorkspaceEnv } from "../../src/config/env.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { loadWorkspaceEnv } from "../../../../src/config/env.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../../helpers/database.js";
 
 loadWorkspaceEnv();
 
@@ -10,7 +10,7 @@ test("createAdminProductRepo creates product when provided id does not exist", a
   const { eq } = await import("drizzle-orm");
   const { products } = await import("@capella/database/drizzle/schema");
   const { db } = await import("@capella/database/src/db");
-  const { createAdminProductRepo } = await import("../../src/repositories/product.repository.js");
+  const { createAdminProductRepo } = await import("../../../../src/modules/catalog/products/product.repository.js");
 
   const sku = `TDD-SKU-${Date.now()}`;
   const slug = `tdd-product-${Date.now()}`;

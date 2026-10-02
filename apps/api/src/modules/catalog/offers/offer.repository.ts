@@ -10,14 +10,14 @@ import {
   loadScopedRanksRepo,
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
-} from "../modules/shared/entity-ordering/entity-ordering.repository.js";
+} from "../../shared/entity-ordering/entity-ordering.repository.js";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   replaceEntityMediaRepo,
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
-} from "../modules/shared/entity-media/entity-media.repository.js";
+} from "../../shared/entity-media/entity-media.repository.js";
 
 async function withOfferMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByOffer = await loadEntityMediaRows("offer", rows.map((row) => row.id));

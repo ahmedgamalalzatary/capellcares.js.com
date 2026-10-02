@@ -1,4 +1,4 @@
-import { addVariantRepo, createAdminProductRepo } from "../../../repositories/product.repository.js";
+import { addVariantRepo, createAdminProductRepo } from "../../catalog/products/product.repository.js";
 import {
   canActivateAdminProduct,
   normalizeAdminProductInput,

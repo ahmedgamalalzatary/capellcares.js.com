@@ -1,4 +1,4 @@
-import { findCollectionBySlugRepo, listVisibleCollectionsRepo } from "../../../repositories/collection.repository.js";
+import { findCollectionBySlugRepo, listVisibleCollectionsRepo } from "./collection.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../../shared/related-items/related-item.repository.js";
 import {
   calculateBundleInventory,

@@ -4,8 +4,8 @@ import test from "node:test";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers, productVariants } from "@capella/database/drizzle/schema";
-import { findAdminProductByIdRepo, findVisibleProductBySlug, findVisibleProducts } from "../../src/repositories/product.repository.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+import { findAdminProductByIdRepo, findVisibleProductBySlug, findVisibleProducts } from "../../../../src/modules/catalog/products/product.repository.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../../helpers/database.js";
 
 test("product reads ignore an active single-variant offer price and still expose offerIds", async () => {
   await resetApiTestDatabase();

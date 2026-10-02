@@ -7,7 +7,7 @@ import {
   reorderCategoriesRepo,
   restoreCategoryRepo,
   softDeleteCategoryRepo
-} from "../../../repositories/category.repository.js";
+} from "../../catalog/categories/category.repository.js";
 import { upsertCategory } from "../../../services/category.service.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";

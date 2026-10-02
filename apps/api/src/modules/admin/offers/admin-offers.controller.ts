@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { offerItems, offers, productVariants, products } from "@capella/database/drizzle/schema";
-import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../../repositories/category.repository.js";
+import { getCategoryByIdRepo, listDescendantCategoryIdsRepo } from "../../catalog/categories/category.repository.js";
 import {
   findOfferByIdRepo,
   hardDeleteOfferRepo,
@@ -11,7 +11,7 @@ import {
   restoreOfferRepo,
   softDeleteOfferRepo,
   upsertOfferRepo
-} from "../../../repositories/offer.repository.js";
+} from "../../catalog/offers/offer.repository.js";
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
@@ -23,7 +23,7 @@ import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
-import { BundleDiscountPriceError } from "../../../repositories/bundle-discount-price.repository.js";
+import { BundleDiscountPriceError } from "../../catalog/offers/bundle-discount-price.repository.js";
 
 async function findOfferRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
   const [offer] = await db.select({ slug: offers.slug }).from(offers).where(eq(offers.id, id)).limit(1);
@@ -278,7 +278,7 @@ export async function adminHardDeleteOffer(req: Request, res: Response, next: Ne
 
 export async function adminToggleOfferStatus(req: Request, res: Response, next: NextFunction) {
   try {
-    const { toggleOfferStatusRepo } = await import("../../../repositories/offer.repository.js");
+    const { toggleOfferStatusRepo } = await import("../../catalog/offers/offer.repository.js");
     const revalidation = await findOfferRevalidationData(Number(req.params.id));
     await toggleOfferStatusRepo(Number(req.params.id));
     if (revalidation) {

@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { loadBundleDiscountsRepo } from "../../../../repositories/bundle-discount.repository.js";
+import { loadBundleDiscountsRepo } from "../../../catalog/offers/bundle-discount.repository.js";
 import { getEffectiveVariantPrice, type Language } from "@capella/shared";
 import { EMPTY_RATING, safeRatingSummaries } from "../../../../repositories/review.repository.js";
 import {

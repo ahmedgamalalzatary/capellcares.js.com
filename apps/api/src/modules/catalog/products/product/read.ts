@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { compareByScopedOrdering } from "@capella/shared";
 import { categories, offerItems, offers, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { collectBranchIds } from "../category-tree.js";
+import { collectBranchIds } from "../../categories/category-tree.js";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,

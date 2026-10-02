@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildLineage, collectBranchIds, collectDescendantIds } from "../../src/repositories/category-tree.js";
+import { buildLineage, collectBranchIds, collectDescendantIds } from "../../../../src/modules/catalog/categories/category-tree.js";
 
 // Tree used across the cases:
 //   1 (root)

@@ -2,7 +2,7 @@
 // enforces the invariants (no parent cycles, unique sibling slugs, unique
 // grandchild names) and throws the coded errors the controller maps to HTTP
 // responses.
-import { buildLineage, collectDescendantIds } from "../repositories/category-tree.js";
+import { buildLineage, collectDescendantIds } from "../modules/catalog/categories/category-tree.js";
 import {
   findSameParentGrandchildNameConflictRepo,
   findSiblingSlugConflictRepo,
@@ -10,7 +10,7 @@ import {
   loadCategoryNodesRepo,
   writeCategoryRepo,
   type CategoryWriteInput
-} from "../repositories/category.repository.js";
+} from "../modules/catalog/categories/category.repository.js";
 
 function throwCoded(code: string, message: string): never {
   const error = new Error(message);

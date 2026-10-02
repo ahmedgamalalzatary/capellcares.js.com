@@ -1,11 +1,11 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { entityOrderings, orderingScopeTypes, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { listCategoryBranchIdsRepo } from "../category.repository.js";
+import { listCategoryBranchIdsRepo } from "../../categories/category.repository.js";
 import {
   assertCompleteOrderedIds,
   replaceScopedOrderingRepo
-} from "../../modules/shared/entity-ordering/entity-ordering.repository.js";
+} from "../../../shared/entity-ordering/entity-ordering.repository.js";
 
 export type ProductOrderingRow = {
   scopeType: (typeof orderingScopeTypes)[number];
