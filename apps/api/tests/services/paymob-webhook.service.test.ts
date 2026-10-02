@@ -2,11 +2,66 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { db } from "@capella/database/src/db";
-import { paymentWebhookEvents, paymobCallbackInbox } from "@capella/database/drizzle/schema";
+import { checkoutSessions, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox } from "@capella/database/drizzle/schema";
 import { recordPaymobTransaction, receivePaymobCallback } from "../../src/modules/payments/paymob/paymob-webhook.service.js";
 import { resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(resetApiTestDatabase);
+
+/**
+ * Creates a real checkout session holding one attempt for `paymobOrderId`, so binding tests
+ * exercise the same lookup intake performs rather than a hand-written column value.
+ */
+async function bindAttemptToOrder(paymobOrderId: string): Promise<number> {
+  const [session] = await db.insert(checkoutSessions).values({
+    publicId: crypto.randomUUID(), idempotencyKey: crypto.randomUUID(),
+    customerType: "guest", fullName: "Bound Buyer", phone: "01012345678",
+    email: "bound@example.test", governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    buildingApartment: "1", cartSnapshot: "[]", amountCents: 3500, shippingAmountCents: 0, currency: "EGP",
+    attemptCount: 1, state: "payment_pending", reservationExpiresAt: new Date(Date.now() + 900_000)
+  }).$returningId();
+  await db.insert(paymentAttempts).values({ checkoutSessionId: session.id, attemptNumber: 1,
+    merchantReference: `ref_${paymobOrderId}_${crypto.randomUUID().slice(0, 8)}`, paymobOrderId,
+    amountCents: 3500, currency: "EGP", environment: "test", status: "created",
+    allowedIntegrationIds: JSON.stringify([123]) });
+  return session.id;
+}
+
+test("a receipt records its signed identity as scalars, not only inside the JSON payload", async () => {
+  // Evidence checks decide whether stock stays held. Reading the signed order id back out
+  // of a JSON blob meant the lookup scanned rows and could be starved by backlog; the
+  // scalar projection is what makes it an exact indexed lookup.
+  await receivePaymobCallback({ callbackType: "transaction",
+    transaction: callback({ order: { id: 9001 }, integration_id: 123 }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.signedOrderId, "9001", "the signed provider order id must be its own column");
+  assert.equal(row!.signedIntegrationId, 123, "the signed integration id must be its own column");
+});
+
+test("a receipt whose signed order id matches a local attempt records that binding", async () => {
+  const bound = await bindAttemptToOrder(9001);
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ order: { id: 9001 } }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.boundSessionId, bound, "a provable binding is recorded at intake");
+});
+
+test("a receipt that cannot be proven to belong to any session stays unbound, never guessed", async () => {
+  // Forcing a binding onto an unknown order id would let an unauthenticated callback claim a
+  // checkout's stock. An unbindable receipt is still valid evidence of arrival; it simply
+  // cannot assert anything about a session.
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ order: { id: 424242 } }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.boundSessionId, null, "an unmatched order id must not be bound to a session");
+  assert.equal(row!.signedOrderId, "424242", "the signed id is still retained for later binding");
+});
+
+test("a receipt carrying no signed order id is still stored, without identity columns", async () => {
+  await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ order: undefined }) });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.signedOrderId, null);
+  assert.equal(row!.boundSessionId, null);
+  assert.equal(row!.processingStatus, "received", "arrival is recorded regardless of correlation");
+});
 
 test("recordPaymobTransaction does not let an unsigned is_live flag split one event in two", async () => {
   const base = {

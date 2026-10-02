@@ -91,8 +91,13 @@ export async function receivePaymobCallback(input: {
   })).digest("hex");
   const hinted = input.transaction.id;
   const orderId = (normalized.order as { id?: unknown } | undefined)?.id;
-  const [bound] = orderId === undefined ? [] : await db.select({ sessionId: paymentAttempts.checkoutSessionId })
-    .from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, String(orderId))).limit(1);
+  const signedOrderId = orderId === undefined || orderId === null ? null : String(orderId);
+  const signedIntegrationId = typeof input.transaction.integration_id === "number"
+    && Number.isSafeInteger(input.transaction.integration_id) && input.transaction.integration_id > 0
+    ? input.transaction.integration_id
+    : null;
+  const [bound] = signedOrderId === null ? [] : await db.select({ sessionId: paymentAttempts.checkoutSessionId })
+    .from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, signedOrderId)).limit(1);
   return db.transaction(async tx => {
     // Receipt and expiry/retry use the same session lock when the signed ID is
     // already locally bound. Unbound receipts cannot assert an arbitrary stock hold.
@@ -107,6 +112,16 @@ export async function receivePaymobCallback(input: {
     try {
       const [row] = await tx.insert(paymobCallbackInbox).values({
         eventFingerprint, fingerprintVersion: PAYMOB_INBOX_FINGERPRINT_VERSION, normalizedPayload: normalized,
+        // Identity is stored as scalars, not only inside the JSON payload. The evidence
+        // checks that decide whether stock stays held read these columns through an index;
+        // extracting them from JSON meant scanning rows, so an unrelated backlog could
+        // starve a genuine match and silently release paid-for stock.
+        //
+        // The binding is PROVEN, never assumed: it comes from the attempt that actually
+        // holds this signed provider order id. A callback naming an unknown order id stays
+        // unbound, because forcing it onto a session would let an unauthenticated callback
+        // claim a checkout's stock.
+        signedOrderId, signedIntegrationId, boundSessionId: bound?.sessionId ?? null,
         hintedTransactionId: hinted === undefined || hinted === null ? null : String(hinted),
         callbackType: input.callbackType, processingStatus: "received", nextAttemptAt: new Date(), receivedAt: new Date()
       }).$returningId();

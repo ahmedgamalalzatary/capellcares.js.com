@@ -859,6 +859,30 @@ export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
   fingerprintVersion: int("fingerprint_version").notNull().default(1),
   /** Allowlisted, redacted snapshot. Never the raw signed body (it carries card data). */
   normalizedPayload: json("normalized_payload").notNull(),
+  /**
+   * Scalar projection of the SIGNED provider order id (`order.id`, covered by Paymob's HMAC).
+   *
+   * Stored as its own indexed column rather than read back out of the JSON payload: the
+   * evidence checks that decide whether stock stays held ran a JSON extraction per candidate
+   * and then confirmed in application code, so correctness depended on scanning rows and a
+   * backlog could starve a real match. A scalar index makes the lookup exact and bounded.
+   * Nullable because a receipt with no signed order id is still valid evidence of arrival;
+   * it simply cannot be correlated to an attempt.
+   */
+  signedOrderId: varchar("signed_order_id", { length: 64 }),
+  /**
+   * The local attempt this receipt provably belongs to, resolved at intake from the signed
+   * order id. Nullable: a callback can legitimately arrive before its intention response has
+   * bound an attempt, in which case the row is simply unbound and is resolved later rather
+   * than being forced onto a guess.
+   */
+  boundSessionId: int("bound_session_id"),
+  /**
+   * Signed integration id, as a scalar for identity. `integration_id` IS in the HMAC input
+   * list, so unlike the unsigned `is_live` flag this is real evidence of which integration
+   * produced the callback.
+   */
+  signedIntegrationId: int("signed_integration_id"),
   /** Transaction ID as an unsigned hint only: it is not proof and must be proven by inquiry. */
   hintedTransactionId: varchar("hinted_transaction_id", { length: 64 }),
   callbackType: mysqlEnum("callback_type", ["transaction", "card_token"]).notNull(),
@@ -876,7 +900,12 @@ export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
 }, (table) => [
   index("paymob_callback_inbox_status_received_idx").on(table.processingStatus, table.receivedAt),
   index("paymob_callback_inbox_due_idx").on(table.processingStatus, table.nextAttemptAt, table.id),
-  index("paymob_callback_inbox_transaction_idx").on(table.hintedTransactionId)
+  index("paymob_callback_inbox_transaction_idx").on(table.hintedTransactionId),
+  // The evidence lookups filter by unresolved status AND the signed order id, so the id is
+  // the leading column: a session asks about its own handful of order ids, never the inbox.
+  index("paymob_callback_inbox_signed_order_idx").on(table.signedOrderId, table.processingStatus),
+  // Staff reconciliation of unbound receipts, and the bound-receipt view a session owns.
+  index("paymob_callback_inbox_bound_session_idx").on(table.boundSessionId, table.processingStatus)
 ]);
 
 export const reviews = mysqlTable(
