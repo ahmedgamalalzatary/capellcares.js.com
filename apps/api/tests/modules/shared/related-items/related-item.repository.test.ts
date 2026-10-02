@@ -7,8 +7,8 @@ import { db } from "@capella/database/src/db";
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
-} from "../../src/repositories/related-item.repository.js";
-import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
+} from "../../../../src/modules/shared/related-items/related-item.repository.js";
+import { getBaselineIds, resetApiTestDatabase } from "../../../helpers/database.js";
 
 beforeEach(async () => {
   await resetApiTestDatabase();

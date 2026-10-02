@@ -20,14 +20,14 @@ import {
   loadScopedRanksRepo,
   orderedProductIdsForVariants,
   replaceScopedOrderingRepo
-} from "./entity-ordering.repository.js";
+} from "../modules/shared/entity-ordering/entity-ordering.repository.js";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   replaceEntityMediaRepo,
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
-} from "./entity-media.repository.js";
+} from "../modules/shared/entity-media/entity-media.repository.js";
 
 async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByCollection = await loadEntityMediaRows("collection", rows.map((row) => row.id));

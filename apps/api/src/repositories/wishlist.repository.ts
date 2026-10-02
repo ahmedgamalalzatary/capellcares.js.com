@@ -6,7 +6,7 @@ import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   resolvePrimaryEntityImagePath
-} from "./entity-media.repository.js";
+} from "../modules/shared/entity-media/entity-media.repository.js";
 
 type WishlistEntityType = WishlistItemDto["entityType"];
 

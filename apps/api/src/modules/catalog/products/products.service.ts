@@ -1,5 +1,5 @@
 import { findVisibleProductBySlug, findVisibleProducts } from "../../../repositories/product.repository.js";
-import { getStorefrontRelatedCardsRepo } from "../../../repositories/related-item.repository.js";
+import { getStorefrontRelatedCardsRepo } from "../../shared/related-items/related-item.repository.js";
 import type { Language } from "../../../types/domain.js";
 import { attachRatings, loadReviewData, ratingFromReviewData } from "../review-data.js";
 import { toStorefrontProduct } from "./products.mapper.js";

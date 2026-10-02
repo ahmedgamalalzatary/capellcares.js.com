@@ -14,10 +14,10 @@ import {
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
-} from "../../../repositories/related-item.repository.js";
+} from "../../shared/related-items/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
-import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
+import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 
 type NormalizedVariantDiscount = {

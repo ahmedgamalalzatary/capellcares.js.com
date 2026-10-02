@@ -16,14 +16,14 @@ import {
 import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
-} from "../../../repositories/related-item.repository.js";
+} from "../../shared/related-items/related-item.repository.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { calculateBundleInventory, computeBundleInventoryFromMap, validateBundlePriceBelowParts } from "../../inventory/bundle-inventory.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
-import { parseEntityMediaInput } from "../../../repositories/entity-media.repository.js";
+import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
 import { BundleDiscountPriceError } from "../../../repositories/bundle-discount-price.repository.js";
 
 async function findCollectionRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {

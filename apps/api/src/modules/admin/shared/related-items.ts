@@ -1,4 +1,4 @@
-import type { RelatedEntityType, RelatedRef } from "../../../repositories/related-item.repository.js";
+import type { RelatedEntityType, RelatedRef } from "../../shared/related-items/related-item.repository.js";
 
 const RELATED_ENTITY_TYPES: RelatedEntityType[] = ["product", "offer", "collection"];
 

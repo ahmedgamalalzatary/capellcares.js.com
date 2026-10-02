@@ -6,7 +6,7 @@ import {
   assertCompleteOrderedIds,
   loadScopedRanksRepo,
   replaceScopedOrderingRepo
-} from "./entity-ordering.repository.js";
+} from "../modules/shared/entity-ordering/entity-ordering.repository.js";
 
 async function withAdviceRanks<T extends { id: number }>(rows: T[], surface: OrderingSurface) {
   const rankByAdviceId = await loadScopedRanksRepo({

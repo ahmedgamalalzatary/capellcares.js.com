@@ -6,7 +6,7 @@ import { categories, products } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
-import { setRelatedLinksForSourceRepo } from "../../src/repositories/related-item.repository.js";
+import { setRelatedLinksForSourceRepo } from "../../src/modules/shared/related-items/related-item.repository.js";
 import { withTestServer } from "../helpers/request.js";
 import {
   assertConformsTo,

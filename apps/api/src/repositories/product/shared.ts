@@ -9,7 +9,7 @@ import {
   resolvePublicEntityMediaUrl,
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
-} from "../entity-media.repository.js";
+} from "../../modules/shared/entity-media/entity-media.repository.js";
 
 export type ProductMediaItem = EntityMediaItem;
 

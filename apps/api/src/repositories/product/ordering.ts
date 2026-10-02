@@ -5,7 +5,7 @@ import { listCategoryBranchIdsRepo } from "../category.repository.js";
 import {
   assertCompleteOrderedIds,
   replaceScopedOrderingRepo
-} from "../entity-ordering.repository.js";
+} from "../../modules/shared/entity-ordering/entity-ordering.repository.js";
 
 export type ProductOrderingRow = {
   scopeType: (typeof orderingScopeTypes)[number];

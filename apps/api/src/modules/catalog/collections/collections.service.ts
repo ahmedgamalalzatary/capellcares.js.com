@@ -1,5 +1,5 @@
 import { findCollectionBySlugRepo, listVisibleCollectionsRepo } from "../../../repositories/collection.repository.js";
-import { getStorefrontRelatedCardsRepo } from "../../../repositories/related-item.repository.js";
+import { getStorefrontRelatedCardsRepo } from "../../shared/related-items/related-item.repository.js";
 import {
   calculateBundleInventory,
   computeBundleInventoryFromMap,

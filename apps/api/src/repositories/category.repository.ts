@@ -10,7 +10,7 @@ import {
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { collectBranchIds, collectDescendantIds } from "./category-tree.js";
-import { assertCompleteOrderedIds, replaceScopedOrderingRepo } from "./entity-ordering.repository.js";
+import { assertCompleteOrderedIds, replaceScopedOrderingRepo } from "../modules/shared/entity-ordering/entity-ordering.repository.js";
 
 type CategoryDbExecutor = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
 

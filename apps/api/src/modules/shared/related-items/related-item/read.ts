@@ -1,14 +1,14 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import { loadBundleDiscountsRepo } from "../bundle-discount.repository.js";
+import { loadBundleDiscountsRepo } from "../../../../repositories/bundle-discount.repository.js";
 import { getEffectiveVariantPrice, type Language } from "@capella/shared";
-import { EMPTY_RATING, safeRatingSummaries } from "../review.repository.js";
+import { EMPTY_RATING, safeRatingSummaries } from "../../../../repositories/review.repository.js";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   resolvePrimaryEntityImagePath
-} from "../entity-media.repository.js";
+} from "../../entity-media/entity-media.repository.js";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
 /** A card as the per-type queries build it; the rating lands at assembly. */
