@@ -1,27 +1,13 @@
-import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { paymentAttempts, paymobCallbackInbox } from "@capella/database/drizzle/schema";
+import { receiptHoldsStock } from "./receipt-hold-policy.js";
 
 /** Inbox states that still represent work a worker has not finished. */
 export const UNRESOLVED_INBOX_STATUSES = ["received", "processing", "failed", "review_required"] as const;
 
 /** Attempt states that mean the attempt is still legitimately in play. */
 export const OPEN_ATTEMPT_STATUSES = ["created", "pending"] as const;
-
-/**
- * The signed provider order id inside a stored inbox payload.
- *
- * `order.id` IS covered by Paymob's HMAC, so unlike `refunded_amount_cents` it is
- * trustworthy for correlation. It is deliberately the ONLY payload field any decision
- * here is allowed to read: this module answers "is something still pending", never "what
- * does it claim". Interpreting a claim requires an authenticated provider inquiry, which
- * belongs to the payment worker, not to a guard query.
- */
-function signedOrderId(payload: unknown): string | null {
-  const order = (payload as { order?: { id?: unknown } } | null)?.order;
-  const id = order?.id;
-  return id === undefined || id === null ? null : String(id);
-}
 
 /**
  * Provider order ids that have durably-received but unresolved payment evidence.
@@ -33,51 +19,33 @@ function signedOrderId(payload: unknown): string | null {
  * exactly the attempt rows they are judging - so the lookup is exact instead of best
  * effort.
  *
- * Correlation happens in application code rather than in SQL JSON functions on purpose:
- * the engine here is MySQL 8.4, which has neither `JSON_UNNEST` nor MariaDB's
- * `IS NOT NULL(expr)` form. Filtering by the candidate rows first keeps the result set
- * to the caller's own attempts, so the in-memory pass stays small and cannot be starved.
+ * Correlation happens in SQL against the indexed `signed_order_id` scalar, not against a JSON
+ * extraction over the payload. Extracting per candidate meant correctness depended on how
+ * many inbox rows the engine happened to walk, so an unrelated backlog could hide a real
+ * match for THIS order and silently release stock the customer had already paid for.
  */
 export async function unresolvedInboxOrderIds(candidateOrderIds: readonly string[],
   options: { tx?: Pick<typeof db, "select">; excludeInboxId?: number } = {}): Promise<Set<string>> {
   if (candidateOrderIds.length === 0) return new Set();
   const rows = await (options.tx ?? db)
-    .select({ payload: paymobCallbackInbox.normalizedPayload })
+    .select({ orderId: paymobCallbackInbox.signedOrderId, payload: paymobCallbackInbox.normalizedPayload })
     .from(paymobCallbackInbox)
     .where(and(
       inArray(paymobCallbackInbox.processingStatus, [...UNRESOLVED_INBOX_STATUSES]),
       options.excludeInboxId === undefined ? undefined : ne(paymobCallbackInbox.id, options.excludeInboxId),
-      jsonContainsCandidateIds(paymobCallbackInbox.normalizedPayload, candidateOrderIds)
+      inArray(paymobCallbackInbox.signedOrderId, [...candidateOrderIds])
     ));
   const ids = new Set<string>();
   for (const row of rows) {
-    const orderId = signedOrderId(row.payload);
-    // Only an id the caller asked about may be returned. A row whose payload names some
-    // other order must not widen the caller's evidence set.
-    if (orderId !== null && candidateOrderIds.includes(orderId)) ids.add(orderId);
+    // Only an id the caller asked about may be returned. A row whose id is null, or names
+    // some other order, must not widen the caller's evidence set.
+    if (row.orderId === null || !candidateOrderIds.includes(row.orderId)) continue;
+    // Unresolved is not the same as actionable. A decline that reached review_required can
+    // never become money, so holding stock on it would strand an abandoned session's
+    // reservation indefinitely. The typed policy decides, from signed fields only.
+    if (receiptHoldsStock(row.payload)) ids.add(row.orderId);
   }
   return ids;
-}
-
-/**
- * Narrow unresolved inbox rows to those whose payload could name one of `ids`.
- *
- * `JSON_UNQUOTE(JSON_EXTRACT(...))` rather than `JSON_CONTAINS`, for two reasons that
- * both bit in practice:
- *   - `JSON_CONTAINS(col, '"9501"', '$.order.id')` compares a JSON string against a JSON
- *     number and silently matches nothing, because the provider sends the id numerically.
- *   - `JSON_CONTAINS(col, id, '$.order')` compares the whole order OBJECT to a string and
- *     also matches nothing.
- * Unquoting the extracted scalar compares as text on both sides, so numeric and string
- * payloads are handled identically.
- *
- * The exact per-id confirmation still happens in application code above; this only reduces
- * the candidate rows, it never decides on its own what a payload claims.
- */
-function jsonContainsCandidateIds(column: typeof paymobCallbackInbox.normalizedPayload, ids: readonly string[]) {
-  const extracted = sql`json_unquote(json_extract(${column}, '$.order.id'))`;
-  const matches = ids.map((id) => sql`${extracted} = ${id}`);
-  return sql`(${sql.join(matches, sql` or `)})`;
 }
 
 /**

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, mysqlPool } from "@capella/database/src/db";
-import { checkoutSessions, orderReviewFlags, orders, paymentAttempts, paymobCallbackInbox, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { checkoutSessions, orderItems, orderReviewFlags, orders, paymentAttempts, paymobCallbackInbox, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { createReservedCheckout, discoverExpiredSessionIds, releaseExpiredCheckoutReservations } from "../../src/modules/checkout/checkout-reservation.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
@@ -55,6 +55,72 @@ test("expiry does not release stock while a durably received success callback is
   assert.equal(variant.stockQty, 8, "reserved stock stays held while payment evidence is in flight");
   const [checkout] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, session.id));
   assert.equal(checkout.state, "payment_pending", "the session is held for the in-flight payment");
+});
+
+/**
+ * A session with one attempt bound to `paymobOrderId`, already past its reservation
+ * deadline, with `qty` units of the first baseline variant reserved.
+ */
+async function expiredSession(email: string, paymobOrderId: string, qty = 2) {
+  const ids = await getBaselineIds();
+  const session = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "Hold Policy", phone: "+201012345678", email,
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    reservationExpiresAt: new Date(Date.now() - 1000),
+    reservations: [{ variantId: ids.firstVariantId, qty }],
+    initialAttempt: { merchantReference: `pi_${paymobOrderId}`, environment: "test",
+      allowedIntegrationIds: [123], expiresAt: new Date(Date.now() + 60_000) }
+  });
+  await db.update(paymentAttempts).set({ paymobOrderId })
+    .where(eq(paymentAttempts.checkoutSessionId, session.id));
+  return { ids, session };
+}
+
+/** Receives a callback and parks its receipt in review_required: durably held, unresolved. */
+async function receiveParkedReceipt(orderId: string, fields: Record<string, unknown>) {
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await receivePaymobCallback({ callbackType: "transaction", transaction: { id: 7200, order: { id: orderId },
+    integration_id: 123, amount_cents: 3500, currency: "EGP", is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" }, ...fields } });
+  await db.update(paymobCallbackInbox).set({ processingStatus: "review_required" });
+}
+
+const heldStock = async (variantId: number) =>
+  (await db.select().from(productVariants).where(eq(productVariants.id, variantId)))[0].stockQty;
+
+test("an unresolved decline does not hold stock forever", async () => {
+  // Before the typed hold policy, every unresolved receipt held stock. A decline that reached
+  // review_required therefore stranded an abandoned session's reservation permanently: stock
+  // no other customer could buy, held by a payment that can never succeed.
+  const { ids } = await expiredSession("decline@example.com", "9601");
+  await receiveParkedReceipt("9601", { success: false, pending: false });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 10, "a decline can never become money, so it must not hold stock");
+});
+
+test("an unresolved pending authorisation still holds stock, because it can still capture", async () => {
+  const { ids } = await expiredSession("pending@example.com", "9602");
+  await receiveParkedReceipt("9602", { success: false, pending: true, is_auth: true });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 8, "a pending authorisation is money in flight");
+});
+
+test("an unresolved refund holds stock, so the refund can still be applied", async () => {
+  const { ids } = await expiredSession("refund@example.com", "9603");
+  await receiveParkedReceipt("9603", { success: true, pending: false, is_refunded: true });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 8, "a real refund awaiting verification must keep its hold");
+});
+
+test("a parked receipt naming an unrelated order never holds this session's stock", async () => {
+  // Correlation stays two-sided: a receipt for someone else's order id cannot hold stock
+  // here, no matter what it claims.
+  const { ids } = await expiredSession("unrelated@example.com", "9604");
+  await receiveParkedReceipt("9999", { success: true, pending: false });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 10, "another order's receipt must not hold this stock");
 });
 
 test("expiry releases stock normally once the queued callback has been fully processed", async () => {
@@ -159,6 +225,81 @@ test("expiry preserves a payment attempt that is already terminal", async () => 
   const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.checkoutSessionId, session.id));
   assert.equal(attempt.status, "failed");
   assert.equal(attempt.failureCode, "PROVIDER_DECLINED");
+});
+
+/**
+ * A pending COD order past its untouched deadline.
+ *
+ * `restockFails: true` writes a shipping-ineligible order item whose restock path throws,
+ * which is exactly the failure the batch must survive: the order is rolled back to pending
+ * for staff, and the sweep continues to the next record.
+ */
+async function insertExpiredCodOrder(variantId: number | null, email: string, restockFails = false) {
+  const [order] = await db.insert(orders).values({
+    orderCode: `EXP-${crypto.randomUUID().slice(0, 8)}`, customerType: "guest",
+    fullName: "Expired Buyer", phone: "+201012345678", email, governorate: "Cairo",
+    cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "cod",
+    paymentStatus: "pending", totalAmount: "35.00", shippingAmountCents: restockFails ? 500 : 0,
+    shippingSize: restockFails ? "small" : null,
+    codExpiresAt: new Date(Date.now() - 1000)
+  }).$returningId();
+  await db.insert(orderItems).values({ orderId: order.id, itemType: "product_variant", variantId,
+    qty: 1, unitPrice: sql`35.00`, lineTotal: sql`35.00`, snapshotNameEn: "Serum" });
+  return order;
+}
+
+test("order expiry discovery is bounded and does not hold every order in one transaction", async () => {
+  // The sweep used to discover every eligible order and handle the whole set inside ONE
+  // transaction, so a backlog held every order's row lock for the length of the batch. The
+  // batch size is the bound, and each order is handled on its own.
+  const { ORDER_EXPIRY_BATCH_SIZE } = await import("../../src/modules/orders/order/write.js");
+  assert.ok(ORDER_EXPIRY_BATCH_SIZE > 0 && ORDER_EXPIRY_BATCH_SIZE <= 200,
+    "a sweep must examine a bounded number of orders");
+});
+
+test("order expiry stops between records when asked to shut down", async () => {
+  // A stop request during a long backlog must not have to wait for every remaining order.
+  // Two eligible orders are discovered, and the check must fire between them.
+  const ids = await getBaselineIds();
+  await insertExpiredCodOrder(ids.firstVariantId, "stop-a@example.com");
+  await insertExpiredCodOrder(ids.secondVariantId, "stop-b@example.com");
+
+  let checks = 0;
+  await expirePendingCodOrders(new Date(), { isStopped: () => ++checks > 1 });
+  assert.equal(checks, 2, "the stop check runs before the first record and again between records");
+  // The first order is completed before the stop is honoured; the second must be left alone.
+  const processed = (await db.select().from(orders)).filter((order) => order.paymentStatus === "denied");
+  assert.equal(processed.length, 1, "work stops at the check, and only the second order is left pending");
+});
+
+test("one failing order does not stop the rest of the expiry batch, and is logged statically", async () => {
+  // Without per-order isolation a single failure rolled back the whole batch, the sweep kept
+  // rediscovering the same record, and no order behind it ever expired. The log must also stay
+  // free of the raw driver error, which can carry query and connection detail.
+  const ids = await getBaselineIds();
+  const broken = await insertExpiredCodOrder(null, "broken@example.com", true);
+  const healthy = await insertExpiredCodOrder(ids.secondVariantId, "healthy@example.com");
+
+  const logged: unknown[][] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  try {
+    await expirePendingCodOrders(new Date());
+  } finally {
+    console.error = original;
+  }
+
+  assert.equal((await db.select().from(orders).where(eq(orders.id, healthy.id)))[0].paymentStatus, "denied",
+    "a failure on one order must not stop the next one from expiring");
+  assert.equal((await db.select().from(orders).where(eq(orders.id, broken.id)))[0].paymentStatus, "pending",
+    "the failing order is rolled back and left for staff rather than half-processed");
+  assert.equal(logged.length, 1, "the failure is reported exactly once");
+  const [message, detail] = logged[0] as [string, Record<string, unknown>];
+  assert.equal(message, "Order expiry sweep could not process an order");
+  assert.equal(detail.orderId, broken.id, "the order id identifies the record for staff");
+  assert.deepEqual(Object.keys(detail).sort(), ["error", "orderId"],
+    "no raw error, stack or query text may reach the log");
+  assert.equal(typeof detail.error, "string");
 });
 
 test("checkout expiry worker denies 96-hour-old pending COD orders and restores their stock", async () => {

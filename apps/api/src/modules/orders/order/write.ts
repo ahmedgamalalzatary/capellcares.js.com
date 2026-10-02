@@ -338,14 +338,19 @@ export async function updateOrderPaymentStatusRepo(
   });
 }
 
+/** How many expired orders one sweep may examine. Bounds lock hold time and drain time. */
+export const ORDER_EXPIRY_BATCH_SIZE = 50;
+
 /**
  * D24/D39: the untouched deadline is order creation + 96 hours, fixed and never extended.
  * D27/D49/D50: only untouched orders qualify, and automatic denial/restocking is COD-only;
  * an untouched paid order raises a staff flag and is never refunded or restocked here.
  */
-export async function expirePendingCodOrders(now: Date): Promise<void> {
-  // Discover candidates without locks: a locking range scan can also lock rows
-  // it examines but rejects. Lock only eligible IDs, then recheck their current state.
+export async function expirePendingCodOrders(now: Date, options: { isStopped?: () => boolean } = {}): Promise<void> {
+  // Pass 1: bounded, unlocked discovery. The previous version discovered EVERY eligible
+  // order with no limit and then handled the whole set inside ONE transaction, so a large
+  // backlog held every order's row lock for the length of the entire batch and nothing could
+  // make progress. Discovery is now capped and each order is handled on its own.
   const candidates = await db.select({ id: orders.id }).from(orders).where(and(
     isNull(orders.cancellationStatus),
     lte(orders.codExpiresAt, now),
@@ -358,38 +363,59 @@ export async function expirePendingCodOrders(now: Date): Promise<void> {
         notExists(db.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
           eq(orderReviewFlags.orderId, orders.id), eq(orderReviewFlags.flagType, "untouched_paid")))))
     )
-  )).orderBy(orders.id);
+  )).orderBy(orders.id).limit(ORDER_EXPIRY_BATCH_SIZE);
 
-  await db.transaction(async (tx) => {
-    for (const candidate of candidates) {
-      const [order] = await tx.select().from(orders).where(eq(orders.id, candidate.id)).for("update");
+  // Pass 2: one short transaction per order, so no lock is held across the batch.
+  for (const candidate of candidates) {
+    // Shutdown is checked between records, not only between sweeps: a stop request during a
+    // long backlog must not have to wait for every remaining order to be processed.
+    if (options.isStopped?.()) return;
+    await expirePendingCodOrder(candidate.id, now);
+  }
+}
+
+async function expirePendingCodOrder(orderId: number, now: Date): Promise<void> {
+  try {
+    await db.transaction(async (tx) => {
+      // Recheck under the order lock: the row may have changed since discovery.
+      const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
       if (!order || order.cancellationStatus !== null || order.codExpiresAt === null || order.codExpiresAt > now ||
-        !untouchedShippingExpiryApplies(order)) continue;
+        !untouchedShippingExpiryApplies(order)) return;
       if (order.paymentMethod === "paymob") {
-        if (order.paymentStatus !== "accepted" || order.refundedAmountCents > 0) continue;
+        if (order.paymentStatus !== "accepted" || order.refundedAmountCents > 0) return;
         // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not
         // return on the next sweep; unlike carrier state it never becomes relevant again.
         const [alreadyRaised] = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
           eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1).for("update");
-        if (alreadyRaised) continue;
+        if (alreadyRaised) return;
         await flagShippingOrder(tx, order.id, "untouched_paid",
           "Paid order passed the 96-hour deadline with no processing; no automatic refund or restocking applies");
-        continue;
+        return;
       }
-      if (order.paymentStatus !== "pending") continue;
+      if (order.paymentStatus !== "pending") return;
       if (order.shippingSnapshot) {
         await requestShippingCancellationInTransaction(tx, order, "expiry", { now });
-        continue;
+        return;
       }
       if (!await stopUnsentDelivery(tx, order.id)) {
         await flagShippingOrder(tx, order.id, "expiry_review", "COD deadline reached; carrier outcome/custody is unverified, stock retained");
-        continue;
+        return;
       }
       await restockOrderItems(tx, order.id);
       await tx.update(orders).set({ paymentStatus: "denied" }).where(and(
         eq(orders.id, order.id),
         eq(orders.paymentStatus, "pending")
       ));
-    }
-  });
+    });
+  } catch (error) {
+    // One order failing must not abort the rest of the batch: the sweep would then keep
+    // rediscovering the same failing record first and never progress past it.
+    //
+    // Only the order id and the error class are logged. The raw error can carry driver
+    // details, and an order id is already visible to staff through the ERP order list.
+    console.error("Order expiry sweep could not process an order", {
+      orderId,
+      error: error instanceof Error ? error.name : "UnknownError"
+    });
+  }
 }

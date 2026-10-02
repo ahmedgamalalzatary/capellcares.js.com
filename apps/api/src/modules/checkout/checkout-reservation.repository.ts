@@ -2,6 +2,7 @@ import { and, eq, gt, gte, inArray, lte, notExists, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
+import { sqlReceiptHoldsStock } from "./receipt-hold-policy.js";
 
 interface ReservedCheckoutInput {
   publicId: string;
@@ -112,9 +113,15 @@ export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_
   // Exclude held sessions BEFORE limiting. Any finite oversample can be filled
   // by held rows and repeatedly starve eligible sessions behind it.
   const evidence = db.select({ id: paymobCallbackInbox.id }).from(paymentAttempts)
-    .innerJoin(paymobCallbackInbox, sql`json_unquote(json_extract(${paymobCallbackInbox.normalizedPayload}, '$.order.id')) = ${paymentAttempts.paymobOrderId}`)
+    .innerJoin(paymobCallbackInbox, eq(paymobCallbackInbox.signedOrderId, paymentAttempts.paymobOrderId))
     .where(and(eq(paymentAttempts.checkoutSessionId, checkoutSessions.id),
-      sql`${paymobCallbackInbox.processingStatus} in (${sql.join(UNRESOLVED_INBOX_STATUSES.map(status => sql`${status}`), sql`, `)})`));
+      sql`${paymobCallbackInbox.processingStatus} in (${sql.join(UNRESOLVED_INBOX_STATUSES.map(status => sql`${status}`), sql`, `)})`,
+      // The SAME policy the per-candidate recheck uses under the session lock. Discovery
+      // previously re-implemented "is this receipt actionable" with a JSON extraction and no
+      // classification at all, so it treated a parked decline as a hold while the recheck
+      // treated it as none: the sweep could exclude every eligible session and release
+      // nothing. One definition, expressed once, used by both.
+      sqlReceiptHoldsStock(paymobCallbackInbox.normalizedPayload)));
   const candidates = await db.select({ id: checkoutSessions.id })
     .from(checkoutSessions)
     .where(and(
