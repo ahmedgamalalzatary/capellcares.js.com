@@ -513,34 +513,37 @@ capella/
 │     │  │     ├─ wishlist.controller.ts
 │     │  │     ├─ wishlist.routes.ts
 │     │  │     └─ wishlist.service.ts
-│     │  ├─ repositories/
-│     │  │  ├─ order/
-│     │  │  │  ├─ read.ts
-│     │  │  │  ├─ shared.ts
-│     │  │  │  └─ write.ts
-│     │  │  ├─ product/
-│     │  │  │  ├─ read.ts
-│     │  │  │  ├─ shared.ts
-│     │  │  │  └─ write.ts
-│     │  │  ├─ related-item/
-│     │  │  │  ├─ read.ts
-│     │  │  │  ├─ shared.ts
-│     │  │  │  └─ write.ts
-│     │  │  ├─ admin-user.repository.ts
-│     │  │  ├─ advice.repository.ts
-│     │  │  ├─ auth-session.repository.ts
-│     │  │  ├─ category.repository.ts
-│     │  │  ├─ collection.repository.ts
-│     │  │  ├─ customer.repository.ts
-│     │  │  ├─ offer.repository.ts
-│     │  │  ├─ order.repository.ts
-│     │  │  ├─ product.repository.ts
-│     │  │  ├─ related-item.repository.ts
-│     │  │  └─ wishlist.repository.ts
 │     │  ├─ services/
 │     │  │  ├─ auth-session.service.ts
 │     │  │  ├─ erp-permissions.service.ts
+│     │  │  ├─ category.service.ts
 │     │  │  └─ slug.service.ts
+│     │  ├─ modules/
+│     │  │  ├─ admin/
+│     │  │  ├─ announcements/
+│     │  │  ├─ auth/
+│     │  │  ├─ cart/
+│     │  │  ├─ catalog/
+│     │  │  │  ├─ categories/
+│     │  │  │  ├─ collections/
+│     │  │  │  ├─ offers/
+│     │  │  │  └─ products/
+│     │  │  ├─ checkout/
+│     │  │  ├─ collections/
+│     │  │  ├─ inventory/
+│     │  │  ├─ offers/
+│     │  │  ├─ orders/
+│     │  │  ├─ payments/
+│     │  │  ├─ reviews/
+│     │  │  ├─ shipping/
+│     │  │  │  └─ bosta/
+│     │  │  ├─ shop-media/
+│     │  │  ├─ shared/
+│     │  │  │  ├─ entity-media/
+│     │  │  │  ├─ entity-ordering/
+│     │  │  │  └─ related-items/
+│     │  │  ├─ uploads/
+│     │  │  └─ wishlist/
 │     │  ├─ routes/
 │     │  │  ├─ erp.routes.ts
 │     │  │  ├─ index.ts
@@ -554,12 +557,20 @@ capella/
 │     │  │  ├─ admin-auth.ts
 │     │  │  ├─ database.ts
 │     │  │  └─ request.ts
-│     │  ├─ repositories/
-│     │  │  ├─ admin-products.repository.test.ts
-│     │  │  ├─ offer.repository.test.ts
-│     │  │  ├─ order.repository.test.ts
-│     │  │  ├─ product-search.repository.test.ts
-│     │  │  └─ related-item.repository.test.ts
+│     │  ├─ modules/
+│     │  │  ├─ admin/
+│     │  │  ├─ cart/
+│     │  │  ├─ catalog/
+│     │  │  │  ├─ categories/
+│     │  │  │  ├─ offers/
+│     │  │  │  └─ products/
+│     │  │  ├─ checkout/
+│     │  │  ├─ orders/
+│     │  │  ├─ reviews/
+│     │  │  ├─ shared/
+│     │  │  │  ├─ entity-media/
+│     │  │  │  └─ related-items/
+│     │  │  └─ shipping/
 │     │  ├─ routes/
 │     │  │  ├─ admin-auth.routes.test.ts
 │     │  │  ├─ admin-categories.routes.test.ts
@@ -853,7 +864,7 @@ The following may be added when they create real value, but are not required jus
 
 - `modules/catalog/collections/` owns public collection browsing endpoints; `modules/admin/collections/` owns ERP collection CRUD.
 - `modules/collections/collection-mapper.shared.ts` holds shared collection mapping used by both sides.
-- `repositories/collection.repository.ts` owns collection persistence.
+- `modules/catalog/collections/collection.repository.ts` owns collection persistence.
 
 ### Upload Boundary
 

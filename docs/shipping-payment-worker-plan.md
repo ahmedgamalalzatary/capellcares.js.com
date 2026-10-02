@@ -99,11 +99,10 @@ packages/backend/
   package.json                      @capella/backend; server-only exports
   tsconfig.json
   src/config/                       env bootstrap and provider role validation
-  src/modules/checkout/              checkout services; execution stays API
-  src/modules/orders/                shared pricing/order services
+  src/modules/checkout/              checkout services/session+reservation persistence; execution stays API
+  src/modules/orders/                shared pricing/order services + order persistence
   src/modules/payments/paymob/        clients/HMAC/parsers/intake/payment/inquiry
-  src/modules/shipping/              shared Bosta services/validation/readiness
-  src/repositories/                  transactional order/stock/payment/shipping
+  src/modules/shipping/              shared Bosta services/validation/readiness + persistence
   src/types/                        server-only domain and transaction types
   tests/                            service/repository/provider contract tests
   tests/helpers/                    shared backend test fixtures/reset helpers
@@ -119,7 +118,7 @@ API bundling emits `apps/api/dist/server.mjs` and `apps/api/dist/scripts/check-s
 2. Move shared business services and their complete server-side dependency closure into backend. Start with the Paymob/shipping/checkout/order services and repositories in section 9. Follow static and dynamic imports recursively. Move necessary pricing/cart/product/bundle/offer/collection dependencies and domain types to their corresponding backend paths; update every API caller. Do not copy a repository or leave one implementation in each app. Unrelated API-only auth/media/HTTP modules stay in API unless a genuine shared business dependency requires extraction.
 3. Route/controller files, Express request/response types, HTTP middleware, cookie/JWT handling, API app composition, uploads and bootstrap/permission setup remain API-owned. If a service mixes these with domain work, split the HTTP adapter from its business function. Pass already-authorized actor context and typed input to shared services; preserve guards and audit. Backend performs business eligibility checks but does not construct HTTP responses. Internal worker health may use Node HTTP; it must not mount public API routes.
 4. Put server-only domain types in backend, browser-facing contracts in shared, and schema/connection types in database. Backend must not depend on UI exports. Reuse one database connection factory/pool per process; moving code must not create a second pool inside the same process or change transaction objects across service calls.
-5. Use explicit exports such as `@capella/backend/modules/payments/paymob/paymob-transaction.service`, `@capella/backend/repositories/checkout/checkout-reservation.repository`, and `@capella/backend/config/env`. Export only intentional entry points with `types` and runtime targets. Avoid a root barrel that eagerly imports every provider/repository, and forbid external imports through `/src/` or relative paths. Internal backend imports remain relative.
+5. Use explicit exports such as `@capella/backend/modules/payments/paymob/paymob-transaction.service`, `@capella/backend/modules/checkout/checkout-reservation.repository`, and `@capella/backend/config/env`. Export only intentional entry points with `types` and runtime targets. Avoid a root barrel that eagerly imports every provider/repository, and forbid external imports through `/src/` or relative paths. Internal backend imports remain relative.
 6. Follow the repository's source-export/bundled-runtime convention: backend exports TypeScript source for workspace tooling/tsx/esbuild and has `build`/`typecheck` scripts emitting/checking its source. Configure compiler roots/project references consistently across API/worker/backend/database; do not evade `rootDir` errors with `any`, disabled checks, or aliases into API. Verify both normal TypeScript builds and self-contained bundles, rather than assuming one proves the other.
 7. Shared modules never start timers/listeners, bootstrap users/permissions, or mutate the database merely on import. Both entry points load environment before dynamically importing configuration/database users. Move the environment helper to backend with an explicit configured workspace-root/env path for local use; injected container environment must work without a mounted `.env`. Test both app working directories and preserve existing test-DB safeguards/override precedence.
 8. `pnpm-workspace.yaml` already includes `apps/*` and `packages/*`; verify discovery rather than adding redundant globs. Add workspace dependencies/manifests, update the lockfile with pnpm, and update Turbo/CI/build/test selectors. Worker depends on backend/database and runtime libraries it directly imports, not API or its Express/auth dependencies. Backend declares its actual Node/Drizzle/Zod/provider dependencies. No installation lifecycle script may start a worker.
@@ -360,25 +359,25 @@ Log bounded structured records: loop, local job ID, attempt count, static failur
 | --- | --- |
 | `apps/api/src/server.ts` | Remove all four background-runner imports/startup. Validate API-relevant capabilities; drain requests/pool on shutdown. |
 | `apps/worker/src/server.ts` (new; **not** `apps/api/src/worker.ts`) | Environment-first worker entry point, role-specific config validation, worker runtime + health startup/drain. Section 2.2/2.3 place the worker in `apps/worker` and shared services in `packages/backend`; the earlier `apps/api/src/worker.ts` + `src/workers/` layout in this table was reverted and is superseded. |
-| `apps/api/src/modules/checkout/checkout-expiry-worker.ts` -> `apps/worker/src/workers/checkout-expiry-worker.ts` | Move runner; update imports, tests and documentation. Shared expiry repositories move to `packages/backend/src/repositories/checkout/`. |
+| `apps/api/src/modules/checkout/checkout-expiry-worker.ts` -> `apps/worker/src/workers/checkout-expiry-worker.ts` | Move runner; update imports, tests and documentation. Shared expiry repositories move to `packages/backend/src/modules/checkout/`. |
 | `apps/api/src/modules/shipping/shipping-{dispatch,sync,cancellation}-worker.ts` -> `apps/worker/src/workers/` with same names | Move runners; fix relative imports and every test import. Keep provider adapters/repositories shared. |
 | `apps/api/src/modules/payments/paymob/paymob-callback-worker.ts` -> `apps/worker/src/workers/paymob-callback-worker.ts`; new `apps/worker/src/runtime/worker-runtime.ts`, `worker-health.ts` | Move the existing payment runner, preserving leases/backoff/recovery. Runtime/health own loop startup, shutdown and progress. |
 | Shared services/repositories/types in API -> matching `packages/backend/src/` paths | Move the complete dependency closure described in 2.3. Include `paymob-callback-processing.service.ts`, `paymob-callback.repository.ts`, transaction/intake/inquiry services, shipping repositories/adapters, pricing/checkout dependencies and server-only types. Keep routes/controllers in API and rewrite their imports to explicit backend exports. No duplicated implementations or app-to-app dependencies. |
 | `apps/api/src/modules/payments/paymob/paymob-webhook.controller.ts`, `paymob-webhook.routes.ts` | Intake-only persisted callback flow. Split POST mounting from methods route for bounded pre-generic-parser handling. |
 | `apps/api/src/app.ts`, `apps/api/src/routes/storefront.routes.ts` | Mount dedicated Paymob intake before generic parser exactly once; retain methods path and Bosta route ordering. |
 | `apps/api/src/modules/payments/paymob/paymob-webhook.service.ts` | Separate reusable audit update from new inbox receipt; do not leave an obsolete after-effects audit transaction. |
-| `apps/api/src/repositories/paymob-callback.repository.ts` (new) | Canonical inbox receipt/binding, claims, holds, outcomes and authorized requeue helpers. |
+| `apps/api/src/modules/payments/paymob/paymob-callback.repository.ts` | Canonical inbox receipt/binding, claims, holds, outcomes and authorized requeue helpers. |
 | `apps/api/src/modules/payments/paymob/paymob-transaction.service.ts` | Transaction-taking core, trusted binding/refund proof, pending evidence and monotonic effects. |
 | `apps/api/src/modules/payments/paymob/paymob-inquiry.client.ts` -> `packages/backend/src/modules/payments/paymob/paymob-inquiry.client.ts` | Preserve separate API-key authentication, cached bearer token, redaction, timeout and safe response normalization. |
 | `apps/api/src/modules/payments/paymob/paymob-config.ts` | Strict role-specific mode/integration/config validation; inquiry requirements. Reject unknown mode rather than silently interpreting a typo as test. |
 | `apps/api/src/modules/checkout/paymob-checkout.service.ts`, `checkout-status.controller.ts`, `checkout-retry.controller.ts` | Publish/save binding promptly; block retry with unresolved financial evidence; expose safe processing status. Keep intention creation in API. |
-| `apps/api/src/repositories/checkout/checkout-reservation.repository.ts` | Session-lock shared hold/expiry guards; bounded discovery instead of a locking full pending-session range scan. |
+| `apps/api/src/modules/checkout/checkout-reservation.repository.ts` | Session-lock shared hold/expiry guards; bounded discovery instead of a locking full pending-session range scan. |
 | `apps/api/src/modules/shipping/bosta/bosta-delivery-read.ts` (new), delivery/sync services | One normalized provider-read contract, safe address resolution/comparison and strict recovery. |
-| `apps/api/src/repositories/shipping-edit.repository.ts` | Confirm edits against normalized address/size; preserve durable PUT and no-repeat recovery. |
+| `apps/api/src/modules/shipping/shipping-edit.repository.ts` | Confirm edits against normalized address/size; preserve durable PUT and no-repeat recovery. |
 | Checkout/order services, shipping quote service, shared checkout/shipping schemas | Early Bosta address/collection validation with stable bilingual errors; retain dispatch defense. |
 | `apps/api/src/modules/shipping/shipping-readiness.service.ts`, provider adapter, both entry points | Runtime enforcement and role-aware redacted readiness; config checks remain side-effect-free. |
 | `apps/worker/src/workers/shipping-sync-worker.ts`, backend shipping sync/state/action repositories | Preserve current accepted-state/flag polling checks, follow-up/parking and callback reopening; finish gated related binding/discovery. |
-| `apps/api/src/repositories/shipment-binding.repository.ts` -> `packages/backend/src/repositories/shipment-binding.repository.ts` | Preserve outgoing evidence. Finish related relationship proof and remove related parcels' dependency on nonexistent create jobs only behind verified contracts. |
+| `apps/api/src/modules/shipping/shipment-binding.repository.ts` -> `packages/backend/src/modules/shipping/shipment-binding.repository.ts` | Preserve outgoing evidence. Finish related relationship proof and remove related parcels' dependency on nonexistent create jobs only behind verified contracts. |
 | `packages/database/drizzle/schema.ts`, next generated migrations/meta | Payment inbox, provider bindings and persisted shipping sync phase/discovery work. Preserve existing rows. |
 | `apps/api/tests/helpers/database.ts`, `packages/database/src/seeds/test.seed.ts` | Delete new child tables in correct test reset order before referenced sessions/shipments; retain production safeguards. |
 | `apps/api/src/modules/orders/admin-orders.routes.ts`, ERP store/reconciliation page | Queue/review status, reasons and authorized read-only requeue. Fix multiple-attempt row keys using attempt/inbox ID rather than checkout ID alone. |
@@ -681,7 +680,7 @@ node scripts/run-tests.mjs tests/services/paymob-checkout.service.test.ts tests/
 ```
 
 ```bash
-node scripts/run-tests.mjs tests/repositories/checkout-reservation.repository.test.ts tests/services/checkout-expiry-worker.test.ts tests/services/paymob-shipping.test.ts
+node scripts/run-tests.mjs tests/modules/checkout/checkout-reservation.repository.test.ts tests/services/checkout-expiry-worker.test.ts tests/services/paymob-shipping.test.ts
 ```
 
 ```bash
