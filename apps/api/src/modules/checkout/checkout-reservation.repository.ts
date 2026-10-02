@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, inArray, lte, notExists, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
@@ -113,7 +113,12 @@ export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_
   // Exclude held sessions BEFORE limiting. Any finite oversample can be filled
   // by held rows and repeatedly starve eligible sessions behind it.
   const evidence = db.select({ id: paymobCallbackInbox.id }).from(paymentAttempts)
-    .innerJoin(paymobCallbackInbox, eq(paymobCallbackInbox.signedOrderId, paymentAttempts.paymobOrderId))
+    .innerJoin(paymobCallbackInbox, or(
+      eq(paymobCallbackInbox.signedOrderId, paymentAttempts.paymobOrderId),
+      // Upgrade-window fallback: signed_order_id is NULL for every row predating migration
+      // 0063 until the backfill runs. Joining on the scalar alone would exclude those rows,
+      // so a paid checkout would look unevidenced and expiry would release its stock.
+      sql`json_unquote(json_extract(${paymobCallbackInbox.normalizedPayload}, '$.order.id')) = ${paymentAttempts.paymobOrderId}`))
     .where(and(eq(paymentAttempts.checkoutSessionId, checkoutSessions.id),
       sql`${paymobCallbackInbox.processingStatus} in (${sql.join(UNRESOLVED_INBOX_STATUSES.map(status => sql`${status}`), sql`, `)})`,
       // The SAME policy the per-candidate recheck uses under the session lock. Discovery

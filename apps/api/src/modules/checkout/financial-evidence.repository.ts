@@ -1,7 +1,7 @@
-import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { paymentAttempts, paymobCallbackInbox } from "@capella/database/drizzle/schema";
-import { receiptHoldsStock } from "./receipt-hold-policy.js";
+import { payloadSignedOrderId, receiptHoldsStock } from "./receipt-hold-policy.js";
 
 /** Inbox states that still represent work a worker has not finished. */
 export const UNRESOLVED_INBOX_STATUSES = ["received", "processing", "failed", "review_required"] as const;
@@ -33,17 +33,28 @@ export async function unresolvedInboxOrderIds(candidateOrderIds: readonly string
     .where(and(
       inArray(paymobCallbackInbox.processingStatus, [...UNRESOLVED_INBOX_STATUSES]),
       options.excludeInboxId === undefined ? undefined : ne(paymobCallbackInbox.id, options.excludeInboxId),
-      inArray(paymobCallbackInbox.signedOrderId, [...candidateOrderIds])
+      // Match on EITHER the indexed scalar or the signed id still living in the payload.
+      // Filtering on the scalar alone would exclude the very un-backfilled rows the payload
+      // fallback exists to rescue, so the OR is required, not merely a safety net.
+      or(inArray(paymobCallbackInbox.signedOrderId, [...candidateOrderIds]),
+        sql`json_unquote(json_extract(${paymobCallbackInbox.normalizedPayload}, '$.order.id')) in (${sql.join(candidateOrderIds.map((id) => sql`${id}`), sql`, `)})`)
     ));
   const ids = new Set<string>();
   for (const row of rows) {
-    // Only an id the caller asked about may be returned. A row whose id is null, or names
-    // some other order, must not widen the caller's evidence set.
-    if (row.orderId === null || !candidateOrderIds.includes(row.orderId)) continue;
+    // `signed_order_id` is indexed and authoritative, but it is NULL for every row that
+    // predates migration 0063 until the backfill runs. Falling back to the signed id inside
+    // the payload closes that upgrade window: reading only the scalar would miss those
+    // receipts and report a paid checkout as unevidenced, so expiry releases stock the
+    // customer already paid for. `order.id` is HMAC-covered, so it stays trustworthy while
+    // unindexed, and it is only consulted when the scalar is absent.
+    const orderId = row.orderId ?? payloadSignedOrderId(row.payload);
+    // Only an id the caller asked about may be returned. A row naming some other order, or
+    // naming none at all, must not widen the caller's evidence set.
+    if (orderId === null || !candidateOrderIds.includes(orderId)) continue;
     // Unresolved is not the same as actionable. A decline that reached review_required can
     // never become money, so holding stock on it would strand an abandoned session's
     // reservation indefinitely. The typed policy decides, from signed fields only.
-    if (receiptHoldsStock(row.payload)) ids.add(row.orderId);
+    if (receiptHoldsStock(row.payload)) ids.add(orderId);
   }
   return ids;
 }

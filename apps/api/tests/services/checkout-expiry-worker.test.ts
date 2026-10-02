@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, like, sql } from "drizzle-orm";
 import { db, mysqlPool } from "@capella/database/src/db";
 import { checkoutSessions, orderItems, orderReviewFlags, orders, paymentAttempts, paymobCallbackInbox, productVariants, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { createReservedCheckout, discoverExpiredSessionIds, releaseExpiredCheckoutReservations } from "../../src/modules/checkout/checkout-reservation.repository.js";
@@ -121,6 +121,56 @@ test("a parked receipt naming an unrelated order never holds this session's stoc
   await receiveParkedReceipt("9999", { success: true, pending: false });
   await releaseExpiredCheckoutReservations(new Date());
   assert.equal(await heldStock(ids.firstVariantId), 10, "another order's receipt must not hold this stock");
+});
+
+/**
+ * A receipt written the way the PRE-0063 code wrote it: a signed order id inside the payload,
+ * but no `signed_order_id` scalar, because the backfill has not reached it yet.
+ *
+ * This is the state every existing row is in between deploying migration 0063 and running the
+ * backfill. Until the backfill lands, a scalar-only correlation silently misses these receipts,
+ * so a paid checkout looks unevidenced and expiry releases its stock.
+ */
+async function legacyUnresolvedReceipt(orderId: string, fields: Record<string, unknown>) {
+  const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
+  await receivePaymobCallback({ callbackType: "transaction", transaction: { id: 7300, order: { id: orderId },
+    integration_id: 123, amount_cents: 3500, currency: "EGP", is_live: false, is_auth: false, is_capture: false,
+    is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" }, ...fields } });
+  // Simulate the upgrade window: clear the scalar the new code would have written, leaving
+  // only the payload, exactly as an un-backfilled pre-0063 row looks.
+  await db.update(paymobCallbackInbox).set({ signedOrderId: null, boundSessionId: null });
+  await db.update(paymobCallbackInbox).set({ processingStatus: "review_required" });
+}
+
+test("a pre-backfill receipt still holds stock during the upgrade window", async () => {
+  // CRITICAL regression guard. Migration 0063 adds signed_order_id as NULL for every existing
+  // row, and the backfill that fills it runs separately. Any correlation that reads only the
+  // new scalar therefore misses every un-backfilled receipt during that window, so a checkout
+  // the customer already paid for looks unevidenced and expiry releases its stock.
+  const { ids } = await expiredSession("legacy@example.com", "9701");
+  await legacyUnresolvedReceipt("9701", { success: true, pending: false });
+  const [row] = await db.select().from(paymobCallbackInbox);
+  assert.equal(row!.signedOrderId, null, "the row is genuinely un-backfilled for this test");
+
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 8,
+    "an un-backfilled success receipt must still hold stock until the backfill runs");
+});
+
+test("a pre-backfill DECLINE does not hold stock, so the fallback stays accurate", async () => {
+  // The legacy fallback must not simply treat every un-indexed receipt as a hold; that would
+  // reintroduce exactly the indefinite hold F05 removed.
+  const { ids } = await expiredSession("legacy-decline@example.com", "9702");
+  await legacyUnresolvedReceipt("9702", { success: false, pending: false });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 10, "a decline holds nothing, indexed or not");
+});
+
+test("a pre-backfill PENDING receipt still holds stock", async () => {
+  const { ids } = await expiredSession("legacy-pending@example.com", "9703");
+  await legacyUnresolvedReceipt("9703", { success: false, pending: true, is_auth: true });
+  await releaseExpiredCheckoutReservations(new Date());
+  assert.equal(await heldStock(ids.firstVariantId), 8, "a pending authorisation is still money in flight");
 });
 
 test("expiry releases stock normally once the queued callback has been fully processed", async () => {
@@ -300,6 +350,58 @@ test("one failing order does not stop the rest of the expiry batch, and is logge
   assert.deepEqual(Object.keys(detail).sort(), ["error", "orderId"],
     "no raw error, stack or query text may reach the log");
   assert.equal(typeof detail.error, "string");
+});
+
+test("a persistently failing order cannot monopolise every expiry batch", async () => {
+  // Per-order error handling lets the CURRENT batch continue, but the failing order stays
+  // eligible. With a full batch of failures, every sweep selects the same lowest ids and the
+  // orders behind them never expire at all. Discovery must advance past failures so the
+  // backlog behind them is reached.
+  const ids = await getBaselineIds();
+  const failing: number[] = [];
+  for (let i = 0; i < 5; i += 1) {
+    failing.push((await insertExpiredCodOrder(null, `starve-${i}@example.com`, true)).id);
+  }
+  const behind = await insertExpiredCodOrder(ids.secondVariantId, "behind@example.com");
+
+  const original = console.error;
+  console.error = () => {};
+  try {
+    // Two sweeps: the first must get past the failures and reach the order behind them.
+    await expirePendingCodOrders(new Date());
+    await expirePendingCodOrders(new Date());
+  } finally {
+    console.error = original;
+  }
+
+  assert.equal((await db.select().from(orders).where(eq(orders.id, behind.id)))[0].paymentStatus, "denied",
+    "an order behind a block of persistently failing orders must still expire");
+  assert.equal(failing.length, 5);
+});
+
+test("expiry discovery resumes from the start once a batch is fully healthy", async () => {
+  // The starvation fix must not turn into a permanent skip: a sweep that processes its whole
+  // batch cleanly returns discovery to the beginning, so a previously failing order is
+  // retried rather than abandoned.
+  const ids = await getBaselineIds();
+  await insertExpiredCodOrder(null, "recovers@example.com", true);
+  const healthy = await insertExpiredCodOrder(ids.secondVariantId, "healthy-retry@example.com");
+
+  const original = console.error;
+  console.error = () => {};
+  try {
+    await expirePendingCodOrders(new Date());
+    await expirePendingCodOrders(new Date());
+    // Now the failing record is fixed by the operator; the next sweep must reach it again.
+    await db.update(orders).set({ shippingSize: null, shippingAmountCents: 0 })
+      .where(like(orders.orderCode, "EXP-%"));
+    await db.update(productVariants).set({ stockQty: 1 }).where(eq(productVariants.id, ids.firstVariantId));
+    await expirePendingCodOrders(new Date());
+  } finally {
+    console.error = original;
+  }
+
+  assert.equal((await db.select().from(orders).where(eq(orders.id, healthy.id)))[0].paymentStatus, "denied");
 });
 
 test("checkout expiry worker denies 96-hour-old pending COD orders and restores their stock", async () => {

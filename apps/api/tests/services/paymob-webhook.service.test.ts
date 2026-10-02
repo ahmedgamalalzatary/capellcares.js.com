@@ -39,7 +39,7 @@ test("a receipt records its signed identity as scalars, not only inside the JSON
 });
 
 test("a receipt whose signed order id matches a local attempt records that binding", async () => {
-  const bound = await bindAttemptToOrder(9001);
+  const bound = await bindAttemptToOrder("9001");
   await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ order: { id: 9001 } }) });
   const [row] = await db.select().from(paymobCallbackInbox);
   assert.equal(row!.boundSessionId, bound, "a provable binding is recorded at intake");

@@ -78,18 +78,45 @@ export function receiptHoldsStock(payload: unknown): boolean {
 }
 
 /**
+ * The signed provider order id a stored receipt claims, read from the payload.
+ *
+ * This is the UPGRADE-WINDOW fallback only. `signed_order_id` is indexed and is what
+ * correlation should use; this exists because migration 0063 adds that column as NULL for
+ * every pre-existing row, and the backfill that fills it runs separately. Reading only the
+ * scalar during that window silently misses every un-backfilled receipt, so a checkout the
+ * customer already paid for looks unevidenced and expiry releases its stock.
+ *
+ * `order.id` is covered by Paymob's HMAC, so it remains trustworthy evidence while unindexed.
+ * Once the backfill has run this is never consulted, because the scalar lookup already
+ * matched.
+ */
+export function payloadSignedOrderId(payload: unknown): string | null {
+  const order = (payload !== null && typeof payload === "object" ? payload : null) as { order?: { id?: unknown } } | null;
+  const id = order?.order?.id;
+  return id === undefined || id === null || id === "" ? null : String(id);
+}
+
+/**
  * The same policy expressed as a SQL predicate, for the expiry sweep's candidate query.
  *
  * This exists because expiry DISCOVERY needs to know which sessions are held without taking
  * a lock, while the per-candidate recheck under the session lock evaluates them in
  * application code. Two implementations of "is this receipt actionable" is precisely how
  * these paths drifted apart in the first place, so the rules live here once and a test
- * proves the SQL form decides identically to `receiptHoldsStock`.
+ * proves the SQL form decides identically to `receiptHoldsStock` against real MySQL.
+ *
+ * The JSON TYPE is checked as well as the value. `JSON_UNQUOTE(JSON_EXTRACT(...))` of the
+ * STRING "true" also yields `true`, so comparing the unquoted value alone would let a payload
+ * whose `success` is the string `"true"` be treated as a hold here while `receiptHoldsStock`
+ * rejects it - reintroducing exactly the discovery/recheck disagreement this file exists to
+ * prevent. MySQL keeps JSON BOOLEAN distinct from JSON STRING until the value is unquoted.
  *
  * Built from the same three signed fields as `classifyReceiptHold`, and from nothing else.
  */
 export function sqlReceiptHoldsStock(payloadColumn: SQL | Column): SQL {
-  const field = (name: string) => sql`json_unquote(json_extract(${payloadColumn}, '$.${sql.raw(name)}'))`;
-  const isTrue = (name: string) => sql`${field(name)} = 'true'`;
-  return sql`(${isTrue("is_refunded")} OR ${isTrue("success")} OR ${isTrue("pending")})`;
+  const isTrueBoolean = (name: string) => {
+    const extracted = sql`json_extract(${payloadColumn}, '$.${sql.raw(name)}')`;
+    return sql`(json_type(${extracted}) = 'BOOLEAN' AND json_unquote(${extracted}) = 'true')`;
+  };
+  return sql`(${isTrueBoolean("is_refunded")} OR ${isTrueBoolean("success")} OR ${isTrueBoolean("pending")})`;
 }

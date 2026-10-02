@@ -53,7 +53,13 @@ test("the SQL predicate used by expiry discovery decides identically to the appl
       [{ success: true, pending: false, is_refunded: true }, true],
       [{ success: false, pending: false, is_refunded: false }, false],
       [{ success: false, pending: false, is_refunded: false, is_live: true }, false],
-      [{ success: true, pending: false, is_refunded: false, refunded_amount_cents: 999999 }, true]
+      [{ success: true, pending: false, is_refunded: false, refunded_amount_cents: 999999 }, true],
+      // A payload whose flags are the STRING "true" rather than JSON booleans. This is the
+      // parity trap: JSON_UNQUOTE yields `true` for both, so a value-only SQL comparison
+      // calls these a hold while receiptHoldsStock rejects them. The two forms must agree.
+      [{ success: "true", pending: false, is_refunded: false }, false],
+      [{ success: "true", pending: "true", is_refunded: "true" }, false],
+      [{ success: 1, pending: 0, is_refunded: 0 }, false]
     ];
     for (const [payload, holds] of cases) {
       const [row] = await db.insert(paymobCallbackInbox).values({
@@ -64,6 +70,10 @@ test("the SQL predicate used by expiry discovery decides identically to the appl
       const [result] = await db.select({ holds: sql<boolean>`${sqlReceiptHoldsStock(paymobCallbackInbox.normalizedPayload)}` })
         .from(paymobCallbackInbox).where(eq(paymobCallbackInbox.id, row.id));
       assert.equal(Boolean(result?.holds), holds, `SQL disagreed with the policy on ${JSON.stringify(payload)}`);
+      // The application form must agree on the same stored value, which is the whole point:
+      // discovery reads the SQL, the locked recheck reads this function.
+      assert.equal(receiptHoldsStock(payload), holds,
+        `the policy disagreed with itself on ${JSON.stringify(payload)}`);
     }
   } finally {
     await resetApiTestDatabase();
