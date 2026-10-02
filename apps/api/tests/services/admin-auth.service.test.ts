@@ -9,7 +9,7 @@ import {
   loginAdmin,
   refreshAdminSession
 } from "../../src/modules/admin/auth/admin-auth.service.js";
-import { findAdminUserByEmail } from "../../src/repositories/admin-user.repository.js";
+import { findAdminUserByEmail } from "../../src/modules/admin/auth/admin-user.repository.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(async () => {

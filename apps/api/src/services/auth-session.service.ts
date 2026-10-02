@@ -4,7 +4,7 @@ import {
   findActiveAuthSessionByTokenHash,
   revokeActiveAuthSession,
   revokeAuthSession
-} from "../repositories/auth-session.repository.js";
+} from "../modules/auth/auth-session.repository.js";
 
 type AccountType = "customer" | "admin";
 

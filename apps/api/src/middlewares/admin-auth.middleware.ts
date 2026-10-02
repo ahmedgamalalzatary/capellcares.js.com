@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import type { AdminUserRole } from "../repositories/admin-user.repository.js";
-import { findAdminUserById } from "../repositories/admin-user.repository.js";
+import type { AdminUserRole } from "../modules/admin/auth/admin-user.repository.js";
+import { findAdminUserById } from "../modules/admin/auth/admin-user.repository.js";
 import { resolveSecret } from "../config/secrets.js";
 
 const ACCESS_SECRET = resolveSecret("JWT_ACCESS_SECRET", {

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
-import { createCustomer, findCustomerByEmail, findCustomerById } from "../../repositories/customer.repository.js";
+import { createCustomer, findCustomerByEmail, findCustomerById } from "./customer.repository.js";
 import {
   createRefreshSession,
   rotateRefreshSession,

@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import bcrypt from "bcryptjs";
 
 import { createRefreshSession, rotateRefreshSession } from "../../src/services/auth-session.service.js";
-import { revokeActiveAuthSession } from "../../src/repositories/auth-session.repository.js";
+import { revokeActiveAuthSession } from "../../src/modules/auth/auth-session.repository.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 
 let adminUserId: number;

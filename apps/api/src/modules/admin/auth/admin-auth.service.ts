@@ -7,7 +7,7 @@ import {
   findFirstAdminUser,
   updateAdminUser,
   type AdminUserRecord
-} from "../../../repositories/admin-user.repository.js";
+} from "./admin-user.repository.js";
 import {
   createRefreshSession,
   rotateRefreshSession,

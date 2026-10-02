@@ -8,7 +8,7 @@ import {
   listStaffUsers,
   updateAdminUser,
   type AdminUserRecord
-} from "../../../repositories/admin-user.repository.js";
+} from "../auth/admin-user.repository.js";
 import type { ErpAuthenticatedRequest } from "../../../middlewares/admin-auth.middleware.js";
 import {
   getEffectiveAdminPermissions,
