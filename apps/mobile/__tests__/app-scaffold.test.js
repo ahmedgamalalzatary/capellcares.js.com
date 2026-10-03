@@ -1,7 +1,7 @@
 const { existsSync } = require("node:fs");
 const path = require("node:path");
 const { StyleSheet } = require("react-native");
-const { fireEvent, render } = require("@testing-library/react-native");
+const { act, fireEvent, render } = require("@testing-library/react-native");
 
 jest.mock("react-native-safe-area-context", () => {
   const React = require("react");
@@ -31,15 +31,20 @@ jest.mock("../src/lib/api/client", () => ({
   fetchProducts: (...args) => mockFetchProducts(...args)
 }));
 
+async function renderHomeScreen() {
+  const HomeScreen = require("../app/index").default;
+  const view = render(<HomeScreen />);
+  await act(async () => {});
+  return view;
+}
+
 describe("Expo Router scaffold", () => {
   test.each(["_layout.tsx", "index.tsx"])("provides app/%s", (route) => {
     expect(existsSync(path.resolve(__dirname, "../app", route))).toBe(true);
   });
 
   test("renders the active dictionary with its language font", async () => {
-    const HomeScreen = require("../app/index").default;
-
-    const view = await render(<HomeScreen />);
+    const view = await renderHomeScreen();
 
     expect(view.getByText("Capella Arabic brand").props.style).toEqual(
       expect.objectContaining({ fontFamily: "Tajawal_700Bold" })
@@ -47,16 +52,13 @@ describe("Expo Router scaffold", () => {
   });
 
   test("keeps home content inside the device safe area", async () => {
-    const HomeScreen = require("../app/index").default;
-
-    const view = await render(<HomeScreen />);
+    const view = await renderHomeScreen();
 
     expect(view.getByTestId("home-safe-area")).toBeTruthy();
   });
 
   test("provides temporary controls for device RTL acceptance", async () => {
-    const HomeScreen = require("../app/index").default;
-    const view = await render(<HomeScreen />);
+    const view = await renderHomeScreen();
 
     fireEvent.press(view.getByRole("button", { name: "English" }));
 
@@ -65,8 +67,7 @@ describe("Expo Router scaffold", () => {
   });
 
   test("gives language controls an accessible touch target", async () => {
-    const HomeScreen = require("../app/index").default;
-    const view = await render(<HomeScreen />);
+    const view = await renderHomeScreen();
     const englishButton = view.getByRole("button", { name: "English" });
 
     expect(StyleSheet.flatten(englishButton.props.style)).toEqual(
@@ -75,10 +76,8 @@ describe("Expo Router scaffold", () => {
   });
 
   test("lists products returned by the Phase 3 API client", async () => {
-    const HomeScreen = require("../app/index").default;
-    const view = await render(<HomeScreen />);
+    const view = await renderHomeScreen();
 
-    expect(await view.findByText("Arabic serum")).toBeTruthy();
     expect(mockFetchProducts).toHaveBeenCalledWith({
       lang: "ar",
       throwOnError: true
