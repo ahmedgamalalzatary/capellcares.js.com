@@ -15,6 +15,7 @@ const product = {
   id: 1,
   categoryId: 2,
   slug: "serum one",
+  name: { ar: "سيروم", en: "Serum" },
   imagePath: "/uploads/product.jpg",
   media: [],
   variants: []
@@ -22,6 +23,7 @@ const product = {
 const offer = {
   id: 3,
   slug: "offer one",
+  name: { ar: "عرض", en: "Offer" },
   imagePath: "/uploads/offer.jpg",
   media: [],
   items: []
@@ -29,6 +31,7 @@ const offer = {
 const collection = {
   id: 4,
   slug: "collection one",
+  name: { ar: "مجموعة", en: "Collection" },
   imagePath: "/uploads/collection.jpg",
   media: [],
   items: []
@@ -268,16 +271,54 @@ describe("mobile API client", () => {
     });
     global.fetch
       .mockResolvedValueOnce(response(401, { message: "Authentication expired" }))
-      .mockResolvedValueOnce(response(201, { id: 9, orderCode: "ORD-9", paymentStatus: "pending" }));
+      .mockResolvedValueOnce(
+        response(201, {
+          kind: "cod_order",
+          id: 9,
+          orderCode: "ORD-9",
+          paymentStatus: "pending"
+        })
+      );
 
     await expect(
       client.submitCheckout({ items: [] }, "old-token", { lang: "ar", idempotencyKey: "checkout-key" })
-    ).resolves.toMatchObject({ orderCode: "ORD-9" });
+    ).resolves.toMatchObject({ kind: "cod_order", orderCode: "ORD-9" });
 
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(global.fetch.mock.calls[0][1].headers["idempotency-key"]).toBe("checkout-key");
     expect(global.fetch.mock.calls[1][1].headers["idempotency-key"]).toBe("checkout-key");
+  });
+
+  test("returns a validated paymob redirect checkout response", async () => {
+    global.fetch.mockResolvedValueOnce(
+      response(201, {
+        kind: "paymob_redirect",
+        checkoutId: "chk_1",
+        checkoutUrl: "https://accept.paymob.com/unifiedcheckout/?publicKey=x",
+        expiresAt: "2026-01-01T00:00:00.000Z"
+      })
+    );
+
+    await expect(
+      client.submitCheckout({ items: [] }, null, { lang: "ar", idempotencyKey: "k" })
+    ).resolves.toMatchObject({ kind: "paymob_redirect", checkoutId: "chk_1" });
+  });
+
+  test("rejects a malformed checkout success response", async () => {
+    global.fetch.mockResolvedValueOnce(response(201, { id: 9 }));
+
+    await expect(
+      client.submitCheckout({ items: [] }, null, { lang: "ar", idempotencyKey: "k" })
+    ).rejects.toThrow("Invalid checkout response");
+  });
+
+  test("rejects an empty checkout success response", async () => {
+    global.fetch.mockResolvedValueOnce(response(201, null));
+
+    await expect(
+      client.submitCheckout({ items: [] }, null, { lang: "ar", idempotencyKey: "k" })
+    ).rejects.toThrow("Invalid checkout response");
   });
 
   test("drops malformed catalog and wishlist rows without losing valid siblings", async () => {
@@ -309,5 +350,58 @@ describe("mobile API client", () => {
     global.fetch.mockResolvedValue(response(200, { items: [valid, { id: 2 }] }));
 
     await expect(client.fetchShopMediaSections()).resolves.toEqual([valid]);
+  });
+
+  test("rejects an invalid envelope on a required product read", async () => {
+    global.fetch.mockResolvedValueOnce(response(200, {}));
+
+    await expect(client.fetchProducts({ throwOnError: true })).rejects.toThrow(
+      /Invalid product payload/
+    );
+  });
+
+  test("keeps the optional fallback when a list envelope is invalid", async () => {
+    global.fetch.mockResolvedValueOnce(response(200, {}));
+
+    await expect(client.fetchProducts()).resolves.toEqual([]);
+  });
+
+  test("allows a genuinely empty required product list", async () => {
+    global.fetch.mockResolvedValueOnce(response(200, { items: [] }));
+
+    await expect(client.fetchProducts({ throwOnError: true })).resolves.toEqual([]);
+  });
+
+  test("rejects a required list whose rows are all invalid", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch.mockResolvedValueOnce(
+      response(200, { items: [{ id: 0, categoryId: 0 }] })
+    );
+
+    await expect(client.fetchProducts({ throwOnError: true })).rejects.toThrow(
+      /Invalid product payload/
+    );
+  });
+
+  test("rejects a non-integer category id", async () => {
+    global.fetch.mockResolvedValueOnce(
+      response(200, {
+        items: [{ id: 1.5, parentId: null, slug: "care", name: { ar: "عناية", en: "Care" } }]
+      })
+    );
+
+    await expect(client.fetchCategories({ throwOnError: true })).rejects.toThrow(
+      /Invalid category payload/
+    );
+  });
+
+  test("rejects a product without a renderable name", async () => {
+    global.fetch.mockResolvedValueOnce(
+      response(200, { items: [{ ...product, name: { ar: "", en: "" } }] })
+    );
+
+    await expect(client.fetchProducts({ throwOnError: true })).rejects.toThrow(
+      /Invalid product payload/
+    );
   });
 });

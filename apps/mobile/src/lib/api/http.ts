@@ -5,11 +5,13 @@ type AuthSessionAdapter = {
   getAccessToken: () => string | null;
   getSessionRevision: () => number;
   refreshAccessToken: () => Promise<string | null>;
+  ownsToken?: (token: string) => boolean;
 };
 
 type RequestSession = {
   adapter: AuthSessionAdapter;
   revision: number;
+  ownsToken: boolean;
 };
 
 type RequestOptions = {
@@ -39,11 +41,35 @@ function isConnectionFailure(error: unknown): boolean {
   );
 }
 
-async function errorMessage(response: Response, path: string): Promise<string> {
-  const data = (await response.json().catch(() => null)) as {
-    message?: string;
-  } | null;
-  return data?.message ?? `API ${response.status} ${path}`;
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+type ErrorEnvelope = {
+  message?: unknown;
+  error?: unknown;
+  code?: unknown;
+};
+
+async function apiError(response: Response, path: string): Promise<ApiError> {
+  const data = (await response.json().catch(() => null)) as ErrorEnvelope | null;
+  const envelope = typeof data === "object" && data !== null ? data : {};
+  const message =
+    typeof envelope.message === "string"
+      ? envelope.message
+      : typeof envelope.error === "string"
+        ? envelope.error
+        : `API ${response.status} ${path}`;
+  const code = typeof envelope.code === "string" ? envelope.code : undefined;
+  return new ApiError(response.status, message, code);
 }
 
 type TimedResponse = {
@@ -80,13 +106,17 @@ async function successfulJSON<T>(response: Response): Promise<T | null> {
   return body.trim() ? (JSON.parse(body) as T) : null;
 }
 
-function captureRequestSession(): RequestSession | null {
-  return authSessionAdapter
-    ? {
-        adapter: authSessionAdapter,
-        revision: authSessionAdapter.getSessionRevision()
-      }
-    : null;
+function captureRequestSession(accessToken: string | null): RequestSession | null {
+  if (!authSessionAdapter) {
+    return null;
+  }
+  const adapter = authSessionAdapter;
+  const ownsToken =
+    accessToken !== null &&
+    (adapter.ownsToken
+      ? adapter.ownsToken(accessToken)
+      : adapter.getAccessToken() === accessToken);
+  return { adapter, revision: adapter.getSessionRevision(), ownsToken };
 }
 
 async function retryToken(
@@ -98,6 +128,10 @@ async function retryToken(
     authSessionAdapter !== requestSession.adapter ||
     requestSession.adapter.getSessionRevision() !== requestSession.revision
   ) {
+    return null;
+  }
+
+  if (!requestSession.ownsToken) {
     return null;
   }
 
@@ -132,7 +166,7 @@ export async function getJSON<T>(
       return null;
     }
     if (!response.ok) {
-      throw new Error(await errorMessage(response, path));
+      throw await apiError(response, path);
     }
     return await successfulJSON<T>(response);
   } catch (error) {
@@ -173,7 +207,7 @@ async function authedGetJSONInternal<T>(
       }
     }
     if (!response.ok) {
-      throw new Error(await errorMessage(response, path));
+      throw await apiError(response, path);
     }
     return await successfulJSON<T>(response);
   } finally {
@@ -191,7 +225,7 @@ export function authedGetJSON<T>(
     accessToken,
     options,
     true,
-    captureRequestSession()
+    captureRequestSession(accessToken)
   );
 }
 
@@ -245,7 +279,7 @@ async function authedMutationJSONInternal<T>(
       }
     }
     if (!response.ok) {
-      throw new Error(await errorMessage(response, path));
+      throw await apiError(response, path);
     }
     return await successfulJSON<T>(response);
   } finally {
@@ -265,6 +299,6 @@ export function authedMutationJSON<T>(
     init,
     options,
     true,
-    captureRequestSession()
+    captureRequestSession(accessToken)
   );
 }

@@ -10,7 +10,10 @@ import type {
 
 export type FetchLanguage = "ar" | "en";
 
-export type ProductApiShape = Omit<Product, "imagePath" | "hoverImagePath"> & {
+export type ProductApiShape = Omit<
+  Product,
+  "buyingPrice" | "createdAt" | "updatedAt" | "imagePath" | "hoverImagePath"
+> & {
   imagePath?: string | null;
   hoverImagePath?: string | null;
 };

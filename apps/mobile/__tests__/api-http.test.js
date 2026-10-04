@@ -286,7 +286,8 @@ describe("mobile API HTTP transport", () => {
     http.configureAuthSessionAdapter({
       getAccessToken: () => "fresh-token",
       getSessionRevision: () => 1,
-      refreshAccessToken
+      refreshAccessToken,
+      ownsToken: (token) => token === "stale-token" || token === "fresh-token"
     });
     global.fetch
       .mockResolvedValueOnce(response(401, { message: "expired" }))
@@ -314,5 +315,113 @@ describe("mobile API HTTP transport", () => {
 
     await expect(http.authedGetJSON("/orders", "failed-token")).rejects.toThrow("Expired");
     expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test("preserves HTTP status and API code from a coded error envelope", async () => {
+    global.fetch.mockResolvedValue(
+      response(409, { code: "SHIPPING_QUOTE_CHANGED", message: "Review total" })
+    );
+
+    await expect(http.getJSON("/checkout", { throwOnError: true })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 409,
+      code: "SHIPPING_QUOTE_CHANGED",
+      message: "Review total"
+    });
+  });
+
+  test("uses the { error } envelope message when no message field exists", async () => {
+    global.fetch.mockResolvedValue(response(400, { error: "Invalid request payload" }));
+
+    await expect(http.getJSON("/checkout", { throwOnError: true })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "Invalid request payload"
+    });
+  });
+
+  test("keeps a coded feature-policy error identifiable to consumers", async () => {
+    global.fetch.mockResolvedValue(
+      response(409, { code: "FEATURE_UPDATE_REQUIRED", message: "Update to continue" })
+    );
+
+    const error = await http
+      .getJSON("/checkout", { throwOnError: true })
+      .catch((thrown) => thrown);
+
+    expect(http.ApiError).toBeDefined();
+    expect(error).toBeInstanceOf(http.ApiError);
+    expect(error).toMatchObject({ status: 409, code: "FEATURE_UPDATE_REQUIRED" });
+  });
+
+  test("falls back to a safe status/path message for non-JSON error bodies", async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: jest.fn().mockRejectedValue(new SyntaxError("Unexpected token <")),
+      text: jest.fn().mockResolvedValue("<html>error</html>")
+    });
+
+    await expect(http.getJSON("/boom", { throwOnError: true })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 500,
+      message: "API 500 /boom"
+    });
+  });
+
+  test("ignores non-string message and code fields", async () => {
+    global.fetch.mockResolvedValue(
+      response(500, { message: { nested: true }, code: 123 })
+    );
+
+    const error = await http
+      .authedGetJSON("/orders/1", "token")
+      .catch((thrown) => thrown);
+
+    expect(error).toMatchObject({ status: 500, message: "API 500 /orders/1" });
+    expect(error.code).toBeUndefined();
+  });
+
+  test("does not replay a mutation whose token belongs to another session", async () => {
+    let accessToken = "user-b-token";
+    const refreshAccessToken = jest.fn().mockResolvedValue("user-b-token-2");
+    http.configureAuthSessionAdapter({
+      getAccessToken: () => accessToken,
+      getSessionRevision: () => 2,
+      refreshAccessToken,
+      ownsToken: (token) => token === accessToken
+    });
+    global.fetch.mockResolvedValue(response(401, { message: "expired" }));
+
+    await expect(
+      http.authedMutationJSON("/api/v1/wishlist", "user-a-token", {
+        method: "POST",
+        body: {}
+      })
+    ).rejects.toThrow("expired");
+
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not replay after the auth adapter is replaced mid-request", async () => {
+    const refreshAccessToken = jest.fn().mockResolvedValue("next");
+    http.configureAuthSessionAdapter({
+      getAccessToken: () => "token",
+      getSessionRevision: () => 1,
+      refreshAccessToken,
+      ownsToken: () => true
+    });
+    global.fetch.mockImplementationOnce(async () => {
+      http.configureAuthSessionAdapter({
+        getAccessToken: () => "other",
+        getSessionRevision: () => 1,
+        refreshAccessToken: jest.fn()
+      });
+      return response(401, { message: "expired" });
+    });
+
+    await expect(http.authedGetJSON("/orders", "token")).rejects.toThrow("expired");
+    expect(refreshAccessToken).not.toHaveBeenCalled();
   });
 });

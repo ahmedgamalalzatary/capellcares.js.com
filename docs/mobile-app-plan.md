@@ -1,17 +1,24 @@
 # Capella Mobile App (Expo / React Native) — Customer Storefront (ERP stays web)
 
-> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04.** Phase 0 auth transport is implemented; scaffold, theme/language/storage, and part of the API client exist. Customer providers and production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
+> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport is implemented; scaffold, theme/language/storage, and part of the API client exist. Customer providers and production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **storefront-only app** — the ERP stays on the web; its planned redesign will make it fully mobile-responsive and installable as a **PWA** for staff, and a native admin slice remains a possible later additive phase. **Full functional and visual parity** with the working customer storefront, adapted to native navigation and phone interaction. Parity preserves supported product behavior, not implementation defects or simulated success. Exceptions and additional launch requirements must be explicit in this contract.
 >
 > Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
 
-## Current-code correction checkpoint — before further foundation implementation
+## Current-code correction checkpoint — audit closed
 
-The complete current mobile workspace audit is recorded in [mobile-code-audit.md](mobile-code-audit.md). It covers all 39 tracked mobile files, fresh mobile-only lint/typecheck/tests/both-platform exports, the failed Expo dependency check, and 11 focused failing diagnostic assertions.
+The mobile workspace audit is closed: findings **B1–B9** were fixed and covered by permanent regression tests (2026-10-04) — Expo dependency alignment, structured `ApiError` (status + code), checkout `cod_order`/`paymob_redirect` union validation, list/DTO envelope + row validation, auth retry session/token-ownership binding, recoverable startup RTL failure, coalesced language switching, canonical theme colors, and production API URL validation; `apps/mobile` typecheck/lint are green, the suite is 13 suites / 105 tests, and both Android and iOS exports bundle.
 
-Correct **B1–B9** in that record before expanding the existing foundation: Expo dependency alignment; structured API errors; checkout response typing; invalid-data handling; auth retry session ownership; startup RTL failure; language-switch concurrency; canonical theme colors; and production API URL validation. Preserve the audit's retained behaviors and add permanent regression coverage while fixing them. No fixes are completed by recording this checkpoint.
+The standalone audit record has been removed. Its **open/undone items — which must still be completed** — are recorded here:
 
-Complete the next slice's prerequisite integrations and the existing device-acceptance gates too. Future screens/providers, 1×1 asset replacement, OTA delivery setup and other scheduled work are recorded separately; their current absence is not labeled a broken implementation. Follow the audit's closure checklist, then continue the phase sequence.
+- [ ] **Device foundation acceptance (Phase 2):** real development build on device/emulator with build/device/OS/revision evidence — Arabic/English cold start and live RTL/LTR switching, tracked per platform. Exports and unit tests are not device acceptance.
+- [ ] **Next-slice integration (Phase 3):** authenticated PUT for cart sync before Phase 4, plus the phase's remaining transports.
+- [ ] **L1:** localize/recover the root font-failure screen and handle splash rejections; replace the diagnostic placeholder in Phase 6.
+- [ ] **L2:** replace the 1×1 icon/splash placeholders with real verified platform assets in Phase 8.
+- [ ] **L3:** add `eas.json` update channels, an explicit preview API environment, and a build-number/publish/rollback procedure before OTA/release.
+- [ ] **L4:** strengthen the mock-heavy tests and the scaffold fetch-call test with real contract fixtures as screens land.
+- [ ] **Release/OTA (Phase 8):** channels, version/build-number, rollout/rollback and store readiness.
+- [ ] **Upstream U1–U11:** fix or record an approved, tested disposition (see the register below).
 
 ## Context
 
@@ -51,7 +58,7 @@ The mobile workspace exists at `apps/mobile`, is included by the `apps/*` pnpm w
 
 ### Evidence and source-of-truth ledger
 
-The initial V1 scope audit read code/configuration and existing coverage without running checks. The subsequent [current-mobile-code audit](mobile-code-audit.md) records fresh mobile-only validation and reproduced defects. Neither inspected provider accounts or established production/device acceptance. Record commands, results, build/update identifiers, devices, OS versions and dates for each acceptance; do not treat historical green claims as current proof.
+The initial V1 scope audit read code/configuration and existing coverage without running checks. A follow-up mobile-code audit then reproduced and recorded the B1–B9 defects with fresh mobile-only validation; that record is now closed (findings fixed with permanent regressions). Neither inspected provider accounts or established production/device acceptance. Record commands, results, build/update identifiers, devices, OS versions and dates for each acceptance; do not treat historical green claims as current proof.
 
 | Area | Code already answers | Remaining implementation/acceptance |
 |---|---|---|
@@ -137,7 +144,7 @@ No screens yet — the primitives everything else imports.
 
 | File | Purpose |
 |---|---|
-| `apps/mobile/src/theme.ts` | Convert the actual Parchment CSS OKLCH values to canonical sRGB/hex; the previous draft hex list is incorrect for nine tokens (audit B8 gives measured conversions). Preserve matching canvas `#f1f0ed`/white surface, radii {6,10,16,24}, spacing and language fonts (Roboto / Tajawal / Lobster); complete existing storefront tokens when components need them. |
+| `apps/mobile/src/theme.ts` | Convert the actual Parchment CSS OKLCH values to canonical sRGB/hex; the previous draft hex list is incorrect for nine tokens (the B8 closure lists the measured conversions). Preserve matching canvas `#f1f0ed`/white surface, radii {6,10,16,24}, spacing and language fonts (Roboto / Tajawal / Lobster); complete existing storefront tokens when components need them. |
 | `apps/mobile/src/constants/storage.ts` | AsyncStorage/SecureStore keys — reuse web names: `capella.cart.v1`, `capella.auth.v1`, plus `capella.lang.v1`, secure keys for refresh tokens |
 | `apps/mobile/src/lib/lang.tsx` | `LangProvider` + `useLang()`: language (`ar` default) + `getDict`/`dir` from `@capella/shared/i18n`, persisted; switching updates `I18nManager.allowRTL/forceRTL` and reloads the installed app with the SDK-supported app reload API so layout flips natively. Dynamic RTL is verified in a development build, not Expo Go |
 | `apps/mobile/app/_layout.tsx` (edit) | load fonts (expo-font + google-font packages), keep splash until ready, wrap in `LangProvider` + SafeArea |

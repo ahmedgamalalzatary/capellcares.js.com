@@ -1,18 +1,18 @@
 import { colors, fonts, radii, spacing } from "../src/theme";
 
 describe("mobile parchment theme", () => {
-  it("uses the storefront hex palette", () => {
+  it("matches the sRGB conversions of the storefront OKLCH palette", () => {
     expect(colors).toEqual({
       canvas: "#f1f0ed",
-      ink: "#0e0d0b",
-      ink2: "#3a3833",
-      ink3: "#6d6a62",
-      accent: "#46433c",
-      accentDeep: "#201e1a",
-      warmSoft: "#eae5d4",
-      hairline: "#c5bda6",
-      error: "#b13f2c",
-      success: "#2e7d4f",
+      ink: "#070603",
+      ink2: "#2c2922",
+      ink3: "#605d57",
+      accent: "#373228",
+      accentDeep: "#14110c",
+      warmSoft: "#eae4d4",
+      hairline: "#beb7a4",
+      error: "#ad301b",
+      success: "#417843",
       surface: "#ffffff"
     });
   });

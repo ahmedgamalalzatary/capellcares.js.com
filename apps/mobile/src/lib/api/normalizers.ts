@@ -1,4 +1,5 @@
 import type {
+  Bilingual,
   Category,
   Collection,
   EntityMedia,
@@ -73,11 +74,21 @@ function normalizeRelatedItems(
 }
 
 function requiredPositiveId(value: unknown, field: string): number {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || numeric <= 0) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isSafeInteger(numeric) || numeric <= 0) {
     throw new Error(`Invalid ${field}`);
   }
   return numeric;
+}
+
+function requiredBilingualName(value: unknown, field: string): Bilingual {
+  const candidate = (value ?? {}) as { ar?: unknown; en?: unknown };
+  const ar = typeof candidate.ar === "string" ? candidate.ar.trim() : "";
+  const en = typeof candidate.en === "string" ? candidate.en.trim() : "";
+  if (!ar && !en) {
+    throw new Error(`Invalid ${field}`);
+  }
+  return { ar, en };
 }
 
 export function normalizeCategory(input: CategoryApiShape): Category {
@@ -94,10 +105,10 @@ export function normalizeCategory(input: CategoryApiShape): Category {
       input.sortOrder != null && input.sortOrder !== "" && Number.isFinite(sortOrder)
         ? sortOrder
         : undefined,
-    name: {
-      ar: input.name?.ar ?? input.arName ?? "",
-      en: input.name?.en ?? input.enName ?? ""
-    },
+    name: requiredBilingualName(
+      { ar: input.name?.ar ?? input.arName, en: input.name?.en ?? input.enName },
+      "category name"
+    ),
     isLeaf: Boolean(input.isLeaf ?? true),
     createdAt: input.createdAt ?? "",
     deletedAt: input.deletedAt ?? null
@@ -117,6 +128,7 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T & Pro
     ...product,
     id: requiredPositiveId(product.id, "product id"),
     categoryId: requiredPositiveId(product.categoryId, "product categoryId"),
+    name: requiredBilingualName(product.name, "product name"),
     imagePath:
       normalizedImagePath ||
       (fallbackImage?.type === "image"
@@ -155,6 +167,7 @@ function normalizeBundle<T extends OfferApiShape | CollectionApiShape>(bundle: T
       bundle.categoryId == null
         ? null
         : requiredPositiveId(bundle.categoryId, "bundle categoryId"),
+    name: requiredBilingualName(bundle.name, "bundle name"),
     imagePath: resolveMediaUrl(bundle.imagePath),
     media: normalizeMedia(bundle.media),
     items: bundle.items.map((item) => ({
@@ -200,6 +213,7 @@ export function normalizeWishlistEntry(entry: WishlistEntry): WishlistEntry {
   return {
     ...entry,
     entityId: requiredPositiveId(entry.entityId, "wishlist entityId"),
+    name: requiredBilingualName(entry.name, "wishlist name"),
     imagePath: resolveNullableMediaUrl(entry.imagePath),
     href: resolveNativeEntityHref(entry.href)
   };

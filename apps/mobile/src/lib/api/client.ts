@@ -2,6 +2,7 @@ import type {
   Advice,
   Category,
   CheckoutRequestDto,
+  CheckoutResponseDto,
   Collection,
   Offer,
   Order,
@@ -18,7 +19,8 @@ import type {
   WishlistEntry,
   WishlistEntityType
 } from "@capella/shared";
-import { authedGetJSON, authedMutationJSON, getJSON } from "./http";
+import { checkoutResponseSchema } from "@capella/shared";
+import { ApiError, authedGetJSON, authedMutationJSON, getJSON } from "./http";
 import {
   normalizeCategory,
   normalizeCollection,
@@ -58,10 +60,26 @@ type CheckoutOptions = LanguageOptions & {
   idempotencyKey: string;
 };
 
+function requireItems<T>(
+  data: { items?: unknown } | null | undefined,
+  label: string,
+  required: boolean
+): T[] {
+  const items = data?.items;
+  if (Array.isArray(items)) {
+    return items as T[];
+  }
+  if (required) {
+    throw new ApiError(200, `Invalid ${label} payload`, "INVALID_PAYLOAD");
+  }
+  return [];
+}
+
 function normalizeRows<TInput, TOutput>(
   items: TInput[],
   normalizer: (item: TInput) => TOutput,
-  label: string
+  label: string,
+  required = false
 ): TOutput[] {
   const normalized: TOutput[] = [];
   for (const item of items) {
@@ -70,6 +88,9 @@ function normalizeRows<TInput, TOutput>(
     } catch (error) {
       console.error(`Failed to normalize ${label} payload`, { error, [label]: item });
     }
+  }
+  if (required && items.length > 0 && normalized.length === 0) {
+    throw new ApiError(200, `Invalid ${label} payload`, "INVALID_PAYLOAD");
   }
   return normalized;
 }
@@ -86,12 +107,18 @@ export async function fetchProducts(params?: {
   if (params?.category) search.set("category", params.category);
   if (params?.categoryId) search.set("categoryId", params.categoryId);
   const query = search.toString();
+  const required = params?.throwOnError === true;
   const data = await getJSON<{ items: ProductApiShape[] }>(
     `/api/v1/products${query ? `?${query}` : ""}`,
     { lang: params?.lang, throwOnError: params?.throwOnError }
   );
 
-  return normalizeRows(data?.items ?? [], normalizeProduct, "product");
+  return normalizeRows(
+    requireItems<ProductApiShape>(data, "product", required),
+    normalizeProduct,
+    "product",
+    required
+  );
 }
 
 export async function fetchProductBySlug(
@@ -119,26 +146,44 @@ export async function fetchProductDetailBySlug(
 export async function fetchCategories(
   options?: PublicOptions
 ): Promise<Category[]> {
+  const required = options?.throwOnError === true;
   const data = await getJSON<{ items: CategoryApiShape[] }>(
     "/api/v1/categories",
     options
   );
-  return normalizeRows(data?.items ?? [], normalizeCategory, "category");
+  return normalizeRows(
+    requireItems<CategoryApiShape>(data, "category", required),
+    normalizeCategory,
+    "category",
+    required
+  );
 }
 
 export async function fetchOffers(options?: PublicOptions): Promise<Offer[]> {
+  const required = options?.throwOnError === true;
   const data = await getJSON<{ items: OfferApiShape[] }>("/api/v1/offers", options);
-  return normalizeRows(data?.items ?? [], normalizeOffer, "offer");
+  return normalizeRows(
+    requireItems<OfferApiShape>(data, "offer", required),
+    normalizeOffer,
+    "offer",
+    required
+  );
 }
 
 export async function fetchCollections(
   options?: PublicOptions
 ): Promise<Collection[]> {
+  const required = options?.throwOnError === true;
   const data = await getJSON<{ items: CollectionApiShape[] }>(
     "/api/v1/collections",
     options
   );
-  return normalizeRows(data?.items ?? [], normalizeCollection, "collection");
+  return normalizeRows(
+    requireItems<CollectionApiShape>(data, "collection", required),
+    normalizeCollection,
+    "collection",
+    required
+  );
 }
 
 export async function fetchOfferBySlug(
@@ -193,11 +238,17 @@ export async function fetchAdvices(options?: PublicOptions): Promise<Advice[]> {
 export async function fetchShopMediaSections(
   options?: PublicOptions
 ): Promise<ShopMediaSection[]> {
+  const required = options?.throwOnError === true;
   const data = await getJSON<{ items: ShopMediaSection[] }>(
     "/api/v1/shop-media-sections",
     options
   );
-  return normalizeRows(data?.items ?? [], normalizeShopMediaSection, "shop media section");
+  return normalizeRows(
+    requireItems<ShopMediaSection>(data, "shop media section", required),
+    normalizeShopMediaSection,
+    "shop media section",
+    required
+  );
 }
 
 export async function fetchCustomerOrders(
@@ -299,17 +350,22 @@ export function removeWishlistItem(
   );
 }
 
-export function submitCheckout(
+export async function submitCheckout(
   input: CheckoutRequestDto,
   accessToken: string | null,
   options: CheckoutOptions
-): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus"> | null> {
-  return authedMutationJSON<Pick<Order, "id" | "orderCode" | "paymentStatus">>(
+): Promise<CheckoutResponseDto> {
+  const data = await authedMutationJSON<unknown>(
     "/api/v1/checkout",
     accessToken,
     { method: "POST", body: input, idempotencyKey: options.idempotencyKey },
     options
   );
+  const result = checkoutResponseSchema.safeParse(data);
+  if (!result.success) {
+    throw new ApiError(200, "Invalid checkout response", "INVALID_CHECKOUT_RESPONSE");
+  }
+  return result.data;
 }
 
 export {

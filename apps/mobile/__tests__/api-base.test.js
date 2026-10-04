@@ -39,4 +39,34 @@ describe("mobile API base", () => {
       "EXPO_PUBLIC_API_URL is required outside development"
     );
   });
+
+  test.each([
+    ["a cleartext production URL", "http://api.example.com"],
+    ["a non-URL value", "not-a-url"],
+    ["embedded credentials", "https://user:pass@api.example.com"],
+    ["a query string", "https://api.example.com/?x=1"],
+    ["a hash fragment", "https://api.example.com/#frag"],
+    ["a non-http scheme", "ftp://api.example.com"],
+    ["an empty host", "https://"]
+  ])("rejects %s outside development", (_label, configured) => {
+    const { resolveMobileApiBase } = require("../src/lib/api/base");
+
+    expect(() => resolveMobileApiBase(configured, "android", false)).toThrow();
+  });
+
+  test("allows an explicit http LAN base in development", () => {
+    const { resolveMobileApiBase } = require("../src/lib/api/base");
+
+    expect(resolveMobileApiBase("http://192.168.1.5:4000", "android", true)).toBe(
+      "http://192.168.1.5:4000"
+    );
+  });
+
+  test("normalizes a valid production https base with trailing slashes", () => {
+    const { resolveMobileApiBase } = require("../src/lib/api/base");
+
+    expect(resolveMobileApiBase("https://api.example.com///", "android", false)).toBe(
+      "https://api.example.com"
+    );
+  });
 });

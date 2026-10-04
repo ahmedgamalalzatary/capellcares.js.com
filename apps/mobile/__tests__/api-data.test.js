@@ -52,6 +52,7 @@ describe("mobile API normalization", () => {
     const product = normalizeProduct({
       id: "8",
       categoryId: "3",
+      name: { ar: "سيروم", en: "Serum" },
       imagePath: "/uploads/product.jpg",
       hoverImagePath: "/uploads/hover.jpg",
       media: [
@@ -100,6 +101,7 @@ describe("mobile API normalization", () => {
       const value = normalizer({
         id: 1,
         categoryId: 2,
+        name: { ar: "حزمة", en: "Bundle" },
         items: [],
         imagePath: "/uploads/bundle.jpg",
         media: [{ type: "image", arUrl: null, enUrl: "/uploads/bundle-en.jpg" }],
@@ -144,7 +146,11 @@ describe("mobile API normalization", () => {
       })
     );
     expect(
-      normalizeWishlistEntry({ entityId: 1, imagePath: "/uploads/wish.jpg" }).imagePath
+      normalizeWishlistEntry({
+        entityId: 1,
+        name: { ar: "سيروم", en: "Serum" },
+        imagePath: "/uploads/wish.jpg"
+      }).imagePath
     ).toBe("https://api.example.com/uploads/wish.jpg");
   });
 
@@ -156,7 +162,14 @@ describe("mobile API normalization", () => {
   ])("maps wishlist href %s to the native route", (href, expected) => {
     const { normalizeWishlistEntry } = require("../src/lib/api/normalizers");
 
-    expect(normalizeWishlistEntry({ entityId: 1, imagePath: null, href }).href).toBe(expected);
+    expect(
+      normalizeWishlistEntry({
+        entityId: 1,
+        name: { ar: "سيروم", en: "Serum" },
+        imagePath: null,
+        href
+      }).href
+    ).toBe(expected);
   });
 
   test("normalizes review-prompt media and its native href", () => {

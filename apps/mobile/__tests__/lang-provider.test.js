@@ -16,16 +16,19 @@ const { LANG_STORAGE_KEY } = require("../src/constants/storage");
 const { LangProvider, useLang } = require("../src/lib/lang");
 
 function LanguageProbe() {
-  const { dict, direction, lang, ready, setLang } = useLang();
+  const { dict, direction, error, lang, pending, ready, retry, setLang } = useLang();
 
   return (
     <View>
       <Text testID="ready">{String(ready)}</Text>
       <Text testID="lang">{lang}</Text>
       <Text testID="direction">{direction}</Text>
+      <Text testID="pending">{String(pending)}</Text>
+      <Text testID="error">{String(Boolean(error))}</Text>
       <Text testID="brand">{dict.brand}</Text>
       <Button title="Arabic" onPress={() => void setLang("ar")} />
       <Button title="English" onPress={() => void setLang("en")} />
+      <Button title="Retry" onPress={() => void retry()} />
     </View>
   );
 }
@@ -164,5 +167,45 @@ describe("LangProvider", () => {
     expect(() => render(<LanguageProbe />)).toThrow(
       "useLang must be used within a LangProvider"
     );
+  });
+
+  test("does not report ready when a required startup reload fails, then recovers on retry", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "ar");
+    mockReloadAppAsync.mockRejectedValueOnce(new Error("reload unavailable"));
+
+    const view = render(
+      <LangProvider>
+        <LanguageProbe />
+      </LangProvider>
+    );
+
+    await waitFor(() => expect(view.getByTestId("error").props.children).toBe("true"));
+    expect(view.getByTestId("ready").props.children).toBe("false");
+
+    fireEvent.press(view.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    expect(view.getByTestId("lang").props.children).toBe("ar");
+    expect(view.getByTestId("error").props.children).toBe("false");
+  });
+
+  test("keeps overlapping language selections consistent with persisted state", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "en");
+    const view = render(
+      <LangProvider>
+        <LanguageProbe />
+      </LangProvider>
+    );
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+
+    AsyncStorage.setItem.mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(resolve, 30))
+    );
+    fireEvent.press(view.getByRole("button", { name: "Arabic" }));
+    fireEvent.press(view.getByRole("button", { name: "English" }));
+
+    await waitFor(() => expect(view.getByTestId("pending").props.children).toBe("false"));
+    expect(view.getByTestId("lang").props.children).toBe("en");
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
   });
 });
