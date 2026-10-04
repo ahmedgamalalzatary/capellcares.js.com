@@ -35,8 +35,7 @@ export function RelatedItems({ items, lang, dict, title }: Props) {
   }
 
   const isAr = lang === "ar";
-  // Mirror the category page grid: cols toggle sets the mobile base, then the
-  // layout steps up on md/lg the same way (1→3 and 2→4 on desktop).
+  // Mirror the category page grid: cols toggle sets the mobile base, then the layout steps up on md/lg the same way (1→3 and 2→4 on desktop).
   const gridCols = cols === 1
     ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
     : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
@@ -63,11 +62,7 @@ export function RelatedItems({ items, lang, dict, title }: Props) {
   );
 }
 
-/**
- * One related card. Deliberately identical to ProductCard/SectionCard —
- * media frame, badge, wishlist heart, typography, and action row all match,
- * so a related item reads as the same object as the cards it sits under.
- */
+/** One related card, deliberately identical to ProductCard/SectionCard — media frame, badge, wishlist heart, typography and action row all match, so a related item reads as the same object as the cards it sits under. */
 function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Language; dict: any }) {
   const router = useRouter();
   const { has, toggle } = useWishlist();
@@ -79,8 +74,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
   const media = { slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" };
   const isWishlisted = has(item.type, item.id);
 
-  // Products carry no new/bestseller flags in this payload, so only bundles
-  // badge — and only when the dictionary actually supplies a label.
+  // Products carry no new/bestseller flags in this payload, so only bundles badge — and only when the dictionary actually supplies a label.
   const badgeLabel: string | undefined =
     item.type === "offer" ? dict.offers?.badge : item.type === "collection" ? dict.collections?.badge : undefined;
   const badge: ItemTag | null = badgeLabel
@@ -96,8 +90,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
     toggle(item.type, item.id);
   };
 
-  // A product needs a variant to transact on; bundles are addressed by their
-  // own id. Without one there is nothing to add, so the row is withheld.
+  // A product needs a variant to transact on; bundles are addressed by their own id. Without one there is nothing to add, so the row is withheld.
   const cartLine: CartLine | null =
     item.type === "offer" ? { type: "offer", offerId: item.id, qty: 1 }
       : item.type === "collection" ? { type: "collection", collectionId: item.id, qty: 1 }

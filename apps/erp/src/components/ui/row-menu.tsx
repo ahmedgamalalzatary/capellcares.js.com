@@ -6,15 +6,8 @@ import { Icon } from "@/components/ui/icons";
 
 const VIEWPORT_MARGIN = 8;
 
-/**
- * A single "⋯" trigger that reveals a dropdown of row actions (edit, delete, …).
- *
- * The dropdown is rendered in a portal with fixed positioning so it is never
- * clipped by an ancestor's `overflow: hidden` (e.g. the collapsible subtree) or
- * painted under a following row. Its position is clamped to the viewport so it
- * never spills off-screen. Closes on outside click, Escape, scroll/resize, or
- * after any item inside is clicked.
- */
+/** A single "⋯" trigger that reveals a dropdown of row actions (edit, delete, …).
+ * It renders in a portal with fixed positioning (never clipped by an ancestor's `overflow: hidden` or painted under a following row), is clamped to the viewport, and closes on outside click, Escape, scroll/resize, or after an item is clicked. */
 export function RowMenu({ label = "إجراءات", children }: { label?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -92,9 +85,7 @@ export function RowMenu({ label = "إجراءات", children }: { label?: string
             ref={dropdownRef}
             className="row-menu__dropdown"
             role="menu"
-            // Measured coordinates are the only truly dynamic values here, so they
-            // travel as custom properties; `data-positioned` keeps the menu hidden
-            // until it is measured/clamped, avoiding a one-frame jump.
+            // Measured coordinates are the only truly dynamic values here, so they travel as custom properties; `data-positioned` keeps the menu hidden until it is measured/clamped, avoiding a one-frame jump.
             data-positioned={position ? "true" : "false"}
             style={{
               "--row-menu-top": `${position?.top ?? 0}px`,

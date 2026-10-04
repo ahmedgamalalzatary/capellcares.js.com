@@ -17,12 +17,7 @@ const backoff = (attempt: number) => Math.min(15 * 60_000, 30_000 * 2 ** Math.ma
 const blocked = (order: typeof orders.$inferSelect) => order.paymentStatus === "denied" || order.cancellationStatus !== null || order.refundedAmountCents > 0 ||
   (order.paymentMethod === "paymob" && (order.paymentStatus !== "accepted" || order.providerPaymentStatus !== "succeeded"));
 
-/**
- * The checkout session an order was paid through, if any. Plain reads only, no lock: the
- * order row is already locked by the caller and this must not add a payment-side lock
- * edge. COD and staff-created orders have no session, hence no financial evidence, and
- * return -1 so the guard finds nothing.
- */
+/** The checkout session an order was paid through, if any. Plain reads only, no lock — the order row is already locked by the caller and this must not add a payment-side lock edge; COD and staff-created orders have no session, hence no financial evidence, and return -1 so the guard finds nothing. */
 async function sessionIdForOrder(tx: ShippingDispatchTransaction, orderId: number): Promise<number> {
   const [order] = await tx.select({ attemptId: orders.paymentAttemptId })
     .from(orders).where(eq(orders.id, orderId)).limit(1);
@@ -67,37 +62,17 @@ async function claim(provider: DeliveryProvider, now: Date, leaseMs: number) {
     if (!recovering) {
       const flags = await tx.select({ flagType: orderReviewFlags.flagType }).from(orderReviewFlags).where(and(
         eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.status, "open")));
-      // O12: an untouched paid order is only alerted, never held — the deadline still denies
-      // COD, but a paid order keeps shipping and is handled by staff through the normal flow.
+      // O12: an untouched paid order is only alerted, never held — the deadline still denies COD, but a paid order keeps shipping and is handled by staff through the normal flow.
       const deadlineBlocks = order.paymentMethod === "cod" && order.codExpiresAt != null &&
         order.codExpiresAt <= now && untouchedShippingExpiryApplies(order);
       const safetyFlagOpen = flags.some((flag) => isSafetyReviewFlag(flag.flagType));
-      // P04/W06: a refund callback that is durably received but not yet resolved must hold
-      // the shipment. Creating a delivery now could send goods to a customer whose money is
-      // being returned, who could then spend the refund a second time.
-      //
-      // The evidence set is scoped to THIS order's own provider order ids rather than a
-      // global inbox scan, so an unrelated backlog can neither hide a real refund nor
-      // decide this order's fate.
-      //
-      // Every attempt of the session is consulted, not only the open ones. A refund
-      // normally lands hours or days AFTER the payment it reverses, by which point the
-      // attempt is long 'succeeded' - scoping this to created/pending missed exactly the
-      // case that matters most and shipped goods to customers being refunded.
-      //
-      // This consults the shared evidence check, which is deliberately lock-free (W06
-      // problem 2). That is what makes it safe to call here: the order lock is held, and
-      // adding a payment-side lock at this point would complete the session/order cycle.
-      // The cost is that this is a point-in-time read, so a refund arriving moments later is
-      // caught by blockRefundedDelivery on the order lock instead.
+      // P04/W06: a refund callback durably received but not yet resolved must hold the shipment — creating a delivery now could send goods to a customer whose money is being returned, who could then spend the refund a second time.
+      // The evidence set is scoped to THIS order's own provider order ids rather than a global inbox scan (so an unrelated backlog can neither hide a real refund nor decide this order's fate), and every attempt of the session is consulted, not only open ones — a refund normally lands hours/days after the payment, by which point the attempt is long 'succeeded', and scoping to created/pending missed exactly the case that matters most. It consults the deliberately lock-free shared evidence check (W06 problem 2), which makes it safe under the order lock; the cost is a point-in-time read, so a refund arriving moments later is caught by blockRefundedDelivery on the order lock instead.
       const sessionId = await sessionIdForOrder(tx, order.id);
       const unresolvedRefund = await hasUnresolvedFinancialEvidence(
         tx, sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx }));
       if (unresolvedRefund) {
-        // A TEMPORARY hold, not a failure. Writing `failed` stranded the order until a
-        // member of staff pressed retry by hand, and the projections treat this error as an
-        // expected stop, so nothing surfaced the stranded order as needing attention. The
-        // job stays pending on a backoff and dispatches by itself once the refund resolves.
+        // A TEMPORARY hold, not a failure — writing `failed` stranded the order until a member of staff pressed retry by hand, and the projections treat this error as an expected stop so nothing surfaced the stranded order; the job stays pending on a backoff and dispatches by itself once the refund resolves.
         await tx.update(shippingWorkItems).set({ status: "pending", claimedBy: null, claimedAt: null,
           lastError: "AWAITING_PAYMENT_EVIDENCE", nextAttemptAt: new Date(now.getTime() + 60_000) })
           .where(eq(shippingWorkItems.id, job.id));

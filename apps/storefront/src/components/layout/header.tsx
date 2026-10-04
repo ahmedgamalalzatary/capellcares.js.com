@@ -20,8 +20,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
-  // Signing in from the header should return the customer to the page they were
-  // reading, not drop them on the locale home.
+  // Signing in from the header should return the customer to the page they were reading, not drop them on the locale home.
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -36,12 +35,8 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
   const announcements: string[] = cmsAnnouncements
     ?? (Array.isArray(dict.nav.announcements) ? dict.nav.announcements : [dict.nav.announcement]);
 
-  // Non-shifting scroll lock: freeze <html> with overflow:hidden and pad for the
-  // removed scrollbar. The page never moves, so the sticky header and the drawer's
-  // measured open-height stay valid no matter the scroll offset at open time.
-  // (A position:fixed/top:-scrollY lock fights globals' `overflow-x: clip` body +
-  // the sticky header — it shifts the drawer on a scrolled reopen and breaks its
-  // inner scroll.)
+  // Non-shifting scroll lock: freeze <html> with overflow:hidden and pad for the removed scrollbar, so the page never moves and the sticky header/measured drawer height stay valid regardless of scroll offset.
+  // (A position:fixed/top:-scrollY lock fights globals' `overflow-x: clip` body + sticky header — it shifts the drawer on a scrolled reopen and breaks its inner scroll.)
   useEffect(() => {
     if (!mobileOpen) return;
     const html = document.documentElement;
@@ -56,10 +51,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
     };
   }, [mobileOpen]);
 
-  // The announcement bar scrolls away with the page; only the nav row below is
-  // sticky. They must be siblings (not nested) because a sticky element can
-  // never escape its parent's box — wrapping both in one sticky <header> would
-  // pin the announcement bar too.
+  // The announcement bar scrolls away with the page; only the nav row below is sticky. They must be siblings (not nested) because a sticky element can never escape its parent's box — wrapping both in one sticky <header> would pin the announcement bar too.
   return (
     <>
       {announcements.length > 0 ? (
@@ -70,9 +62,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
 
       <header
         className={[
-          // bg-surface matches the white page body: it fills the notches outside
-          // the nav row's rounded top corners so scrolling content can't peek
-          // through them while the header is stuck.
+          // bg-surface matches the white page body: it fills the notches outside the nav row's rounded top corners so scrolling content can't peek through them while the header is stuck.
           "container sticky top-0 z-30 bg-surface transition-[background,box-shadow] duration-200"
         ].join(" ")}
       >
@@ -190,10 +180,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
   );
 }
 
-// Hamburger ⇄ minus morph, mirroring Rhode: the whole icon spins 180° while the
-// top and bottom bars fade out, leaving the middle bar as a single "-". Same
-// cubic-bezier(0.76, 0, 0.24, 1) used by the drawer reveal so they feel like one
-// gesture. Reverses on close.
+// Hamburger ⇄ minus morph, mirroring Rhode: the icon spins 180° while the top/bottom bars fade out, leaving the middle bar as a single "-", with the same cubic-bezier(0.76, 0, 0.24, 1) as the drawer reveal so they feel like one gesture; reverses on close.
 function MenuToggle({ open }: { open: boolean }) {
   const bar = "transition-opacity duration-500 ease-[cubic-bezier(0.76,0,0.24,1)]";
   const barOpacity = open ? "opacity-0" : "opacity-100";

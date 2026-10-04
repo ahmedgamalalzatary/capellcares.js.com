@@ -39,8 +39,7 @@ export async function getJSON<T>(
       headers: resolvedLang ? { "x-lang": resolvedLang } : undefined
     });
   } catch (error) {
-    // By default a connection failure is swallowed so SSR pages render empty
-    // gracefully. Callers that must distinguish "down" from "no data" opt in.
+    // By default a connection failure is swallowed so SSR pages render empty gracefully. Callers that must distinguish "down" from "no data" opt in.
     if (isConnectionFailure(error) && !options?.throwOnError) {
       return null;
     }

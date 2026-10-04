@@ -68,13 +68,10 @@ test("a real paid order carries the 96-hour untouched deadline and raises the st
   // P1: real Paymob orders must carry the deadline, otherwise the sweep can never see them.
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
   assert.notEqual(order.codExpiresAt, null, "a real paid order must carry the untouched deadline");
-  // The deadline is creation + 96h, bracketed by the insert window (the `datetime` column has
-  // no sub-second part, so the window is widened to whole seconds) and independent of how it
-  // reads back against the `timestamp` created_at column.
+  // The deadline is creation + 96h, bracketed by the insert window (the `datetime` column has no sub-second part, so the window is widened to whole seconds) and independent of how it reads back against the `timestamp` created_at column.
   const deadline = order.codExpiresAt!.getTime();
   const ninetySixHours = 96 * 60 * 60 * 1000;
-  // Widened by a second on each side: the `datetime` column truncates to whole seconds, so a
-  // deadline written at the end of a second can sit one second below the sampled window.
+  // Widened by a second on each side: the `datetime` column truncates to whole seconds, so a deadline written at the end of a second can sit one second below the sampled window.
   const expectedLow = beforeMs + ninetySixHours - 1000;
   const expectedHigh = afterMs + ninetySixHours + 1000;
   assert.ok(deadline >= expectedLow && deadline <= expectedHigh,

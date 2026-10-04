@@ -3,19 +3,8 @@ import { BostaResponseValidationError } from "./bosta-client.js";
 import { MAX_SHIPPING_RATE_CENTS } from "./bosta-rate-context.js";
 export { MAX_SHIPPING_RATE_CENTS } from "./bosta-rate-context.js";
 
-/**
- * Bosta account pricing backed by `GET /pricing/shipment/calculator`.
- * The documented request inputs are dropOffCity/pickupCity/cod/type/size with
- * provider sizes Normal / Light Bulky / Heavy Bulky. The response body is not
- * specified in the OpenAPI document, so the amount is parsed defensively and
- * any unparseable value is rejected rather than turned into a price.
- *
- * The Capella Small/Medium/Large -> provider pricing-size mapping is account
- * evidence (O06) and is NOT verified. It is injected; an unverified size has
- * no live quote path and is never guessed. Actual VAT/fee semantics remain
- * unverified until credentials are available; this adapter never fabricates
- * them.
- */
+/** Bosta account pricing backed by `GET /pricing/shipment/calculator`; documented inputs are dropOffCity/pickupCity/cod/type/size with provider sizes Normal / Light Bulky / Heavy Bulky, and the response body is unspecified in the OpenAPI doc so the amount is parsed defensively and any unparseable value is rejected rather than turned into a price.
+ * The Capella Small/Medium/Large → provider pricing-size mapping is unverified account evidence (O06) and is injected — an unverified size has no live quote path and is never guessed, and actual VAT/fee semantics remain unverified until credentials exist (this adapter never fabricates them). */
 
 export type PricingResponseContract = {
   verified: boolean;
@@ -61,13 +50,7 @@ export function buildShipmentCalculatorQuery(request: ShipmentRateRequest, sizeM
   return query;
 }
 
-/**
- * Parse an EGP-denominated price into integer cents. Accepts a non-negative
- * finite number or a plain decimal string with up to two decimal places, and
- * converts exactly. Rejects blank/non-decimal strings, negatives, non-finite
- * values and excess precision instead of rounding them into a fabricated
- * charge. The shared cents validator checks the converted minor units.
- */
+/** Parse an EGP-denominated price into integer cents, accepting a non-negative finite number or a plain decimal string with up to two decimals and converting exactly; rejects blank/non-decimal strings, negatives, non-finite values and excess precision instead of rounding them into a fabricated charge (the shared cents validator checks the converted minor units). */
 function parseAmountCents(payload: unknown, contract: PricingResponseContract): number {
   let candidate = payload;
   for (const part of contract.amountPath) {

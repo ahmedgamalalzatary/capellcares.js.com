@@ -54,9 +54,7 @@ async function withCollectionDiscounts<T extends { id: number }>(rows: T[]) {
   return rows.map((row) => ({ ...row, discount: discounts.get(row.id) ?? null }));
 }
 
-// Items inside one collection must read identically on both surfaces, so the
-// erp fallback (older first) is used to keep legacy insertion order for
-// items created before in-collection product ordering existed.
+// Items inside one collection must read identically on both surfaces, so the erp fallback (older first) is used to keep legacy insertion order for items created before in-collection product ordering existed.
 type CollectionItemRow = {
   id: number;
   collectionId: number;
@@ -96,10 +94,7 @@ async function listOrderedCollectionItemsRepo(collectionId: number) {
   return orderCollectionItems(rows, rankByProductId);
 }
 
-/**
- * The same ordered items as `listOrderedCollectionItemsRepo`, for a whole page
- * of collections in two reads rather than two per collection.
- */
+/** The same ordered items as `listOrderedCollectionItemsRepo`, for a whole page of collections in two reads rather than two per collection. */
 async function listOrderedItemsByCollectionRepo(collectionIds: number[]) {
   const itemsByCollectionId = new Map<number, ReturnType<typeof orderCollectionItems>>();
   if (collectionIds.length === 0) {

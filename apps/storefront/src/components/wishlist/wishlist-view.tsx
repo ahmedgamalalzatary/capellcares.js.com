@@ -66,9 +66,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
   const [collections, setCollections] = useState<Collection[]>([]);
   // Needed only to name the classification line under each card's title.
   const [categories, setCategories] = useState<Category[]>([]);
-  // Same guard as the cart: the wishlist entries are the source of truth, the
-  // catalog fetch only upgrades them to full cards. Until it lands we must not
-  // render "nothing saved" over a wishlist that actually has entries.
+  // Same guard as the cart: the wishlist entries are the source of truth and the catalog fetch only upgrades them to full cards, so until it lands we must not render "nothing saved" over a wishlist that has entries.
   const [catalogLoaded, setCatalogLoaded] = useState(false);
 
   useEffect(() => {
@@ -90,10 +88,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
         setCatalogLoaded(true);
       })
       .catch(() => {
-        // Open the gate on failure too, otherwise the page is stuck on the
-        // loading state forever. With no catalog every entry falls through to
-        // `orphans`, so the customer still sees what they saved as unavailable
-        // rows and can remove them — degraded, but not a dead page.
+        // Open the gate on failure too, otherwise the page is stuck on the loading state forever; with no catalog every entry falls through to `orphans` so the customer still sees what they saved as unavailable rows and can remove them — degraded, but not a dead page.
         if (cancelled) return;
         setCatalogLoaded(true);
       });
@@ -102,8 +97,7 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
     };
   }, [user]);
 
-  // One mixed row: offers first, then collections, then products. Within each
-  // kind the wishlist's own order (oldest saved first) is preserved.
+  // One mixed row: offers first, then collections, then products. Within each kind the wishlist's own order (oldest saved first) is preserved.
   const saved = useMemo(
     () => items
       .map((item) => {
@@ -134,16 +128,13 @@ export function WishlistView({ lang, dict }: { lang: Language; dict: any }) {
     [categories, lang]
   );
 
-  // Entries whose target is gone from the catalog (deleted, hidden, or out of
-  // publication). They still occupy a wishlist slot, so they get a minimal card
-  // whose only job is letting the customer clear them.
+  // Entries whose target is gone from the catalog (deleted, hidden, or out of publication). They still occupy a wishlist slot, so they get a minimal card whose only job is letting the customer clear them.
   const orphans = useMemo(() => {
     const resolvedIds = new Set(saved.map((entry) => `${entry.entry.entityType}:${entry.entry.entityId}`));
     return items.filter((item) => !resolvedIds.has(`${item.entityType}:${item.entityId}`));
   }, [items, saved]);
 
-  // Page head, rendered by this view (not the shared shell) so the POV toggle
-  // can sit beside the title. The toggle only appears once there are cards.
+  // Page head, rendered by this view (not the shared shell) so the POV toggle can sit beside the title. The toggle only appears once there are cards.
   const head = (
     <header className="page-head">
       <div className="flex items-center justify-between gap-4">

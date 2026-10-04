@@ -38,8 +38,7 @@ function rowFor(order: Order, shipment: ShipmentRow | null, kind: ShipmentRow["k
     trackingNumber: shipment?.trackingNumber ?? null,
     carrierState: shipment?.normalizedState ?? null,
     rawProviderState: shipment?.rawProviderState ?? null,
-    // The order's manual state describes its outgoing parcel; linked return/exchange
-    // shipments carry only their own manual state.
+    // The order's manual state describes its outgoing parcel; linked return/exchange shipments carry only their own manual state.
     manualState: kind === "outgoing"
       ? order.manualShippingState ?? shipment?.manualState ?? null
       : shipment?.manualState ?? null,
@@ -49,8 +48,7 @@ function rowFor(order: Order, shipment: ShipmentRow | null, kind: ShipmentRow["k
     shippingAmountCents: shipment?.shippingAmountCents ?? order.shippingAmountCents,
     collectedAmountCents: shipment?.collectedAmountCents ?? null,
     collectionConfirmed: shipment?.collectionConfirmed ?? false,
-    // Cancellation is an order-level outgoing decision; linked return/exchange shipments
-    // must not report or be filtered by it.
+    // Cancellation is an order-level outgoing decision; linked return/exchange shipments must not report or be filtered by it.
     cancellationStatus: kind === "outgoing" ? order.cancellationStatus : null,
     openFlagTypes,
     needsAttention: openFlagTypes.length > 0 ||
@@ -59,8 +57,7 @@ function rowFor(order: Order, shipment: ShipmentRow | null, kind: ShipmentRow["k
   };
 }
 
-/** A create_delivery job failed with ORDER_NOT_DISPATCHABLE was intentionally stopped by a
- *  cancellation or refund block, so it is not an open failure needing staff attention. */
+/** A create_delivery job failed with ORDER_NOT_DISPATCHABLE was intentionally stopped by a cancellation or refund block, so it is not an open failure needing staff attention. */
 function isExpectedStop(item: WorkItemRow): boolean {
   return item.operation === "create_delivery" && item.status === "failed" && item.lastError === "ORDER_NOT_DISPATCHABLE";
 }

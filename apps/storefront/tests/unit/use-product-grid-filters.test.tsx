@@ -84,8 +84,7 @@ const branchProducts: Product[] = [
   products[1]
 ];
 
-// The product from the bug report: English display name, unrelated Arabic name,
-// and keywords in both languages that appear in neither name.
+// The product from the bug report: English display name, unrelated Arabic name, and keywords in both languages that appear in neither name.
 const aloeProduct: Product = {
   id: 9,
   sku: "ALOE-1",
@@ -169,8 +168,7 @@ describe("useProductGridFilters", () => {
     expect(screen.getByText("ids:1,2")).toBeInTheDocument();
   });
 
-  // The "view all" destination must find everything the overlay previewed,
-  // otherwise the dropdown promises matches this page cannot deliver.
+  // The "view all" destination must find everything the overlay previewed, otherwise the dropdown promises matches this page cannot deliver.
   it("finds a product by a keyword that appears in neither name", () => {
     render(createElement(HookProbe, { productInput: [aloeProduct], initialSearch: "lotion" }));
 

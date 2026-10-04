@@ -232,8 +232,7 @@ describe("HeaderMobileDrawer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "العناية" }));
     expect(screen.getByRole("link", { name: "سيروم" })).toHaveAttribute("href", "/ar/category/serums?categoryId=2");
-    // The drawer renders only the second-level category cards; deeper grandchild
-    // levels are no longer surfaced as their own links.
+    // The drawer renders only the second-level category cards; deeper grandchild levels are no longer surfaced as their own links.
     expect(screen.queryByRole("link", { name: "فيتامين سي" })).toBeNull();
   });
 

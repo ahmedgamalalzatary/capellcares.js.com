@@ -70,11 +70,7 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
       const quote = checkoutShippingQuoteSchema.parse({ ...rate,
         productsTotalCents, amountCents: productsTotalCents + rate.shippingAmountCents,
         codAmountCents, paymentMethod: payload.paymentMethod, address });
-      // Enforce the carrier's collection ceiling on every iteration, including the
-      // final accepted one, before a quote can be agreed or checkout can proceed.
-      // The address lines are only known when the caller has the full checkout
-      // payload, so an absent line is validated later at checkout and dispatch
-      // rather than failing a quote that never saw the address.
+      // Enforce the carrier's collection ceiling on every iteration, including the final accepted one, before a quote can be agreed or checkout can proceed; the address lines are only known when the caller has the full checkout payload, so an absent line is validated later at checkout and dispatch rather than failing a quote that never saw the address.
       assertShippingRestrictionsAllowed({
         firstLine: payload.addressLine !== undefined || payload.buildingApartment !== undefined
           ? buildDropOffFirstLine(payload.addressLine ?? "", payload.buildingApartment ?? "") : null,
@@ -91,8 +87,7 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
       const quote = await calculate(payload, priced);
       const checkoutFingerprint = fingerprint(payload, priced);
       const { quoteId: _providerQuoteId, quotedAt: _providerQuotedAt, ...agreement } = quote;
-      // Stable while the agreed cart/destination/payment/rate remains identical.
-      // Reloading checkout must not allocate another payment idempotency key.
+      // Stable while the agreed cart/destination/payment/rate remains identical. Reloading checkout must not allocate another payment idempotency key.
       quote.quoteId = `quote_${createHash("sha256").update(JSON.stringify([checkoutFingerprint, agreement])).digest("hex").slice(0, 58)}`;
       await db.insert(shippingCheckoutQuotes).values({ quoteId: quote.quoteId,
         checkoutFingerprint, snapshot: JSON.stringify(quote) }).onDuplicateKeyUpdate({ set: { quoteId: quote.quoteId } });

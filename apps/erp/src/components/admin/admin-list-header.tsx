@@ -36,11 +36,8 @@ interface AdminListHeaderProps {
   customFilters?: ReactNode;
 }
 
-/**
- * Shared header for every ERP list page: search, the page's own filters, and a count.
- * Filters are declared as data so search styling, select styling, and accessible names
- * stay identical across pages no matter how many filters a page needs.
- */
+/** Shared header for every ERP list page: search, the page's own filters, and a count.
+ * Filters are declared as data so search/select styling and accessible names stay identical across pages regardless of how many filters a page needs. */
 export function AdminListHeader({
   searchPlaceholder,
   searchLabel,

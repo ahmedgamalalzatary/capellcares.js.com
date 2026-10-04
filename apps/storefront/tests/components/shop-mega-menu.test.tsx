@@ -98,8 +98,7 @@ describe("ShopMegaMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Offers" }));
 
-    // Same text-only treatment NavBranch gives a child category: no thumbnails,
-    // even when the entry has artwork.
+    // Same text-only treatment NavBranch gives a child category: no thumbnails, even when the entry has artwork.
     expect(screen.getByRole("link", { name: "Duo Deal" }).querySelector("img")).toBeNull();
     expect(screen.queryByAltText("Duo Deal")).toBeNull();
     expect(screen.getByRole("link", { name: "Bare Deal" })).toBeInTheDocument();
@@ -256,8 +255,7 @@ describe("ShopMegaMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
 
-    // "Cleansers" has an imagePath in the fixture; the menu deliberately shows
-    // the label alone, so no thumbnail should be rendered for it.
+    // "Cleansers" has an imagePath in the fixture; the menu deliberately shows the label alone, so no thumbnail should be rendered for it.
     expect(screen.getByRole("link", { name: "Cleansers" })).toBeInTheDocument();
     expect(screen.queryByAltText("Cleansers")).toBeNull();
     expect(screen.queryByAltText("Serums")).toBeNull();

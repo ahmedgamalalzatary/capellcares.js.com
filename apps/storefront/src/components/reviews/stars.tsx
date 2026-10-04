@@ -6,10 +6,7 @@ export function template(value: string, replacements: Record<string, string>) {
   );
 }
 
-/**
- * The five-star row. Without a label it is decorative — the caller is then
- * responsible for naming the rating, so screen readers hear it once.
- */
+/** The five-star row. Without a label it is decorative — the caller is then responsible for naming the rating, so screen readers hear it once. */
 export function Stars({ rating, label, className }: { rating: number; label?: string; className?: string }) {
   const decorative = label == null;
   return (

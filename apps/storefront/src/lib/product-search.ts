@@ -1,20 +1,7 @@
 import type { Product } from "@capella/shared";
 
-/**
- * The one definition of "does this product match what the shopper typed".
- *
- * This is the client-side half: the /products?q= grid and the filter drawer
- * narrow an already-fetched list with it. Global search (the header dropdown and
- * the /search results page) asks the catalog for the term instead, so both of
- * those agree with each other rather than with this.
- *
- * Matching spans *both* names plus the keywords: a product is routinely named
- * in one language and searched for in the other, and its keywords carry terms
- * ("lotion") that appear in neither name.
- *
- * An empty term means "no constraint" and matches everything; callers decide
- * whether an empty search should list all products or none.
- */
+/** The one definition of "does this product match what the shopper typed": the client-side half (the /products?q= grid and filter drawer narrow an already-fetched list with it, while global search asks the catalog instead).
+ * Matching spans both names plus keywords (a product is often named in one language and searched for in the other, and keywords carry terms in neither name); an empty term matches everything, and callers decide whether an empty search lists all products or none. */
 export function matchesProductQuery(
   product: Pick<Product, "name" | "keywords">,
   query: string

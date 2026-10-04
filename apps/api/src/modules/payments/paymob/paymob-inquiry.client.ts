@@ -1,29 +1,7 @@
 import { z } from "zod";
 
-/**
- * Trusted Paymob transaction inquiry.
- *
- * Webhook callbacks are HMAC-signed, but only over a fixed field list that does NOT
- * include `refunded_amount_cents`. A refund amount taken from the callback body is
- * therefore attacker-controllable, so refund totals must come from this authenticated
- * read instead.
- *
- * CREDENTIALS (Paymob official docs, "Setup & Authentication", and the official
- * PaymobAccept/API-Postman-Collections README):
- *   POST {base}/api/auth/tokens   body {"api_key": "<API KEY>"}  -> {"token": "..."}
- *   GET  {base}/api/acceptance/transactions/{id}   Authorization: Bearer {token}
- *
- * The credential that mints this token is the merchant **API Key**, NOT the **Secret Key**.
- * Paymob defines these as two separate credentials: the Secret Key authenticates Intentions
- * and post-pay APIs as `Authorization: Token <secret_key>`, while the API Key mints the
- * 60-minute bearer token used by Subscriptions, Transaction Inquiry and QuickLink.
- *
- * This file previously sent the Secret Key as `api_key` while its own comment claimed the
- * contract was verified against those docs. That combination is the worst of both: the
- * inquiry could never authenticate in production, and the failure did not surface as an
- * error - it surfaced as "refunds never verify", so every refund degraded to "no evidence"
- * and the guards built on that evidence waved payments through.
- */
+/** Trusted Paymob transaction inquiry. Webhook callbacks are HMAC-signed over a fixed field list that does NOT include `refunded_amount_cents`, so a refund amount from the callback body is attacker-controllable and refund totals must come from this authenticated read.
+ * CREDENTIALS (Paymob docs): `POST {base}/api/auth/tokens` body `{"api_key": "<API KEY>"}` mints a 60-minute bearer token, then `GET {base}/api/acceptance/transactions/{id}` with `Authorization: Bearer {token}`. The credential that mints the token is the merchant **API Key**, NOT the **Secret Key** (the Secret Key authenticates Intentions/post-pay APIs as `Authorization: Token <secret_key>`). This file previously sent the Secret Key as `api_key`, so the inquiry could never authenticate in production and the failure surfaced as "refunds never verify", degrading every refund to "no evidence". */
 
 export const PAYMOB_TOKEN_TTL_MS = 60 * 60 * 1000;
 /** Refresh early so an in-flight request never uses a token that expires mid-flight. */
@@ -31,18 +9,8 @@ const TOKEN_EXPIRY_MARGIN_MS = 60_000;
 
 const tokenSchema = z.object({ token: z.string().trim().min(1) });
 
-/**
- * Only the fields we actually act on are modelled; everything else is ignored on purpose.
- *
- * The identity fields (`order.id`, `integration_id`, `owner`, `is_live`) are required, not
- * optional. A refund total on its own is not enough: without them the caller cannot tell
- * whether the authenticated read describes the payment it holds a signed callback for, or
- * some other transaction on the same account. Refusing to parse a response that omits them
- * turns that into an unresolved read instead of a verified amount with unknown provenance.
- *
- * `owner` is the merchant/account identifier the provider reports for the transaction. It is
- * carried through as opaque evidence only: nothing here assumes it equals any local value.
- */
+/** Only the fields we actually act on are modelled; everything else is ignored on purpose.
+ * The identity fields (`order.id`, `integration_id`, `owner`, `is_live`) are required, not optional — a refund total alone is not enough, since without them the caller cannot tell whether the authenticated read describes the payment its signed callback is for or some other transaction on the same account; refusing to parse a response that omits them turns that into an unresolved read instead of a verified amount with unknown provenance. `owner` is carried through as opaque evidence only. */
 const transactionSchema = z.object({
   id: z.union([z.string().trim().min(1), z.number().int().positive()]).transform(String),
   order: z.object({ id: z.union([z.string().trim().min(1), z.number().int().positive()]).transform(String) }),
@@ -86,11 +54,7 @@ export class PaymobInquiryError extends Error {
 export type PaymobInquiryClientOptions = {
   fetchImpl?: typeof fetch;
   baseUrl: string;
-  /**
-   * The merchant API Key that mints the inquiry bearer token. Distinct from the Secret
-   * Key used for intentions, and required - there is deliberately no fallback to it,
-   * because a silent fallback would restore the exact defect this replaces.
-   */
+  /** The merchant API Key that mints the inquiry bearer token — distinct from the Secret Key used for intentions, and required (deliberately no fallback, because a silent fallback would restore the exact defect this replaces). */
   apiKey: string;
   timeoutMs?: number;
   /** Injectable clock so token caching is testable without real waiting. */
@@ -102,9 +66,7 @@ export type PaymobInquiryClient = { query(transactionId: string): Promise<Paymob
 export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): PaymobInquiryClient {
   const apiKey = typeof options.apiKey === "string" ? options.apiKey.trim() : "";
   if (apiKey.length === 0) {
-    // Fail closed at the boundary. Attempting the request anyway produced a call the
-    // provider cannot authenticate, which surfaced far downstream as "refunds never
-    // verify" rather than as the configuration fault it actually is.
+    // Fail closed at the boundary; attempting the request anyway produced a call the provider cannot authenticate, which surfaced far downstream as "refunds never verify" rather than as the configuration fault it actually is.
     throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE",
       "Paymob API key is not configured; transaction inquiry cannot authenticate");
   }
@@ -142,12 +104,10 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
       const parsed = transactionSchema.safeParse(body);
       if (!parsed.success) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob transaction inquiry response is invalid");
       const raw = parsed.data;
-      // The queried transaction must be the one the provider returned, otherwise the
-      // caller could be told about a different payment than it asked for.
+      // The queried transaction must be the one the provider returned, otherwise the caller could be told about a different payment than it asked for.
       if (raw.id !== id) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob transaction inquiry returned a different transaction");
       const refunded = raw.is_refunded === true;
-      // `refunded_amount_cents` is nullable. Treating null as zero when the provider says
-      // refunded would silently discard a real refund, so that is an unresolved read.
+      // `refunded_amount_cents` is nullable. Treating null as zero when the provider says refunded would silently discard a real refund, so that is an unresolved read.
       if (refunded && (raw.refunded_amount_cents === null || raw.refunded_amount_cents === undefined)) {
         throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob reported a refund without an authenticated amount");
       }
@@ -161,15 +121,7 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
     }
   };
 
-  /**
-   * Performs the authenticated read, refreshing the cached bearer token exactly once if the
-   * provider rejects it.
-   *
-   * The cached token previously survived a 401, so a single expiry made every refund inquiry
-   * fail for the remainder of the hour. One refresh is enough to cover a genuinely stale
-   * token; more than that would turn a wrong credential into a request loop, so a second
-   * rejection is reported as an unresolved read.
-   */
+  /** Performs the authenticated read, refreshing the cached bearer token exactly once if the provider rejects it; the cached token previously survived a 401, so a single expiry made every refund inquiry fail for the rest of the hour — one refresh covers a genuinely stale token, while more would turn a wrong credential into a request loop, so a second rejection is reported as an unresolved read. */
   async function authenticatedRead(url: string): Promise<unknown> {
     const attempt = async (token: string): Promise<Response> => {
       try {
@@ -181,8 +133,7 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
     };
     let response = await attempt(await authToken());
     if (response.status !== 401) return readBody(response);
-    // Drop the rejected token before minting a replacement, so the refresh is guaranteed to
-    // be a fresh credential rather than the same rejected one.
+    // Drop the rejected token before minting a replacement, so the refresh is guaranteed to be a fresh credential rather than the same rejected one.
     cachedToken = null;
     response = await attempt(await authToken());
     if (response.status === 401) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");

@@ -50,8 +50,7 @@ function editPayload(patch: ShipmentEdit, city: string) {
   return payload;
 }
 
-/** Runs under the same order/shipment locks as synchronization. A read confirms an edit;
- * an acknowledgement alone never invents carrier data. Recovery never repeats the PUT. */
+/** Runs under the same order/shipment locks as synchronization. A read confirms an edit; an acknowledgement alone never invents carrier data. Recovery never repeats the PUT. */
 export async function confirmShippingEdits(tx: ShippingTransaction, ship: typeof shipments.$inferSelect, event: BostaObservation) {
   const jobs = await tx.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.shipmentId, ship.id),
     eq(shippingWorkItems.operation, "edit_delivery"), inArray(shippingWorkItems.status, ["processing", "review_required", "failed"]))).for("update");
@@ -61,8 +60,7 @@ export async function confirmShippingEdits(tx: ShippingTransaction, ship: typeof
     const saved = JSON.parse(job.requestSnapshot!);
     const patch = shipmentEditSchema.parse(saved.patch);
     const recipient = event.carrier.recipient as Record<string, unknown> | undefined;
-    // Identity comes from the shared normalizer, not from assuming flat provider fields:
-    // a documented address may carry a district name and no district id.
+    // Identity comes from the shared normalizer, not from assuming flat provider fields: a documented address may carry a district name and no district id.
     const addressIdentity = event.carrier.addressIdentity;
     const matched = (patch.notes === undefined || patch.notes === event.carrier.notes) &&
       (!patch.size || saved.payload.specs.size === event.carrier.size) &&
@@ -107,8 +105,7 @@ export async function applyShippingNoMoneyEdit(orderId: number, input: unknown, 
     if (patch.address && (patch.address.cityId !== snapshot.address.cityId || patch.address.zoneId !== snapshot.address.zoneId || patch.address.districtId !== snapshot.address.districtId)) {
       throw new ShippingEditError("Destination city/zone/district changes require cancellation and a new order");
     }
-    // Validate the address the carrier will receive BEFORE the PUT intent is saved, so
-    // an address the carrier would reject never becomes a pending work item.
+    // Validate the address the carrier will receive BEFORE the PUT intent is saved, so an address the carrier would reject never becomes a pending work item.
     if (patch.address) assertAddressAllowed(patch.address.addressLine, patch.address.buildingApartment);
     if (!ship) {
       await tx.update(shippingWorkItems).set({ requestSnapshot: null }).where(and(eq(shippingWorkItems.orderId, orderId),

@@ -47,8 +47,7 @@ function atPath(value: unknown, path: string[]): unknown {
 
 export function bostaDeliveryProviderFromEnvironment(env: Record<string, string | undefined> = process.env,
   fetchImpl: typeof fetch = fetch, options: { recoveryOnly?: boolean } = {}): DeliveryProvider | null {
-  // Strict: a typo must fail loudly rather than silently disabling sending, because
-// "sending off" would strand every queued order as an unexplained eventual failure.
+  // Strict: a typo must fail loudly rather than silently disabling sending, because "sending off" would strand every queued order as an unexplained eventual failure.
 const sendingFlag = env.BOSTA_SHIPMENT_SENDING_ENABLED?.trim().toLowerCase();
 if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" && sendingFlag !== "false") {
     throw new Error("BOSTA_SHIPMENT_SENDING_ENABLED must be true or false");
@@ -72,12 +71,7 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
       Object.entries(value).map(([key, entry]) => [redact(key), sanitize(entry)]));
     return value;
   };
-  // The tracking number is accepted in every form the shared normalizer supports and is
-  // normalized ONCE, through that same normalizer. The shared business read normalizes the
-  // value again during recovery, so create and recovery can never disagree about which
-  // identifier they are talking about. A form the normalizer rejects is not proof that the
-  // shipment failed to be created, so it stays an uncertain outcome like any other
-  // unparseable create response.
+  // The tracking number is accepted in every form the shared normalizer supports and normalized ONCE through that same normalizer, so create and recovery can never disagree about which identifier they mean; a form the normalizer rejects is not proof the shipment failed to be created, so it stays an uncertain outcome like any other unparseable create response.
   const resultSchema = z.object({ success: z.literal(true), data: z.object({
     trackingNumber: z.union([z.string(), z.number().int().positive()]),
     state: z.object({ code: z.number().int(), value: z.string().min(1).max(64) })
@@ -100,8 +94,7 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
   return {
     accountId: settings.accountId, environment, canCreate,
     buildRequest(order, items, reference) {
-      // NOTE: the sending -> sync gate lives in create(), not here. buildRequest is also
-      // used to reconcile already-created shipments, which must keep working with sync off.
+      // NOTE: the sending -> sync gate lives in create(), not here. buildRequest is also used to reconcile already-created shipments, which must keep working with sync off.
       const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot ?? "null"));
       const quoteAccount = JSON.parse(env.BOSTA_QUOTE_SETTINGS_JSON ?? "null") as BostaQuoteSettings | null;
       if (!quoteAccount || quoteAccount.accountVerified !== true || !quoteAccount.accountEvidence?.trim() ||
@@ -125,8 +118,7 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
       }
       const codCents = order.paymentMethod === "cod" ? totalCents : 0;
       const firstLine = buildDropOffFirstLine(order.addressLine, order.buildingApartment);
-      // Defensive revalidation for old or corrupt snapshots: the same rules checkout
-      // and edits already enforce, so the value validated is the value we send.
+      // Defensive revalidation for old or corrupt snapshots: the same rules checkout and edits already enforce, so the value validated is the value we send.
       assertShippingRestrictionsAllowed({ firstLine, paymentMethod: order.paymentMethod, codAmountCents: codCents });
       const names = order.fullName.trim().split(/\s+/);
       const descriptions: string[] = [];
@@ -149,9 +141,7 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
     },
     async create(request) {
       if (!canCreate) throw new Error("New shipment sending is disabled");
-      // Creating a shipment we can never synchronize is unrecoverable: the order would
-      // sit forever with no way to learn its outcome. Enforce at the provider write, so
-      // read-only recovery keeps working with synchronization off.
+      // Creating a shipment we can never synchronize is unrecoverable — the order would sit forever with no way to learn its outcome; enforce at the provider write so read-only recovery keeps working with synchronization off.
       if (env.BOSTA_SYNC_ENABLED?.trim().toLowerCase() !== "true") throw new Error("New shipment sending requires synchronization");
       checkAccount(request);
       return parseResult(await client.post("/deliveries?apiVersion=1", request.payload));
@@ -170,9 +160,7 @@ if (sendingFlag !== undefined && sendingFlag !== "" && sendingFlag !== "true" &&
           .transform(value => String(value)) }).parse(rows[0]);
       const raw = await client.get(`/deliveries/business/${encodeURIComponent(row.trackingNumber)}`);
       const result = parseResult(raw);
-      // Correlate through the shared normalizer: Bosta returns `type` as an integer or
-      // as { code, value }, and addresses with ids or with a district NAME. A parse or
-      // correlation failure stays an unresolved outcome — never permission to create again.
+      // Correlate through the shared normalizer: Bosta returns `type` as an integer or `{ code, value }`, and addresses with ids or a district NAME; a parse or correlation failure stays an unresolved outcome — never permission to create again.
       const detail = await normalizeDeliveryRead(raw, {
         resolveByName: async (query) => query.districtName
           ? await addresses.resolveDistrictsByName({ cityId: query.cityId, zoneId: query.zoneId, districtName: query.districtName })

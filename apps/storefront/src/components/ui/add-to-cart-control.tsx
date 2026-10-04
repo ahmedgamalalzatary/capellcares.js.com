@@ -24,14 +24,8 @@ const DISABLED_CLASS = "disabled:pointer-events-none disabled:opacity-50";
 const STEP_CLASS =
   "grid h-9 w-9 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30";
 
-/**
- * The card action row: add → confirm → quantity stepper.
- *
- * The stepper is derived from the cart, not from local state, so a card always
- * reflects what is actually in the bag — across reloads, and after the line is
- * removed elsewhere. Every step writes to the cart immediately; stepping below
- * one drops the line and hands the row back to the add button.
- */
+/** The card action row: add → confirm → quantity stepper.
+ * The stepper is derived from the cart (not local state) so a card always reflects what is in the bag across reloads and after the line is removed elsewhere; every step writes immediately, and stepping below one drops the line and hands the row back to the add button. */
 export function AddToCartControl({ line, dict, maxQty, className }: Props) {
   const { lines, add, setQty, remove, keyOf } = useCart();
   const { added, flash: flashAdded } = useAddedFlash(1400);
@@ -84,8 +78,7 @@ export function AddToCartControl({ line, dict, maxQty, className }: Props) {
     );
   }
 
-  // `atStock` covers the steps; the very first unit needs the same cap, or a
-  // sold-out card would still put one in the bag before disabling `+`.
+  // `atStock` covers the steps; the very first unit needs the same cap, or a sold-out card would still put one in the bag before disabling `+`.
   return (
     <button
       type="button"

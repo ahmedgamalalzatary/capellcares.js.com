@@ -44,9 +44,7 @@ async function withOfferDiscounts<T extends { id: number }>(rows: T[]) {
   return rows.map((row) => ({ ...row, discount: discounts.get(row.id) ?? null }));
 }
 
-// Items inside one offer must read identically on both surfaces, so the
-// erp fallback (older first) is used to keep legacy insertion order for
-// items created before in-offer product ordering existed.
+// Items inside one offer must read identically on both surfaces, so the erp fallback (older first) is used to keep legacy insertion order for items created before in-offer product ordering existed.
 type OfferItemRow = {
   id: number;
   offerId: number;
@@ -86,10 +84,7 @@ async function listOrderedOfferItemsRepo(offerId: number) {
   return orderOfferItems(rows, rankByProductId);
 }
 
-/**
- * The same ordered items as `listOrderedOfferItemsRepo`, for a whole page of
- * offers in two reads rather than two per offer.
- */
+/** The same ordered items as `listOrderedOfferItemsRepo`, for a whole page of offers in two reads rather than two per offer. */
 async function listOrderedItemsByOfferRepo(offerIds: number[]) {
   const itemsByOfferId = new Map<number, ReturnType<typeof orderOfferItems>>();
   if (offerIds.length === 0) {
@@ -137,9 +132,7 @@ export async function reorderOffersRepo(input: { ids: number[] }) {
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Runs inside the offer write transaction and locks the category row, so a
-// concurrent soft-delete or reparent cannot commit between the check and the
-// insert and leave the offer classified under a non-root category.
+// Runs inside the offer write transaction and locks the category row, so a concurrent soft-delete or reparent cannot commit between the check and the insert and leave the offer classified under a non-root category.
 async function assertRootOfferCategory(tx: DbTransaction, categoryId: number) {
   const [category] = await tx
     .select({ id: categories.id, parentId: categories.parentId })
@@ -258,8 +251,7 @@ export async function upsertOfferRepo(input: {
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
-        // Omitting visibility on an edit leaves it alone; defaulting here would
-        // silently republish an offer the admin had deliberately hidden.
+        // Omitting visibility on an edit leaves it alone; defaulting here would silently republish an offer the admin had deliberately hidden.
         ...(input.visibility !== undefined ? { visibility: input.visibility } : {})
       })
       .where(eq(offers.id, offerId));
@@ -330,8 +322,7 @@ export async function softDeleteOfferRepo(id: number) {
 }
 
 export async function restoreOfferRepo(id: number) {
-  // An offer with no category predates classification. Restoring it must never
-  // put it back on the storefront, so it always comes back parked as inactive.
+  // An offer with no category predates classification. Restoring it must never put it back on the storefront, so it always comes back parked as inactive.
   const [existing] = await db
     .select({ categoryId: offers.categoryId })
     .from(offers)
@@ -407,8 +398,7 @@ export async function toggleOfferStatusRepo(id: number) {
   if (!current) return;
 
   const nextStatus = current.status === "active" ? "inactive" : "active";
-  // This path bypasses the upsert validation, so it is the last place that can
-  // stop an uncategorised legacy offer from being switched on to the storefront.
+  // This path bypasses the upsert validation, so it is the last place that can stop an uncategorised legacy offer from being switched on to the storefront.
   if (nextStatus === "active" && current.categoryId == null) {
     const error = new Error("Offer must have a category before it can be activated");
     (error as Error & { code?: string }).code = "OFFER_CATEGORY_REQUIRED";

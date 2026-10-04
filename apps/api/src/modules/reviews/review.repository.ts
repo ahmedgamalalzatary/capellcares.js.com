@@ -207,11 +207,7 @@ export async function listPublicReviews(input: {
 /** What an unreviewed entity reports; frozen because every card shares it. */
 export const EMPTY_RATING: RatingSummary = Object.freeze({ average: 0, count: 0 });
 
-/**
- * Batch rating summaries for a grid of cards: one grouped read per entity
- * type, covering only publicly visible reviews. Entities without one are left
- * out of the map so callers can fall back to an empty rating.
- */
+/** Batch rating summaries for a grid of cards: one grouped read per entity type covering only publicly visible reviews; entities without one are left out of the map so callers can fall back to an empty rating. */
 export async function listRatingSummaries(
   entityType: ReviewEntityType,
   entityIds: number[]
@@ -240,11 +236,7 @@ export async function listRatingSummaries(
   return summaries;
 }
 
-/**
- * Stars are decoration on a catalog listing, so a reviews outage must not empty
- * the shop. Mirrors what `loadReviewData` does for the detail widget: warn, and
- * let every card fall back to no rating.
- */
+/** Stars are decoration on a catalog listing, so a reviews outage must not empty the shop. Mirrors what `loadReviewData` does for the detail widget: warn, and let every card fall back to no rating. */
 export async function safeRatingSummaries(
   entityType: ReviewEntityType,
   entityIds: number[]

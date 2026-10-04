@@ -10,17 +10,8 @@ import {
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/**
- * Reconciles a source entity's related list to exactly `targets`, in the given
- * order. This is the single mutation entry point used by upserts and the ERP
- * editor:
- *
- * - The source's rank for each target is the target's position (1-based).
- * - New links also create their mirror row, appended to the target's own list
- *   (per-source ranking — the mirror's rank is independent of this side).
- * - Links dropped from `targets` are unlinked in BOTH directions.
- * - Self-references are rejected.
- */
+/** Reconciles a source entity's related list to exactly `targets`, in the given order — the single mutation entry point used by upserts and the ERP editor.
+ * The source's rank for each target is the target's 1-based position; new links also create their mirror row appended to the target's own list (per-source ranking, independent of this side); links dropped from `targets` are unlinked in BOTH directions; and self-references are rejected. */
 export async function setRelatedLinksForSourceRepo(
   source: RelatedRef,
   targets: RelatedRef[],

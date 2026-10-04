@@ -86,8 +86,7 @@ export function useProductsPage() {
       .sort(compareByScopedOrdering.bind(null, "erp"));
   }, [filteredProducts, scopeCategoryId]);
 
-  // Reordering needs the complete scope set, so it is only meaningful when no
-  // search/status filter hides part of the scope.
+  // Reordering needs the complete scope set, so it is only meaningful when no search/status filter hides part of the scope.
   const reorderEnabled = statusFilter === "all" && !search.trim();
 
   useEffect(() => {

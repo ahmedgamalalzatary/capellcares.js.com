@@ -126,8 +126,7 @@ export function resolveBostaSyncRuntime(env: Record<string, string | undefined> 
       const collected = atPath(parsed, settings.readContract.collectionPath);
       const confirmation = atPath(parsed, settings.readContract.confirmationPath);
       if (confirmation !== undefined && confirmation !== null && typeof confirmation !== "boolean") throw new Error("Invalid carrier delivery confirmation");
-      // The sanitized blob stays as raw evidence; identity is normalized separately so
-      // edit confirmation compares proven ids instead of assuming flat provider fields.
+      // The sanitized blob stays as raw evidence; identity is normalized separately so edit confirmation compares proven ids instead of assuming flat provider fields.
       let addressIdentity: NormalizedReadAddress | undefined;
       try { addressIdentity = await normalizeReadAddress(parsed.dropOffAddress, resolveDistrictByName); }
       catch { addressIdentity = { cityId: null, zoneId: null, districtId: null, firstLine: "" }; }

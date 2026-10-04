@@ -10,11 +10,7 @@ beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-/**
- * Reviews are unique per customer and target, so every seeded rating needs its
- * own customer. The order item only has to exist — the card summary never
- * re-checks eligibility, that was settled when the review was created.
- */
+/** Reviews are unique per customer and target, so every seeded rating needs its own customer; the order item only has to exist — the card summary never re-checks eligibility, that was settled when the review was created. */
 async function seedRatings(
   entityType: "product" | "offer" | "collection",
   entityId: number,

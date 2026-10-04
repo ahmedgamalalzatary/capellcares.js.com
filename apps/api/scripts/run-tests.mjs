@@ -7,16 +7,13 @@ const workspaceRoot = resolve(packageRoot, "..", "..");
 
 process.env.NODE_ENV = "test";
 
-// Load the workspace .env.test into process.env before spawning the test child.
-// The child inherits process.env, so even modules that import the DB client at
-// import time (e.g. route tests) get a real connection URL. Existing env vars
-// win, so CI can override without editing the file.
+// Load the workspace .env.test into process.env before spawning the test child; the child inherits it, so even modules importing the DB client at import time get a real connection URL.
+// Existing env vars win, so CI can override without editing the file.
 const testEnvPath = resolve(workspaceRoot, ".env.test");
 if (existsSync(testEnvPath) && typeof process.loadEnvFile === "function") {
   const preexisting = { ...process.env };
   process.loadEnvFile(testEnvPath);
-  // process.loadEnvFile overwrites; restore vars that were already set so CI
-  // can override the checked-in defaults.
+  // process.loadEnvFile overwrites; restore vars that were already set so CI can override the checked-in defaults.
   for (const [key, value] of Object.entries(preexisting)) {
     process.env[key] = value;
   }
@@ -35,8 +32,7 @@ const wantsCoverage = extraArgs.includes("--coverage");
 const filteredArgs = extraArgs.filter((arg) => arg !== "--coverage");
 const testArgs = filteredArgs.length > 0 ? filteredArgs : ["tests/**/*.test.ts"];
 
-// Node's built-in coverage counts only loaded files, so the reported figure is a
-// lower bound on workspace coverage rather than a whole-workspace percentage.
+// Node's built-in coverage counts only loaded files, so the reported figure is a lower bound on workspace coverage rather than a whole-workspace percentage.
 const coverageArgs = wantsCoverage
   ? ["--experimental-test-coverage", "--test-coverage-include=src/**/*.ts", "--test-coverage-exclude=src/scripts/**"]
   : [];

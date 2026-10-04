@@ -3,12 +3,8 @@ import test, { after } from "node:test";
 
 import { clearTestSeed } from "../src/seeds/test.seed.js";
 
-/**
- * `clearTestSeed` truncates every seeded table, so a misconfigured connection
- * would destroy real data. The guard is asserted by pointing the resolved URL
- * at a production-looking schema; the pool was created from the real test URL
- * at import time, so nothing here touches a live connection.
- */
+/** `clearTestSeed` truncates every seeded table, so a misconfigured connection would destroy real data.
+ * The guard is asserted by pointing the resolved URL at a production-looking schema; the pool was created from the real test URL at import time, so nothing here touches a live connection. */
 
 const originalTestDatabaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -31,7 +27,6 @@ test("clearTestSeed proceeds against an explicitly disposable schema", async () 
   process.env.NODE_ENV = "test";
   process.env.TEST_DATABASE_URL = "mysql://root:pass@localhost:3306/capella_test";
 
-  // No rejection: the guard permits this target, so the real reset runs against
-  // the live pool (which was connected to the actual test schema at import time).
+  // No rejection: the guard permits this target, so the real reset runs against the live pool (which was connected to the actual test schema at import time).
   await clearTestSeed();
 });

@@ -88,9 +88,7 @@ export class BostaClient {
         if (isRead && parseFailed) {
           throw new BostaResponseValidationError("Bosta returned malformed JSON to a read", response.status);
         }
-        // A write whose body cannot be parsed is an uncertain outcome: the
-        // delivery may have been created but its reference is lost. Never
-        // report it as a successful create. Reads tolerate an empty body.
+        // A write whose body cannot be parsed is an uncertain outcome: the delivery may have been created but its reference is lost. Never report it as a successful create. Reads tolerate an empty body.
         if (parseFailed || (!isRead && parsed == null)) {
           throw new BostaProviderError(
             "Bosta returned an unreadable response to a write; the operation outcome is uncertain",
@@ -101,8 +99,7 @@ export class BostaClient {
         return parsed;
       }
 
-      // Only a string message is usable; an object/array/number message would
-      // break redaction and must not erase the known HTTP status.
+      // Only a string message is usable; an object/array/number message would break redaction and must not erase the known HTTP status.
       const rawMessage = (parsed as { message?: unknown } | null)?.message;
       const message = this.redact(
         typeof rawMessage === "string" ? rawMessage : `Bosta request failed with status ${response.status}`
@@ -116,15 +113,13 @@ export class BostaClient {
       if (response.status >= 400 && response.status < 500) {
         throw new BostaProviderError(message, "definitive", response.status);
       }
-      // 5xx on a read is transient and safe to retry. On a write it is
-      // ambiguous: the provider may have processed the mutation before failing.
+      // 5xx on a read is transient and safe to retry. On a write it is ambiguous: the provider may have processed the mutation before failing.
       throw new BostaProviderError(message, isRead ? "transient" : "ambiguous", response.status);
     } catch (error) {
       if (error instanceof BostaProviderError || error instanceof BostaResponseValidationError) {
         throw error;
       }
-      // AbortError (timeout) and network failures are ambiguous: the provider may
-      // have processed the request. Never treat them as a definite rejection.
+      // AbortError (timeout) and network failures are ambiguous: the provider may have processed the request. Never treat them as a definite rejection.
       const message = this.redact(error instanceof Error ? error.message : "Bosta request failed");
       throw new BostaProviderError(message, "ambiguous", null);
     } finally {

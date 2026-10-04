@@ -6,8 +6,7 @@ import { EntityAvatar } from "@/components/admin/entity-avatar";
 import { API_BASE } from "@/lib/api/client";
 
 describe("EntityAvatar", () => {
-  // Uploads are served by the API, not by the ERP origin, so a stored
-  // `/uploads/...` path has to be resolved against the API before it is shown.
+  // Uploads are served by the API, not by the ERP origin, so a stored `/uploads/...` path has to be resolved against the API before it is shown.
   it("resolves a stored upload path against the API origin", () => {
     const { container } = render(
       createElement(EntityAvatar, { src: "/uploads/thing.webp", fallback: "T" })

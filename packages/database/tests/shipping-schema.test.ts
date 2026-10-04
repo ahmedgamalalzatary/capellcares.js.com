@@ -180,10 +180,8 @@ serialTest("orders persist the shipping quote snapshot they were created with", 
   assert.equal(stored.shippingQuoteId, "quote-abc");
   assert.equal(stored.shippingSize, "small");
 
-  // These columns are plain, writable columns: nothing in the schema prevents a
-  // later write. Immutability is an application-layer rule enforced in
-  // apps/api (shipping guards reject edits once the order is in flight), so it
-  // is deliberately not claimed here.
+  // These columns are plain, writable columns: nothing in the schema prevents a later write.
+  // Immutability is an application-layer rule enforced in apps/api (shipping guards reject edits once the order is in flight), so it is deliberately not claimed here.
   await db.update(schema.orders).set({ shippingQuoteId: "quote-replaced" })
     .where(eq(schema.orders.id, orderId));
   const [rewritten] = await db.select({ shippingQuoteId: schema.orders.shippingQuoteId })

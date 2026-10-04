@@ -41,10 +41,7 @@ describe("storefront next config", () => {
   });
 
   it("passes through whatever API URL the environment resolved, inventing none", async () => {
-    // loadWorkspaceEnv() reads the untracked workspace-root .env, so the exact
-    // value is not knowable from a clean checkout. The contract worth locking is
-    // that the config forwards the resolved value verbatim and never substitutes
-    // one of its own.
+    // loadWorkspaceEnv() reads the untracked workspace-root .env, so the exact value is not knowable from a clean checkout; the contract worth locking is that the config forwards the resolved value verbatim and never substitutes one of its own.
     setEnv("NEXT_PUBLIC_API_URL", undefined);
     process.chdir(storefrontDir);
 
@@ -55,9 +52,7 @@ describe("storefront next config", () => {
   });
 
   it("leaves the env API URL undefined when the environment provides none", async () => {
-    // Runs from a directory with no workspace-root .env two levels up, so the
-    // loader has nothing to load. The variable is deleted explicitly because
-    // Vitest shares one process.env across cases in a worker.
+    // Runs from a directory with no workspace-root .env two levels up, so the loader has nothing to load. The variable is deleted explicitly because Vitest shares one process.env across cases in a worker.
     setEnv("NEXT_PUBLIC_API_URL", undefined);
     const emptyDir = mkdtempSync(join(tmpdir(), "capella-next-config-"));
     process.chdir(emptyDir);

@@ -59,8 +59,7 @@ describe("useCollapsedCategories", () => {
 
     render(createElement(Probe));
 
-    // First committed render must already reflect storage — if hydration happened
-    // in an effect, renders[0] would be empty and the tree would animate closed.
+    // First committed render must already reflect storage — if hydration happened in an effect, renders[0] would be empty and the tree would animate closed.
     expect(renders[0].has(9)).toBe(true);
   });
 

@@ -132,8 +132,7 @@ export function FilterDrawer({
       <button
         type="button"
         onClick={onClose}
-        // Distinct from the close button's label — naming both the same would
-        // read as two identical controls to a screen reader.
+        // Distinct from the close button's label — naming both the same would read as two identical controls to a screen reader.
         aria-label={dict.filters.dismissFilters ?? "Dismiss filters"}
         tabIndex={open ? 0 : -1}
         inert={!open}
@@ -148,8 +147,7 @@ export function FilterDrawer({
         role="dialog"
         aria-modal="true"
         aria-label={dict.filters.title}
-        // The drawer stays mounted so it can slide; `inert` keeps the off-screen
-        // copy out of the tab order and the accessibility tree meanwhile.
+        // The drawer stays mounted so it can slide; `inert` keeps the off-screen copy out of the tab order and the accessibility tree meanwhile.
         inert={!open}
         className={cn(
           "fixed inset-y-0 start-0 z-[51] flex w-[min(340px,90vw)] flex-col overflow-y-auto bg-canvas transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",

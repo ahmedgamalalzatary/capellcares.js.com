@@ -3,18 +3,8 @@
 import { Children, useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
 
-/**
- * Shop-page card layout: one row of cards (3 on desktop, 2 on tablet, ~1 with a
- * peek on mobile) with the rest reachable via horizontal scroll. Cards keep a
- * fixed 1/3 width and snap into place; the scrollbar is hidden.
- *
- * On desktop, prev/next buttons scroll the row by a page and disable at the
- * ends. The buttons are hidden on touch/tablet, where swiping is natural.
- *
- * Used by the shop page's sections and by Capella Tips wherever it appears.
- * Product/category listings keep their multi-row grids, so this leaves
- * ProductCard / SectionCard untouched.
- */
+/** Shop-page card layout: one row of cards (3 desktop, 2 tablet, ~1 with a peek mobile) with the rest reachable via horizontal scroll; cards keep a fixed 1/3 width and snap, scrollbar hidden.
+ * On desktop prev/next buttons scroll a page and disable at the ends (hidden on touch/tablet); used by the shop page's sections and Capella Tips, leaving ProductCard/SectionCard untouched. */
 export function ShopCardRow({
   children,
   lang,
@@ -23,16 +13,9 @@ export function ShopCardRow({
 }: {
   children: React.ReactNode;
   lang: string;
-  /**
-   * Arrow colour. "ink" reads on the light shop rows; "canvas" (white) is for
-   * rows whose cards are dark artwork, such as Capella Tips.
-   */
+  /** Arrow colour. "ink" reads on the light shop rows; "canvas" (white) is for rows whose cards are dark artwork, such as Capella Tips. */
   arrowTone?: "ink" | "canvas";
-  /**
-   * Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per
-   * screen on desktop), 2 packs one extra card into every breakpoint. Only the
-   * item width changes — the row still scrolls and snaps either way.
-   */
+  /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint; only item width changes — the row still scrolls and snaps either way. */
   cols?: 1 | 2;
 }) {
   const isRtl = lang === "ar";
@@ -72,14 +55,12 @@ export function ShopCardRow({
     el.scrollBy({ left: amount, behavior: "smooth" });
   };
 
-  // Widths subtract the gaps (1.25rem / 1.5rem / 1.75rem per breakpoint) so a
-  // whole number of cards lands per screen, leaving a peek on mobile.
+  // Widths subtract the gaps (1.25rem / 1.5rem / 1.75rem per breakpoint) so a whole number of cards lands per screen, leaving a peek on mobile.
   const itemWidthClass = cols === 2
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
     : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
 
-  // The halo flips with the tone: a light glow lifts the ink arrows off pale
-  // cards, a dark one keeps the white arrows readable over bright artwork.
+  // The halo flips with the tone: a light glow lifts the ink arrows off pale cards, a dark one keeps the white arrows readable over bright artwork.
   const toneClass = arrowTone === "canvas"
     ? "text-canvas drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
     : "text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]";
@@ -92,8 +73,7 @@ export function ShopCardRow({
       <div
         ref={scrollerRef}
         className={[
-          // min-w-0 keeps the scroller from being widened to its content by a
-          // flex/grid parent, which would push the cards past the viewport.
+          // min-w-0 keeps the scroller from being widened to its content by a flex/grid parent, which would push the cards past the viewport.
           "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-2 sm:gap-6 lg:gap-7",
           // hide the scrollbar — prev/next buttons (and swipe) are the affordance
           "scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"

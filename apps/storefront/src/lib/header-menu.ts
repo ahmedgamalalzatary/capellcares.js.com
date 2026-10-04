@@ -82,8 +82,7 @@ export function buildHeaderMenu({
 }): HeaderMenuEntry[] {
   const activeProducts = products.filter((product) => product.status === "active" && !product.deletedAt);
 
-  // Offers and Collections lead: they are the two entries the mobile drawer
-  // surfaces as its first tabs. New/Bestsellers follow, then the category roots.
+  // Offers and Collections lead: they are the two entries the mobile drawer surfaces as its first tabs. New/Bestsellers follow, then the category roots.
   return [
     {
       type: "offers",

@@ -122,8 +122,7 @@ describe("EntityMediaGallery", () => {
 
     const thumbnails = within(screen.getByTestId("product-media-thumbs")).getAllByRole("button");
     expect(thumbnails).toHaveLength(3);
-    // The photos still lead; the video is the final thumbnail. Its image is
-    // decorative — the button itself carries the label — so query the tag.
+    // The photos still lead; the video is the final thumbnail. Its image is decorative — the button itself carries the label — so query the tag.
     expect(thumbnails[2]!.querySelector("img")).toHaveAttribute(
       "src",
       "https://i.ytimg.com/vi/capella/sddefault.jpg"
@@ -150,8 +149,7 @@ describe("EntityMediaGallery", () => {
     const frame = screen.getByTestId("product-media-main").querySelector("iframe");
     expect(frame).toHaveAttribute("src", expect.stringContaining("https://www.youtube.com/embed/capella?"));
     expect(frame).toHaveAttribute("src", expect.stringContaining("controls=1"));
-    // A gallery must never start playing on its own — selecting the thumbnail
-    // only reveals the player, the shopper still has to press play.
+    // A gallery must never start playing on its own — selecting the thumbnail only reveals the player, the shopper still has to press play.
     expect(frame?.getAttribute("src")).not.toContain("autoplay");
     expect(frame).not.toHaveAttribute("allow", expect.stringContaining("autoplay"));
   });
@@ -188,8 +186,7 @@ describe("EntityMediaGallery", () => {
     expect(within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")).toHaveLength(2);
   });
 
-  // A second finger lifting used to reach clearPointer before the isPrimary
-  // guard, wiping the drag state and silently killing the first finger's swipe.
+  // A second finger lifting used to reach clearPointer before the isPrimary guard, wiping the drag state and silently killing the first finger's swipe.
   it("lets a swipe survive a second finger lifting mid-gesture", () => {
     render(createElement(EntityMediaGallery, {
       media: imageMedia,
@@ -384,8 +381,7 @@ describe("EntityMediaGallery", () => {
       const user = userEvent.setup();
       const dialog = await openLightbox(user);
 
-      // A portal to <body>: inside the page tree, an ancestor's stacking context
-      // let page content (price, share, tabs) paint over the dialog.
+      // A portal to <body>: inside the page tree, an ancestor's stacking context let page content (price, share, tabs) paint over the dialog.
       expect(dialog.parentElement).toBe(document.body);
     });
 
@@ -411,8 +407,7 @@ describe("EntityMediaGallery", () => {
         renderImage
       }));
 
-      // Move the page gallery to the second image first: the dialog must open
-      // where the shopper already is, not jump back to the first item.
+      // Move the page gallery to the second image first: the dialog must open where the shopper already is, not jump back to the first item.
       const secondThumbnail = within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[1]!;
       await user.click(secondThumbnail);
       await user.click(screen.getByRole("button", { name: "View all media" }));
@@ -524,8 +519,7 @@ describe("EntityMediaGallery", () => {
       const user = userEvent.setup();
 
       const arabic = await openLightbox(user, { lang: "ar", label: "سيروم الورد" });
-      // Portalled to <body>, it sits outside the locale subtree that carries dir,
-      // so it has to state its own or the arrows and layout come out mirrored.
+      // Portalled to <body>, it sits outside the locale subtree that carries dir, so it has to state its own or the arrows and layout come out mirrored.
       expect(arabic).toHaveAttribute("dir", "rtl");
       expect(arabic).toHaveAttribute("lang", "ar");
       expect(within(arabic).getByRole("heading").className).toContain("font-(family-name:--font-ar)");
@@ -543,8 +537,7 @@ describe("EntityMediaGallery", () => {
       const user = userEvent.setup();
       const dialog = await openLightbox(user);
 
-      // Chevron draws a ">"; the one on the start side must be turned around, or
-      // the pair reads back-to-front — which is what an unset dir caused.
+      // Chevron draws a ">"; the one on the start side must be turned around, or the pair reads back-to-front — which is what an unset dir caused.
       const previous = within(dialog).getByRole("button", { name: "Previous media" });
       const next = within(dialog).getByRole("button", { name: "Next media" });
       expect(previous.className).toContain("inset-s-");
@@ -558,8 +551,7 @@ describe("EntityMediaGallery", () => {
       const dialog = await openLightbox(user, { lang: "ar", label: "سيروم الورد" });
       const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
 
-      // The strip reads right-to-left, so "next" sits on the left — but it still
-      // means the next picture, never the previous one.
+      // The strip reads right-to-left, so "next" sits on the left — but it still means the next picture, never the previous one.
       expect(within(dialog).getByRole("button", { name: "السابق" })).toBeDisabled();
 
       await user.click(within(dialog).getByRole("button", { name: "التالي" }));
@@ -586,8 +578,7 @@ describe("EntityMediaGallery", () => {
         hasPointerCapture: vi.fn(() => true)
       });
 
-      // A touch swipe releases outside the box and fires no click at all, so the
-      // gesture must not leave a flag behind that eats the next real tap.
+      // A touch swipe releases outside the box and fires no click at all, so the gesture must not leave a flag behind that eats the next real tap.
       fireEvent.pointerDown(main, { clientX: 260, clientY: 100, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
       fireEvent.pointerUp(document, { clientX: 60, clientY: 105, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
 
@@ -618,8 +609,7 @@ describe("EntityMediaGallery", () => {
 
       await user.click(screen.getByTestId("product-media-main"));
 
-      // Opening mounts a second blockquote in the portal; without a fresh pass
-      // it stays an unprocessed link instead of becoming the player.
+      // Opening mounts a second blockquote in the portal; without a fresh pass it stays an unprocessed link instead of becoming the player.
       expect(process).toHaveBeenCalled();
     });
 
@@ -641,12 +631,10 @@ describe("EntityMediaGallery", () => {
         media: [{ type: "video", url: "/uploads/one.mp4" }, ...imageMedia]
       });
 
-      // Arrows scrub the clip there; stepping the gallery too would move the
-      // video out from under the shopper mid-seek.
+      // Arrows scrub the clip there; stepping the gallery too would move the video out from under the shopper mid-seek.
       const stage = within(dialog).getByTestId("product-lightbox-main");
       expect(stage.querySelector("video")).not.toBeNull();
-      // jsdom will not focus a <video>, so the key is dispatched from it the way
-      // a browser does for a focused player: on the element, bubbling to window.
+      // jsdom will not focus a <video>, so the key is dispatched from it the way a browser does for a focused player: on the element, bubbling to window.
       fireEvent.keyDown(stage.querySelector("video")!, { key: "ArrowRight" });
 
       expect(within(dialog).getByTestId("product-lightbox-main").querySelector("video")).not.toBeNull();
@@ -669,8 +657,7 @@ describe("EntityMediaGallery", () => {
       const dialog = await openLightbox(user);
 
       const strip = within(dialog).getByTestId("product-lightbox-thumbs");
-      // Centred by an auto-margined track rather than justify-center, which
-      // would clip the first thumbnails once the strip has to scroll.
+      // Centred by an auto-margined track rather than justify-center, which would clip the first thumbnails once the strip has to scroll.
       expect(strip.className).toContain("overflow-x-auto");
       const track = strip.firstElementChild as HTMLElement;
       expect(track.className).toContain("mx-auto");

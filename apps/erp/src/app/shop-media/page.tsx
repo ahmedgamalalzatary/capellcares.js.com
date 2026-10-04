@@ -139,8 +139,7 @@ export default function ShopMediaPage() {
     setBarStatus(storedBarStatus ?? "active");
   }, [storedAnnouncements, storedBarStatus]);
 
-  // Soft-deleted entities still live in the store (the trash page reads them from
-  // these same slices), so every target picker has to exclude them itself.
+  // Soft-deleted entities still live in the store (the trash page reads them from these same slices), so every target picker has to exclude them itself.
   const targetOptionsByType = useMemo(() => ({
     product: products.filter((product) => !product.deletedAt).map((product) => ({ id: product.id, label: product.name.ar, depth: 0 })),
     offer: offers.filter((offer) => !offer.deletedAt).map((offer) => ({ id: offer.id, label: offer.name.ar, depth: 0 })),
@@ -158,9 +157,7 @@ export default function ShopMediaPage() {
 
   const canEdit = canUpdateErpModule(user, "shop_media");
 
-  // A target deleted after the banner was set no longer resolves to an option. The
-  // storefront falls back to the home page meanwhile, and the API refuses to store a
-  // deleted target, so saving stays blocked until a live one is chosen.
+  // A target deleted after the banner was set no longer resolves to an option: the storefront falls back to the home page, and the API refuses a deleted target, so saving stays blocked until a live one is chosen.
   const hasMissingTarget = (item: EditableItem) =>
     isDetailTargetType(item.targetType)
     && item.targetId !== null

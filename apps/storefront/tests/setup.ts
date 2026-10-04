@@ -18,9 +18,7 @@ vi.mock("next/image", () => ({
   }
 }));
 
-// jsdom's matchMedia is unusable here, and a case that spies on it and calls
-// mockRestore() can leave it without an implementation. Reinstall a complete stub
-// before every case so later cases never see an undefined matchMedia.
+// jsdom's matchMedia is unusable here, and a case that spies on it and calls mockRestore() can leave it without an implementation; reinstall a complete stub before every case so later cases never see an undefined matchMedia.
 function installMatchMedia() {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,

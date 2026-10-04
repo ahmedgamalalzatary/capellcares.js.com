@@ -76,17 +76,13 @@ for (const applied of [false, true]) test(`a later initiation rejection preserve
 });
 
 test("an unsigned is_live flag cannot steer acceptance in either direction", async () => {
-  // `is_live` is NOT in Paymob's HMAC input list. The environment that governs a callback
-  // is therefore the one recorded on the LOCAL attempt that created the intention, never the
-  // callback's own unsigned claim. Flipping the flag must change no outcome at all: it can
-  // neither force acceptance nor block a genuine payment.
+  // `is_live` is NOT in Paymob's HMAC input list, so the environment governing a callback is the one recorded on the LOCAL attempt that created the intention, never the callback's own unsigned claim; flipping the flag must change no outcome at all — it can neither force acceptance nor block a genuine payment.
   await checkout();
   assert.equal((await processPaymobTransaction(transaction({ is_live: true }))).outcome, "succeeded",
     "a callback claiming live must not reject a test attempt created against test");
   assert.equal((await db.select().from(orders)).length, 1);
 
-  // And a live attempt is equally unsteered: a callback whose flag claims "test" must not
-  // block a genuine live refund.
+  // And a live attempt is equally unsteered: a callback whose flag claims "test" must not block a genuine live refund.
   await db.update(paymentAttempts).set({ environment: "live" });
   assert.equal((await processPaymobTransaction(transaction({ is_refunded: true, is_live: false }),
     { verified: { is_refunded: true, refunded_amount_cents: 3500, environment: "live" } })).outcome, "refunded",
@@ -94,9 +90,7 @@ test("an unsigned is_live flag cannot steer acceptance in either direction", asy
 });
 
 test("the audit fingerprint does not let an unsigned environment flag mint a distinct event", async () => {
-  // Because is_live is unsigned, one validly signed callback could be replayed with the flag
-  // flipped to manufacture unlimited distinct receipts and audit rows. The flag must not
-  // participate in the audit identity at all.
+  // Because is_live is unsigned, one validly signed callback could be replayed with the flag flipped to manufacture unlimited distinct receipts and audit rows; the flag must not participate in the audit identity at all.
   await checkout();
   await processPaymobTransaction(transaction(), { audit: { transaction: transaction() } });
   await processPaymobTransaction(transaction({ is_live: true }), { audit: { transaction: transaction({ is_live: true }) } });
@@ -122,10 +116,7 @@ test("a refund is applied on verified evidence even when the unsigned environmen
 });
 
 test("a refund inquiry answering about a different transaction is never applied", async () => {
-  // The authenticated read must describe the same payment the SIGNED callback describes.
-  // `order.id` and `integration_id` are both inside the HMAC input list, so a disagreement
-  // means the provider answered about something else - applying its total would move money
-  // on the strength of an unrelated read.
+  // The authenticated read must describe the same payment the SIGNED callback describes; `order.id` and `integration_id` are both inside the HMAC input list, so a disagreement means the provider answered about something else — applying its total would move money on the strength of an unrelated read.
   const run = await runner();
   await checkout();
   await receivePaymobCallback({ callbackType: "transaction", transaction: transaction() });

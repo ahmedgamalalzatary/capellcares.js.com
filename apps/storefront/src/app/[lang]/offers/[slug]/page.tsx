@@ -19,8 +19,7 @@ export async function generateMetadata({
 export default async function OfferDetailsPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
   const { lang, slug, dict } = await resolveStorefrontSlugPageContext(params);
   const offer = requireStorefrontValue(await fetchOfferDetailBySlug(slug, { lang }), (candidate) => !candidate || Boolean(candidate.deletedAt));
-  // The category is only a label here, so a failed fetch must not take the whole
-  // page down with it — same handling as the offers index.
+  // The category is only a label here, so a failed fetch must not take the whole page down with it — same handling as the offers index.
   const [products, categories] = await Promise.all([
     fetchProducts({ lang }),
     fetchCategories({ lang }).catch(() => [])

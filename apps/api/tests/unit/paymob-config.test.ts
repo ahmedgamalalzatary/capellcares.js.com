@@ -16,9 +16,7 @@ test("resolvePaymobConfig keeps an unconfirmed VPC integration disabled", async 
 });
 
 test("resolvePaymobConfig rejects an unrecognized mode instead of silently treating it as test", async () => {
-  // A typo silently became `test`, which is indistinguishable from a deliberately
-  // unconfigured deployment: live payments would be aimed at the sandbox. A mode must be
-  // one of the two documented values.
+  // A typo silently became `test`, which is indistinguishable from a deliberately unconfigured deployment: live payments would be aimed at the sandbox. A mode must be one of the two documented values.
   const module = await import("../../src/modules/payments/paymob/paymob-config.js").catch(() => null);
   for (const mode of ["livee", "TEST", "Live", "production", "1"]) {
     assert.throws(() => module?.resolvePaymobConfig({ PAYMOB_MODE: mode }),
@@ -29,16 +27,14 @@ test("resolvePaymobConfig rejects an unrecognized mode instead of silently treat
 });
 
 test("resolvePaymobConfig accepts an absent mode as an explicit test default", async () => {
-  // Unset is the normal local case and must not be an error, but it is recorded as `test`
-  // once here rather than guessed at each use site.
+  // Unset is the normal local case and must not be an error, but it is recorded as `test` once here rather than guessed at each use site.
   const module = await import("../../src/modules/payments/paymob/paymob-config.js");
   assert.equal(module.resolvePaymobConfig({}).mode, "test");
   assert.equal(module.resolvePaymobConfig({ PAYMOB_MODE: "  " }).mode, "test");
 });
 
 test("an integration confirmation typo fails instead of silently disabling the method", async () => {
-  // `PAYMOB_CARD_INTEGRATION_CONFIRMED=yes` is not "true", so the card method quietly
-  // vanished and customers were told their card was unavailable.
+  // `PAYMOB_CARD_INTEGRATION_CONFIRMED=yes` is not "true", so the card method quietly vanished and customers were told their card was unavailable.
   const module = await import("../../src/modules/payments/paymob/paymob-config.js").catch(() => null);
   for (const value of ["yes", "1", "TRUE", "True", "on"]) {
     assert.throws(() => module?.resolvePaymobConfig({

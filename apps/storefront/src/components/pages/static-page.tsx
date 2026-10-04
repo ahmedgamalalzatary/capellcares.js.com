@@ -13,10 +13,7 @@ export interface StaticPageContent {
   blocks: readonly StaticBlock[];
 }
 
-/**
- * Renders a long-form informational page (legal, about, …) from structured
- * dictionary content. Sticks to the existing design tokens — no new ones.
- */
+/** Renders a long-form informational page (legal, about, …) from structured dictionary content. Sticks to the existing design tokens — no new ones. */
 export function StaticPage({
   lang,
   dict,

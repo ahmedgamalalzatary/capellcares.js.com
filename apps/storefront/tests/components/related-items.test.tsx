@@ -190,8 +190,7 @@ describe("RelatedItems", () => {
 
     const card = screen.getByTestId("related-item");
 
-    // Same media frame: a fixed-ratio surface box holding an absolutely
-    // positioned link, exactly like ProductCard/SectionCard.
+    // Same media frame: a fixed-ratio surface box holding an absolutely positioned link, exactly like ProductCard/SectionCard.
     const media = card.querySelector(".aspect-8\\/9") as HTMLElement;
     expect(media).not.toBeNull();
     expect(media.className).toContain("rounded-t-lg");
@@ -237,8 +236,7 @@ describe("RelatedItems", () => {
 
     const grid = screen.getByTestId("related-items").querySelector(".grid.gap-4") as HTMLElement;
 
-    // Two columns is the default, so the switch has to be exercised away from it
-    // first — clicking "2 per row" up front would assert a layout already on screen.
+    // Two columns is the default, so the switch has to be exercised away from it first — clicking "2 per row" up front would assert a layout already on screen.
     fireEvent.click(screen.getByRole("button", { name: /1 per row/i }));
 
     expect(grid.className).toContain("grid-cols-1");

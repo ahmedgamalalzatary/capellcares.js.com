@@ -19,8 +19,7 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
   onOpenSearch: () => void;
 };
 
-// Tab order: Offers, Sets, then the category roots. The New/Bestsellers entries
-// the header menu also carries are deliberately not surfaced here.
+// Tab order: Offers, Sets, then the category roots. The New/Bestsellers entries the header menu also carries are deliberately not surfaced here.
 function sortMenuEntries(entries: HeaderMenuEntry[]): HeaderMenuEntry[] {
   return [
     ...entries.filter((entry) => entry.type === "offers"),
@@ -48,11 +47,8 @@ export function HeaderMobileDrawer({
   const orderedMenuEntries = sortMenuEntries(menuEntries);
   const activeGroup = orderedMenuEntries[activeTab];
 
-  // The panel is anchored below the (variable-height) header, so its open height
-  // must be measured from its real distance to the top of the viewport — a fixed
-  // calc() would let the lower content (social + language) fall off-screen. This
-  // value is also the max-height the reveal animates to, so it must be ready
-  // before the first open (measure on mount + resize, not gated by mobileOpen).
+  // The panel is anchored below the (variable-height) header, so its open height is measured from its real distance to the viewport top; a fixed calc() would let the lower content (social + language) fall off-screen.
+  // It is also the max-height the reveal animates to, so it must be ready before the first open (measure on mount + resize, not gated by mobileOpen).
   const wrapRef = useRef<HTMLDivElement>(null);
   const [maxH, setMaxH] = useState<number>();
 
@@ -89,12 +85,10 @@ export function HeaderMobileDrawer({
     setActiveTab(index);
   };
 
-  // Incoming enters from the trailing side; outgoing exits toward the leading side.
-  // Mirror the direction in RTL.
+  // Incoming enters from the trailing side; outgoing exits toward the leading side. Mirror the direction in RTL.
   const fromRight = dir === 1 ? !isAr : isAr;
 
-  // Offers and Sets share one shape: a media link list under a dedicated index
-  // page, so they render through the same branch.
+  // Offers and Sets share one shape: a media link list under a dedicated index page, so they render through the same branch.
   const renderMediaCards = (
     group: Extract<NonNullable<typeof activeGroup>, { type: "offers" | "collections" }>
   ) => {

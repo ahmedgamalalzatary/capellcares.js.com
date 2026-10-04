@@ -17,8 +17,7 @@ describe("resolveAdviceVideo", () => {
     });
   });
 
-  // The popup is a chrome-free reel; a video sitting inside a gallery instead
-  // needs a scrubber and volume, so the two players differ on controls.
+  // The popup is a chrome-free reel; a video sitting inside a gallery instead needs a scrubber and volume, so the two players differ on controls.
   it("keeps player controls on the in-page embed but not the popup", () => {
     const resolved = resolveAdviceVideo("https://www.youtube.com/watch?v=capella");
 

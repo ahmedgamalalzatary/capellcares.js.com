@@ -58,8 +58,7 @@ export async function rotateRefreshSession(refreshToken: string, accountType: Ac
   const session = await findActiveAuthSessionByTokenHash(hashRefreshToken(refreshToken), accountType);
   if (!session) throw new Error("Invalid refresh token");
 
-  // Conditional revoke: only the caller that flips revoked_at may issue a
-  // replacement session, so concurrent/replayed refreshes cannot both win.
+  // Conditional revoke: only the caller that flips revoked_at may issue a replacement session, so concurrent/replayed refreshes cannot both win.
   const won = await revokeActiveAuthSession(session.id);
   if (!won) throw new Error("Invalid refresh token");
 

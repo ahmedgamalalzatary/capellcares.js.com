@@ -17,13 +17,7 @@ const buckets = new Map<string, RateLimitBucket>();
 const CLEANUP_INTERVAL_MS = 60_000;
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-/**
- * Evaluate (and mutate) a rate-limit bucket store for one request in O(1): only
- * the caller's own bucket is inspected. An expired bucket for the same key is
- * lazily reset. Bounding the map across many distinct keys is handled out of
- * band by the periodic cleaner (see pruneExpiredBuckets), so request handling
- * never pays for a full-map scan.
- */
+/** Evaluate (and mutate) a rate-limit bucket store for one request in O(1) — only the caller's own bucket is inspected and an expired bucket for the same key is lazily reset; bounding the map across many keys is handled out of band by the periodic cleaner (pruneExpiredBuckets), so request handling never pays for a full-map scan. */
 export function evaluateRateLimit(
   store: Map<string, RateLimitBucket>,
   key: string,

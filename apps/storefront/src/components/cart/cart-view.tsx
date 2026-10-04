@@ -32,12 +32,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  // Track whether the catalog fetch has resolved successfully. The cart's source
-  // of truth is `lines` (in memory / localStorage); the fetch only enriches each
-  // line with name/price/image. Until it lands — or if it fails — we must NOT
-  // treat an unresolved cart as an empty one, otherwise a slow or flaky fetch
-  // renders "empty cart" over a cart that actually has items (the intermittent
-  // empty-cart bug seen on some Safari/WebKit runs).
+  // Track whether the catalog fetch has resolved successfully. The cart's source of truth is `lines`; the fetch only enriches each line with name/price/image.
+  // Until it lands — or if it fails — an unresolved cart must NOT be treated as empty, otherwise a slow/flaky fetch renders "empty cart" over a real cart (the intermittent empty-cart bug seen on some Safari/WebKit runs).
   const [catalogLoaded, setCatalogLoaded] = useState(false);
 
   useEffect(() => {
@@ -51,8 +47,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         setCatalogLoaded(true);
       })
       .catch(() => { });
-    // Categories are decorative (a label on the line), so they load on their own
-    // and a failure here must never hold back — or blank — the cart itself.
+    // Categories are decorative (a label on the line), so they load on their own and a failure here must never hold back — or blank — the cart itself.
     fetchCategories()
       .then((cats) => {
         if (cancelled) return;
@@ -132,9 +127,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
   const totalUnits = resolved.reduce((acc, r) => acc + r.qty, 0);
 
-  // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch
-  // failed): show a loading state, never the "empty" screen. Collapsing this into
-  // the empty case is what let a slow/failed fetch blank a real cart.
+  // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch failed): show a loading state, never the "empty" screen — collapsing this into the empty case is what let a slow/failed fetch blank a real cart.
   if (resolved.length === 0 && lines.length > 0 && !catalogLoaded) {
     return (
       <div className="mx-auto my-10 grid max-w-115 place-items-center gap-4 px-6 py-12 text-center sm:my-16">

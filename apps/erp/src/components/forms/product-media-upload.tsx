@@ -116,9 +116,7 @@ export function EntityMediaUpload({
   };
 
   const replaceImageLanguage = async (index: number, lang: Language, files: FileList | null) => {
-    // Hold on to the item itself, not its position: a reorder while the upload
-    // is in flight would otherwise write the new URL onto whichever image had
-    // moved into this slot.
+    // Hold on to the item itself, not its position: a reorder while the upload is in flight would otherwise write the new URL onto whichever image had moved into this slot.
     const target = latestValueRef.current[index];
     if (!target || target.type !== "image") return;
     setUploading(true);

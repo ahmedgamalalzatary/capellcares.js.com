@@ -45,8 +45,7 @@ async function loadTargetSlugMap(items: Array<{ targetType: ShopMediaTargetType;
   const collectionIds = items.filter((item) => item.targetType === "collection" && item.targetId != null).map((item) => item.targetId!);
   const categoryIds = items.filter((item) => item.targetType === "category" && item.targetId != null).map((item) => item.targetId!);
 
-  // Soft-deleted targets must not resolve to a slug: the storefront treats a missing
-  // slug as "link to home" instead of sending shoppers to a page that no longer exists.
+  // Soft-deleted targets must not resolve to a slug: the storefront treats a missing slug as "link to home" instead of sending shoppers to a page that no longer exists.
   const [productRows, offerRows, collectionRows, categoryRows] = await Promise.all([
     productIds.length > 0
       ? db.select({ id: products.id, slug: products.slug }).from(products).where(and(inArray(products.id, productIds), isNull(products.deletedAt)))
@@ -154,8 +153,7 @@ export async function replaceShopMediaSectionRepo(slot: 1 | 2 | 3 | 4 | 5, statu
   });
 }
 
-// A trashed entity is not a valid banner target, so saving one is rejected the same
-// way a non-existent id is.
+// A trashed entity is not a valid banner target, so saving one is rejected the same way a non-existent id is.
 export async function shopMediaTargetExists(targetType: ShopMediaTargetType, targetId: number) {
   if (targetType === "product") {
     const [row] = await db.select({ id: products.id }).from(products).where(and(eq(products.id, targetId), isNull(products.deletedAt))).limit(1);

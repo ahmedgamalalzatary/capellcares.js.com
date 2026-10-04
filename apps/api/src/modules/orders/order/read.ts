@@ -31,9 +31,7 @@ export async function listOrdersRepo(filters?: { customerId?: number; withItems?
     totalAmount: toNumber(row.totalAmount)
   }));
 
-  // The admin list only needs order-level columns. The storefront list renders a
-  // card per order with item thumbnails and a unit count, so it opts into the
-  // line items via one extra query rather than N per-order detail requests.
+  // The admin list only needs order-level columns; the storefront list renders a card per order with item thumbnails and a unit count, so it opts into the line items via one extra query rather than N per-order detail requests.
   if (!filters?.withItems || summaries.length === 0) {
     return summaries;
   }
@@ -130,8 +128,7 @@ export async function getSalesAnalyticsRepo() {
     const paidCents = Math.max(0, grossCents - (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0));
     return [order.id, grossCents > 0 ? Math.round(productsCents * paidCents / grossCents) : 0];
   }));
-  // Bucket the lines once so the allocation loop below is a single pass over
-  // itemRows instead of scanning every item for every recognized order.
+  // Bucket the lines once so the allocation loop below is a single pass over itemRows instead of scanning every item for every recognized order.
   const linesByOrderId = new Map<number, typeof itemRows>();
   for (const item of itemRows) {
     const bucket = linesByOrderId.get(item.orderId);
@@ -229,9 +226,7 @@ export async function getSalesAnalyticsRepo() {
         : item.itemType === "offer"
           ? offerItemsByOfferId.get(item.offerId ?? -1) ?? []
           : collectionItemsByCollectionId.get(item.collectionId ?? -1) ?? [];
-      // Allocate the offer line's actual paid total (lineTotal) across its component
-      // variants in proportion to each component's catalog value, so component revenue
-      // reconciles with totalRevenue instead of using the standalone catalog price.
+      // Allocate the offer line's actual paid total (lineTotal) across its component variants in proportion to each component's catalog value, so component revenue reconciles with totalRevenue instead of using the standalone catalog price.
       const components = expandedItems.flatMap((expandedItem) => {
         const variant = variantById.get(expandedItem.variantId);
         if (!variant) {

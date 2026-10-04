@@ -10,9 +10,7 @@ beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-// Regression: the `q` filter used `LIKE ... ESCAPE '\\'`, which renders as the
-// invalid MySQL fragment `ESCAPE '\'` and threw ER_PARSE_ERROR, crashing the API
-// on every search. Any non-empty `q` must execute and return matches instead.
+// Regression: the `q` filter used `LIKE ... ESCAPE '\\\\'`, which renders as the invalid MySQL fragment `ESCAPE '\\'` and threw ER_PARSE_ERROR, crashing the API on every search; any non-empty `q` must execute and return matches instead.
 test("findVisibleProducts matches the English name via q", async () => {
   const rows = await findVisibleProducts({ lang: "en", q: "Baseline" });
   const names = rows.map((row) => row.enName).sort();
@@ -25,8 +23,7 @@ test("findVisibleProducts matches the Arabic name via q", async () => {
 });
 
 test("findVisibleProducts matches the keywords column via q", async () => {
-  // Seed keywords are "test,baseline"; "test" is not in either localized name,
-  // so a hit proves the keywords branch of the OR is searched.
+  // Seed keywords are "test,baseline"; "test" is not in either localized name, so a hit proves the keywords branch of the OR is searched.
   const rows = await findVisibleProducts({ lang: "en", q: "test" });
   assert.equal(rows.length, 2);
 });

@@ -44,9 +44,7 @@ async function newSession() {
 }
 
 async function runBackfill() {
-  // The script targets DATABASE_URL, which is what an operator would set in production.
-  // The tests live in TEST_DATABASE_URL, so it is passed explicitly rather than inheriting
-  // whatever DATABASE_URL happens to point at.
+  // The script targets DATABASE_URL, which is what an operator would set in production; the tests live in TEST_DATABASE_URL, so it is passed explicitly rather than inheriting whatever DATABASE_URL happens to point at.
   await run("node", [backfill], { env: { ...process.env, DATABASE_URL: process.env.TEST_DATABASE_URL } });
 }
 
@@ -79,9 +77,7 @@ test("a signed id matching no attempt stays unbound rather than being guessed", 
 });
 
 test("a signed order id is unique per attempt, so a binding is always unambiguous", async () => {
-  // `payment_attempts.paymob_order_id` is UNIQUE, which is what makes the backfill's
-  // "exactly one session" resolution sound: a signed id cannot name two checkouts. A
-  // receipt therefore binds to exactly one session, never an arbitrary one.
+  // `payment_attempts.paymob_order_id` is UNIQUE, which is what makes the backfill's "exactly one session" resolution sound — a signed id cannot name two checkouts, so a receipt binds to exactly one session, never an arbitrary one.
   const sessionId = await newSession();
   await attemptFor("9003", sessionId);
   await legacyReceipt("9003");

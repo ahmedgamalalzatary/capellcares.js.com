@@ -131,10 +131,7 @@ export async function listWishlistEntriesByCustomer(
           .where(inArray(collections.id, collectionIds))
   ]);
 
-  // The legacy `imagePath` column is often empty (media now lives in
-  // `entity_media`), and even when set it holds a storage-relative
-  // `/uploads/...` path that only resolves against the public uploads base.
-  // Mirror the product/offer/collection repos so wishlist rows get a usable URL.
+  // The legacy `imagePath` column is often empty (media now lives in `entity_media`) and even when set holds a storage-relative `/uploads/...` path that only resolves against the public uploads base; mirror the product/offer/collection repos so wishlist rows get a usable URL.
   const [productMedia, offerMedia, collectionMedia] = await Promise.all([
     loadEntityMediaRows("product", productIds),
     loadEntityMediaRows("offer", offerIds),

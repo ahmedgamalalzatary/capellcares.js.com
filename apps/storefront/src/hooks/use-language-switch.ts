@@ -3,10 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import type { Language } from "@capella/shared";
 
-/**
- * Swaps the locale segment of the current URL, keeping the page and its query
- * string intact so filters and searches survive the switch.
- */
+/** Swaps the locale segment of the current URL, keeping the page and its query string intact so filters and searches survive the switch. */
 export function useLanguageSwitch(lang: Language) {
   const router = useRouter();
   const pathname = usePathname();

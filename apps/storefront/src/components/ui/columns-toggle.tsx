@@ -5,10 +5,7 @@ import { Icon } from "@/components/ui/icons";
 
 export type Cols = 1 | 2;
 
-/**
- * Segmented "POV" control that switches a card grid between one big card per row
- * and a denser multi-card row. Stateless — the parent owns the `cols` value.
- */
+/** Segmented "POV" control that switches a card grid between one big card per row and a denser multi-card row. Stateless — the parent owns the `cols` value. */
 export function ColumnsToggle({
   cols,
   onChange,

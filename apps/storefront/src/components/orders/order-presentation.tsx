@@ -18,13 +18,8 @@ import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { Icon } from "@/components/ui/icons";
 
-/**
- * Order lines store only a name/size snapshot — never an image — because an
- * order is a historical record that must not shift when the catalog is edited.
- * To show thumbnails we resolve each line back to the live entity by id, and
- * fall back to a neutral placeholder when that entity has since been deleted.
- * The snapshot still wins for name and price, so the receipt stays truthful.
- */
+/** Order lines store only a name/size snapshot — never an image — because an order is a historical record that must not shift when the catalog is edited.
+ * To show thumbnails we resolve each line back to the live entity by id (falling back to a neutral placeholder if deleted), while the snapshot still wins for name and price so the receipt stays truthful. */
 export interface Catalog {
   products: Product[];
   offers: Offer[];
@@ -44,8 +39,7 @@ export function useCatalog(): Catalog {
 
   useEffect(() => {
     let cancelled = false;
-    // Settled, not all-or-nothing: one failing catalog used to discard the two
-    // that did load, so every order line rendered as "unavailable".
+    // Settled, not all-or-nothing: one failing catalog used to discard the two that did load, so every order line rendered as "unavailable".
     Promise.allSettled([fetchProducts(), fetchOffers(), fetchCollections(), fetchCategories()])
       .then(([products, offers, collections, categories]) => {
         if (cancelled) return;
@@ -114,8 +108,7 @@ export function OrderItemMedia({
     if (collection) return <CollectionIllustration collection={collection} lang={lang} className={className} />;
   }
 
-  // The catalog entry is gone (deleted, or the fetch failed): the order line is
-  // still valid history, so show a neutral mark rather than a broken image.
+  // The catalog entry is gone (deleted, or the fetch failed): the order line is still valid history, so show a neutral mark rather than a broken image.
   return (
     <div className="grid h-full w-full place-items-center bg-(--warm-soft) text-(--ink-3)">
       <Icon.Cart size={20} />
@@ -135,11 +128,7 @@ export function orderItemName(item: OrderItem, lang: Language): string {
     : item.snapshotNameEn ?? item.snapshotNameAr ?? "";
 }
 
-/**
- * `paymentStatus` is a fixed union, so it maps to a localized label directly —
- * the previous substring sniffing on the raw English value leaked untranslated
- * status text into the Arabic pages.
- */
+/** `paymentStatus` is a fixed union, so it maps to a localized label directly — the previous substring sniffing on the raw English value leaked untranslated status text into the Arabic pages. */
 export function paymentStatusLabel(status: PaymentStatus, dict: any): string {
   if (status === "accepted") return dict.orders.statusAccepted;
   if (status === "denied") return dict.orders.statusDenied;

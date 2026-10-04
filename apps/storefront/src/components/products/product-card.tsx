@@ -44,8 +44,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
     setPreviewImage(primaryImage);
   }, [primaryImage]);
 
-  // The variant we transact on from the card: cheapest one that is in stock,
-  // falling back to the cheapest overall so the buttons still resolve a target.
+  // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
   const buyVariant = useMemo(() => {
     const inStock = product.variants.filter((v) => (v.stock ?? 0) > 0);
     const pool = inStock.length ? inStock : product.variants;

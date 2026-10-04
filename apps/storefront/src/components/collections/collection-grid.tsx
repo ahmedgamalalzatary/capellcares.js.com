@@ -61,8 +61,7 @@ export function CollectionGrid({
     [categories]
   );
 
-  // Only the big (top-level) categories that actually own at least one collection
-  // — leaf subcategories and empty big categories are never offered as filters.
+  // Only the big (top-level) categories that actually own at least one collection — leaf subcategories and empty big categories are never offered as filters.
   const bigCategories = useMemo<Category[]>(() => {
     const rootsWithCollections = new Map<number, Category>();
     for (const collection of collections) {
@@ -79,8 +78,7 @@ export function CollectionGrid({
     [bigCategories]
   );
 
-  // Names for the cards' classification line. Built from active categories only,
-  // so a collection pointing at a deleted category simply shows no line.
+  // Names for the cards' classification line. Built from active categories only, so a collection pointing at a deleted category simply shows no line.
   const categoryNameById = useMemo(
     () => new Map(activeCategories.map((category) => [category.id, pickLang(category.name, lang)] as const)),
     [activeCategories, lang]

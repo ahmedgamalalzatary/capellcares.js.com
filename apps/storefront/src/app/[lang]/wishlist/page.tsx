@@ -5,9 +5,7 @@ import { resolveStorefrontPageContext } from "@/lib/storefront-page-context";
 export default async function WishlistPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang, dict } = await resolveStorefrontPageContext(params);
 
-  // Not StorefrontPageShell: this page's head carries the POV toggle beside the
-  // title, and that control owns client state, so the header is rendered by
-  // WishlistView itself rather than by the shared shell.
+  // Not StorefrontPageShell: this page's head carries the POV toggle beside the title, and that control owns client state, so the header is rendered by WishlistView itself rather than by the shared shell.
   return (
     <main className="container">
       <Breadcrumb

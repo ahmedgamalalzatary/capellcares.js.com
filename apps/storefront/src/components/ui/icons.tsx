@@ -5,8 +5,7 @@ type IconProps = { size?: number; className?: string; style?: CSSProperties };
 const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 export const Icon = {
-  // Cart glyph only. The item count is rendered as a separate HTML corner
-  // badge by the header so it can never be clipped by the SVG viewBox.
+  // Cart glyph only. The item count is rendered as a separate HTML corner badge by the header so it can never be clipped by the SVG viewBox.
   Cart: ({ size = 20, className, style }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className} style={style}>
       <path d="M2.5 4.5h2.3l2 9.8a1.7 1.7 0 0 0 1.7 1.4h8a1.7 1.7 0 0 0 1.7-1.3L21.8 6" />

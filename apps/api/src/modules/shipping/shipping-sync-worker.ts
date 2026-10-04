@@ -32,8 +32,7 @@ async function ensureJobs(now: Date) {
 
 async function claim(runtime: BostaSyncRuntime, now: Date, leaseMs: number) {
   const expired = new Date(now.getTime() - leaseMs);
-  // W07 B05: a parked job is finished forever. Excluding it here is what actually returns
-  // read capacity to active parcels - rescheduling alone would leave it competing.
+  // W07 B05: a parked job is finished forever. Excluding it here is what actually returns read capacity to active parcels - rescheduling alone would leave it competing.
   const [candidate] = await db.select().from(shippingWorkItems).where(and(eq(shippingWorkItems.operation, "sync_delivery"),
     ne(shippingWorkItems.syncPhase, "parked"),
     or(and(eq(shippingWorkItems.status, "pending"), lte(shippingWorkItems.nextAttemptAt, now)),
@@ -71,21 +70,16 @@ async function finish(job: Job, now: Date, successful: boolean, observation?: Bo
     const [current] = await tx.select().from(shippingWorkItems).where(eq(shippingWorkItems.id, job.id)).limit(1).for("update");
     if (!current || current.status !== "processing" || current.claimedBy !== job.claimedBy) return;
 
-    // W07 B05: persist the scheduling decision, not an in-memory skip. A terminal parcel
-    // gets exactly one follow-up read a day later, then parks - provided nothing is still
-    // unresolved. Unresolved work keeps the normal cadence, so a correction is still seen.
+    // W07 B05: persist the scheduling decision, not an in-memory skip — a terminal parcel gets exactly one follow-up read a day later then parks, provided nothing is still unresolved; unresolved work keeps the normal cadence so a correction is still seen.
     const phase = successful && observation ? await nextSyncPhase(tx, job, observation, now) : null;
-    // MySQL DATETIME(0) rounds fractional seconds on insert, so floor to whole seconds
-    // before persisting. Otherwise the stored value drifts a second ahead of what the
-    // schedule actually means, and a follow-up could be considered due early.
+    // MySQL DATETIME(0) rounds fractional seconds on insert, so floor to whole seconds before persisting — otherwise the stored value drifts a second ahead of what the schedule means and a follow-up could be considered due early.
     const at = (offsetMs: number) => new Date(Math.floor((now.getTime() + offsetMs) / 1000) * 1000);
 
     await tx.update(shippingWorkItems).set(phase
       ? { status: phase === "parked" ? "succeeded" : "pending", claimedBy: null, claimedAt: null, attemptCount: 0,
           lastError: null, syncPhase: phase,
           terminalFollowUpAt: phase === "terminal_followup" ? at(TERMINAL_FOLLOW_UP_MS) : null,
-          // `active` means something is still unresolved, so it keeps the five-minute
-          // cadence - NOT the follow-up delay. Only terminal_followup waits a day.
+          // `active` means something is still unresolved, so it keeps the five-minute cadence - NOT the follow-up delay. Only terminal_followup waits a day.
           nextAttemptAt: at(phase === "terminal_followup"
             ? TERMINAL_FOLLOW_UP_MS
             : phase === "parked" ? 3650 * 86_400_000 : 300_000) }
@@ -98,14 +92,7 @@ async function finish(job: Job, now: Date, successful: boolean, observation?: Bo
   });
 }
 
-/**
- * Decide the next polling phase for a successful read.
- *
- * The first terminal read only schedules the follow-up; it does not park. Parking on the
- * terminal code alone would risk missing a late correction, which is why the follow-up
- * exists. If the parcel is no longer terminal, or was never fully resolved, it goes back
- * to `active` and the five-minute cadence.
- */
+/** Decide the next polling phase for a successful read. The first terminal read only schedules the follow-up, it does not park — parking on the terminal code alone risks missing a late correction, which is why the follow-up exists; if the parcel is no longer terminal, or was never fully resolved, it goes back to `active` and the five-minute cadence. */
 async function nextSyncPhase(
   tx: ShippingSyncTransaction,
   job: Job,
@@ -113,8 +100,7 @@ async function nextSyncPhase(
   now: Date
 ): Promise<"active" | "terminal_followup" | "parked"> {
   const [ship] = await tx.select().from(shipments).where(eq(shipments.id, job.shipmentId ?? -1)).limit(1).for("update");
-  // A processed event can still be stale/rejected, or a newer webhook can have won
-  // since the read. Only the accepted current observation may establish completion.
+  // A processed event can still be stale/rejected, or a newer webhook can have won since the read. Only the accepted current observation may establish completion.
   if (!ship || ship.providerEventAtMs !== observation.atMs || ship.rawProviderCode !== observation.stateCode ||
     ship.collectedAmountCents !== observation.collectedAmountCents ||
     ship.collectionConfirmed !== observation.confirmedDelivery) return "active";
@@ -122,9 +108,7 @@ async function nextSyncPhase(
     eq(shippingWorkItems.orderId, job.orderId),
     inArray(shippingWorkItems.operation, ["edit_delivery", "cancel_delivery", "terminate_delivery"]),
     inArray(shippingWorkItems.status, ["pending", "processing", "review_required"])));
-  // Open safety flags are unresolved money or custody questions. A parcel carrying one must
-  // keep polling, or parking would retire the job and no automatic path would ever revisit
-  // the discrepancy that the flag was raised to describe.
+  // Open safety flags are unresolved money or custody questions; a parcel carrying one must keep polling, or parking would retire the job and no automatic path would ever revisit the discrepancy the flag was raised to describe.
   const flags = await tx.select({ flagType: orderReviewFlags.flagType }).from(orderReviewFlags).where(and(
     eq(orderReviewFlags.orderId, job.orderId), eq(orderReviewFlags.status, "open")));
   const resolved = isFullyResolvedTerminal(observation, pending?.total ?? 0, flags.filter(flag => isSafetyReviewFlag(flag.flagType)).length);

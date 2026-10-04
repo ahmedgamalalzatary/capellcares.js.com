@@ -16,8 +16,7 @@ function parseAuthUser(req: Request) {
     const raw = jwt.verify(token, ACCESS_SECRET) as unknown;
     const payload = raw as { sub?: number | string; role?: string };
     if (payload?.sub == null || !payload?.role) return null;
-    // Storefront/customer routes must never accept admin or staff tokens, even
-    // though they are signed with the same access secret.
+    // Storefront/customer routes must never accept admin or staff tokens, even though they are signed with the same access secret.
     if (payload.role !== "customer") return null;
 
     const id =

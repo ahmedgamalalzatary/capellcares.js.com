@@ -15,10 +15,7 @@ interface Props {
   className?: string;
 }
 
-/**
- * Floating wishlist toggle for detail pages. Positions itself over the media
- * frame, so the nearest positioned ancestor must be the image wrapper.
- */
+/** Floating wishlist toggle for detail pages. Positions itself over the media frame, so the nearest positioned ancestor must be the image wrapper. */
 export function WishlistButton({ entityType, entityId, lang, label, className }: Props) {
   const router = useRouter();
   const { user } = useAuth();
@@ -37,8 +34,7 @@ export function WishlistButton({ entityType, entityId, lang, label, className }:
     <button
       type="button"
       className={[
-        // The plate is identical in both states — saving is signalled by the
-        // heart filling in, never by a change of background.
+        // The plate is identical in both states — saving is signalled by the heart filling in, never by a change of background.
         "absolute top-2 inset-e-2 z-20 grid h-11 w-11 place-items-center rounded-full text-ink backdrop-blur-sm transition-all duration-200 hover:scale-105 bg-surface/85 hover:bg-(--warm-soft)",
         className
       ].filter(Boolean).join(" ")}

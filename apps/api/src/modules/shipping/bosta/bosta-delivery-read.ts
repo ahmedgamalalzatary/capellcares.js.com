@@ -1,14 +1,5 @@
-/**
- * Shared, validated normalizer for Bosta delivery business reads.
- *
- * Bosta returns `type` either as a bare integer or as `{ code, value }`, and
- * returns `dropOffAddress` either with flat ids or with nested `city`/`zone`
- * objects plus a district *name*. Correlation must not depend on which form a
- * given response happened to use, but it also must never guess: an identifier
- * is only believed when the provider sent it, and a district NAME only resolves
- * through a unique match in authoritative zoning data. Anything ambiguous,
- * missing or self-contradictory stays unresolved so callers fail closed.
- */
+/** Shared, validated normalizer for Bosta delivery business reads.
+ * Bosta returns `type` either as a bare integer or as `{ code, value }`, and `dropOffAddress` either flat ids or nested `city`/`zone` plus a district *name*; correlation must not depend on which form a response used, but must never guess — an identifier is believed only when the provider sent it and a district NAME only resolves through a unique match in authoritative zoning data, so anything ambiguous/missing/self-contradictory stays unresolved and callers fail closed. */
 
 export type NormalizedDeliveryType = { code: number; label: string };
 
@@ -52,21 +43,12 @@ export type NormalizedReadAddress = {
 export type ZoningRow = { cityId: string; zoneId: string | null; districtId: string; districtName: string };
 export type ResolveByName = (query: { cityId: string | null; zoneId: string | null; districtName: string | null }) => ZoningRow[] | Promise<ZoningRow[]>;
 
-/**
- * Reads a flat id field, which the provider documents as a bare string. An object here is
- * not the documented shape, so it is never mined for an identifier.
- */
+/** Reads a flat id field, which the provider documents as a bare string. An object here is not the documented shape, so it is never mined for an identifier. */
 function idOf(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-/**
- * Reads a nested `city`/`zone` reference. A bare string there is a display NAME, not an id.
- *
- * Only the documented `_id` is believed; a bare `id` alias is captured separately so a
- * response carrying two disagreeing identities is reported as a contradiction instead of
- * being resolved by preferring whichever field happened to be read first.
- */
+/** Reads a nested `city`/`zone` reference; a bare string there is a display NAME, not an id. Only the documented `_id` is believed; a bare `id` alias is captured separately so a response carrying two disagreeing identities is reported as a contradiction instead of resolved by preferring whichever field was read first. */
 function nestedReference(value: unknown): { documentedId: string | null; aliasId: string | null } {
   if (value === null || typeof value !== "object") return { documentedId: null, aliasId: null };
   const record = value as Record<string, unknown>;
@@ -87,13 +69,7 @@ function nameOf(value: unknown): string | null {
   return null;
 }
 
-/**
- * Combines a flat id with the documented nested `_id`.
- *
- * A non-documented nested `id` alias contributes ONLY to contradiction detection: a response
- * carrying `_id: A` and `id: B` is an unresolved read, but a response carrying only the alias
- * proves nothing and stays unresolved rather than being believed as identity.
- */
+/** Combines a flat id with the documented nested `_id`; a non-documented nested `id` alias contributes ONLY to contradiction detection — `_id: A` with `id: B` is an unresolved read, but a response carrying only the alias proves nothing and stays unresolved rather than being believed as identity. */
 function reconcileIdentity(label: string, flat: string | null, reference: { documentedId: string | null; aliasId: string | null }): string | null {
   if (reference.aliasId !== null && reference.documentedId !== null && reference.aliasId !== reference.documentedId) {
     throw new Error(`Bosta address ${label} identifiers contradict each other`);
@@ -103,11 +79,7 @@ function reconcileIdentity(label: string, flat: string | null, reference: { docu
   return present[0] ?? null;
 }
 
-/**
- * Preserves flat ids when present and extracts the documented nested `_id` when present. A
- * district display name is not an id: it resolves only through a unique authoritative match
- * under the proven city/zone.
- */
+/** Preserves flat ids when present and extracts the documented nested `_id` when present; a district display name is not an id — it resolves only through a unique authoritative match under the proven city/zone. */
 export async function normalizeReadAddress(value: unknown, resolveByName: ResolveByName): Promise<NormalizedReadAddress> {
   const record = value !== null && typeof value === "object" ? value as Record<string, unknown> : {};
   const firstLine = typeof record.firstLine === "string" ? record.firstLine.trim() : "";
@@ -120,8 +92,7 @@ export async function normalizeReadAddress(value: unknown, resolveByName: Resolv
   let resolvedDistrictId = districtId;
   if (!resolvedDistrictId && districtName) {
     const matches = await resolveByName({ cityId, zoneId, districtName });
-    // Ambiguity or no authoritative match stays unresolved. A single match is only
-    // believed when it does not contradict the identity the provider already gave us.
+    // Ambiguity or no authoritative match stays unresolved. A single match is only believed when it does not contradict the identity the provider already gave us.
     if (matches.length === 1
       && (!cityId || matches[0].cityId === cityId)
       && (!zoneId || matches[0].zoneId === zoneId)) resolvedDistrictId = matches[0].districtId;
@@ -131,10 +102,7 @@ export async function normalizeReadAddress(value: unknown, resolveByName: Resolv
 
 export type RequestedAddress = { cityId?: string | null; zoneId?: string | null; districtId: string | null; firstLine: string };
 
-/**
- * Correlation needs provable identity *and* the complete requested line. A read
- * that could not prove its destination can never match a requested one.
- */
+/** Correlation needs provable identity *and* the complete requested line. A read that could not prove its destination can never match a requested one. */
 export function assertAddressMatches(actual: NormalizedReadAddress, requested: RequestedAddress): void {
   const zoneMatches = !requested.zoneId || actual.zoneId === requested.zoneId;
   const cityMatches = !requested.cityId || actual.cityId === requested.cityId;
@@ -176,11 +144,7 @@ export function normalizeAmountCents(value: unknown): number | null {
   return null;
 }
 
-/**
- * Validates a business read and correlates it against the request it claims to
- * satisfy. Throws on any missing, ambiguous or contradictory field. A throw is
- * an unresolved outcome, never proof that no delivery exists.
- */
+/** Validates a business read and correlates it against the request it claims to satisfy; throws on any missing, ambiguous or contradictory field — a throw is an unresolved outcome, never proof that no delivery exists. */
 export async function normalizeDeliveryRead(raw: unknown, context: DeliveryReadContext): Promise<NormalizedDeliveryRead> {
   const failure = () => new Error("Bosta delivery read is invalid or failed correlation");
   const data = at(raw, ["data"]);

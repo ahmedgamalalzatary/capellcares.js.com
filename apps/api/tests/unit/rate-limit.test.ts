@@ -21,8 +21,7 @@ test("evaluateRateLimit resets the window after expiry", () => {
   assert.equal(evaluateRateLimit(buckets, "a", 1001, 1000, 1).allowed, true);
 });
 
-// Records every full-map traversal so "does not scan" can be observed rather
-// than inferred from an entry surviving.
+// Records every full-map traversal so "does not scan" can be observed rather than inferred from an entry surviving.
 class IterationCountingMap extends Map<string, RateLimitBucket> {
   iterations = 0;
 
@@ -59,8 +58,7 @@ test("evaluateRateLimit never iterates the bucket store, so its cost is independ
   }
   const afterFilling = buckets.iterations;
 
-  // A request for an unrelated key must neither read the map's entries nor
-  // evict an expired bucket belonging to somebody else.
+  // A request for an unrelated key must neither read the map's entries nor evict an expired bucket belonging to somebody else.
   evaluateRateLimit(buckets, "unrelated", 2000, 1000, 5);
   evaluateRateLimit(buckets, "unrelated", 2001, 1000, 5);
 

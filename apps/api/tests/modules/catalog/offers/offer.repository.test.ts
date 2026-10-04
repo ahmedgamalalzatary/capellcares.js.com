@@ -48,17 +48,13 @@ test("upsertOfferRepo rejects a category that stops being a root while the offer
     releaseReparent = resolve;
   });
 
-  // A separate root to adopt the category under. Reparenting it beneath its own
-  // descendant would leave a cycle behind if this test ever died mid-run, and
-  // clearTestSeed cannot delete a cycle.
+  // A separate root to adopt the category under. Reparenting it beneath its own descendant would leave a cycle behind if this test ever died mid-run, and clearTestSeed cannot delete a cycle.
   const [newParent] = await db
     .insert(categories)
     .values({ slug: `race-parent-${Date.now()}`, arName: "أب", enName: "Race Parent", isLeaf: false })
     .$returningId();
 
-  // A concurrent transaction turns the chosen root into a child, but has not
-  // committed yet. The offer write must not be able to slip past on a snapshot
-  // read taken before that commit.
+  // A concurrent transaction turns the chosen root into a child, but has not committed yet. The offer write must not be able to slip past on a snapshot read taken before that commit.
   const reparent = db.transaction(async (tx) => {
     await tx
       .update(categories)
@@ -89,8 +85,7 @@ test("upsertOfferRepo rejects a category that stops being a root while the offer
     const created = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug));
     assert.equal(created.length, 0, "no offer may be left behind by the rejected write");
   } finally {
-    // The reparent above is committed, so it has to be undone here or the rest
-    // of the suite inherits a baseline whose root category is no longer a root.
+    // The reparent above is committed, so it has to be undone here or the rest of the suite inherits a baseline whose root category is no longer a root.
     await db.update(categories).set({ parentId: null }).where(eq(categories.id, ids.rootCategoryId));
     await db.delete(categories).where(eq(categories.id, newParent.id));
   }

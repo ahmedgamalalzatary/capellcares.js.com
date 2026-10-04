@@ -46,9 +46,8 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
   const savings = computed.originalTotal - Number(price || 0);
   const rootCategories = categories.filter((category) => category.parentId == null);
   const allowedCategoryIds = categoryId != null ? getDescendantCategoryIds(categories, categoryId) : null;
-  // A legacy offer opens with no category. Showing an empty product list there
-  // would make its existing rows read as "nothing selected", so until a category
-  // is picked every product stays listed; choosing one then prunes the rows.
+  // A legacy offer opens with no category; showing an empty product list would make its existing rows read as "nothing selected", so until a category is picked every product stays listed.
+  // Choosing a category then prunes the rows.
   const categoryProducts = products.filter(
     (product) => !product.deletedAt && (allowedCategoryIds == null || allowedCategoryIds.has(product.categoryId))
   );

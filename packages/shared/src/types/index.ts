@@ -107,11 +107,7 @@ export interface ReviewSummary {
   distribution: Record<"1" | "2" | "3" | "4" | "5", number>;
 }
 
-/**
- * The compact rating a card shows: just enough to draw the stars and the
- * count. Listing endpoints carry it for every item, so a grid never has to
- * fetch reviews per card; `count: 0` means nothing is shown.
- */
+/** The compact rating a card shows: just enough to draw the stars and the count; listing endpoints carry it for every item so a grid never fetches reviews per card, and `count: 0` means nothing is shown. */
 export interface RatingSummary {
   average: number;
   count: number;
@@ -200,20 +196,11 @@ export interface RelatedItemCard {
   name: Bilingual;
   imagePath: string | null;
   price: number;
-  /**
-   * The variant the card adds to the cart — the cheapest in-stock one. Null for
-   * offers and collections, which the cart addresses by their own id.
-   */
+  /** The variant the card adds to the cart — the cheapest in-stock one. Null for offers and collections, which the cart addresses by their own id. */
   variantId: number | null;
-  /**
-   * Price before the saving: a product's pre-discount selling price, or a
-   * bundle's sum of parts. Null when the card is not discounted.
-   */
+  /** Price before the saving: a product's pre-discount selling price, or a bundle's sum of parts. Null when the card is not discounted. */
   originalTotal: number | null;
-  /**
-   * Classification line shown under a product's name. Null for offers and
-   * collections, whose cards carry no category line.
-   */
+  /** Classification line shown under a product's name. Null for offers and collections, whose cards carry no category line. */
   categoryName: Bilingual | null;
   /** Average stars and review count for the card; zeroed when unreviewed. */
   rating: RatingSummary;
@@ -284,11 +271,8 @@ export interface Offer {
   basePrice?: number;
   discount?: VariantDiscount | null;
   originalTotal: number;
-  /**
-   * The root category this offer is classified under, mirroring collections.
-   * Null only for offers created before classification existed; those are
-   * deactivated by the migration and must be given a category before saving.
-   */
+  /** The root category this offer is classified under, mirroring collections.
+   * Null only for offers created before classification existed; those are deactivated by the migration and must be given a category before saving. */
   categoryId: number | null;
   items: OfferItem[];
   stock: number;
@@ -422,10 +406,7 @@ export interface OrderSummary {
   shippingQuoteId?: string | null;
   shippingSize?: "small" | "medium" | "large" | null;
   fulfillment?: CustomerOrderFulfillment | null;
-  /**
-   * Present on the storefront order list (which renders item thumbnails per
-   * card) and absent on the admin list, which only needs order-level columns.
-   */
+  /** Present on the storefront order list (which renders item thumbnails per card) and absent on the admin list, which only needs order-level columns. */
   items?: OrderItem[];
 }
 

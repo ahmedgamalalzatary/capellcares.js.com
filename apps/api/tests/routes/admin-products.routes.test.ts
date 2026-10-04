@@ -694,8 +694,7 @@ serialTest("admin product detail returns a related-items array for editing", asy
 serialTest("admin product upsert preserves existing related links when relatedItems is omitted", async () => {
   const ids = await getBaselineIds();
 
-  // This test replaces productOne's variant set, which requires its variant not be
-  // linked to the baseline offer or collection (the seed links it). Unlink it for this scenario.
+  // This test replaces productOne's variant set, which requires its variant not be linked to the baseline offer or collection (the seed links it). Unlink it for this scenario.
   await db.delete(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
   await db.delete(collectionItems).where(eq(collectionItems.variantId, ids.firstVariantId));
 
@@ -731,9 +730,7 @@ serialTest("admin product upsert preserves existing related links when relatedIt
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        // Keep the seed SKU/slug so the seed-based test reset can still find and
-        // clean this row (renaming to a fresh SKU escapes cleanup and pollutes
-        // later runs via products_sku_unique).
+        // Keep the seed SKU/slug so the seed-based test reset can still find and clean this row (renaming to a fresh SKU escapes cleanup and pollutes later runs via products_sku_unique).
         id: ids.productOneId,
         sku: "TEST-SKU-001",
         slug: "test-product-baseline-1",
@@ -763,8 +760,7 @@ serialTest("admin product upsert preserves existing related links when relatedIt
 serialTest("admin product upsert preserves linked variant ids when editing an existing variant", async () => {
   const ids = await getBaselineIds();
 
-  // The baseline seed already links productOne's variant to the baseline offer
-  // (a duplicate offer_item would violate the offer_items unique constraint).
+  // The baseline seed already links productOne's variant to the baseline offer (a duplicate offer_item would violate the offer_items unique constraint).
 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
@@ -885,9 +881,7 @@ serialTest("admin product upsert rejects removing a variant that is used by an o
         imagePath: "/uploads/test-baseline.png",
         status: "active",
         categoryId: ids.leafCategoryId,
-        // Drop the offer-linked variant (no id matching the seed variant) while
-        // keeping the product active with a different new variant, so the request
-        // passes activation validation and reaches the offer-link guard.
+        // Drop the offer-linked variant (no id matching the seed variant) while keeping the product active with a different new variant, so the request passes activation validation and reaches the offer-link guard.
         variants: [{ size: "250ml", price: 99, stock: 5 }]
       })
     });
@@ -1077,9 +1071,7 @@ serialTest("admin hard-delete removes product, variants, wishlists, and image fi
 serialTest("admin soft-delete rejects products whose variants are used by offers", async () => {
   const ids = await getBaselineIds();
 
-  // The baseline seed already links productOne's variant to the baseline offer,
-  // so no extra offer_item is needed (and a duplicate would violate the
-  // offer_items (offer_id, variant_id) unique constraint).
+  // The baseline seed already links productOne's variant to the baseline offer, so no extra offer_item is needed (and a duplicate would violate the offer_items (offer_id, variant_id) unique constraint).
   const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
   const [offerItemBefore] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));
 
@@ -1126,8 +1118,7 @@ serialTest("admin soft-delete rejects products whose variants are used by collec
 serialTest("admin hard-delete rejects products whose variants are used by offers", async () => {
   const ids = await getBaselineIds();
 
-  // Baseline seed already links productOne's variant to the baseline offer
-  // (a duplicate offer_item would violate the new unique constraint).
+  // Baseline seed already links productOne's variant to the baseline offer (a duplicate offer_item would violate the new unique constraint).
   await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
   const [productBefore] = await db.select().from(products).where(eq(products.id, ids.productOneId));
   const [offerItemBefore] = await db.select().from(offerItems).where(eq(offerItems.variantId, ids.firstVariantId));

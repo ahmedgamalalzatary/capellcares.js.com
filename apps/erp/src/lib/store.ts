@@ -1,7 +1,6 @@
 "use client";
 
-// API-backed ERP store: initial state hydrated from /api/erp, mutations go
-// through the API and trigger a refetch so storefront sees the same data.
+// API-backed ERP store: initial state hydrated from /api/erp, mutations go through the API and trigger a refetch so storefront sees the same data.
 
 import { useSyncExternalStore } from "react";
 import { ErpStore } from "./store/core";

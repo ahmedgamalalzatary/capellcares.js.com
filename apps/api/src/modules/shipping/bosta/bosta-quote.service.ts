@@ -10,11 +10,7 @@ export type ShipmentSize = "small" | "medium" | "large";
 const MEDIUM_THRESHOLD_CENTS = 700_000; // EGP 7,000.00 — over this is Medium
 const LARGE_THRESHOLD_CENTS = 2_000_000; // EGP 20,000.00 — over this is Large
 
-/**
- * D06: estimate size from the full products total after discounts, excluding
- * shipping. Boundaries are inclusive of the lower band: exactly 7,000 is Small,
- * exactly 20,000 is Medium.
- */
+/** D06: estimate size from the full products total after discounts, excluding shipping. Boundaries are inclusive of the lower band: exactly 7,000 is Small, exactly 20,000 is Medium. */
 export function estimateShipmentSize(productsTotalCents: number): ShipmentSize {
   if (productsTotalCents > LARGE_THRESHOLD_CENTS) return "large";
   if (productsTotalCents > MEDIUM_THRESHOLD_CENTS) return "medium";
@@ -59,14 +55,7 @@ function isValidAmount(amountCents: number): boolean {
   return shippingRateAmountSchema.safeParse(amountCents).success;
 }
 
-/**
- * Server-authoritative quote. The rate identity binds the complete account,
- * environment, pricing and collection context, so unrelated rates cannot be
- * reused. Live rates are validated and persisted as the new fallback;
- * saved rates have no age-based expiry (D16). No valid rate blocks order
- * placement. A thrown live outage falls back to a valid saved rate; a
- * definitive rejection does not.
- */
+/** Server-authoritative quote. The rate identity binds the complete account, environment, pricing and collection context so unrelated rates cannot be reused; live rates are validated and persisted as the new fallback, saved rates have no age-based expiry (D16), and no valid rate blocks order placement — a thrown live outage falls back to a valid saved rate while a definitive rejection does not. */
 export async function resolveShippingQuote(
   request: ShippingQuoteRequest,
   deps: ShippingQuoteDeps
@@ -91,9 +80,7 @@ export async function resolveShippingQuote(
   try {
     live = await deps.fetchLiveRate(context);
   } catch (error) {
-    // Only classified recoverable provider outages fall back to a saved rate
-    // (D16). A definitive rejection is final; malformed-data or programming
-    // errors are surfaced, never silently turned into a saved quote.
+    // Only classified recoverable provider outages fall back to a saved rate (D16); a definitive rejection is final, and malformed-data or programming errors are surfaced rather than silently turned into a saved quote.
     if (error instanceof BostaProviderError) {
       if (error.kind === "definitive") {
         throw new ShippingQuoteUnavailableError();
@@ -105,8 +92,7 @@ export async function resolveShippingQuote(
   }
 
   if (live) {
-    // Validate the live rate before trusting or persisting it: the amount must
-    // be valid integer cents and the identity must match this exact request.
+    // Validate the live rate before trusting or persisting it: the amount must be valid integer cents and the identity must match this exact request.
     if (isValidAmount(live.amountCents) && live.rateIdentity === expectedIdentity) {
       await deps.saveRate({ ...context, amountCents: live.amountCents });
       return {
@@ -123,8 +109,7 @@ export async function resolveShippingQuote(
   }
 
   const saved = await deps.loadSavedRate(context);
-  // A saved rate is only valid for the exact destination + size it was fetched
-  // for, and only with a valid amount. Anything else is never reused.
+  // A saved rate is only valid for the exact destination + size it was fetched for, and only with a valid amount. Anything else is never reused.
   if (saved && saved.rateIdentity === expectedIdentity && isValidAmount(saved.amountCents)) {
     return {
       quoteId: `quote_${createHash("sha256").update(`${saved.rateIdentity}:${saved.amountCents}`).digest("hex").slice(0, 32)}`,

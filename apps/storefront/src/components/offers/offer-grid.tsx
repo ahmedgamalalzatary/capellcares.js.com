@@ -61,9 +61,7 @@ export function OfferGrid({
     [categories]
   );
 
-  // Only the big (top-level) categories that actually own at least one offer
-  // — leaf subcategories and empty big categories are never offered as filters.
-  // Legacy offers with no category contribute no pill.
+  // Only the big (top-level) categories that actually own at least one offer — leaf subcategories and empty big categories are never offered as filters. Legacy offers with no category contribute no pill.
   const bigCategories = useMemo<Category[]>(() => {
     const rootsWithOffers = new Map<number, Category>();
     for (const offer of offers) {
@@ -81,8 +79,7 @@ export function OfferGrid({
     [bigCategories]
   );
 
-  // Names for the cards' classification line. Built from active categories only,
-  // so an offer pointing at a deleted category simply shows no line.
+  // Names for the cards' classification line. Built from active categories only, so an offer pointing at a deleted category simply shows no line.
   const categoryNameById = useMemo(
     () => new Map(activeCategories.map((category) => [category.id, pickLang(category.name, lang)] as const)),
     [activeCategories, lang]

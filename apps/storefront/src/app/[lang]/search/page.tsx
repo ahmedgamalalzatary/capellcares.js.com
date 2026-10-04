@@ -8,15 +8,8 @@ import { fetchAdvices, fetchCategories, fetchCollections, fetchOffers, fetchProd
 import { isSearchableBundle, matchesBilingualName } from "@/lib/storefront-search";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 
-/**
- * Global search results: the page behind the header dropdown's "View all".
- *
- * It carries every kind the dropdown previews — products, categories, offers and
- * collections — which /products?q= structurally could not. Products come back
- * already filtered by the catalog (their matching spans keywords too), while the
- * rest go through the same bilingual matcher the dropdown uses, so this page can
- * never contradict the preview that led here.
- */
+/** Global search results: the page behind the header dropdown's "View all".
+ * It carries every kind the dropdown previews — products, categories, offers and collections — which /products?q= could not; products come back filtered by the catalog (their matching spans keywords too) while the rest use the same bilingual matcher the dropdown uses, so the page can never contradict the preview that led here. */
 export async function generateMetadata({
   params,
   searchParams
@@ -30,8 +23,7 @@ export async function generateMetadata({
 
   return {
     title: query ? dict.search.resultsFor.replace("{q}", query) : dict.search.title,
-    // A per-query results page is not a landing page: keep it out of the index
-    // so the catalog's own pages stay the ones that rank.
+    // A per-query results page is not a landing page: keep it out of the index so the catalog's own pages stay the ones that rank.
     robots: { index: false, follow: true }
   };
 }
@@ -67,8 +59,7 @@ export default async function SearchPage({
   const matchedCollections = collections.filter(
     (collection) => isSearchableBundle(collection) && matchesBilingualName(collection.name, query)
   );
-  // Categories are fetched to name each card's classification line, never listed
-  // as results of their own.
+  // Categories are fetched to name each card's classification line, never listed as results of their own.
   const categoryNames = Object.fromEntries(
     categories
       .filter((category) => !category.deletedAt)

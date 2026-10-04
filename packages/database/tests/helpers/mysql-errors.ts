@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 
-/**
- * MySQL driver error codes, so an unrelated failure (a dropped connection, a
- * typo in the statement) cannot pass as the constraint violation a case is
- * actually about.
- */
+/** MySQL driver error codes, so an unrelated failure (a dropped connection, a typo in the statement) cannot pass as the constraint violation a case is actually about. */
 export const FK_MISSING_ROW = "ER_NO_REFERENCED_ROW_2";
 export const UNIQUE_VIOLATION = "ER_DUP_ENTRY";
 export const CHECK_VIOLATION = "ER_CHECK_CONSTRAINT_VIOLATED";

@@ -3,8 +3,7 @@ import type { Product } from "@capella/shared";
 
 import { matchesProductQuery } from "@/lib/product-search";
 
-// The product from the bug report: an English display name with an Arabic name
-// that shares no words with it, plus keywords in both languages.
+// The product from the bug report: an English display name with an Arabic name that shares no words with it, plus keywords in both languages.
 const aloe = {
   name: { ar: "لوشن للجسم برائحة الصبار", en: "ALOE VERA" },
   keywords: ["لوشن", "لوشن للجسم", "تعطير الجسم", "رائحة الموز", "lotion", "aloe vera", "body lotion"]
@@ -17,8 +16,7 @@ describe("matchesProductQuery", () => {
   });
 
   it("matches on keywords the name does not contain", () => {
-    // "lotion" appears only in the keywords — this is the case that used to
-    // preview in the overlay and then land on an empty results page.
+    // "lotion" appears only in the keywords — this is the case that used to preview in the overlay and then land on an empty results page.
     expect(matchesProductQuery(aloe, "lotion")).toBe(true);
     expect(matchesProductQuery(aloe, "body lotion")).toBe(true);
   });

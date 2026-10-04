@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icons";
 
-/**
- * Fixed "back to top" button anchored to the bottom-start corner. Hidden until
- * the page is scrolled a screenful, then fades in; smooth-scrolls to the top.
- */
+/** Fixed "back to top" button anchored to the bottom-start corner. Hidden until the page is scrolled a screenful, then fades in; smooth-scrolls to the top. */
 export function BackToTop({ label }: { label: string }) {
   const [visible, setVisible] = useState(false);
 

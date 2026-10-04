@@ -44,8 +44,7 @@ export const shopMediaSectionTargetTypes = [
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   parentId: int("parent_id"),
-  // MySQL unique indexes treat NULLs as distinct, so root categories need a
-  // generated parent scope key to make sibling-scoped slug uniqueness enforceable.
+  // MySQL unique indexes treat NULLs as distinct, so root categories need a generated parent scope key to make sibling-scoped slug uniqueness enforceable.
   parentScopeId: int("parent_scope_id").generatedAlwaysAs(
     sql`(coalesce(\`parent_id\`, 0))`,
     { mode: "stored" }
@@ -154,10 +153,8 @@ export const productVariants = mysqlTable(
     stockQty: int("stock_qty").notNull().default(0),
     sortOrder: int("sort_order").notNull().default(0),
     deletedAt: datetime("deleted_at"),
-    // Uniqueness must ignore soft-deleted rows: a deleted 100ml variant must not
-    // block creating a new 100ml variant for the same product. MySQL has no
-    // partial unique index, so we key uniqueness off a generated column that is
-    // NULL for soft-deleted rows (multiple NULLs are allowed in a unique index).
+    // Uniqueness must ignore soft-deleted rows: a deleted 100ml variant must not block creating a new 100ml variant for the same product.
+    // MySQL has no partial unique index, so uniqueness is keyed off a generated column that is NULL for soft-deleted rows (multiple NULLs are allowed).
     activeSizeLabel: varchar("active_size_label", { length: 64 }).generatedAlwaysAs(
       sql`(case when \`deleted_at\` is null then \`size_label\` else null end)`,
       { mode: "stored" }
@@ -201,9 +198,7 @@ export const offers = mysqlTable("offers", {
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
-  // Nullable only for offers created before classification existed; the
-  // migration deactivates those so an uncategorised offer never reaches the
-  // storefront. Every write through the admin API requires a root category.
+  // Nullable only for offers created before classification existed; the migration deactivates those so an uncategorised offer never reaches the storefront, and every admin-API write requires a root category.
   categoryId: int("category_id").references(() => categories.id, { onDelete: "restrict" }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   visibility: mysqlEnum("visibility", ["visible", "hidden"]).notNull().default("visible"),
@@ -463,10 +458,7 @@ export const wishlists = mysqlTable(
   })
 );
 
-/**
- * Mirrors the storefront `CartLine` union. Declared locally because the
- * database package must not depend on `@capella/shared`.
- */
+/** Mirrors the storefront `CartLine` union. Declared locally because the database package must not depend on `@capella/shared`. */
 export type StoredCartLine =
   | { type: "product"; productId: number; variantId: number; qty: number }
   | { type: "offer"; offerId: number; qty: number }
@@ -500,16 +492,13 @@ export const orders = mysqlTable("orders", {
   paymentStatus: mysqlEnum("payment_status", ["pending", "accepted", "denied"]).notNull(),
   providerPaymentStatus: mysqlEnum("provider_payment_status", ["pending", "succeeded", "failed", "partially_refunded", "refunded", "voided"]),
   refundedAmountCents: int("refunded_amount_cents").notNull().default(0),
-  // The callback's return type is annotated to break the orders -> payment_attempts ->
-  // checkout_sessions -> orders inference cycle.
+  // The callback's return type is annotated to break the orders -> payment_attempts -> checkout_sessions -> orders inference cycle.
   paymentAttemptId: int("payment_attempt_id").references((): AnyMySqlColumn => paymentAttempts.id, { onDelete: "set null" }).unique(),
   idempotencyKey: varchar("idempotency_key", { length: 64 }).unique(),
   checkoutFingerprint: varchar("checkout_fingerprint", { length: 64 }),
   codExpiresAt: datetime("cod_expires_at"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  // Immutable shipping quote snapshot: the customer-facing charge, the quote
-  // identity the server re-derives on submit, and the estimated size. Written
-  // once at order creation; never updated by later carrier or packing changes.
+  // Immutable shipping quote snapshot: the customer-facing charge, the quote identity the server re-derives on submit, and the estimated size — written once at order creation and never updated by later carrier or packing changes.
   shippingAmountCents: int("shipping_amount_cents").notNull().default(0),
   shippingQuoteId: varchar("shipping_quote_id", { length: 64 }),
   shippingSize: mysqlEnum("shipping_size", ["small", "medium", "large"]),
@@ -687,19 +676,8 @@ export const shipments = mysqlTable("shipments", {
   orderIndex: index("shipments_order_idx").on(table.orderId, table.kind)
 }));
 
-/**
- * W07 B06: what a shipment is actually bound to at the provider, and how that was proven.
- *
- * A binding is evidence, not a convenience index. `outgoing` rows record the create
- * intent we sent and the tracking id the provider returned; `related` rows record a
- * return/exchange parcel proven to descend from a specific original. Both keep the
- * sanitized proof and when it was verified, because a later reader has to be able to
- * re-check the claim rather than trust it.
- *
- * Identity is deliberately two-fold: one binding per shipment, and at most one shipment
- * per account+environment+tracking. The second constraint is what stops two local orders
- * from ever claiming the same courier parcel.
- */
+/** W07 B06: what a shipment is bound to at the provider and how it was proven — `outgoing` records the create intent + returned tracking id, `related` records a return/exchange parcel proven to descend from a specific original; both keep the sanitized proof and verification time so a later reader can re-check rather than trust it.
+ * Identity is two-fold: one binding per shipment, and at most one shipment per account+environment+tracking (so two local orders can never claim the same courier parcel). */
 export const shipmentProviderBindings = mysqlTable("shipment_provider_bindings", {
   id: int("id").autoincrement().primaryKey(),
   shipmentId: int("shipment_id").notNull().references(() => shipments.id, { onDelete: "cascade" }),
@@ -843,14 +821,8 @@ export const paymentWebhookEvents = mysqlTable("payment_webhook_events", {
   processedAt: datetime("processed_at")
 });
 
-/**
- * Durable intake for Paymob callbacks. Written and committed BEFORE any business
- * processing, so a crash or a slow provider read cannot lose a notification that the
- * provider considers delivered.
- *
- * The inbox is deliberately NOT a replay source for the old audit table: `payment_webhook_events`
- * rows stay exactly as they were, and only this table carries a trusted receipt time.
- */
+/** Durable intake for Paymob callbacks, written and committed BEFORE any business processing so a crash or slow provider read cannot lose a notification the provider considers delivered.
+ * Deliberately NOT a replay source for the old audit table: `payment_webhook_events` rows stay exactly as they were, and only this table carries a trusted receipt time. */
 export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
   id: int("id").autoincrement().primaryKey(),
   /** Semantic fingerprint of the allowlisted fields; identical redeliveries collapse to one row. */
@@ -859,29 +831,12 @@ export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
   fingerprintVersion: int("fingerprint_version").notNull().default(1),
   /** Allowlisted, redacted snapshot. Never the raw signed body (it carries card data). */
   normalizedPayload: json("normalized_payload").notNull(),
-  /**
-   * Scalar projection of the SIGNED provider order id (`order.id`, covered by Paymob's HMAC).
-   *
-   * Stored as its own indexed column rather than read back out of the JSON payload: the
-   * evidence checks that decide whether stock stays held ran a JSON extraction per candidate
-   * and then confirmed in application code, so correctness depended on scanning rows and a
-   * backlog could starve a real match. A scalar index makes the lookup exact and bounded.
-   * Nullable because a receipt with no signed order id is still valid evidence of arrival;
-   * it simply cannot be correlated to an attempt.
-   */
+  /** Scalar projection of the SIGNED provider order id (`order.id`, covered by Paymob's HMAC), stored as its own indexed column instead of read back from JSON: the old per-candidate JSON extraction made evidence checks depend on row scanning, so a backlog could starve a real match.
+   * Nullable because a receipt with no signed order id is still valid evidence of arrival, it just cannot be correlated to an attempt. */
   signedOrderId: varchar("signed_order_id", { length: 64 }),
-  /**
-   * The local attempt this receipt provably belongs to, resolved at intake from the signed
-   * order id. Nullable: a callback can legitimately arrive before its intention response has
-   * bound an attempt, in which case the row is simply unbound and is resolved later rather
-   * than being forced onto a guess.
-   */
+  /** The local attempt this receipt provably belongs to, resolved at intake from the signed order id; nullable because a callback can legitimately arrive before its intention response has bound an attempt, so the row stays unbound and resolves later rather than being forced onto a guess. */
   boundSessionId: int("bound_session_id"),
-  /**
-   * Signed integration id, as a scalar for identity. `integration_id` IS in the HMAC input
-   * list, so unlike the unsigned `is_live` flag this is real evidence of which integration
-   * produced the callback.
-   */
+  /** Signed integration id, as a scalar for identity. `integration_id` IS in the HMAC input list, so unlike the unsigned `is_live` flag this is real evidence of which integration produced the callback. */
   signedIntegrationId: int("signed_integration_id"),
   /** Transaction ID as an unsigned hint only: it is not proof and must be proven by inquiry. */
   hintedTransactionId: varchar("hinted_transaction_id", { length: 64 }),
@@ -901,8 +856,7 @@ export const paymobCallbackInbox = mysqlTable("paymob_callback_inbox", {
   index("paymob_callback_inbox_status_received_idx").on(table.processingStatus, table.receivedAt),
   index("paymob_callback_inbox_due_idx").on(table.processingStatus, table.nextAttemptAt, table.id),
   index("paymob_callback_inbox_transaction_idx").on(table.hintedTransactionId),
-  // The evidence lookups filter by unresolved status AND the signed order id, so the id is
-  // the leading column: a session asks about its own handful of order ids, never the inbox.
+  // The evidence lookups filter by unresolved status AND the signed order id, so the id is the leading column: a session asks about its own handful of order ids, never the inbox.
   index("paymob_callback_inbox_signed_order_idx").on(table.signedOrderId, table.processingStatus),
   // Staff reconciliation of unbound receipts, and the bound-receipt view a session owns.
   index("paymob_callback_inbox_bound_session_idx").on(table.boundSessionId, table.processingStatus)

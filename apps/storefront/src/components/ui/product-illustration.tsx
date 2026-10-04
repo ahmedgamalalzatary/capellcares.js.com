@@ -1,5 +1,4 @@
-// Lightweight SVG illustrations keyed by product slug so the storefront feels
-// finished without needing real photography uploaded yet.
+// Lightweight SVG illustrations keyed by product slug so the storefront feels finished without needing real photography uploaded yet.
 import Image from "next/image";
 import type { Product } from "@capella/shared";
 

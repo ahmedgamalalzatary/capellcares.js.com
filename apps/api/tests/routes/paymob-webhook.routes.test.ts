@@ -12,10 +12,7 @@ import { withTestServer } from "../helpers/request.js";
 
 beforeEach(resetApiTestDatabase);
 beforeEach(() => {
-  // Stand in for the authenticated Paymob read so route tests never reach the network.
-  // The callback's own refunded_amount_cents is unsigned, so the provider value is the
-  // only one the service is allowed to trust. The identity fields matter too: the
-  // processor cross-checks the authenticated read against the signed callback.
+  // Stand in for the authenticated Paymob read so route tests never reach the network. The callback's own refunded_amount_cents is unsigned, so the provider value is the only one the service may trust; the identity fields matter too, since the processor cross-checks the authenticated read against the signed callback.
   setPaymobInquiryLookupForTests(async (transactionId) => ({
     transactionId, paymobOrderId: "9001", integrationId: 5885253, owner: "7", environment: "test",
     amountCents: 7000, currency: "EGP", success: true, pending: false,
@@ -24,11 +21,7 @@ beforeEach(() => {
 });
 afterEach(() => setPaymobInquiryLookupForTests(null));
 
-/**
- * Post a signed callback. The HMAC is computed for the exact payload rather than pasted,
- * because these tests vary the payload and a stale hardcoded digest would fail as a
- * signature error instead of the behaviour under test.
- */
+/** Post a signed callback; the HMAC is computed for the exact payload rather than pasted, because these tests vary the payload and a stale hardcoded digest would fail as a signature error instead of the behaviour under test. */
 async function postSignedCallback(request: (path: string, init?: RequestInit) => Promise<{ status: number; json: unknown }>,
   obj: Record<string, unknown>) {
   const { computePaymobTransactionHmac } = await import("../../src/modules/payments/paymob/paymob-hmac.js");
@@ -49,10 +42,7 @@ const inquiryCallback = (overrides: Record<string, unknown> = {}) => ({
 });
 
 test("a non-refund callback never triggers an authenticated inquiry", async () => {
-  // The refund flag IS covered by Paymob's HMAC, so the callback's own claim is
-  // trustworthy. Paying for an authenticated inquiry on EVERY successful payment is a
-  // wasted provider round trip per order; the inquiry only earns its cost when a refund
-  // is actually claimed, and the refund AMOUNT remains the only unsigned part.
+  // The refund flag IS covered by Paymob's HMAC so the callback's own claim is trustworthy; paying for an authenticated inquiry on EVERY successful payment is a wasted provider round trip per order — the inquiry earns its cost only when a refund is claimed, and the refund AMOUNT remains the only unsigned part.
   let inquiries = 0;
   setPaymobInquiryLookupForTests(async (transactionId) => {
     inquiries += 1;
@@ -97,10 +87,7 @@ test("a refund callback does trigger exactly one authenticated inquiry", async (
 });
 
 test("a refund whose verification fails leaves durable retryable work rather than being acknowledged", async () => {
-  // A transient provider outage must not permanently lose a refund notification. The old
-  // shape caught the failure, answered 202, and created nothing - so the callback was
-  // treated as handled while no evidence existed and no work was queued. The refund then
-  // simply never applied.
+  // A transient provider outage must not permanently lose a refund notification. The old shape caught the failure, answered 202 and created nothing, so the callback was treated as handled while no evidence existed and no work was queued — the refund then simply never applied.
   setPaymobInquiryLookupForTests(async () => { throw new Error("provider unavailable"); });
   const previous = process.env.PAYMOB_HMAC_SECRET;
   process.env.PAYMOB_HMAC_SECRET = "test-hmac-secret";

@@ -98,9 +98,7 @@ export async function loadCategoryNodesRepo(): Promise<CategoryNode[]> {
     .from(categories);
 }
 
-// Persists a category (insert or update) and keeps the closure table and
-// parents' leaf flags in sync. Assumes the caller (the service) has already
-// enforced the business rules.
+// Persists a category (insert or update) and keeps the closure table and parents' leaf flags in sync. Assumes the caller (the service) has already enforced the business rules.
 export async function writeCategoryRepo(
   input: CategoryWriteInput,
   previousParentId: number | null
@@ -213,9 +211,7 @@ export async function hardDeleteCategoryRepo(id: number): Promise<boolean> {
   });
 }
 
-// Descendant lookup with a single source of truth: the categoryPaths closure
-// table (rebuilt on every write, and self-inclusive). The in-memory fallback
-// covers states where paths haven't been materialised yet (e.g. fresh seeds).
+// Descendant lookup with a single source of truth: the categoryPaths closure table (rebuilt on every write, self-inclusive); the in-memory fallback covers states where paths are not materialised yet (e.g. fresh seeds).
 async function descendantCategoryIds(ancestorId: number): Promise<number[]> {
   const rows = await db
     .select({ id: categoryPaths.descendantId })
@@ -295,10 +291,7 @@ export async function findSiblingSlugConflictRepo(input: {
     .then((rows) => rows[0] ?? null);
 }
 
-// Deliberately rebuilds the entire closure table on every write. The category
-// tree is small (tens of rows), so a full truncate-and-reinsert is simpler and
-// safer than computing incremental path deltas. Revisit only if the tree grows
-// large enough for this to matter.
+// Deliberately rebuilds the entire closure table on every write — the tree is small (tens of rows), so a full truncate-and-reinsert is simpler and safer than incremental path deltas; revisit only if it grows large.
 async function rebuildCategoryPathsRepo(executor: CategoryDbExecutor = db) {
   const rows = await executor
     .select({ id: categories.id, parentId: categories.parentId })

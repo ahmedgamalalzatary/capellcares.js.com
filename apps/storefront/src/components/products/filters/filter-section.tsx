@@ -82,8 +82,7 @@ export function FilterSection({
 
       <div
         ref={contentRef}
-        // The panel height is measured from content, so it travels as a custom
-        // property that the height utility below reads.
+        // The panel height is measured from content, so it travels as a custom property that the height utility below reads.
         style={{ "--filter-height": height === "auto" ? "auto" : `${height}px` } as CSSProperties}
         className={cn(
           "h-(--filter-height) transition-[height] duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",

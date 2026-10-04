@@ -75,8 +75,7 @@ export async function replaceScopedOrderingRepo(
   await db.transaction(run);
 }
 
-// The payload's item order is the bundle's product order; variants of the same
-// product collapse onto the product's first occurrence.
+// The payload's item order is the bundle's product order; variants of the same product collapse onto the product's first occurrence.
 export async function orderedProductIdsForVariants(
   tx: Pick<typeof db, "select">,
   variantIds: number[]
@@ -99,10 +98,7 @@ export async function orderedProductIdsForVariants(
   return orderedProductIds;
 }
 
-/**
- * Ranks for many scopes at once, keyed by scope id. Listing endpoints use this
- * instead of one `loadScopedRanksRepo` call per row, which grows with the page.
- */
+/** Ranks for many scopes at once, keyed by scope id. Listing endpoints use this instead of one `loadScopedRanksRepo` call per row, which grows with the page. */
 export async function loadScopedRanksForScopesRepo(input: {
   scopeType: ScopeType;
   scopeIds: number[];

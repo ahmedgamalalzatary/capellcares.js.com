@@ -2,8 +2,7 @@ import { createElement } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The provider revalidates its lines against the catalog; the network is the
-// only boundary worth stubbing — the cart itself runs for real.
+// The provider revalidates its lines against the catalog; the network is the only boundary worth stubbing — the cart itself runs for real.
 vi.mock("@/lib/api/client", () => ({
   fetchProducts: async () => [],
   fetchOffers: async () => [],

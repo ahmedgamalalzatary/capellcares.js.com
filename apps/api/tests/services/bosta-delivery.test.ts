@@ -67,9 +67,7 @@ test("create stores initial tracking/state/response and a malformed success rema
 });
 
 test("a numeric tracking number normalizes to the same identifier the business read produces", async () => {
-  // Bosta documents trackingNumber as a string but returns a number in some responses.
-  // Before this, `parseResult` demanded a string, so a create that genuinely succeeded came
-  // back "uncertain" and the shipment was later recovered under a different identity.
+  // Bosta documents trackingNumber as a string but returns a number in some responses; before this, `parseResult` demanded a string, so a create that genuinely succeeded came back "uncertain" and the shipment was later recovered under a different identity.
   const provider = await adapter(env, async () => Response.json({ success: true,
     data: { trackingNumber: 5108002, state: { code: 10, value: "Pickup requested" } } }));
   const request = provider!.buildRequest(order as any, items as any, "bosta_create_7");

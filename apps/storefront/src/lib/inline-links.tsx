@@ -2,17 +2,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Language } from "@capella/shared";
 
-/**
- * Inline links inside dictionary prose, written markdown-style: `[label](/path)`.
- *
- * The long-form legal pages come from source documents where certain phrases —
- * "Help Center", "Privacy Policy", … — are styled as links. Marking them in the
- * copy itself keeps each occurrence deliberate: the same words appear elsewhere
- * as plain prose (the browser's own "Help" page, for one) and must stay plain.
- *
- * A target starting with `/` is a page on this site and is resolved against the
- * active locale; anything else is treated as third-party and opens in a new tab.
- */
+/** Inline links inside dictionary prose, written markdown-style: `[label](/path)`.
+ * The long-form legal pages come from source documents where certain phrases — "Help Center", "Privacy Policy", … — are styled as links; marking them in the copy keeps each occurrence deliberate (the same words appear elsewhere as plain prose).
+ * A target starting with `/` is a page on this site, resolved against the active locale; anything else is third-party and opens in a new tab. */
 const LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
 
 const LINK_CLASS =

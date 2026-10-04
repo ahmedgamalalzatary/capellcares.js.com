@@ -1,13 +1,8 @@
-// Pure, in-memory category-tree helpers. No DB access — they operate on rows
-// the caller has already loaded, so they are trivially unit-testable and shared
-// by the repository, the service, and the product controller.
+// Pure, in-memory category-tree helpers with no DB access — they operate on rows the caller already loaded, so they are trivially unit-testable and shared by the repository, service and product controller.
 
 type CategoryNode = { id: number; parentId: number | null };
 
-/**
- * Returns `rootId` together with every category beneath it. Resilient to
- * malformed parent cycles (each id is visited at most once).
- */
+/** Returns `rootId` together with every category beneath it. Resilient to malformed parent cycles (each id is visited at most once). */
 export function collectDescendantIds(rootId: number, rows: CategoryNode[]): number[] {
   const descendantIds = new Set<number>([rootId]);
   let changed = true;
@@ -35,11 +30,7 @@ export function collectBranchIds(categoryId: number, rows: CategoryNode[]): numb
   ];
 }
 
-/**
- * Walks parent links upward from `startId` and returns the chain root-first,
- * inclusive of the start node. Returns an empty array for a null start and
- * stops safely on broken chains or cycles.
- */
+/** Walks parent links upward from `startId` and returns the chain root-first, inclusive of the start node. Returns an empty array for a null start and stops safely on broken chains or cycles. */
 export function buildLineage<T extends CategoryNode>(startId: number | null, rows: T[]): T[] {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const lineage: T[] = [];

@@ -15,11 +15,7 @@ export interface ItemTag {
 
 type Variant = "float" | "badge";
 
-// Floating accent pill — sits on top of an illustration (cards, detail images).
-// Default is the roomy size. It only shrinks in the single dense case: a mobile
-// view (below `md`) inside a grid flagged `data-cols="2"`, where cards are narrow
-// enough that the full-size tag would overflow. Every other case (desktop at any
-// column count, and cols=1 on mobile) keeps the roomy size.
+// Floating accent pill — sits on top of an illustration (cards, detail images). Default is the roomy size; it shrinks only for a mobile view (below `md`) inside a grid flagged `data-cols="2"` where narrow cards would overflow — every other case keeps the roomy size.
 const FLOAT_BASE =
   "inline-flex items-center text-xs uppercase text-canvas px-3 tracking-[0.16em] py-1.5 " +
   "max-md:group-data-[cols=2]/cards:px-2 max-md:group-data-[cols=2]/cards:py-1 " +
@@ -106,12 +102,7 @@ export function ItemTags({
   );
 }
 
-/**
- * Derives a product's merchandising tags from its badge state.
- * - `lead: true`  → a single highest-priority tag (the floating card label).
- * - `lead: false` → new + bestseller (the product page badge row; offers are
- *   rendered separately there as links).
- */
+/** Derives a product's merchandising tags from its badge state: `lead: true` → a single highest-priority tag (the floating card label); `lead: false` → new + bestseller (the product page badge row, where offers render separately as links). */
 export function getProductTags(
   product: Product,
   dict: any,

@@ -14,20 +14,8 @@ export type OutgoingBindingEvidence = {
   businessReference: string;
 };
 
-/**
- * Record what a shipment is bound to at the provider.
- *
- * W07 B06. A binding is evidence, so it is written only from a read that actually
- * succeeded, and it is written once. The table's unique constraints are the real guard:
- * `shipment_provider_bindings_shipment_unique` and the account+environment+tracking
- * identity together make a duplicate impossible, so a redelivered callback or a repeated
- * poll converges on the same single row instead of fanning out.
- *
- * `ER_DUP_ENTRY` is swallowed deliberately. The only way to reach it is "we already
- * recorded this exact binding", which is the desired outcome, not a failure - and this
- * runs inside the caller's transaction, where an unhandled throw would roll back a real
- * delivery state change.
- */
+/** Record what a shipment is bound to at the provider.
+ * W07 B06: a binding is evidence, so it is written only from a read that actually succeeded and written once — the table's unique constraints (`shipment_provider_bindings_shipment_unique` plus the account+environment+tracking identity) make a duplicate impossible, so a redelivered callback or repeated poll converges on the same single row. `ER_DUP_ENTRY` is swallowed deliberately (the only way to reach it is "we already recorded this exact binding") because this runs inside the caller's transaction, where an unhandled throw would roll back a real delivery state change. */
 export async function recordOutgoingBinding(
   tx: Pick<typeof db, "insert">,
   evidence: OutgoingBindingEvidence
@@ -60,16 +48,7 @@ export async function findShipmentBinding(shipmentId: number) {
   return binding ?? null;
 }
 
-/**
- * Map the runtime's provider base URL onto the stored environment enum.
- *
- * The sync runtime identifies an environment by its endpoint, but the column is a
- * two-value enum. An explicit host allowlist is used rather than substring matching:
- * substring matching quietly filed any unrecognised host under `test`, so a typo'd or
- * wholly unexpected endpoint would have recorded live evidence in the test environment
- * and looked entirely normal. An unknown host is a configuration fault and is thrown, so
- * it surfaces at startup instead of corrupting evidence silently.
- */
+/** Map the runtime's provider base URL onto the stored environment enum. The sync runtime identifies an environment by its endpoint but the column is a two-value enum; an explicit host allowlist is used rather than substring matching, because substring matching quietly filed any unrecognised host under `test`, so a typo'd/unexpected endpoint would record live evidence in the test environment and look normal — an unknown host is a configuration fault and is thrown so it surfaces at startup. */
 const BOSTA_ENVIRONMENT_HOSTS: Record<string, "test" | "live"> = {
   "stg-app.bosta.co": "test",
   "app.bosta.co": "live"

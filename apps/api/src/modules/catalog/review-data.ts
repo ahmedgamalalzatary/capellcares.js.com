@@ -6,11 +6,7 @@ import {
   type ReviewEntityType
 } from "../reviews/review.repository.js";
 
-/**
- * Gives every item in a listing the rating its card draws. Resolved in one
- * grouped read for the whole page, and zeroed for entities nobody has
- * reviewed, so a card never has to tell "unreviewed" from "not loaded".
- */
+/** Gives every item in a listing the rating its card draws, resolved in one grouped read for the whole page and zeroed for entities nobody has reviewed, so a card never has to tell "unreviewed" from "not loaded". */
 export async function attachRatings<T extends { id: number }>(
   entityType: ReviewEntityType,
   items: T[]
@@ -28,10 +24,7 @@ export async function loadReviewData(entityType: ReviewEntityType, entityId: num
   }
 }
 
-/**
- * The detail payload reports the same rating its card does, reusing the
- * summary already loaded for the review list rather than querying again.
- */
+/** The detail payload reports the same rating its card does, reusing the summary already loaded for the review list rather than querying again. */
 export function ratingFromReviewData(reviewData: Awaited<ReturnType<typeof loadReviewData>>): RatingSummary {
   if (!reviewData) return EMPTY_RATING;
   return { average: reviewData.summary.averageRating, count: reviewData.summary.reviewCount };

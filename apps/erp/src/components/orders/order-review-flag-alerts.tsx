@@ -22,10 +22,7 @@ function canSeeAlerts(user: { role: "admin" | "staff"; permissionKeys?: string[]
   return !!user && (user.role === "admin" || (user.permissionKeys ?? []).includes("orders.read"));
 }
 
-/**
- * Staff alerts for unresolved order review flags. The x button acknowledges the alert
- * server-side with no note, which hides it for everyone and never changes the order.
- */
+/** Staff alerts for unresolved order review flags. The x button acknowledges the alert server-side with no note, which hides it for everyone and never changes the order. */
 export function OrderReviewFlagAlerts() {
   const { user } = useAdminAuth();
   const shownIds = useRef(new Set<number>());

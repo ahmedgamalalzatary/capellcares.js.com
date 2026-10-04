@@ -21,8 +21,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
   const [dir, setDir] = useState<1 | -1>(1);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mirror the mobile drawer: switching tabs slides the new group in from the
-  // trailing side (mirrored in RTL) instead of swapping instantly.
+  // Mirror the mobile drawer: switching tabs slides the new group in from the trailing side (mirrored in RTL) instead of swapping instantly.
   const selectRoot = useCallback((index: number) => {
     setActiveRoot((current) => {
       if (index !== current) setDir(index > current ? 1 : -1);
@@ -31,10 +30,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
   }, []);
   const fromRight = dir === 1 ? !isAr : isAr;
 
-  // Clipped max-height reveal, like the mobile drawer: the panel grows down from
-  // under the bar on open and collapses up on close. Measure the content's real
-  // height so the reveal animates to an exact value (remeasure when the active
-  // tab changes its height).
+  // Clipped max-height reveal, like the mobile drawer: the panel grows down from under the bar on open and collapses up on close; the content's real height is measured so the reveal animates to an exact value (remeasured when the active tab changes height).
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelH, setPanelH] = useState<number>();
   useEffect(() => {
@@ -56,8 +52,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
 
   useEffect(() => () => cancelClose(), [cancelClose]);
 
-  // Offers and Sets lead — the same two entries the mobile drawer opens with —
-  // then the category roots in ERP order. New/Bestsellers stay out of the panel.
+  // Offers and Sets lead — the same two entries the mobile drawer opens with — then the category roots in ERP order. New/Bestsellers stay out of the panel.
   const roots = [
     ...menuEntries.filter((entry) => entry.type === "offers"),
     ...menuEntries.filter((entry) => entry.type === "collections"),
@@ -102,8 +97,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         ].join(" ")}
         role="menu"
-        // The open height is measured from the panel content, so it rides along
-        // as a custom property.
+        // The open height is measured from the panel content, so it rides along as a custom property.
         style={{ "--mega-panel-height": open ? (panelH ? `${panelH}px` : "80vh") : "0px" } as CSSProperties}
       >
         <div ref={panelRef} className="container">

@@ -35,8 +35,7 @@ vi.mock("sonner", () => ({
   }
 }));
 
-// The state object must be a stable reference: the page derives memoized arrays
-// from `categories`, and a fresh array per render causes an infinite re-render loop.
+// The state object must be a stable reference: the page derives memoized arrays from `categories`, and a fresh array per render causes an infinite re-render loop.
 const storeState = vi.hoisted(() => ({
     categories: [
       { id: 1, parentId: null, slug: "body-care", sortOrder: 2, name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false, deletedAt: null },
@@ -84,9 +83,7 @@ describe("CategoriesPage", () => {
     const { container } = render(createElement(CategoriesPage));
     const view = within(container);
 
-    // Skin Care (id 2) has children Serums (3) and Cleansers (4); the subtree
-    // stays mounted (animated via CSS) and its collapsed state is tracked on the
-    // wrapper's data-collapsed attribute.
+    // Skin Care (id 2) has children Serums (3) and Cleansers (4); the subtree stays mounted (animated via CSS) and its collapsed state is tracked on the wrapper's data-collapsed attribute.
     const subtree = view.getByTestId("category-subtree-2");
     const toggle = view.getByTestId("category-toggle-2");
     expect(subtree.getAttribute("data-collapsed")).toBe("false");

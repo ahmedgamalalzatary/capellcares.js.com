@@ -11,6 +11,5 @@ function resolvePublicApiBase() {
 
 export const PUBLIC_API_BASE = resolvePublicApiBase();
 
-// Dev-only fallback for the storefront revalidation secret. Production must set
-// STOREFRONT_REVALIDATE_SECRET explicitly (see resolveRevalidateSecret).
+// Dev-only fallback for the storefront revalidation secret. Production must set STOREFRONT_REVALIDATE_SECRET explicitly (see resolveRevalidateSecret).
 export const DEV_REVALIDATE_SECRET = "dev-revalidate-secret";

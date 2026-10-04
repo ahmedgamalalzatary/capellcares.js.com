@@ -193,9 +193,7 @@ export default function OffersListPage() {
                      {(canToggleErpModule(user, "offers") || canUpdateErpModule(user, "offers") || canSoftDeleteErpModule(user, "offers")) && (
                        <RowMenu>
                          {canToggleErpModule(user, "offers") && (
-                           // An offer with no category predates classification and has to be
-                           // completed in the editor before it can go live. The API rejects the
-                           // activation anyway, so the action is not offered here at all.
+                           // An offer with no category predates classification and has to be completed in the editor before it can go live. The API rejects the activation anyway, so the action is not offered here at all.
                            o.status !== "active" && o.categoryId == null ? (
                              <span className="row-menu__item row-menu__item--disabled">
                                اختاري قسمًا للعرض قبل تفعيله

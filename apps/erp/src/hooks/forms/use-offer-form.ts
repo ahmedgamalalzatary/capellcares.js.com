@@ -161,8 +161,7 @@ export function useOfferForm({
     media,
     setMedia,
     categoryId,
-    // Changing the category clears any row whose product falls outside the new
-    // subtree, so an offer can never keep a member from another category.
+    // Changing the category clears any row whose product falls outside the new subtree, so an offer can never keep a member from another category.
     setCategoryId: (value) => {
       setCategoryId(value);
       const allowedCategoryIds = value != null ? getDescendantCategoryIds(categories, value) : null;

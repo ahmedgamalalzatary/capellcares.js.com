@@ -3,12 +3,7 @@ import test from "node:test";
 
 import { buildLineage, collectBranchIds, collectDescendantIds } from "../../../../src/modules/catalog/categories/category-tree.js";
 
-// Tree used across the cases:
-//   1 (root)
-//   ├─ 2
-//   │  └─ 4
-//   └─ 3
-//   5 (separate root)
+// Tree used across the cases: 1 (root) ├─ 2 │ └─ 4 └─ 3 5 (separate root)
 const rows = [
   { id: 1, parentId: null },
   { id: 2, parentId: 1 },

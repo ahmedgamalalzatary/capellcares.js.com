@@ -37,8 +37,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     })
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((data) => {
-        // Entries may still carry a storage-relative `/uploads/...` path, which
-        // would otherwise be requested from the storefront origin and 404.
+        // Entries may still carry a storage-relative `/uploads/...` path, which would otherwise be requested from the storefront origin and 404.
         const nextItems = ((data.items ?? []) as WishlistEntry[]).map((item) => ({
           ...item,
           imagePath: resolveMediaUrl(item.imagePath) || null

@@ -7,9 +7,7 @@ async function read() {
   return module;
 }
 
-// Authoritative zoning evidence. A district NAME is never an identifier; it only
-// resolves when exactly one district in the authoritative data carries that name
-// under the already-proven city/zone.
+// Authoritative zoning evidence. A district NAME is never an identifier; it only resolves when exactly one district in the authoritative data carries that name under the already-proven city/zone.
 const zoning = [
   { cityId: "city-cairo", zoneId: "zone-nasr", districtId: "district-nasr", districtName: "District 1" },
   { cityId: "city-cairo", zoneId: "zone-masr", districtId: "district-masr-1", districtName: "Shared Name" },
@@ -94,8 +92,7 @@ test("the documented nested `_id` form is believed, and a non-documented alias i
   }, resolveByName), {
     cityId: "city-cairo", zoneId: "zone-nasr", districtId: "district-nasr", firstLine: "Street 1, Building 2 apartment 3"
   });
-  // `id` is not the documented nested field. It must never be silently promoted to
-  // identity, so a requested city can never correlate against an alias-only read.
+  // `id` is not the documented nested field. It must never be silently promoted to identity, so a requested city can never correlate against an alias-only read.
   const aliasOnly = await normalizeReadAddress({ city: { id: "city-cairo" }, districtId: "district-nasr",
     firstLine: "Street 1" }, resolveByName);
   assert.equal(aliasOnly.cityId, null, "an undocumented nested alias is not proof of city identity");
@@ -105,8 +102,7 @@ test("the documented nested `_id` form is believed, and a non-documented alias i
 
 test("a nested alias and a flat id that disagree are a contradiction, not a preference", async () => {
   const { normalizeReadAddress } = await read();
-  // Documented `_id` and an alias `id` naming different cities must not be resolved by
-  // picking one: a response carrying two identities is an unresolved read.
+  // Documented `_id` and an alias `id` naming different cities must not be resolved by picking one: a response carrying two identities is an unresolved read.
   await assert.rejects(normalizeReadAddress({ city: { _id: "city-cairo", id: "city-giza" },
     districtId: "district-nasr", firstLine: "Street 1" }, resolveByName), /contradict/i);
   await assert.rejects(normalizeReadAddress({ cityId: "city-cairo", city: { _id: "city-giza" },

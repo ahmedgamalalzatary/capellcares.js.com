@@ -39,8 +39,7 @@ async function lockedCreateJob(tx: Parameters<Parameters<typeof db.transaction>[
   return job;
 }
 
-/** Staff-reviewed recovery for definitively failed delivery creation; the worker re-checks
- *  dispatchability at claim time, so a still-blocked order simply stops again. */
+/** Staff-reviewed recovery for definitively failed delivery creation; the worker re-checks dispatchability at claim time, so a still-blocked order simply stops again. */
 export async function retryOrderDeliveryCreation(orderId: number, actorId: number) {
   return db.transaction(async tx => {
     const order = await lockedShippingOrder(tx, orderId);
@@ -57,8 +56,7 @@ export async function retryOrderDeliveryCreation(orderId: number, actorId: numbe
   });
 }
 
-/** Read-only recovery of uncertain creation: make the job due so the worker reconciles it
- *  through carrier reads, never a resend. */
+/** Read-only recovery of uncertain creation: make the job due so the worker reconciles it through carrier reads, never a resend. */
 export async function reconcileOrderDeliveryCreation(orderId: number, actorId: number) {
   const outcome = await db.transaction(async tx => {
     await lockedShippingOrder(tx, orderId);

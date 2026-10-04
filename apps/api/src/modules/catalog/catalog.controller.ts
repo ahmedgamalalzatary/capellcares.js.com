@@ -12,8 +12,7 @@ import { attachRatings, loadReviewData, ratingFromReviewData } from "./review-da
 import type { LocalizedRequest } from "../../middlewares/locale.middleware.js";
 
 export async function listCategories(_req: Request, res: Response) {
-  // Categories mirror the ERP tree (oldest unranked first); the storefront
-  // client re-sorts, but keep the API response consistent with that ordering.
+  // Categories mirror the ERP tree (oldest unranked first); the storefront client re-sorts, but keep the API response consistent with that ordering.
   const rows = await listCategoriesRepo(false, "erp");
   const items = rows.map((category) => ({
     id: category.id,

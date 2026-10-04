@@ -25,8 +25,7 @@ vi.mock("@/components/providers/auth-provider", () => ({
 
 vi.mock("@/lib/api/client", () => ({
   fetchCustomerOrders: (...args: any[]) => fetchCustomerOrders(...args),
-  // The order cards resolve line items back to the live catalog for thumbnails
-  // and classification names.
+  // The order cards resolve line items back to the live catalog for thumbnails and classification names.
   fetchProducts: (...args: any[]) => fetchProducts(...args),
   fetchOffers: (...args: any[]) => fetchOffers(...args),
   fetchCollections: (...args: any[]) => fetchCollections(...args),

@@ -6,9 +6,8 @@ const apiDel = vi.fn();
 const authTokenListeners: Array<(token: string | null) => void> = [];
 const authHydrationListeners: Array<(hydrated: boolean) => void> = [];
 const authUserListeners: Array<(user: unknown) => void> = [];
-// The store binds window "focus" listeners it never removes. `vi.resetModules()` hands the
-// next case a fresh store, but the earlier stores' listeners stay on the shared jsdom window,
-// so a single focus event would refetch through them too. Track and detach per case.
+// The store binds window "focus" listeners it never removes; `vi.resetModules()` gives the next case a fresh store, but earlier stores' listeners stay on the shared jsdom window, so one focus event would refetch through them too.
+// Track and detach per case.
 const focusListeners: EventListener[] = [];
 let adminAuthHydrated = true;
 let adminAuthUser: unknown = {
@@ -292,8 +291,7 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    // One focus event refetches once through the current store only; the products
-    // endpoint being fetched exactly twice proves no stale listener added a third.
+    // One focus event refetches once through the current store only; the products endpoint being fetched exactly twice proves no stale listener added a third.
     expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(2);
   });
 

@@ -32,8 +32,7 @@ export function ContactView({ lang, dict }: { lang: Language; dict: any }) {
   const [sent, setSent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Keep a live ref so the unmount cleanup revokes whatever previews remain
-  // without re-running (and prematurely revoking) on every add/remove.
+  // Keep a live ref so the unmount cleanup revokes whatever previews remain without re-running (and prematurely revoking) on every add/remove.
   const attachmentsRef = useRef(attachments);
   attachmentsRef.current = attachments;
   useEffect(() => {

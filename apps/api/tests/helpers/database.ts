@@ -37,9 +37,7 @@ import { assertDisposableTestDatabaseUrl, resolveDatabaseUrl } from "@capella/da
 import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
 
 export async function resetApiTestDatabase() {
-  // Every delete below is destructive, and most run before clearTestSeed's own
-  // guard, so refuse up front unless the target is an explicitly disposable
-  // schema.
+  // Every delete below is destructive, and most run before clearTestSeed's own guard, so refuse up front unless the target is an explicitly disposable schema.
   assertDisposableTestDatabaseUrl(resolveDatabaseUrl());
 
   await db.delete(shipmentEvents);

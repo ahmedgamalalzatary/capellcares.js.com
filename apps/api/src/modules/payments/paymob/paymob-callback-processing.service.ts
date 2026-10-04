@@ -28,11 +28,8 @@ export async function processPaymobCallbackClaim(claim: PaymobCallbackClaim, opt
   const now = () => options.now ?? new Date();
   const payload = claim.normalizedPayload as Record<string, unknown>;
   const transaction = parsePaymobProcessedCallback({ ...payload, source_data: { type: payload.payment_method } });
-  // Version 3 is the current fingerprint definition. Versions 1 and 2 remain processable:
-  // receipts already durably stored under the older definitions carry the same normalized
-  // payload shape and must still reach an outcome rather than be rejected outright. A row
-  // written under a definition this code no longer understands would have to be rejected, so
-  // any FUTURE version must be added here explicitly rather than assumed compatible.
+  // Version 3 is the current fingerprint definition; versions 1 and 2 remain processable because receipts already stored under them carry the same normalized payload shape and must still reach an outcome rather than be rejected outright.
+  // A row written under a definition this code no longer understands must be rejected, so any FUTURE version must be added here explicitly rather than assumed compatible.
   if (claim.callbackType !== "transaction" || ![1, 2, 3].includes(claim.fingerprintVersion) || !transaction) {
     await rejectPaymobCallback(claim, "PAYMENT_CALLBACK_INVALID", now());
     return false;
@@ -41,10 +38,7 @@ export async function processPaymobCallbackClaim(claim: PaymobCallbackClaim, opt
     let verified: { is_refunded: boolean; refunded_amount_cents: number; environment: "test" | "live" } | undefined;
     if (transaction.is_refunded) {
       const inquiry = await (options.inquiryLookup ?? inquiryLookup())(String(transaction.id));
-      // The authenticated read must describe the SAME payment the signed callback describes.
-      // `order.id` and `integration_id` are both covered by Paymob's HMAC, so a mismatch here
-      // means the inquiry answered about a different transaction - applying its refund total
-      // would move money on the strength of an unrelated read.
+      // The authenticated read must describe the SAME payment the signed callback describes; `order.id` and `integration_id` are both HMAC-covered, so a mismatch means the inquiry answered about a different transaction — applying its refund total would move money on the strength of an unrelated read.
       if (inquiry.transactionId !== String(transaction.id) || inquiry.paymobOrderId !== String(transaction.order?.id ?? "") ||
         inquiry.integrationId !== Number(transaction.integration_id) ||
         inquiry.amountCents !== transaction.amount_cents ||
@@ -54,10 +48,7 @@ export async function processPaymobCallbackClaim(claim: PaymobCallbackClaim, opt
         await deferPaymobCallback(claim, "REFUND_VERIFICATION_UNRESOLVED", now());
         return false;
       }
-      // The environment comes from the AUTHENTICATED inquiry response, never from the
-      // callback body: `is_live` is outside Paymob's HMAC input list, so the callback's own
-      // copy of it is not evidence. The processor cross-checks it against the environment
-      // recorded on the locked local attempt.
+      // The environment comes from the AUTHENTICATED inquiry response, never the callback body: `is_live` is outside Paymob's HMAC input list, so the callback's own copy is not evidence; the processor cross-checks it against the environment recorded on the locked local attempt.
       verified = { is_refunded: true, refunded_amount_cents: inquiry.refundedAmountCents,
         environment: inquiry.environment };
     }

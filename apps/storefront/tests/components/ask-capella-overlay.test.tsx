@@ -25,8 +25,7 @@ function renderOverlay() {
 }
 
 describe("AskCapellaOverlay", () => {
-  // The transcript is kept in sessionStorage so it survives the overlay closing
-  // (e.g. when a result is clicked); clear it so cases don't inherit each other.
+  // The transcript is kept in sessionStorage so it survives the overlay closing (e.g. when a result is clicked); clear it so cases don't inherit each other.
   beforeEach(() => {
     window.sessionStorage.clear();
   });
@@ -37,8 +36,7 @@ describe("AskCapellaOverlay", () => {
 
     fireEvent.change(input, { target: { value: "hair loss" } });
     fireEvent.submit(input.closest("form")!);
-    // The browser drops focus when the field is disabled mid-send, so the next
-    // question could not be typed without clicking the field again.
+    // The browser drops focus when the field is disabled mid-send, so the next question could not be typed without clicking the field again.
     input.blur();
 
     await waitFor(() => expect(document.activeElement).toBe(input));
@@ -54,8 +52,7 @@ describe("AskCapellaOverlay", () => {
     const send = input.closest("form")!.querySelector("button")!;
 
     fireEvent.change(input, { target: { value: "hair loss" } });
-    // Tapping send is what moves focus off the field on a touch device. Pulling
-    // it straight back would raise the keyboard over the answer being awaited.
+    // Tapping send is what moves focus off the field on a touch device. Pulling it straight back would raise the keyboard over the answer being awaited.
     send.focus();
     fireEvent.click(send);
 
@@ -88,8 +85,7 @@ describe("AskCapellaOverlay", () => {
     fireEvent.submit(input.closest("form")!);
     expect(await screen.findByText("hair loss")).toBeInTheDocument();
 
-    // Clicking a result closes the overlay, which unmounts it. Reopening must
-    // not drop what the customer asked for.
+    // Clicking a result closes the overlay, which unmounts it. Reopening must not drop what the customer asked for.
     cleanup();
     renderOverlay();
 

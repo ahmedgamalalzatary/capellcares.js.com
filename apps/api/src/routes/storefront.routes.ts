@@ -30,9 +30,7 @@ storefrontRoutes.use("/wishlist", wishlistRoutes);
 storefrontRoutes.use("/reviews", storefrontReviewsRoutes);
 storefrontRoutes.use("/shop-media-sections", storefrontShopMediaRoutes);
 storefrontRoutes.use("/announcements", storefrontAnnouncementsRoutes);
-// Wrapped like the product and collection routers: an unwrapped async handler
-// rejects into an unhandled rejection, which takes the process down rather than
-// returning a 500.
+// Wrapped like the product and collection routers: an unwrapped async handler rejects into an unhandled rejection, which takes the process down rather than returning a 500.
 storefrontRoutes.get("/categories", wrapAsync(listCategories));
 storefrontRoutes.get("/offers", wrapAsync(listOffers));
 storefrontRoutes.get("/offers/:slug", wrapAsync(getOfferBySlug));

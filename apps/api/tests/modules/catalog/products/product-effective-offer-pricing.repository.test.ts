@@ -80,8 +80,7 @@ test("a multi-variant bundle spanning products does not affect a single product'
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
-  // The baseline offer bundles product 1's variant (35) + product 2's variant (55).
-  // Reading product 1 alone must not mistake that bundle for a single-variant offer.
+  // The baseline offer bundles product 1's variant (35) + product 2's variant (55). Reading product 1 alone must not mistake that bundle for a single-variant offer.
   const product = await findVisibleProductBySlug("test-product-baseline-1");
   assert.ok(product);
   assert.equal(product.variants[0]?.price, 35);
@@ -92,8 +91,7 @@ test("a two-item offer with one soft-deleted variant does not affect product pri
   await resetApiTestDatabase();
   const ids = await getBaselineIds();
 
-  // Soft-delete product 2's variant. The baseline offer still has two items, so it
-  // remains a bundle and must not override product 1's variant price.
+  // Soft-delete product 2's variant. The baseline offer still has two items, so it remains a bundle and must not override product 1's variant price.
   await db
     .update(productVariants)
     .set({ deletedAt: new Date() })

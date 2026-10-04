@@ -87,8 +87,7 @@ test("expiry waits for the payment session lock before releasing any stock", asy
   input.reservationExpiresAt = new Date(Date.now() - 1000);
   const session = await module?.createReservedCheckout(input);
 
-  // A real MySQL lock-wait timeout establishes contention, unlike an arbitrary
-  // sleep. Apply the short timeout only to expiry's real transaction connection.
+  // A real MySQL lock-wait timeout establishes contention, unlike an arbitrary sleep. Apply the short timeout only to expiry's real transaction connection.
   const getConnection = mysqlPool.getConnection;
   const payment = await mysqlPool.getConnection();
   let expiryConnection: Awaited<ReturnType<typeof mysqlPool.getConnection>> | undefined;
@@ -113,8 +112,7 @@ test("expiry waits for the payment session lock before releasing any stock", asy
     mysqlPool.getConnection = getConnection;
     await payment.rollback();
     payment.release();
-    // The connection has already been returned by Drizzle. Restore its session
-    // setting on that connection before the next test uses the pool.
+    // The connection has already been returned by Drizzle. Restore its session setting on that connection before the next test uses the pool.
     if (expiryConnection) await expiryConnection.query("SET SESSION innodb_lock_wait_timeout = DEFAULT");
   }
   await module!.releaseExpiredCheckoutReservations(new Date());

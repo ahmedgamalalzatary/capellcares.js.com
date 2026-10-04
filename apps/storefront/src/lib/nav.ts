@@ -15,8 +15,7 @@ export interface NavGroup {
 
 export function buildNav(categories: Category[], lang: Language): NavGroup[] {
   const active = categories.filter((c) => !c.deletedAt);
-  // Categories display the same as the ERP tree (oldest unranked first), unlike
-  // other storefront entities — so order them with the "erp" surface.
+  // Categories display the same as the ERP tree (oldest unranked first), unlike other storefront entities — so order them with the "erp" surface.
   const roots = active
     .filter((c) => c.parentId === null)
     .sort(compareByScopedOrdering.bind(null, "erp"));

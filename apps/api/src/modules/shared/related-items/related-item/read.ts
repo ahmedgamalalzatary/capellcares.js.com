@@ -47,11 +47,7 @@ function sumBundleParts(items: { qty: number; sellingPrice: unknown }[]): number
   return items.reduce((total, item) => total + Number(item.sellingPrice) * item.qty, 0);
 }
 
-/**
- * How many whole bundles the scarcest part allows. Zero when there are none.
- * A soft-deleted part counts as unavailable rather than being skipped: dropping
- * it would let the surviving parts make an unshippable bundle look in stock.
- */
+/** How many whole bundles the scarcest part allows (zero when there are none); a soft-deleted part counts as unavailable rather than being skipped, since dropping it would let the surviving parts make an unshippable bundle look in stock. */
 function availableBundles(items: { qty: number; stockQty: number; deletedAt: Date | null }[]): number {
   const stock = items.reduce((minAvailable, item) => {
     const onHand = item.deletedAt ? 0 : item.stockQty;
@@ -61,9 +57,7 @@ function availableBundles(items: { qty: number; stockQty: number; deletedAt: Dat
   return Number.isFinite(stock) ? stock : 0;
 }
 
-/**
- * Returns a source entity's related targets in its own rank order.
- */
+/** Returns a source entity's related targets in its own rank order. */
 export async function listRelatedLinksForSourceRepo(
   sourceType: RelatedEntityType,
   sourceId: number
@@ -76,13 +70,7 @@ export async function listRelatedLinksForSourceRepo(
   return rows.map((row) => ({ type: row.targetType, id: row.targetId }));
 }
 
-/**
- * Hydrates a source entity's related targets into storefront cards, in this
- * source's rank order, filtered at read time:
- * - products: active, non-deleted, in-stock
- * - offers: active, non-deleted, visible
- * Filtered-out targets are dropped; remaining order (with gaps) is preserved.
- */
+/** Hydrates a source entity's related targets into storefront cards, in this source's rank order, filtered at read time: - products: active, non-deleted, in-stock - offers: active, non-deleted, visible Filtered-out targets are dropped; remaining order (with gaps) is preserved. */
 export async function getStorefrontRelatedCardsRepo(
   source: RelatedRef,
   lang: Language = "ar"
@@ -100,10 +88,7 @@ export async function getStorefrontRelatedCardsRepo(
     loadBundleDiscountsRepo("collection", collectionIds)
   ]);
 
-  // A related card carries the same stars as the card it mirrors elsewhere.
-  // Started here but only awaited at assembly, so the ratings travel alongside
-  // the card queries instead of delaying them. Safe to leave floating: these
-  // never reject.
+  // A related card carries the same stars as the card it mirrors elsewhere; started here but only awaited at assembly, so the ratings travel alongside the card queries instead of delaying them — safe to leave floating because these never reject.
   const ratingsPromise = Promise.all([
     safeRatingSummaries("product", productIds),
     safeRatingSummaries("offer", offerIds),
@@ -160,8 +145,7 @@ export async function getStorefrontRelatedCardsRepo(
           .where(
             and(
               inArray(productVariants.productId, rows.map((row) => row.id)),
-              // Soft delete leaves stock_qty untouched, so a deleted variant
-              // still looks purchasable here — and checkout would reject it.
+              // Soft delete leaves stock_qty untouched, so a deleted variant still looks purchasable here — and checkout would reject it.
               isNull(productVariants.deletedAt)
             )
           )
@@ -177,8 +161,7 @@ export async function getStorefrontRelatedCardsRepo(
       if (inStockVariants.length === 0) {
         continue;
       }
-      // The card transacts on the cheapest in-stock variant, so that variant's
-      // effective price is the card price and its selling price the original.
+      // The card transacts on the cheapest in-stock variant, so that variant's effective price is the card price and its selling price the original.
       const cheapest = inStockVariants.reduce((lowest, candidate) =>
         candidate.price < lowest.price ? candidate : lowest
       ).variant;

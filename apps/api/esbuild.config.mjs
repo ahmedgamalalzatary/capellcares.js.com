@@ -1,14 +1,7 @@
 import { build } from "esbuild";
 
-// Bundle the API and read-only shipping configuration CLI into self-contained files.
-// Everything — our source, the workspace packages (@capella/*), and pure-JS
-// npm deps (express, drizzle-orm, zod, ...) — is inlined. Node builtins are
-// external automatically under platform:node.
-//
-// `mysql2` is the only package kept external: it lazily `require()`s charset
-// and auth-plugin files at runtime, which a static bundle cannot resolve.
-// The runner installs just mysql2 (a few MB) instead of the whole workspace
-// dependency closure, so React/Radix/Lucide from @capella/shared never ship.
+// Bundle the API and read-only shipping-config CLI into self-contained files: everything (our source, @capella/*, pure-JS npm deps) is inlined, Node builtins external under platform:node.
+// `mysql2` stays external because it lazily `require()`s charset/auth-plugin files at runtime that a static bundle cannot resolve, so the runner installs just mysql2 instead of the whole workspace closure.
 await build({
   entryPoints: ["src/server.ts", "src/scripts/check-shipping.ts"],
   bundle: true,
@@ -20,8 +13,7 @@ await build({
   sourcemap: true,
   logLevel: "info",
   external: ["mysql2", "mysql2/*"],
-  // CJS deps (express/body-parser/…) call require() internally; provide a real
-  // require + __dirname/__filename so esbuild's shim resolves them in ESM output.
+  // CJS deps (express/body-parser/…) call require() internally; provide a real require + __dirname/__filename so esbuild's shim resolves them in ESM output.
   banner: {
     js: [
       "import { createRequire as __cr } from 'node:module';",

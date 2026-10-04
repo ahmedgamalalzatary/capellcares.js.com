@@ -48,8 +48,7 @@ test("a worker reports the original sweep error once per failed sweep and can st
     }
   );
 
-  // Bounded: the first report resolves this, and the small delay afterwards
-  // gives any duplicate report a chance to arrive before the count is asserted.
+  // Bounded: the first report resolves this, and the small delay afterwards gives any duplicate report a chance to arrive before the count is asserted.
   await errorReported;
   await new Promise((resolve) => setTimeout(resolve, 50));
 

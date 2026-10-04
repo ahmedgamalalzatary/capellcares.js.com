@@ -330,8 +330,7 @@ describe("ProductCard", () => {
       }
     }));
 
-    // Counted, not queried by name: a restored View link would render an empty
-    // accessible name now that common.view is gone, and slip past a name query.
+    // Counted, not queried by name: a restored View link would render an empty accessible name now that common.view is gone, and slip past a name query.
     const actionRow = document.querySelector(".mt-3.flex.gap-2") as HTMLElement;
     expect(actionRow.children).toHaveLength(1);
     expect(actionRow.querySelector("a")).toBeNull();

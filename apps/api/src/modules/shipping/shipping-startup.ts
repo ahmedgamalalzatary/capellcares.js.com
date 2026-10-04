@@ -1,13 +1,6 @@
 import { checkShippingConfiguration } from "./shipping-readiness.service.js";
 
-/**
- * Startup gate shared by the API and the workers. It reuses the same side-effect-free
- * configuration check as the deployment CLI, so an invalid active shipping setup is
- * refused at boot instead of surfacing later as unexplained worker failures.
- *
- * It deliberately validates only shipping configuration: it must never require the
- * admin, JWT or payment-intention secrets that a given process does not use.
- */
+/** Startup gate shared by the API and the workers. It reuses the same side-effect-free configuration check as the deployment CLI, so an invalid active shipping setup is refused at boot instead of surfacing later as unexplained worker failures; it deliberately validates only shipping configuration and must never require the admin, JWT or payment-intention secrets a given process does not use. */
 export function shippingStartupReport(env: Record<string, string | undefined> = process.env) {
   return checkShippingConfiguration(env);
 }

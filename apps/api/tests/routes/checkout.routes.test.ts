@@ -282,8 +282,7 @@ test("checkout status withdraws retry while a sibling attempt's payment evidence
     checkoutSessionId: session.id, attemptNumber: 2, merchantReference: `capella_${crypto.randomUUID()}`,
     amountCents: 1000, currency: "EGP", environment: "test", status: "failed"
   });
-  // But attempt 1's callback is still queued. Paying again could double-charge a customer
-  // whose first payment is about to succeed, so retry must be withheld (P04).
+  // But attempt 1's callback is still queued. Paying again could double-charge a customer whose first payment is about to succeed, so retry must be withheld (P04).
   await db.insert(paymentAttempts).values({
     checkoutSessionId: session.id, attemptNumber: 1, merchantReference: `capella_${crypto.randomUUID()}`,
     amountCents: 1000, currency: "EGP", environment: "test", status: "pending", paymobOrderId: String(orderId)

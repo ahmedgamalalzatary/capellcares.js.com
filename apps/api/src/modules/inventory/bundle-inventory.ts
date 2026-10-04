@@ -44,12 +44,7 @@ export async function calculateBundleInventory(items: BundleItem[]) {
 
 export const PRICE_NOT_BELOW_ORIGINAL = "price-not-below-original";
 
-/**
- * A bundle (offer or collection) must save the customer money: its fixed price
- * has to be strictly below the sum of its parts. Returns a rejection reason when
- * the price is at or above that total, or null when it is a genuine discount.
- * Bundles with no items are left to the caller's own validation.
- */
+/** A bundle (offer or collection) must save the customer money: its fixed price has to be strictly below the sum of its parts; returns a rejection reason when it is at or above that total, or null when it is a genuine discount (bundles with no items are left to the caller's validation). */
 export async function validateBundlePriceBelowParts(
   fixedPrice: number,
   items: BundleItem[]
@@ -64,10 +59,7 @@ export async function validateBundlePriceBelowParts(
   return null;
 }
 
-/**
- * One pricing/stock read covering every bundle on a page, for use with
- * `computeBundleInventoryFromMap` instead of a lookup per bundle.
- */
+/** One pricing/stock read covering every bundle on a page, for use with `computeBundleInventoryFromMap` instead of a lookup per bundle. */
 export async function loadBundleVariantMap(bundles: Array<{ items: BundleItem[] }>) {
   const variantIds = [...new Set(bundles.flatMap((bundle) => bundle.items.map((item) => item.variantId)))];
   if (variantIds.length === 0) {

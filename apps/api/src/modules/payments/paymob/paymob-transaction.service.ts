@@ -12,20 +12,8 @@ type PaymobTransaction = Record<string, any> & {
   source_data?: { type?: unknown };
 };
 
-/**
- * Authenticated provider state for a callback. Supplied by the caller after a trusted
- * inquiry read.
- *
- * This exists because `refunded_amount_cents` is NOT part of Paymob's HMAC input list,
- * so the callback's copy is attacker-controllable. Every refund amount in this service
- * is taken from `verified` and never from the callback body. A callback with no verified
- * read cannot assert a refund amount at all.
- *
- * `environment` is the authenticated read's own environment (`is_live` from the inquiry
- * response, which comes from the provider rather than from the callback body). When present
- * it must agree with the environment recorded on the local attempt. It is an additional
- * cross-check, never a substitute for the local value.
- */
+/** Authenticated provider state for a callback, supplied by the caller after a trusted inquiry read.
+ * It exists because `refunded_amount_cents` is NOT in Paymob's HMAC input list, so the callback's copy is attacker-controllable — every refund amount here comes from `verified`, never the callback body, and a callback with no verified read cannot assert a refund amount at all. `environment` (the authenticated read's own `is_live`) is an additional cross-check that must agree with the local attempt, never a substitute for it. */
 type VerifiedPaymobState = {
   is_refunded?: boolean;
   refunded_amount_cents?: number | null;
@@ -41,31 +29,13 @@ function isDuplicateEntry(error: unknown): boolean {
 export type ProcessPaymobOptions = {
   /** Trusted state from `queryPaymobTransaction`. Without it, no refund amount is trusted. */
   verified?: VerifiedPaymobState;
-  /**
-   * When supplied, the audit outcome is written inside this same transaction instead of
-   * by a separate follow-up call. The order and its recorded outcome therefore commit
-   * together: a crash can no longer leave a paid order with no audit trail, nor an audit
-   * row claiming a payment that rolled back.
-   */
+  /** When supplied, the audit outcome is written inside this same transaction instead of a separate follow-up call, so the order and its recorded outcome commit together — a crash can no longer leave a paid order with no audit trail, nor an audit row claiming a payment that rolled back. */
   audit?: { transaction: Record<string, unknown> };
   inbox?: { id: number; claimedBy: string; now: Date; leaseMs: number };
 };
 
-/**
- * Audit identity for a callback. Deliberately excludes the CALLBACK's
- * `refunded_amount_cents`: it is not covered by the HMAC, and an unsigned value must not
- * be able to make two genuinely different callbacks collapse into one audit row.
- *
- * It ALSO excludes `is_live`. That flag is likewise outside the HMAC input list, so it is not
- * evidence of anything: including it let anyone holding one validly signed callback replay it
- * with the flag flipped and mint an unlimited number of distinct receipts and audit rows, and
- * made the audit trail assert an environment the signature never protected.
- *
- * The VERIFIED refund amount is included, and that is a different thing. A partial refund
- * followed by a larger one are two distinct real-world events; leaving the verified amount
- * out of the identity meant the second was discarded as a duplicate and the audit trail
- * silently lost the fact that the refund had grown.
- */
+/** Audit identity for a callback. Deliberately excludes the CALLBACK's `refunded_amount_cents` (not HMAC-covered, so an unsigned value must not collapse two genuinely different callbacks into one audit row) and `is_live` (also unsigned — including it let anyone holding one validly signed callback replay it with the flag flipped to mint unlimited distinct receipts/audit rows and assert an environment the signature never protected).
+ * The VERIFIED refund amount IS included: a partial refund followed by a larger one are two distinct real-world events, and leaving it out discarded the second and lost the fact the refund had grown. */
 export function paymobAuditFingerprint(transaction: Record<string, unknown>, verified?: VerifiedPaymobState): {
   eventFingerprint: string; processingStatus: "processed" | "rejected";
 } {
@@ -80,8 +50,7 @@ export function paymobAuditFingerprint(transaction: Record<string, unknown>, ver
     is_refunded: transaction.is_refunded,
     is_voided: transaction.is_voided,
     captured_amount: transaction.captured_amount,
-    // Trusted value only, so it distinguishes real refund progression without ever
-    // letting an unsigned amount steer the audit identity.
+    // Trusted value only, so it distinguishes real refund progression without ever letting an unsigned amount steer the audit identity.
     verified_refunded_amount_cents: verified?.is_refunded === true
       ? Number(verified.refunded_amount_cents ?? 0)
       : null
@@ -98,8 +67,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
   const [bound] = await db.select({ sessionId: paymentAttempts.checkoutSessionId }).from(paymentAttempts)
     .where(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? ""))).limit(1);
   return db.transaction(async (tx) => {
-    // All financial paths serialize on the session before taking attempt/order or
-    // inbox locks. Unbound events take only their inbox lock and cannot affect money.
+    // All financial paths serialize on the session before taking attempt/order or inbox locks. Unbound events take only their inbox lock and cannot affect money.
     if (bound) await tx.select({ id: checkoutSessions.id }).from(checkoutSessions)
       .where(eq(checkoutSessions.id, bound.sessionId)).for("update");
     if (options.inbox) {
@@ -119,8 +87,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
           eventFingerprint, processingStatus: PROCESSED_OUTCOMES.has(outcome.outcome) ? "processed" : "rejected",
           processedAt: new Date() });
       } catch (error) {
-        // A redelivered callback has the same fingerprint. That is normal, and must never
-        // roll back a legitimate payment just because its audit row already exists.
+        // A redelivered callback has the same fingerprint. That is normal, and must never roll back a legitimate payment just because its audit row already exists.
         if (!isDuplicateEntry(error)) throw error;
       }
     }
@@ -163,14 +130,7 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
     if (!match) return { outcome: "unmatched" as const };
 
     // The environment is the one recorded on the LOCAL attempt that created the intention.
-    //
-    // The callback's `is_live` flag is deliberately NOT consulted. It is outside Paymob's
-    // HMAC input list, so it is not evidence: deriving acceptance from it meant anyone
-    // holding one validly signed callback could flip the flag to steer whether the payment
-    // was accepted, refunded, or turned into a financial hold. The locally recorded
-    // environment is the only value that was actually fixed before the provider was called.
-    // When the authenticated inquiry was used, its environment is additionally required to
-    // agree with the local attempt.
+    // The callback's `is_live` flag is deliberately NOT consulted — it is outside Paymob's HMAC input list, so deriving acceptance from it meant anyone holding one validly signed callback could flip the flag to steer whether the payment was accepted, refunded or held; the locally recorded value is the only one fixed before the provider was called, and when an authenticated inquiry was used its environment must additionally agree.
     const environmentMatches = verified?.environment === undefined
       || match.attempt.environment === verified.environment;
     const allowedIntegrationIds = match.attempt.allowedIntegrationIds
@@ -213,9 +173,7 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       }
       if (match.attempt.paymobTransactionId &&
         match.attempt.paymobTransactionId !== String(transaction.id)) {
-        // Keep the attempt's canonical succeeded status so later duplicate callbacks and
-        // legitimate refunds still flow through the post-success branch; record the
-        // second-capture flag separately via failureCode (surfaced by ERP reconciliation).
+        // Keep the attempt's canonical succeeded status so later duplicate callbacks and legitimate refunds still flow through the post-success branch; record the second-capture flag separately via failureCode (surfaced by ERP reconciliation).
         await tx.update(paymentAttempts).set({
           failureCode: "SECOND_CAPTURE_AFTER_SUCCESS"
         }).where(eq(paymentAttempts.id, match.attempt.id));
@@ -262,13 +220,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
         .where(eq(paymentAttempts.id, match.attempt.id));
       if (match.attempt.attemptNumber === match.session.attemptCount &&
         match.session.attemptCount >= 3 && match.session.state === "payment_pending") {
-        // W06 P04: a third decline normally releases the reservation, but not while any
-        // attempt of this session still has durably-received, unresolved evidence. A
-        // success callback in flight means the customer may already have paid; releasing
-        // now frees that stock and leaves the eventual success with nothing to fulfil.
-        //
-        // The inbox lookup is lock-free (W06 problem 2), so consulting it here adds no
-        // payment-side lock edge and cannot form the session/order cycle.
+        // W06 P04: a third decline normally releases the reservation, but not while any attempt of this session still has durably-received, unresolved evidence — a success callback in flight means the customer may already have paid, and releasing now frees that stock and leaves the eventual success with nothing to fulfil.
+        // The inbox lookup is lock-free (W06 problem 2), so consulting it adds no payment-side lock edge and cannot form the session/order cycle.
         const unresolvedOrderIds = await unresolvedInboxOrderIds(
           await sessionPaymobOrderIds(tx, match.session.id), { tx, excludeInboxId: inboxId });
         if (!await hasUnresolvedFinancialEvidence(tx, match.session.id, unresolvedOrderIds)) {
@@ -343,8 +296,7 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       shippingQuoteId: shipping?.quoteId ?? null,
       shippingSize: shipping?.size ?? null,
       shippingSnapshot: match.session.shippingSnapshot,
-      // D24: the paid order gets the same fixed 96-hour untouched deadline as COD, so the
-      // staff alert for an untouched paid order can actually be raised by the sweep.
+      // D24: the paid order gets the same fixed 96-hour untouched deadline as COD, so the staff alert for an untouched paid order can actually be raised by the sweep.
       codExpiresAt: new Date(Date.now() + UNTOUCHED_EXPIRY_MS),
       totalAmount: sql`${match.attempt.amountCents / 100}`
     }).$returningId();

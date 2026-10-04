@@ -137,8 +137,7 @@ test("getStorefrontRelatedCardsRepo drops a sold-out offer, as it already does f
 test("getStorefrontRelatedCardsRepo drops a bundle whose part was soft-deleted, not just one that is out of stock", async () => {
   const ids = await getBaselineIds();
 
-  // Soft-deleting a part leaves its stock_qty intact. Skipping the row entirely
-  // would make the bundle look shippable from its surviving parts alone.
+  // Soft-deleting a part leaves its stock_qty intact. Skipping the row entirely would make the bundle look shippable from its surviving parts alone.
   await db
     .update(productVariants)
     .set({ deletedAt: new Date("2026-01-01T00:00:00.000Z") })
@@ -172,9 +171,7 @@ test("getStorefrontRelatedCardsRepo drops a bundle that has no items at all", as
 test("getStorefrontRelatedCardsRepo breaks an effective-price tie on sort order, so the card always adds the same SKU", async () => {
   const ids = await getBaselineIds();
 
-  // Same effective price as the baseline variant (35.00), but ranked ahead of it
-  // while carrying a HIGHER id — so only an explicit sort order can pick it, not
-  // the natural row order the database happens to return.
+  // Same effective price as the baseline variant (35.00), but ranked ahead of it while carrying a HIGHER id — so only an explicit sort order can pick it, not the natural row order the database happens to return.
   const [earlyVariant] = await db.insert(productVariants).values({
     productId: ids.productOneId,
     sizeLabel: "60ml",

@@ -133,8 +133,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  // Remove anything a test may have inserted, tolerating either pre- or
-  // post-constraint behavior.
+  // Remove anything a test may have inserted, tolerating either pre- or post-constraint behavior.
   await db.delete(orderItems).where(eq(orderItems.snapshotNameEn, "integrity-marker")).catch(() => {});
   await db.delete(orders).where(eq(orders.email, "integrity@test.local")).catch(() => {});
   await db

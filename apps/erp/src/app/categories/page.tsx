@@ -253,8 +253,7 @@ function Tree({
               className="tree__row"
               data-root={isRoot ? "true" : "false"}
               data-testid={`category-row-${c.id}`}
-              // Indentation grows with tree depth, so the level rides along as a
-              // custom property the stylesheet turns into padding.
+              // Indentation grows with tree depth, so the level rides along as a custom property the stylesheet turns into padding.
               style={{ "--depth": depth } as CSSProperties}
             >
               {hasKids ? (

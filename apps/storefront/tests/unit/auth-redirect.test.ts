@@ -9,8 +9,7 @@ describe("sanitizeNext", () => {
   });
 
   it("rejects targets that would leave the site", () => {
-    // The value arrives through the URL, so a crafted link must not turn our
-    // own login into an open redirect.
+    // The value arrives through the URL, so a crafted link must not turn our own login into an open redirect.
     expect(sanitizeNext("https://evil.example", "en")).toBeNull();
     expect(sanitizeNext("//evil.example", "en")).toBeNull();
     expect(sanitizeNext("/\\evil.example", "en")).toBeNull();

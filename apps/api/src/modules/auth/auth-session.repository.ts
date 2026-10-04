@@ -45,11 +45,7 @@ export function revokeAuthSession(id: number) {
     .where(eq(authSessions.id, id));
 }
 
-/**
- * Atomically revoke a session only if it is still active. Returns true when this
- * caller won the revocation (one affected row), false if it was already revoked.
- * This makes refresh rotation safe against concurrent/replayed requests.
- */
+/** Atomically revoke a session only if it is still active; returns true when this caller won the revocation (one affected row), false if already revoked, which makes refresh rotation safe against concurrent/replayed requests. */
 export async function revokeActiveAuthSession(id: number): Promise<boolean> {
   const result = await db
     .update(authSessions)

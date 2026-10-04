@@ -38,18 +38,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const linesRef = useRef<CartLine[]>([]);
   const pendingClearCustomerIdRef = useRef<number | null>(null);
-  // Customer whose cart this browser session has already pulled from the API.
-  // Null means "not synced yet", so pushes stay disabled until the pull lands
-  // (a failed GET must never be followed by a PUT that would overwrite the
-  // stored cart with whatever happens to be in localStorage).
+  // Customer whose cart this browser session has already pulled from the API; null means "not synced yet" so pushes stay disabled until the pull lands (a failed GET must never be followed by a PUT that overwrites the stored cart with localStorage).
   const syncedCustomerIdRef = useRef<number | null>(null);
-  // Last cart snapshot known to be on the server (after a successful GET or
-  // PUT). Lets the merge step tell unsynced local additions apart from
-  // quantities that were already synced.
+  // Last cart snapshot known to be on the server (after a successful GET or PUT). Lets the merge step tell unsynced local additions apart from quantities that were already synced.
   const syncedLinesRef = useRef<CartLine[] | null>(null);
-  // Upload queue: serializes PUTs so only one request is active per customer.
-  // `pending` is the latest snapshot not yet sent; a cart change during an
-  // active upload overwrites it and is sent once the active request completes.
+  // Upload queue: serializes PUTs so only one request is active per customer; `pending` is the latest snapshot not yet sent, and a cart change during an active upload overwrites it and is sent once the active request completes.
   const uploadStateRef = useRef<{ pending: CartLine[] | null; inFlight: boolean; retryTimer: number | null }>({
     pending: null,
     inFlight: false,
@@ -89,10 +82,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = loadCartLines(localStorage);
-    // Merge rather than overwrite: on a slow device the buttons become tappable
-    // (handlers attached at hydration) before this passive effect runs, so a quick
-    // "add to cart"/"buy now" tap can land first. Overwriting here would silently
-    // drop that just-added line; merging preserves it (summing qty on collision).
+    // Merge rather than overwrite: on a slow device the buttons become tappable (handlers attached at hydration) before this passive effect runs, so a quick "add to cart"/"buy now" tap can land first.
+    // Overwriting here would silently drop that just-added line; merging preserves it (summing qty on collision).
     const pending = linesRef.current;
     const next = (() => {
       if (pending.length === 0) return stored;
@@ -135,8 +126,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     uploadState.inFlight = true;
 
     const failUpload = (failed: CartLine[]) => {
-      // Retain the latest snapshot: a newer one that arrived mid-flight wins;
-      // otherwise the failed snapshot is retried once the upload path frees up.
+      // Retain the latest snapshot: a newer one that arrived mid-flight wins; otherwise the failed snapshot is retried once the upload path frees up.
       if (uploadState.pending == null) uploadState.pending = failed;
       if (uploadState.retryTimer == null) {
         uploadState.retryTimer = window.setTimeout(() => {
@@ -184,8 +174,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [lines, hydrated]);
 
-  // Server cart sync — signed-in customers only. Guests keep the
-  // localStorage-only cart, so nothing changes for people who never register.
+  // Server cart sync — signed-in customers only. Guests keep the localStorage-only cart, so nothing changes for people who never register.
   useEffect(() => {
     if (!hydrated || !user || !accessToken) return;
     if (syncedCustomerIdRef.current === user.id) return;
@@ -204,21 +193,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
               .map((line) => normalizeCartLine(line))
               .filter((line): line is CartLine => line !== null)
           : [];
-        // Another account was signed in on this browser before: its leftover
-        // local lines must not leak into this account's cart.
+        // Another account was signed in on this browser before: its leftover local lines must not leak into this account's cart.
         const localLines =
           previousCustomerId != null && previousCustomerId !== user.id ? [] : linesRef.current;
-        // Only the local additions the server has not seen are merged in; the
-        // rest of the local cart was already synced and must not be summed
-        // again (that would double quantities on every page reload).
+        // Only the local additions the server has not seen are merged in; the rest of the local cart was already synced and must not be summed again (that would double quantities on every page reload).
         const lastSynced = syncedLinesRef.current ?? loadLastSyncedCartLines(localStorage);
         const additions = cartLineAdditions(localLines, lastSynced);
-        // Checkout can finish while this GET is in flight. Its response is then
-        // an older cart snapshot and must not restore the purchased items.
+        // Checkout can finish while this GET is in flight. Its response is then an older cart snapshot and must not restore the purchased items.
         const clearedDuringPull = pendingClearCustomerIdRef.current === user.id;
         const merged = clearedDuringPull ? [...localLines] : mergeCartLines(additions, serverLines);
-        // The server snapshot is the new sync baseline; the merged cart is
-        // queued for upload by the lines-change effect.
+        // The server snapshot is the new sync baseline; the merged cart is queued for upload by the lines-change effect.
         persistSyncedSnapshot(serverLines);
         syncedCustomerIdRef.current = user.id;
         commitLines(merged);
@@ -235,11 +219,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
   }, [hydrated, user, accessToken, commitLines]);
 
-  // Push local changes while signed in so every device converges on the same
-  // cart. Uploads are serialized — one PUT in flight per customer; a change
-  // during an active upload waits in a one-slot queue and is sent when the
-  // active request completes. Failed uploads retain the latest snapshot and
-  // retry without needing another cart change.
+  // Push local changes while signed in so every device converges on the same cart. Uploads are serialized — one PUT in flight per customer; a change during an active upload waits in a one-slot queue and is sent when the active request completes.
+  // Failed uploads retain the latest snapshot and retry without needing another cart change.
   useEffect(() => {
     if (!hydrated || !user || !accessToken) return;
     if (syncedCustomerIdRef.current !== user.id) return;
@@ -263,10 +244,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const collectionIds = new Set(collections.map((collection) => collection.id));
 
         setLines((current) => current.filter((line) => {
-          // Only ever prune a line against a catalog we actually received. An empty
-          // result means the fetch came back without data (transient/flaky), not
-          // that every item is invalid — pruning then would silently wipe a real
-          // cart. Keep the line in that case and let a later good fetch validate it.
+          // Only ever prune a line against a catalog we actually received. An empty result means the fetch came back without data (transient/flaky), not that every item is invalid — pruning then would wipe a real cart, so keep the line and let a later good fetch validate it.
           if (line.type === "product") {
             if (products.length === 0) return true;
             return productVariants.get(line.productId)?.has(line.variantId) ?? false;

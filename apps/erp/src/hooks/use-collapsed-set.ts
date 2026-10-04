@@ -22,15 +22,8 @@ function persist<T>(key: string, values: Set<T>) {
   }
 }
 
-/**
- * Tracks a collapsed set of ids/slots, persisting it to localStorage under
- * `storageKey` so fold/unfold state survives navigation and page reloads.
- *
- * The stored set is read synchronously in the initializer so the first render
- * already reflects it, avoiding a flash of expanded items when returning to the
- * page. SSR-safe for views that render from a client store that is empty on the
- * server (no markup to mismatch).
- */
+/** Tracks a collapsed set of ids/slots, persisting it to localStorage under `storageKey` so fold/unfold survives navigation and reloads; it is read synchronously in the initializer so the first render already reflects it (no flash of expanded items).
+ * SSR-safe for views rendering from a client store that is empty on the server. */
 export function useCollapsedSet<T>(storageKey: string, isValid: (value: unknown) => value is T) {
   const [collapsed, setCollapsed] = useState<Set<T>>(() => readStored(storageKey, isValid));
 

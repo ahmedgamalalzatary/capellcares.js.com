@@ -28,14 +28,8 @@ export async function getCheckoutStatusController(req: Request, res: Response): 
   const [latestAttempt] = await db.select({ status: paymentAttempts.status }).from(paymentAttempts)
     .where(eq(paymentAttempts.checkoutSessionId, session.sessionId))
     .orderBy(desc(paymentAttempts.attemptNumber)).limit(1);
-  // P04: the latest attempt declining is not on its own permission to pay again. Any
-  // attempt of this session still carrying unresolved evidence withholds retry, so a
-  // customer whose first payment is merely queued cannot be charged a second time.
-  // Derived from the same shared definition expiry and dispatch use, so the customer is
-  // never offered an action the mutation paths would refuse.
-  // Scoped to THIS session's own provider order ids. The previous global inbox scan could
-  // be silently truncated by unrelated backlog, which would offer a customer a retry the
-  // mutation path would then refuse.
+  // P04: the latest attempt declining is not on its own permission to pay again — any attempt of this session still carrying unresolved evidence withholds retry, so a customer whose first payment is merely queued cannot be charged twice.
+  // Derived from the same shared definition expiry and dispatch use, and scoped to THIS session's own provider order ids (the previous global inbox scan could be truncated by unrelated backlog, offering a retry the mutation path would then refuse).
   const unresolved = await hasUnresolvedFinancialEvidence(
     db, session.sessionId, await unresolvedInboxOrderIds(await sessionPaymobOrderIds(db, session.sessionId)));
   res.status(200).json({

@@ -5,12 +5,7 @@ import { buildRateIdentity, shippingRateAmountSchema,
   type ShippingRateContext } from "./bosta/bosta-rate-context.js";
 export type { ShippingRateContext } from "./bosta/bosta-rate-context.js";
 
-/**
- * Persists the last valid account rate as the fallback (D16). The structured
- * context determines a unique bounded key; destination/size/service columns
- * additionally guard the lookup. Legacy incomplete keys cannot serve a quote.
- * Invalid amounts are rejected rather than persisted.
- */
+/** Persists the last valid account rate as the fallback (D16); the structured context determines a unique bounded key and destination/size/service columns additionally guard the lookup, legacy incomplete keys cannot serve a quote, and invalid amounts are rejected rather than persisted. */
 export async function saveShippingRate(context: ShippingRateContext & { amountCents: number }): Promise<void> {
   if (!shippingRateAmountSchema.safeParse(context.amountCents).success) {
     throw new Error("Refusing to persist an invalid shipping rate amount");

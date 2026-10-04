@@ -14,8 +14,7 @@ const { startPaymobCallbackWorker } = await import("./modules/payments/paymob/pa
 const { assertShippingStartup } = await import("./modules/shipping/shipping-startup.js");
 const { mysqlPool } = await import("@capella/database/src/db");
 
-// Refuse to boot on an invalid active shipping setup, before any worker can act on it.
-// Shipping validation is self-contained, so it never requires admin/JWT/intention secrets.
+// Refuse to boot on an invalid active shipping setup, before any worker can act on it. Shipping validation is self-contained, so it never requires admin/JWT/intention secrets.
 assertShippingStartup(process.env);
 
 await ensureBootstrapAdmin();

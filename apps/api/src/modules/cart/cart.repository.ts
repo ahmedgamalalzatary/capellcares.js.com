@@ -12,9 +12,7 @@ export async function getCartLinesByCustomer(customerId: number): Promise<Stored
 }
 
 export async function saveCartLinesForCustomer(customerId: number, lines: StoredCartLine[]): Promise<StoredCartLine[]> {
-  // Single atomic upsert keyed by the unique customer_id. A read-then-insert
-  // implementation races when concurrent PUTs create the first cart row and
-  // fails the loser with a duplicate-key error.
+  // Single atomic upsert keyed by the unique customer_id. A read-then-insert implementation races when concurrent PUTs create the first cart row and fails the loser with a duplicate-key error.
   await db
     .insert(carts)
     .values({ customerId, lines })

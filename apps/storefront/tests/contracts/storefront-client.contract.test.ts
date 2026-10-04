@@ -120,8 +120,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // vi.restoreAllMocks() does not undo stubEnv/stubGlobal, so the Docker-origin case used to
-  // leak its production NEXT_PUBLIC_API_URL into later product/category cases.
+  // vi.restoreAllMocks() does not undo stubEnv/stubGlobal, so the Docker-origin case used to leak its production NEXT_PUBLIC_API_URL into later product/category cases.
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

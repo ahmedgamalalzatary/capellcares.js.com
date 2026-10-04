@@ -165,8 +165,7 @@ export function useProductGridFilters({
           );
           if (!matchesHeaderCategory) return false;
         }
-        // Same matcher the header overlay previews with, so "view all" always
-        // lands on at least the results the dropdown showed.
+        // Same matcher the header overlay previews with, so "view all" always lands on at least the results the dropdown showed.
         if (!matchesProductQuery(product, ql)) return false;
         if (category) {
           if (!isInCategoryBranch(product.categoryId, category, categoryById)) return false;

@@ -17,15 +17,7 @@ function atPath(value: unknown, parts: string[]): unknown {
   return value;
 }
 
-/**
- * The provider's own delivery id, read from whichever shape this observation arrived in.
- *
- * A WEBHOOK body carries `_id` at the top level, while a POLLED READ wraps the delivery in
- * `{success, data}` so the id sits at `data._id`. Reading only the top level recorded null
- * on every polled observation - which is precisely when the sync worker is the one creating
- * the binding. Both shapes are accepted, because neither is a guess: the value is still the
- * provider's own id, just reached through the envelope that carried it.
- */
+/** The provider's own delivery id, read from whichever shape this observation arrived in. A WEBHOOK body carries `_id` at the top level while a POLLED READ wraps the delivery in `{success, data}` so the id sits at `data._id`; reading only the top level recorded null on every polled observation — precisely when the sync worker creates the binding. Both shapes are accepted because neither is a guess: the value is still the provider's own id, just reached through the envelope that carried it. */
 function providerReferenceFromObservation(event: { raw: unknown }): string | null {
   const fromRead = atPath(event.raw, ["data", "_id"]);
   if (typeof fromRead === "string" && fromRead.length > 0) return fromRead;
@@ -149,9 +141,7 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
     if (!ship) return "pending";
     const processingError = await apply(tx, order, ship, event);
     await tx.update(shipmentEvents).set({ shipmentId: ship.id, processedAt: new Date(), stateRecordedAt: new Date(), processingError }).where(eq(shipmentEvents.id, eventId));
-    // W07 B06: a delivery that actually reached the provider is now bound to it. Recording
-    // this is what later lets a return/exchange be tied back to a specific original, and
-    // it must only happen from a read that genuinely correlated - never from a guess.
+    // W07 B06: a delivery that actually reached the provider is now bound to it — recording this is what later lets a return/exchange be tied back to a specific original, and it must only happen from a read that genuinely correlated, never a guess.
     await recordOutgoingBinding(tx, {
       shipmentId: ship.id,
       orderId: order.id,
@@ -162,9 +152,7 @@ export async function recordShippingObservation(runtime: BostaSyncRuntime, event
       providerReference: providerReferenceFromObservation(event),
       businessReference: reference
     });
-    // W07 B05 reopen: a parked job stopped reading, so an authenticated callback is the
-    // only way a late correction can reach it. Without this, parking would be permanent
-    // blindness rather than a scheduling decision. Staff reconcile the same way.
+    // W07 B05 reopen: a parked job stopped reading, so an authenticated callback is the only way a late correction can reach it — without this, parking would be permanent blindness rather than a scheduling decision; staff reconcile the same way.
     await tx.update(shippingWorkItems).set({ syncPhase: "active", status: "pending", terminalFollowUpAt: null,
       nextAttemptAt: new Date() }).where(and(eq(shippingWorkItems.shipmentId, ship.id),
       eq(shippingWorkItems.operation, "sync_delivery"), eq(shippingWorkItems.syncPhase, "parked")));

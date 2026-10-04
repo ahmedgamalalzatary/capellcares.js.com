@@ -28,8 +28,7 @@ export function parseEntityMediaInput(value: unknown): EntityMediaItem[] | undef
     }
 
     const arUrl = String(item?.arUrl ?? "").trim() || null;
-    // `url` is accepted as the legacy English field while deployed ERP clients
-    // transition to the bilingual contract.
+    // `url` is accepted as the legacy English field while deployed ERP clients transition to the bilingual contract.
     const enUrl = String(item?.enUrl ?? item?.url ?? "").trim() || null;
     return arUrl || enUrl ? [{ type: "image", arUrl, enUrl }] : [];
   });

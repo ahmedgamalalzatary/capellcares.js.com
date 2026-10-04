@@ -34,8 +34,7 @@ function stubFetch(items: Items, { fail = false }: { fail?: boolean } = {}) {
   vi.stubGlobal("fetch", fetchMock);
 }
 
-// Harness: drives the hook's send() and renders the latest reply's result
-// counts so tests can assert what the search produced.
+// Harness: drives the hook's send() and renders the latest reply's result counts so tests can assert what the search produced.
 function Harness({ lang, query }: { lang: Language; query: string }) {
   const { messages, send, setInput } = useAskCapella({ lang, onClose: () => {} });
   const reply = [...messages].reverse().find((m) => m.role === "capella");

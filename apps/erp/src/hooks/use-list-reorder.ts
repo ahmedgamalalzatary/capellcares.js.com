@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors";
 
-/**
- * Draft up/down reordering over a persisted id order. The draft resets whenever
- * the persisted order changes (e.g. after a refetch).
- */
+/** Draft up/down reordering over a persisted id order. The draft resets whenever the persisted order changes (e.g. after a refetch). */
 export function useListReorder(input: {
   persistedIds: number[];
   save: (ids: number[]) => Promise<void>;

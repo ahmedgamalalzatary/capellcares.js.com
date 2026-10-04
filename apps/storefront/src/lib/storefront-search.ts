@@ -15,15 +15,8 @@ export const EMPTY_STOREFRONT_SEARCH_RESULTS: StorefrontSearchResults = {
   collections: []
 };
 
-/**
- * "Does this named thing match what the shopper typed", across both languages —
- * a bundle is routinely named in one language and searched for in the other.
- *
- * The header dropdown and the /search results page both go through this, so the
- * dropdown can never preview a match the results page then fails to find. Only
- * products differ: their matching also spans keywords and happens in the API,
- * so both surfaces ask the catalog for the term instead (see matchesProductQuery).
- */
+/** "Does this named thing match what the shopper typed", across both languages — a bundle is routinely named in one language and searched for in the other.
+ * The header dropdown and the /search results page both go through this so the dropdown can never preview a match the results page fails to find; only products differ, matching in the API over keywords too. */
 export function matchesBilingualName(name: { ar: string; en: string }, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;

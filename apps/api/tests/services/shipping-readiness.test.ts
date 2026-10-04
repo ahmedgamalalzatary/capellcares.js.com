@@ -74,8 +74,7 @@ test("the configured default pickup must match the pricing origin", async () => 
   assert.ok(report.errors.includes("PICKUP_CITY_MISMATCH"));
 });
 test("the deployment CLI is a pure check: it never performs a provider write even when sending is enabled", async () => {
-  // It reports that provider calls are *configured*, while its own fetch is a
-  // hard stub, so validation cannot reach Bosta.
+  // It reports that provider calls are *configured*, while its own fetch is a hard stub, so validation cannot reach Bosta.
   const report = await check(active);
   assert.equal(report.providerCalls, true, "sending is configured on, so the check is non-trivial");
   assert.equal(report.valid, true, "the check passes and still made no HTTP call");
@@ -92,8 +91,7 @@ test("the sending adapter refuses to create a shipment when synchronization is d
 });
 test("read-only recovery keeps reconciling an already-created shipment with synchronization disabled", async () => {
   const module = await import("../../src/modules/shipping/bosta/bosta-delivery.service.js");
-  // A shipment created *before* sync was turned off must still be readable, otherwise
-  // turning sync off would permanently strand orders in an unknown carrier state.
+  // A shipment created *before* sync was turned off must still be readable, otherwise turning sync off would permanently strand orders in an unknown carrier state.
   let searched = 0;
   const provider = module.bostaDeliveryProviderFromEnvironment({ ...deliveryEnvironment, BOSTA_SYNC_ENABLED: "false" },
     async (input: any, init: any) => {

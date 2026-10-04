@@ -18,11 +18,7 @@ type ErpProductInput = {
   }>;
 };
 
-/**
- * Flat product payload shape (API/domain-style), with the localized and pricing
- * fields the admin flow actually consumes. Declared explicitly so the
- * normalizer can read every field type-safely instead of casting to `any`.
- */
+/** Flat product payload shape (API/domain-style) with the localized and pricing fields the admin flow consumes, declared explicitly so the normalizer reads every field type-safely instead of casting to `any`. */
 type ApiProductInput = {
   sku?: string;
   arName?: string;

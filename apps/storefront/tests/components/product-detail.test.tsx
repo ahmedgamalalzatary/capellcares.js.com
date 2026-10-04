@@ -558,8 +558,7 @@ describe("ProductDetail", () => {
     expect(tag.className).toContain("inset-s-0");
     expect(tag.className).toContain("rounded-ss-md");
 
-    // Queried by label, not by position: the media frame also carries the
-    // expand control that opens the media lightbox.
+    // Queried by label, not by position: the media frame also carries the expand control that opens the media lightbox.
     const heart = within(frame).getByRole("button", { name: "Wishlist" });
     expect(heart.className).toContain("inset-e-2");
     expect(heart.className).not.toContain("inset-s-2");

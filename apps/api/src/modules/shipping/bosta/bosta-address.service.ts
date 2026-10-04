@@ -1,8 +1,4 @@
-/**
- * Bosta supported-address service backed by `GET /cities/getAllDistricts`.
- * A district is deliverable only when it exists and `dropOffAvailability` is
- * true (D10: governorate coverage does not imply district deliverability).
- */
+/** Bosta supported-address service backed by `GET /cities/getAllDistricts`; a district is deliverable only when it exists and `dropOffAvailability` is true (D10: governorate coverage does not imply district deliverability). */
 import { BostaResponseValidationError } from "./bosta-client.js";
 import { shippingDestinationSchema, type ShippingDestination } from "@capella/shared";
 
@@ -116,12 +112,7 @@ export class BostaAddressService {
     return district ? { ...district } : null;
   }
 
-  /**
-   * Resolves a district NAME to candidate ids using the authoritative zoning data.
-   * Returns every candidate, narrowed by city/zone when the provider proved them;
-   * the caller must treat anything other than a single match as unresolved. A
-   * name is never an identifier on its own.
-   */
+  /** Resolves a district NAME to candidate ids using the authoritative zoning data; returns every candidate, narrowed by city/zone when the provider proved them, and the caller must treat anything other than a single match as unresolved — a name is never an identifier on its own. */
   async resolveDistrictsByName(query: { cityId: string | null; zoneId: string | null; districtName: string }): Promise<DistrictNameCandidate[]> {
     const { payload } = await this.loadDistricts();
     const matches: DistrictNameCandidate[] = [];

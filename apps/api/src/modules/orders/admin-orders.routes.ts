@@ -36,9 +36,7 @@ adminOrdersRoutes.get("/reconciliation", requireErpPermission("orders.read"), wr
       and(eq(paymentAttempts.status, "succeeded"),
         eq(paymentAttempts.failureCode, "SECOND_CAPTURE_AFTER_SUCCESS"))
     ));
-  // A callback parked in review_required is a money problem that never produced a
-  // reconciliation_required attempt, so the attempt query above cannot see it. Expose the
-  // parked receipt too, with only safe fields: never the normalized payload or the raw body.
+  // A callback parked in review_required is a money problem that never produced a reconciliation_required attempt, so the attempt query above cannot see it; expose the parked receipt too, with only safe fields — never the normalized payload or the raw body.
   const parked = await db.select({
     callbackId: paymobCallbackInbox.id,
     receivedAt: paymobCallbackInbox.receivedAt,

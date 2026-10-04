@@ -36,13 +36,7 @@ function transactionHmacInput(transaction: PaymobTransaction): string {
   ].map(serialize).join("");
 }
 
-/**
- * The digest Paymob expects for a transaction callback.
- *
- * Exported so tests can sign a payload they construct rather than pasting a digest
- * computed for some earlier payload: a stale hardcoded digest fails as a signature error
- * and hides the behaviour actually under test.
- */
+/** The digest Paymob expects for a transaction callback, exported so tests can sign a payload they construct rather than pasting a digest computed for some earlier payload (a stale hardcoded digest fails as a signature error and hides the behaviour actually under test). */
 export function computePaymobTransactionHmac(input: {
   transaction: PaymobTransaction;
   secret: string;

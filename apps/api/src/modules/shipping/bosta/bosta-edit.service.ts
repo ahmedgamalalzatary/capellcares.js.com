@@ -16,8 +16,7 @@ function atPath(value: unknown, parts: string[]) {
   return value;
 }
 
-/** O07: provider edit availability must be verified per merchant account before staff edits
- *  reach linked shipments; absent settings simply disable the capability. */
+/** O07: provider edit availability must be verified per merchant account before staff edits reach linked shipments; absent settings simply disable the capability. */
 export function resolveBostaEditRuntime(env: Record<string, string | undefined> = process.env, fetchImpl: typeof fetch = fetch): BostaEditRuntime | null {
   const gate = env.BOSTA_EDITS_ENABLED?.trim().toLowerCase();
   if (gate !== undefined && gate !== "" && gate !== "true" && gate !== "false") throw new Error("BOSTA_EDITS_ENABLED must be true or false");

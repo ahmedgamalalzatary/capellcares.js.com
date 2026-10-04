@@ -33,8 +33,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const activeProducts = products.filter((p) => p.status === "active" && !p.deletedAt);
   const newProducts = activeProducts.filter((p) => p.isNew);
   const bestsellerProducts = activeProducts.filter((p) => p.isBestseller);
-  // Active categories only: a card must never name a category the shop has
-  // deleted — the same rule the offers/collections grids apply.
+  // Active categories only: a card must never name a category the shop has deleted — the same rule the offers/collections grids apply.
   const categoryNameById = new Map(
     categories.filter((c) => !c.deletedAt).map((c) => [c.id, pickLang(c.name, lang)] as const)
   );

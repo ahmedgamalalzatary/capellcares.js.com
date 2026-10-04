@@ -95,37 +95,17 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
 /** How many expired sessions one sweep may examine. Keeps lock hold time bounded. */
 export const EXPIRY_BATCH_SIZE = 50;
 
-/**
- * Candidate ids for expiry, discovered WITHOUT any locks.
- *
- * The previous implementation ran a locking range scan over every expired session and
- * held all those row locks until the whole sweep finished, so one slow pass could block
- * customers who were paying at that moment. Discovery is now a cheap unlocked read of a
- * bounded batch; each candidate is then locked and rechecked on its own.
- */
+/** Candidate ids for expiry, discovered WITHOUT any locks. The previous implementation ran a locking range scan over every expired session and held those row locks until the whole sweep finished, so one slow pass could block customers paying at that moment; discovery is now a cheap unlocked read of a bounded batch and each candidate is locked and rechecked on its own. */
 export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_SIZE): Promise<number[]> {
-  // Candidates are the expired sessions whose provider order ids are NOT already sitting
-  // in unresolved evidence. Sessions that are only HELD must not consume a discovery slot:
-  // they are skipped under their own lock anyway, so counting them here means a run of
-  // held sessions can fill the whole batch and the eligible sessions behind them are never
-  // examined at all - their stock is never released and the sweep quietly stops progressing.
-  //
-  // Exclude held sessions BEFORE limiting. Any finite oversample can be filled
-  // by held rows and repeatedly starve eligible sessions behind it.
+  // Candidates are the expired sessions whose provider order ids are NOT already sitting in unresolved evidence. Sessions that are only HELD must not consume a discovery slot — they are skipped under their own lock anyway, so counting them means a run of held sessions can fill the whole batch and the eligible sessions behind them are never examined (stock never released, sweep stops progressing); exclude held sessions BEFORE limiting, since any finite oversample can be filled by held rows.
   const evidence = db.select({ id: paymobCallbackInbox.id }).from(paymentAttempts)
     .innerJoin(paymobCallbackInbox, or(
       eq(paymobCallbackInbox.signedOrderId, paymentAttempts.paymobOrderId),
-      // Upgrade-window fallback: signed_order_id is NULL for every row predating migration
-      // 0063 until the backfill runs. Joining on the scalar alone would exclude those rows,
-      // so a paid checkout would look unevidenced and expiry would release its stock.
+      // Upgrade-window fallback: signed_order_id is NULL for every row predating migration 0063 until the backfill runs, so joining on the scalar alone would exclude those rows and a paid checkout would look unevidenced and expiry would release its stock.
       sql`json_unquote(json_extract(${paymobCallbackInbox.normalizedPayload}, '$.order.id')) = ${paymentAttempts.paymobOrderId}`))
     .where(and(eq(paymentAttempts.checkoutSessionId, checkoutSessions.id),
       sql`${paymobCallbackInbox.processingStatus} in (${sql.join(UNRESOLVED_INBOX_STATUSES.map(status => sql`${status}`), sql`, `)})`,
-      // The SAME policy the per-candidate recheck uses under the session lock. Discovery
-      // previously re-implemented "is this receipt actionable" with a JSON extraction and no
-      // classification at all, so it treated a parked decline as a hold while the recheck
-      // treated it as none: the sweep could exclude every eligible session and release
-      // nothing. One definition, expressed once, used by both.
+      // The SAME policy the per-candidate recheck uses under the session lock. Discovery previously re-implemented "is this receipt actionable" with a JSON extraction and no classification, so it treated a parked decline as a hold while the recheck treated it as none — the sweep could exclude every eligible session and release nothing; one definition, used by both.
       sqlReceiptHoldsStock(paymobCallbackInbox.normalizedPayload)));
   const candidates = await db.select({ id: checkoutSessions.id })
     .from(checkoutSessions)
@@ -149,13 +129,10 @@ export async function releaseExpiredCheckoutReservations(
 
   // Pass 2: one short transaction per candidate, so no lock is held across the batch.
   for (const sessionId of candidates) {
-    // A stop request during a long backlog must not wait for every remaining candidate.
-    // Checked before each record, so the in-flight one is completed and the rest are
-    // left recoverable for the next run.
+    // A stop request during a long backlog must not wait for every remaining candidate. Checked before each record, so the in-flight one is completed and the rest are left recoverable for the next run.
     if (options.isStopped?.()) return;
     await db.transaction(async (tx) => {
-      // Recheck under the session lock: the row may have changed since discovery, in which
-      // case it is simply skipped and the next sweep re-evaluates it against fresh data.
+      // Recheck under the session lock: the row may have changed since discovery, in which case it is simply skipped and the next sweep re-evaluates it against fresh data.
       const [session] = await tx.select({ id: checkoutSessions.id, state: checkoutSessions.state,
         expiresAt: checkoutSessions.reservationExpiresAt })
         .from(checkoutSessions)
@@ -167,13 +144,10 @@ export async function releaseExpiredCheckoutReservations(
         .for("update");
       if (!session) return;
 
-      // Take a fresh snapshot after acquiring the shared intake/session lock.
-      // Use this transaction's connection, not a second pool connection under locks.
+      // Take a fresh snapshot after acquiring the shared intake/session lock. Use this transaction's connection, not a second pool connection under locks.
       const unresolvedOrderIds = await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx });
 
-      // P03: a verified callback may already be durably received while its effects are
-      // still queued. Releasing the reservation then would free stock the customer has
-      // already paid for and leave the eventual success with nothing to fulfil.
+      // P03: a verified callback may already be durably received while its effects are still queued — releasing the reservation then would free stock the customer has already paid for and leave the eventual success with nothing to fulfil.
       if (await hasUnresolvedFinancialEvidence(tx, session.id, unresolvedOrderIds)) return;
       const reservations = await tx.select()
         .from(checkoutReservations)

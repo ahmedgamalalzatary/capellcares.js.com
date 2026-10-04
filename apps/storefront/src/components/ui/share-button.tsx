@@ -11,10 +11,7 @@ interface Props {
   className?: string;
 }
 
-/**
- * Share control shared by every detail page. Uses the Web Share API when the
- * browser exposes one and falls back to copying the link with a short toast.
- */
+/** Share control shared by every detail page. Uses the Web Share API when the browser exposes one and falls back to copying the link with a short toast. */
 export function ShareButton({ path, title, dict, className }: Props) {
   const [linkCopied, setLinkCopied] = useState(false);
 

@@ -19,14 +19,11 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Where to land once authenticated: the page that sent the customer here,
-  // falling back to the locale home when nothing (trustworthy) was passed.
+  // Where to land once authenticated: the page that sent the customer here, falling back to the locale home when nothing (trustworthy) was passed.
   const next = searchParams.get(NEXT_PARAM);
   const destination = resolveAuthDestination(next, lang);
 
-  // Already signed in (or a session restored while this page was open): bounce
-  // to the destination. This runs as an effect, not during render — navigating
-  // mid-render is a side effect React may run twice or discard.
+  // Already signed in (or a session restored while this page was open): bounce to the destination, as an effect (not during render) because navigating mid-render is a side effect React may run twice or discard.
   useEffect(() => {
     if (user) router.replace(destination);
   }, [user, destination, router]);

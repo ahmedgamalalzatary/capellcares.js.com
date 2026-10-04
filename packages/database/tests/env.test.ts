@@ -8,11 +8,7 @@ import {
   resolveDatabaseUrl
 } from "../src/env.js";
 
-/**
- * Test setup truncates and re-seeds every table, so pointing it at a real
- * database would destroy it. These cases lock the rule that a destructive run
- * only proceeds against an explicitly disposable schema.
- */
+/** Test setup truncates and re-seeds every table, so pointing it at a real database would destroy it; these cases lock the rule that a destructive run only proceeds against an explicitly disposable schema. */
 
 test("resolveDatabaseUrl prefers TEST_DATABASE_URL when NODE_ENV is test", () => {
   const databaseUrl = resolveDatabaseUrl({

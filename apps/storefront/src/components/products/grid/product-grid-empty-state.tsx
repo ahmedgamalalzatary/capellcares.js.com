@@ -21,8 +21,7 @@ export function ProductGridEmptyState({
   const isAr = lang === "ar";
 
   return (
-    // `[display:grid]`, not `grid`: the global `.grid` class carries its own
-    // 24px gap that would override the gap utility here.
+    // `[display:grid]`, not `grid`: the global `.grid` class carries its own 24px gap that would override the gap utility here.
     <div className="mx-auto max-w-[420px] [display:grid] gap-4 rounded-(--radius-xl) border border-(--hairline) bg-surface px-8 py-12 text-center">
       <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-(--warm-soft)">
         <Icon.Search size={22} className="text-warm" />

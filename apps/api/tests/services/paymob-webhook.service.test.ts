@@ -8,10 +8,7 @@ import { resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(resetApiTestDatabase);
 
-/**
- * Creates a real checkout session holding one attempt for `paymobOrderId`, so binding tests
- * exercise the same lookup intake performs rather than a hand-written column value.
- */
+/** Creates a real checkout session holding one attempt for `paymobOrderId`, so binding tests exercise the same lookup intake performs rather than a hand-written column value. */
 async function bindAttemptToOrder(paymobOrderId: string): Promise<number> {
   const [session] = await db.insert(checkoutSessions).values({
     publicId: crypto.randomUUID(), idempotencyKey: crypto.randomUUID(),
@@ -28,9 +25,7 @@ async function bindAttemptToOrder(paymobOrderId: string): Promise<number> {
 }
 
 test("a receipt records its signed identity as scalars, not only inside the JSON payload", async () => {
-  // Evidence checks decide whether stock stays held. Reading the signed order id back out
-  // of a JSON blob meant the lookup scanned rows and could be starved by backlog; the
-  // scalar projection is what makes it an exact indexed lookup.
+  // Evidence checks decide whether stock stays held; reading the signed order id back out of a JSON blob meant the lookup scanned rows and could be starved by backlog — the scalar projection is what makes it an exact indexed lookup.
   await receivePaymobCallback({ callbackType: "transaction",
     transaction: callback({ order: { id: 9001 }, integration_id: 123 }) });
   const [row] = await db.select().from(paymobCallbackInbox);
@@ -46,9 +41,7 @@ test("a receipt whose signed order id matches a local attempt records that bindi
 });
 
 test("a receipt that cannot be proven to belong to any session stays unbound, never guessed", async () => {
-  // Forcing a binding onto an unknown order id would let an unauthenticated callback claim a
-  // checkout's stock. An unbindable receipt is still valid evidence of arrival; it simply
-  // cannot assert anything about a session.
+  // Forcing a binding onto an unknown order id would let an unauthenticated callback claim a checkout's stock; an unbindable receipt is still valid evidence of arrival, it simply cannot assert anything about a session.
   await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ order: { id: 424242 } }) });
   const [row] = await db.select().from(paymobCallbackInbox);
   assert.equal(row!.boundSessionId, null, "an unmatched order id must not be bound to a session");
@@ -78,9 +71,7 @@ test("recordPaymobTransaction does not let an unsigned is_live flag split one ev
     integration_id: 123
   };
 
-  // `is_live` is outside Paymob's HMAC input list, so it is not evidence that two callbacks
-  // are two different events. It must not participate in the audit identity: otherwise one
-  // validly signed callback replayed with the flag flipped writes a fresh audit row every time.
+  // `is_live` is outside Paymob's HMAC input list, so it is not evidence that two callbacks are two different events; it must not participate in the audit identity, otherwise one validly signed callback replayed with the flag flipped writes a fresh audit row every time.
   await recordPaymobTransaction({ ...base, is_live: false }, "rejected");
   await recordPaymobTransaction({ ...base, is_live: false }, "rejected");
   await recordPaymobTransaction({ ...base, is_live: true }, "rejected");
@@ -105,11 +96,7 @@ test("unsigned merchant references cannot carry nested data into the inbox", asy
 });
 
 test("successive refunds of growing amount produce distinct inbox events", async () => {
-  // A partial refund followed by a larger one are genuinely different events. The
-  // fingerprint deliberately excludes the refund AMOUNT because it is unsigned, but that
-  // must not collapse every refund of the same payment into ONE receipt - once the first
-  // is processed, the later notification resolves to that completed row and the refund
-  // progression is silently dropped.
+  // A partial refund followed by a larger one are genuinely different events; the fingerprint deliberately excludes the refund AMOUNT because it is unsigned, but that must not collapse every refund of the same payment into ONE receipt — once the first is processed the later notification resolves to that completed row and the refund progression is silently dropped.
   const first = await receivePaymobCallback({ callbackType: "transaction",
     transaction: callback({ is_refunded: true, refunded_amount_cents: 1200 }) });
   const second = await receivePaymobCallback({ callbackType: "transaction",
@@ -120,8 +107,7 @@ test("successive refunds of growing amount produce distinct inbox events", async
 });
 
 test("an identical refund redelivery still collapses to one inbox row", async () => {
-  // The hint must distinguish EVENTS, not deliveries: the same notification repeated must
-  // not look like new work, or a retry storm becomes unbounded duplicate processing.
+  // The hint must distinguish EVENTS, not deliveries: the same notification repeated must not look like new work, or a retry storm becomes unbounded duplicate processing.
   const first = await receivePaymobCallback({ callbackType: "transaction",
     transaction: callback({ is_refunded: true, refunded_amount_cents: 1200 }) });
   const again = await receivePaymobCallback({ callbackType: "transaction",
@@ -132,8 +118,7 @@ test("an identical refund redelivery still collapses to one inbox row", async ()
 });
 
 test("an unsigned refund hint is stored separately and never as trusted evidence", async () => {
-  // The amount is attacker-controlled, so it may only ever be a scheduling hint. It must be
-  // recorded somewhere that cannot be mistaken for a verified figure.
+  // The amount is attacker-controlled, so it may only ever be a scheduling hint. It must be recorded somewhere that cannot be mistaken for a verified figure.
   await receivePaymobCallback({ callbackType: "transaction",
     transaction: callback({ is_refunded: true, refunded_amount_cents: 7777 }) });
   const [row] = await db.select().from(paymobCallbackInbox);
@@ -172,8 +157,7 @@ test("a callback whose meaningful fields differ gets its own inbox row", async (
 });
 
 test("an unsigned is_live flag does not split one signed event into two receipts", async () => {
-  // is_live is outside the HMAC input list. A single validly signed callback replayed with
-  // the flag flipped must not become extra work for the recovery sweep to claim and review.
+  // is_live is outside the HMAC input list. A single validly signed callback replayed with the flag flipped must not become extra work for the recovery sweep to claim and review.
   const first = await receivePaymobCallback({ callbackType: "transaction", transaction: callback() });
   const replayed = await receivePaymobCallback({ callbackType: "transaction", transaction: callback({ is_live: true }) });
   assert.equal(replayed.id, first.id, "the flipped-flag replay resolves to the original receipt");

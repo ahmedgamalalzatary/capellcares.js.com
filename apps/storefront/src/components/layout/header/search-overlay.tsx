@@ -68,17 +68,13 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     }
   }, [open]);
 
-  // While the overlay is up, the page behind must not scroll — wheel and touch
-  // scrolling belong to the results list, which has its own overflow container.
-  // Lock <html>, not <body>: the document element is the scrolling element, and
-  // `overflow: hidden` on the body alone is ignored on mobile (the page keeps
-  // scrolling under the overlay). Same non-shifting lock the mobile drawer uses.
+  // While the overlay is up the page behind must not scroll — wheel/touch scrolling belong to the results list, which has its own overflow container.
+  // Lock <html>, not <body>: the document element is the scrolling element and body-only `overflow: hidden` is ignored on mobile; same non-shifting lock the mobile drawer uses.
   useEffect(() => {
     if (!open) return;
     const html = document.documentElement;
     const scrollbarWidth = window.innerWidth - html.clientWidth;
-    // Restore whatever was there before instead of blanking it, so an outer lock
-    // (a drawer, a modal) that is still up survives this overlay closing.
+    // Restore whatever was there before instead of blanking it, so an outer lock (a drawer, a modal) that is still up survives this overlay closing.
     const previousOverflow = html.style.overflow;
     const previousPaddingRight = html.style.paddingRight;
     const previousBodyOverflow = document.body.style.overflow;
@@ -103,8 +99,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
     e.preventDefault();
     const t = term.trim();
     if (!t) return;
-    // The global results page, not /products: this dropdown previews offers and
-    // collections too, so the page behind it has to be able to show them.
+    // The global results page, not /products: this dropdown previews offers and collections too, so the page behind it has to be able to show them.
     router.push(`/${lang}/search?q=${encodeURIComponent(t)}`);
     onClose();
   };

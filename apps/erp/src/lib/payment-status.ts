@@ -20,11 +20,7 @@ export const paymentStatusFilterOptions = [
   }))
 ];
 
-/**
- * Paymob orders display the provider's state (see orderPaymentDisplay) while COD orders
- * display the operational status, so the list filter has to read the same source as the
- * label it sits next to instead of comparing raw enums across both payment methods.
- */
+/** Paymob orders display the provider's state (see orderPaymentDisplay) while COD orders display the operational status, so the list filter has to read the same source as the label it sits next to instead of comparing raw enums across both payment methods. */
 export function orderMatchesPaymentStatusFilter(
   order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">,
   filter: PaymentStatus

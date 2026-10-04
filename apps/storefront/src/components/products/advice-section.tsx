@@ -2,10 +2,7 @@ import type { Advice, Language } from "@capella/shared";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
 
-/**
- * Capella Tips. Always the shop page's single horizontally scrolling row, so the
- * section reads identically wherever it appears (shop, product search results).
- */
+/** Capella Tips. Always the shop page's single horizontally scrolling row, so the section reads identically wherever it appears (shop, product search results). */
 export function AdviceSection({
   advices,
   lang,

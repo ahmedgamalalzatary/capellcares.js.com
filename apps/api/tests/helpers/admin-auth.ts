@@ -44,8 +44,7 @@ export async function getStaffAuthHeaders(
     isActive: options?.isActive ?? true
   });
   if (options?.permissionKeys) {
-    // The grant resolves keys against the permission catalog, so it must be synced first;
-    // without it the insert silently matches no rows and the user keeps zero permissions.
+    // The grant resolves keys against the permission catalog, so it must be synced first; without it the insert silently matches no rows and the user keeps zero permissions.
     const { replaceAdminUserPermissions, syncPermissionCatalog } = await import("../../src/services/erp-permissions.service.js");
     await syncPermissionCatalog();
     await replaceAdminUserPermissions(id, options.permissionKeys);

@@ -36,10 +36,7 @@ async function paymentEvidenceUnresolved(tx: DbTransaction, sessionId: number) {
     await unresolvedInboxOrderIds(await sessionPaymobOrderIds(tx, sessionId), { tx }));
 }
 
-/**
- * Returns the stock held by a checkout's still-reserved lines and marks those lines released.
- * Used when the provider rejects an initiation and when recycling an abandoned checkout.
- */
+/** Returns the stock held by a checkout's still-reserved lines and marks those lines released. Used when the provider rejects an initiation and when recycling an abandoned checkout. */
 async function releaseReservedStock(tx: DbTransaction, sessionId: number) {
   const reservations = await tx.select().from(checkoutReservations)
     .where(and(eq(checkoutReservations.checkoutSessionId, sessionId),
@@ -71,9 +68,7 @@ function isDuplicateEntryError(error: unknown): boolean {
     candidate.cause?.cause?.code === "ER_DUP_ENTRY";
 }
 
-/**
- * Records a confirmed provider rejection as a failed attempt and frees the stock it held.
- */
+/** Records a confirmed provider rejection as a failed attempt and frees the stock it held. */
 async function failPaymobInitiation(sessionId: number, attemptId: number) {
   await db.transaction(async (tx) => {
     const [session] = await tx.select().from(checkoutSessions).where(eq(checkoutSessions.id, sessionId)).for("update");
@@ -88,10 +83,7 @@ async function failPaymobInitiation(sessionId: number, attemptId: number) {
   });
 }
 
-/**
- * A throttled (429) request never created an intention, but it is retryable:
- * fail only the attempt so the session stays payable and keeps its stock hold.
- */
+/** A throttled (429) request never created an intention, but it is retryable: fail only the attempt so the session stays payable and keeps its stock hold. */
 async function failThrottledPaymobAttempt(attemptId: number) {
   await db.update(paymentAttempts)
     .set({ status: "failed", failureCode: "INTENTION_CREATION_THROTTLED" })
@@ -142,8 +134,7 @@ export async function initiatePaymobCheckout(input: {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
   }
-  // A caller that already priced and quoted (e.g. submitCheckout) passes the validated
-  // context so it is never recomputed. Absent context, resolve it exactly as before.
+  // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
   const priced = input.priced ?? await priceCheckout(input.payload);
   const shipping = input.shipping !== undefined
     ? input.shipping
@@ -221,10 +212,7 @@ export async function initiatePaymobCheckout(input: {
         notificationUrl: input.notificationUrl, redirectionUrl: input.redirectionUrl,
         createIntention: input.createIntention, now });
     }
-    // A throttled (429) initiation left the session payable with its stock still held
-    // and no client secret. Allocate the next attempt on that session in place so the
-    // reservation is never released — releasing first would let competing checkouts
-    // take the held stock before this retry re-reserves it.
+    // A throttled (429) initiation left the session payable with its stock still held and no client secret; allocate the next attempt on that session in place so the reservation is never released — releasing first would let competing checkouts take the held stock before this retry re-reserves it.
     const throttledRetry = await db.transaction(async (tx): Promise<CheckoutPlan | null> => {
       const [session] = await tx.select().from(checkoutSessions)
         .where(eq(checkoutSessions.id, existing.sessionId)).limit(1).for("update");
@@ -255,9 +243,7 @@ export async function initiatePaymobCheckout(input: {
     if (throttledRetry) {
       plan = throttledRetry;
     } else {
-      // A previous initiation never produced a client secret (a crash after reserving, or a
-      // confirmed provider rejection). Release anything it still holds and recycle the
-      // idempotency key so a retry of the same cart can start clean.
+      // A previous initiation never produced a client secret (a crash after reserving, or a confirmed provider rejection); release anything it still holds and recycle the idempotency key so a retry of the same cart starts clean.
       await db.transaction(async (tx) => {
         const [session] = await tx.select().from(checkoutSessions)
           .where(eq(checkoutSessions.id, existing.sessionId)).limit(1).for("update");
@@ -306,8 +292,7 @@ export async function initiatePaymobCheckout(input: {
       });
     } catch (error) {
       if (!isDuplicateEntryError(error)) throw error;
-      // A concurrent request with the same idempotency key won the insert race; behave
-      // like an idempotent replay instead of surfacing the database error.
+      // A concurrent request with the same idempotency key won the insert race; behave like an idempotent replay instead of surfacing the database error.
       const winner = await findExistingCheckout();
       if (!winner) throw error;
       const reused = resolveReuse(winner);
@@ -400,14 +385,8 @@ export async function retryPaymobCheckout(input: {
         latest.failureCode === "INTENTION_CREATION_AMBIGUOUS" && !latest.clientSecret))) {
       throw new Error("Previous payment attempt has not failed");
     }
-    // W06 P04: hiding the retry button is not the guard. The mutation itself must refuse,
-    // because a direct request can otherwise create a SECOND intention while the first
-    // attempt's success callback is durably received but not yet applied - the customer
-    // pays twice, and the second payment wins with stock reserved for only one.
-    //
-    // Read inside the existing session lock. The inbox lookup is deliberately lock-free
-    // (financial-evidence.repository.ts), so this adds no new lock edge and cannot form the
-    // session/order cycle W06 problem 2 documents.
+    // W06 P04: hiding the retry button is not the guard — the mutation itself must refuse, because a direct request can otherwise create a SECOND intention while the first attempt's success callback is durably received but not yet applied (the customer pays twice and the second wins with stock reserved for only one).
+    // Read inside the existing session lock; the inbox lookup is deliberately lock-free, so this adds no new lock edge and cannot form the session/order cycle W06 problem 2 documents.
     if (await paymentEvidenceUnresolved(tx, session.id)) {
       throw new PaymentEvidenceUnresolvedError();
     }

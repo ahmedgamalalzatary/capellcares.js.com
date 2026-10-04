@@ -16,10 +16,7 @@ interface Props {
   media?: EntityMedia[];
   lang?: Language;
   imagePath?: string | null;
-  /**
-   * Optional YouTube/Instagram link. It joins the gallery as the last item, so
-   * the uploaded photos still lead and nothing plays until it is selected.
-   */
+  /** Optional YouTube/Instagram link. It joins the gallery as the last item, so the uploaded photos still lead and nothing plays until it is selected. */
   videoUrl?: string | null;
   label: string;
   testIdPrefix: "product" | "offer" | "collection";
@@ -54,16 +51,13 @@ export function EntityMediaGallery({
 }: Props) {
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const activePointerTargetRef = useRef<HTMLElement | null>(null);
-  // Only the pointer that began the swipe may finish it — a second finger
-  // lifting must not consume, or cancel, someone else's gesture.
+  // Only the pointer that began the swipe may finish it — a second finger lifting must not consume, or cancel, someone else's gesture.
   const dragPointerIdRef = useRef<number | null>(null);
   const activeIndexRef = useRef(0);
-  // A swipe ends with a click on the media. That click must not be read as a
-  // request to open the lightbox, so the gesture marks it as already spent.
+  // A swipe ends with a click on the media. That click must not be read as a request to open the lightbox, so the gesture marks it as already spent.
   const swipeConsumedClickRef = useRef(false);
 
-  // A link we cannot turn into a player contributes no item at all, rather than
-  // a thumbnail that opens nothing.
+  // A link we cannot turn into a player contributes no item at all, rather than a thumbnail that opens nothing.
   const linkedVideo = useMemo(
     () => (videoUrl?.trim() ? resolveAdviceVideo(videoUrl) : null),
     [videoUrl]
@@ -94,8 +88,7 @@ export function EntityMediaGallery({
   const activeItem = items[activeIndex] ?? items[0] ?? null;
   activeIndexRef.current = activeIndex;
 
-  // Swipes must not fight a player the shopper is scrubbing or an embed that
-  // owns its own pointer handling.
+  // Swipes must not fight a player the shopper is scrubbing or an embed that owns its own pointer handling.
   const isPlayerTarget = (target: EventTarget | null) =>
     target instanceof Element && Boolean(target.closest("video, iframe, blockquote"));
 
@@ -103,8 +96,7 @@ export function EntityMediaGallery({
     setActiveIndex(0);
   }, [incomingMedia, imagePath, lang, videoUrl]);
 
-  // lightboxOpen is a dependency because opening mounts a second copy of the
-  // embed in the portal, which needs its own processing pass to become a player.
+  // lightboxOpen is a dependency because opening mounts a second copy of the embed in the portal, which needs its own processing pass to become a player.
   useEffect(() => {
     const active = items[activeIndex];
     if (active?.kind === "embed" && active.video.provider === "instagram") {
@@ -157,9 +149,7 @@ export function EntityMediaGallery({
   }, [items.length]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
-    // A new gesture clears the last one's mark. Relying on a click to clear it
-    // strands the flag: a touch swipe releases outside the box and fires none,
-    // so the next genuine tap would be swallowed.
+    // A new gesture clears the last one's mark. Relying on a click to clear it strands the flag: a touch swipe releases outside the box and fires none, so the next genuine tap would be swallowed.
     swipeConsumedClickRef.current = false;
     if (items.length <= 1 || !event.isPrimary || isPlayerTarget(event.target)) return;
     dragStartRef.current = { x: event.clientX, y: event.clientY };
@@ -201,8 +191,7 @@ export function EntityMediaGallery({
         className="h-full w-full object-cover"
       />
     ) : (
-      // Instagram exposes no thumbnail without an API call, so the tile just
-      // reads as "a video lives here".
+      // Instagram exposes no thumbnail without an API call, so the tile just reads as "a video lives here".
       <span
         className="grid aspect-square w-full place-items-center bg-ink text-canvas"
         aria-label={`${label} video ${index + 1}`}
@@ -217,10 +206,7 @@ export function EntityMediaGallery({
     setActiveIndex((current) => Math.max(0, Math.min(items.length - 1, current + direction)));
   };
 
-  /**
-   * A tap or click on the picture opens the lightbox — but a player owns its own
-   * clicks, and the click that ends a swipe must not count as one.
-   */
+  /** A tap or click on the picture opens the lightbox — but a player owns its own clicks, and the click that ends a swipe must not count as one. */
   const openFromMedia = (event: React.MouseEvent) => {
     const swiped = swipeConsumedClickRef.current;
     swipeConsumedClickRef.current = false;
@@ -233,8 +219,7 @@ export function EntityMediaGallery({
     openButtonRef.current?.focus();
   };
 
-  // While the lightbox is up the page behind must not scroll. <html> is the
-  // scrolling element — locking <body> alone is ignored on mobile.
+  // While the lightbox is up the page behind must not scroll. <html> is the scrolling element — locking <body> alone is ignored on mobile.
   useEffect(() => {
     if (!lightboxOpen) return;
     const html = document.documentElement;
@@ -265,11 +250,9 @@ export function EntityMediaGallery({
         closeLightbox();
         return;
       }
-      // A focused player owns its arrow keys — they scrub the clip, and stepping
-      // the gallery too would pull it out from under the shopper mid-seek.
+      // A focused player owns its arrow keys — they scrub the clip, and stepping the gallery too would pull it out from under the shopper mid-seek.
       if (isPlayerTarget(event.target)) return;
-      // "Forward" follows the writing direction, so the arrows always move the
-      // way the strip reads.
+      // "Forward" follows the writing direction, so the arrows always move the way the strip reads.
       if (event.key === "ArrowRight") step(isRtl ? -1 : 1);
       if (event.key === "ArrowLeft") step(isRtl ? 1 : -1);
     };
@@ -277,10 +260,7 @@ export function EntityMediaGallery({
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxOpen, isRtl, items.length]);
 
-  /**
-   * A dialog that claims aria-modal must not let Tab walk out into the page it
-   * covers, so focus cycles within it. Same approach the advice dialog uses.
-   */
+  /** A dialog that claims aria-modal must not let Tab walk out into the page it covers, so focus cycles within it. Same approach the advice dialog uses. */
   const onDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;
     const focusables = Array.from(
@@ -320,11 +300,9 @@ export function EntityMediaGallery({
         <div
           className={[
             "relative grid place-items-center overflow-hidden rounded-md sm:rounded-md lg:place-items-start",
-            // pan-y: the page may still scroll vertically; a horizontal finger
-            // drag stays with this box so it can change the picture.
+            // pan-y: the page may still scroll vertically; a horizontal finger drag stays with this box so it can change the picture.
             items.length > 1 ? "touch-pan-y" : "",
-            // The picture is the trigger: a plus cursor announces it to anyone
-            // with a hover-capable pointer, and a tap opens it on touch.
+            // The picture is the trigger: a plus cursor announces it to anyone with a hover-capable pointer, and a tap opens it on touch.
             items.length > 0 ? "cursor-plus" : ""
           ].join(" ").trim()}
           data-testid={`${testIdPrefix}-media-main`}
@@ -340,9 +318,7 @@ export function EntityMediaGallery({
           {renderItem(activeItem, imagePath ?? "")}
         </div>
         {items.length > 0 ? (
-          // Clicking a picture is invisible to the keyboard and to screen
-          // readers, so the same action also exists as a real control. It stays
-          // out of the layout until focused.
+          // Clicking a picture is invisible to the keyboard and to screen readers, so the same action also exists as a real control. It stays out of the layout until focused.
           <button
             ref={openButtonRef}
             type="button"
@@ -404,10 +380,7 @@ export function EntityMediaGallery({
           aria-modal="true"
           aria-label={label}
           onKeyDown={onDialogKeyDown}
-          // Portalled to <body>, it sits outside the locale subtree that carries
-          // dir/lang, so it states its own. Without this every logical property
-          // inside (inset-s/inset-e, text alignment) resolves against <html dir>
-          // and the layout comes out mirrored — which is what flipped the arrows.
+          // Portalled to <body>, it sits outside the locale subtree that carries dir/lang, so it states its own; without this every logical property inside (inset-s/inset-e, text alignment) resolves against <html dir> and the layout comes out mirrored — which flipped the arrows.
           dir={isRtl ? "rtl" : "ltr"}
           lang={lang}
           data-testid={`${testIdPrefix}-lightbox`}
@@ -433,8 +406,7 @@ export function EntityMediaGallery({
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 sm:px-16">
             <button
               type="button"
-              // Index steps are direction-agnostic: "previous" is always the
-              // previous picture. Only the button's side and its chevron mirror.
+              // Index steps are direction-agnostic: "previous" is always the previous picture. Only the button's side and its chevron mirror.
               onClick={() => step(-1)}
               disabled={activeIndex === 0}
               aria-label={dict.media.previous}
@@ -445,9 +417,7 @@ export function EntityMediaGallery({
 
             <div
               data-testid={`${testIdPrefix}-lightbox-main`}
-              // Each detail page renders its own artwork here, so the stage caps
-              // whatever comes back rather than trusting it to fit — otherwise a
-              // tall photo runs off the bottom of the screen.
+              // Each detail page renders its own artwork here, so the stage caps whatever comes back rather than trusting it to fit — otherwise a tall photo runs off the bottom of the screen.
               className={[
                 "grid h-full max-h-full w-full max-w-4xl place-items-center overflow-hidden [&_img]:max-h-full [&_img]:max-w-full [&_img]:w-auto [&_img]:object-contain [&_svg]:max-h-full [&_svg]:max-w-full [&_video]:max-h-full [&_video]:max-w-full",
                 items.length > 1 ? "touch-pan-y" : ""

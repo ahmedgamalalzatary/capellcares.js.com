@@ -146,8 +146,7 @@ test("shop media stops resolving a target once it is soft deleted", async () => 
 
     await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, productOneId));
 
-    // The storefront reads a null slug as "link to the home page" instead of routing
-    // shoppers to a product page that no longer exists.
+    // The storefront reads a null slug as "link to the home page" instead of routing shoppers to a product page that no longer exists.
     const afterDelete = await request("/api/v1/shop-media-sections");
     const sectionAfter = afterDelete.json.items.find((section: any) => section.slot === 3);
     assert.equal(sectionAfter.items[0].targetSlug, null);

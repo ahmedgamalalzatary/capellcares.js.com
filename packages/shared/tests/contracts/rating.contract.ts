@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-/**
- * The compact rating every storefront card carries. Always present so a grid
- * never has to distinguish "not loaded" from "not reviewed" — an unreviewed
- * entity reports zero on both fields.
- */
+/** The compact rating every storefront card carries. Always present so a grid never has to distinguish "not loaded" from "not reviewed" — an unreviewed entity reports zero on both fields. */
 export const storefrontRatingContract = z
   .object({
     average: z.number().min(0).max(5),

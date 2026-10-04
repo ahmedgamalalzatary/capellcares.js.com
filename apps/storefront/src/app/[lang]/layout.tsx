@@ -15,11 +15,8 @@ import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 
-// The root <html dir> is derived from the x-capella-locale request header set
-// by middleware. Static prerendering has no request, so at build time that
-// header is absent and dir wrongly defaults to "ar"/rtl on the EN page. Render
-// the locale subtree per-request so middleware's header drives <html dir>
-// (and every CSS rtl:/[dir=rtl] consumer) correctly.
+// The root <html dir> is derived from the x-capella-locale request header set by middleware; static prerendering has no request, so at build time the header is absent and dir wrongly defaults to "ar"/rtl on the EN page.
+// Render the locale subtree per-request so middleware's header drives <html dir> (and every CSS rtl:/[dir=rtl] consumer) correctly.
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({

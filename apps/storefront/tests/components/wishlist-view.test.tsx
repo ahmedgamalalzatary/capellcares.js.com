@@ -13,9 +13,7 @@ vi.mock("next/navigation", () => ({
 const remove = vi.fn();
 const toggle = vi.fn();
 
-// The view resolves each saved entry against the catalog and renders the real
-// ProductCard / SectionCard, so the fetchers must return matching records.
-// Fixtures live inside the factory because vi.mock is hoisted above the file.
+// The view resolves each saved entry against the catalog and renders the real ProductCard / SectionCard, so the fetchers must return matching records; fixtures live inside the factory because vi.mock is hoisted above the file.
 vi.mock("@/lib/api/client", () => {
   const product = {
     id: 11,
@@ -58,8 +56,7 @@ vi.mock("@/lib/api/client", () => {
     updatedAt: ""
   };
 
-  // Two distinct categories so the product's line and the offer's line can be
-  // told apart in the assertions.
+  // Two distinct categories so the product's line and the offer's line can be told apart in the assertions.
   const categories = [
     {
       id: 1,
@@ -173,8 +170,7 @@ describe("WishlistView", () => {
     // Its own page head, since this page opts out of StorefrontPageShell.
     expect(await screen.findByRole("heading", { level: 1, name: "Your wishlist" })).toBeInTheDocument();
 
-    // Resolved entries become real cards. Each card links from both its media
-    // and its title, so every link for an item points at its detail page.
+    // Resolved entries become real cards. Each card links from both its media and its title, so every link for an item points at its detail page.
     const productLinks = await screen.findAllByRole("link", { name: "Body Mist" });
     expect(productLinks.length).toBeGreaterThan(0);
     for (const link of productLinks) {

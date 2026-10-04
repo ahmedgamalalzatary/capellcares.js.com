@@ -116,8 +116,7 @@ describe("SearchOverlay", () => {
     fireEvent.change(screen.getByPlaceholderText(dict.nav.search), { target: { value: "rose" } });
     fireEvent.click(await screen.findByRole("button", { name: dict.nav.viewAll }));
 
-    // Not /products: the dropdown previews offers and collections too, so the
-    // page behind it must be able to show them.
+    // Not /products: the dropdown previews offers and collections too, so the page behind it must be able to show them.
     expect(push).toHaveBeenCalledWith("/en/search?q=rose");
   });
 
@@ -127,8 +126,7 @@ describe("SearchOverlay", () => {
       createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() })
     );
 
-    // <html> is the scrolling element — locking only <body> lets mobile browsers
-    // keep scrolling the page behind the overlay.
+    // <html> is the scrolling element — locking only <body> lets mobile browsers keep scrolling the page behind the overlay.
     expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 

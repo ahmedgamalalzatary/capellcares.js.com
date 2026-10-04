@@ -273,8 +273,7 @@ describe("shop page", () => {
   it("names each bundle's category on its shop-row card", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    // The collection is classified under "Sets" (category 11); the offer fixture
-    // carries no category, so its card shows no classification line.
+    // The collection is classified under "Sets" (category 11); the offer fixture carries no category, so its card shows no classification line.
     expect(screen.getByText("Sets")).toBeInTheDocument();
   });
 

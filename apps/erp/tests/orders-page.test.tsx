@@ -61,8 +61,7 @@ vi.mock("@/lib/store", () => ({
 
 import OrdersPage from "@/app/orders/page";
 
-// formatPrice emits a non-breaking space that testing-library normalizes away on the
-// DOM side only, so compare with all whitespace stripped from both sides.
+// formatPrice emits a non-breaking space that testing-library normalizes away on the DOM side only, so compare with all whitespace stripped from both sides.
 function money(value: number) {
   const expected = formatPrice(value, "ar").replace(/\s+/gu, "");
   return (_content: string, element: Element | null) =>

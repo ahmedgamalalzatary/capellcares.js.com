@@ -4,9 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => cleanup());
 
-// A case that renders the page with a staff user must not inherit the apiGet call
-// history or queued responses of an earlier case, so each case starts from a known
-// admin session with no recorded requests and no captured form props.
+// A case that renders the page with a staff user must not inherit the apiGet call history or queued responses of an earlier case, so each case starts from a known admin session with no recorded requests and no captured form props.
 const defaultAdminAuth = {
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
   hydrated: true,

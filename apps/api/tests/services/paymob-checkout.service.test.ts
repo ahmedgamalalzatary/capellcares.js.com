@@ -334,20 +334,14 @@ test("an early callback cannot settle by an unsigned reference before signed ord
     "a callback whose signed order id is not yet recorded must NOT be settled via the unsigned reference");
   assert.equal((await db.select().from(orders).where(eq(orders.email, "fast@example.com"))).length, 0,
     "no order may be created while the signed provider order id is unknown");
-  // Durable intake is the controller's job (verified in paymob-webhook.routes.test.ts): a
-  // real callback always lands in the inbox before processing, so this early notification is
-  // retained and reprocessed rather than lost. What must never happen is settling it here,
-  // on the strength of an unsigned field.
+  // Durable intake is the controller's job (verified in paymob-webhook.routes.test.ts): a real callback always lands in the inbox before processing, so this early notification is retained and reprocessed rather than lost; what must never happen is settling it here on the strength of an unsigned field.
   const [stored] = await db.select().from(paymentAttempts)
     .where(eq(paymentAttempts.paymobOrderId, "9112"));
   assert.ok(stored, "the attempt is recorded and will match this callback once its id is saved");
 });
 
 test("a callback cannot be re-pointed at another checkout by rewriting an unsigned field", async () => {
-  // `order.id` IS covered by Paymob's HMAC; `order.merchant_order_id` is NOT. Matching a
-  // callback by the merchant reference therefore let anyone holding one validly-signed
-  // callback rewrite that field and have it still verify - redirecting the payment at will
-  // onto a checkout they do not own. Correlation must rest only on signed fields.
+  // `order.id` IS covered by Paymob's HMAC while `order.merchant_order_id` is NOT; matching a callback by the merchant reference therefore let anyone holding one validly-signed callback rewrite that field and have it still verify, redirecting the payment at will onto a checkout they do not own — correlation must rest only on signed fields.
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const ids = await getBaselineIds();
@@ -379,14 +373,10 @@ test("a callback cannot be re-pointed at another checkout by rewriting an unsign
       specialReference: request.specialReference })
   });
 
-  // The attacker holds a genuinely valid callback for their OWN order, then rewrites the
-  // unsigned merchant reference to point at the victim's checkout.
+  // The attacker holds a genuinely valid callback for their OWN order, then rewrites the unsigned merchant reference to point at the victim's checkout.
   const [attackerAttempt] = await db.select().from(paymentAttempts)
     .where(eq(paymentAttempts.paymobIntentionId, "pi_attacker"));
-  // Blanking the SIGNED id is what forces correlation onto the unsigned field. Any attempt
-  // whose provider order id is unknown - an intention created before it was recorded, a
-  // legacy row, or one deliberately cleared - currently falls back to merchant_order_id,
-  // and that fallback is attacker-reachable precisely because the field is unsigned.
+  // Blanking the SIGNED id is what forces correlation onto the unsigned field; any attempt whose provider order id is unknown (an intention created before it was recorded, a legacy row, or one deliberately cleared) currently falls back to merchant_order_id, and that fallback is attacker-reachable precisely because the field is unsigned.
   await db.update(paymentAttempts).set({ paymobOrderId: null })
     .where(eq(paymentAttempts.checkoutSessionId, victim.sessionId));
   const result = await processPaymobTransaction({
@@ -872,8 +862,7 @@ test("an unsigned refund amount in the callback is ignored; only authenticated i
     success: true, pending: false, is_live: false, is_auth: false, is_capture: false,
     is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" } };
   await processPaymobTransaction(paid, { verified: paid });
-  // `refunded_amount_cents` is NOT part of Paymob's HMAC input list. Claiming a full
-  // refund in the body must not be able to mark the order refunded on its own.
+  // `refunded_amount_cents` is NOT part of Paymob's HMAC input list. Claiming a full refund in the body must not be able to mark the order refunded on its own.
   const forged = await processPaymobTransaction({ ...paid, is_refunded: true, refunded_amount_cents: 3500 },
     { verified: { ...paid, is_refunded: false, refunded_amount_cents: 0 } });
   const [order] = await db.select().from(orders).where(eq(orders.email, "unsigned@example.com"));
@@ -1008,10 +997,7 @@ test("retryPaymobCheckout does not return a payment link after its reservation i
 });
 
 test("retryPaymobCheckout refuses a retry while a sibling attempt's evidence is unresolved", async () => {
-  // The customer-facing button is hidden in this state, but the mutation itself was not
-  // guarded: a direct POST still created a fresh intention while the FIRST payment's
-  // success callback was durably received but not yet applied. The customer then pays
-  // twice - and the second payment wins, with stock reserved for only one of them.
+  // The customer-facing button is hidden in this state, but the mutation itself was not guarded: a direct POST still created a fresh intention while the FIRST payment's success callback was durably received but not yet applied — the customer then pays twice, and the second payment wins with stock reserved for only one.
   const { initiatePaymobCheckout, retryPaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
@@ -1053,9 +1039,7 @@ test("retryPaymobCheckout refuses a retry while a sibling attempt's evidence is 
 });
 
 test("a third decline does not release reserved stock while evidence is unresolved", async () => {
-  // Third decline releases the reservation, which frees stock the customer may already
-  // have paid for. With an unresolved callback outstanding the release must wait, or the
-  // eventual success has nothing left to fulfil and the stock is sold twice.
+  // Third decline releases the reservation, which frees stock the customer may already have paid for; with an unresolved callback outstanding the release must wait, or the eventual success has nothing left to fulfil and the stock is sold twice.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
   const { releaseExpiredCheckoutReservations } = await import("../../src/modules/checkout/checkout-reservation.repository.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
@@ -1074,8 +1058,7 @@ test("a third decline does not release reserved stock while evidence is unresolv
     initialAttempt: { merchantReference: "pi_third_decline", environment: "test", allowedIntegrationIds: [123],
       expiresAt: new Date(Date.now() + 600_000) }
   });
-  // Three attempts used, the third declines, and an unrelated success callback for the same
-  // provider order is sitting unresolved in the inbox.
+  // Three attempts used, the third declines, and an unrelated success callback for the same provider order is sitting unresolved in the inbox.
   await db.update(paymentAttempts).set({ attemptNumber: 3, paymobOrderId: "9510" })
     .where(eq(paymentAttempts.checkoutSessionId, session.id));
   await db.update(checkoutSessions).set({ attemptCount: 3 }).where(eq(checkoutSessions.id, session.id));
@@ -1273,9 +1256,7 @@ test("the audit outcome commits atomically with the payment, so a crash cannot l
   const transaction = paidTransaction(9411, 8411);
   const result = await processPaymobTransaction(transaction, { audit: { transaction } });
   assert.equal(result.outcome, "succeeded");
-  // The order and its audit outcome must both exist, or both be absent. Previously the
-  // audit row was written by a separate call after the business transaction committed,
-  // so a crash in between lost the outcome while the order survived.
+  // The order and its audit outcome must both exist, or both be absent; previously the audit row was written by a separate call after the business transaction committed, so a crash in between lost the outcome while the order survived.
   assert.equal((await db.select().from(paymentWebhookEvents)).length, 1, "exactly one audit row for the success");
   assert.equal((await db.select().from(orders)).length, 1, "exactly one canonical order");
 });
@@ -1292,9 +1273,7 @@ test("a rolled-back payment leaves no audit row claiming it was processed", asyn
     config, notificationUrl, redirectionUrl,
     createIntention: async () => ({ intentionId: "pi_rollback", orderId: 9412, clientSecret: "s", checkoutUrl: "https://checkout" })
   });
-  // A wrong amount is a safe `reconciliation_required`, not a throw, so corrupt the stored
-  // snapshot instead: the happy path then fails after deciding to create an order, which
-  // is the rollback we need to observe.
+  // A wrong amount is a safe `reconciliation_required`, not a throw, so corrupt the stored snapshot instead: the happy path then fails after deciding to create an order, which is the rollback we need to observe.
   const ids2 = await getBaselineIds();
   await initiatePaymobCheckout({
     payload: { fullName: "Rollback Two", phone: "01012345678", email: "rollback2@example.com", governorate: "Cairo",
@@ -1323,8 +1302,7 @@ test("a later, smaller authenticated refund never lowers a monotonic refund tota
   });
   const base = { ...paidTransaction(9308, 8311), is_refunded: true, refunded_amount_cents: 3500 };
   await processPaymobTransaction(base, { verified: { is_refunded: true, refunded_amount_cents: 3500 } });
-  // An out-of-order or stale provider read reporting a smaller cumulative total must not
-  // walk the recorded refund backwards.
+  // An out-of-order or stale provider read reporting a smaller cumulative total must not walk the recorded refund backwards.
   await processPaymobTransaction({ ...base, refunded_amount_cents: 1200 },
     { verified: { is_refunded: true, refunded_amount_cents: 1200 } });
   const [order] = await db.select().from(orders).where(eq(orders.email, "monotonic@example.com"));
@@ -1374,10 +1352,7 @@ test("processPaymobTransaction rejects an out-of-order decline after the payment
 });
 
 test("an unsigned environment claim cannot settle or block a payment after success", async () => {
-  // `is_live` is outside Paymob's HMAC input list, so it is not evidence of anything. It
-  // previously decided acceptance: flipping it rejected a genuine payment, and holding the
-  // HMAC secret would have let an attacker do the same. The environment that governs the
-  // callback is the one recorded on the local attempt.
+  // `is_live` is outside Paymob's HMAC input list, so it is not evidence of anything; it previously decided acceptance — flipping it rejected a genuine payment, and holding the HMAC secret would have let an attacker do the same — the environment that governs the callback is the one recorded on the local attempt.
   const { processPaymobTransaction } = await createPaidSession({
     email: "post-success-env@example.com", idempotencyKey: "c4c4c4c4-c4c4-4c4c-8c4c-c4c4c4c4c4c4",
     intentionId: "pi_post_success_env", orderId: 9303, txnId: 8305
@@ -1393,8 +1368,7 @@ test("an unsigned environment claim cannot settle or block a payment after succe
   }, { verified: { is_refunded: true, refunded_amount_cents: 3500 } })).outcome, "refunded",
     "an unsigned flag must not block a real refund");
 
-  // A genuinely mismatched environment is still caught, but only from the AUTHENTICATED
-  // inquiry, which is evidence rather than an unsigned callback field.
+  // A genuinely mismatched environment is still caught, but only from the AUTHENTICATED inquiry, which is evidence rather than an unsigned callback field.
   assert.equal((await processPaymobTransaction({
     ...paidTransaction(9303, 8305), is_live: false, is_refunded: true, refunded_amount_cents: 3500
   }, { verified: { is_refunded: true, refunded_amount_cents: 3500, environment: "live" } })).outcome, "rejected",
@@ -1478,9 +1452,7 @@ test("processPaymobTransaction still acknowledges a duplicate delivery of the or
 test("initiatePaymobCheckout uses the validated checkout context instead of re-pricing and re-quoting", async () => {
   const module = await import("../../src/modules/checkout/paymob-checkout.service.js").catch(() => null);
   const ids = await getBaselineIds();
-  // The provided context prices one unit at 12.50, which differs from the seeded 35.00.
-  // Re-pricing would compute 35.00 and mismatch expectedAmountCents; honouring the validated
-  // context is what lets this succeed with a single pricing pass.
+  // The provided context prices one unit at 12.50, which differs from the seeded 35.00; re-pricing would compute 35.00 and mismatch expectedAmountCents — honouring the validated context is what lets this succeed with a single pricing pass.
   const priced = { items: [{ itemType: "product_variant", variantId: ids.firstVariantId, offerId: null,
     qty: 1, unitPrice: 12.5, lineTotal: 12.5 }], totalAmount: 12.5,
     reservations: [{ variantId: ids.firstVariantId, qty: 1 }] };

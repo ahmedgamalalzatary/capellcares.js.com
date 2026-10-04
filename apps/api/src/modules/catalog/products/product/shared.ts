@@ -113,11 +113,7 @@ export async function loadVariantDiscountRows(variantIds: number[]) {
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/**
- * Replaces a product's media atomically. When called inside an existing transaction, pass
- * `executor` so the delete+insert join the caller's transaction (e.g. the product update);
- * otherwise it runs in its own transaction.
- */
+/** Replaces a product's media atomically; when called inside an existing transaction pass `executor` so the delete+insert join the caller's transaction (e.g. the product update), otherwise it runs in its own. */
 export async function replaceProductMediaRepo(
   productId: number,
   media: ProductMediaItem[],

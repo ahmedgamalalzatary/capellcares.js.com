@@ -158,8 +158,7 @@ test("erp sales excludes denied orders from recognized revenue and units", async
     assert.equal(productOne.unitsSold, 1);
     assert.equal(productTwo.unitsSold, 1);
 
-    // Offer revenue is the actual paid bundle price (lineTotal), allocated across components,
-    // so per-variant revenue reconciles with totalRevenue rather than summing catalog prices.
+    // Offer revenue is the actual paid bundle price (lineTotal), allocated across components, so per-variant revenue reconciles with totalRevenue rather than summing catalog prices.
     const variantRevenueSum = response.json.variantTotals.reduce((sum: number, item: any) => sum + item.revenue, 0);
     assert.ok(
       Math.abs(variantRevenueSum - response.json.summary.totalRevenue) < 0.01,

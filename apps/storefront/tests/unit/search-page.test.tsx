@@ -10,8 +10,7 @@ vi.mock("@/lib/storefront-page-context", () => ({
   resolveStorefrontLang: async () => "en"
 }));
 
-// The page's own composition is what is under test, so the cards are stubbed
-// down to the two things this page must hand them: the entity and its category.
+// The page's own composition is what is under test, so the cards are stubbed down to the two things this page must hand them: the entity and its category.
 vi.mock("@/components/products/product-card", () => ({
   ProductCard: ({ product, categoryName }: any) =>
     createElement("div", { "data-testid": "product-card" }, `${product.name.en}${categoryName ? ` — ${categoryName}` : ""}`)
@@ -143,8 +142,7 @@ describe("search results page", () => {
     expect(screen.getByTestId("collection-card")).toHaveTextContent("Rose Care");
   });
 
-  // No page-head here by design: the breadcrumb leads straight into the grids,
-  // so the query is echoed in the tab title (generateMetadata) rather than an h1.
+  // No page-head here by design: the breadcrumb leads straight into the grids, so the query is echoed in the tab title (generateMetadata) rather than an h1.
 
   it("leaves out a kind that has no match instead of showing an empty section", async () => {
     fetchProducts.mockResolvedValue([product]);

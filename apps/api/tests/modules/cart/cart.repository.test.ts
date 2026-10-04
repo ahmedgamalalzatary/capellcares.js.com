@@ -23,15 +23,13 @@ test("concurrent first-time cart saves upsert atomically instead of racing on in
   const linesA: StoredCartLine[] = [{ type: "offer", offerId: 1, qty: 1 }];
   const linesB: StoredCartLine[] = [{ type: "product", productId: 2, variantId: 3, qty: 2 }];
 
-  // Two PUTs racing for a customer with no cart row yet must both succeed;
-  // a read-then-insert implementation would fail the loser with a duplicate key.
+  // Two PUTs racing for a customer with no cart row yet must both succeed; a read-then-insert implementation would fail the loser with a duplicate key.
   await Promise.all([
     saveCartLinesForCustomer(customerId, linesA),
     saveCartLinesForCustomer(customerId, linesB)
   ]);
 
-  // MySQL JSON columns return object keys in normalized order, so compare
-  // canonically rather than with a raw JSON.stringify.
+  // MySQL JSON columns return object keys in normalized order, so compare canonically rather than with a raw JSON.stringify.
   const canonical = (lines: unknown[]) =>
     JSON.stringify(lines, (_key, value: unknown) =>
       value && typeof value === "object" && !Array.isArray(value)

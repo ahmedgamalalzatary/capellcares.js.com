@@ -6,10 +6,7 @@ import { parsePaymobProcessedCallback } from "./paymob-callback.js";
 import type { PaymobInquiry } from "./paymob-inquiry.client.js";
 import { processPaymobCallbackReceipt } from "./paymob-callback-processing.service.js";
 
-/**
- * Injectable seam so route tests never reach the network. Injected per-request by the
- * test app; production leaves it unset and gets the real authenticated client.
- */
+/** Injectable seam so route tests never reach the network. Injected per-request by the test app; production leaves it unset and gets the real authenticated client. */
 let inquiryLookup: ((transactionId: string) => Promise<PaymobInquiry>) | null = null;
 
 /** Test-only: install a stand-in for the authenticated transaction inquiry. */
@@ -35,12 +32,9 @@ export async function paymobWebhookController(req: Request, res: Response): Prom
     res.status(422).json({ message: "Invalid Paymob transaction callback" });
     return;
   }
-  // Durable intake FIRST. Once a callback is signature-verified it is recorded before any
-  // processing, so a crash or a provider outage cannot lose a notification Paymob already
-  // considers delivered.
+  // Durable intake FIRST. Once a callback is signature-verified it is recorded before any processing, so a crash or a provider outage cannot lose a notification Paymob already considers delivered.
   const receipt = await receivePaymobCallback({ callbackType: "transaction", transaction: parsedTransaction });
-  // Inline processing and scheduled recovery use the same claim and atomic commit.
-  // A concurrent duplicate cannot reopen a completed receipt or steal a fresh lease.
+  // Inline processing and scheduled recovery use the same claim and atomic commit. A concurrent duplicate cannot reopen a completed receipt or steal a fresh lease.
   const processed = await processPaymobCallbackReceipt(receipt.id, { inquiryLookup: inquiryLookup ?? undefined });
   if (processed) {
     res.status(200).json({ received: true });

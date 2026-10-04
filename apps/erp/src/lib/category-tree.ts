@@ -2,8 +2,7 @@ import { compareByScopedOrdering, type Category } from "@capella/shared";
 
 export type CategoryTreeOption = { id: number; label: string; depth: number };
 
-// Flattens the active categories the way every ERP category picker shows them:
-// each parent is followed by its own descendants, and `depth` drives the "— " prefix.
+// Flattens the active categories the way every ERP category picker shows them: each parent is followed by its own descendants, and `depth` drives the "— " prefix.
 export function buildCategoryTreeOptions(categories: Category[]): CategoryTreeOption[] {
   const active = categories
     .filter((category) => !category.deletedAt)

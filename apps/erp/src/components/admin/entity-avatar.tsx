@@ -9,8 +9,7 @@ interface Props {
   wide?: boolean;
 }
 
-/** Stored media may be a relative `/uploads/...` path, which must resolve against
- * the API origin rather than the ERP origin. */
+/** Stored media may be a relative `/uploads/...` path, which must resolve against the API origin rather than the ERP origin. */
 function resolveAvatarSrc(value: string) {
   if (/^https?:\/\//i.test(value)) {
     return value;

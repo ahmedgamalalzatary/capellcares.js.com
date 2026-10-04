@@ -5,18 +5,8 @@ import { db } from "../src/db.js";
 import { clearTestSeed, rebuildCategoryPaths, seedTestData } from "../src/seeds/test.seed.js";
 import { categoryPaths } from "../drizzle/schema.js";
 
-/**
- * `rebuildCategoryPaths` deletes every closure row and reinserts the rebuilt
- * set. Wrapping both statements in one transaction is what stops a failed
- * insert from leaving the closure table empty, so these cases assert the
- * observable outcome rather than searching the source for a keyword.
- *
- * Note on scope: forcing `rebuildCategoryPaths` itself to fail was attempted
- * with a connection-scoped temporary table shadowing `category_paths`, but the
- * pooled client hands the rebuild's statements a different connection, so the
- * shadow never applied. The rollback guarantee is therefore asserted directly
- * against the delete-then-insert shape the function performs.
- */
+/** `rebuildCategoryPaths` deletes every closure row and reinserts the rebuilt set in one transaction, so a failed insert cannot leave the closure table empty; these cases assert that observable outcome rather than searching the source for a keyword.
+ * Forcing the rebuild itself to fail via a connection-scoped temp table did not work (the pooled client uses a different connection), so the rollback guarantee is asserted against the delete-then-insert shape directly. */
 
 async function pathRows() {
   return db
@@ -61,15 +51,12 @@ test("a failed closure rebuild leaves the table populated instead of emptying it
   const before = await pathRows();
   assert.ok(before.length > 0, "the closure must be populated before the attempt");
 
-  // The rebuild deletes every row and reinserts the computed closure inside one
-  // transaction, so a failure anywhere in the insert half must roll the delete
-  // half back. A non-transactional delete followed by a failing insert is the
-  // failure this guards against: the closure would be left empty.
+  // The rebuild deletes every row and reinserts the computed closure inside one transaction, so a failure in the insert half must roll the delete half back.
+  // A non-transactional delete followed by a failing insert is the failure guarded against: the closure would be left empty.
   await assert.rejects(
     db.transaction(async (tx) => {
       await tx.delete(categoryPaths);
-      // depth is NOT NULL, so passing undefined makes the insert fail after the
-      // delete has already run inside this transaction.
+      // depth is NOT NULL, so passing undefined makes the insert fail after the delete has already run inside this transaction.
       await tx.insert(categoryPaths).values({
         ancestorId: before[0].ancestorId,
         descendantId: before[0].descendantId,

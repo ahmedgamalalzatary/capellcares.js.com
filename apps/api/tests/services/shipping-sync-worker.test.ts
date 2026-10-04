@@ -59,9 +59,7 @@ test("a delivered parcel stops competing with active reads: one 24h follow-up, t
   })!;
   const run = await worker();
   const t0 = new Date();
-  // Sweep 1: the terminal "Delivered" read. The parcel is NOT yet parked - terminal code
-  // alone is never enough, because a missing COD confirmation or a pending edit still
-  // needs resolution, so the follow-up read is scheduled a full day out.
+  // Sweep 1: the terminal "Delivered" read. The parcel is NOT yet parked — terminal code alone is never enough, because a missing COD confirmation or a pending edit still needs resolution, so the follow-up read is scheduled a full day out.
   await run({ runtime, now: t0 });
   let job = await syncJob();
   assert.equal(job.status, "pending", "a terminal read schedules a follow-up rather than parking");
@@ -110,17 +108,14 @@ test("a parked job reopens when an authenticated callback arrives, so a terminal
   await run({ runtime, now: new Date(Date.now() + 24 * 3600_000) });
   assert.equal((await syncJob()).syncPhase, "parked");
 
-  // A provider webhook is authenticated evidence that something changed after parking.
-  // Returning to an in-transit state is exactly the late correction parking risks missing.
+  // A provider webhook is authenticated evidence that something changed after parking. Returning to an in-transit state is exactly the late correction parking risks missing.
   await recordShippingObservation(runtime, runtime.parseWebhook(f.body({
     type: "SEND", state: 30, isConfirmedDelivery: false, cod: 0 })));
   assert.equal((await syncJob()).syncPhase, "active", "an authenticated callback must reopen a parked job");
 });
 
 test("a delivered parcel with an OPEN safety flag never parks", async () => {
-  // Staff raised a custody_review on this order. Parking would remove the job from every
-  // sweep and with it the only automatic way the open question would ever be revisited -
-  // so the open flag itself must veto parking, whatever the carrier says.
+  // Staff raised a custody_review on this order; parking would remove the job from every sweep and with it the only automatic way the open question would ever be revisited — so the open flag itself must veto parking, whatever the carrier says.
   const f = await shippingSyncFixture();
   await db.insert(orderReviewFlags).values({ orderId: f.order.id, flagType: "custody_review",
     reason: "Delivery reported but collection does not match the locked total" });
@@ -135,10 +130,7 @@ test("a delivered parcel with an OPEN safety flag never parks", async () => {
 });
 
 test("a delivered parcel whose collection amount is DISPUTED never parks", async () => {
-  // The carrier confirms delivery but the collected amount differs from the locked total.
-  // The observation raises amount_mismatch, so the money question is explicitly open - yet
-  // every other condition for parking is satisfied. Parking here would file a known
-  // financial discrepancy as finished business and stop ever looking again.
+  // The carrier confirms delivery but the collected amount differs from the locked total; the observation raises amount_mismatch so the money question is explicitly open, yet every other condition for parking is satisfied — parking here would file a known financial discrepancy as finished business and stop ever looking again.
   const f = await shippingSyncFixture();
   const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
     Response.json(readFixture(f.job.idempotencyKey, { collection: { amount: 99.99, confirmed: true } })))!;
@@ -154,8 +146,7 @@ test("a delivered parcel whose collection amount is DISPUTED never parks", async
 });
 
 test("bindingEnvironment refuses an unrecognised provider host instead of guessing test", () => {
-  // Substring matching is why this must not ship: an unknown or typo'd host silently
-  // became `test`, which would file live evidence under the test environment.
+  // Substring matching is why this must not ship: an unknown or typo'd host silently became `test`, which would file live evidence under the test environment.
   assert.throws(() => bindingEnvironment("https://evil.example.com/api"),
     /unrecognised|unrecognized/i, "an unknown host must never be recorded as a known environment");
   assert.equal(bindingEnvironment("https://stg-app.bosta.co/api/v2"), "test");
@@ -163,10 +154,7 @@ test("bindingEnvironment refuses an unrecognised provider host instead of guessi
 });
 
 test("a polling read records the provider's own delivery id from the response envelope", async () => {
-  // A READ and a WEBHOOK have different shapes: the read wraps the delivery in
-  // `{success, data}`, so the provider's own `_id` lives at raw.data._id. Reading it from
-  // raw._id (the webhook shape) silently yielded null on every polled observation, which
-  // is exactly when the binding is being created.
+  // A READ and a WEBHOOK have different shapes: the read wraps the delivery in `{success, data}`, so the provider's own `_id` lives at raw.data._id; reading it from raw._id (the webhook shape) silently yielded null on every polled observation, which is exactly when the binding is being created.
   const f = await shippingSyncFixture();
   const runtime = resolveBostaSyncRuntime(syncEnvironment, async () =>
     Response.json(readFixture(f.job.idempotencyKey)))!;

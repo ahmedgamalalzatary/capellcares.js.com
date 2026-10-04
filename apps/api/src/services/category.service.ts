@@ -1,7 +1,4 @@
-// Category business rules. The repository handles raw persistence; this layer
-// enforces the invariants (no parent cycles, unique sibling slugs, unique
-// grandchild names) and throws the coded errors the controller maps to HTTP
-// responses.
+// Category business rules. The repository handles raw persistence; this layer enforces the invariants (no parent cycles, unique sibling slugs, unique grandchild names) and throws the coded errors the controller maps to HTTP responses.
 import { buildLineage, collectDescendantIds } from "../modules/catalog/categories/category-tree.js";
 import {
   findSameParentGrandchildNameConflictRepo,
@@ -18,8 +15,7 @@ function throwCoded(code: string, message: string): never {
   throw error;
 }
 
-// A category may not be parented to itself or to any of its descendants.
-// collectDescendantIds(categoryId) is self-inclusive, so it covers both.
+// A category may not be parented to itself or to any of its descendants. collectDescendantIds(categoryId) is self-inclusive, so it covers both.
 function wouldCreateCategoryCycle(
   categoryId: number,
   nextParentId: number | null,

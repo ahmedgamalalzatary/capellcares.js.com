@@ -24,11 +24,7 @@ function normalizeShopMediaImageSrc(imagePath: string) {
   return resolveMediaUrl(imagePath);
 }
 
-/**
- * A banner whose target was deleted has no slug to link to. Rather than dropping the
- * banner (which made it vanish from the storefront) or linking to a dead page, every
- * unresolvable target falls back to the home page.
- */
+/** A banner whose target was deleted has no slug to link to; rather than dropping the banner (which made it vanish) or linking to a dead page, every unresolvable target falls back to the home page. */
 function buildShopMediaHref(
   lang: Language,
   targetType: ShopMediaSection["items"][number]["targetType"],

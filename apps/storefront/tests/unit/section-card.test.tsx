@@ -104,8 +104,7 @@ const instagramAdvice = {
 };
 
 describe("SectionCard", () => {
-  // The add/confirm/stepper timer moved into AddToCartControl; its unmount
-  // cleanup is covered directly in add-to-cart-control.test.tsx.
+  // The add/confirm/stepper timer moved into AddToCartControl; its unmount cleanup is covered directly in add-to-cart-control.test.tsx.
 
   it("renders an offer with title, savings, and links to the offer detail page", () => {
     const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
@@ -118,10 +117,7 @@ describe("SectionCard", () => {
     expect(struckOriginal).not.toBeNull();
     expect(struckOriginal).toHaveTextContent(/80/); // original total (formatPrice 80) shown struck-through
 
-    // The card links to the detail page from the image and the heading; the
-    // action row is the Add to cart button alone, with no View link. Counted
-    // rather than queried by name — a restored View link would have an empty
-    // accessible name now that common.view is gone.
+    // The card links to the detail page from the image and the heading; the action row is the Add to cart button alone, with no View link — counted rather than queried by name, since a restored View link would have an empty accessible name now that common.view is gone.
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(2);
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/offers/rose"));

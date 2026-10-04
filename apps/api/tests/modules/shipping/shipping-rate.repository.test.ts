@@ -40,8 +40,7 @@ test("a saved rate for one identity is not returned for another", async () => {
 });
 
 test("rejects an invalid amount instead of persisting it", async () => {
-  // The message matters: a bare rejects would also pass on a connection or
-  // query failure, which is not what this case is about.
+  // The message matters: a bare rejects would also pass on a connection or query failure, which is not what this case is about.
   const invalidAmount = /invalid shipping rate amount/i;
   await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: -1 }), invalidAmount);
   await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: 12.5 }), invalidAmount);

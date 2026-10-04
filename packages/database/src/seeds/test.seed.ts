@@ -40,9 +40,7 @@ export async function clearTestSeed() {
     throw new Error("clearTestSeed may only run in tests or when ALLOW_DB_WIPE=true.");
   }
 
-  // This truncates every table below, so also refuse unless the resolved
-  // connection points at an explicitly disposable schema. NODE_ENV=test alone
-  // is not enough: the URL could still name a real database.
+  // This truncates every table below, so also refuse unless the resolved connection points at an explicitly disposable schema. NODE_ENV=test alone is not enough: the URL could still name a real database.
   assertDisposableTestDatabaseUrl(resolveDatabaseUrl());
 
   await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
@@ -157,8 +155,7 @@ export async function seedTestData() {
     arName: "عرض تجريبي",
     enName: "Baseline Offer",
     fixedPrice: "70.00",
-    // Offers classify under a root category only; their items live anywhere in
-    // that root's subtree, which is where the seeded products sit.
+    // Offers classify under a root category only; their items live anywhere in that root's subtree, which is where the seeded products sit.
     categoryId: rootCategory.id
   });
 
@@ -169,8 +166,7 @@ export async function seedTestData() {
     arName: "تجميعة تجريبية",
     enName: "Baseline Collection",
     fixedPrice: "65.00",
-    // Like offers, a collection is classified under a root category only; its
-    // items may live anywhere in that root's subtree.
+    // Like offers, a collection is classified under a root category only; its items may live anywhere in that root's subtree.
     categoryId: rootCategory.id
   });
   await ensureCollectionItem({ collectionId, variantId: firstVariantId, qty: 1 });

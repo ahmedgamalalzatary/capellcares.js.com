@@ -94,8 +94,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
 
   const reviewingItem = order.items.find((item) => item.id === reviewingItemId) ?? null;
   const units = order.items.reduce((acc, item) => acc + item.qty, 0);
-  // Line totals are the authoritative per-item figures stored with the order;
-  // summing them gives the goods subtotal, which for COD equals the order total.
+  // Line totals are the authoritative per-item figures stored with the order; summing them gives the goods subtotal, which for COD equals the order total.
   const subtotal = order.items.reduce((acc, item) => acc + item.lineTotal, 0);
 
   return (

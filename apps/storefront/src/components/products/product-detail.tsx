@@ -28,8 +28,7 @@ interface Props {
 export function ProductDetail({ product, offers, lang, dict, categoryName, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  // New/bestseller float over the media as a single lead tag, exactly like the
-  // cards do; only the linked offers remain as inline badges beside the title.
+  // New/bestseller float over the media as a single lead tag, exactly like the cards do; only the linked offers remain as inline badges beside the title.
   const leadTag = getProductTags(product, dict)[0];
   const badgeTags: ItemTag[] = offers.map((offer): ItemTag => ({
     kind: "offer",

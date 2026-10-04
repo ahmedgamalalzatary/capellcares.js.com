@@ -16,12 +16,7 @@ interface ProductFilterCategoryListProps {
   categoryTree: CategoryTreeNode[];
   openParents: Record<number, boolean>;
   toggleParent: (id: number) => void;
-  /**
-   * The category the surrounding page is scoped to (category pages only). When it
-   * is the tree's own root, that root doubles as the "everything here" pill —
-   * labelled after the category — and the generic all-categories pill is dropped,
-   * so the same filter is never offered twice.
-   */
+  /** The category the surrounding page is scoped to (category pages only). When it is the tree's own root, that root doubles as the "everything here" pill (labelled after the category) and the generic all-categories pill is dropped, so the same filter is never offered twice. */
   scopedCategoryId?: number;
 }
 
@@ -82,8 +77,7 @@ function getIsOpen(
   openParents: Record<number, boolean>,
   isScopedRoot = false
 ) {
-  // A scoped root is the whole page, so its children start visible even before a
-  // selection exists to trace a branch from.
+  // A scoped root is the whole page, so its children start visible even before a selection exists to trace a branch from.
   return openParents[node.category.id] ?? (isScopedRoot || Boolean(category && branchContains(node, category)));
 }
 
@@ -123,8 +117,7 @@ export function ProductFilterCategoryList({
       <CategoryPill
         key={item.id}
         name={name}
-        // The scoped root also stands in for "no narrowing yet", so it stays
-        // selected whether the page arrived with its id or with nothing.
+        // The scoped root also stands in for "no narrowing yet", so it stays selected whether the page arrived with its id or with nothing.
         checked={isScopedRoot ? category == null || category === item.id : category === item.id}
         onChange={() => setCategory(item.id)}
         indent={indent}

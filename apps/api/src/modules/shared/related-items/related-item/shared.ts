@@ -19,20 +19,11 @@ export interface StorefrontRelatedCard {
   name: { ar: string; en: string };
   imagePath: string | null;
   price: number;
-  /**
-   * The variant the card transacts on — the cheapest in-stock one. Null for
-   * offers and collections, which the cart addresses by their own id.
-   */
+  /** The variant the card transacts on — the cheapest in-stock one. Null for offers and collections, which the cart addresses by their own id. */
   variantId: number | null;
-  /**
-   * Price before the saving: a product's pre-discount selling price, or a
-   * bundle's sum of parts. Null when the card is not discounted.
-   */
+  /** Price before the saving: a product's pre-discount selling price, or a bundle's sum of parts. Null when the card is not discounted. */
   originalTotal: number | null;
-  /**
-   * Classification line shown under a product's name. Null for offers and
-   * collections, whose cards carry no category line.
-   */
+  /** Classification line shown under a product's name. Null for offers and collections, whose cards carry no category line. */
   categoryName: { ar: string; en: string } | null;
 }
 

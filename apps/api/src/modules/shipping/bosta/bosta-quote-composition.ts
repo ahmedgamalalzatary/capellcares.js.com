@@ -38,11 +38,7 @@ const requestSchema = z.object({
   "Prepaid delivery must collect zero COD");
 export type BostaQuoteInput = z.infer<typeof requestSchema>;
 
-/**
- * Concrete S04 composition, deliberately not registered in checkout before S05.
- * Money inputs come from server pricing. COD charge policy remains O06; this
- * service quotes the supplied collection amount without inventing that policy.
- */
+/** Concrete S04 composition, deliberately not registered in checkout before S05; money inputs come from server pricing, and COD charge policy remains O06 — this service quotes the supplied collection amount without inventing that policy. */
 export function createBostaQuoteService(config: BostaConfig, settings: BostaQuoteSettings, fetchImpl: typeof fetch = fetch) {
   const account = structuredClone(settings);
   const client = new BostaClient(config, fetchImpl);

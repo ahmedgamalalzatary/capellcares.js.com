@@ -64,10 +64,7 @@ test("bulk shipping keeps expected rejection messages", async () => {
 });
 
 test("an address the carrier would reject is a client error, not a 500", async t => {
-  // The address validator throws a checkout-shipping error, which the action routes did not
-  // recognise. A schema-valid but carrier-invalid address therefore fell through to the
-  // generic handler and surfaced as "Internal server error" - telling staff the platform
-  // broke when the truth is simply that their address input was wrong.
+  // The address validator throws a checkout-shipping error, which the action routes did not recognise, so a schema-valid but carrier-invalid address fell through to the generic handler and surfaced as "Internal server error" — telling staff the platform broke when their address input was simply wrong.
   const f = await shippingSyncFixture(false);
   const env = { ...syncEnvironment, BOSTA_EDITS_ENABLED: "true",
     BOSTA_EDIT_SETTINGS_JSON: JSON.stringify({ accountVerified: true, accountEvidence: "controlled fixture only",
@@ -78,9 +75,7 @@ test("an address the carrier would reject is a client error, not a 500", async t
   Object.assign(process.env, env);
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
-    // The destination ids must MATCH the order's locked snapshot: a mismatch is caught by an
-    // earlier, different guard (cancellation required). Only a same-destination edit with a
-    // too-short first line reaches the carrier-side address check under test.
+    // The destination ids must MATCH the order's locked snapshot (a mismatch is caught by an earlier, different guard: cancellation required); only a same-destination edit with a too-short first line reaches the carrier-side address check under test.
     const snapshot = JSON.parse((await db.select({ shippingSnapshot: orders.shippingSnapshot })
       .from(orders).where(eq(orders.id, f.order.id)))[0].shippingSnapshot!);
     const response = await request(`/api/erp/shipping/orders/${f.order.id}/shipment-edit`, {

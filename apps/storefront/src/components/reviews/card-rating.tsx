@@ -1,10 +1,7 @@
 import type { Language, RatingSummary } from "@capella/shared";
 import { Stars, template } from "./stars";
 
-/**
- * The stars a card shows above its price. An unreviewed item renders nothing
- * rather than an empty row, which would read as a zero-star rating.
- */
+/** The stars a card shows above its price. An unreviewed item renders nothing rather than an empty row, which would read as a zero-star rating. */
 export function CardRating({ rating, dict, lang }: { rating?: RatingSummary | null; dict: any; lang: Language }) {
   if (!rating || rating.count <= 0) {
     return null;

@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 
 export const allowedPaymentStatuses = new Set(["pending", "accepted", "denied"]);
 
-/**
- * D24: the untouched deadline is the customer's original order creation plus 96 hours.
- * D39: it is a single fixed event, never extended or reset. Applies to every order,
- * because a paid untouched order still needs its staff alert at the deadline.
- */
+/** D24: the untouched deadline is the customer's original order creation plus 96 hours; D39: a single fixed event, never extended or reset, applying to every order because a paid untouched order still needs its staff alert at the deadline. */
 export const UNTOUCHED_EXPIRY_MS = 96 * 60 * 60 * 1000;
 
 export function generateOrderCode(orderId: number): string {

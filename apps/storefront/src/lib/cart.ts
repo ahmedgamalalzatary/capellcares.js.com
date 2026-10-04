@@ -60,12 +60,7 @@ export function cartLineKey(line: CartLine): string {
       : `c:${line.collectionId}`;
 }
 
-/**
- * Merge the server cart with the local one for a signed-in customer. The
- * server cart is the canonical base (its order wins); local-only lines are
- * appended, and quantities are summed when the same line exists on both sides
- * so nothing added on either device is lost.
- */
+/** Merge the server cart with the local one for a signed-in customer: the server cart is the canonical base (its order wins), local-only lines are appended, and quantities are summed when a line exists on both sides so nothing added on either device is lost. */
 export function mergeCartLines(local: CartLine[], server: CartLine[]): CartLine[] {
   const merged = [...server];
   for (const line of local) {
@@ -77,13 +72,8 @@ export function mergeCartLines(local: CartLine[], server: CartLine[]): CartLine[
   return merged;
 }
 
-/**
- * Extract the local changes that the server has not seen yet: lines missing
- * from the last synced snapshot in full, plus quantities added on top of it.
- * Decreases are dropped so the server snapshot wins on conflicts — merging a
- * previously synced cart against its own snapshot must not re-add those
- * quantities (which would double the cart on every reload).
- */
+/** Extract the local changes the server has not seen yet: lines missing from the last synced snapshot in full, plus quantities added on top.
+ * Decreases are dropped so the server snapshot wins on conflicts — merging a previously synced cart against its own snapshot must not re-add those quantities (which would double the cart on every reload). */
 export function cartLineAdditions(local: CartLine[], lastSynced: CartLine[] | null): CartLine[] {
   if (lastSynced == null) return local.map((line) => ({ ...line }));
 
@@ -117,11 +107,7 @@ export function clearCartLines(storage: Pick<Storage, "removeItem">) {
   storage.removeItem(STORAGE_KEY);
 }
 
-/**
- * The last cart snapshot known to be stored on the server (after a successful
- * GET or PUT). Persisted so a page reload can still tell synced quantities
- * apart from unsynced local additions.
- */
+/** The last cart snapshot known to be stored on the server (after a successful GET or PUT). Persisted so a page reload can still tell synced quantities apart from unsynced local additions. */
 export function loadLastSyncedCartLines(storage: Pick<Storage, "getItem">): CartLine[] | null {
   try {
     const raw = storage.getItem(SYNCED_STORAGE_KEY);

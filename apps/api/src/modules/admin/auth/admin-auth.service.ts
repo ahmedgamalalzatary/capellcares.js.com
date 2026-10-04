@@ -86,11 +86,7 @@ export async function loginAdmin(
   };
 }
 
-/**
- * Reconcile the single admin account to the environment configuration, which is
- * the source of truth. Runs at server startup (not during login) so credential
- * changes apply at a deliberate moment rather than as a side effect of auth.
- */
+/** Reconcile the single admin account to the environment configuration (the source of truth), at server startup rather than during login so credential changes apply at a deliberate moment rather than as a side effect of auth. */
 export async function ensureBootstrapAdmin(env: NodeJS.ProcessEnv = process.env) {
   const email = env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = env.ADMIN_PASSWORD;

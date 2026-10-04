@@ -44,9 +44,7 @@ shippingActionRoutes.post("/orders/:id/cancel", requireErpPermission("shipping.u
 
 function mapActionError(error: unknown, res: Response) {
   if (error instanceof ShippingConfigurationError) return res.status(503).json({ message: error.message });
-  // A carrier address the platform refuses is bad staff input, not a broken platform.
-  // Left unhandled it reached the generic middleware and answered 500, telling staff the
-  // system had failed when the truth is simply that the address cannot be delivered to.
+  // A carrier address the platform refuses is bad staff input, not a broken platform; left unhandled it reached the generic middleware and answered 500, telling staff the system failed when the truth is simply that the address cannot be delivered to.
   if (error instanceof CheckoutShippingError) return res.status(400).json({ message: error.message });
   if (!(error instanceof ShippingRuleError)) throw error;
   const message = error.message;

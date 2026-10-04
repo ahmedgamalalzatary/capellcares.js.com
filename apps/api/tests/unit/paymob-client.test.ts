@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-/**
- * A minimal but COMPLETE inquiry body. The identity fields are required: an authenticated
- * read that cannot name the order, integration, account and environment it describes is
- * unusable for anything a signed callback has to be cross-checked against.
- */
+/** A minimal but COMPLETE inquiry body; the identity fields are required because an authenticated read that cannot name the order, integration, account and environment it describes is unusable for anything a signed callback has to be cross-checked against. */
 const inquiryBody = (extra: Record<string, unknown> = {}) => ({ id: 574588, order: { id: 690898 },
   integration_id: 158, owner: 211, is_live: false, amount_cents: 13229, currency: "EGP", success: true,
   pending: false, is_refunded: false, refunded_amount_cents: null, ...extra });
@@ -28,9 +24,7 @@ test("Paymob inquiry authenticates with the API KEY, never the secret key", asyn
   };
   const result = await module.queryPaymobTransaction({ fetchImpl, baseUrl: "https://accept.paymob.com",
     apiKey: "pk_api", transactionId: "574588" });
-  // Official contract: the API KEY mints the bearer token used by Transaction Inquiry.
-  // The SECRET KEY is a different credential, sent as `Authorization: Token ...` for
-  // Intentions - so sending it here means the inquiry can never authenticate.
+  // Official contract: the API KEY mints the bearer token used by Transaction Inquiry; the SECRET KEY is a different credential sent as `Authorization: Token ...` for Intentions, so sending it here means the inquiry can never authenticate.
   assert.equal(calls[0]!.url, "https://accept.paymob.com/api/auth/tokens");
   assert.equal(calls[0]!.init?.method, "POST");
   assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), { api_key: "pk_api" });
@@ -42,9 +36,7 @@ test("Paymob inquiry authenticates with the API KEY, never the secret key", asyn
 });
 
 test("a secret key in place of an API key fails closed instead of authenticating", async () => {
-  // The defect this replaces was silent: the wrong credential produced a request the
-  // provider cannot authenticate, which surfaced far downstream as "refunds never verify"
-  // rather than as a configuration error. Failing closed makes it obvious at the boundary.
+  // The defect this replaces was silent: the wrong credential produced a request the provider cannot authenticate, which surfaced far downstream as "refunds never verify" rather than as a configuration error — failing closed makes it obvious at the boundary.
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   let attempted = false;
   const fetchImpl: typeof fetch = async () => {
@@ -116,9 +108,7 @@ test("a provider outage or malformed response yields an unresolved inquiry, neve
 });
 
 test("the inquiry returns the provider's own identity and action, so a claim can be cross-checked", async () => {
-  // A refund amount alone is not enough. Without the order/integration/environment the
-  // provider authenticated, the processor cannot tell whether it is reading about the payment
-  // it holds a signed callback for, or about some other transaction on the same account.
+  // A refund amount alone is not enough; without the order/integration/environment the provider authenticated, the processor cannot tell whether it is reading about the payment it holds a signed callback for or some other transaction on the same account.
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   const fetchImpl: typeof fetch = async (url) => String(url).endsWith("/api/auth/tokens")
     ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
@@ -134,8 +124,7 @@ test("the inquiry returns the provider's own identity and action, so a claim can
 });
 
 test("an inquiry whose identity fields are absent is unresolved, not partially trusted", async () => {
-  // Returning a refund total without the identity it belongs to would let a caller apply a
-  // verified amount from an unrelated transaction. Absence is an unresolved read.
+  // Returning a refund total without the identity it belongs to would let a caller apply a verified amount from an unrelated transaction. Absence is an unresolved read.
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   for (const missing of ["order", "integration_id", "owner", "is_live"]) {
     const body: Record<string, unknown> = { id: 5, order: { id: 9 }, integration_id: 158, owner: 211,
@@ -150,9 +139,7 @@ test("an inquiry whose identity fields are absent is unresolved, not partially t
 });
 
 test("a 401 refreshes the cached token exactly once and never retries beyond that", async () => {
-  // The cached token used to survive a 401, so an expired token made every subsequent refund
-  // inquiry fail for the whole hour until the process restarted. Exactly one refresh, and no
-  // unbounded retries: a genuinely rejected token must surface as an unresolved read.
+  // The cached token used to survive a 401, so an expired token made every subsequent refund inquiry fail for the whole hour until the process restarted; exactly one refresh and no unbounded retries — a genuinely rejected token must surface as an unresolved read.
   const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
   let minted = 0;
   let inquiries = 0;
