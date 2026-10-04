@@ -34,10 +34,28 @@ test("stopping a worker waits for active work and prevents another sweep", async
   assert.equal(runs, 1);
 });
 
-test("a worker reports sweep failures and can still stop", async () => {
-  let reported!: () => void;
-  const errorReported = new Promise<void>((resolve) => { reported = resolve; });
-  const stop = startIntervalWorker(async () => { throw new Error("sweep failed"); }, 60_000, reported);
+test("a worker reports the original sweep error once per failed sweep and can still stop", async () => {
+  const reported: unknown[] = [];
+  let signalReported!: () => void;
+  const errorReported = new Promise<void>((resolve) => { signalReported = resolve; });
+
+  const stop = startIntervalWorker(
+    async () => { throw new Error("sweep failed"); },
+    60_000,
+    (error) => {
+      reported.push(error);
+      signalReported();
+    }
+  );
+
+  // Bounded: the first report resolves this, and the small delay afterwards
+  // gives any duplicate report a chance to arrive before the count is asserted.
   await errorReported;
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  assert.equal(reported.length, 1, "one failed sweep must produce exactly one report");
+  assert.ok(reported[0] instanceof Error, "the reported value must be the original Error");
+  assert.match((reported[0] as Error).message, /sweep failed/);
+
   await stop();
 });

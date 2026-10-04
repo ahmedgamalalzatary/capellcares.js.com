@@ -11,6 +11,12 @@ import {
 } from "../drizzle/schema.js";
 import { db, mysqlPool } from "../src/db.js";
 import { clearTestSeed, seedTestData } from "../src/seeds/test.seed.js";
+import {
+  CHECK_VIOLATION,
+  FK_MISSING_ROW,
+  UNIQUE_VIOLATION,
+  rejectsWithCode
+} from "./helpers/mysql-errors.js";
 
 function serialTest(name: string, fn: () => Promise<void>) {
   return test(name, { concurrency: false }, fn);
@@ -136,7 +142,7 @@ serialTest("checkout sessions accept a positive shipping amount after the zero-s
 
 serialTest("checkout sessions reject a negative shipping amount", async () => {
   const schema = await import("../drizzle/schema.js") as Record<string, any>;
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(schema.checkoutSessions).values({
       publicId: `checkout-shipping-neg-${Date.now()}`,
       idempotencyKey: `idempotency-shipping-neg-${Date.now()}`,
@@ -155,11 +161,13 @@ serialTest("checkout sessions reject a negative shipping amount", async () => {
       state: "payment_pending",
       attemptCount: 1,
       reservationExpiresAt: new Date(Date.now() + 30 * 60 * 1000)
-    })
+    }),
+    CHECK_VIOLATION,
+    "a negative shipping amount must fail the checkout_sessions check constraint"
   );
 });
 
-serialTest("orders store immutable shipping quote snapshots", async () => {
+serialTest("orders persist the shipping quote snapshot they were created with", async () => {
   const schema = await import("../drizzle/schema.js") as Record<string, any>;
   const orderId = await createOrder();
   await db.update(schema.orders).set({
@@ -171,6 +179,16 @@ serialTest("orders store immutable shipping quote snapshots", async () => {
   assert.equal(stored.shippingAmountCents, 9700);
   assert.equal(stored.shippingQuoteId, "quote-abc");
   assert.equal(stored.shippingSize, "small");
+
+  // These columns are plain, writable columns: nothing in the schema prevents a
+  // later write. Immutability is an application-layer rule enforced in
+  // apps/api (shipping guards reject edits once the order is in flight), so it
+  // is deliberately not claimed here.
+  await db.update(schema.orders).set({ shippingQuoteId: "quote-replaced" })
+    .where(eq(schema.orders.id, orderId));
+  const [rewritten] = await db.select({ shippingQuoteId: schema.orders.shippingQuoteId })
+    .from(schema.orders).where(eq(schema.orders.id, orderId)).limit(1);
+  assert.equal(rewritten.shippingQuoteId, "quote-replaced");
 });
 
 serialTest("shipments require a valid order and keep outgoing/return/exchange kinds", async () => {
@@ -189,7 +207,7 @@ serialTest("shipments require a valid order and keep outgoing/return/exchange ki
   }).$returningId();
   assert.ok(shipment.id);
 
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(schema.shipments).values({
       orderId: 999_999_999,
       kind: "return",
@@ -200,7 +218,9 @@ serialTest("shipments require a valid order and keep outgoing/return/exchange ki
       shippingAmountCents: 0,
       size: "small",
       idempotencyKey: `ship-bad-${Date.now()}`
-    })
+    }),
+    FK_MISSING_ROW,
+    "a shipment must reference an existing order"
   );
 });
 
@@ -219,7 +239,7 @@ serialTest("a return shipment cannot overwrite the outgoing shipment tracking re
     size: "small",
     idempotencyKey: `ship-out-${Date.now()}`
   });
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(schema.shipments).values({
       orderId,
       kind: "return",
@@ -230,7 +250,9 @@ serialTest("a return shipment cannot overwrite the outgoing shipment tracking re
       shippingAmountCents: 0,
       size: "small",
       idempotencyKey: `ship-ret-${Date.now()}`
-    })
+    }),
+    UNIQUE_VIOLATION,
+    "a tracking number must stay unique across shipment kinds"
   );
 });
 
@@ -255,13 +277,15 @@ serialTest("shipment events deduplicate on provider event fingerprint", async ()
     rawPayload: "{}",
     receivedAt: new Date()
   });
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(schema.shipmentEvents).values({
       shipmentId: shipment.id,
       eventFingerprint: fingerprint,
       rawPayload: "{}",
       receivedAt: new Date()
-    })
+    }),
+    UNIQUE_VIOLATION,
+    "a repeated provider event fingerprint must hit the unique key"
   );
 });
 
@@ -280,7 +304,7 @@ serialTest("shipping work items support durable intent, claiming and recovery", 
   assert.ok(work.id);
 
   // Duplicate intent must be rejected
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(schema.shippingWorkItems).values({
       orderId,
       operation: "create_delivery",
@@ -288,7 +312,9 @@ serialTest("shipping work items support durable intent, claiming and recovery", 
       status: "pending",
       attemptCount: 0,
       nextAttemptAt: new Date()
-    })
+    }),
+    UNIQUE_VIOLATION,
+    "a repeated shipping work idempotency key must hit the unique key"
   );
 
   // Claim
@@ -383,8 +409,12 @@ serialTest("early carrier events can wait durably for linking and linked reconci
     await db.insert(schema.shippingWorkItems).values({ orderId, shipmentId: shipment.id, operation: "sync_delivery",
       idempotencyKey: `sync-work-${orderId}`, status: "pending", nextAttemptAt: new Date() });
   });
-  await assert.rejects(db.insert(schema.shippingWorkItems).values({ orderId, shipmentId: 999_999_999,
-    operation: "sync_delivery", idempotencyKey: `bad-sync-${orderId}`, status: "pending", nextAttemptAt: new Date() }));
+  await rejectsWithCode(
+    db.insert(schema.shippingWorkItems).values({ orderId, shipmentId: 999_999_999,
+      operation: "sync_delivery", idempotencyKey: `bad-sync-${orderId}`, status: "pending", nextAttemptAt: new Date() }),
+    FK_MISSING_ROW,
+    "a shipping work item must reference an existing shipment"
+  );
 });
 
 test.after(async () => {

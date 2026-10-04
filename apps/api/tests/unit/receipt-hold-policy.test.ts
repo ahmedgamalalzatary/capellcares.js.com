@@ -80,24 +80,6 @@ test("the SQL predicate used by expiry discovery decides identically to the appl
   }
 });
 
-test("the SQL and application forms agree on every documented outcome", () => {
-  // MySQL renders JSON booleans as the strings 'true'/'false', which is why the predicate
-  // compares against 'true'. Each case below is the exact pair both forms must produce.
-  const cases: Array<[Record<string, unknown>, boolean]> = [
-    [{ success: true, pending: false, is_refunded: false }, true],
-    [{ success: false, pending: true, is_refunded: false }, true],
-    [{ success: true, pending: false, is_refunded: true }, true],
-    [{ success: false, pending: false, is_refunded: false }, false]
-  ];
-  for (const [payload, holds] of cases) {
-    assert.equal(receiptHoldsStock(payload), holds, JSON.stringify(payload));
-    // The SQL form is a disjunction of the three signed fields, so it must be true exactly
-    // when at least one of them is the string 'true'.
-    const sqlSaysHolds = ["is_refunded", "success", "pending"].some((field) => payload[field] === true);
-    assert.equal(sqlSaysHolds, holds, `SQL/application disagreement on ${JSON.stringify(payload)}`);
-  }
-});
-
 test("no unsigned field can change the classification", () => {
   // is_live and refunded_amount_cents are outside Paymob's HMAC input list, so neither may
   // influence whether stock stays held. Only is_refunded / success / pending decide, and all

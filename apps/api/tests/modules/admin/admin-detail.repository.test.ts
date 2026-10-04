@@ -20,8 +20,11 @@ test("findAdminProductByIdRepo returns a single hydrated product by id", async (
 
   assert.ok(product);
   assert.equal(product.id, ids.productOneId);
-  assert.ok(Array.isArray(product.keywords));
-  assert.ok(Array.isArray(product.variants));
+  assert.deepEqual(product.keywords, ["test", "baseline"]);
+  assert.deepEqual(
+    product.variants.map((variant) => variant.id),
+    [ids.firstVariantId]
+  );
 });
 
 test("findOfferByIdRepo returns a single hydrated offer by id", async () => {
@@ -31,7 +34,13 @@ test("findOfferByIdRepo returns a single hydrated offer by id", async () => {
 
   assert.ok(offer);
   assert.equal(offer.id, ids.offerId);
-  assert.ok(Array.isArray(offer.items));
+  assert.deepEqual(
+    offer.items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
+    [
+      { variantId: ids.firstVariantId, qty: 1 },
+      { variantId: ids.secondVariantId, qty: 1 }
+    ]
+  );
 });
 
 test("findCollectionByIdRepo returns a single hydrated collection by id", async () => {
@@ -44,14 +53,14 @@ test("findCollectionByIdRepo returns a single hydrated collection by id", async 
       arName: "مجموعة مستودع",
       enName: "Repository Collection",
       fixedPrice: sql`120`,
-      categoryId: ids.leafCategoryId,
+      categoryId: ids.rootCategoryId,
       status: "active",
       visibility: "visible"
     })
     .$returningId();
 
   await db.insert(collectionItems).values([
-    { collectionId: created.id, variantId: ids.firstVariantId, qty: 1 },
+    { collectionId: created.id, variantId: ids.firstVariantId, qty: 2 },
     { collectionId: created.id, variantId: ids.secondVariantId, qty: 1 }
   ]);
 
@@ -59,5 +68,12 @@ test("findCollectionByIdRepo returns a single hydrated collection by id", async 
 
   assert.ok(collection);
   assert.equal(collection.id, created.id);
-  assert.ok(Array.isArray(collection.items));
+  assert.equal(collection.categoryId, ids.rootCategoryId);
+  assert.deepEqual(
+    collection.items.map((item) => ({ variantId: item.variantId, qty: item.qty })),
+    [
+      { variantId: ids.firstVariantId, qty: 2 },
+      { variantId: ids.secondVariantId, qty: 1 }
+    ]
+  );
 });

@@ -18,6 +18,9 @@ beforeEach(() => {
   fetchCheckoutStatus.mockReset();
   replace.mockReset();
   sessionStorage.clear();
+  // history.replaceState persists on the shared jsdom window, so a case that sets a
+  // checkoutId URL used to leak it into the locale-neutral redirect case.
+  window.history.replaceState({}, "", "/");
 });
 
 describe("PaymobResult", () => {

@@ -1,5 +1,3 @@
-const { existsSync } = require("node:fs");
-const path = require("node:path");
 const { StyleSheet } = require("react-native");
 const { act, fireEvent, render } = require("@testing-library/react-native");
 
@@ -39,10 +37,6 @@ async function renderHomeScreen() {
 }
 
 describe("Expo Router scaffold", () => {
-  test.each(["_layout.tsx", "index.tsx"])("provides app/%s", (route) => {
-    expect(existsSync(path.resolve(__dirname, "../app", route))).toBe(true);
-  });
-
   test("renders the active dictionary with its language font", async () => {
     const view = await renderHomeScreen();
 

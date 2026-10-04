@@ -19,6 +19,12 @@ import {
 } from "../drizzle/schema.js";
 import { db, mysqlPool } from "../src/db.js";
 import { clearTestSeed, seedTestData } from "../src/seeds/test.seed.js";
+import {
+  CHECK_VIOLATION,
+  FK_MISSING_ROW,
+  UNIQUE_VIOLATION,
+  rejectsWithCode
+} from "./helpers/mysql-errors.js";
 
 const MISSING_ID = 999_999_999;
 function serialTest(name: string, fn: () => Promise<void>) {
@@ -174,28 +180,34 @@ serialTest("seeds the baseline offer under a root category", async () => {
 });
 
 serialTest("rejects offer_items with a non-existent variant_id", async () => {
-  await assert.rejects(
-    db.insert(offerItems).values({ offerId: base.offerId, variantId: MISSING_ID, qty: 1 })
+  await rejectsWithCode(
+    db.insert(offerItems).values({ offerId: base.offerId, variantId: MISSING_ID, qty: 1 }),
+    FK_MISSING_ROW,
+    "offer_items.variant_id must reference an existing variant"
   );
 });
 
 serialTest("entity_media requires exactly one valid owner", async () => {
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(entityMedia).values({
       mediaType: "image",
       url: "/uploads/no-owner.jpg",
       sortOrder: 1
-    })
+    }),
+    CHECK_VIOLATION,
+    "entity_media without any owner must fail its check constraint"
   );
 
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(entityMedia).values({
       productId: base.productId,
       offerId: base.offerId,
       mediaType: "image",
       url: "/uploads/two-owners.jpg",
       sortOrder: 1
-    })
+    }),
+    CHECK_VIOLATION,
+    "entity_media with two owners must fail its check constraint"
   );
 
   await db.insert(entityMedia).values({
@@ -230,14 +242,16 @@ serialTest("deleting an entity cascades its entity_media rows", async () => {
 });
 
 serialTest("rejects offer_items with a non-existent offer_id", async () => {
-  await assert.rejects(
-    db.insert(offerItems).values({ offerId: MISSING_ID, variantId: base.variantId, qty: 1 })
+  await rejectsWithCode(
+    db.insert(offerItems).values({ offerId: MISSING_ID, variantId: base.variantId, qty: 1 }),
+    FK_MISSING_ROW,
+    "offer_items.offer_id must reference an existing offer"
   );
 });
 
 serialTest("rejects order_items with a non-existent variant_id", async () => {
   const orderId = await createOrder();
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(orderItems).values({
       orderId,
       itemType: "product_variant",
@@ -246,21 +260,27 @@ serialTest("rejects order_items with a non-existent variant_id", async () => {
       unitPrice: "10.00",
       lineTotal: "10.00",
       snapshotNameEn: "integrity-marker"
-    })
+    }),
+    FK_MISSING_ROW,
+    "order_items.variant_id must reference an existing variant"
   );
 });
 
 serialTest("rejects a duplicate wishlists (customer_id, entity_type, entity_id)", async () => {
   const customerId = base.customerId;
   await db.insert(wishlists).values({ customerId, entityType: "product", entityId: base.productId });
-  await assert.rejects(
-    db.insert(wishlists).values({ customerId, entityType: "product", entityId: base.productId })
+  await rejectsWithCode(
+    db.insert(wishlists).values({ customerId, entityType: "product", entityId: base.productId }),
+    UNIQUE_VIOLATION,
+    "the wishlists unique key must reject a repeated entry"
   );
 });
 
 serialTest("rejects wishlists with a non-existent customer_id", async () => {
-  await assert.rejects(
-    db.insert(wishlists).values({ customerId: MISSING_ID, entityType: "product", entityId: base.productId })
+  await rejectsWithCode(
+    db.insert(wishlists).values({ customerId: MISSING_ID, entityType: "product", entityId: base.productId }),
+    FK_MISSING_ROW,
+    "wishlists.customer_id must reference an existing customer"
   );
 });
 
@@ -281,29 +301,33 @@ serialTest("allows wishlists to reference missing entities until repository vali
 });
 
 serialTest("rejects auth_sessions with a non-existent customer_id", async () => {
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(authSessions).values({
       accountType: "customer",
       customerId: MISSING_ID,
       tokenHash: `missing-customer-${Date.now()}`,
       expiresAt: new Date(Date.now() + 60_000)
-    })
+    }),
+    FK_MISSING_ROW,
+    "auth_sessions.customer_id must reference an existing customer"
   );
 });
 
 serialTest("rejects auth_sessions with a non-existent admin_user_id", async () => {
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(authSessions).values({
       accountType: "admin",
       adminUserId: MISSING_ID,
       tokenHash: `missing-admin-${Date.now()}`,
       expiresAt: new Date(Date.now() + 60_000)
-    })
+    }),
+    FK_MISSING_ROW,
+    "auth_sessions.admin_user_id must reference an existing admin user"
   );
 });
 
 serialTest("rejects orders with a non-existent customer_id", async () => {
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(orders).values({
       orderCode: `INTEG-BAD-CUSTOMER-${Date.now()}`,
       customerType: "registered",
@@ -318,14 +342,18 @@ serialTest("rejects orders with a non-existent customer_id", async () => {
       paymentMethod: "cod",
       paymentStatus: "pending",
       totalAmount: "10.00"
-    })
+    }),
+    FK_MISSING_ROW,
+    "orders.customer_id must reference an existing customer"
   );
 });
 
 serialTest("rejects a duplicate offer_items (offer_id, variant_id)", async () => {
   // Baseline already seeds one (offerId, variantId) row; a second must be rejected.
-  await assert.rejects(
-    db.insert(offerItems).values({ offerId: base.offerId, variantId: base.variantId, qty: 1 })
+  await rejectsWithCode(
+    db.insert(offerItems).values({ offerId: base.offerId, variantId: base.variantId, qty: 1 }),
+    UNIQUE_VIOLATION,
+    "offer_items unique key must reject a repeated (offer_id, variant_id)"
   );
 });
 
@@ -335,13 +363,15 @@ serialTest("rejects a duplicate product_variants (product_id, size_label)", asyn
     .from(productVariants)
     .where(eq(productVariants.id, base.variantId))
     .limit(1);
-  await assert.rejects(
+  await rejectsWithCode(
     db.insert(productVariants).values({
       productId: base.productId,
       sizeLabel: existing!.sizeLabel,
       sellingPrice: "9.99",
       stockQty: 1
-    })
+    }),
+    UNIQUE_VIOLATION,
+    "product_variants unique key must reject a repeated (product_id, size_label)"
   );
 });
 
@@ -471,15 +501,19 @@ serialTest("payment sessions persist reservations and reject attempts beyond thr
       qty: 1,
       state: "reserved"
     });
-    await assert.rejects(db.insert(schema.paymentAttempts).values({
-      checkoutSessionId: session.id,
-      attemptNumber: 4,
-      merchantReference: `attempt-four-${Date.now()}`,
-      amountCents: 1000,
-      currency: "EGP",
-      environment: "test",
-      status: "created"
-    }));
+    await rejectsWithCode(
+      db.insert(schema.paymentAttempts).values({
+        checkoutSessionId: session.id,
+        attemptNumber: 4,
+        merchantReference: `attempt-four-${Date.now()}`,
+        amountCents: 1000,
+        currency: "EGP",
+        environment: "test",
+        status: "created"
+      }),
+      CHECK_VIOLATION,
+      "a fourth payment attempt must fail the attempt-count check constraint"
+    );
   } finally {
     await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
   }
@@ -495,12 +529,16 @@ serialTest("payment webhook events reject duplicate provider fingerprints", asyn
     eventFingerprint: fingerprint,
     processingStatus: "processed"
   });
-  await assert.rejects(db.insert(schema.paymentWebhookEvents).values({
-    provider: "paymob",
-    callbackType: "transaction",
-    eventFingerprint: fingerprint,
-    processingStatus: "processed"
-  }));
+  await rejectsWithCode(
+    db.insert(schema.paymentWebhookEvents).values({
+      provider: "paymob",
+      callbackType: "transaction",
+      eventFingerprint: fingerprint,
+      processingStatus: "processed"
+    }),
+    UNIQUE_VIOLATION,
+    "a repeated provider event fingerprint must hit the unique key"
+  );
   await db.delete(schema.paymentWebhookEvents).where(eq(schema.paymentWebhookEvents.eventFingerprint, fingerprint));
 });
 
@@ -523,12 +561,16 @@ serialTest("payment attempts reject duplicate Paymob intention identifiers", asy
       paymobIntentionId: "pi_test_duplicate", paymobOrderId: "9001", clientSecret: "client-1",
       expiresAt: new Date(Date.now() + 30 * 60 * 1000)
     });
-    await assert.rejects(db.insert(attempts).values({
-      checkoutSessionId: session.id, attemptNumber: 2, merchantReference: `ref-2-${Date.now()}`,
-      amountCents: 1000, currency: "EGP", environment: "test", status: "pending",
-      paymobIntentionId: "pi_test_duplicate", paymobOrderId: "9002", clientSecret: "client-2",
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
-    }));
+    await rejectsWithCode(
+      db.insert(attempts).values({
+        checkoutSessionId: session.id, attemptNumber: 2, merchantReference: `ref-2-${Date.now()}`,
+        amountCents: 1000, currency: "EGP", environment: "test", status: "pending",
+        paymobIntentionId: "pi_test_duplicate", paymobOrderId: "9002", clientSecret: "client-2",
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+      }),
+      UNIQUE_VIOLATION,
+      "a repeated Paymob intention id must hit the unique key"
+    );
   } finally {
     await db.delete(schema.checkoutSessions).where(eq(schema.checkoutSessions.id, session.id));
   }
@@ -563,7 +605,11 @@ serialTest("orders can link a successful Paymob attempt without using the operat
 
 serialTest("orders reject a negative refunded amount without changing the stored value", async () => {
   const orderId = await createOrder();
-  await assert.rejects(db.update(orders).set({ refundedAmountCents: -1 }).where(eq(orders.id, orderId)));
+  await rejectsWithCode(
+    db.update(orders).set({ refundedAmountCents: -1 }).where(eq(orders.id, orderId)),
+    CHECK_VIOLATION,
+    "a negative refunded amount must fail the orders check constraint"
+  );
   const [stored] = await db.select({ refundedAmountCents: orders.refundedAmountCents })
     .from(orders).where(eq(orders.id, orderId));
   assert.equal(stored.refundedAmountCents, 0);

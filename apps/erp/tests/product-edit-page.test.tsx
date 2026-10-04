@@ -1,14 +1,19 @@
 import { createElement, Suspense } from "react";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => cleanup());
 
-const mockedUseAdminAuth = vi.fn(() => ({
+// A case that renders the page with a staff user must not inherit the apiGet call
+// history or queued responses of an earlier case, so each case starts from a known
+// admin session with no recorded requests and no captured form props.
+const defaultAdminAuth = {
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.update"] },
   hydrated: true,
   logout: vi.fn()
-}));
+};
+
+const mockedUseAdminAuth = vi.fn(() => defaultAdminAuth);
 
 import { buildRelatedOptions } from "@/components/forms/related-options";
 
@@ -79,6 +84,14 @@ vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => mockedUseStore(selector)
 }));
 
+beforeEach(() => {
+  apiGet.mockReset();
+  capturedProps = null;
+  mockedUseAdminAuth.mockReset();
+  mockedUseAdminAuth.mockReturnValue(defaultAdminAuth);
+  mockedUseStore.mockClear();
+});
+
 describe("buildRelatedOptions", () => {
   it("includes active, non-deleted products and offers and drops the rest", () => {
     const options = buildRelatedOptions(
@@ -120,28 +133,6 @@ describe("EditProductPage data plumbing", () => {
     expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
     expect(mockedUseStore).not.toHaveBeenCalled();
     expect(apiGet).not.toHaveBeenCalled();
-  });
-
-  it("shows a 403 state for staff without products.update", async () => {
-    mockedUseStore.mockClear();
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read"] },
-      hydrated: true,
-      logout: vi.fn()
-    });
-
-    await act(async () => {
-      render(
-        createElement(
-          Suspense,
-          { fallback: null },
-          createElement(EditProductPage, { params: Promise.resolve({ id: "1" }) })
-        )
-      );
-    });
-
-    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
-    expect(screen.getByText("لا تملكين صلاحية تعديل المنتجات.")).toBeInTheDocument();
   });
 
   it("fetches existing related links and passes them plus options to the form", async () => {

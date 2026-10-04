@@ -365,11 +365,9 @@ capella/
 │  │  │  ├─ api-data.test.js
 │  │  │  ├─ api-http.test.js
 │  │  │  ├─ app-scaffold.test.js
-│  │  │  ├─ foundation.test.js
 │  │  │  ├─ lang-provider.test.js
 │  │  │  ├─ metro-config.test.js
-│  │  │  ├─ root-layout.test.js
-│  │  │  └─ shared-boundary.test.js
+│  │  │  └─ root-layout.test.js
 │  │  ├─ app/
 │  │  │  ├─ _layout.tsx
 │  │  │  └─ index.tsx
@@ -390,6 +388,7 @@ capella/
 │  │  │  │  └─ lang.tsx
 │  │  │  └─ theme.ts
 │  │  ├─ tests/
+│  │  │  ├─ expo-config.test.ts
 │  │  │  ├─ metro-js-specifier.test.ts
 │  │  │  ├─ shared-bundle.test.ts
 │  │  │  ├─ storage-keys.test.ts

@@ -40,10 +40,21 @@ test("a saved rate for one identity is not returned for another", async () => {
 });
 
 test("rejects an invalid amount instead of persisting it", async () => {
-  await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: -1 }));
-  await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: 12.5 }));
+  // The message matters: a bare rejects would also pass on a connection or
+  // query failure, which is not what this case is about.
+  const invalidAmount = /invalid shipping rate amount/i;
+  await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: -1 }), invalidAmount);
+  await assert.rejects(saveShippingRate({ ...DELIVERY, amountCents: 12.5 }), invalidAmount);
   const rows = await db.select().from(shippingRates);
   assert.equal(rows.length, 0);
+});
+
+test("still persists a valid rate, so the rejection above is validation and not a dead database", async () => {
+  await saveShippingRate({ ...DELIVERY, amountCents: 9_700 });
+
+  const rows = await db.select().from(shippingRates);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].amountCents, 9_700);
 });
 
 test(" different services for the same destination/size coexist without overwrite", async () => {

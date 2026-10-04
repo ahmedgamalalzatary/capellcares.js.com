@@ -10,15 +10,6 @@ test("the scoped category label interpolates the category name", () => {
   assert.equal(ar.nav.allCategoryTypes, "كل أنواع {name}");
 });
 
-test("the scoped category label is a template, not a fixed string", () => {
-  for (const dict of [en, ar]) {
-    assert.ok(
-      dict.nav.allCategoryTypes.includes("{name}"),
-      "allCategoryTypes must contain the {name} placeholder"
-    );
-  }
-});
-
 // `filters.bytype` heads the category list in the filter panel. It was once
 // spelled `beytype` in Arabic only, which rendered the heading blank for every
 // Arabic shopper — the key has to stay spelled identically in both dictionaries.

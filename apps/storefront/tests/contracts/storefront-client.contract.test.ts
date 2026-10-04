@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   storefrontAdviceContract,
@@ -113,8 +113,19 @@ const adviceBoundaryPayload = {
   status: "active" as const
 };
 
+beforeEach(() => {
+  // Pin the media-origin inputs so a case never inherits the ambient shell environment.
+  vi.stubEnv("NEXT_PUBLIC_API_URL", "");
+  vi.stubEnv("API_INTERNAL_URL", "");
+});
+
 afterEach(() => {
+  // vi.restoreAllMocks() does not undo stubEnv/stubGlobal, so the Docker-origin case used to
+  // leak its production NEXT_PUBLIC_API_URL into later product/category cases.
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.resetModules();
 });
 
 describe("storefront client contracts", () => {

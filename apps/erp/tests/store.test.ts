@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiGet = vi.fn();
 const apiPost = vi.fn();
@@ -6,6 +6,10 @@ const apiDel = vi.fn();
 const authTokenListeners: Array<(token: string | null) => void> = [];
 const authHydrationListeners: Array<(hydrated: boolean) => void> = [];
 const authUserListeners: Array<(user: unknown) => void> = [];
+// The store binds window "focus" listeners it never removes. `vi.resetModules()` hands the
+// next case a fresh store, but the earlier stores' listeners stay on the shared jsdom window,
+// so a single focus event would refetch through them too. Track and detach per case.
+const focusListeners: EventListener[] = [];
 let adminAuthHydrated = true;
 let adminAuthUser: unknown = {
   name: "Admin User",
@@ -60,7 +64,20 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+beforeEach(() => {
+  const originalAdd = window.addEventListener.bind(window);
+  vi.spyOn(window, "addEventListener").mockImplementation(
+    (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+      if (type === "focus" && typeof listener === "function") focusListeners.push(listener);
+      originalAdd(type, listener, options);
+    }
+  );
+});
+
 afterEach(() => {
+  vi.restoreAllMocks();
+  focusListeners.forEach((listener) => window.removeEventListener("focus", listener));
+  focusListeners.length = 0;
   vi.resetModules();
   vi.clearAllMocks();
   authTokenListeners.length = 0;
@@ -275,7 +292,9 @@ describe("ERP store", () => {
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
-    expect(apiGet).toHaveBeenCalledTimes(18);
+    // One focus event refetches once through the current store only; the products
+    // endpoint being fetched exactly twice proves no stale listener added a third.
+    expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(2);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {
@@ -318,7 +337,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(18);
+    expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(2);
   });
 
   it("waits for admin auth hydration before the initial ERP fetch on tab reload", async () => {

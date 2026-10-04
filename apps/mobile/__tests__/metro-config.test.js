@@ -1,4 +1,3 @@
-const { existsSync } = require("node:fs");
 const path = require("node:path");
 
 jest.mock("expo/metro-config", () => ({
@@ -6,16 +5,6 @@ jest.mock("expo/metro-config", () => ({
 }));
 
 describe("Metro configuration", () => {
-  test("exists at the mobile workspace root", () => {
-    expect(existsSync(path.resolve(__dirname, "../metro.config.js"))).toBe(true);
-  });
-
-  test("provides a custom resolver for shared TypeScript sources", () => {
-    const config = require("../metro.config.js");
-
-    expect(typeof config.resolver.resolveRequest).toBe("function");
-  });
-
   test("strips .js from relative imports originating in @capella/shared", () => {
     const config = require("../metro.config.js");
     const defaultResolver = jest.fn((_context, moduleName) => ({ filePath: moduleName }));

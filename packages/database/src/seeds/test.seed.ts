@@ -26,6 +26,7 @@ import {
   variantDiscounts
 } from "../../drizzle/schema.js";
 import { db } from "../db.js";
+import { assertDisposableTestDatabaseUrl, resolveDatabaseUrl } from "../env.js";
 
 const seedSkus = ["TEST-SKU-001", "TEST-SKU-002"];
 const seedOfferSlug = "test-offer-baseline";
@@ -38,6 +39,11 @@ export async function clearTestSeed() {
   if (process.env.NODE_ENV !== "test" && process.env.ALLOW_DB_WIPE !== "true") {
     throw new Error("clearTestSeed may only run in tests or when ALLOW_DB_WIPE=true.");
   }
+
+  // This truncates every table below, so also refuse unless the resolved
+  // connection points at an explicitly disposable schema. NODE_ENV=test alone
+  // is not enough: the URL could still name a real database.
+  assertDisposableTestDatabaseUrl(resolveDatabaseUrl());
 
   await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
 
@@ -163,7 +169,9 @@ export async function seedTestData() {
     arName: "تجميعة تجريبية",
     enName: "Baseline Collection",
     fixedPrice: "65.00",
-    categoryId: leafCategory.id
+    // Like offers, a collection is classified under a root category only; its
+    // items may live anywhere in that root's subtree.
+    categoryId: rootCategory.id
   });
   await ensureCollectionItem({ collectionId, variantId: firstVariantId, qty: 1 });
   await ensureCollectionItem({ collectionId, variantId: secondVariantId, qty: 1 });
@@ -221,7 +229,7 @@ async function ensureCategory(input: {
   return category!;
 }
 
-async function rebuildCategoryPaths() {
+export async function rebuildCategoryPaths() {
   const rows = await db
     .select({ id: categories.id, parentId: categories.parentId })
     .from(categories);
