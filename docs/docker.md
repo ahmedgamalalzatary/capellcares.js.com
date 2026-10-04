@@ -34,7 +34,7 @@ Compose sets runtime memory limits directly in `docker-compose.yml`:
 | MySQL | 466 MiB | 768 MiB |
 | API | 414 MiB | 768 MiB |
 | Storefront | 760 MiB | 1280 MiB |
-| ERP | 79 MiB | 256 MiB |
+| ERP | 79 MiB | 384 MiB |
 | Migrations | Not measured | 768 MiB (provisional) |
 
 No new environment settings are required. Recheck peaks after

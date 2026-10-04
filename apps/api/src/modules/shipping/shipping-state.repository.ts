@@ -116,9 +116,15 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
   const work = pickWorkItem(outgoingJobs);
   const quote = checkoutShippingQuoteSchema.parse(JSON.parse(order.shippingSnapshot!));
   let editEnabled = !ship;
+  let editFields: AdminOrderShippingStateDto["editFields"] = ["recipientPhone", "address", "recipientName", "notes", "size"];
   if (ship) {
-    try { editEnabled = resolveBostaEditRuntime() !== null; }
-    catch { /* Invalid edit configuration must not block order-detail reads. */ }
+    editFields = [];
+    try {
+      const runtime = resolveBostaEditRuntime();
+      editEnabled = runtime !== null;
+      // The documented fields are always editable once a verified runtime exists; the extra fields appear only with verified merchant evidence.
+      if (runtime) editFields = ["recipientPhone", "address", ...runtime.editableFields];
+    } catch { /* Invalid edit configuration must not block order-detail reads, and must not advertise any field as editable. */ }
   }
   return { flags, destination: { cityId: quote.address.cityId, zoneId: quote.address.zoneId, districtId: quote.address.districtId },
     relatedShipments: parcels.filter(parcel => parcel.kind !== "outgoing").map(parcel => {
@@ -129,7 +135,7 @@ export async function getOrderShippingState(input: Pick<Order, "id" | "shippingS
         providerEventAtMs: parcel.providerEventAtMs,
         workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null };
     }),
-    editEnabled, hasPendingEdit: outgoingJobs.some(job => job.operation === "edit_delivery" && ["processing", "review_required"].includes(job.status)),
+    editEnabled, editFields, hasPendingEdit: outgoingJobs.some(job => job.operation === "edit_delivery" && ["processing", "review_required"].includes(job.status)),
     packingSize: ship?.size ?? order.shippingSize,
     carrierSnapshot: ship?.carrierSnapshot ? JSON.parse(ship.carrierSnapshot) : null,
     workItem: work ? { operation: work.operation, status: work.status, lastError: work.lastError } : null,

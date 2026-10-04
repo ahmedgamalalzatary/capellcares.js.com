@@ -36,6 +36,14 @@ const addressMatches = (actual: NormalizedReadAddress, requested: { zoneId: stri
     return false;
   }
 };
+/** The public Bosta edit schema establishes the recipient phone and the drop-off address only. A patch that also changes the recipient name, notes or package size must be refused before any carrier read or write unless the merchant account has explicit verified evidence for that field — an unproven edit must never reach Bosta. */
+function unverifiedEditFields(patch: ShipmentEdit, editableFields: ReadonlySet<string>): string[] {
+  return [
+    ...(patch.recipient?.fullName !== undefined && !editableFields.has("recipientName") ? ["recipient name"] : []),
+    ...(patch.notes !== undefined && !editableFields.has("notes") ? ["notes"] : []),
+    ...(patch.size !== undefined && !editableFields.has("size") ? ["package size"] : [])
+  ];
+}
 function editPayload(patch: ShipmentEdit, city: string) {
   const payload: Record<string, unknown> = {};
   if (patch.recipient) {
@@ -84,6 +92,8 @@ export async function applyShippingNoMoneyEdit(orderId: number, input: unknown, 
   let evidence: ShippingEditEvidence | undefined;
   if (ship) {
     if (!edit) throw new ShippingEditError("Verified merchant edit availability is required for linked shipments");
+    const unverified = unverifiedEditFields(patch, edit.editableFields ?? new Set());
+    if (unverified.length) throw new ShippingEditError(`Shipment edit fields require verified merchant evidence: ${unverified.join(", ")}`);
     const read = await edit.read(ship.trackingNumber, ship.idempotencyKey);
     if (!read.editable || !read.prePickup || read.observation.trackingNumber !== ship.trackingNumber || read.observation.businessReference !== ship.idempotencyKey) {
       throw new ShippingEditError("Fresh verified carrier pre-pickup edit availability evidence is required");

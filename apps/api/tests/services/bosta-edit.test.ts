@@ -30,6 +30,14 @@ test("edit runtime reads verified booleans and PUT uses the correlated tracking 
   await runtime.update("5108002", { notes: "Corrected" });
 });
 
+test("only fields backed by verified merchant evidence are reported editable", () => {
+  // The documented fields (recipient phone, drop-off address) need no evidence entry; name/notes/size appear only when the account verifies them.
+  assert.deepEqual([...resolveBostaEditRuntime(env)!.editableFields], []);
+  const verified = resolveBostaEditRuntime({ ...env, BOSTA_EDIT_SETTINGS_JSON: JSON.stringify({ ...settings,
+    fields: { notes: { verified: true, evidence: "controlled fixture only" } } }) })!;
+  assert.deepEqual([...verified.editableFields], ["notes"]);
+});
+
 test("malformed availability and an ambiguous PUT never claim edit success", async () => {
   const runtime = resolveBostaEditRuntime(env, async (_url, init) => init?.method === "PUT"
     ? Response.json({ success: false })

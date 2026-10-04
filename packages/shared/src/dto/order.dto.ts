@@ -45,6 +45,8 @@ export interface AdminOrderShippingStateDto {
   flags?: Pick<AdminOrderReviewFlagDto, "id" | "flagType" | "reason">[];
   destination?: ShippingAddress;
   editEnabled?: boolean;
+  /** Which shipment edit fields are actually supported for this shipment. `recipientPhone`/`address` are documented; `recipientName`/`notes`/`size` appear only with verified merchant evidence. Absent means the capability is unknown (e.g. bulk), so the server remains the enforcement point. */
+  editFields?: Array<"recipientPhone" | "address" | "recipientName" | "notes" | "size">;
   hasPendingEdit?: boolean;
   packingSize?: "small" | "medium" | "large" | null;
   carrierSnapshot?: Record<string, unknown> | null;

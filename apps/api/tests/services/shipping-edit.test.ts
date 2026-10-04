@@ -59,6 +59,7 @@ test("linked shipments require a verified edit runtime and fresh matching carrie
   let putCalls = 0;
   const edit = {
     sync: f.runtime,
+    editableFields: new Set(["notes", "size"]),
     async read(trackingNumber: string, reference: string) {
       assert.equal(trackingNumber, f.shipment.trackingNumber);
       assert.equal(reference, f.shipment.idempotencyKey);
@@ -94,6 +95,7 @@ test("stale or unverified carrier evidence blocks the linked edit before any pro
   const frozen = JSON.parse((await shippingWorkItemsMeta(f.order.id))[0]?.requestSnapshot ?? "null");
   const base = {
     sync: f.runtime,
+    editableFields: new Set(["notes"]),
     async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new Error("Provider write must never happen"); }
   };
@@ -118,7 +120,8 @@ function observation(f: Awaited<ReturnType<typeof shippingSyncFixture>>, changed
 test("uncertain linked edits block another write and synchronization confirms them without resending", async () => {
   const f = await shippingSyncFixture();
   const actor = await admin();
-  const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
+  const edit = { sync: f.runtime, editableFields: new Set(["notes", "size"]),
+    async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new Error("Connection lost after write"); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { size: "medium", notes: "Handle with care" }, actor, edit), /uncertain|confirm/i);
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { notes: "Another edit" }, actor, edit), /pending|unresolved/i);
@@ -144,7 +147,7 @@ test("a rejected read after successful PUT cannot authorize another write", asyn
   const f = await shippingSyncFixture();
   const actor = await admin();
   let reads = 0;
-  const edit = { sync: f.runtime, async read() {
+  const edit = { sync: f.runtime, editableFields: new Set(["notes"]), async read() {
     if (++reads > 1) throw new BostaProviderError("Read unavailable", "definitive", 404);
     return { observation: observation(f), editable: true, prePickup: true };
   }, async update() { return { success: true }; } };
@@ -155,7 +158,8 @@ test("a rejected read after successful PUT cannot authorize another write", asyn
 
 test("a repeated carrier snapshot still confirms an idempotent edit", async () => {
   const f = await shippingSyncFixture();
-  const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
+  const edit = { sync: f.runtime, editableFields: new Set(["notes"]),
+    async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { return { success: true }; } };
   await applyShippingNoMoneyEdit(f.order.id, { notes: "Original" }, await admin(), edit);
   const jobs = await shippingWorkItemsMeta(f.order.id);
@@ -201,11 +205,36 @@ test("an address edit is never confirmed by an observation whose destination ide
 
 test("carrier evidence closes a rejected edit after the requested correction is applied in Bosta", async () => {
   const f = await shippingSyncFixture();
-  const edit = { sync: f.runtime, async read() { return { observation: observation(f), editable: true, prePickup: true }; },
+  const edit = { sync: f.runtime, editableFields: new Set(["notes", "size"]),
+    async read() { return { observation: observation(f), editable: true, prePickup: true }; },
     async update() { throw new BostaProviderError("Edit unavailable", "definitive", 400); } };
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { size: "medium", notes: "Handle with care" }, await admin(), edit), /rejected/i);
   const { recordShippingObservation } = await import("../../src/modules/shipping/shipping-sync.repository.js");
   await recordShippingObservation(f.runtime, { ...observation(f, true), atMs: 6_000 });
   const jobs = await shippingWorkItemsMeta(f.order.id);
   assert.equal(jobs.find(job => String(job.operation) === "edit_delivery")?.status, "succeeded");
+});
+
+test("an edit field without verified merchant evidence never reaches the provider", async () => {
+  // Bosta's public edit schema establishes the recipient phone and the drop-off address only; name/notes/size must be refused before any carrier read or write unless the account has explicit evidence.
+  const f = await shippingSyncFixture(true);
+  let providerCalls = 0;
+  const edit = { sync: f.runtime, editableFields: new Set<string>(),
+    async read() { providerCalls += 1; return { observation: observation(f), editable: true, prePickup: true }; },
+    async update() { providerCalls += 1; return { success: true }; } };
+  for (const patch of [{ notes: "Unproven" }, { size: "medium" as const }, { recipient: { fullName: "Unproven Name" } }]) {
+    await assert.rejects(applyShippingNoMoneyEdit(f.order.id, patch, await admin(), edit as never), /verified merchant evidence/i);
+  }
+  assert.equal(providerCalls, 0, "an unproven edit field must never reach the carrier");
+});
+
+test("a documented field edits without extra merchant evidence", async () => {
+  const f = await shippingSyncFixture(true);
+  let reads = 0;
+  const edit = { sync: f.runtime, editableFields: new Set<string>(),
+    async read() { reads += 1; return { observation: observation(f), editable: true, prePickup: true }; },
+    async update() { return { success: true }; } };
+  // The recipient phone is inside the documented public schema, so the evidence gate must let it through to the carrier.
+  await applyShippingNoMoneyEdit(f.order.id, { recipient: { phone: "01099998888" } }, await admin(), edit as never).catch(() => {});
+  assert.ok(reads > 0, "the documented recipient phone must not be blocked by the field gate");
 });

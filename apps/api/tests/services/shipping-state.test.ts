@@ -33,13 +33,21 @@ test("invalid edit settings disable editing without breaking linked order detail
   Object.assign(process.env, env);
   const state = await api.getOrderShippingState(f.order);
   assert.equal(state.editEnabled, false);
+  assert.deepEqual(state.editFields, [], "invalid settings must advertise no editable field");
   assert.equal(state.carrierState, "created");
   assert.equal(state.packingSize, "small");
-  process.env.BOSTA_EDIT_SETTINGS_JSON = JSON.stringify({
+  const settings = {
     accountVerified: true, accountEvidence: "controlled fixture only", accountId: "fixture",
     readContract: { verified: true, evidence: "controlled fixture only", editablePath: ["editable"], prePickupPath: ["prePickup"] }
-  });
-  assert.equal((await api.getOrderShippingState(f.order)).editEnabled, true);
+  };
+  process.env.BOSTA_EDIT_SETTINGS_JSON = JSON.stringify(settings);
+  const verifiedState = await api.getOrderShippingState(f.order);
+  assert.equal(verifiedState.editEnabled, true);
+  assert.deepEqual(verifiedState.editFields, ["recipientPhone", "address"], "documented fields need no extra evidence");
+  process.env.BOSTA_EDIT_SETTINGS_JSON = JSON.stringify({ ...settings,
+    fields: { notes: { verified: true, evidence: "controlled fixture only" } } });
+  assert.deepEqual((await api.getOrderShippingState(f.order)).editFields, ["recipientPhone", "address", "notes"],
+    "a field with verified evidence is advertised");
 });
 
 test("pre-link staff preparation records actor/time once, stops untouched eligibility and survives shipment linking", async () => {

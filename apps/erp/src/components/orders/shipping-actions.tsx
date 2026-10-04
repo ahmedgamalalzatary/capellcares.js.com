@@ -37,6 +37,9 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
   const pendingEdit = shipping?.hasPendingEdit ?? (shipping?.workItem?.operation === "edit_delivery" && ["processing", "review_required"].includes(shipping.workItem.status));
   const editable = !locked && !pickedUp && !pendingEdit && shipping?.editEnabled !== false &&
     !["delivered", "returned"].includes(shipping?.manualState ?? "") && !(order?.refundedAmountCents);
+  // Fields without verified merchant evidence are hidden/disabled client-side; the server still refuses them, so this is only a UI courtesy.
+  const editFields = shipping?.editFields;
+  const allowsField = (field: "recipientName" | "notes" | "size") => !editFields || editFields.includes(field);
   const currentFlagId = shipping?.flags?.some(flag => flag.id === flagId) ? flagId : shipping?.flags?.[0]?.id;
 
   const allowed = (key: ShippingBulkRequest["action"]) => {
@@ -60,9 +63,12 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
     if (currentAction === "resolve_flags") { input.note = note.trim(); if (order) input.flagId = currentFlagId; }
     if (currentAction === "shipment_edit") {
       const patch: ShipmentEdit = {};
-      if (fullName.trim() || phone.trim()) patch.recipient = { ...(fullName.trim() ? { fullName: fullName.trim() } : {}), ...(phone.trim() ? { phone: phone.trim() } : {}) };
-      if (size) patch.size = size as ShipmentEdit["size"];
-      if (editNotes) patch.notes = notes;
+      const recipient: NonNullable<ShipmentEdit["recipient"]> = {};
+      if (fullName.trim() && allowsField("recipientName")) recipient.fullName = fullName.trim();
+      if (phone.trim()) recipient.phone = phone.trim();
+      if (Object.keys(recipient).length) patch.recipient = recipient;
+      if (size && allowsField("size")) patch.size = size as ShipmentEdit["size"];
+      if (editNotes && allowsField("notes")) patch.notes = notes;
       if (addressLine.trim() || building.trim()) {
         if (!addressLine.trim() || !building.trim()) { setError("أدخلي العنوان والمبنى معًا."); return; }
         if (order) {
@@ -108,14 +114,14 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
         {currentAction === "cancel" && <p className="muted">الإلغاء الآمن يعيد المخزون بعد التحقق. استرداد باي موب يتم يدويًا من لوحته.</p>}
         {currentAction === "shipment_edit" && <>
           <p className="muted">عدّلي الحقول المطلوبة فقط. تكلفة الطلب ثابتة؛ تغيير المنطقة يحتاج طلبًا جديدًا.</p>
-          <div className="field"><label htmlFor={`${id}-name`}>اسم المستلم الجديد</label><input id={`${id}-name`} className="input" maxLength={255} value={fullName} onChange={e => setFullName(e.target.value)} /></div>
+          <div className="field"><label htmlFor={`${id}-name`}>اسم المستلم الجديد</label><input id={`${id}-name`} className="input" maxLength={255} value={fullName} disabled={!allowsField("recipientName")} onChange={e => setFullName(e.target.value)} />{!allowsField("recipientName") && <span className="muted">غير متاح لحسابك حتى يتم التحقق منه.</span>}</div>
           <div className="field"><label htmlFor={`${id}-phone`}>هاتف المستلم الجديد</label><input id={`${id}-phone`} className="input" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} /></div>
           <div className="field"><label htmlFor={`${id}-address`}>العنوان الجديد</label><input id={`${id}-address`} className="input" maxLength={255} value={addressLine} onChange={e => setAddressLine(e.target.value)} /></div>
           <div className="field"><label htmlFor={`${id}-building`}>المبنى / الشقة الجديدة</label><input id={`${id}-building`} className="input" maxLength={255} value={building} onChange={e => setBuilding(e.target.value)} /></div>
-          <div className="field"><label htmlFor={`${id}-size`}>حجم العبوة الجديد</label><select id={`${id}-size`} className="select" value={size} onChange={e => setSize(e.target.value)}>
-            <option value="">بدون تغيير</option><option value="small">صغير</option><option value="medium">وسط</option><option value="large">كبير</option></select></div>
-          <label><input type="checkbox" checked={editNotes} onChange={e => setEditNotes(e.target.checked)} /> تعديل الملاحظات</label>
-          {editNotes && <div className="field"><label htmlFor={`${id}-notes`}>ملاحظات الشحنة الجديدة</label><textarea id={`${id}-notes`} className="input" maxLength={4000} value={notes} onChange={e => setNotes(e.target.value)} /></div>}
+          <div className="field"><label htmlFor={`${id}-size`}>حجم العبوة الجديد</label><select id={`${id}-size`} className="select" value={size} disabled={!allowsField("size")} onChange={e => setSize(e.target.value)}>
+            <option value="">بدون تغيير</option><option value="small">صغير</option><option value="medium">وسط</option><option value="large">كبير</option></select>{!allowsField("size") && <span className="muted">غير متاح لحسابك حتى يتم التحقق منه.</span>}</div>
+          <label><input type="checkbox" checked={editNotes} disabled={!allowsField("notes")} onChange={e => setEditNotes(e.target.checked)} /> تعديل الملاحظات</label>
+          {editNotes && allowsField("notes") && <div className="field"><label htmlFor={`${id}-notes`}>ملاحظات الشحنة الجديدة</label><textarea id={`${id}-notes`} className="input" maxLength={4000} value={notes} onChange={e => setNotes(e.target.value)} /></div>}
         </>}
         {currentAction === "resolve_flags" && <>
           {order && <div className="field"><label htmlFor={`${id}-flag`}>علامة المتابعة</label><select id={`${id}-flag`} className="select" value={currentFlagId} onChange={e => setFlagId(Number(e.target.value))}>

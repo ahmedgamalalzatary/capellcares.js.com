@@ -150,7 +150,7 @@ Do not run provider writes against production to establish a baseline.
 
 ### Phase 1 — repair correctness, contracts and avoidable work
 
-- [ ] S01 / G07: Verify Bosta read/create/edit/cancel/search/pricing contracts against docs and
+- [x] S01 / G07: Verify Bosta read/create/edit/cancel/search/pricing contracts against docs and
   redacted merchant evidence. Map supported fields and exact proof paths, units, sizes and timestamps.
   If evidence is unavailable, keep that capability disabled with a clear staff-facing reason.
   Update provider adapters, readiness checks, schemas, ERP capability controls and fixtures together.
@@ -264,7 +264,7 @@ Phase 3 exit: separate images/processes own HTTP and background work, using iden
 | --- | --- | --- | --- |
 | Investigation | Complete | Repository read + official docs; no live calls/tests | Merchant-specific contracts unverified |
 | S00 | Not started | Baseline results not yet recorded | See phase acceptance gates |
-| S01 / G07 | Not started | Needs merchant evidence for Bosta edit/cancel/pricing contracts | Capability stays gated meanwhile |
+| S01 / G07 | Complete (docs-only) | TDD: aligned the edit contract with Bosta's public schema — recipient phone and drop-off address are documented; recipient name, notes and package size are now evidence-gated per field (`BOSTA_EDIT_SETTINGS_JSON.fields`), refused before any carrier read/write, surfaced to the ERP as `editFields` and shown disabled. New gate/field tests + full API suite (1053) green; API + shared typecheck green | Merchant (redacted) evidence still required to enable name/notes/size; cancellation/pricing/custody contracts remain gated. ERP suite + typecheck blocked by pre-existing, unrelated breakage (see below) |
 | S02 / G06 | Complete | TDD: documented by-order inquiry (POST /api/ecommerce/orders/transaction_inquiry), a bounded reconciliation sweep with durable scheduling/claim/retry/park on the attempt, settlement via the shared atomic processor, and an expiry hold that defers unproven open attempts only while inquiry is enabled. Recovery/outage/no-payment/mismatch/park/concurrency + expiry-hold tests green; API + database typecheck green | No-transaction ⇒ releasable inferred from docs; region/account match still warrants a readiness check |
 | S03 / G10 | Complete | TDD: reconciliation returns parked `review_required` callbacks (safe fields only) plus a permission-gated requeue; ERP renders both and can requeue. API route tests + ERP page tests green; API/ERP typecheck green | — |
 | S04 / G04-G05 | Complete | TDD: shipping runtime memoized by config+fetch identity with 30s TTL; validated priced/shipping context threaded from `submitCheckout` into `initiatePaymobCheckout`. Runtime/reuse/expiry + context tests, plus checkout/shipping regression suites green; API typecheck green | Live-call reduction not yet measured |
@@ -275,6 +275,11 @@ Done means: confirmed gaps repaired, unverified capabilities gated, immediate ch
 durable deferred flows working, worker isolated/observable, and restart/rollback paths verified.
 No production latency claim is complete without measurements; no merchant contract is verified
 solely because an environment JSON says `verified: true`.
+
+### Pre-existing blockers observed (not introduced by this work)
+
+- ERP typecheck fails on `apps/erp/src/app/login/page.tsx` — `<style jsx global>` passes a `jsx` prop the tsconfig does not type. The file is unmodified; the shipping-change file itself reports no error.
+- ERP tests fail wholesale with `TypeError: React.act is not a function` (React 19 vs `@testing-library/react`) before any assertion runs, so the ERP suite cannot currently validate UI changes in this environment.
 
 ## Official references (reviewed 2026-10-04)
 
