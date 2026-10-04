@@ -39,8 +39,6 @@ test("expiry does not release stock while a durably received success callback is
       expiresAt: new Date(Date.now() + 60_000) }
   });
   // The callback was durably accepted (HMAC-verified) but its effects are not applied yet.
-  // Releasing the reservation here would free stock the customer already paid for and
-  // leave the eventual success with nothing to fulfil.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
   await receivePaymobCallback({ callbackType: "transaction",
     transaction: { id: 7101, order: { id: 9501 }, amount_cents: 3500, currency: "EGP", integration_id: 123,
@@ -57,10 +55,7 @@ test("expiry does not release stock while a durably received success callback is
   assert.equal(checkout.state, "payment_pending", "the session is held for the in-flight payment");
 });
 
-/**
- * A session with one attempt bound to `paymobOrderId`, already past its reservation
- * deadline, with `qty` units of the first baseline variant reserved.
- */
+/** A session with one attempt bound to `paymobOrderId`, already past its reservation deadline, with `qty` units of the first baseline variant reserved. */
 async function expiredSession(email: string, paymobOrderId: string, qty = 2) {
   const ids = await getBaselineIds();
   const session = await createReservedCheckout({
@@ -91,9 +86,7 @@ const heldStock = async (variantId: number) =>
   (await db.select().from(productVariants).where(eq(productVariants.id, variantId)))[0].stockQty;
 
 test("an unresolved decline does not hold stock forever", async () => {
-  // Before the typed hold policy, every unresolved receipt held stock. A decline that reached
-  // review_required therefore stranded an abandoned session's reservation permanently: stock
-  // no other customer could buy, held by a payment that can never succeed.
+  // Before the typed hold policy, every unresolved receipt held stock.
   const { ids } = await expiredSession("decline@example.com", "9601");
   await receiveParkedReceipt("9601", { success: false, pending: false });
   await releaseExpiredCheckoutReservations(new Date());
@@ -115,38 +108,26 @@ test("an unresolved refund holds stock, so the refund can still be applied", asy
 });
 
 test("a parked receipt naming an unrelated order never holds this session's stock", async () => {
-  // Correlation stays two-sided: a receipt for someone else's order id cannot hold stock
-  // here, no matter what it claims.
+  // Correlation stays two-sided: a receipt for someone else's order id cannot hold stock here, no matter what it claims.
   const { ids } = await expiredSession("unrelated@example.com", "9604");
   await receiveParkedReceipt("9999", { success: true, pending: false });
   await releaseExpiredCheckoutReservations(new Date());
   assert.equal(await heldStock(ids.firstVariantId), 10, "another order's receipt must not hold this stock");
 });
 
-/**
- * A receipt written the way the PRE-0063 code wrote it: a signed order id inside the payload,
- * but no `signed_order_id` scalar, because the backfill has not reached it yet.
- *
- * This is the state every existing row is in between deploying migration 0063 and running the
- * backfill. Until the backfill lands, a scalar-only correlation silently misses these receipts,
- * so a paid checkout looks unevidenced and expiry releases its stock.
- */
+/** A receipt written the way the PRE-0063 code wrote it: a signed order id inside the payload, but no `signed_order_id` scalar, because the backfill has not reached it yet. */
 async function legacyUnresolvedReceipt(orderId: string, fields: Record<string, unknown>) {
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
   await receivePaymobCallback({ callbackType: "transaction", transaction: { id: 7300, order: { id: orderId },
     integration_id: 123, amount_cents: 3500, currency: "EGP", is_live: false, is_auth: false, is_capture: false,
     is_refunded: false, is_voided: false, has_parent_transaction: false, source_data: { type: "card" }, ...fields } });
-  // Simulate the upgrade window: clear the scalar the new code would have written, leaving
-  // only the payload, exactly as an un-backfilled pre-0063 row looks.
+  // Simulate the upgrade window: clear the scalar the new code would have written, leaving only the payload, exactly as an un-backfilled pre-0063 row looks.
   await db.update(paymobCallbackInbox).set({ signedOrderId: null, boundSessionId: null });
   await db.update(paymobCallbackInbox).set({ processingStatus: "review_required" });
 }
 
 test("a pre-backfill receipt still holds stock during the upgrade window", async () => {
-  // CRITICAL regression guard. Migration 0063 adds signed_order_id as NULL for every existing
-  // row, and the backfill that fills it runs separately. Any correlation that reads only the
-  // new scalar therefore misses every un-backfilled receipt during that window, so a checkout
-  // the customer already paid for looks unevidenced and expiry releases its stock.
+  // CRITICAL regression guard.
   const { ids } = await expiredSession("legacy@example.com", "9701");
   await legacyUnresolvedReceipt("9701", { success: true, pending: false });
   const [row] = await db.select().from(paymobCallbackInbox);
@@ -158,8 +139,7 @@ test("a pre-backfill receipt still holds stock during the upgrade window", async
 });
 
 test("a pre-backfill DECLINE does not hold stock, so the fallback stays accurate", async () => {
-  // The legacy fallback must not simply treat every un-indexed receipt as a hold; that would
-  // reintroduce exactly the indefinite hold F05 removed.
+  // The legacy fallback must not simply treat every un-indexed receipt as a hold; that would reintroduce exactly the indefinite hold F05 removed.
   const { ids } = await expiredSession("legacy-decline@example.com", "9702");
   await legacyUnresolvedReceipt("9702", { success: false, pending: false });
   await releaseExpiredCheckoutReservations(new Date());
@@ -252,8 +232,7 @@ test("stopping the checkout expiry worker mid-backlog leaves the rest recoverabl
   const second = await expiredReservation(ids.secondVariantId, "worker-stop-b@example.test", 2000);
   const { startCheckoutExpiryWorker } = await import("../../src/modules/checkout/checkout-expiry-worker.js");
 
-  // Hold the first candidate's row so the worker's sweep is provably in flight when the
-  // stop arrives, which is the only moment the pass-through stop signal can be observed.
+  // Hold the first candidate's row so the worker's sweep is provably in flight when the stop arrives, which is the only moment the pass-through stop signal can be observed.
   const blocker = await mysqlPool.getConnection();
   await blocker.beginTransaction();
   await blocker.query("SELECT id FROM checkout_sessions WHERE id = ? FOR UPDATE", [first]);
@@ -333,13 +312,7 @@ test("expiry preserves a payment attempt that is already terminal", async () => 
   assert.equal(attempt.failureCode, "PROVIDER_DECLINED");
 });
 
-/**
- * A pending COD order past its untouched deadline.
- *
- * `restockFails: true` writes a shipping-ineligible order item whose restock path throws,
- * which is exactly the failure the batch must survive: the order is rolled back to pending
- * for staff, and the sweep continues to the next record.
- */
+/** A pending COD order past its untouched deadline. */
 async function insertExpiredCodOrder(variantId: number | null, email: string, restockFails = false) {
   const [order] = await db.insert(orders).values({
     orderCode: `EXP-${crypto.randomUUID().slice(0, 8)}`, customerType: "guest",
@@ -355,17 +328,14 @@ async function insertExpiredCodOrder(variantId: number | null, email: string, re
 }
 
 test("order expiry discovery is bounded and does not hold every order in one transaction", async () => {
-  // The sweep used to discover every eligible order and handle the whole set inside ONE
-  // transaction, so a backlog held every order's row lock for the length of the batch. The
-  // batch size is the bound, and each order is handled on its own.
+  // The sweep used to discover every eligible order and handle the whole set inside ONE transaction, so a backlog held every order's row lock for the length of the batch.
   const { ORDER_EXPIRY_BATCH_SIZE } = await import("../../src/modules/orders/order/write.js");
   assert.ok(ORDER_EXPIRY_BATCH_SIZE > 0 && ORDER_EXPIRY_BATCH_SIZE <= 200,
     "a sweep must examine a bounded number of orders");
 });
 
 test("order expiry stops between records when asked to shut down", async () => {
-  // A stop request during a long backlog must not have to wait for every remaining order.
-  // Two eligible orders are discovered, and the check must fire between them.
+  // A stop request during a long backlog must not have to wait for every remaining order. Two eligible orders are discovered, and the check must fire between them.
   const ids = await getBaselineIds();
   await insertExpiredCodOrder(ids.firstVariantId, "stop-a@example.com");
   await insertExpiredCodOrder(ids.secondVariantId, "stop-b@example.com");
@@ -379,9 +349,7 @@ test("order expiry stops between records when asked to shut down", async () => {
 });
 
 test("one failing order does not stop the rest of the expiry batch, and is logged statically", async () => {
-  // Without per-order isolation a single failure rolled back the whole batch, the sweep kept
-  // rediscovering the same record, and no order behind it ever expired. The log must also stay
-  // free of the raw driver error, which can carry query and connection detail.
+  // Without per-order isolation a single failure rolled back the whole batch, the sweep kept rediscovering the same record, and no order behind it ever expired.
   const ids = await getBaselineIds();
   const broken = await insertExpiredCodOrder(null, "broken@example.com", true);
   const healthy = await insertExpiredCodOrder(ids.secondVariantId, "healthy@example.com");
@@ -409,10 +377,7 @@ test("one failing order does not stop the rest of the expiry batch, and is logge
 });
 
 test("a persistently failing order cannot monopolise every expiry batch", async () => {
-  // Per-order error handling lets the CURRENT batch continue, but the failing order stays
-  // eligible. With a full batch of failures, every sweep selects the same lowest ids and the
-  // orders behind them never expire at all. Discovery must advance past failures so the
-  // backlog behind them is reached.
+  // Per-order error handling lets the CURRENT batch continue, but the failing order stays eligible.
   const ids = await getBaselineIds();
   const failing: number[] = [];
   for (let i = 0; i < 5; i += 1) {
@@ -436,9 +401,7 @@ test("a persistently failing order cannot monopolise every expiry batch", async 
 });
 
 test("expiry discovery resumes from the start once a batch is fully healthy", async () => {
-  // The starvation fix must not turn into a permanent skip: a sweep that processes its whole
-  // batch cleanly returns discovery to the beginning, so a previously failing order is
-  // retried rather than abandoned.
+  // The starvation fix must not turn into a permanent skip: a sweep that processes its whole batch cleanly returns discovery to the beginning, so a previously failing order is retried rather than abandoned.
   const ids = await getBaselineIds();
   await insertExpiredCodOrder(null, "recovers@example.com", true);
   const healthy = await insertExpiredCodOrder(ids.secondVariantId, "healthy-retry@example.com");
@@ -458,6 +421,40 @@ test("expiry discovery resumes from the start once a batch is fully healthy", as
   }
 
   assert.equal((await db.select().from(orders).where(eq(orders.id, healthy.id)))[0].paymentStatus, "denied");
+});
+
+/** An expired COD order whose delivery custody is unverified, so the expiry sweep can only flag it for staff: the order "succeeds" but stays pending and eligible for the next sweep. */
+async function insertCustodyHeldExpiredCodOrder(email: string) {
+  const [order] = await db.insert(orders).values({
+    orderCode: `EXP-${crypto.randomUUID().slice(0, 8)}`, customerType: "guest",
+    fullName: "Custody Held", phone: "+201012345678", email, governorate: "Cairo",
+    cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1", paymentMethod: "cod",
+    paymentStatus: "pending", totalAmount: "35.00", manualShippingState: "printed",
+    codExpiresAt: new Date(Date.now() - 1000)
+  }).$returningId();
+  return order;
+}
+
+test("a full batch of orders that stay eligible cannot starve the backlog behind them", async () => {
+  // An order can resolve without leaving the eligible set: a custody-held COD order only raises an expiry_review flag and stays pending, so it is rediscovered every sweep.
+  const { ORDER_EXPIRY_BATCH_SIZE } = await import("../../src/modules/orders/order/write.js");
+  const ids = await getBaselineIds();
+  for (let i = 0; i < ORDER_EXPIRY_BATCH_SIZE; i += 1) {
+    await insertCustodyHeldExpiredCodOrder(`custody-${i}@example.com`);
+  }
+  const behind = await insertExpiredCodOrder(ids.secondVariantId, "behind-custody@example.com");
+
+  const original = console.error;
+  console.error = () => {};
+  try {
+    // Enough sweeps to drain the batch and reach the order behind it.
+    for (let sweep = 0; sweep < 3; sweep += 1) await expirePendingCodOrders(new Date());
+  } finally {
+    console.error = original;
+  }
+
+  assert.equal((await db.select().from(orders).where(eq(orders.id, behind.id)))[0].paymentStatus, "denied",
+    "an order behind a full batch of still-eligible orders must still expire");
 });
 
 test("checkout expiry worker denies 96-hour-old pending COD orders and restores their stock", async () => {
@@ -483,8 +480,7 @@ test("checkout expiry worker denies 96-hour-old pending COD orders and restores 
 });
 
 const HOUR = 60 * 60 * 1000;
-// Whole-second instants: the `cod_expires_at` datetime column stores no sub-second
-// part, so sub-second creation times would make the deadline look skewed in tests.
+// Whole-second instants: the `cod_expires_at` datetime column stores no sub-second part, so sub-second creation times would make the deadline look skewed in tests.
 const ago = (hours: number) => new Date(Math.floor((Date.now() - hours * HOUR) / 1000) * 1000);
 const orderById = async (id: number) => (await db.select().from(orders).where(eq(orders.id, id)))[0];
 const stockOf = async (variantId: number) =>
@@ -510,9 +506,7 @@ async function createPaidOrder(hoursAgo: number, email: string) {
 
 test("the untouched deadline is order creation plus 96 hours", async () => {
   const { orderId, createdAt } = await createCodOrder(60, "deadline-96@example.test");
-  // Asserted against the creation instant supplied to checkout, not the stored
-  // `created_at` column: timestamp columns read back with a driver timezone
-  // shift, while the deadline is stored as an exact instant.
+  // Asserted against the creation instant supplied to checkout, not the stored `created_at` column: timestamp columns read back with a driver timezone shift, while the deadline is stored as an exact instant.
   assert.equal((await orderById(orderId)).codExpiresAt!.getTime(), createdAt.getTime() + 96 * HOUR);
 });
 
@@ -652,8 +646,7 @@ test("expiry rechecks processing recorded while it waits for the order lock", as
   try {
     await connection.beginTransaction();
     await connection.query("UPDATE orders SET shipping_processing_at_ms = ? WHERE id = ?", [Date.now(), orderId]);
-    // Candidate discovery can still see the committed untouched state. Once the
-    // lock is released, the sweep must use the newly committed processing state.
+    // Candidate discovery can still see the committed untouched state. Once the lock is released, the sweep must use the newly committed processing state.
     sweep = expirePendingCodOrders(new Date());
     await new Promise(resolve => setTimeout(resolve, 100));
     await connection.commit();
@@ -706,11 +699,7 @@ for (const scenario of [
   });
 }
 
-/**
- * A real paid order with its durable delivery intent, built through the actual Paymob path
- * (checkout -> paid callback) so the locked quote, payment method and untouched deadline are
- * exactly what production produces. This is the order shape the dispatch guard must judge.
- */
+/** A real paid order with its durable delivery intent, built through the actual Paymob path (checkout -> paid callback) so the locked quote, payment method and untouched deadline are exactly what production produces. */
 async function paidOrderWithDeliveryIntent(hours: number, email: string) {
   const ids = await getBaselineIds();
   const createdAt = ago(hours);
@@ -760,14 +749,9 @@ test("the real dispatch worker ships an order carrying only the informational un
 
 test("dispatch holds an order while refund evidence for its session is still unresolved", async () => {
   const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "unresolved-refund-blocks@example.test");
-  // A refund callback is durably received but not yet resolved. Handing this order to a
-  // courier now would deliver goods to someone whose money is being returned, and the
-  // refund may then be spent again. Dispatch must wait for the authenticated answer.
+  // A refund callback is durably received but not yet resolved.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
-  // Only the provider order id is set here. The attempt keeps whatever status the paid
-  // path actually left it at ('succeeded'), because forcing it back to 'pending' made this
-  // test exercise a shape that does not occur in production: a refund never arrives
-  // against an open attempt.
+  // Only the provider order id is set here.
   const [before] = await db.select().from(paymentAttempts)
     .where(eq(paymentAttempts.checkoutSessionId, sessionId));
   assert.equal(before.status, "succeeded", "the refund must arrive against a settled attempt");
@@ -791,12 +775,7 @@ test("dispatch holds an order while refund evidence for its session is still unr
 
 test("dispatch holds a PAID order whose refund evidence arrives after the attempt succeeded", async () => {
   const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "late-refund-blocks@example.test");
-  // The attempt is genuinely succeeded - the order was paid and created. Only now does a
-  // refund callback land, durably received but not yet resolved. Handing this order to a
-  // courier now would deliver goods to someone whose money is being returned.
-  //
-  // This is the case that a guard scoped to "created/pending" attempts misses entirely,
-  // because a refund normally arrives hours after the payment that it reverses.
+  // The attempt is genuinely succeeded - the order was paid and created.
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
   const [attempt] = await db.select().from(paymentAttempts)
     .where(eq(paymentAttempts.checkoutSessionId, sessionId));
@@ -820,17 +799,9 @@ test("dispatch holds a PAID order whose refund evidence arrives after the attemp
 });
 
 test("expiry discovery does not spend its batch on sessions that are only held", async () => {
-  // A session held by unresolved payment evidence is correctly skipped under its lock -
-  // but it must not CONSUME a discovery slot. If held sessions occupy the batch, an
-  // eligible session behind them is never examined and its stock is never released, so
-  // the sweep silently stops making progress while held sessions pile up in front of it.
-  //
-  // The batch size is deliberately 2 here, not the production 50: starvation is a
-  // ratio problem, and testing it at production scale would need 51 fixtures to prove
-  // the same thing.
+  // A session held by unresolved payment evidence is correctly skipped under its lock - but it must not CONSUME a discovery slot.
   const held: number[] = [];
-  // The held ones expire EARLIER, so they take the first discovery slots and can push the
-  // eligible session out of the batch. That ordering is the whole point of the test.
+  // The held ones expire EARLIER, so they take the first discovery slots and can push the eligible session out of the batch. That ordering is the whole point of the test.
   for (let index = 0; index < 2; index += 1) {
     held.push(await createExpiredHeldSession(`starved-held-${index}@example.test`, 8100 + index, true, 120_000 + index * 1000));
   }
@@ -851,10 +822,7 @@ test("expiry discovery does not spend its batch on sessions that are only held",
   }
 });
 
-/**
- * An already-expired checkout session, optionally holding unresolved payment evidence so
- * it is skipped under its own lock.
- */
+/** An already-expired checkout session, optionally holding unresolved payment evidence so it is skipped under its own lock. */
 async function createExpiredHeldSession(email: string, paymobOrderId: number, held = true, expiryOffsetMs = 60_000, qty = 1) {
   const ids = await getBaselineIds();
   const created = await createReservedCheckout({
@@ -862,8 +830,7 @@ async function createExpiredHeldSession(email: string, paymobOrderId: number, he
     customerId: null, fullName: "Starved", phone: "+201012345678", email,
     governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
     notes: "", cartSnapshot: "[]", amountCents: 3500,
-    // The larger the offset, the earlier this session expired, so it sorts ahead of the
-    // others in discovery order.
+    // The larger the offset, the earlier this session expired, so it sorts ahead of the others in discovery order.
     reservationExpiresAt: new Date(Date.now() - expiryOffsetMs),
     reservations: qty > 0 ? [{ variantId: ids.firstVariantId, qty }] : [],
     initialAttempt: { merchantReference: `pi_${paymobOrderId}`, environment: "test", allowedIntegrationIds: [123],
@@ -883,23 +850,14 @@ async function createExpiredHeldSession(email: string, paymobOrderId: number, he
 }
 
 test("expiry discovery is not starved by held sessions even when history dwarfs the batch", async () => {
-  // The exclusion was computed from a CAPPED scan of all payment attempts. Once history
-  // exceeded that cap, held sessions fell outside it and stopped being excluded, so they
-  // could occupy the earliest batch slots indefinitely and eligible sessions behind them
-  // were never examined - stock never released, sweep silently idle.
-  //
-  // Scoping the evidence lookup to the actual candidates bounds the relevant input by the
-  // batch instead of by total history. The history here is deliberately larger than any
-  // fixed cap a candidate-scoped implementation would need.
+  // The exclusion was computed from a CAPPED scan of all payment attempts.
   const held: number[] = [];
   for (let index = 0; index < 2; index += 1) {
     held.push(await createExpiredHeldSession(`f7-held-${index}@example.test`, 9600 + index, true, 240_000 + index * 1000));
   }
   const eligible = await createExpiredHeldSession("f7-eligible@example.test", 9699, false, 1000);
 
-  // Historical held sessions, all expiring EARLIER than the eligible one, pushing total
-  // history past the 5,000-row cap the previous implementation relied on and filling more
-  // than the over-fetch window. They reserve no stock - they exist purely as history.
+  // Historical held sessions, all expiring EARLIER than the eligible one, pushing total history past the 5,000-row cap the previous implementation relied on and filling more than the over-fetch window.
   for (let index = 0; index < 100; index += 1) {
     await createExpiredHeldSession(`f7-history-${index}@example.test`, 20_000 + index, true, 300_000 + index, 0);
   }
@@ -910,9 +868,7 @@ test("expiry discovery is not starved by held sessions even when history dwarfs 
 });
 
 test("a temporary evidence hold resumes automatically once the evidence resolves", async () => {
-  // A refund still being verified is a TEMPORARY condition. Writing `failed` made the
-  // stranded order depend on a member of staff pressing retry by hand, and the projections
-  // treat this error as an expected stop, so nothing surfaces it as needing attention.
+  // A refund still being verified is a TEMPORARY condition.
   const { orderId, sessionId } = await paidOrderWithDeliveryIntent(97, "hold-recovers@example.test");
   const { receivePaymobCallback } = await import("../../src/modules/payments/paymob/paymob-webhook.service.js");
   await db.update(paymentAttempts).set({ paymobOrderId: "9703" })

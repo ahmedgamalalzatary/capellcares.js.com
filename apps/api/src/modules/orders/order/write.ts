@@ -60,12 +60,7 @@ interface OrderItem {
   snapshotDiscountEndsAt?: string | null;
 }
 
-/**
- * Atomically decrements variant stock only if enough is available. The conditional
- * `WHERE stockQty >= requiredQty` makes the check-and-decrement a single statement, so
- * concurrent orders cannot both pass a stale read and oversell (and a variant appearing
- * in multiple lines is re-checked against current stock each time).
- */
+/** Atomically decrements variant stock only if enough is available. */
 async function decrementVariantStock(tx: DbTransaction, variantId: number, requiredQty: number) {
   const result = await tx
     .update(productVariants)
@@ -341,29 +336,12 @@ export async function updateOrderPaymentStatusRepo(
 /** How many expired orders one sweep may examine. Bounds lock hold time and drain time. */
 export const ORDER_EXPIRY_BATCH_SIZE = 50;
 
-/**
- * The order id discovery resumes after, so a block of persistently failing orders cannot
- * monopolise every batch. Reset to 0 once a batch drains.
- */
+/** The order id discovery resumes after, so orders that cannot be handled (whether they throw or only raise a flag while staying eligible) cannot monopolise every batch. */
 let expiryDiscoveryCursor = 0;
 
-/**
- * D24/D39: the untouched deadline is order creation + 96 hours, fixed and never extended.
- * D27/D49/D50: only untouched orders qualify, and automatic denial/restocking is COD-only;
- * an untouched paid order raises a staff flag and is never refunded or restocked here.
- */
+/** D24/D39: the untouched deadline is order creation + 96 hours, fixed and never extended. */
 export async function expirePendingCodOrders(now: Date, options: { isStopped?: () => boolean } = {}): Promise<void> {
-  // Pass 1: bounded, unlocked discovery. The previous version discovered EVERY eligible
-  // order with no limit and then handled the whole set inside ONE transaction, so a large
-  // backlog held every order's row lock for the length of the entire batch and nothing could
-  // make progress. Discovery is now capped and each order is handled on its own.
-  //
-  // Discovery resumes after the last failure. Per-order error handling lets the current
-  // batch continue, but a failing order stays eligible, so without this every sweep would
-  // select the same lowest ids and the orders behind a block of failures would never expire
-  // at all. A fully healthy batch resets the cursor, so a record that later stops failing is
-  // retried rather than abandoned. The cursor is per-process, so a restart retries from the
-  // beginning, which is the safe direction: an order is retried, never skipped.
+  // Pass 1: bounded, unlocked discovery.
   const afterId = expiryDiscoveryCursor;
   const candidates = await db.select({ id: orders.id }).from(orders).where(and(
     gt(orders.id, afterId),
@@ -380,30 +358,21 @@ export async function expirePendingCodOrders(now: Date, options: { isStopped?: (
     )
   )).orderBy(orders.id).limit(ORDER_EXPIRY_BATCH_SIZE);
 
-  // A batch shorter than the limit means the backlog past the cursor is drained, so the next
-  // sweep starts from the beginning again rather than permanently skipping the skipped ids.
-  if (candidates.length < ORDER_EXPIRY_BATCH_SIZE) expiryDiscoveryCursor = 0;
-
   // Pass 2: one short transaction per order, so no lock is held across the batch.
   for (const candidate of candidates) {
-    // Shutdown is checked between records, not only between sweeps: a stop request during a
-    // long backlog must not have to wait for every remaining order to be processed.
+    // Shutdown is checked between records, not only between sweeps: a stop request during a long backlog must not have to wait for every remaining order to be processed.
     if (options.isStopped?.()) return;
-    if (await expirePendingCodOrder(candidate.id, now)) continue;
-    // Only advance past a genuine failure, and only once a later order has been reached, so
-    // the cursor cannot skip an order that was never examined.
-    if (candidates.some((later) => later.id > candidate.id)) expiryDiscoveryCursor = candidate.id;
+    await expirePendingCodOrder(candidate.id, now);
   }
+
+  // Advance discovery by how much of the batch was examined, regardless of how the individual orders resolved.
+  expiryDiscoveryCursor = candidates.length < ORDER_EXPIRY_BATCH_SIZE
+    ? 0
+    : candidates[candidates.length - 1].id;
 }
 
-/**
- * Whether `expirePendingCodOrder` succeeded.
- *
- * `false` means the order raised. That is the only signal the discovery cursor needs, and it
- * is deliberately not an outcome about the order's business state: an order skipped because it
- * was cancelled or already handled is a success here, since nothing is left to retry.
- */
-async function expirePendingCodOrder(orderId: number, now: Date): Promise<boolean> {
+/** Expires one order in its own transaction. A failure is logged and swallowed so the rest of the batch can continue; discovery advances by batch segment, not by this outcome. */
+async function expirePendingCodOrder(orderId: number, now: Date): Promise<void> {
   try {
     await db.transaction(async (tx) => {
       // Recheck under the order lock: the row may have changed since discovery.
@@ -412,8 +381,7 @@ async function expirePendingCodOrder(orderId: number, now: Date): Promise<boolea
         !untouchedShippingExpiryApplies(order)) return;
       if (order.paymentMethod === "paymob") {
         if (order.paymentStatus !== "accepted" || order.refundedAmountCents > 0) return;
-        // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not
-        // return on the next sweep; unlike carrier state it never becomes relevant again.
+        // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not return on the next sweep; unlike carrier state it never becomes relevant again.
         const [alreadyRaised] = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
           eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1).for("update");
         if (alreadyRaised) return;
@@ -436,17 +404,11 @@ async function expirePendingCodOrder(orderId: number, now: Date): Promise<boolea
         eq(orders.paymentStatus, "pending")
       ));
     });
-    return true;
   } catch (error) {
-    // One order failing must not abort the rest of the batch: the sweep would then keep
-    // rediscovering the same failing record first and never progress past it.
-    //
-    // Only the order id and the error class are logged. The raw error can carry driver
-    // details, and an order id is already visible to staff through the ERP order list.
+    // One order failing must not abort the rest of the batch; it is logged and the sweep moves on to the next record.
     console.error("Order expiry sweep could not process an order", {
       orderId,
       error: error instanceof Error ? error.name : "UnknownError"
     });
-    return false;
   }
 }
