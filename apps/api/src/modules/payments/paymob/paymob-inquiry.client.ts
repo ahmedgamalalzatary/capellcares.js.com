@@ -43,8 +43,11 @@ export type PaymobInquiry = {
   refundedAmountCents: number;
 };
 
+/** A trusted read keyed on the stored provider order id, used when no transaction id exists (a callback never arrived). It carries the raw authenticated transaction alongside the summary so settlement can act on the same signed fields a callback would, without fabricating them. */
+export type PaymobOrderInquiry = PaymobInquiry & { rawTransaction: Record<string, unknown> };
+
 export class PaymobInquiryError extends Error {
-  readonly code: "PAYMENT_INQUIRY_UNAVAILABLE" | "PAYMENT_INQUIRY_INVALID";
+  readonly code: "PAYMENT_INQUIRY_UNAVAILABLE" | "PAYMENT_INQUIRY_INVALID" | "PAYMENT_INQUIRY_NOT_FOUND";
   constructor(code: PaymobInquiryError["code"], message: string) {
     super(message);
     this.code = code;
@@ -61,7 +64,11 @@ export type PaymobInquiryClientOptions = {
   now?: () => Date;
 };
 
-export type PaymobInquiryClient = { query(transactionId: string): Promise<PaymobInquiry> };
+export type PaymobInquiryClient = {
+  query(transactionId: string): Promise<PaymobInquiry>;
+  /** The documented by-order/reference read (`POST /api/ecommerce/orders/transaction_inquiry`), for recovering a payment whose callback never arrived. */
+  queryByOrderId(orderId: string): Promise<PaymobOrderInquiry>;
+};
 
 export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): PaymobInquiryClient {
   const apiKey = typeof options.apiKey === "string" ? options.apiKey.trim() : "";
@@ -106,20 +113,40 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
       const raw = parsed.data;
       // The queried transaction must be the one the provider returned, otherwise the caller could be told about a different payment than it asked for.
       if (raw.id !== id) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob transaction inquiry returned a different transaction");
-      const refunded = raw.is_refunded === true;
-      // `refunded_amount_cents` is nullable. Treating null as zero when the provider says refunded would silently discard a real refund, so that is an unresolved read.
-      if (refunded && (raw.refunded_amount_cents === null || raw.refunded_amount_cents === undefined)) {
-        throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob reported a refund without an authenticated amount");
+      return toInquiry(raw);
+    },
+
+    async queryByOrderId(orderId: string): Promise<PaymobOrderInquiry> {
+      const id = String(orderId ?? "").trim();
+      if (!id) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob order inquiry requires an order ID");
+      const { status, body } = await orderedRead(id);
+      // No transaction for an order is a distinct, RESOLVABLE fact (the provider authenticated the read and reported nothing) and must never be mistaken for an outage or an unreadable body — conflating them would either release a paid reservation or hold stock forever.
+      if (status === 404 || body === null || (typeof body === "object" && !Array.isArray(body) && Object.keys(body as object).length === 0)) {
+        throw new PaymobInquiryError("PAYMENT_INQUIRY_NOT_FOUND", "Paymob has no transaction for this order");
       }
-      const refundedAmountCents = refunded ? raw.refunded_amount_cents! : 0;
-      if (refundedAmountCents > raw.amount_cents) {
-        throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob refund exceeds the transaction amount");
-      }
-      return { transactionId: raw.id, paymobOrderId: raw.order.id, integrationId: raw.integration_id,
-        owner: raw.owner, environment: raw.is_live ? "live" : "test", amountCents: raw.amount_cents,
-        currency: raw.currency, success: raw.success, pending: raw.pending, refunded, refundedAmountCents };
+      const parsed = transactionSchema.safeParse(body);
+      if (!parsed.success) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob order inquiry response is invalid");
+      const raw = parsed.data;
+      // The read is keyed on OUR stored order id; a response naming another order cannot describe this attempt's payment.
+      if (raw.order.id !== id) throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob order inquiry returned a different order");
+      return { ...toInquiry(raw), rawTransaction: body as Record<string, unknown> };
     }
   };
+
+  /** Builds the trusted summary both reads share, validating refund totals once so neither read can surface a refund without an authenticated amount. */
+  function toInquiry(raw: z.infer<typeof transactionSchema>): PaymobInquiry {
+    const refunded = raw.is_refunded === true;
+    if (refunded && (raw.refunded_amount_cents === null || raw.refunded_amount_cents === undefined)) {
+      throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob reported a refund without an authenticated amount");
+    }
+    const refundedAmountCents = refunded ? raw.refunded_amount_cents! : 0;
+    if (refundedAmountCents > raw.amount_cents) {
+      throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob refund exceeds the transaction amount");
+    }
+    return { transactionId: raw.id, paymobOrderId: raw.order.id, integrationId: raw.integration_id,
+      owner: raw.owner, environment: raw.is_live ? "live" : "test", amountCents: raw.amount_cents,
+      currency: raw.currency, success: raw.success, pending: raw.pending, refunded, refundedAmountCents };
+  }
 
   /** Performs the authenticated read, refreshing the cached bearer token exactly once if the provider rejects it; the cached token previously survived a 401, so a single expiry made every refund inquiry fail for the rest of the hour — one refresh covers a genuinely stale token, while more would turn a wrong credential into a request loop, so a second rejection is reported as an unresolved read. */
   async function authenticatedRead(url: string): Promise<unknown> {
@@ -138,6 +165,39 @@ export function createPaymobInquiryClient(options: PaymobInquiryClientOptions): 
     response = await attempt(await authToken());
     if (response.status === 401) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob transaction inquiry failed");
     return readBody(response);
+  }
+
+  /** POSTs the by-order/reference inquiry with the cached bearer token, refreshing once on a 401 exactly like the by-transaction read. A 404 is returned rather than thrown because "no transaction for this order" is a resolvable fact the caller must distinguish from an outage. */
+  async function orderedRead(orderId: string): Promise<{ status: number; body: unknown }> {
+    const attempt = async (token: string): Promise<Response> => {
+      try {
+        return await fetchImpl(`${base}/api/ecommerce/orders/transaction_inquiry`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+          body: JSON.stringify({ order_id: orderId }),
+          signal: AbortSignal.timeout(options.timeoutMs ?? 10_000)
+        });
+      } catch {
+        throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob order inquiry failed");
+      }
+    };
+    let response = await attempt(await authToken());
+    if (response.status === 401) {
+      cachedToken = null;
+      response = await attempt(await authToken());
+    }
+    if (response.status === 404) return { status: 404, body: null };
+    if (response.status === 401) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob order inquiry failed");
+    if (!response.ok) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob order inquiry failed");
+    const text = await response.text().catch(() => null);
+    // A body we cannot read is an unresolved read, never "no transaction": treating HTML/truncated output as an absence would release a reservation nobody proved was unpaid.
+    if (text === null) throw new PaymobInquiryError("PAYMENT_INQUIRY_UNAVAILABLE", "Paymob order inquiry failed");
+    if (text.trim() === "") return { status: response.status, body: null };
+    try {
+      return { status: response.status, body: JSON.parse(text) };
+    } catch {
+      throw new PaymobInquiryError("PAYMENT_INQUIRY_INVALID", "Paymob order inquiry response is invalid");
+    }
   }
 
   /** Parses a 2xx inquiry body. A non-2xx or unparseable body is an unresolved read. */

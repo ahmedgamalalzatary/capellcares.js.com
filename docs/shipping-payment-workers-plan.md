@@ -157,7 +157,7 @@ Do not run provider writes against production to establish a baseline.
   Acceptance: supported edits confirm from correlated reads; unsupported edits never reach Bosta;
   cancellation never restocks without proof. Retain G08 policy; do not expand post-pickup editing.
 
-- [ ] S02 / G06: Implement bounded missed-callback payment reconciliation before unsafe expiry.
+- [x] S02 / G06: Implement bounded missed-callback payment reconciliation before unsafe expiry.
   Discover due unresolved attempts; query by stored provider order ID/reference when no transaction ID
   exists. Verify the regional/account lookup contract rather than guessing the URL/response shape.
   Persist scheduling/claims/proven inquiry outcomes; apply through shared atomic settlement logic.
@@ -265,7 +265,7 @@ Phase 3 exit: separate images/processes own HTTP and background work, using iden
 | Investigation | Complete | Repository read + official docs; no live calls/tests | Merchant-specific contracts unverified |
 | S00 | Not started | Baseline results not yet recorded | See phase acceptance gates |
 | S01 / G07 | Not started | Needs merchant evidence for Bosta edit/cancel/pricing contracts | Capability stays gated meanwhile |
-| S02 / G06 | In progress | Missed-callback reconciliation not yet implemented | Needs verified account/order inquiry contract |
+| S02 / G06 | Complete | TDD: documented by-order inquiry (POST /api/ecommerce/orders/transaction_inquiry), a bounded reconciliation sweep with durable scheduling/claim/retry/park on the attempt, settlement via the shared atomic processor, and an expiry hold that defers unproven open attempts only while inquiry is enabled. Recovery/outage/no-payment/mismatch/park/concurrency + expiry-hold tests green; API + database typecheck green | No-transaction ⇒ releasable inferred from docs; region/account match still warrants a readiness check |
 | S03 / G10 | Complete | TDD: reconciliation returns parked `review_required` callbacks (safe fields only) plus a permission-gated requeue; ERP renders both and can requeue. API route tests + ERP page tests green; API/ERP typecheck green | — |
 | S04 / G04-G05 | Complete | TDD: shipping runtime memoized by config+fetch identity with 30s TTL; validated priced/shipping context threaded from `submitCheckout` into `initiatePaymobCheckout`. Runtime/reuse/expiry + context tests, plus checkout/shipping regression suites green; API typecheck green | Live-call reduction not yet measured |
 | S05 / G09 | Complete | TDD: stop seam added to reservation expiry and forwarded by the checkout expiry worker. Stop/backlog tests + expiry/reservation/interval suites green; API typecheck green | — |

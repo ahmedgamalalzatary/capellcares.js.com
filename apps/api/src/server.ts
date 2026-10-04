@@ -11,6 +11,8 @@ const { startShippingDispatchWorker } = await import("./modules/shipping/shippin
 const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
 const { startShippingCancellationWorker } = await import("./modules/shipping/shipping-cancellation-worker.js");
 const { startPaymobCallbackWorker } = await import("./modules/payments/paymob/paymob-callback-worker.js");
+const { startPaymobReconciliationWorker } = await import("./modules/payments/paymob/paymob-reconciliation-worker.js");
+const { resolvePaymobConfig } = await import("./modules/payments/paymob/paymob-config.js");
 const { assertShippingStartup } = await import("./modules/shipping/shipping-startup.js");
 const { mysqlPool } = await import("@capella/database/src/db");
 
@@ -19,9 +21,12 @@ assertShippingStartup(process.env);
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
+// Missing-callback reconciliation needs the inquiry API key; without it there is no authenticated read, so expiry keeps its existing behaviour rather than holding stock nothing can resolve.
+const reconciliationEnabled = resolvePaymobConfig().apiKey !== null;
 const stopWorkers = [
   startPaymobCallbackWorker(),
-  startCheckoutExpiryWorker(),
+  startPaymobReconciliationWorker(),
+  startCheckoutExpiryWorker({ reconciliationEnabled }),
   startShippingDispatchWorker(),
   startShippingSyncWorker(),
   startShippingCancellationWorker()

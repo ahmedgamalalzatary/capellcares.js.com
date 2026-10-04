@@ -189,6 +189,61 @@ test("inquiry output never carries the api key or auth token", async () => {
   assert.equal(text.includes("super_secret_token"), false);
 });
 
+test("an inquiry by order id uses the documented endpoint, bearer auth and returns the authenticated transaction", async () => {
+  // Missed-callback recovery has no transaction id to look up; the documented by-order/reference read is the only way to discover whether an unresolved attempt was actually paid. The raw body is retained because settlement must act on the authenticated fields (is_auth/is_capture/...) rather than a trimmed summary.
+  const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const fetchImpl: typeof fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).endsWith("/api/auth/tokens")) return new Response(JSON.stringify({ token: "tok_123" }), { status: 200 });
+    return new Response(JSON.stringify(inquiryBody()), { status: 200 });
+  };
+  const result = await module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com",
+    apiKey: "pk_api" }).queryByOrderId("690898");
+  assert.equal(calls[1]!.url, "https://accept.paymob.com/api/ecommerce/orders/transaction_inquiry");
+  assert.equal(calls[1]!.init?.method, "POST");
+  assert.equal(String(new Headers(calls[1]!.init!.headers as HeadersInit).get("authorization")), "Bearer tok_123");
+  assert.deepEqual(JSON.parse(String(calls[1]!.init?.body)), { order_id: "690898" });
+  assert.equal(result.transactionId, "574588");
+  assert.equal(result.paymobOrderId, "690898");
+  assert.equal((result.rawTransaction as Record<string, unknown>).id, 574588);
+});
+
+test("an order inquiry that answers about a different order is rejected", async () => {
+  // The read is keyed on OUR stored order id; a response naming another order is unusable and must never be applied to this attempt.
+  const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
+  const fetchImpl: typeof fetch = async (url) => String(url).endsWith("/api/auth/tokens")
+    ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
+    : new Response(JSON.stringify(inquiryBody({ order: { id: 999999 } })), { status: 200 });
+  await assert.rejects(module.createPaymobInquiryClient({ fetchImpl, baseUrl: "https://accept.paymob.com",
+    apiKey: "pk_api" }).queryByOrderId("690898"), /different|invalid|mismatch/i);
+});
+
+test("an order with no transaction is reported as not found, never as a zero payment", async () => {
+  // A missing payment and an outage are different facts: not-found may resolve an attempt, an outage must not.
+  const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
+  const build = (respond: () => Response) => module.createPaymobInquiryClient({
+    fetchImpl: async (url: any) => String(url).endsWith("/api/auth/tokens")
+      ? new Response(JSON.stringify({ token: "t" }), { status: 200 }) : respond(),
+    baseUrl: "https://accept.paymob.com", apiKey: "pk_api" });
+  await assert.rejects(build(() => new Response("Not Found", { status: 404 })).queryByOrderId("690898"),
+    (error: any) => error.code === "PAYMENT_INQUIRY_NOT_FOUND");
+  await assert.rejects(build(() => new Response("null", { status: 200 })).queryByOrderId("690898"),
+    (error: any) => error.code === "PAYMENT_INQUIRY_NOT_FOUND");
+});
+
+test("an order inquiry outage surfaces as unresolved rather than not found", async () => {
+  const module = await import("../../src/modules/payments/paymob/paymob-inquiry.client.js");
+  const build = (respond: () => Response) => module.createPaymobInquiryClient({
+    fetchImpl: async (url: any) => String(url).endsWith("/api/auth/tokens")
+      ? new Response(JSON.stringify({ token: "t" }), { status: 200 }) : respond(),
+    baseUrl: "https://accept.paymob.com", apiKey: "pk_api" });
+  await assert.rejects(build(() => new Response("unavailable", { status: 503 })).queryByOrderId("690898"),
+    (error: any) => error.code === "PAYMENT_INQUIRY_UNAVAILABLE");
+  await assert.rejects(build(() => { throw new Error("socket reset"); }).queryByOrderId("690898"),
+    (error: any) => error.code === "PAYMENT_INQUIRY_UNAVAILABLE");
+});
+
 test("createPaymobIntention sends the authoritative amount and maps public checkout data", async () => {
   const module = await import("../../src/modules/payments/paymob/paymob-client.js").catch(() => null);
   let capturedUrl = "";

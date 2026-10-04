@@ -623,6 +623,12 @@ export const paymentAttempts = mysqlTable("payment_attempts", {
   status: mysqlEnum("status", ["created", "pending", "succeeded", "failed", "cancelled", "expired", "reconciliation_required"]).notNull(),
   expiresAt: datetime("expires_at"),
   failureCode: varchar("failure_code", { length: 128 }),
+  /** Missing-callback reconciliation state (G06): bounded retries, a lease claim and the last reason, persisted on the attempt so scheduling survives a restart and every worker agrees on what is still in play. */
+  reconcileAttempts: int("reconcile_attempts").notNull().default(0),
+  reconcileNextAt: datetime("reconcile_next_at"),
+  reconcileClaimedAt: datetime("reconcile_claimed_at"),
+  reconcileClaimedBy: varchar("reconcile_claimed_by", { length: 64 }),
+  reconcileLastError: varchar("reconcile_last_error", { length: 128 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
@@ -630,6 +636,7 @@ export const paymentAttempts = mysqlTable("payment_attempts", {
   attemptNumberCheck: check("payment_attempts_attempt_number_check", sql`${table.attemptNumber} between 1 and 3`),
   amountCheck: check("payment_attempts_amount_check", sql`${table.amountCents} > 0`),
   earlyRefundCheck: check("payment_attempts_early_refund_check", sql`${table.earlyRefundAmountCents} >= 0 and ${table.earlyRefundAmountCents} <= ${table.amountCents}`),
+  reconcileDueIdx: index("payment_attempts_reconcile_idx").on(table.status, table.reconcileNextAt),
   sessionFk: foreignKey({ name: "payment_attempts_session_fk", columns: [table.checkoutSessionId], foreignColumns: [checkoutSessions.id] }).onDelete("cascade")
 }));
 

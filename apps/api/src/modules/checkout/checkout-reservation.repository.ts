@@ -1,7 +1,7 @@
 import { and, eq, gt, gte, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
-import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
+import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionAwaitsReconciliation, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 import { sqlReceiptHoldsStock } from "./receipt-hold-policy.js";
 
 interface ReservedCheckoutInput {
@@ -121,7 +121,7 @@ export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_
 
 export async function releaseExpiredCheckoutReservations(
   now: Date,
-  options: { isStopped?: () => boolean } = {}
+  options: { isStopped?: () => boolean; reconciliationEnabled?: boolean } = {}
 ): Promise<void> {
   // Pass 1: cheap unlocked discovery of a bounded candidate set.
   const candidates = await discoverExpiredSessionIds(now);
@@ -149,6 +149,8 @@ export async function releaseExpiredCheckoutReservations(
 
       // P03: a verified callback may already be durably received while its effects are still queued — releasing the reservation then would free stock the customer has already paid for and leave the eventual success with nothing to fulfil.
       if (await hasUnresolvedFinancialEvidence(tx, session.id, unresolvedOrderIds)) return;
+      // G06: an open attempt holding a provider order id may be a payment whose callback never arrived. While reconciliation is enabled, defer rather than release an unproven reservation; the sweep settles a real success, resolves a proven no-payment, or parks the attempt visibly.
+      if (options.reconciliationEnabled && await sessionAwaitsReconciliation(tx, session.id)) return;
       const reservations = await tx.select()
         .from(checkoutReservations)
         .where(and(

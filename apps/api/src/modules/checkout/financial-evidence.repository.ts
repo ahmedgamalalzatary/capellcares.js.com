@@ -52,6 +52,24 @@ export async function hasUnresolvedFinancialEvidence(
     unresolvedOrderIds.has(String(attempt.paymobOrderId)));
 }
 
+/** True while a session's own attempt holds a provider order id whose outcome is still unproven — an open attempt, or one parked for reconciliation. Expiry must defer these (when reconciliation is enabled) instead of releasing stock a missed callback might have paid for; a parked attempt keeps the hold visible in ERP rather than silent.
+ * Deliberately lock-free, like the other guards: it runs under the session lock and must not take an inbox/attempt lock of its own. */
+export async function sessionAwaitsReconciliation(
+  tx: Pick<typeof db, "select">,
+  checkoutSessionId: number
+): Promise<boolean> {
+  const [row] = await tx
+    .select({ id: paymentAttempts.id })
+    .from(paymentAttempts)
+    .where(and(
+      eq(paymentAttempts.checkoutSessionId, checkoutSessionId),
+      isNotNull(paymentAttempts.paymobOrderId),
+      or(inArray(paymentAttempts.status, [...OPEN_ATTEMPT_STATUSES]), isNotNull(paymentAttempts.reconcileNextAt))
+    ))
+    .limit(1);
+  return row !== undefined;
+}
+
 /** Every provider order id a session's attempts hold, for scoping an inbox lookup. */
 export async function sessionPaymobOrderIds(
   tx: Pick<typeof db, "select">,
