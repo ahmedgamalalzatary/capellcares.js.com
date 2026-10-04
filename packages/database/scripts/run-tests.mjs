@@ -29,12 +29,20 @@ process.env.NODE_OPTIONS = [process.env.NODE_OPTIONS, "--max-old-space-size=4096
   .join(" ");
 
 const extraArgs = process.argv.slice(2);
-const testArgs = extraArgs.length > 0 ? extraArgs : ["tests/**/*.test.ts"];
+const wantsCoverage = extraArgs.includes("--coverage");
+const filteredArgs = extraArgs.filter((arg) => arg !== "--coverage");
+const testArgs = filteredArgs.length > 0 ? filteredArgs : ["tests/**/*.test.ts"];
+
+// Node's built-in coverage counts only loaded files, so the reported figure is a
+// lower bound on workspace coverage rather than a whole-workspace percentage.
+const coverageArgs = wantsCoverage
+  ? ["--experimental-test-coverage", "--test-coverage-include=src/**/*.ts"]
+  : [];
 const command = process.platform === "win32" ? "cmd.exe" : "pnpm";
 const args =
   process.platform === "win32"
-    ? ["/c", "pnpm", "exec", "tsx", "--test", "--test-force-exit", "--test-concurrency=1", ...testArgs]
-    : ["exec", "tsx", "--test", "--test-force-exit", "--test-concurrency=1", ...testArgs];
+    ? ["/c", "pnpm", "exec", "tsx", "--test", "--test-force-exit", "--test-concurrency=1", ...coverageArgs, ...testArgs]
+    : ["exec", "tsx", "--test", "--test-force-exit", "--test-concurrency=1", ...coverageArgs, ...testArgs];
 
 const child = spawn(command, args, {
   cwd: packageRoot,

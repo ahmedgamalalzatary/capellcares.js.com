@@ -12,7 +12,8 @@
     "shipping:check": "tsx src/scripts/check-shipping.ts",
     "pretest": "pnpm --filter @capella/database pretest",
     "start": "node dist/server.js",
-    "test": "node ./scripts/run-tests.mjs"
+    "test": "node ./scripts/run-tests.mjs",
+    "test:coverage": "node ./scripts/run-tests.mjs --coverage"
   },
   "dependencies": {
     "@capella/database": "workspace:*",

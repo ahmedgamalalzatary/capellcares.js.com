@@ -11,7 +11,8 @@
     "build": "expo export --platform ios --platform android --output-dir dist",
     "lint": "expo lint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@capella/shared": "workspace:*",

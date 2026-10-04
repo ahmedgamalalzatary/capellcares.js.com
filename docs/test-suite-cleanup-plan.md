@@ -14,37 +14,66 @@ Preserve concurrent owner changes and re-check every finding against current fil
 ## Verified baseline and limits
 
 The owner confirms that all existing workspaces pass their normal test runs.
-The audit independently confirmed ERP and storefront twice in normal order.
+All six full workspace coverage runs subsequently passed; ERP/storefront also passed normal-order rechecks.
 Shuffled failures are a separate test-isolation finding, not current default-run failures.
 
 | Workspace | Framework / locations | Files | Expanded cases | Audit execution |
 | --- | --- | ---: | ---: | --- |
-| apps/api | Node test + tsx; tests/{contracts,helpers,modules,routes,services,unit,units} | 119 | 1,025 | 242 mutation-free cases passed |
+| apps/api | Node test + tsx; tests/{contracts,helpers,modules,routes,services,unit,units} | 119 | 1,025 | Full coverage command passed |
 | apps/erp | Vitest 4 + Testing Library; tests/ | 48 | 267 | All passed normally |
 | apps/storefront | Vitest 4 + Testing Library; tests/{components,contracts,unit} | 86 | 576 | All passed normally |
 | apps/mobile | Jest 29 + jest-expo; __tests/ and tests/ | 14 | 89 | All passed |
-| packages/database | Node test + tsx; tests/ | 7 | 50 | 11 read-only cases passed |
+| packages/database | Node test + tsx; tests/ | 7 | 50 | All passed with coverage |
 | packages/shared | Node test + tsx; tests/ | 15 | 42 | All passed |
-| Total | Six workspaces | 289 | 2,049 | 1,227 unique cases passed in audit runs |
+| Total | Six workspaces | 289 | 2,049 | All six full coverage commands passed |
 
-API/database full counts were established statically, including parameter expansion.
-Their remaining 822 cases mutate the database and were not executed during the read-only audit.
+Inventory counts include static parameter expansion; API's case count is from that inventory.
+Initial read-only audit ran subsets; subsequent full API/database coverage ran sequentially against local capella_test.
 No confirmed orphan test, permanent skip/only/todo marker, or snapshot assertion was found.
 Working-tree changes, including deleted Playwright files, already existed before the audit.
 
 ### Runners and coverage
 
 - Root: pnpm test invokes Turbo with concurrency 4 and test dependencies on upstream builds.
+- Root coverage: pnpm test:coverage invokes Turbo with concurrency 1; its task is now configured with upstream builds/environment forwarding.
 - API: node scripts/run-tests.mjs; pretest invokes database migrations; per-file concurrency 1.
 - Database: node scripts/run-tests.mjs; migration pretest; per-file concurrency 1.
 - ERP/storefront: vitest run. Mobile: jest. Shared: tsx --test tests/**/*.test.ts.
-- No configured coverage scripts/thresholds; Vitest coverage providers were absent.
-- Mobile built-in coverage: 98.34% lines, 80.90% branches for src/**; app/** excluded.
-- Node built-in coverage: shared 90.11% lines / 94.25% branches; API subset 68.36% / 89.00%.
-- Database env.ts alone: 86.67% lines / 88.89% branches.
-- Node measurements include loaded files only and type/barrel declarations; they are not whole-workspace coverage.
+- Coverage scripts now exist in every workspace; ERP/storefront have @vitest/coverage-v8 4.1.6. No thresholds are configured.
+- ERP/storefront measurement: --coverage --coverage.reporter=text --coverage.include=src/**/*.{ts,tsx}.
+- Mobile measurement: --coverage --coverageReporters=text with collectCoverageFrom for both src/** and app/** TypeScript files.
+- API/database measurement: node scripts/run-tests.mjs --coverage; shared: pnpm run test:coverage.
+- Workspace commands were run directly; the root Turbo coverage/build pipeline itself was not validated.
+- Normal order, disabled caching where supported, and four Vitest workers were used; database-backed workspaces ran sequentially.
 - Audit Vitest runs disabled caching and supplied __dirname in memory to avoid bundling config files.
 - Seed-42 failures reproduced with both runner and native config loaders; no config files were changed.
+
+### Measured coverage baseline
+
+| Workspace | Lines | Branches | Functions | Denominator |
+| --- | ---: | ---: | ---: | --- |
+| ERP | 75.83% | 71.57% | 70.02% | src TypeScript, including unimported files |
+| Storefront | 79.63% | 73.14% | 72.73% | src TypeScript, including unimported files |
+| Mobile | 97.78% | 80.64% | 96.66% | src and app TypeScript |
+| API | 97.62% | 86.66% | 95.76% | Loaded src TypeScript; scripts excluded |
+| Database | 95.45% | 78.18% | 87.50% | Loaded src TypeScript; drizzle/schema and migrations excluded |
+| Shared | 90.11% | 94.25% | 62.50% | Loaded src TypeScript |
+
+Node figures exclude unimported files and include type/barrel declarations; they are not whole-workspace percentages or guaranteed lower bounds.
+These scopes/providers differ, so do not average the numbers or compare workspaces as a quality ranking.
+Coverage proves execution, not useful assertions or race safety; passing coverage runs do not resolve Phase 1.
+
+| Evidence from measured coverage | Plan consequence |
+| --- | --- |
+| ERP admin-auth.tsx and advice-form.tsx: 0% lines | Add Slice 5.6; prioritize real auth-provider behavior |
+| ERP staff-editor-form.tsx: 51.64% lines, 59.01% branches | Supports mutation/dependency checks in 5.3 |
+| ERP reconciliation page: 92.85% lines, 50% branches | High line coverage still misses the states in 5.3 |
+| Storefront wishlist-provider.tsx: 63.82% lines, 54.54% branches | Supports account/mutation races in 5.1 |
+| Storefront use-checkout.ts: 92.56% lines, 76.15% branches | Review uncovered branches; retain existing checkout scenarios |
+| Mobile app/index.tsx: 88.23% lines, 62.50% branches | Supports rendered loading/error behavior in 5.4 |
+| Shared ordering.ts: 45.45% lines, 25% functions in shared suite | Supports owner-level cases in 5.5; app coverage remains complementary |
+| API callback processing: 90% lines / 86.96% branches; financial evidence: 94.63% / 95.45% | Preserve existing integration tests; investigate specific missing branches |
+| API checkout retry/status: 83.33% / 98.04% lines; startup/sync policy: 100% / 100% lines | Reject “no tests” claims; sync policy still has only 72.22% branch coverage |
 
 ## Rules for every slice
 
@@ -59,7 +88,7 @@ Working-tree changes, including deleted Playwright files, already existed before
 9. Record results, case/file count changes, remaining decisions, and the next slice in this document.
 
 Run conflicting commands sequentially. Confirm disposable test-database targets before resets/migrations.
-Until database isolation is implemented, execute API and database suites sequentially, outside root Turbo.
+Execute API/database suites sequentially until isolation is implemented; coverage root concurrency 1 helps, but normal root test concurrency remains 4.
 Do not weaken assertions, skip tests, or widen timeouts simply to make a failure disappear.
 Keep slices focused; finish and validate one slice before moving to the next.
 
@@ -223,7 +252,8 @@ Phases 2–3 estimate: 18 fewer cases, from 2,049 to about 2,031 before addition
 
 Source changes are included only when the owner authorizes the relevant behavior-fix slice.
 For every slice: reproduce a failing/missing behavior, implement the focused test/fix, then verify adjacent integration paths.
-Estimated impact: 25–45 focused additional cases, depending on parameterization.
+Estimated impact: 35–60 focused additional cases including newly measured ERP gaps, depending on parameterization.
+Prioritize wishlist/auth session isolation, revalidation rejection paths, and staff mutations over cosmetic coverage gains.
 
 ### 5.1 Wishlist account isolation — high confidence
 
@@ -261,6 +291,17 @@ Estimated impact: 25–45 focused additional cases, depending on parameterizatio
 - [ ] packages/database/tests/env.test.ts: add supported TEST_DATABASE_URL-only fallback outside test mode.
 - Finish: owner-level boundary coverage and deterministic environment resolution.
 
+### 5.6 Newly measured ERP auth and advice gaps — high confidence
+
+- [ ] Source: apps/erp/src/components/providers/admin-auth.tsx; add focused real-provider tests instead of mocking the provider itself.
+- Evidence: 0% line coverage. Read hydration, refresh, login/logout, storage, and invalidation integration before writing cases.
+- Add valid/malformed saved sessions, refresh success/failure, login success/rejection, logout failure cleanup, and unsubscribe/unmount behavior.
+- Add delayed bootstrap-refresh versus newer login/logout races; source currently guards only unmount, not newer session actions.
+- Reproduce intended race behavior before any approved source fix; preserve synchronization with API-client token/user/hydration state.
+- [ ] Source: apps/erp/src/components/forms/advice-form.tsx; add new/edit initialization, required title/video, save payload, navigation, and failure/retry tests.
+- Evidence: 0% line coverage; existing advice list/API cases do not execute this form.
+- Finish: auth state/storage cannot be restored by stale requests; advice validation and save/recovery are asserted through real UI actions.
+
 ## Phase 6 — Presentation policy, coverage, and optional organization
 
 ### 6.1 Review the 21 class-only cases
@@ -288,9 +329,11 @@ Cosmetic deletion confidence is medium until intent is agreed; class strings alo
 
 ### 6.2 Coverage and browser layer
 
-- [ ] Configure approved coverage tooling/scripts with explicit source inclusion and exclusions per workspace.
-- Include mobile app/** when reporting screen coverage; distinguish declarations, loaded-source coverage, and untested files.
-- Establish a measured baseline before proposing thresholds; prioritize critical branches and invariants.
+- [x] Coverage providers/scripts installed by the owner; all six direct workspace coverage commands passed.
+- [ ] Persist explicit source inclusion/exclusions so ordinary coverage scripts reproduce the measured scopes above.
+- Include mobile app/** for screen coverage; label Node loaded-source figures and review source-backed schema behavior separately.
+- [ ] Validate the root coverage/build pipeline, then propose thresholds from the measured baseline and critical invariants.
+- Re-measure after approved slices using the same scopes; report behavioral improvements as well as percentage changes.
 - [ ] Confirm whether existing Playwright deletions were intentional before adding a small browser replacement.
 - Focus browser cases on touch/swipe, focus, actual link clickability, responsive layout, and a critical customer flow.
 - Finish: reproducible reports with stated denominators; browser checks protect agreed real-browser requirements.
