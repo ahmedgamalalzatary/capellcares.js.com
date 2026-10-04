@@ -139,13 +139,20 @@ export async function discoverExpiredSessionIds(now: Date, limit = EXPIRY_BATCH_
   return candidates.map(candidate => candidate.id);
 }
 
-export async function releaseExpiredCheckoutReservations(now: Date): Promise<void> {
+export async function releaseExpiredCheckoutReservations(
+  now: Date,
+  options: { isStopped?: () => boolean } = {}
+): Promise<void> {
   // Pass 1: cheap unlocked discovery of a bounded candidate set.
   const candidates = await discoverExpiredSessionIds(now);
   if (candidates.length === 0) return;
 
   // Pass 2: one short transaction per candidate, so no lock is held across the batch.
   for (const sessionId of candidates) {
+    // A stop request during a long backlog must not wait for every remaining candidate.
+    // Checked before each record, so the in-flight one is completed and the rest are
+    // left recoverable for the next run.
+    if (options.isStopped?.()) return;
     await db.transaction(async (tx) => {
       // Recheck under the session lock: the row may have changed since discovery, in which
       // case it is simply skipped and the next sweep re-evaluates it against fresh data.

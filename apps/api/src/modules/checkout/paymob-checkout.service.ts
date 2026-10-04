@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import type { CheckoutPayload } from "../../types/domain.js";
+import type { CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
@@ -135,12 +136,18 @@ export async function initiatePaymobCheckout(input: {
   redirectionUrl: string;
   createIntention?: IntentionCreator;
   shippingService?: CheckoutShippingService;
+  priced?: Awaited<ReturnType<typeof priceCheckout>>;
+  shipping?: CheckoutShippingQuote | null;
 }) {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
   }
-  const priced = await priceCheckout(input.payload);
-  const shipping = await resolveShippingForCheckout(input.payload, priced, input.shippingService);
+  // A caller that already priced and quoted (e.g. submitCheckout) passes the validated
+  // context so it is never recomputed. Absent context, resolve it exactly as before.
+  const priced = input.priced ?? await priceCheckout(input.payload);
+  const shipping = input.shipping !== undefined
+    ? input.shipping
+    : await resolveShippingForCheckout(input.payload, priced, input.shippingService);
   const cartSnapshot = JSON.stringify(priced.items);
   const amountCents = Math.round(priced.totalAmount * 100) + (shipping?.shippingAmountCents ?? 0);
   const shippingSnapshot = shipping ? JSON.stringify(shipping) : null;

@@ -2,6 +2,39 @@ import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Or
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
+
+export type PaymobReconciliationItem = {
+  checkoutId: string;
+  customerName: string;
+  customerEmail: string;
+  amountCents: number;
+  currency: string;
+  environment: "test" | "live";
+  paymobOrderId: string | null;
+  paymobTransactionId: string | null;
+  reason: string | null;
+};
+
+/** A durably received callback parked in review_required, with only safe fields exposed. */
+export type PaymobCallbackProblem = {
+  callbackId: number;
+  checkoutId: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  amountCents: number | null;
+  currency: string | null;
+  environment: "test" | "live" | null;
+  paymobOrderId: string | null;
+  paymobTransactionId: string | null;
+  reason: string | null;
+  ageMs: number;
+};
+
+export type PaymobReconciliationPayload = {
+  items: PaymobReconciliationItem[];
+  callbackProblems: PaymobCallbackProblem[];
+};
+
 export type SalesAnalytics = {
   summary: {
     totalOrders: number;

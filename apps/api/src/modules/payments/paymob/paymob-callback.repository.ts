@@ -44,3 +44,23 @@ export async function rejectPaymobCallback(claim: PaymobCallbackClaim, reason: s
     processedAt: now, claimedBy: null, claimedAt: null }).where(and(eq(paymobCallbackInbox.id, claim.id),
     eq(paymobCallbackInbox.processingStatus, "processing"), eq(paymobCallbackInbox.claimedBy, claim.claimedBy)));
 }
+
+/**
+ * Staff recovery for a parked callback. Offers the SAME durably stored receipt to the
+ * idempotent processor again; it never fabricates provider evidence and never bypasses the
+ * processor's own authentication/verification, so a resend of an uncertain mutation is
+ * still reconciled through verified reads. Only a parked row may be requeued; `attempts`
+ * resets so the retry gets a fresh bounded window instead of re-parking on the first try.
+ */
+export async function requeuePaymobCallback(id: number, now: Date): Promise<"requeued" | "not_parked" | "missing"> {
+  return db.transaction(async tx => {
+    const [row] = await tx.select({ status: paymobCallbackInbox.processingStatus })
+      .from(paymobCallbackInbox).where(eq(paymobCallbackInbox.id, id)).for("update");
+    if (!row) return "missing";
+    if (row.status !== "review_required" && row.status !== "failed") return "not_parked";
+    await tx.update(paymobCallbackInbox).set({ processingStatus: "received", lastError: null,
+      claimedBy: null, claimedAt: null, processedAt: null, attempts: 0, nextAttemptAt: now })
+      .where(eq(paymobCallbackInbox.id, id));
+    return "requeued";
+  });
+}

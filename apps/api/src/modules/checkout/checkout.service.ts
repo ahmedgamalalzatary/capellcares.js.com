@@ -62,7 +62,9 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
       idempotencyKey: options.idempotencyKey.trim(),
       config,
       notificationUrl,
-      redirectionUrl
+      redirectionUrl,
+      priced,
+      shipping
     });
   }
   return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload, {

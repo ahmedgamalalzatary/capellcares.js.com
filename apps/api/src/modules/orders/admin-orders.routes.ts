@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@capella/database/src/db";
-import { checkoutSessions, paymentAttempts } from "@capella/database/drizzle/schema";
-import { and, eq, or } from "drizzle-orm";
+import { checkoutSessions, paymobCallbackInbox, paymentAttempts } from "@capella/database/drizzle/schema";
+import { and, asc, eq, or } from "drizzle-orm";
 import { wrapAsync } from "../../lib/async-route.js";
 import { requireErpPermission } from "../../middlewares/erp-permissions.middleware.js";
+import { requeuePaymobCallback } from "../payments/paymob/paymob-callback.repository.js";
 import {
   getAdminOrderController,
   listAdminOrderReviewFlagsController,
@@ -35,7 +36,47 @@ adminOrdersRoutes.get("/reconciliation", requireErpPermission("orders.read"), wr
       and(eq(paymentAttempts.status, "succeeded"),
         eq(paymentAttempts.failureCode, "SECOND_CAPTURE_AFTER_SUCCESS"))
     ));
-  res.json({ items: rows });
+  // A callback parked in review_required is a money problem that never produced a
+  // reconciliation_required attempt, so the attempt query above cannot see it. Expose the
+  // parked receipt too, with only safe fields: never the normalized payload or the raw body.
+  const parked = await db.select({
+    callbackId: paymobCallbackInbox.id,
+    receivedAt: paymobCallbackInbox.receivedAt,
+    checkoutId: checkoutSessions.publicId,
+    customerName: checkoutSessions.fullName,
+    customerEmail: checkoutSessions.email,
+    amountCents: checkoutSessions.amountCents,
+    currency: checkoutSessions.currency,
+    environment: paymentAttempts.environment,
+    paymobOrderId: paymobCallbackInbox.signedOrderId,
+    paymobTransactionId: paymentAttempts.paymobTransactionId,
+    reason: paymobCallbackInbox.lastError
+  }).from(paymobCallbackInbox)
+    .leftJoin(checkoutSessions, eq(checkoutSessions.id, paymobCallbackInbox.boundSessionId))
+    .leftJoin(paymentAttempts, eq(paymentAttempts.paymobOrderId, paymobCallbackInbox.signedOrderId))
+    .where(eq(paymobCallbackInbox.processingStatus, "review_required"))
+    .orderBy(asc(paymobCallbackInbox.receivedAt), asc(paymobCallbackInbox.id));
+  const now = Date.now();
+  res.json({ items: rows,
+    callbackProblems: parked.map(({ receivedAt, ...row }) => ({ ...row, ageMs: now - receivedAt.getTime() })) });
 }));
+adminOrdersRoutes.post("/reconciliation/callbacks/:id/requeue", requireErpPermission("orders.update_payment_status"),
+  wrapAsync(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ message: "Invalid callback id" });
+      return;
+    }
+    const outcome = await requeuePaymobCallback(id, new Date());
+    if (outcome === "missing") {
+      res.status(404).json({ message: "Callback not found" });
+      return;
+    }
+    if (outcome === "not_parked") {
+      res.status(409).json({ message: "Only a parked callback can be requeued" });
+      return;
+    }
+    res.json({ ok: true });
+  }));
 adminOrdersRoutes.get("/:id", requireErpPermission("orders.read"), wrapAsync(getAdminOrderController));
 adminOrdersRoutes.post("/:id/payment-status", requireErpPermission("orders.update_payment_status"), wrapAsync(updateOrderPaymentStatusController));

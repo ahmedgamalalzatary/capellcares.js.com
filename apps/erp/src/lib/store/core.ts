@@ -17,6 +17,7 @@ import type {
   CategoryUpsertInput,
   ErpStoreSnapshot,
   Listener,
+  PaymobReconciliationPayload,
   ProductApiShape,
   SalesAnalytics
 } from "./types";
@@ -475,17 +476,13 @@ export class ErpStore {
     await api.post(`/api/erp/orders/review-flags/${flagId}/resolve`);
   }
 
-  async fetchPaymobReconciliation(): Promise<Array<{
-    checkoutId: string; customerName: string; customerEmail: string; amountCents: number;
-    currency: string; environment: "test" | "live"; paymobOrderId: string | null;
-    paymobTransactionId: string | null; reason: string | null;
-  }>> {
-    const result = await api.get<{ items: Array<{
-      checkoutId: string; customerName: string; customerEmail: string; amountCents: number;
-      currency: string; environment: "test" | "live"; paymobOrderId: string | null;
-      paymobTransactionId: string | null; reason: string | null;
-    }> }>("/api/erp/orders/reconciliation");
-    return result.items;
+  async fetchPaymobReconciliation(): Promise<PaymobReconciliationPayload> {
+    return api.get<PaymobReconciliationPayload>("/api/erp/orders/reconciliation");
+  }
+
+  /** Offer a parked callback receipt to the idempotent processor again. Never a blind resend. */
+  async requeuePaymobCallback(callbackId: number) {
+    await api.post(`/api/erp/orders/reconciliation/callbacks/${callbackId}/requeue`);
   }
 
   async fetchShippingOverview(cursor?: string): Promise<{ items: AdminShipmentListItemDto[]; nextCursor: string | null }> {

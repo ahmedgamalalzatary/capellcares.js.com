@@ -218,6 +218,62 @@ test("checkout expiry worker restores an abandoned reservation without a custome
   }
 });
 
+/** A reservation-only session past its deadline, aged by `ageMs` so discovery order is deterministic. */
+async function expiredReservation(variantId: number, email: string, ageMs: number) {
+  const created = await createReservedCheckout({
+    publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
+    customerId: null, fullName: "Stopping", phone: "+201012345678", email,
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+    notes: "", cartSnapshot: "[]", amountCents: 3500,
+    reservationExpiresAt: new Date(Date.now() - ageMs),
+    reservations: [{ variantId, qty: 1 }]
+  });
+  return created.id;
+}
+
+test("reservation expiry stops between candidates when asked to shut down", async () => {
+  const ids = await getBaselineIds();
+  const first = await expiredReservation(ids.firstVariantId, "res-stop-a@example.test", 3000);
+  const second = await expiredReservation(ids.secondVariantId, "res-stop-b@example.test", 2000);
+
+  let checks = 0;
+  await releaseExpiredCheckoutReservations(new Date(), { isStopped: () => ++checks > 1 });
+
+  assert.equal(checks, 2, "the stop check runs before the first candidate and again between candidates");
+  const [a] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, first));
+  const [b] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, second));
+  assert.equal(a.state, "expired", "the first candidate is completed before the stop is honoured");
+  assert.equal(b.state, "payment_pending", "the remaining backlog is left recoverable for the next sweep");
+});
+
+test("stopping the checkout expiry worker mid-backlog leaves the rest recoverable", async () => {
+  const ids = await getBaselineIds();
+  const first = await expiredReservation(ids.firstVariantId, "worker-stop-a@example.test", 3000);
+  const second = await expiredReservation(ids.secondVariantId, "worker-stop-b@example.test", 2000);
+  const { startCheckoutExpiryWorker } = await import("../../src/modules/checkout/checkout-expiry-worker.js");
+
+  // Hold the first candidate's row so the worker's sweep is provably in flight when the
+  // stop arrives, which is the only moment the pass-through stop signal can be observed.
+  const blocker = await mysqlPool.getConnection();
+  await blocker.beginTransaction();
+  await blocker.query("SELECT id FROM checkout_sessions WHERE id = ? FOR UPDATE", [first]);
+  const stop = startCheckoutExpiryWorker({ intervalMs: 60_000 });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const draining = stop();
+    await blocker.commit();
+    await draining;
+  } finally {
+    await blocker.rollback();
+    blocker.release();
+  }
+
+  const [a] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, first));
+  const [b] = await db.select().from(checkoutSessions).where(eq(checkoutSessions.id, second));
+  assert.equal(a.state, "expired", "the in-flight candidate completes before the stop is honoured");
+  assert.equal(b.state, "payment_pending", "the remaining backlog is left recoverable for the next run");
+});
+
 test("expiry flags an early refunded attempt for manual reconciliation", async () => {
   const ids = await getBaselineIds();
   const session = await createReservedCheckout({

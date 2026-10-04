@@ -1474,3 +1474,36 @@ test("processPaymobTransaction still acknowledges a duplicate delivery of the or
 
   assert.equal(duplicate.outcome, "succeeded");
 });
+
+test("initiatePaymobCheckout uses the validated checkout context instead of re-pricing and re-quoting", async () => {
+  const module = await import("../../src/modules/checkout/paymob-checkout.service.js").catch(() => null);
+  const ids = await getBaselineIds();
+  // The provided context prices one unit at 12.50, which differs from the seeded 35.00.
+  // Re-pricing would compute 35.00 and mismatch expectedAmountCents; honouring the validated
+  // context is what lets this succeed with a single pricing pass.
+  const priced = { items: [{ itemType: "product_variant", variantId: ids.firstVariantId, offerId: null,
+    qty: 1, unitPrice: 12.5, lineTotal: 12.5 }], totalAmount: 12.5,
+    reservations: [{ variantId: ids.firstVariantId, qty: 1 }] };
+  const shippingService = { listDestinations: async () => { throw new Error("must not re-quote"); },
+    quoteCheckout: async () => { throw new Error("must not re-quote"); },
+    resolve: async () => { throw new Error("must not re-quote"); } };
+  const result = await module?.initiatePaymobCheckout({
+    payload: { fullName: "Context Buyer", phone: "01012345678", email: "context@example.com",
+      governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
+      paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }],
+      expectedAmountCents: 1250 },
+    idempotencyKey: crypto.randomUUID(), now: new Date("2026-09-11T12:00:00Z"),
+    config: { mode: "test", baseUrl: "https://accept.paymob.com", secretKey: "secret", publicKey: "public",
+      hmacSecret: "hmac", apiKey: null, enabledMethods: [{ method: "card", integrationId: 123 }],
+      canInitiatePayments: true, intentionExpirationSeconds: 1800 },
+    notificationUrl: "https://example.invalid/webhook", redirectionUrl: "https://example.invalid/result",
+    createIntention: async () => ({ intentionId: "pi_context", orderId: 9010, clientSecret: "s",
+      checkoutUrl: "https://eg.checkout.paymob.com/?publicKey=public&clientSecret=s" }),
+    priced, shipping: null, shippingService
+  });
+  assert.equal(result?.kind, "paymob_redirect");
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9010")).limit(1);
+  const [session] = await db.select().from(checkoutSessions)
+    .where(eq(checkoutSessions.id, attempt?.checkoutSessionId ?? -1)).limit(1);
+  assert.equal(session?.amountCents, 1250, "the session must record the validated amount, not a re-priced one");
+});
