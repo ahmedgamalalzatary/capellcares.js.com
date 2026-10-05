@@ -1,6 +1,6 @@
 # Capella Mobile App (Expo / React Native) — Customer Storefront (ERP stays web)
 
-> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport and Phases 1–3 scaffold/foundation/data-layer implementations exist, including the shared/API compatibility layer. Customer providers and production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
+> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport and Phases 1–4 scaffold/foundation/data-layer/state-provider implementations exist, including the shared/API compatibility layer and the U1–U4 auth hardening. Production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **storefront-only app** — the ERP stays on the web; its planned redesign will make it fully mobile-responsive and installable as a **PWA** for staff, and a native admin slice remains a possible later additive phase. **Full functional and visual parity** with the working customer storefront, adapted to native navigation and phone interaction. Parity preserves supported product behavior, not implementation defects or simulated success. Exceptions and additional launch requirements must be explicit in this contract.
 >
 > Build order: implement and verify the phases sequentially. Track **code verification** separately from **native acceptance**. The user approved Chrome at phone-sized viewports for continuing implementation on 2026-10-05; browser evidence does not satisfy Android/iOS acceptance. Pending device checks do not block subsequent code slices, but remain mandatory before release. A phase is fully accepted only when every applicable exit criterion passes.
@@ -15,7 +15,8 @@ Phase 0 evidence was collected against base revision `8d8c893c3480b9de26f83e3304
 | 1 | Expo scaffold/shared resolution; web preview; dependency check, lint/typecheck, 13 suites / 107 tests, 1 Chrome Playwright test, web/Android/iOS exports pass | Code and automated Chrome verification complete; manual computer use blocked by URL-policy check; native launch pending |
 | 2 | Theme/fonts, bilingual startup recovery, guarded language changes, validated storage/migration/cache-clear primitives; 14 suites / 127 tests, lint/typecheck, Chrome test and all exports pass | Foundation code verified; domain consumers in 4/6/7 and native/release acceptance remain pending |
 | 3 | Remaining transports, validated response boundaries, native identity/auth/retries, public policy and feature-only enforcement | Code verified: 2219 repository tests, 2 Chrome checks, fresh lint/typecheck and all builds/exports pass; native/store/OTA acceptance pending |
-| 4–7 | Not verified in this pass | Customer state/components/screens remain to be implemented |
+| 4 | Auth token store + `AuthProvider` (SecureStore refresh token, single-flight refresh, durable-before-publish rotation, rejection-vs-transient handling), `PolicyProvider` (validated cache, freshness, single-flight refresh, dismissal), durable `CartProvider` (guest persistence, pull/merge, serialized uploads, account isolation, clear-vs-pull); U1–U4 API hardening | Code verified by TDD: mobile 22 suites / 220 tests, API 1094 tests, fresh lint/typecheck/build pass; post-review fixes (failed-upload double-count, refresh-after-logout resurrection, stale-profile restore, middleware 503-vs-401 + subject check, per-IP signup limit); native device acceptance pending; not yet committed as a phase |
+| 5–7 | Not verified in this pass | Customer components/screens remain to be implemented |
 | 8 | Existing EAS configuration only | Release/distribution/OTA acceptance pending |
 
 ### Mandatory additions mapped to implementation slices
@@ -267,9 +268,10 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 ## Phase 4 — State providers: customer auth & cart
 
 **Tracked slices / mandatory completion checks**
-- [ ] **4A:** secure token/auth state and safe revocation/rotation/recovery; prerequisite U1–U4 disposition backed by real API tests.
-- [ ] **4B:** durable guest and account-isolated synchronized carts, serialized pending writes and purchased-cart reconciliation integration.
-- [ ] **4C:** policy provider at cold startup/foreground: validated cache, freshness/deduplication, reminder dismissal, offline/no-cache/invalid response behavior. Refresh never reloads the app or interrupts payment; startup settles even without config.
+- [x] **4A:** secure token/auth state and safe revocation/rotation/recovery; prerequisite U1–U4 disposition backed by real API tests. Implemented: U1 boundary validation + signup rate limit, U2 rejection-vs-transient refresh (customer and admin), U3 transactional rotation, U4 `sid`-based immediate access revocation; mobile `token-store` + `AuthProvider` (SecureStore, single-flight, durable-before-publish). Real API tests cover U1–U4; provider behavior covered by TDD suites.
+- [x] **4B:** durable guest and account-isolated synchronized carts, serialized pending writes and purchased-cart reconciliation integration. Implemented in `src/lib/cart.tsx` + `src/lib/cart-lines.ts` (guest persistence, pull/merge without doubling, serialized latest-snapshot uploads, persisted pending writes, account isolation, clear-vs-pull).
+- [x] **4C:** policy provider at cold startup/foreground: validated cache, freshness/deduplication, reminder dismissal, offline/no-cache/invalid response behavior. Refresh never reloads the app or interrupts payment; startup settles even without config. Implemented in `src/lib/policy.tsx`.
+- [ ] **Native/device acceptance:** installed-device checks for SecureStore persistence, RTL switching, cold start and foreground behavior remain pending (Phase 8 materially).
 
 **Files**
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import bcrypt from "bcryptjs";
 
-import { createRefreshSession, rotateRefreshSession } from "../../src/services/auth-session.service.js";
+import { createRefreshSession, RefreshTokenRejectedError, rotateRefreshSession } from "../../src/services/auth-session.service.js";
 import { revokeActiveAuthSession } from "../../src/modules/auth/auth-session.repository.js";
 import { createTestAdminUser, resetApiTestDatabase } from "../helpers/database.js";
 
@@ -55,5 +55,19 @@ test("rotateRefreshSession rejects an already-rotated token (replay)", async () 
   const created = await createRefreshSession({ accountType: "admin", adminUserId });
   await rotateRefreshSession(created.refreshToken, "admin");
 
-  await assert.rejects(rotateRefreshSession(created.refreshToken, "admin"));
+  await assert.rejects(rotateRefreshSession(created.refreshToken, "admin"), RefreshTokenRejectedError);
+});
+
+test("a failed replacement insert rolls back the revocation so the original token stays usable", async () => {
+  const created = await createRefreshSession({ accountType: "admin", adminUserId });
+
+  await assert.rejects(
+    rotateRefreshSession(created.refreshToken, "admin", async () => {
+      throw new Error("replacement insert failed");
+    })
+  );
+
+  // The revoke and the replacement insert share one transaction, so a failed insert must not consume the original session and force a needless re-login.
+  const retried = await rotateRefreshSession(created.refreshToken, "admin");
+  assert.notEqual(retried.refreshToken, created.refreshToken);
 });

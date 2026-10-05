@@ -10,6 +10,7 @@ import {
 } from "./admin-user.repository.js";
 import {
   createRefreshSession,
+  RefreshTokenRejectedError,
   rotateRefreshSession,
   revokeRefreshSession
 } from "../../../services/auth-session.service.js";
@@ -110,10 +111,10 @@ export async function ensureBootstrapAdmin(env: NodeJS.ProcessEnv = process.env)
 
 export async function refreshAdminSession(refreshToken: string) {
   const session = await rotateRefreshSession(refreshToken, "admin");
-  if (!session.adminUserId) throw new Error("Invalid admin refresh session");
+  if (!session.adminUserId) throw new RefreshTokenRejectedError("Invalid admin refresh session");
   const admin = await findAdminUserById(session.adminUserId);
-  if (!admin) throw new Error("Invalid admin refresh session");
-  if (admin.role === "staff" && !admin.isActive) throw new Error("Invalid admin refresh session");
+  if (!admin) throw new RefreshTokenRejectedError("Invalid admin refresh session");
+  if (admin.role === "staff" && !admin.isActive) throw new RefreshTokenRejectedError("Invalid admin refresh session");
   return {
     accessToken: issueAdminAccessToken(
       admin,

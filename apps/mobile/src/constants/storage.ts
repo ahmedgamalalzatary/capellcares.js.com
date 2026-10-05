@@ -1,7 +1,11 @@
 export const AUTH_STORAGE_KEY = "capella.auth.v1";
 export const CART_STORAGE_KEY = "capella.cart.v1";
+export const CART_OWNER_STORAGE_KEY = "capella.cart.owner.v1";
+export const CART_SYNCED_STORAGE_KEY = "capella.cart.synced.v1";
 export const CUSTOMER_REFRESH_TOKEN_KEY = "capella.customer.refresh-token.v1";
 export const LANG_STORAGE_KEY = "capella.lang.v1";
+export const APP_POLICY_STORAGE_KEY = "capella.app-policy.v1";
+export const APP_POLICY_DISMISSAL_STORAGE_KEY = "capella.app-policy.dismissed.v1";
 export const ASK_STORAGE_KEY = "capella.ask.v1";
 export const LEGACY_ASK_STORAGE_KEY = "capella:ask:v1";
 export const CART_PENDING_STORAGE_KEY = "capella.cart.pending.v1";

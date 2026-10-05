@@ -13,6 +13,9 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LangProvider, useLang } from "@/lib/lang";
+import { AuthProvider } from "@/lib/auth/auth-context";
+import { PolicyProvider } from "@/lib/policy";
+import { CartProvider } from "@/lib/cart";
 import { colors, spacing } from "@/theme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -105,7 +108,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LangProvider>
-        <RootNavigator fontsLoaded={fontsLoaded} fontError={fontError} />
+        <AuthProvider>
+          <PolicyProvider>
+            <CartProvider>
+              <RootNavigator fontsLoaded={fontsLoaded} fontError={fontError} />
+            </CartProvider>
+          </PolicyProvider>
+        </AuthProvider>
       </LangProvider>
     </SafeAreaProvider>
   );

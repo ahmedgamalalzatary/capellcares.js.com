@@ -59,6 +59,15 @@ jest.mock("../src/lib/lang", () => ({
   LangProvider: ({ children }) => children,
   useLang: () => ({ ready: mockLanguageReady, lang: mockLang, error: mockLanguageError, retry: mockRetryLanguage })
 }));
+jest.mock("../src/lib/auth/auth-context", () => ({
+  AuthProvider: ({ children }) => children
+}));
+jest.mock("../src/lib/policy", () => ({
+  PolicyProvider: ({ children }) => children
+}));
+jest.mock("../src/lib/cart", () => ({
+  CartProvider: ({ children }) => children
+}));
 
 const RootLayout = require("../app/_layout").default;
 
