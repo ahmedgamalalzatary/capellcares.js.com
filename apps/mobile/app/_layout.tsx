@@ -16,6 +16,7 @@ import { LangProvider, useLang } from "@/lib/lang";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { PolicyProvider } from "@/lib/policy";
 import { CartProvider } from "@/lib/cart";
+import { UiProvider } from "@/components/ui/ui-provider";
 import { colors, spacing } from "@/theme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
@@ -108,6 +109,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <LangProvider>
+        <UiProvider>
         <AuthProvider>
           <PolicyProvider>
             <CartProvider>
@@ -115,6 +117,7 @@ export default function RootLayout() {
             </CartProvider>
           </PolicyProvider>
         </AuthProvider>
+        </UiProvider>
       </LangProvider>
     </SafeAreaProvider>
   );

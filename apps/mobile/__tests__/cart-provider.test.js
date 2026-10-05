@@ -25,6 +25,7 @@ jest.mock("../src/lib/api/client", () => ({
 }));
 
 const AsyncStorage = require("@react-native-async-storage/async-storage");
+const storageGet = AsyncStorage.getItem.getMockImplementation();
 const { CART_STORAGE_KEY, CART_SYNCED_STORAGE_KEY, CART_PENDING_STORAGE_KEY, CART_OWNER_STORAGE_KEY } = require("../src/constants/storage");
 const { CartProvider, useCart } = require("../src/lib/cart");
 
@@ -52,6 +53,7 @@ function renderCart() {
 
 describe("CartProvider", () => {
   beforeEach(async () => {
+    AsyncStorage.getItem.mockImplementation(storageGet);
     await AsyncStorage.clear();
     jest.clearAllMocks();
     mockAuthState.user = null;
@@ -271,5 +273,65 @@ describe("CartProvider", () => {
     await waitFor(() => expect(mockReplaceCustomerCart).toHaveBeenCalledTimes(2));
     // Only the latest coalesced snapshot is sent once the active request completes.
     expect(mockReplaceCustomerCart.mock.calls[1][1]).toEqual([productLine(4)]);
+  });
+
+  test("ignores account A's pull when account changes during its storage reads", async () => {
+    const originalGet = AsyncStorage.getItem.getMockImplementation();
+    let resolvePending;
+    let blocked = false;
+    jest.spyOn(AsyncStorage, "getItem").mockImplementation(key => {
+      if (key === CART_PENDING_STORAGE_KEY && !blocked) {
+        blocked = true; return new Promise(resolve => { resolvePending = resolve; });
+      }
+      return originalGet(key);
+    });
+    function Harness() {
+      const [account, setAccount] = React.useState(1);
+      mockAuthState.user = { id: account, name: `U${account}`, email: `u${account}@capella.test` };
+      mockAuthState.accessToken = `token-${account}`;
+      return <View><CartProvider><CartProbe /></CartProvider><Button title="Switch" onPress={() => setAccount(2)} /></View>;
+    }
+    mockFetchCustomerCart.mockImplementation(token => Promise.resolve(token === "token-1" ? [productLine(9)] : []));
+    const view = render(<Harness />);
+    await waitFor(() => expect(resolvePending).toBeDefined());
+    fireEvent.press(view.getByRole("button", { name: "Switch" }));
+    await waitFor(() => expect(mockFetchCustomerCart).toHaveBeenCalledWith("token-2"));
+    await act(async () => resolvePending(null));
+    await waitFor(() => expect(view.getByTestId("count").props.children).toBe("0"));
+    expect(view.getByTestId("lines").props.children).toBe("[]");
+  });
+
+  test("switching accounts clears the old cart even if the new pull is offline", async () => {
+    function Harness() {
+      const [account, setAccount] = React.useState(1);
+      mockAuthState.user = { id: account, name: `U${account}`, email: `u${account}@capella.test` };
+      mockAuthState.accessToken = `token-${account}`;
+      return <View><CartProvider><CartProbe /></CartProvider><Button title="Switch" onPress={() => setAccount(2)} /></View>;
+    }
+    mockFetchCustomerCart.mockImplementation(token => token === "token-1" ? Promise.resolve([productLine(2)]) : Promise.reject(new Error("offline")));
+    mockReplaceCustomerCart.mockImplementation(async (_token, lines) => lines);
+    const view = render(<Harness />);
+    await waitFor(() => expect(view.getByTestId("count").props.children).toBe("2"));
+    fireEvent.press(view.getByRole("button", { name: "Switch" }));
+    await waitFor(() => expect(mockFetchCustomerCart).toHaveBeenCalledWith("token-2"));
+    expect(view.getByTestId("count").props.children).toBe("0");
+  });
+
+  test("an old-account upload cannot replace the new account's sync snapshot", async () => {
+    let completeOldUpload;
+    function Harness() {
+      const [account, setAccount] = React.useState(1);
+      mockAuthState.user = { id: account, name: `U${account}`, email: `u${account}@capella.test` };
+      mockAuthState.accessToken = `token-${account}`;
+      return <View><CartProvider><CartProbe /></CartProvider><Button title="Switch" onPress={() => setAccount(2)} /></View>;
+    }
+    mockFetchCustomerCart.mockImplementation(token => Promise.resolve(token === "token-1" ? [productLine(2)] : []));
+    mockReplaceCustomerCart.mockImplementation(token => token === "token-1" ? new Promise(resolve => { completeOldUpload = resolve; }) : new Promise(() => {}));
+    const view = render(<Harness />);
+    await waitFor(() => expect(completeOldUpload).toBeDefined());
+    fireEvent.press(view.getByRole("button", { name: "Switch" }));
+    await waitFor(() => expect(view.getByTestId("count").props.children).toBe("0"));
+    await act(async () => completeOldUpload([productLine(2)]));
+    expect(JSON.parse(await AsyncStorage.getItem(CART_SYNCED_STORAGE_KEY))).toEqual([]);
   });
 });

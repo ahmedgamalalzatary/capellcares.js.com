@@ -87,13 +87,13 @@ export async function clearSession(): Promise<void> {
   sessionRevision += 1;
   refreshToken = null;
   refreshInFlight = null;
+  publishAccessToken(null);
+  clearedListeners.forEach((listener) => listener());
   try {
     await SecureStore.deleteItemAsync(CUSTOMER_REFRESH_TOKEN_KEY);
   } catch {
     // The in-memory session is cleared regardless of whether the keychain agrees.
   }
-  publishAccessToken(null);
-  clearedListeners.forEach((listener) => listener());
 }
 
 /** Single-flight refresh. Genuine rejection clears the session; a transient failure keeps it recoverable. */

@@ -133,14 +133,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     const token = getRefreshToken();
+    setUser(null);
+    await clearSession();
+    await persistUser(null);
     try {
       await authJSON("logout", undefined, token ? { refreshToken: token } : {});
     } catch {
       // Offline local clearing is immediate; server revocation requires connectivity (D5).
-    } finally {
-      await clearSession();
-      setUser(null);
-      await persistUser(null);
     }
   }, []);
 

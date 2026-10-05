@@ -165,4 +165,19 @@ describe("AuthProvider", () => {
     expect(await AsyncStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     expect(mockSecureStoreData.has(CUSTOMER_REFRESH_TOKEN_KEY)).toBe(false);
   });
+
+  test("logout removes local access while remote revocation is still waiting", async () => {
+    let resolveLogout;
+    mockAuthJSON.mockImplementation(action => action === "login"
+      ? Promise.resolve({ accessToken: "access", refreshToken: "refresh", user: { id: 1, name: "Ada", email: "a@capella.test" } })
+      : new Promise(resolve => { resolveLogout = resolve; }));
+    const view = renderProvider();
+    await waitFor(() => expect(view.getByTestId("hydrated").props.children).toBe("true"));
+    fireEvent.press(view.getByRole("button", { name: "Login" }));
+    await waitFor(() => expect(view.getByTestId("user").props.children).toBe("Ada"));
+    fireEvent.press(view.getByRole("button", { name: "Logout" }));
+    await waitFor(() => expect(view.getByTestId("token").props.children).toBe("none"));
+    expect(view.getByTestId("user").props.children).toBe("none");
+    await act(async () => resolveLogout(null));
+  });
 });

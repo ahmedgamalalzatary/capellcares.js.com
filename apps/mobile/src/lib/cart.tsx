@@ -62,6 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
   // Stable indirection so the upload retry timer can re-enter drainUpload without referring to the callback before its declaration.
   const drainUploadRef = useRef<() => void>(() => {});
+  const accountEpochRef = useRef(0);
 
   useEffect(() => {
     userRef.current = user;
@@ -124,6 +125,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Serialize: one PUT in flight per customer; a change during flight waits in the one-slot queue.
     upload.pending = null;
     upload.inFlight = true;
+    const epoch = accountEpochRef.current;
 
     const failUpload = (failed: CartLine[]) => {
       if (upload.pending == null) upload.pending = failed;
@@ -138,7 +140,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     void replaceCustomerCart(token, snapshot)
       .then((storedLines) => {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || epoch !== accountEpochRef.current || userRef.current?.id !== customerId) return;
         upload.inFlight = false;
         syncedLinesRef.current = storedLines;
         void saveLastSyncedCartLines(storedLines);
@@ -146,7 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (upload.pending != null) drainUploadRef.current();
       })
       .catch(() => {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || epoch !== accountEpochRef.current || userRef.current?.id !== customerId) return;
         upload.inFlight = false;
         failUpload(snapshot);
       });
@@ -180,7 +182,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const currentId = user?.id ?? null;
     if (previousId === currentId) return;
     previousUserIdRef.current = currentId;
-    if (currentId != null || previousId == null) return;
+    accountEpochRef.current += 1;
+    const upload = uploadRef.current;
+    if (upload.retryTimer != null) clearTimeout(upload.retryTimer);
+    upload.retryTimer = null;
+    upload.inFlight = false;
+    upload.pending = null;
+    if (previousId == null) return;
 
     syncedCustomerIdRef.current = null;
     syncedLinesRef.current = null;
@@ -188,7 +196,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     linesRef.current = [];
     setLines([]);
     void saveCartLines([]);
-    void clearCartOwner();
+    if (currentId == null) void clearCartOwner();
+    else void saveCartOwner(currentId);
     void clearLastSyncedCartLines();
     void clearPendingCart();
   }, [hydrated, user]);
@@ -206,14 +215,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         const pending = await loadPendingCart();
+        if (cancelled || !mountedRef.current || userRef.current?.id !== user.id) return;
         // Reuse the persisted local cart only when it belongs to this account, or to a guest who is now
         // signing in. A cold start or a logout followed by a different login must not merge another account's cart.
         const storedOwner = await loadCartOwner();
+        if (cancelled || !mountedRef.current || userRef.current?.id !== user.id) return;
         const ownsLocalCart = storedOwner === user.id || (storedOwner == null && previousCustomerId == null);
         const localLines = ownsLocalCart ? linesRef.current : [];
         // A persisted failed-upload snapshot duplicates the local cart it came from; fold it in as a union (never a sum) so a retry does not multiply quantities.
         const localCart = pending && pending.customerId === user.id ? unionCartLines(localLines, pending.lines) : localLines;
         const lastSynced = ownsLocalCart ? syncedLinesRef.current ?? (await loadLastSyncedCartLines()) : null;
+        if (cancelled || !mountedRef.current || userRef.current?.id !== user.id) return;
         const additions = cartLineAdditions(localCart, lastSynced);
 
         const clearedDuringPull = pendingClearCustomerIdRef.current === user.id;

@@ -51,8 +51,10 @@ jest.mock("react-native-safe-area-context", () => {
   const ReactModule = require("react");
   const { View: NativeView } = require("react-native");
   return {
+    ...require("react-native-safe-area-context/jest/mock").default,
     SafeAreaProvider: ({ children }) =>
-      ReactModule.createElement(NativeView, { testID: "safe-area" }, children)
+      ReactModule.createElement(NativeView, { testID: "safe-area" }, ReactModule.createElement(
+        require("react-native-safe-area-context/jest/mock").default.SafeAreaProvider, null, children))
   };
 });
 jest.mock("../src/lib/lang", () => ({
