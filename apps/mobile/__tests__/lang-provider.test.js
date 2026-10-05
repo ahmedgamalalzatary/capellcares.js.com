@@ -1,6 +1,8 @@
 const React = require("react");
-const { Button, I18nManager, Text, View } = require("react-native");
+const { Button, I18nManager, Platform, Text, View } = require("react-native");
 const { act, fireEvent, render, waitFor } = require("@testing-library/react-native");
+const originalPlatform = Platform.OS;
+const originalDocument = global.document;
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
@@ -34,6 +36,11 @@ function LanguageProbe() {
 }
 
 describe("LangProvider", () => {
+  afterEach(() => {
+    Object.defineProperty(Platform, "OS", { configurable: true, value: originalPlatform });
+    if (originalDocument === undefined) delete global.document;
+    else global.document = originalDocument;
+  });
   beforeEach(async () => {
     await AsyncStorage.clear();
     jest.clearAllMocks();
@@ -207,5 +214,30 @@ describe("LangProvider", () => {
     await waitFor(() => expect(view.getByTestId("pending").props.children).toBe("false"));
     expect(view.getByTestId("lang").props.children).toBe("en");
     await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
+  });
+
+  test("boots the browser in persisted Arabic without invoking native RTL or reloading", async () => {
+    Object.defineProperty(Platform, "OS", { configurable: true, value: "web" });
+    global.document = { documentElement: { dir: "ltr", lang: "en" } };
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "ar");
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    expect(global.document.documentElement).toEqual({ dir: "rtl", lang: "ar" });
+    expect(I18nManager.forceRTL).not.toHaveBeenCalled();
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+  });
+
+  test("switches browser direction and persists English without a native reload", async () => {
+    Object.defineProperty(Platform, "OS", { configurable: true, value: "web" });
+    global.document = { documentElement: { dir: "ltr", lang: "en" } };
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    fireEvent.press(view.getByRole("button", { name: "English" }));
+
+    await waitFor(() => expect(view.getByTestId("lang").props.children).toBe("en"));
+    expect(global.document.documentElement).toEqual({ dir: "ltr", lang: "en" });
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
   });
 });

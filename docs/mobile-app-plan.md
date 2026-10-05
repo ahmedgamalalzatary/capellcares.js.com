@@ -3,7 +3,39 @@
 > Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport is implemented; scaffold, theme/language/storage, and part of the API client exist. Customer providers and production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **storefront-only app** — the ERP stays on the web; its planned redesign will make it fully mobile-responsive and installable as a **PWA** for staff, and a native admin slice remains a possible later additive phase. **Full functional and visual parity** with the working customer storefront, adapted to native navigation and phone interaction. Parity preserves supported product behavior, not implementation defects or simulated success. Exceptions and additional launch requirements must be explicit in this contract.
 >
-> Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
+> Build order: implement and verify the phases sequentially. Track **code verification** separately from **native acceptance**. The user approved Chrome at phone-sized viewports for continuing implementation on 2026-10-05; browser evidence does not satisfy Android/iOS acceptance. Pending device checks do not block subsequent code slices, but remain mandatory before release. A phase is fully accepted only when every applicable exit criterion passes.
+
+## Phase verification ledger — 2026-10-05
+
+Phase 0 evidence was collected against base revision `8d8c893c3480b9de26f83e330446d820a0de5b2e` and committed as `73f20b4`. Phase 1 verification excludes the saved Phase 2 startup-recovery changes so the commits stay separate. Commands ran sequentially. No API source changes were made. Only `apps/mobile`, this plan, and `pnpm-lock.yaml` are authorized for edits in this pass.
+
+| Phase | Verified implementation | Status / remaining evidence |
+|---|---|---|
+| 0 | Customer/admin mobile auth transport; fresh DB-backed HTTP tests and API build/lint/typecheck pass | Transport verification committed as `73f20b4`; repository-wide suite and separate U1–U4 auth hardening are not established by this check |
+| 1 | Expo scaffold/shared resolution; web preview; dependency check, lint/typecheck, 13 suites / 107 tests, 1 Chrome Playwright test, web/Android/iOS exports pass | Code and automated Chrome verification complete; manual computer use blocked by URL-policy check; native launch pending |
+| 2 | Existing theme/language/storage primitives and startup recovery | Full foundation audit and native acceptance pending |
+| 3 | Existing partial API client | Full transport/compatibility implementation and verification pending |
+| 4–7 | Not verified in this pass | Customer state/components/screens remain to be implemented |
+| 8 | Existing EAS configuration only | Release/distribution/OTA acceptance pending |
+
+### Mandatory additions mapped to implementation slices
+
+Reviewed the plan changes in `8d8c893` (2026-10-05) and `620dc6c` (2026-10-04). The latest five-item version/update requirements were present in the contract, but needed explicit per-phase checklists. Every item below remains **pending** until implementation and evidence are recorded; configuration scaffolding is not proof of compatibility/OTA acceptance. Finish and commit each phase before starting the next. Outside `apps/mobile`, only this plan and `pnpm-lock.yaml` are currently approved for edits; ask before touching any API/shared/web file required by a prerequisite.
+
+| Mandatory work | Implementation phase/slice | Acceptance evidence required |
+|---|---|---|
+| Five native identity headers on every request, auth, config and retry; no device/user tracking | 3B transport; 4A auth integration | Real runtime/build/update metadata fixtures; header and retry preservation; existing web behavior preserved |
+| Public `GET /app-config`, versioned response/error contract and feature-only server enforcement | 3B shared/API prerequisites; 3C native client | Pre-login HTTP contract, malformed/missing metadata, stable `APP_UPDATE_REQUIRED` + feature, compatible operations still available; API/shared edits require approval |
+| Current/previous/review-candidate support; staggered-store promotion | 3B policy fixtures; 8A release procedure | Fixtures for occupied states; unavailable review candidate never advertised; both-store promotion/retirement evidence |
+| Cold-launch/foreground policy checks, cache/freshness/deduplication, offline/no-cache recovery | 4C policy state | Defined freshness/dismissal contract; invalid config and outage tests; startup always settles; no payment interruption |
+| Dismissible recommended update and accessible feature-specific update action | 5B components; 7D feature wiring | Both languages; dismissal, safe store destinations, accessibility, compatible features remain usable |
+| Preview/production OTA delivery and runtime compatibility | 8A | Channels/environments, build/version rules, embedded/offline support, safe apply timing, rollout/rollback evidence |
+| Durable guest cart/Ask cache; transient browsing/forms; migrations and safe cache clear | 2B storage; 4B cart; 6B Ask; 7A recovery | Restart/upgrade/rollback/account isolation; unresolved payment reference survives cache clear |
+| Immediate session revocation and safe refresh failure/rotation handling | 4A with U1–U4 prerequisites | Real API tests and native persistence/reconnect checks; upstream edits require approval |
+| In-app video, full browse/search/banner/legal parity and accessible interaction | 5A components; 6A–6C screens | Browser journeys plus both-platform playback/lifecycle/accessibility evidence |
+| Authoritative checkout/shipping/recovery, purchased-cart reconciliation, eligible cancellation | 3A transports; 7A–7B journeys | Real COD/Paymob/provider tests, uncertain response/restart/duplicate confirmation/concurrent-cart scenarios |
+| Minimum account deletion and customer review safety | 7C with U7/U8 prerequisites | API/web/native completion, retention decision, session invalidation/report/block/filter controls; upstream edits require approval |
+| Production failure notifications with redacted diagnostic identity | 8B operations (D12) | User-provided destination/service access, redaction and actionable delivery evidence |
 
 ## Current-code correction checkpoint — audit closed
 
@@ -13,7 +45,7 @@ The standalone audit record has been removed. Its **open/undone items — which 
 
 - [ ] **Device foundation acceptance (Phase 2):** real development build on device/emulator with build/device/OS/revision evidence — Arabic/English cold start and live RTL/LTR switching, tracked per platform. Exports and unit tests are not device acceptance.
 - [ ] **Next-slice integration (Phase 3):** authenticated PUT for cart sync before Phase 4, plus the phase's remaining transports.
-- [ ] **L1:** localize/recover the root font-failure screen and handle splash rejections; replace the diagnostic placeholder in Phase 6.
+- [ ] **L1:** localize/recover the root font-failure screen, expose language startup retry and handle splash rejections in Phase 2. Earlier tested startup changes are saved separately, excluded from the Phase 1 commit. Replace the diagnostic placeholder in Phase 6.
 - [ ] **L2:** replace the 1×1 icon/splash placeholders with real verified platform assets in Phase 8.
 - [ ] **L3:** add `eas.json` update channels, an explicit preview API environment, and a build-number/publish/rollback procedure before OTA/release.
 - [ ] **L4:** strengthen the mock-heavy tests and the scaffold fetch-call test with real contract fixtures as screens land.
@@ -98,6 +130,21 @@ This implemented transport addition preserves ordinary web auth responses. The s
 
 ## Phase 1 — Workspace scaffold & build infra
 
+**Fresh verification (2026-10-05): scaffold and Chrome preview code verified.** Existing scaffold is retained. Added Expo-selected `react-dom`, `react-native-web` and `@expo/metro-runtime`, direct Playwright test tooling, browser scripts and ignored output directories. Browser language changes set document language/direction without calling native layout/reload functions; native behavior retains its previous path. Two new language tests were observed failing before the browser handling was implemented, then passed.
+
+| Command / observation | Evidence |
+|---|---|
+| `pnpm --filter @capella/mobile exec expo install --check` | Exit 0, **Dependencies are up to date**, after adding web dependencies |
+| `pnpm --filter @capella/mobile add -D @playwright/test@1.60.0 --offline` | Exit 0; direct test dependency installed from cache; selected web dependencies are installed and exercised by exports/browser test |
+| `pnpm --filter @capella/mobile lint` / `typecheck` | Both exit 0 |
+| `pnpm --filter @capella/mobile test -- --runInBand` | **13 suites / 107 tests pass**, Phase 2 startup changes excluded |
+| `pnpm --filter @capella/mobile test:e2e` | Exit 0, **1 passed** in installed Google Chrome at **390×844**, touch enabled; Arabic bootstrap, English switch/reload persistence, return to Arabic; no uncaught page errors |
+| `pnpm --filter @capella/mobile build:web` | Exit 0; 880 modules; `dist-web/index.html`, metadata and web bundle `entry-08b15379ed3f97674dc9a9df42ff9850.js` |
+| `pnpm --filter @capella/mobile build` after dependency changes | Exit 0; iOS `entry-46fd187357c0e331091918ad68e31f1d.hbc`, Android `entry-a2053b7efd12324931cae1104bff1c3b.hbc`, `dist/metadata.json` |
+| Manual Chrome computer use | Chrome launched; control stopped because the tool could not identify the current browser URL confidently enough to enforce policy. No manual UI acceptance claimed; Playwright supplies automated browser evidence |
+
+Inspected workspace/Turbo participation, optional shared DOM peers, Metro shim, Babel/TypeScript config, routing, generated Expo type references, and environment documentation. Playwright stubs only the products endpoint with `{ items: [] }` to isolate foundation checks; it does **not** prove real API/catalog or native behavior. Initial cold web bundling exceeded the original test startup limit; the test now permits 60 seconds while assertions retain their normal timeout. Exports/tests emit the Node `NO_COLOR`/`FORCE_COLOR` warning; dependency installation reported existing deprecated/peer warnings, without failing the Expo compatibility check. Installed native launch and real-device font/RTL behavior remain pending. Preview: `pnpm --filter @capella/mobile web`; repeat browser checks with `test:e2e`.
+
 The app boots to a placeholder screen; Metro proves it can bundle `@capella/shared` through pnpm symlinks. **Riskiest phase — do first, verify hard.**
 
 **Files (all new unless noted)**
@@ -134,11 +181,13 @@ Previously recorded implementation verification: Expo Doctor, dependency compati
 - **API testing on a phone:** before phases that call the API, set `EXPO_PUBLIC_API_URL` to the PC's LAN-reachable API address; a physical phone cannot use the PC's `localhost`.
 - **iOS:** EAS can cloud-build iOS, but installing on a physical iPhone requires Apple signing/device registration, and an iOS Simulator still requires macOS. Android remains the practical acceptance device for this Windows workspace.
 
-**Deferred acceptance decision:** Do not wait for an EAS build merely to verify the temporary Phase 1 placeholder. Treat Phase 1 as code-complete, but not 100% accepted, until the device-launch criterion passes. Complete the Android build/install workflow above no later than Phase 2 acceptance, where Arabic fonts and live RTL/LTR switching require a development build; do not defer it until the full storefront is finished.
+**Deferred acceptance decision (updated with user approval 2026-10-05):** continue code slices using TDD and Chrome at phone-sized viewports. Treat native launch and Arabic/English native RTL switching as explicitly pending; Chrome cannot close those checks. Arrange an installed Android/iOS development build for native integration checks and require both-platform release acceptance before launch. Do not label a browser preview or bundle export as native acceptance.
 
 ---
 
 ## Phase 2 — Core foundation: theme, language/RTL, storage
+
+**Tracked slices:** 2A theme/language/startup recovery; 2B validated versioned storage/migrations/cache boundaries. Native direction, large-text, restart and upgrade evidence remain separate from browser checks.
 
 No screens yet — the primitives everything else imports.
 
@@ -159,6 +208,11 @@ No screens yet — the primitives everything else imports.
 
 ## Phase 3 — Data layer: API client
 
+**Tracked slices / mandatory completion checks**
+- [ ] **3A:** remaining catalog/cart/announcements/shipping/payment/cancellation transports and real boundary fixtures.
+- [ ] **3B:** five identity headers; shared versioned app-config/update-error contracts; current/previous/review support registry/fixtures; public API configuration and feature-only server enforcement. Stop for approval before editing `packages/shared` or `apps/api`.
+- [ ] **3C:** native config fetch/validation and structured feature-update error handling; all initial/retry/auth/idempotency/language headers preserved. First release must implement this layer, not defer it to Phase 8.
+
 Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minus Next-isms (`next: { revalidate }`, `NEXT_PUBLIC_API_URL`).
 
 **Files**
@@ -176,6 +230,11 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 ## Phase 4 — State providers: customer auth & cart
 
+**Tracked slices / mandatory completion checks**
+- [ ] **4A:** secure token/auth state and safe revocation/rotation/recovery; prerequisite U1–U4 disposition backed by real API tests.
+- [ ] **4B:** durable guest and account-isolated synchronized carts, serialized pending writes and purchased-cart reconciliation integration.
+- [ ] **4C:** policy provider at cold startup/foreground: validated cache, freshness/deduplication, reminder dismissal, offline/no-cache/invalid response behavior. Refresh never reloads the app or interrupts payment; startup settles even without config.
+
 **Files**
 
 | File | Purpose |
@@ -191,6 +250,10 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 ## Phase 5 — Design-system components
 
+**Tracked slices / mandatory completion checks**
+- [ ] **5A:** bilingual accessible components, loading/error/retry, gallery/in-app playback and lifecycle behavior.
+- [ ] **5B:** dismissible recommended-update prompt and feature-specific blocked state with safe store action; compatible features remain available. Both-language, accessibility and dismissal evidence required.
+
 Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo/vector-icons` (lucide is DOM-only).
 
 **Files** — `apps/mobile/src/components/`: `screen.tsx` (safe-area + canvas bg), `button.tsx` (primary/outline/ghost, pressed = accent-deep), `input.tsx`, `price-text.tsx` (EGP + strikethrough original), `rating-stars.tsx`, `badge.tsx` (new/bestseller/offer from `dict.badges`), `qty-stepper.tsx`, `media-image.tsx` (bilingual `EntityMedia` → url by lang, expo-image), `product-card.tsx`, `section-header.tsx` (eyebrow style), `empty-state.tsx`.
@@ -202,6 +265,8 @@ Also provide reusable loading/error/retry states, accessible modal/confirmation 
 ---
 
 ## Phase 6 — Customer slice A: browse & catalog (first real screens)
+
+**Tracked slices:** 6A home/catalog/detail/cart controls; 6B global search/Ask and approved conversation cache; 6C banners/media/static links/support and complete navigation reachability. Acceptance uses the existing parity matrix, not only the named routes.
 
 Merged slice (former Phases 6 + 9): all read-only customer surfaces land together — browse, offers, collections, and static pages — so the whole catalog navigation graph is verified in one pass.
 
@@ -225,6 +290,12 @@ Merged slice (former Phases 6 + 9): all read-only customer surfaces land togethe
 ---
 
 ## Phase 7 — Customer slice B: cart, checkout, accounts, orders, wishlist, reviews
+
+**Tracked slices / mandatory completion checks**
+- [ ] **7A:** cart/shipping/checkout/payment recovery and durable attempt/reference; purchased-cart reconciliation and transient form state.
+- [ ] **7B:** login/signup/intended return, account, orders/cancellation, wishlist and purchase-eligible reviews.
+- [ ] **7C:** account deletion and minimum review safety with approved upstream API/web work and retention policy.
+- [ ] **7D:** wire feature-specific update errors/recovery into every affected journey; preserve other tasks and unresolved payment state.
 
 Merged slice (former Phases 7 + 8): everything that mutates state or needs a customer session.
 
@@ -253,6 +324,11 @@ The former native ERP slices (admin foundation/dashboard/orders; catalog managem
 ---
 
 ## Phase 8 — Store readiness (needs user accounts)
+
+**Tracked slices / mandatory completion checks**
+- [ ] **8A:** native identity/build/runtime and preview/production environments/channels; supported-release promotion, safe OTA timing and tested rollout/rollback. Never advertise a store candidate unavailable to the user.
+- [ ] **8B:** real assets, signing/store/privacy/reviewer readiness and D12 redacted failure notifications with the user's actual destination/service access.
+- [ ] **8C:** close every remaining Android/iOS device/lifecycle/upgrade/provider acceptance item with dated build/device/OS/revision evidence.
 
 EAS build profiles/project link already exist. Finish preview/production environments and OTA channels, version/build-number procedure, real icon/splash assets, Android adaptive icon, privacy declarations, signing/account ownership and recovery, store listings and reviewer instructions. Production API URL is configured in `eas.json`; verify the same intended environment when publishing OTA updates. Requires Apple Developer + Google Play accounts and external acceptance evidence.
 

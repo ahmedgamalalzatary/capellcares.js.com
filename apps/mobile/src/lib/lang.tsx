@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode
 } from "react";
-import { I18nManager } from "react-native";
+import { I18nManager, Platform } from "react-native";
 import { dir, getDict, isRtl, type Dict } from "@capella/shared/i18n";
 import type { Language } from "@capella/shared";
 import { LANG_STORAGE_KEY } from "@/constants/storage";
@@ -41,6 +41,13 @@ function toError(error: unknown): Error {
 
 function setNativeDirection(language: Language) {
   const shouldUseRtl = isRtl(language);
+  if (Platform.OS === "web") {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = language;
+      document.documentElement.dir = dir(language);
+    }
+    return shouldUseRtl;
+  }
   I18nManager.allowRTL(shouldUseRtl);
   I18nManager.forceRTL(shouldUseRtl);
   return shouldUseRtl;
@@ -48,6 +55,7 @@ function setNativeDirection(language: Language) {
 
 async function applyNativeDirection(language: Language) {
   const shouldUseRtl = setNativeDirection(language);
+  if (Platform.OS === "web") return;
   const needsReload = I18nManager.isRTL !== shouldUseRtl;
   if (needsReload) await reloadAppAsync();
 }

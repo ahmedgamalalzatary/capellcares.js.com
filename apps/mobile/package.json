@@ -8,10 +8,13 @@
     "start": "expo start --dev-client",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "web": "expo start --web --localhost",
+    "build:web": "expo export --platform web --output-dir dist-web",
     "build": "expo export --platform ios --platform android --output-dir dist",
     "lint": "expo lint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
+    "test:e2e": "playwright test",
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
@@ -19,6 +22,7 @@
     "@expo-google-fonts/lobster": "^0.4.1",
     "@expo-google-fonts/roboto": "^0.4.1",
     "@expo-google-fonts/tajawal": "^0.4.1",
+    "@expo/metro-runtime": "~57.0.16",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.26",
@@ -34,12 +38,15 @@
     "expo-status-bar": "~57.0.1",
     "expo-updates": "~57.0.24",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.2",
+    "react-native-web": "^0.21.3",
     "react-native-webview": "13.16.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.60.0",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.7.0",
