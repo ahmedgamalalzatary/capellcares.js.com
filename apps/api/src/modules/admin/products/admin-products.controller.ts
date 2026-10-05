@@ -18,6 +18,7 @@ import {
 import { toSlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
+import { parseHoverImageInput } from "../../shared/hover-image/hover-image.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 
 type NormalizedVariantDiscount = {
@@ -155,9 +156,6 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     const normalizedMedia = parseEntityMediaInput(incoming.media);
     const hasImagePathInput = Object.prototype.hasOwnProperty.call(incoming, "imagePath");
     const hasMediaInput = Object.prototype.hasOwnProperty.call(incoming, "media");
-    const hasLegacyHoverInput = Object.prototype.hasOwnProperty.call(incoming, "hoverImagePath");
-    const hasArHoverInput = Object.prototype.hasOwnProperty.call(incoming, "arHoverImagePath");
-    const hasEnHoverInput = Object.prototype.hasOwnProperty.call(incoming, "enHoverImagePath");
     const selectedImage = normalizedMedia?.find((item) => item.type === "image");
     const productImagePath = hasMediaInput
       ? selectedImage?.enUrl ?? null
@@ -215,13 +213,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         enWarnings: incoming.warnings?.en ?? incoming.enWarnings ?? null,
         youtubeUrl: incoming.youtubeUrl ?? null,
         imagePath: productImagePath,
-        hoverImagePath: hasLegacyHoverInput ? incoming.hoverImagePath ?? null : undefined,
-        arHoverImagePath: hasArHoverInput ? incoming.arHoverImagePath ?? null : undefined,
-        enHoverImagePath: hasEnHoverInput
-          ? incoming.enHoverImagePath ?? null
-          : hasLegacyHoverInput
-            ? incoming.hoverImagePath ?? null
-            : undefined,
+        ...parseHoverImageInput(incoming),
         media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
         status: productStatus,
@@ -264,6 +256,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
   } catch (error: any) {
     if (error?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
       return res.status(400).json({ ok: false, reason: "media-video-limit" });
+    }
+    if (error?.code === "INVALID_HOVER_IMAGE") {
+      return res.status(400).json({ ok: false, reason: "invalid-hover-image" });
     }
     if (error?.code === "PRODUCT_VARIANT_LINKED_TO_OFFERS") {
       return res.status(409).json({ ok: false, reason: "linked-to-offers" });

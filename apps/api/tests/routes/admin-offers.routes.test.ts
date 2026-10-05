@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import { categories, entityMedia, entityOrderings, offerItems, offers, orderItems, orders, products, relatedItems, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
@@ -1091,4 +1091,345 @@ serialTest("admin offer upsert keeps a hidden offer hidden when visibility is om
 
   const [after] = await db.select({ visibility: offers.visibility }).from(offers).where(eq(offers.slug, slug)).limit(1);
   assert.equal(after?.visibility, "hidden", "omitting visibility must not silently republish a hidden offer");
+});
+
+serialTest("admin offer upsert persists a dedicated hover image per language", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-hover-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض hover", en: "Hover Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        media: [{ type: "image", url: "/uploads/test-offer.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        arHoverImagePath: "/uploads/route-offer-hover-ar.jpg",
+        enHoverImagePath: "/uploads/route-offer-hover-en.jpg"
+      })
+    });
+
+    assert.equal(createResponse.status, 200);
+    assert.equal(createResponse.json.ok, true);
+
+    const adminOffersResponse = await request("/api/erp/offers", {
+      headers: { ...authHeaders }
+    });
+    const adminOffer = adminOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.equal(adminOffer.hoverImagePath, "http://localhost:4000/uploads/route-offer-hover-en.jpg");
+    assert.equal(adminOffer.arHoverImagePath, "http://localhost:4000/uploads/route-offer-hover-ar.jpg");
+    assert.equal(adminOffer.enHoverImagePath, "http://localhost:4000/uploads/route-offer-hover-en.jpg");
+
+    const storefrontOffersResponse = await request("/api/v1/offers");
+    const storefrontOffer = storefrontOffersResponse.json.items.find((offer: any) => offer.slug === slug);
+    assert.equal(storefrontOffer.hoverImagePath, "http://localhost:4000/uploads/route-offer-hover-ar.jpg");
+  });
+
+  const [created] = await db
+    .select({
+      hoverImagePath: offers.hoverImagePath,
+      arHoverImagePath: offers.arHoverImagePath
+    })
+    .from(offers)
+    .where(eq(offers.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(created, {
+    hoverImagePath: "/uploads/route-offer-hover-en.jpg",
+    arHoverImagePath: "/uploads/route-offer-hover-ar.jpg"
+  });
+});
+
+serialTest("admin offer upsert preserves an explicitly missing English hover image", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-hover-ar-only-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/offers", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "عرض hover عربي", en: "Arabic Hover Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        media: [{ type: "image", url: "/uploads/test-offer.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        hoverImagePath: "/uploads/route-offer-hover-ar-only.jpg",
+        arHoverImagePath: "/uploads/route-offer-hover-ar-only.jpg",
+        enHoverImagePath: null
+      })
+    });
+
+    assert.equal(createResponse.status, 200);
+  });
+
+  const [created] = await db
+    .select({
+      hoverImagePath: offers.hoverImagePath,
+      arHoverImagePath: offers.arHoverImagePath
+    })
+    .from(offers)
+    .where(eq(offers.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(created, {
+    hoverImagePath: null,
+    arHoverImagePath: "/uploads/route-offer-hover-ar-only.jpg"
+  });
+});
+
+serialTest("admin offer update omitting hover fields preserves stored hover images", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-hover-keep-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const base = {
+      slug,
+      name: { ar: "عرض hover", en: "Hover Offer" },
+      description: { ar: "وصف", en: "Description" },
+      imagePath: "/uploads/test-offer.png",
+      media: [{ type: "image", url: "/uploads/test-offer.png" }],
+      price: 120,
+      categoryId: ids.rootCategoryId,
+      status: "active",
+      visibility: "visible",
+      items: [
+        { variantId: ids.firstVariantId, qty: 1 },
+        { variantId: ids.secondVariantId, qty: 2 }
+      ],
+      arHoverImagePath: "/uploads/route-offer-hover-keep-ar.jpg",
+      enHoverImagePath: "/uploads/route-offer-hover-keep-en.jpg"
+    };
+
+    const created = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(base)
+    });
+    assert.equal(created.status, 200);
+
+    const [row] = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug)).limit(1);
+    const { arHoverImagePath: _ar, enHoverImagePath: _en, ...withoutHover } = base;
+    const updated = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...withoutHover, id: row!.id })
+    });
+    assert.equal(updated.status, 200);
+  });
+
+  const [after] = await db
+    .select({ hoverImagePath: offers.hoverImagePath, arHoverImagePath: offers.arHoverImagePath })
+    .from(offers)
+    .where(eq(offers.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(after, {
+    hoverImagePath: "/uploads/route-offer-hover-keep-en.jpg",
+    arHoverImagePath: "/uploads/route-offer-hover-keep-ar.jpg"
+  });
+});
+
+serialTest("admin offer update clears and replaces hover images explicitly", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-offer-hover-clear-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const base = {
+      slug,
+      name: { ar: "عرض hover", en: "Hover Offer" },
+      description: { ar: "وصف", en: "Description" },
+      imagePath: "/uploads/test-offer.png",
+      media: [{ type: "image", url: "/uploads/test-offer.png" }],
+      price: 120,
+      categoryId: ids.rootCategoryId,
+      status: "active",
+      visibility: "visible",
+      items: [
+        { variantId: ids.firstVariantId, qty: 1 },
+        { variantId: ids.secondVariantId, qty: 2 }
+      ],
+      arHoverImagePath: "/uploads/route-offer-hover-clear-ar.jpg",
+      enHoverImagePath: "/uploads/route-offer-hover-clear-en.jpg"
+    };
+
+    const created = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(base)
+    });
+    assert.equal(created.status, 200);
+
+    const [row] = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug)).limit(1);
+
+    const clearedEnglish = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...base, id: row!.id, enHoverImagePath: null })
+    });
+    assert.equal(clearedEnglish.status, 200);
+
+    const [afterEnglishClear] = await db
+      .select({ hoverImagePath: offers.hoverImagePath, arHoverImagePath: offers.arHoverImagePath })
+      .from(offers)
+      .where(eq(offers.slug, slug))
+      .limit(1);
+    assert.deepEqual(afterEnglishClear, {
+      hoverImagePath: null,
+      arHoverImagePath: "/uploads/route-offer-hover-clear-ar.jpg"
+    });
+
+    const replaced = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...base,
+        id: row!.id,
+        arHoverImagePath: "/uploads/route-offer-hover-clear-ar-2.jpg",
+        enHoverImagePath: "/uploads/route-offer-hover-clear-en-2.jpg"
+      })
+    });
+    assert.equal(replaced.status, 200);
+
+    const [afterReplace] = await db
+      .select({ hoverImagePath: offers.hoverImagePath, arHoverImagePath: offers.arHoverImagePath })
+      .from(offers)
+      .where(eq(offers.slug, slug))
+      .limit(1);
+    assert.deepEqual(afterReplace, {
+      hoverImagePath: "/uploads/route-offer-hover-clear-en-2.jpg",
+      arHoverImagePath: "/uploads/route-offer-hover-clear-ar-2.jpg"
+    });
+
+    const clearedArabic = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...base, id: row!.id, arHoverImagePath: null })
+    });
+    assert.equal(clearedArabic.status, 200);
+
+    const [afterArabicClear] = await db
+      .select({ hoverImagePath: offers.hoverImagePath, arHoverImagePath: offers.arHoverImagePath })
+      .from(offers)
+      .where(eq(offers.slug, slug))
+      .limit(1);
+    assert.deepEqual(afterArabicClear, {
+      hoverImagePath: "/uploads/route-offer-hover-clear-en.jpg",
+      arHoverImagePath: null
+    });
+  });
+});
+
+serialTest("admin offer upsert rejects non-string hover image values", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-hover-invalid-${Date.now()}`,
+        name: { ar: "عرض hover", en: "Hover Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        media: [{ type: "image", url: "/uploads/test-offer.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        enHoverImagePath: 123
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-hover-image");
+
+    const numericStringResponse = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-hover-invalid-string-${Date.now()}`,
+        name: { ar: "عرض hover", en: "Hover Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        media: [{ type: "image", url: "/uploads/test-offer.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        enHoverImagePath: "123"
+      })
+    });
+
+    assert.equal(numericStringResponse.status, 400);
+    assert.equal(numericStringResponse.json.reason, "invalid-hover-image");
+
+    const objectResponse = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-offer-hover-invalid-object-${Date.now()}`,
+        name: { ar: "عرض hover", en: "Hover Offer" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-offer.png",
+        media: [{ type: "image", url: "/uploads/test-offer.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        arHoverImagePath: { toString: 123 }
+      })
+    });
+
+    assert.equal(objectResponse.status, 400);
+    assert.equal(objectResponse.json.reason, "invalid-hover-image");
+  });
+
+  const rows = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(sql`${offers.slug} like 'route-offer-hover-invalid-%'`);
+  assert.equal(rows.length, 0, "expected no offer to be created from an invalid hover payload");
 });

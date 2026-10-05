@@ -18,12 +18,18 @@ import {
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
 } from "../../shared/entity-media/entity-media.repository.js";
+import { resolveHoverImageFields, resolveHoverImageUpdate } from "../../shared/hover-image/hover-image.js";
 
-async function withOfferMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
+async function withOfferMedia<T extends { id: number; imagePath: string | null; hoverImagePath?: string | null; arHoverImagePath?: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByOffer = await loadEntityMediaRows("offer", rows.map((row) => row.id));
   return rows.map((row) => {
     const media = normalizeEntityMedia(mediaByOffer.get(row.id), row.imagePath);
-    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang) };
+    return {
+      ...row,
+      media,
+      imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang),
+      ...resolveHoverImageFields(row.arHoverImagePath, row.hoverImagePath, lang)
+    };
   });
 }
 
@@ -216,6 +222,9 @@ export async function upsertOfferRepo(input: {
   enDescription?: string | null;
   youtubeUrl?: string | null;
   imagePath?: string | null;
+  hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMediaItem[];
   fixedPrice: number;
   categoryId: number;
@@ -233,6 +242,7 @@ export async function upsertOfferRepo(input: {
   const primaryImagePath = mediaUpdate
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
     : null;
+  const hoverUpdate = resolveHoverImageUpdate(input);
   return db.transaction(async (tx) => {
   await assertRootOfferCategory(tx, input.categoryId);
   if (input.id) await validateExistingBundleDiscountPrice(tx, "offer", input.id, input.fixedPrice);
@@ -248,6 +258,8 @@ export async function upsertOfferRepo(input: {
         enDescription: input.enDescription ?? null,
         youtubeUrl: input.youtubeUrl ?? null,
         ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
+        ...(hoverUpdate.hasEnHoverUpdate ? { hoverImagePath: hoverUpdate.enHoverImagePath } : {}),
+        ...(hoverUpdate.hasArHoverUpdate ? { arHoverImagePath: hoverUpdate.arHoverImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
@@ -266,6 +278,8 @@ export async function upsertOfferRepo(input: {
         enDescription: input.enDescription ?? null,
         youtubeUrl: input.youtubeUrl ?? null,
         imagePath: primaryImagePath,
+        hoverImagePath: hoverUpdate.enHoverImagePath,
+        arHoverImagePath: hoverUpdate.arHoverImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
@@ -338,7 +352,12 @@ export async function restoreOfferRepo(id: number) {
 export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ deletedAt: offers.deletedAt, imagePath: offers.imagePath })
+      .select({
+        deletedAt: offers.deletedAt,
+        imagePath: offers.imagePath,
+        hoverImagePath: offers.hoverImagePath,
+        arHoverImagePath: offers.arHoverImagePath
+      })
       .from(offers)
       .where(eq(offers.id, id))
       .limit(1);
@@ -383,7 +402,12 @@ export async function hardDeleteOfferRepo(id: number): Promise<{ mediaUrls: stri
       );
     await tx.delete(offers).where(eq(offers.id, id));
     return {
-      mediaUrls: [existing.imagePath, ...mediaRows.flatMap((item) => [item.url, item.arUrl])]
+      mediaUrls: [
+        existing.imagePath,
+        existing.hoverImagePath,
+        existing.arHoverImagePath,
+        ...mediaRows.flatMap((item) => [item.url, item.arUrl])
+      ]
         .filter((url): url is string => Boolean(url))
     };
   });

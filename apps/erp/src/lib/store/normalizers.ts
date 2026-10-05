@@ -57,7 +57,8 @@ export function normalizeProduct(input: ProductApiShape): Product {
     imagePath: input.imagePath ?? (primaryImage ? resolveLocalizedEntityMediaUrl(primaryImage, "en") : ""),
     hoverImagePath: input.hoverImagePath ?? "",
     arHoverImagePath: input.arHoverImagePath ?? "",
-    enHoverImagePath: input.enHoverImagePath ?? input.hoverImagePath ?? "",
+    // An explicitly null English hover image means it was cleared; only an absent field falls back to the legacy path.
+    enHoverImagePath: input.enHoverImagePath !== undefined ? input.enHoverImagePath : input.hoverImagePath ?? "",
     media: normalizedMedia,
     youtubeUrl: input.youtubeUrl ?? undefined,
     status: input.status ?? "inactive",

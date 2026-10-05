@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, resolveLocalizedEntityMediaUrl, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { CardRating } from "@/components/reviews/card-rating";
+import { useHoverPreviewImage } from "@/hooks/use-hover-preview-image";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -37,12 +38,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const primaryImage = imageMedia[0]
     ? resolveLocalizedEntityMediaUrl(imageMedia[0], lang)
     : product.imagePath;
-  const hoverImage = product.hoverImagePath || primaryImage;
-  const [previewImage, setPreviewImage] = useState(primaryImage);
-
-  useEffect(() => {
-    setPreviewImage(primaryImage);
-  }, [primaryImage]);
+  const { previewImage, hoverProps } = useHoverPreviewImage(primaryImage, product.hoverImagePath);
 
   // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
   const buyVariant = useMemo(() => {
@@ -70,8 +66,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         href={href}
         aria-label={pickLang(product.name, lang)}
         className="absolute inset-0 grid place-items-center"
-        onMouseEnter={() => setPreviewImage(hoverImage)}
-        onMouseLeave={() => setPreviewImage(primaryImage)}
+        {...hoverProps}
       >
         <ProductIllustration
           product={{ ...product, imagePath: previewImage }}

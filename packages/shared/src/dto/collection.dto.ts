@@ -1,3 +1,6 @@
+import type { EntityMediaDto } from "./product.dto.js";
+import type { HoverImageDto } from "./hover-image.dto.js";
+
 export interface CollectionItemDto {
   id: number;
   collectionId: number;
@@ -5,7 +8,7 @@ export interface CollectionItemDto {
   qty: number;
 }
 
-export interface CollectionDto {
+export interface CollectionDto extends HoverImageDto {
   id: number;
   slug: string;
   arName: string;
@@ -22,4 +25,3 @@ export interface CollectionDto {
   deletedAt: string | null;
   items: CollectionItemDto[];
 }
-import type { EntityMediaDto } from "./product.dto.js";

@@ -595,3 +595,335 @@ serialTest("admin collection revalidation includes related product slugs for col
   assert.equal(payload.slug, slug);
   assert.deepEqual([...payload.relatedProductSlugs].sort(), productRows.map((row) => row.slug).sort());
 });
+
+serialTest("admin collection upsert persists a dedicated hover image per language", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-collection-hover-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/collections", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "مجموعة hover", en: "Hover Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        media: [{ type: "image", url: "/uploads/test-collection.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        arHoverImagePath: "/uploads/route-collection-hover-ar.jpg",
+        enHoverImagePath: "/uploads/route-collection-hover-en.jpg"
+      })
+    });
+
+    assert.equal(createResponse.status, 200);
+    assert.equal(createResponse.json.ok, true);
+
+    const adminCollectionsResponse = await request("/api/erp/collections", {
+      headers: { ...authHeaders }
+    });
+    const adminCollection = adminCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.equal(adminCollection.hoverImagePath, "http://localhost:4000/uploads/route-collection-hover-en.jpg");
+    assert.equal(adminCollection.arHoverImagePath, "http://localhost:4000/uploads/route-collection-hover-ar.jpg");
+    assert.equal(adminCollection.enHoverImagePath, "http://localhost:4000/uploads/route-collection-hover-en.jpg");
+
+    const storefrontCollectionsResponse = await request("/api/v1/collections");
+    const storefrontCollection = storefrontCollectionsResponse.json.items.find((collection: any) => collection.slug === slug);
+    assert.equal(storefrontCollection.hoverImagePath, "http://localhost:4000/uploads/route-collection-hover-ar.jpg");
+  });
+
+  const [created] = await db
+    .select({
+      hoverImagePath: collections.hoverImagePath,
+      arHoverImagePath: collections.arHoverImagePath
+    })
+    .from(collections)
+    .where(eq(collections.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(created, {
+    hoverImagePath: "/uploads/route-collection-hover-en.jpg",
+    arHoverImagePath: "/uploads/route-collection-hover-ar.jpg"
+  });
+});
+
+serialTest("admin collection upsert preserves an explicitly missing English hover image", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-collection-hover-ar-only-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/collections", {
+      method: "POST",
+      headers: {
+        ...authHeaders,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "مجموعة hover عربية", en: "Arabic Hover Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        media: [{ type: "image", url: "/uploads/test-collection.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        hoverImagePath: "/uploads/route-collection-hover-ar-only.jpg",
+        arHoverImagePath: "/uploads/route-collection-hover-ar-only.jpg",
+        enHoverImagePath: null
+      })
+    });
+
+    assert.equal(createResponse.status, 200);
+  });
+
+  const [created] = await db
+    .select({
+      hoverImagePath: collections.hoverImagePath,
+      arHoverImagePath: collections.arHoverImagePath
+    })
+    .from(collections)
+    .where(eq(collections.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(created, {
+    hoverImagePath: null,
+    arHoverImagePath: "/uploads/route-collection-hover-ar-only.jpg"
+  });
+});
+
+serialTest("admin collection update omitting hover fields preserves stored hover images", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-collection-hover-keep-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const base = {
+      slug,
+      name: { ar: "مجموعة hover", en: "Hover Collection" },
+      description: { ar: "وصف", en: "Description" },
+      imagePath: "/uploads/test-collection.png",
+      media: [{ type: "image", url: "/uploads/test-collection.png" }],
+      price: 120,
+      categoryId: ids.rootCategoryId,
+      status: "active",
+      visibility: "visible",
+      items: [
+        { variantId: ids.firstVariantId, qty: 1 },
+        { variantId: ids.secondVariantId, qty: 2 }
+      ],
+      arHoverImagePath: "/uploads/route-collection-hover-keep-ar.jpg",
+      enHoverImagePath: "/uploads/route-collection-hover-keep-en.jpg"
+    };
+
+    const created = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(base)
+    });
+    assert.equal(created.status, 200);
+
+    const [row] = await db.select({ id: collections.id }).from(collections).where(eq(collections.slug, slug)).limit(1);
+    const { arHoverImagePath: _ar, enHoverImagePath: _en, ...withoutHover } = base;
+    const updated = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ ...withoutHover, id: row!.id })
+    });
+    assert.equal(updated.status, 200);
+  });
+
+  const [after] = await db
+    .select({ hoverImagePath: collections.hoverImagePath, arHoverImagePath: collections.arHoverImagePath })
+    .from(collections)
+    .where(eq(collections.slug, slug))
+    .limit(1);
+
+  assert.deepEqual(after, {
+    hoverImagePath: "/uploads/route-collection-hover-keep-en.jpg",
+    arHoverImagePath: "/uploads/route-collection-hover-keep-ar.jpg"
+  });
+});
+
+serialTest("admin collection update omitting visibility preserves the stored visibility", async () => {
+  const ids = await getBaselineIds();
+  const slug = `route-collection-hidden-keep-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const created = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "مجموعة مخفية", en: "Hidden Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        media: [{ type: "image", url: "/uploads/test-collection.png" }],
+        price: 1,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "hidden",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ],
+        arHoverImagePath: "/uploads/route-collection-hidden-ar.jpg",
+        enHoverImagePath: "/uploads/route-collection-hidden-en.jpg"
+      })
+    });
+    assert.equal(created.status, 200);
+
+    const [row] = await db.select({ id: collections.id }).from(collections).where(eq(collections.slug, slug)).limit(1);
+    const updated = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        id: row!.id,
+        slug,
+        name: { ar: "مجموعة مخفية", en: "Hidden Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        media: [{ type: "image", url: "/uploads/test-collection.png" }],
+        price: 1,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 1 }
+        ],
+        arHoverImagePath: "/uploads/route-collection-hidden-ar-2.jpg"
+      })
+    });
+    assert.equal(updated.status, 200);
+  });
+
+  const [after] = await db
+    .select({ visibility: collections.visibility, arHoverImagePath: collections.arHoverImagePath })
+    .from(collections)
+    .where(eq(collections.slug, slug))
+    .limit(1);
+
+  assert.equal(after?.visibility, "hidden");
+  assert.equal(after?.arHoverImagePath, "/uploads/route-collection-hidden-ar-2.jpg");
+});
+
+serialTest("admin collection upsert rejects non-string hover image values", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `route-collection-hover-invalid-${Date.now()}`,
+        name: { ar: "مجموعة hover", en: "Hover Collection" },
+        description: { ar: "وصف", en: "Description" },
+        imagePath: "/uploads/test-collection.png",
+        media: [{ type: "image", url: "/uploads/test-collection.png" }],
+        price: 120,
+        categoryId: ids.rootCategoryId,
+        status: "active",
+        visibility: "visible",
+        items: [
+          { variantId: ids.firstVariantId, qty: 1 },
+          { variantId: ids.secondVariantId, qty: 2 }
+        ],
+        arHoverImagePath: { url: "/uploads/x.jpg" }
+      })
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-hover-image");
+  });
+
+  const rows = await db
+    .select({ id: collections.id })
+    .from(collections)
+    .where(sql`${collections.slug} like 'route-collection-hover-invalid-%'`);
+  assert.equal(rows.length, 0, "expected no collection to be created from an invalid hover payload");
+});
+
+serialTest("admin collection permanent delete keeps a hover file still referenced by another collection", async () => {
+  const ids = await getBaselineIds();
+  const uploadsDir = resolve(process.cwd(), "uploads");
+  const sharedFileName = `test-shared-collection-hover-${ids.collectionId}.jpg`;
+  const sharedAbsolutePath = resolve(uploadsDir, sharedFileName);
+  await mkdir(uploadsDir, { recursive: true });
+  await writeFile(sharedAbsolutePath, "fake-shared-hover-bytes");
+  const sharedUrl = `/uploads/${sharedFileName}`;
+
+  const orphanFileName = `test-orphan-collection-hover-${ids.collectionId}.jpg`;
+  const orphanAbsolutePath = resolve(uploadsDir, orphanFileName);
+  await writeFile(orphanAbsolutePath, "fake-orphan-hover-bytes");
+  const orphanUrl = `/uploads/${orphanFileName}`;
+
+  const slugKept = `route-collection-hover-kept-${Date.now()}`;
+  const slugDeleted = `route-collection-hover-deleted-${Date.now()}`;
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const base = {
+      name: { ar: "مجموعة hover", en: "Hover Collection" },
+      description: { ar: "وصف", en: "Description" },
+      imagePath: "/uploads/test-collection.png",
+      media: [{ type: "image", url: "/uploads/test-collection.png" }],
+      price: 120,
+      categoryId: ids.rootCategoryId,
+      status: "active",
+      visibility: "visible",
+      items: [
+        { variantId: ids.firstVariantId, qty: 1 },
+        { variantId: ids.secondVariantId, qty: 2 }
+      ]
+    };
+
+    // The deleted collection shares the kept collection's Arabic hover file, so deletion
+    // must actually evaluate the new hover reference checks, plus an exclusively-owned file.
+    for (const [slug, arHover, enHover] of [
+      [slugKept, sharedUrl, sharedUrl],
+      [slugDeleted, sharedUrl, orphanUrl]
+    ] as const) {
+      const created = await request("/api/erp/collections", {
+        method: "POST",
+        headers: { ...authHeaders, "content-type": "application/json" },
+        body: JSON.stringify({ ...base, slug, arHoverImagePath: arHover, enHoverImagePath: enHover })
+      });
+      assert.equal(created.status, 200);
+    }
+  });
+
+  await db.update(collections).set({ deletedAt: new Date() }).where(eq(collections.slug, slugDeleted));
+  const [deletedRow] = await db.select({ id: collections.id }).from(collections).where(eq(collections.slug, slugDeleted)).limit(1);
+  assert.ok(deletedRow, "expected the deleted collection to exist");
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/collections/${deletedRow.id}/permanent`, {
+      method: "DELETE",
+      headers: { ...authHeaders }
+    });
+    assert.equal(response.status, 204);
+  });
+
+  // The orphan file has no remaining references and must be unlinked; the shared file is still the kept collection's hover image, so the reference check must protect it from the deleted collection's cleanup.
+  await assert.rejects(access(orphanAbsolutePath), "expected the orphaned hover file to be unlinked");
+  await assert.doesNotReject(access(sharedAbsolutePath), "expected the shared hover file to survive");
+});

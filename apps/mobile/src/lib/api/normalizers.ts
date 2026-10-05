@@ -169,6 +169,7 @@ function normalizeBundle<T extends OfferApiShape | CollectionApiShape>(bundle: T
         : requiredPositiveId(bundle.categoryId, "bundle categoryId"),
     name: requiredBilingualName(bundle.name, "bundle name"),
     imagePath: resolveMediaUrl(bundle.imagePath),
+    hoverImagePath: resolveMediaUrl(bundle.hoverImagePath),
     media: normalizeMedia(bundle.media),
     items: bundle.items.map((item) => ({
       ...item,

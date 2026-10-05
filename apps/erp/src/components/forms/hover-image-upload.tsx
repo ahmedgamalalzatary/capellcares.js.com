@@ -11,6 +11,8 @@ interface Props {
   enValue: string;
   onChange: (lang: Language, value: string) => void;
   uploadContext?: ErpUploadContext;
+  entityLabel?: string;
+  testIdPrefix?: "product" | "offer" | "collection";
 }
 
 function resolvePreviewSrc(value: string) {
@@ -20,7 +22,14 @@ function resolvePreviewSrc(value: string) {
   return value;
 }
 
-export function ProductHoverImageUpload({ arValue, enValue, onChange, uploadContext }: Props) {
+export function HoverImageUpload({
+  arValue,
+  enValue,
+  onChange,
+  uploadContext,
+  entityLabel = "منتج",
+  testIdPrefix = "product"
+}: Props) {
   const [uploading, setUploading] = useState<Language | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +64,7 @@ export function ProductHoverImageUpload({ arValue, enValue, onChange, uploadCont
         <div className="emedia__langs">
           {(["ar", "en"] as const).map((lang) => {
             const value = lang === "ar" ? arValue : enValue;
-            const inputTestId = `product-hover-image-${lang}-input`;
+            const inputTestId = `${testIdPrefix}-hover-image-${lang}-input`;
             const input = (
               <input
                 data-testid={inputTestId}
@@ -71,7 +80,7 @@ export function ProductHoverImageUpload({ arValue, enValue, onChange, uploadCont
               <div key={lang} className="emedia__lang">
                 <span className="emedia__label">
                   <span className="emedia__label-flag">{lang === "ar" ? "AR" : "EN"}</span>
-                  {lang === "ar" ? "صورة hover العربية" : "صورة hover الإنجليزية"}
+                  {lang === "ar" ? `صورة hover العربية لل${entityLabel}` : `صورة hover الإنجليزية لل${entityLabel}`}
                 </span>
 
                 {value ? (
@@ -105,7 +114,7 @@ export function ProductHoverImageUpload({ arValue, enValue, onChange, uploadCont
           })}
         </div>
       </div>
-      {!uploadContext ? <div className="muted fs-12">رفع صور hover متاح فقط أثناء تعديل منتج موجود.</div> : null}
+      {!uploadContext ? <div className="muted fs-12">رفع صور hover متاح فقط أثناء تعديل {entityLabel} موجود.</div> : null}
       {uploading ? <div className="muted fs-12">جارِ رفع صورة hover...</div> : null}
       {error ? <div className="field-error">{error}</div> : null}
     </div>

@@ -6,6 +6,7 @@ import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
+import { useHoverImageFields } from "./use-hover-image-fields";
 import type { OfferFormProps, OfferFormRow, UseOfferFormResult } from "../../types/forms/offer-form.types";
 
 export function useOfferForm({
@@ -25,6 +26,7 @@ export function useOfferForm({
       ? [{ type: "image" as const, arUrl: null, enUrl: initial.imagePath }]
       : [])
   );
+  const { arHoverImagePath, setArHoverImagePath, enHoverImagePath, setEnHoverImagePath, hoverImagePayload } = useHoverImageFields(initial);
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<OfferFormRow[]>(() => {
     if (!initial) {
@@ -121,6 +123,7 @@ export function useOfferForm({
         const image = media.find((item) => item.type === "image");
         return image ? resolveLocalizedEntityMediaUrl(image, "en") : "";
       })(),
+      ...hoverImagePayload,
       media,
       price: Number(price),
       originalTotal: computed.originalTotal,
@@ -160,6 +163,10 @@ export function useOfferForm({
     setYoutubeUrl,
     media,
     setMedia,
+    arHoverImagePath,
+    setArHoverImagePath,
+    enHoverImagePath,
+    setEnHoverImagePath,
     categoryId,
     // Changing the category clears any row whose product falls outside the new subtree, so an offer can never keep a member from another category.
     setCategoryId: (value) => {

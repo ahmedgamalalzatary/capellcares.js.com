@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { nullableYouTubeUrlSchema } from "./youtube-url.schema.js";
+import { hoverImageSchema } from "./hover-image.schema.js";
 
 const timestampString = z.string().min(1).refine((value) => !Number.isNaN(new Date(value).getTime()), {
   message: "Invalid timestamp"
@@ -88,9 +89,6 @@ export const productSchema = z.object({
   enWarnings: z.string().nullable(),
   youtubeUrl: nullableYouTubeUrlSchema,
   imagePath: z.string().nullable(),
-  hoverImagePath: z.string().nullable(),
-  arHoverImagePath: z.string().nullable().optional(),
-  enHoverImagePath: z.string().nullable().optional(),
   media: z.array(entityMediaSchema),
   status: z.enum(["active", "inactive"]),
   isNew: z.boolean(),
@@ -98,4 +96,4 @@ export const productSchema = z.object({
   categoryId: z.number().int().positive(),
   deletedAt: z.string().nullable(),
   variants: z.array(productVariantSchema)
-});
+}).extend(hoverImageSchema.shape);

@@ -63,7 +63,18 @@ export type EntityMedia = EntityImageMedia | EntityVideoMedia;
 /** @deprecated Use EntityMedia. */
 export type ProductMedia = EntityMedia;
 
-export interface Product {
+/**
+ * The one hover-image shape every purchasable entity shares: `hoverImagePath` is the
+ * legacy/English path, `arHoverImagePath` the Arabic overlay, and `enHoverImagePath`
+ * the explicit English override.
+ */
+export interface HoverImagePaths {
+  hoverImagePath?: string;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
+}
+
+export interface Product extends HoverImagePaths {
   id: number;
   sku: string;
   slug: string;
@@ -75,9 +86,6 @@ export interface Product {
   keywords: string[];
   buyingPrice: number;
   imagePath: string;
-  hoverImagePath?: string;
-  arHoverImagePath?: string | null;
-  enHoverImagePath?: string | null;
   media?: EntityMedia[];
   youtubeUrl?: string;
   status: ProductStatus;
@@ -212,7 +220,7 @@ export interface CollectionItem {
   qty: number;
 }
 
-export interface Collection {
+export interface Collection extends HoverImagePaths {
   id: number;
   slug: string;
   name: Bilingual;
@@ -259,7 +267,7 @@ export interface OfferItem {
   qty: number;
 }
 
-export interface Offer {
+export interface Offer extends HoverImagePaths {
   id: number;
   slug: string;
   name: Bilingual;

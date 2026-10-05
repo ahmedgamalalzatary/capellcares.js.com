@@ -5,6 +5,7 @@ export * from "./cart.schema.js";
 export * from "./category.schema.js";
 export * from "./collection.schema.js";
 export * from "./checkout.schema.js";
+export * from "./hover-image.schema.js";
 export * from "./offer.schema.js";
 export * from "./product.schema.js";
 export * from "./review.schema.js";

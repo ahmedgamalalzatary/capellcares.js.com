@@ -37,7 +37,8 @@ vi.mock("@/components/forms/category-picker", () => ({
 vi.mock("@/components/ui/icons", () => ({
   Icon: {
     Plus: () => createElement("span", null, "+"),
-    Trash: () => createElement("span", null, "x")
+    Trash: () => createElement("span", null, "x"),
+    Upload: () => createElement("span", null, "upload")
   }
 }));
 

@@ -4,6 +4,7 @@ export * from "./announcement.dto.js";
 export * from "./category.dto.js";
 export * from "./collection.dto.js";
 export * from "./checkout.dto.js";
+export * from "./hover-image.dto.js";
 export * from "./offer.dto.js";
 export * from "./order.dto.js";
 export * from "./product.dto.js";

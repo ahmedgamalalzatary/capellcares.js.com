@@ -6,7 +6,7 @@ import { useProductForm } from "../../hooks/forms/use-product-form";
 import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./editor-form-parts";
-import { ProductHoverImageUpload } from "./product-hover-image-upload";
+import { HoverImageUpload } from "./hover-image-upload";
 import { ProductMediaUpload } from "./product-media-upload";
 import { RelatedItemsField } from "./related-items-field";
 import "./product-form.css";
@@ -202,11 +202,13 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
           <ImageFieldCard
             step="05"
             title="صورة Hover لبطاقة المنتج"
-            uploadSlot={<ProductHoverImageUpload
+            uploadSlot={<HoverImageUpload
               arValue={arHoverImagePath}
               enValue={enHoverImagePath}
               onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
               uploadContext={mode === "edit" ? "products.update" : "products.create"}
+              entityLabel="منتج"
+              testIdPrefix="product"
             />}
           />
         </div>

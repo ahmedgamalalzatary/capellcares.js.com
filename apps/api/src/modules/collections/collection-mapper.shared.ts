@@ -9,6 +9,9 @@ type CollectionMapperRow = {
   enDescription: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
+  hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
   discount?: Collection["discount"];
@@ -47,6 +50,9 @@ export function toCollectionBase(
     },
     youtubeUrl: collection.youtubeUrl ?? undefined,
     imagePath: collection.imagePath ?? "",
+    hoverImagePath: collection.hoverImagePath ?? "",
+    arHoverImagePath: collection.arHoverImagePath ?? null,
+    enHoverImagePath: collection.enHoverImagePath ?? null,
     media: collection.media ?? (collection.imagePath
       ? [{ type: "image", arUrl: null, enUrl: collection.imagePath }]
       : []),

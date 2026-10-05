@@ -197,6 +197,8 @@ export const offers = mysqlTable("offers", {
   enDescription: text("en_description"),
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
+  hoverImagePath: varchar("hover_image_path", { length: 1024 }),
+  arHoverImagePath: varchar("ar_hover_image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
   // Nullable only for offers created before classification existed; the migration deactivates those so an uncategorised offer never reaches the storefront, and every admin-API write requires a root category.
   categoryId: int("category_id").references(() => categories.id, { onDelete: "restrict" }),
@@ -216,6 +218,8 @@ export const collections = mysqlTable("collections", {
   enDescription: text("en_description"),
   youtubeUrl: varchar("youtube_url", { length: 1024 }),
   imagePath: varchar("image_path", { length: 1024 }),
+  hoverImagePath: varchar("hover_image_path", { length: 1024 }),
+  arHoverImagePath: varchar("ar_hover_image_path", { length: 1024 }),
   fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
   categoryId: int("category_id")
     .notNull()

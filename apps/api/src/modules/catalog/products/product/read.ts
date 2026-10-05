@@ -3,13 +3,13 @@ import { compareByScopedOrdering } from "@capella/shared";
 import { categories, offerItems, offers, products, productVariants } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { collectBranchIds } from "../../categories/category-tree.js";
+import { resolveHoverImageFields, resolveLocalizedHoverImagePath } from "../../../shared/hover-image/hover-image.js";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
   loadVariantDiscountRows,
   mapVariant,
   normalizeMedia,
-  resolveLocalizedHoverImagePath,
   resolvePrimaryImagePath,
   toKeywords
 } from "./shared.js";
@@ -276,9 +276,7 @@ export async function listAdminProductsRepo() {
         sortOrder: rootRankByProductId.get(r.id),
         orderings: orderingsByProductId.get(r.id) ?? [],
         imagePath: resolvePrimaryImagePath(media, r.imagePath),
-        hoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, r.hoverImagePath, "en") ?? "",
-        arHoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, null, "ar") ?? "",
-        enHoverImagePath: resolveLocalizedHoverImagePath(null, r.hoverImagePath, "en") ?? "",
+        ...resolveHoverImageFields(r.arHoverImagePath, r.hoverImagePath, "en"),
         media,
         offerIds: offerIdsByProductId.get(r.id) ?? [],
         variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
@@ -312,9 +310,7 @@ export async function findAdminProductByIdRepo(id: number) {
   return {
     ...row,
     imagePath: resolvePrimaryImagePath(media, row.imagePath),
-    hoverImagePath: resolveLocalizedHoverImagePath(row.arHoverImagePath, row.hoverImagePath, "en") ?? "",
-    arHoverImagePath: resolveLocalizedHoverImagePath(row.arHoverImagePath, null, "ar") ?? "",
-    enHoverImagePath: resolveLocalizedHoverImagePath(null, row.hoverImagePath, "en") ?? "",
+    ...resolveHoverImageFields(row.arHoverImagePath, row.hoverImagePath, "en"),
     media,
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],

@@ -104,11 +104,15 @@ describe("mobile API normalization", () => {
         name: { ar: "حزمة", en: "Bundle" },
         items: [],
         imagePath: "/uploads/bundle.jpg",
+        hoverImagePath: "/uploads/bundle-hover.jpg",
         media: [{ type: "image", arUrl: null, enUrl: "/uploads/bundle-en.jpg" }],
         relatedItems: [{ imagePath: "/uploads/related.jpg" }]
       });
 
       expect(value.imagePath).toBe("https://api.example.com/uploads/bundle.jpg");
+      expect(value.hoverImagePath).toBe(
+        "https://api.example.com/uploads/bundle-hover.jpg"
+      );
       expect(value.media[0].enUrl).toBe(
         "https://api.example.com/uploads/bundle-en.jpg"
       );

@@ -42,7 +42,8 @@ vi.mock("@/components/ui/icons", () => ({
   Icon: {
     Plus: () => createElement("span", null, "+"),
     Trash: () => createElement("span", null, "x"),
-    Chevron: () => createElement("span", null, "^")
+    Chevron: () => createElement("span", null, "^"),
+    Upload: () => createElement("span", null, "upload")
   }
 }));
 

@@ -10,6 +10,7 @@ import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { CardRating } from "@/components/reviews/card-rating";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
+import { useHoverPreviewImage } from "@/hooks/use-hover-preview-image";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,12 @@ export function SectionCard(props: SectionCardProps) {
   const router = useRouter();
   const wishlist = useWishlist();
   const { user } = useAuth();
+  // Advice cards have no hover image; the purchasable kinds share the card hover pipeline with ProductCard.
+  const primaryImage = props.kind === "advice" ? "" : props.data.imagePath;
+  const { previewImage, hoverProps } = useHoverPreviewImage(
+    primaryImage,
+    props.kind === "advice" ? undefined : props.data.hoverImagePath
+  );
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [advicePreviewActive, setAdvicePreviewActive] = useState(false);
   const adviceDialogRef = useRef<HTMLDivElement | null>(null);
@@ -90,7 +97,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(offer.name, lang);
     description = pickLang(offer.description, lang);
     badge = { kind: "offer", label: dict.offers.badge, star: true };
-    image = <OfferIllustration offer={offer} className="absolute inset-0 h-full w-full object-cover" />;
+    image = <OfferIllustration offer={{ ...offer, imagePath: previewImage }} className="absolute inset-0 h-full w-full object-cover" />;
     price = offer.price;
     originalTotal = offer.originalTotal;
     rating = offer.rating ?? null;
@@ -111,7 +118,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(collection.name, lang);
     description = pickLang(collection.description, lang);
     badge = { kind: "collection", label: dict.collections.badge, star: true };
-    image = <CollectionIllustration collection={collection} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
+    image = <CollectionIllustration collection={{ ...collection, imagePath: previewImage }} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
     price = collection.price;
     originalTotal = collection.originalTotal;
     rating = collection.rating ?? null;
@@ -257,7 +264,7 @@ export function SectionCard(props: SectionCardProps) {
             {adviceTrigger}
           </>
         ) : href ? (
-          <Link href={href} aria-label={title} className="absolute inset-0 grid place-items-center">
+          <Link href={href} aria-label={title} className="absolute inset-0 grid place-items-center" {...hoverProps}>
             {image}
           </Link>
         ) : (

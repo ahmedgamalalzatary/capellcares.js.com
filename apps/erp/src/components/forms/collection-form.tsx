@@ -5,6 +5,7 @@ import { formatPrice } from "@capella/shared";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { EntityMediaUpload } from "./entity-media-upload";
+import { HoverImageUpload } from "./hover-image-upload";
 import { useCollectionForm } from "../../hooks/forms/use-collection-form";
 import { RelatedItemsField } from "./related-items-field";
 import type { CollectionFormProps } from "../../types/forms/collection-form.types";
@@ -35,6 +36,10 @@ export function CollectionForm({
     setYoutubeUrl,
     media,
     setMedia,
+    arHoverImagePath,
+    setArHoverImagePath,
+    enHoverImagePath,
+    setEnHoverImagePath,
     categoryId,
     setCategoryId,
     rows,
@@ -185,6 +190,18 @@ export function CollectionForm({
           title="وسائط المجموعة"
           error={errors.image}
           uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "collections.update" : "collections.create"} entityLabel="مجموعة" testIdPrefix="collection" />}
+        />
+
+        <ImageFieldCard
+          title="صورة Hover لبطاقة المجموعة"
+          uploadSlot={<HoverImageUpload
+            arValue={arHoverImagePath}
+            enValue={enHoverImagePath}
+            onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
+            uploadContext={mode === "edit" ? "collections.update" : "collections.create"}
+            entityLabel="مجموعة"
+            testIdPrefix="collection"
+          />}
         />
       </div>
 

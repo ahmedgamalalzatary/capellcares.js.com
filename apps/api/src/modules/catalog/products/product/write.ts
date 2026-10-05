@@ -7,6 +7,7 @@ import {
   ProductMediaItem,
   replaceProductMediaRepo
 } from "./shared.js";
+import { resolveHoverImageUpdate } from "../../../shared/hover-image/hover-image.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -44,11 +45,7 @@ export async function createAdminProductRepo(input: {
   const primaryImagePath = mediaUpdate
     ? mediaUpdate.find((item) => item.type === "image")?.enUrl ?? null
     : null;
-  const hasEnHoverUpdate = input.enHoverImagePath !== undefined || input.hoverImagePath !== undefined;
-  const enHoverImagePath = input.enHoverImagePath !== undefined
-    ? input.enHoverImagePath
-    : input.hoverImagePath ?? null;
-  const hasArHoverUpdate = input.arHoverImagePath !== undefined;
+  const hoverUpdate = resolveHoverImageUpdate(input);
   const repo = executor ?? db;
 
   if (input.id) {
@@ -79,8 +76,8 @@ export async function createAdminProductRepo(input: {
           enWarnings: input.enWarnings ?? null,
           youtubeUrl: input.youtubeUrl ?? null,
           ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
-          ...(hasEnHoverUpdate ? { hoverImagePath: enHoverImagePath } : {}),
-          ...(hasArHoverUpdate ? { arHoverImagePath: input.arHoverImagePath ?? null } : {}),
+          ...(hoverUpdate.hasEnHoverUpdate ? { hoverImagePath: hoverUpdate.enHoverImagePath } : {}),
+          ...(hoverUpdate.hasArHoverUpdate ? { arHoverImagePath: hoverUpdate.arHoverImagePath } : {}),
           categoryId: input.categoryId,
           status: input.status,
           isNew: input.isNew ?? false,
@@ -111,8 +108,8 @@ export async function createAdminProductRepo(input: {
       enWarnings: input.enWarnings ?? null,
       youtubeUrl: input.youtubeUrl ?? null,
       imagePath: primaryImagePath,
-      hoverImagePath: enHoverImagePath,
-      arHoverImagePath: input.arHoverImagePath ?? null,
+      hoverImagePath: hoverUpdate.enHoverImagePath,
+      arHoverImagePath: hoverUpdate.arHoverImagePath,
       categoryId: input.categoryId,
       status: input.status,
       isNew: input.isNew ?? false,

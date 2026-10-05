@@ -9,6 +9,9 @@ type OfferMapperRow = {
   enDescription: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
+  hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMedia[];
   fixedPrice: unknown;
   discount?: Offer["discount"];
@@ -42,6 +45,9 @@ export function toOfferBase(
     },
     youtubeUrl: offer.youtubeUrl ?? undefined,
     imagePath: offer.imagePath ?? "",
+    hoverImagePath: offer.hoverImagePath ?? "",
+    arHoverImagePath: offer.arHoverImagePath ?? null,
+    enHoverImagePath: offer.enHoverImagePath ?? null,
     media: offer.media ?? (offer.imagePath
       ? [{ type: "image", arUrl: null, enUrl: offer.imagePath }]
       : []),

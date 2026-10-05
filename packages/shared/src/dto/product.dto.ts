@@ -25,7 +25,9 @@ export type EntityMediaDto =
 /** @deprecated Use EntityMediaDto. */
 export type ProductMediaDto = EntityMediaDto;
 
-export interface ProductDto {
+import type { HoverImageDto } from "./hover-image.dto.js";
+
+export interface ProductDto extends HoverImageDto {
   id: number;
   sku: string;
   slug: string;
@@ -43,9 +45,6 @@ export interface ProductDto {
   enWarnings: string | null;
   youtubeUrl: string | null;
   imagePath: string | null;
-  hoverImagePath: string | null;
-  arHoverImagePath?: string | null;
-  enHoverImagePath?: string | null;
   media: EntityMediaDto[];
   status: "active" | "inactive";
   isNew: boolean;

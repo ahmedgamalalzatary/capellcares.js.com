@@ -164,9 +164,9 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 | File | Purpose |
 |---|---|
 | `apps/mobile/src/lib/api/base.ts` | `API_BASE` = `EXPO_PUBLIC_API_URL`, falling back to the emulator/simulator URL by `Platform.OS` **only when `__DEV__`**; in a production build a missing variable is a startup error, never a dev-URL fallback |
-| `apps/mobile/src/lib/api/http.ts` | 15-second request/body timeout and 401 → refresh → retry-once adapter already exist. Complete structured errors preserving HTTP status, API code and safe message, including upstream `error`/`message` formats; supply language and approved version diagnostics. Checkout idempotency survives retries. Add authenticated PUT for server cart sync; never retry a non-idempotent mutation merely because the connection failed. |
+| `apps/mobile/src/lib/api/http.ts` | 15-second request/body timeout and 401 → refresh → retry-once adapter already exist. Complete structured errors preserving HTTP status, API code and safe message, including upstream `error`/`message` formats and feature-specific `APP_UPDATE_REQUIRED`; attach the identity headers specified below to all native API calls/retries. Preserve language/auth/idempotency headers. Add authenticated PUT for server cart sync; never retry a non-idempotent mutation merely because the connection failed. |
 | `apps/mobile/src/lib/api/types.ts`, `normalizers.ts`, `selectors.ts` | adapt boundary types/normalizers; media URLs resolved against `API_BASE`; category IDs disambiguate repeated slugs; do not assume TS casts validate network data |
-| `apps/mobile/src/lib/api/client.ts` | catalog, advice, shop-media, announcements, orders/detail/cancel, reviews/prompt, wishlist, GET/PUT cart, checkout union, Paymob methods/status/retry, shipping availability/quote. Some exist already; announcements/cart/shipping/payment recovery/cancellation remain missing in the audited native client. |
+| `apps/mobile/src/lib/api/client.ts` | `GET /app-config` plus catalog, advice, shop-media, announcements, orders/detail/cancel, reviews/prompt, wishlist, GET/PUT cart, checkout union, Paymob methods/status/retry, shipping availability/quote. Some exist already; config/announcements/cart/shipping/payment recovery/cancellation remain missing in the audited native client. |
 
 **Exit criteria**: build/lint/typecheck/tests green; a temporary debug call lists real products from a running local API. Boundary tests cover all client operations, both checkout response kinds, structured shipping/payment errors, missing/malformed payloads, timeout during body reading, unauthorized/session-changed responses, and idempotency preservation. Screens must distinguish failed required reads from a successful empty result; optional decoration may fail without blocking the main task. Existing `getJSON` defaults can turn connection failure into null/empty arrays, so callers must deliberately choose the required-read behavior.
 
@@ -319,6 +319,30 @@ Screen/account guards must also cover a response arriving after logout, a differ
 
 ## API compatibility, old app support and delivery contract
 
+### Approved version/update scope — five items
+
+The user selected only **client identity, `GET /app-config`, update enforcement, the three-state support policy, and OTA delivery** for this layer. General app crash/failure notifications already approved in D12 remain a separate operational requirement. Dedicated version analytics, unique-user/device tracking, revenue attribution, analytics dashboards, general feature rollout flags and emergency kill-switch systems are not additional V1 requirements. Basic release identity in diagnostic records supports these five items without becoming an analytics project.
+
+| Item | V1 implementation contract |
+|---|---|
+| Client identity | Central request-header construction for every native API call, including auth, `/app-config`, original requests and retries; fields below. Metadata never replaces authentication or server input validation. |
+| Remote config | Public `GET /app-config` on the configured API origin, usable before login. Stable response schema/version and per-platform release/store destinations plus feature-specific compatibility requirements. |
+| Update enforcement | Dismissible recommended-update prompt; incompatible feature shows its update requirement/store action. Server backstop and shared client error handling identify the affected feature; compatible app functionality continues. |
+| Support policy | Current deployed release, immediate previous release and one review candidate; promotion/retirement follows the existing both-store availability rules below. |
+| OTA | EAS Update through preview/production channels, native runtime compatibility, safe apply timing and tested rollback. Native-incompatible changes still require a new store binary. |
+
+### Client identity — exact initial headers
+
+| Header | Value / purpose |
+|---|---|
+| `X-App-Version` | Native app/store version, e.g. the configured appVersion; not `package.json`'s workspace version |
+| `X-App-Build` | Android versionCode or iOS buildNumber, serialized as a string; compare only within the relevant platform/contract |
+| `X-Platform` | `android` or `ios` |
+| `X-Runtime-Version` | Actual Expo runtime identifier for the installed binary |
+| `X-Update-Id` | Actual executing Expo update ID when available; use the documented `embedded` marker only when the executing embedded bundle has no update ID |
+
+Keep existing `x-lang`, auth Bearer, auth-transport `x-client: mobile` / refresh-token and checkout idempotency headers intact. Diagnostic identity contains no hardware device identifier or additional stable user/device tracking ID. If a compatibility requirement is introduced by OTA within one native appVersion, define an explicit ordered client revision/capability in the shared contract; opaque update UUIDs are not sortable version numbers. First-release identity/config/enforcement integration is mandatory. Validate missing/malformed metadata safely and preserve existing web clients, which do not send native app headers.
+
 ### Independent versions and release paths
 
 | Identifier | Meaning | Does not guarantee |
@@ -345,7 +369,11 @@ EAS Update groundwork exists (`expo-updates`, updates URL, appVersion runtime po
 
 ### Required client-policy integration
 
-Implement a public, versioned policy/bootstrap endpoint available before login, and version-policy handling at the API boundary for affected operations. Final route/header/error names and policy values are D1/D2; they do not exist today and must be documented in shared contract fixtures before implementation acceptance.
+Implement **`GET /app-config`**, a public policy/bootstrap endpoint available before login on the API origin, and version-policy handling at the API boundary for affected operations. Keep the route stable; version its response schema so future clients can evolve safely. Initial identity header names are fixed above. Define the shared response/error schemas, including the stable machine code `APP_UPDATE_REQUIRED` and affected feature, before implementation acceptance; these do not exist in current code.
+
+The configuration contract includes response schema/policy revision, platform, current/latest and previous supported release identifiers, store URL, recommended-update information, and minimum supported release/capability for each feature requiring a gate. Keep the under-review candidate in the support registry without advertising an unavailable store upgrade to ordinary users. This endpoint is for version compatibility and delivery policy, not a general business-feature/analytics configuration engine.
+
+Check on cold launch and on foreground using a defined freshness interval and request deduplication. Use cached configuration immediately while refreshing; a fetch failure keeps last-known policy and compatible functionality available. With no cache, initialization must still settle and the API remains the authority for protected operations. Specify/test cache freshness, invalid responses and reminder-dismissal behavior in the shared/native policy implementation; no arbitrary reminder or polling interval is approved by this scope selection. Do not reload the app or interrupt payment merely because configuration was refreshed.
 
 Implement shared policy/error contracts and API enforcement with Phase 3, native startup/session integration with Phase 4, accessible update prompts/blocked-feature states with Phase 5, and per-feature recovery integration with Phase 7. Phase 8 verifies distribution/rollout rather than being the first place compatibility is implemented. An update-policy response must use a stable cache/freshness contract that can itself evolve without breaking the first released client.
 
@@ -358,7 +386,7 @@ The first public binary must understand policy responses and a stable structured
 1. Maintain **three release states only**: the current deployed/working release, its immediate previous release, and one candidate under Google Play/App Store review. Under review is a candidate, not a third public release. Test backend compatibility for all occupied states, including their actual runtime/OTA revisions. At first launch the previous slot can be empty. Track store availability on both platforms; while a candidate is available on only one, retain the existing current/previous support and do not start another promotion that requires a fourth promised release. Once the candidate is available on both platforms, promote it to current, move old current to previous, and retire the former previous through feature-specific update prompts. Rejected candidates do not change public support. Record promotion/retirement and store links; no extra time-based support window is added.
 2. Deploy backend support before mobile uses it. Preserve old inputs/outputs and existing web flows; add adapters/defaults as necessary.
 3. Test current web/mobile and retained supported client artifacts against that backend. Ship to preview, then staged production rollout with diagnostic evidence and rollback criteria.
-4. Measure usage of app/build/runtime/OTA/contract versions and failed operations without logging credentials or customer/payment payloads. A source-code test suite alone does not establish old-binary compatibility.
+4. Record app/build/runtime/OTA/contract identity with relevant failures for diagnosis, without logging credentials/customer/payment payloads or introducing a dedicated analytics dashboard. A source-code test suite alone does not establish old-binary compatibility.
 5. Before enforcement/retirement, verify the update is available in each affected store/platform, users have a supported upgrade path, and update prompts/recovery work. Store review delays must not cause premature backend breakage. Record the approved notice/enforcement dates and exceptions.
 6. Remove old adapters only after approved retirement and verification. Mobile and backend rollbacks must preserve supported contracts and data. Use expand/backfill/contract database migrations where required; do not remove fields/data still read by either production slot or a supported rollback build. If blue-green is used, both slots and their schema dependencies must satisfy these rules; blue-green is not established by current Compose configuration.
 
@@ -389,7 +417,7 @@ The answers below supersede the earlier open questions. Do not reopen settled pr
 | ID | Confirmed choice / recommendation | Remaining detail / acceptance |
 |---|---|---|
 | D1 | **Confirmed:** current deployed, immediate previous, and one under-review candidate; keep it simple, no additional support window. | Apply the promotion/staggered-store rules above; map runtime/OTA/API fixtures to each release state. |
-| D2 | **Confirmed:** block only the incompatible feature; keep the rest running. | Implement stable policy/error contracts and cached/offline handling without an app-wide wall. Thresholds derive from supported release/capability policy, not arbitrary prompts. |
+| D2 | **Confirmed:** version/update layer is identity headers, `GET /app-config`, feature-only enforcement, current/previous/review support and OTA. Keep compatible features running. | Implement the specified headers/route and shared policy/error contracts; cached/offline handling, freshness and prompt behavior follow this section. Thresholds derive from supported release/capability policy. No additional analytics/kill-switch/feature-experiment system is required. |
 | D3 | **Professional recommendation requested:** use the platform browser sheet for existing Paymob hosted checkout (Safari view on iOS / Custom Tabs on Android), with app return and API status recovery, rather than a custom payment WebView. | Recommendation, not a claim of device/provider acceptance. Select the appropriate Expo browser API, validate bank verification/wallet redirects, return-link/domain configuration and both-platform failure/resume paths before Phase 7 acceptance. |
 | D4 | **Confirmed:** videos play inside the app. | Select native uploaded-video playback and embedded YouTube/Instagram presentation; test full-screen, errors, controls and background pause. |
 | D5 | **Confirmed:** ask for re-login if recovery is unsafe; logout must invalidate the session immediately. | U2/U3/U4 must enforce server revocation once logout reaches the API. Offline local clearing is immediate, but server revocation cannot occur before communication; implement/test reconnect handling and do not falsely claim remote revocation while offline. |

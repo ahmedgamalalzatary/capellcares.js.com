@@ -1,12 +1,10 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import { productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import type { Language } from "@capella/shared";
 import {
   loadEntityMediaRows,
   normalizeEntityMedia,
   replaceEntityMediaRepo,
-  resolvePublicEntityMediaUrl,
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
 } from "../../../shared/entity-media/entity-media.repository.js";
@@ -59,21 +57,6 @@ export function mapVariant(v: {
 
 export const normalizeMedia = normalizeEntityMedia;
 export const resolvePrimaryImagePath = resolvePrimaryEntityImagePath;
-
-export function resolveHoverImagePath(hoverImagePath: string | null | undefined) {
-  return hoverImagePath ? resolvePublicEntityMediaUrl(hoverImagePath) : null;
-}
-
-export function resolveLocalizedHoverImagePath(
-  arHoverImagePath: string | null | undefined,
-  enHoverImagePath: string | null | undefined,
-  lang: Language
-) {
-  const path = lang === "ar"
-    ? arHoverImagePath || enHoverImagePath
-    : enHoverImagePath || arHoverImagePath;
-  return resolveHoverImagePath(path);
-}
 
 export async function loadMediaRows(productIds: number[]) {
   return loadEntityMediaRows("product", productIds);

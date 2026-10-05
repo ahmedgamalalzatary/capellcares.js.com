@@ -28,12 +28,18 @@ import {
   resolvePrimaryEntityImagePath,
   type EntityMediaItem
 } from "../../shared/entity-media/entity-media.repository.js";
+import { resolveHoverImageFields, resolveHoverImageUpdate } from "../../shared/hover-image/hover-image.js";
 
-async function withCollectionMedia<T extends { id: number; imagePath: string | null }>(rows: T[], lang: Language = "en") {
+async function withCollectionMedia<T extends { id: number; imagePath: string | null; hoverImagePath?: string | null; arHoverImagePath?: string | null }>(rows: T[], lang: Language = "en") {
   const mediaByCollection = await loadEntityMediaRows("collection", rows.map((row) => row.id));
   return rows.map((row) => {
     const media = normalizeEntityMedia(mediaByCollection.get(row.id), row.imagePath);
-    return { ...row, media, imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang) };
+    return {
+      ...row,
+      media,
+      imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang),
+      ...resolveHoverImageFields(row.arHoverImagePath, row.hoverImagePath, lang)
+    };
   });
 }
 
@@ -227,6 +233,9 @@ export async function upsertCollectionRepo(input: {
   enDescription?: string | null;
   youtubeUrl?: string | null;
   imagePath?: string | null;
+  hoverImagePath?: string | null;
+  arHoverImagePath?: string | null;
+  enHoverImagePath?: string | null;
   media?: EntityMediaItem[];
   fixedPrice: number;
   categoryId: number;
@@ -245,6 +254,7 @@ export async function upsertCollectionRepo(input: {
   const primaryImagePath = mediaUpdate
     ? resolvePrimaryEntityImagePath(mediaUpdate, input.imagePath ?? null)
     : null;
+  const hoverUpdate = resolveHoverImageUpdate(input);
   return db.transaction(async (tx) => {
   if (input.id) await validateExistingBundleDiscountPrice(tx, "collection", input.id, input.fixedPrice);
   let collectionId = input.id;
@@ -259,10 +269,13 @@ export async function upsertCollectionRepo(input: {
         enDescription: input.enDescription ?? null,
         youtubeUrl: input.youtubeUrl ?? null,
         ...(shouldReplaceMedia ? { imagePath: primaryImagePath } : {}),
+        ...(hoverUpdate.hasEnHoverUpdate ? { hoverImagePath: hoverUpdate.enHoverImagePath } : {}),
+        ...(hoverUpdate.hasArHoverUpdate ? { arHoverImagePath: hoverUpdate.arHoverImagePath } : {}),
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
-        visibility: input.visibility ?? "visible"
+        // A visibility omitted from an edit keeps the stored value; the "visible" default is creation-only.
+        ...(input.visibility !== undefined ? { visibility: input.visibility } : {})
       })
       .where(eq(collections.id, collectionId));
   } else {
@@ -276,6 +289,8 @@ export async function upsertCollectionRepo(input: {
         enDescription: input.enDescription ?? null,
         youtubeUrl: input.youtubeUrl ?? null,
         imagePath: primaryImagePath,
+        hoverImagePath: hoverUpdate.enHoverImagePath,
+        arHoverImagePath: hoverUpdate.arHoverImagePath,
         fixedPrice: sql`${input.fixedPrice}`,
         categoryId: input.categoryId,
         status: input.status,
@@ -341,7 +356,12 @@ export async function restoreCollectionRepo(id: number) {
 export async function hardDeleteCollectionRepo(id: number): Promise<{ mediaUrls: string[] } | null> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ deletedAt: collections.deletedAt, imagePath: collections.imagePath })
+      .select({
+        deletedAt: collections.deletedAt,
+        imagePath: collections.imagePath,
+        hoverImagePath: collections.hoverImagePath,
+        arHoverImagePath: collections.arHoverImagePath
+      })
       .from(collections)
       .where(eq(collections.id, id))
       .limit(1);
@@ -379,7 +399,12 @@ export async function hardDeleteCollectionRepo(id: number): Promise<{ mediaUrls:
     await tx.delete(collections).where(eq(collections.id, id));
 
     return {
-      mediaUrls: [existing.imagePath, ...mediaRows.flatMap((item) => [item.url, item.arUrl])]
+      mediaUrls: [
+        existing.imagePath,
+        existing.hoverImagePath,
+        existing.arHoverImagePath,
+        ...mediaRows.flatMap((item) => [item.url, item.arUrl])
+      ]
         .filter((url): url is string => Boolean(url))
     };
   });

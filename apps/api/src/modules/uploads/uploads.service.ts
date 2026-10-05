@@ -137,8 +137,16 @@ export async function deleteLocalUploadUrls(urls: Array<string | null | undefine
         inArray(products.hoverImagePath, referenceUrls),
         inArray(products.arHoverImagePath, referenceUrls)
       )).limit(1),
-      db.select({ id: offers.id }).from(offers).where(inArray(offers.imagePath, referenceUrls)).limit(1),
-      db.select({ id: collections.id }).from(collections).where(inArray(collections.imagePath, referenceUrls)).limit(1),
+      db.select({ id: offers.id }).from(offers).where(or(
+        inArray(offers.imagePath, referenceUrls),
+        inArray(offers.hoverImagePath, referenceUrls),
+        inArray(offers.arHoverImagePath, referenceUrls)
+      )).limit(1),
+      db.select({ id: collections.id }).from(collections).where(or(
+        inArray(collections.imagePath, referenceUrls),
+        inArray(collections.hoverImagePath, referenceUrls),
+        inArray(collections.arHoverImagePath, referenceUrls)
+      )).limit(1),
       db.select({ id: shopMediaSectionItems.id }).from(shopMediaSectionItems).where(or(
         inArray(shopMediaSectionItems.arImagePath, referenceUrls),
         inArray(shopMediaSectionItems.arMobileImagePath, referenceUrls),

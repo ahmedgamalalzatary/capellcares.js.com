@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/icons";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields, EditorActions, ImageFieldCard } from "./editor-form-parts";
 import { EntityMediaUpload } from "./entity-media-upload";
+import { HoverImageUpload } from "./hover-image-upload";
 import { RelatedItemsField } from "./related-items-field";
 import { useOfferForm } from "../../hooks/forms/use-offer-form";
 import type { OfferFormProps } from "../../types/forms/offer-form.types";
@@ -28,6 +29,10 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
     setYoutubeUrl,
     media,
     setMedia,
+    arHoverImagePath,
+    setArHoverImagePath,
+    enHoverImagePath,
+    setEnHoverImagePath,
     categoryId,
     setCategoryId,
     rows,
@@ -174,6 +179,18 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
           title="وسائط العرض"
           error={errors.image}
           uploadSlot={<EntityMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "offers.update" : "offers.create"} entityLabel="عرض" testIdPrefix="offer" />}
+        />
+
+        <ImageFieldCard
+          title="صورة Hover لبطاقة العرض"
+          uploadSlot={<HoverImageUpload
+            arValue={arHoverImagePath}
+            enValue={enHoverImagePath}
+            onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
+            uploadContext={mode === "edit" ? "offers.update" : "offers.create"}
+            entityLabel="عرض"
+            testIdPrefix="offer"
+          />}
         />
       </div>
 

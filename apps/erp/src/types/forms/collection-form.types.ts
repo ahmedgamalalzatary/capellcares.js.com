@@ -32,6 +32,10 @@ export interface UseCollectionFormResult {
   setYoutubeUrl: (value: string) => void;
   media: EntityMedia[];
   setMedia: (value: EntityMedia[]) => void;
+  arHoverImagePath: string;
+  setArHoverImagePath: (value: string) => void;
+  enHoverImagePath: string;
+  setEnHoverImagePath: (value: string) => void;
   categoryId: number | null;
   setCategoryId: (value: number | null) => void;
   rows: CollectionFormRow[];

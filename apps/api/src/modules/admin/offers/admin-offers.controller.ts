@@ -23,6 +23,7 @@ import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
+import { parseHoverImageInput } from "../../shared/hover-image/hover-image.js";
 import { BundleDiscountPriceError } from "../../catalog/offers/bundle-discount-price.repository.js";
 
 async function findOfferRevalidationData(id: number): Promise<{ slug: string; relatedProductSlugs: string[] } | null> {
@@ -203,6 +204,7 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       youtubeUrl: incoming.youtubeUrl ?? null,
       imagePath: incoming.imagePath ?? null,
+      ...parseHoverImageInput(incoming),
       media: parseEntityMediaInput(incoming.media),
       fixedPrice,
       categoryId,
@@ -225,6 +227,9 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     }
     if ((error as { code?: string })?.code === "ENTITY_MEDIA_VIDEO_LIMIT") {
       return res.status(400).json({ ok: false, reason: "media-video-limit" });
+    }
+    if ((error as { code?: string })?.code === "INVALID_HOVER_IMAGE") {
+      return res.status(400).json({ ok: false, reason: "invalid-hover-image" });
     }
     if (isDuplicateEntryError(error)) {
       return res.status(409).json({ ok: false, reason: "slug-conflict" });

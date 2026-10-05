@@ -6,6 +6,7 @@ import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
+import { useHoverImageFields } from "./use-hover-image-fields";
 import type { CollectionFormProps, CollectionFormRow, UseCollectionFormResult } from "../../types/forms/collection-form.types";
 
 export function useCollectionForm({
@@ -25,6 +26,7 @@ export function useCollectionForm({
       ? [{ type: "image" as const, arUrl: null, enUrl: initial.imagePath }]
       : [])
   );
+  const { arHoverImagePath, setArHoverImagePath, enHoverImagePath, setEnHoverImagePath, hoverImagePayload } = useHoverImageFields(initial);
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<CollectionFormRow[]>(() => {
     if (!initial) return [];
@@ -117,6 +119,7 @@ export function useCollectionForm({
         const image = media.find((item) => item.type === "image");
         return image ? resolveLocalizedEntityMediaUrl(image, "en") : "";
       })(),
+      ...hoverImagePayload,
       media,
       price: Number(price),
       originalTotal,
@@ -157,6 +160,10 @@ export function useCollectionForm({
     setYoutubeUrl,
     media,
     setMedia,
+    arHoverImagePath,
+    setArHoverImagePath,
+    enHoverImagePath,
+    setEnHoverImagePath,
     categoryId,
     setCategoryId: (value) => {
       setCategoryId(value);

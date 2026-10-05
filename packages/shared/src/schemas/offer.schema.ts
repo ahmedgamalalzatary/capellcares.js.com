@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { entityMediaSchema } from "./product.schema.js";
 import { nullableYouTubeUrlSchema } from "./youtube-url.schema.js";
+import { hoverImageSchema } from "./hover-image.schema.js";
 
 export const offerItemSchema = z.object({
   id: z.number().int().positive(),
@@ -25,4 +26,4 @@ export const offerSchema = z.object({
   visibility: z.enum(["visible", "hidden"]),
   deletedAt: z.string().nullable(),
   items: z.array(offerItemSchema)
-});
+}).extend(hoverImageSchema.shape);

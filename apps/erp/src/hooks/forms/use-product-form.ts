@@ -5,6 +5,7 @@ import { resolveLocalizedEntityMediaUrl, type Product, type ProductVariant, type
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "../../components/forms/form-slug";
+import { useHoverImageFields } from "./use-hover-image-fields";
 import type { ProductFormErrors, ProductFormProps, Requirement } from "../../types/forms/product-form.types";
 
 // Negative, monotonically-decreasing temp ids never collide with positive DB autoincrement ids.
@@ -38,8 +39,7 @@ export function useProductForm({
       ? [{ type: "image" as const, arUrl: null, enUrl: initial.imagePath }]
       : [])
   );
-  const [arHoverImagePath, setArHoverImagePath] = useState(initial?.arHoverImagePath ?? "");
-  const [enHoverImagePath, setEnHoverImagePath] = useState(initial?.enHoverImagePath ?? initial?.hoverImagePath ?? "");
+  const { arHoverImagePath, setArHoverImagePath, enHoverImagePath, setEnHoverImagePath, hoverImagePayload } = useHoverImageFields(initial);
   const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [isNew, setIsNew] = useState(initial?.isNew ?? false);
   const [isBestseller, setIsBestseller] = useState(initial?.isBestseller ?? false);
@@ -116,9 +116,7 @@ export function useProductForm({
       keywords: keywords.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
       imagePath: primaryImage,
-      hoverImagePath: enHoverImagePath,
-      arHoverImagePath: arHoverImagePath || null,
-      enHoverImagePath: enHoverImagePath || null,
+      ...hoverImagePayload,
       media,
       youtubeUrl: youtubeUrl.trim() || undefined,
       status,

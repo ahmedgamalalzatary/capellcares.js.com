@@ -5,7 +5,7 @@ import {
   parseEntityMediaInput,
   resolvePrimaryEntityImagePath
 } from "../../../../src/modules/shared/entity-media/entity-media.repository.js";
-import * as productMedia from "../../../../src/modules/catalog/products/product/shared.js";
+import * as hoverImage from "../../../../src/modules/shared/hover-image/hover-image.js";
 
 test("parseEntityMediaInput rejects more than one video", () => {
   assert.throws(
@@ -58,8 +58,8 @@ test("resolvePrimaryEntityImagePath localizes with opposite-language fallback", 
   ], null, "en"), "/uploads/ar-only.jpg");
 });
 
-test("product hover image resolution uses the requested language with fallback", () => {
-  const resolve = (productMedia as Record<string, unknown>).resolveLocalizedHoverImagePath;
+test("hover image resolution uses the requested language with fallback", () => {
+  const resolve = (hoverImage as Record<string, unknown>).resolveLocalizedHoverImagePath;
   assert.equal(typeof resolve, "function");
   if (typeof resolve !== "function") return;
 
