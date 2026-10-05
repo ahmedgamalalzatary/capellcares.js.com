@@ -18,7 +18,8 @@ const { LANG_STORAGE_KEY } = require("../src/constants/storage");
 const { LangProvider, useLang } = require("../src/lib/lang");
 
 function LanguageProbe() {
-  const { dict, direction, error, lang, pending, ready, retry, setLang } = useLang();
+  const { dict, direction, error, lang, pending, ready, retry, setLang, holdLanguageChanges } = useLang();
+  const holds = React.useRef([]);
 
   return (
     <View>
@@ -31,6 +32,8 @@ function LanguageProbe() {
       <Button title="Arabic" onPress={() => void setLang("ar")} />
       <Button title="English" onPress={() => void setLang("en")} />
       <Button title="Retry" onPress={() => void retry()} />
+      <Button title="Begin critical operation" onPress={() => holds.current.push(holdLanguageChanges?.() ?? (() => {}))} />
+      <Button title="End critical operation" onPress={() => holds.current.pop()?.()} />
     </View>
   );
 }
@@ -44,6 +47,7 @@ describe("LangProvider", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     jest.clearAllMocks();
+    mockReloadAppAsync.mockReset().mockResolvedValue(undefined);
     I18nManager.allowRTL = jest.fn();
     I18nManager.forceRTL = jest.fn();
     Object.defineProperty(I18nManager, "isRTL", { configurable: true, value: false });
@@ -239,5 +243,78 @@ describe("LangProvider", () => {
     expect(global.document.documentElement).toEqual({ dir: "ltr", lang: "en" });
     await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
     expect(mockReloadAppAsync).not.toHaveBeenCalled();
+  });
+
+  test("defers language persistence and reload until every critical operation finishes", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "en");
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    fireEvent.press(view.getByRole("button", { name: "Begin critical operation" }));
+    fireEvent.press(view.getByRole("button", { name: "Begin critical operation" }));
+    fireEvent.press(view.getByRole("button", { name: "Arabic" }));
+    await act(async () => {});
+    expect(view.getByTestId("lang").props.children).toBe("en");
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
+    expect(view.getByTestId("pending").props.children).toBe("true");
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+
+    fireEvent.press(view.getByRole("button", { name: "End critical operation" }));
+    await act(async () => {});
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+    fireEvent.press(view.getByRole("button", { name: "End critical operation" }));
+    await waitFor(() => expect(view.getByTestId("lang").props.children).toBe("ar"));
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("ar");
+    expect(mockReloadAppAsync).toHaveBeenCalledTimes(1);
+  });
+
+  test("cancels a queued language change when the original language is selected again", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "en");
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    fireEvent.press(view.getByRole("button", { name: "Begin critical operation" }));
+    fireEvent.press(view.getByRole("button", { name: "Arabic" }));
+    fireEvent.press(view.getByRole("button", { name: "English" }));
+    fireEvent.press(view.getByRole("button", { name: "End critical operation" }));
+    await act(async () => {});
+    expect(view.getByTestId("pending").props.children).toBe("false");
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("en");
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+  });
+
+  test("does not reload after the language provider unmounts during a storage write", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "en");
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    let finishWrite;
+    AsyncStorage.setItem.mockImplementationOnce(() => new Promise((resolve) => { finishWrite = resolve; }));
+    // Stop the old implementation's erroneous native call rather than allowing
+    // its unmounted retry loop to run indefinitely.
+    mockReloadAppAsync.mockRejectedValueOnce(new Error("unexpected reload"));
+    fireEvent.press(view.getByRole("button", { name: "Arabic" }));
+    await act(async () => {});
+    await view.unmount();
+    await act(async () => { finishWrite(); });
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+  });
+
+  test("resumes a queued switch when the critical operation ends during storage reconciliation", async () => {
+    await AsyncStorage.setItem(LANG_STORAGE_KEY, "en");
+    const view = render(<LangProvider><LanguageProbe /></LangProvider>);
+    await waitFor(() => expect(view.getByTestId("ready").props.children).toBe("true"));
+    let finishWrite;
+    let finishReconciliation;
+    AsyncStorage.setItem
+      .mockImplementationOnce(() => new Promise((resolve) => { finishWrite = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { finishReconciliation = resolve; }));
+    fireEvent.press(view.getByRole("button", { name: "Arabic" }));
+    await act(async () => {});
+    fireEvent.press(view.getByRole("button", { name: "Begin critical operation" }));
+    await act(async () => { finishWrite(); });
+    expect(mockReloadAppAsync).not.toHaveBeenCalled();
+    fireEvent.press(view.getByRole("button", { name: "End critical operation" }));
+    await act(async () => { finishReconciliation(); });
+    await waitFor(() => expect(view.getByTestId("lang").props.children).toBe("ar"));
+    await expect(AsyncStorage.getItem(LANG_STORAGE_KEY)).resolves.toBe("ar");
+    expect(view.getByTestId("pending").props.children).toBe("false");
   });
 });

@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { reloadAppAsync } from "expo";
 import {
   createContext,
@@ -13,7 +12,7 @@ import {
 import { I18nManager, Platform } from "react-native";
 import { dir, getDict, isRtl, type Dict } from "@capella/shared/i18n";
 import type { Language } from "@capella/shared";
-import { LANG_STORAGE_KEY } from "@/constants/storage";
+import { languageStorage, readPersistentValue, writePersistentValue } from "@/lib/persistent-storage";
 
 const MOBILE_DEFAULT_LANGUAGE: Language = "ar";
 
@@ -21,6 +20,7 @@ type LangContextValue = {
   dict: Dict;
   direction: "rtl" | "ltr";
   error: Error | null;
+  holdLanguageChanges: () => () => void;
   isRtl: boolean;
   lang: Language;
   pending: boolean;
@@ -71,6 +71,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   const langRef = useRef<Language>(MOBILE_DEFAULT_LANGUAGE);
   const desiredRef = useRef<Language>(MOBILE_DEFAULT_LANGUAGE);
   const busyRef = useRef(false);
+  const criticalOperationsRef = useRef(0);
 
   useEffect(() => {
     activeRef.current = true;
@@ -85,7 +86,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
     const hydrate = async () => {
       let storedLanguage: string | null = null;
       try {
-        storedLanguage = await AsyncStorage.getItem(LANG_STORAGE_KEY);
+        storedLanguage = await readPersistentValue(languageStorage);
       } catch {
         // Storage can be unavailable on a damaged install; Arabic remains safe.
       }
@@ -93,7 +94,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
       const language = normalizeLanguage(storedLanguage);
       if (storedLanguage !== language) {
         try {
-          await AsyncStorage.setItem(LANG_STORAGE_KEY, language);
+          await writePersistentValue(languageStorage, language);
         } catch {
           // Keep the app usable even if persistence is temporarily unavailable.
         }
@@ -120,24 +121,27 @@ export function LangProvider({ children }: { children: ReactNode }) {
     };
   }, [hydrateNonce]);
 
-  const runSwitches = useCallback(async () => {
-    if (busyRef.current) return;
+  const runSwitches = useCallback(async function runQueuedSwitches(): Promise<void> {
+    if (busyRef.current || criticalOperationsRef.current > 0 || !activeRef.current) return;
     busyRef.current = true;
 
     let persisted: Language | null = null;
     try {
-      while (desiredRef.current !== langRef.current) {
+      while (desiredRef.current !== langRef.current && activeRef.current) {
         // Let any synchronously-queued selection coalesce so the latest wins.
         await Promise.resolve();
+        if (criticalOperationsRef.current > 0 || !activeRef.current) break;
         const target = desiredRef.current;
         if (target === langRef.current) break;
 
-        await AsyncStorage.setItem(LANG_STORAGE_KEY, target);
+        await writePersistentValue(languageStorage, target);
         persisted = target;
+        if (criticalOperationsRef.current > 0 || !activeRef.current) break;
         if (desiredRef.current !== target) continue;
 
         await applyNativeDirection(target);
-        if (desiredRef.current !== target || !activeRef.current) continue;
+        if (!activeRef.current) break;
+        if (desiredRef.current !== target) continue;
 
         langRef.current = target;
         desiredRef.current = target;
@@ -147,7 +151,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
     } catch (switchError) {
       desiredRef.current = langRef.current;
       try {
-        await AsyncStorage.setItem(LANG_STORAGE_KEY, langRef.current);
+        await writePersistentValue(languageStorage, langRef.current);
       } catch {
         // The active in-memory language remains authoritative for this run.
       }
@@ -157,24 +161,45 @@ export function LangProvider({ children }: { children: ReactNode }) {
     } finally {
       if (persisted !== null && persisted !== langRef.current) {
         try {
-          await AsyncStorage.setItem(LANG_STORAGE_KEY, langRef.current);
+          await writePersistentValue(languageStorage, langRef.current);
         } catch {
           // Best-effort reconciliation of a superseded write.
         }
       }
       busyRef.current = false;
-      if (activeRef.current) setPending(false);
+      if (activeRef.current) setPending(desiredRef.current !== langRef.current);
+      if (
+        activeRef.current && criticalOperationsRef.current === 0 &&
+        desiredRef.current !== langRef.current
+      ) {
+        void runQueuedSwitches();
+      }
     }
   }, []);
 
   const setLang = useCallback(
     (language: Language) => {
       desiredRef.current = language;
+      if (language === langRef.current && !busyRef.current) {
+        if (activeRef.current) setPending(false);
+        return Promise.resolve();
+      }
       if (activeRef.current) setPending(true);
       return runSwitches();
     },
     [runSwitches]
   );
+
+  const holdLanguageChanges = useCallback(() => {
+    criticalOperationsRef.current += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      criticalOperationsRef.current -= 1;
+      if (criticalOperationsRef.current === 0 && activeRef.current) void runSwitches();
+    };
+  }, [runSwitches]);
 
   const retry = useCallback(() => {
     setError(null);
@@ -187,6 +212,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
       dict: getDict(lang),
       direction: dir(lang),
       error,
+      holdLanguageChanges,
       isRtl: isRtl(lang),
       lang,
       pending,
@@ -194,7 +220,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
       retry,
       setLang
     }),
-    [lang, ready, pending, error, retry, setLang]
+    [lang, ready, pending, error, retry, setLang, holdLanguageChanges]
   );
 
   return <LangContext.Provider value={value}>{children}</LangContext.Provider>;

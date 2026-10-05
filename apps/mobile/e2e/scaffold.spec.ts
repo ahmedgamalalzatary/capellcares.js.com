@@ -16,10 +16,16 @@ test("boots in Arabic and preserves an English selection after browser reload", 
   await expect(page.getByRole("button", { name: "English" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  const arabicPosition = await page.getByRole("button", { name: "العربية" }).boundingBox();
+  const englishPosition = await page.getByRole("button", { name: "English" }).boundingBox();
+  expect(arabicPosition?.x).toBeGreaterThan(englishPosition?.x ?? Infinity);
 
   await page.getByRole("button", { name: "English" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  const arabicLtrPosition = await page.getByRole("button", { name: "العربية" }).boundingBox();
+  const englishLtrPosition = await page.getByRole("button", { name: "English" }).boundingBox();
+  expect(arabicLtrPosition?.x).toBeLessThan(englishLtrPosition?.x ?? -Infinity);
   await page.reload();
   await expect(page.getByRole("button", { name: "العربية" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");

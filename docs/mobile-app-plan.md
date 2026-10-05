@@ -7,13 +7,13 @@
 
 ## Phase verification ledger — 2026-10-05
 
-Phase 0 evidence was collected against base revision `8d8c893c3480b9de26f83e330446d820a0de5b2e` and committed as `73f20b4`. Phase 1 verification excludes the saved Phase 2 startup-recovery changes so the commits stay separate. Commands ran sequentially. No API source changes were made. Only `apps/mobile`, this plan, and `pnpm-lock.yaml` are authorized for edits in this pass.
+Phase 0 evidence was collected against base revision `8d8c893c3480b9de26f83e330446d820a0de5b2e` and committed as `73f20b4`. Phase 1 was committed separately as `d175872`, excluding the saved Phase 2 startup changes. Phase 2 verification is against `d175872` plus the foundation changes below. Commands ran sequentially. No API/shared/web source changes were made. Only `apps/mobile`, this plan, and `pnpm-lock.yaml` are authorized for edits in this pass.
 
 | Phase | Verified implementation | Status / remaining evidence |
 |---|---|---|
 | 0 | Customer/admin mobile auth transport; fresh DB-backed HTTP tests and API build/lint/typecheck pass | Transport verification committed as `73f20b4`; repository-wide suite and separate U1–U4 auth hardening are not established by this check |
 | 1 | Expo scaffold/shared resolution; web preview; dependency check, lint/typecheck, 13 suites / 107 tests, 1 Chrome Playwright test, web/Android/iOS exports pass | Code and automated Chrome verification complete; manual computer use blocked by URL-policy check; native launch pending |
-| 2 | Existing theme/language/storage primitives and startup recovery | Full foundation audit and native acceptance pending |
+| 2 | Theme/fonts, bilingual startup recovery, guarded language changes, validated storage/migration/cache-clear primitives; 14 suites / 127 tests, lint/typecheck, Chrome test and all exports pass | Foundation code verified; domain consumers in 4/6/7 and native/release acceptance remain pending |
 | 3 | Existing partial API client | Full transport/compatibility implementation and verification pending |
 | 4–7 | Not verified in this pass | Customer state/components/screens remain to be implemented |
 | 8 | Existing EAS configuration only | Release/distribution/OTA acceptance pending |
@@ -45,7 +45,8 @@ The standalone audit record has been removed. Its **open/undone items — which 
 
 - [ ] **Device foundation acceptance (Phase 2):** real development build on device/emulator with build/device/OS/revision evidence — Arabic/English cold start and live RTL/LTR switching, tracked per platform. Exports and unit tests are not device acceptance.
 - [ ] **Next-slice integration (Phase 3):** authenticated PUT for cart sync before Phase 4, plus the phase's remaining transports.
-- [ ] **L1:** localize/recover the root font-failure screen, expose language startup retry and handle splash rejections in Phase 2. Earlier tested startup changes are saved separately, excluded from the Phase 1 commit. Replace the diagnostic placeholder in Phase 6.
+- [x] **L1 startup:** Arabic/English font-failure recovery, visible language startup retry and handled splash rejections implemented and regression-covered in Phase 2.
+- [ ] **L1 placeholder:** replace the diagnostic product/language screen in Phase 6.
 - [ ] **L2:** replace the 1×1 icon/splash placeholders with real verified platform assets in Phase 8.
 - [ ] **L3:** add `eas.json` update channels, an explicit preview API environment, and a build-number/publish/rollback procedure before OTA/release.
 - [ ] **L4:** strengthen the mock-heavy tests and the scaffold fetch-call test with real contract fixtures as screens land.
@@ -189,6 +190,25 @@ Previously recorded implementation verification: Expo Doctor, dependency compati
 
 **Tracked slices:** 2A theme/language/startup recovery; 2B validated versioned storage/migrations/cache boundaries. Native direction, large-text, restart and upgrade evidence remain separate from browser checks.
 
+- [x] **2A foundation code:** existing palette/font/radius/spacing primitives retained; recoverable font/language startup; bounded language switching after unmount; critical-operation holds with queued selection/resume.
+- [x] **2B foundation primitives:** validated read/write and forward-copy migration; current-key precedence/recheck; canonicalized values before hydration/write; browsing-cache clear excludes credentials, identity, pending account writes and payment references. Language now consumes this boundary.
+- [ ] **Consumer acceptance:** actual auth/guest/account-cart codecs and serialization in Phase 4, conversation codec/migration/cache-clear UI in Phases 6/7, and payment recovery codec/lifecycle in Phase 7. These are not implemented by a storage primitive test.
+- [ ] **Native/release acceptance:** real Android/iOS font/RTL/reload, large text, lifecycle and upgrade/rollback tests.
+
+**Fresh verification (2026-10-05):** restored the separately saved startup tests first; **5 of 10 failed** against Phase 1's root, then all passed after startup recovery was restored. New storage tests exercised actual boundary code against an in-memory backend: invalid writes, migration storage failure, rollback-source preservation, current-value precedence/recheck, validated recovery-field filtering and canonical migration hydration. Language tests first reproduced unwanted reload during a critical operation, work continuing after provider unmount, and a queued selection getting stuck when a hold ended during storage reconciliation. The fixes pass their regression tests. Native module adapters are mocked in Jest because the native bridge is unavailable there; this is not device evidence.
+
+| Command | Final result |
+|---|---|
+| `pnpm --filter @capella/mobile lint` / `typecheck` | Both exit 0 |
+| `pnpm --filter @capella/mobile test -- --runInBand` | **14 suites / 127 tests passed**, no failures/skips |
+| `pnpm --filter @capella/mobile test:e2e` | **1 passed**, installed Chrome at 390×844; persisted language, Arabic/English document direction and actual language-control positions verified |
+| `pnpm --filter @capella/mobile build:web` | Exit 0; `entry-ff79c557a8109fca538fa7d4de08c9f2.js` and `dist-web/index.html` |
+| `pnpm --filter @capella/mobile build` | Exit 0; iOS `entry-08c5a25bb9ad98f9a969ffd90c26e16a.hbc`, Android `entry-3e5c0d53106ded5f64c12f5efc3de27c.hbc` and `dist/metadata.json` |
+
+**Storage/consumer contract:** `src/lib/persistent-storage.ts` owns `PersistentValue<T>` codecs and forward-copy migrations. Key versions identify formats; a breaking format requires a new key, with an explicit validator/converter, while previous serialized values are retained for supported rollback clients. No historical language migration is enabled because no earlier language format is established; migration tests use controlled fixtures. Existing `capella.lang.v1` remains the raw `ar`/`en` format. Reads preserve malformed data instead of deleting it; actual storage failures propagate. Writes persist the current decoder's canonical value, allowing recovery codecs to strip form fields. Cache clearing removes only `capella.cart.v1`, `capella.ask.v1` and legacy `capella:ask:v1`. No expiry is introduced. Auth profile, SecureStore refresh tokens, `capella.cart.pending.v1` and `capella.checkout.recovery.v1` are preserved.
+
+Consumers must validate their actual domain payloads and serialize competing domain writes; AsyncStorage is not a transactional/CAS store. Phase 4 must isolate pending cart data by account and persist SecureStore rotation before publishing access. Phases 4/7 must acquire `holdLanguageChanges()` before critical auth/storage/checkout/payment work, release it after reconciliation, and honor pending language changes when entering another critical task. The foundation tests prove the hold behavior, not a completed payment journey. Phase 7 must persist only minimal technical attempt/idempotency/reference state, never checkout name/address/form drafts; this is the D6 recovery exception. Phase 6 owns the conversation's real message/result validator; cache clearing UI follows in the customer slices. Native acceptance remains pending; exports do not prove installed startup, SDK 57 Expo Go cannot establish dynamic RTL acceptance, and manual Chrome control remains blocked by the tool's URL-policy check. Builds still emit the previously recorded Node color-environment warning.
+
 No screens yet — the primitives everything else imports.
 
 **Files**
@@ -197,6 +217,7 @@ No screens yet — the primitives everything else imports.
 |---|---|
 | `apps/mobile/src/theme.ts` | Convert the actual Parchment CSS OKLCH values to canonical sRGB/hex; the previous draft hex list is incorrect for nine tokens (the B8 closure lists the measured conversions). Preserve matching canvas `#f1f0ed`/white surface, radii {6,10,16,24}, spacing and language fonts (Roboto / Tajawal / Lobster); complete existing storefront tokens when components need them. |
 | `apps/mobile/src/constants/storage.ts` | AsyncStorage/SecureStore keys — reuse web names: `capella.cart.v1`, `capella.auth.v1`, plus `capella.lang.v1`, secure keys for refresh tokens |
+| `apps/mobile/src/lib/persistent-storage.ts` | validated codecs, canonical writes, forward-copy migration and selective browsing-cache clear; language integration implemented; domain consumer codecs in their owning phases |
 | `apps/mobile/src/lib/lang.tsx` | `LangProvider` + `useLang()`: language (`ar` default) + `getDict`/`dir` from `@capella/shared/i18n`, persisted; switching updates `I18nManager.allowRTL/forceRTL` and reloads the installed app with the SDK-supported app reload API so layout flips natively. Dynamic RTL is verified in a development build, not Expo Go |
 | `apps/mobile/app/_layout.tsx` (edit) | load fonts (expo-font + google-font packages), keep splash until ready, wrap in `LangProvider` + SafeArea |
 
