@@ -75,6 +75,8 @@ The initial V1 scope audit read code/configuration and existing coverage without
 
 ## Phase 0 — API: token-based auth for mobile (backend prerequisite)
 
+**Fresh verification (2026-10-05): transport exists and passes its scoped checks.** Inspected `mobile-client.ts`, both auth controllers, and both auth route test files. `pnpm --filter @capella/api test tests/unit/mobile-client.test.ts tests/routes/auth.routes.test.ts tests/routes/admin-auth.routes.test.ts` completed with **27 passed, 0 failed/skipped** after disposable test-DB migrations. These tests run real Express HTTP endpoints and database sessions: mobile login returns JSON refresh tokens without cookies; header/body refresh rotates tokens and rejects replay; mobile logout revokes refresh; browser-origin spoofing never exposes refresh tokens; mixed web/mobile sessions remain isolated. Ordinary web login/refresh keeps cookie transport without JSON refresh-token disclosure. This provides the login HTTP-response evidence without printing live credentials or tokens. `pnpm --filter @capella/api typecheck`, `lint`, and `build` all exited **0**. No missing Phase 0 transport implementation was found. The full-repository `pnpm test` criterion was not run in this scoped pass; U1–U4 remain separate prerequisites and this is not a claim that all auth correctness work is complete.
+
 This implemented transport addition preserves ordinary web auth responses. The separate auth correctness fixes in the upstream register must preserve supported successful flows, while deliberately correcting invalid-input/failure behavior; the transport requirement does not prohibit those fixes.
 
 **Files**
