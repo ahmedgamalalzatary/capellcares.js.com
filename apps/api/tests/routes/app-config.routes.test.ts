@@ -55,6 +55,17 @@ test("config advertises only public releases and recommends an available current
   });
 });
 
+test("recommended updates order build before client revision so a newer build is never downgraded", async () => {
+  const registry = policy(); registry.current.android.clientRevision = 2;
+  process.env.APP_RELEASE_POLICY_JSON = JSON.stringify(registry);
+  await withTestServer(app, async request => {
+    const newerBuild = await request("/app-config", { headers: { ...headers("2.0.0"), "x-app-build": "20" } });
+    assert.equal(newerBuild.json.recommendedUpdate, null);
+    const staleRevision = await request("/app-config", { headers: headers("2.0.0", "android", "1") });
+    assert.equal(staleRevision.json.recommendedUpdate.releaseId, "current");
+  });
+});
+
 test("current, previous and review candidates retain checkout access while a retired client gets a feature error", async () => {
   const registry: any = policy(); registry.requirements.android = [requirement];
   process.env.APP_RELEASE_POLICY_JSON = JSON.stringify(registry);

@@ -41,8 +41,9 @@ export function promoteReleaseCandidate(input: ReleaseRegistry, policyRevision: 
 function configForPlatform(policy: ReleaseRegistry, platform: NativePlatform, identity: NativeClientIdentity | null): AppConfig {
   const current = policy.current?.[platform];
   const versionOrder = current && identity ? compareReleaseNumbers(identity.appVersion, current.appVersion) : 0;
+  const buildOrder = current && identity ? compareReleaseNumbers(identity.appBuild, current.appBuild) : 0;
   const recommend = current && identity && (versionOrder < 0 || (versionOrder === 0 &&
-    (compareReleaseNumbers(identity.appBuild, current.appBuild) < 0 || identity.clientRevision < current.clientRevision)));
+    (buildOrder < 0 || (buildOrder === 0 && identity.clientRevision < current.clientRevision))));
   return appConfigSchema.parse({
     schemaVersion: 1, policyRevision: policy.policyRevision, platform, cache: policy.cache,
     current: policy.current ? { id: policy.current.id, release: policy.current[platform] } : null,
