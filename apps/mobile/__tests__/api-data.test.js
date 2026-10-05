@@ -52,6 +52,7 @@ describe("mobile API normalization", () => {
     const product = normalizeProduct({
       id: "8",
       categoryId: "3",
+      slug: "serum",
       name: { ar: "سيروم", en: "Serum" },
       imagePath: "/uploads/product.jpg",
       hoverImagePath: "/uploads/hover.jpg",
@@ -63,6 +64,7 @@ describe("mobile API normalization", () => {
         {
           id: "10",
           productId: "8",
+          price: 100, stock: 3, size: "50ml",
           discount: { id: "5", variantId: "10", value: "15" }
         }
       ],
@@ -101,6 +103,7 @@ describe("mobile API normalization", () => {
       const value = normalizer({
         id: 1,
         categoryId: 2,
+        slug: "bundle", price: 100, stock: 3,
         name: { ar: "حزمة", en: "Bundle" },
         items: [],
         imagePath: "/uploads/bundle.jpg",
@@ -198,6 +201,20 @@ describe("mobile API normalization", () => {
     expect(() =>
       normalizeProduct({ id: 0, categoryId: 1, variants: [], media: [] })
     ).toThrow("Invalid product id");
+  });
+
+  test.each([
+    [{ slug: "" }, "slug"], [{ variants: [{ id: 1, productId: 8, price: "unknown", stock: 1 }] }, "price"],
+    [{ variants: [{ id: 1, productId: 8, price: 10, stock: -1 }] }, "stock"]
+  ])("rejects unusable product purchase data (%j)", (patch, field) => {
+    const { normalizeProduct } = require("../src/lib/api/normalizers");
+    expect(() => normalizeProduct({ id: 8, categoryId: 3, slug: "serum", name: { ar: "سيروم", en: "Serum" },
+      variants: [], media: [], ...patch })).toThrow(new RegExp(field));
+  });
+
+  test.each(["normalizeOffer", "normalizeCollection"])("%s rejects missing bundle prices", name => {
+    const normalize = require("../src/lib/api/normalizers")[name];
+    expect(() => normalize({ id: 1, slug: "bundle", stock: 1, name: { ar: "حزمة", en: "Bundle" }, items: [] })).toThrow(/price/);
   });
 });
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { featureCompatibilityMiddleware } from "../modules/app-policy/app-policy.js";
 import { wrapAsync } from "../lib/async-route.js";
 import { localeMiddleware } from "../middlewares/locale.middleware.js";
 import { checkoutRoutes } from "../modules/checkout/checkout.routes.js";
@@ -17,6 +18,7 @@ import { paymobWebhookRoutes } from "../modules/payments/paymob/paymob-webhook.r
 
 export const storefrontRoutes = Router();
 storefrontRoutes.use(localeMiddleware);
+storefrontRoutes.use(featureCompatibilityMiddleware);
 
 storefrontRoutes.use("/products", catalogProductsRoutes);
 storefrontRoutes.use("/collections", catalogCollectionsRoutes);

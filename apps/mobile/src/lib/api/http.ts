@@ -1,4 +1,6 @@
 import { API_BASE } from "./base";
+import { nativeRequestHeaders } from "./identity";
+import { appUpdateRequiredSchema, type AppFeature, type AppUpdateRequired } from "@capella/shared";
 import type { FetchLanguage } from "./types";
 
 type AuthSessionAdapter = {
@@ -17,6 +19,7 @@ type RequestSession = {
 type RequestOptions = {
   lang?: FetchLanguage;
   retryOn401?: boolean;
+  refreshToken?: string;
 };
 
 let authSessionAdapter: AuthSessionAdapter | null = null;
@@ -25,10 +28,6 @@ export const API_REQUEST_TIMEOUT_MS = 15_000;
 
 export function configureAuthSessionAdapter(adapter: AuthSessionAdapter | null) {
   authSessionAdapter = adapter;
-}
-
-function languageHeaders(lang?: FetchLanguage): Record<string, string> {
-  return lang ? { "x-lang": lang } : {};
 }
 
 function isConnectionFailure(error: unknown): boolean {
@@ -44,12 +43,16 @@ function isConnectionFailure(error: unknown): boolean {
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
+  readonly feature?: AppFeature;
+  readonly updateRequired?: AppUpdateRequired;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, updateRequired?: AppUpdateRequired) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.feature = updateRequired?.feature;
+    this.updateRequired = updateRequired;
   }
 }
 
@@ -69,7 +72,8 @@ async function apiError(response: Response, path: string): Promise<ApiError> {
         ? envelope.error
         : `API ${response.status} ${path}`;
   const code = typeof envelope.code === "string" ? envelope.code : undefined;
-  return new ApiError(response.status, message, code);
+  const update = appUpdateRequiredSchema.safeParse(envelope);
+  return new ApiError(response.status, message, code, update.success ? update.data : undefined);
 }
 
 type TimedResponse = {
@@ -103,7 +107,10 @@ async function fetchWithTimeout(
 async function successfulJSON<T>(response: Response): Promise<T | null> {
   if (response.status === 204) return null;
   const body = await response.text();
-  return body.trim() ? (JSON.parse(body) as T) : null;
+  if (!body.trim()) return null;
+  try { return JSON.parse(body) as T; } catch {
+    throw new ApiError(response.status, "Invalid API response", "INVALID_PAYLOAD");
+  }
 }
 
 function captureRequestSession(accessToken: string | null): RequestSession | null {
@@ -117,6 +124,13 @@ function captureRequestSession(accessToken: string | null): RequestSession | nul
       ? adapter.ownsToken(accessToken)
       : adapter.getAccessToken() === accessToken);
   return { adapter, revision: adapter.getSessionRevision(), ownsToken };
+}
+
+function assertCurrentSession(session: RequestSession | null) {
+  if (session?.ownsToken && (authSessionAdapter !== session.adapter ||
+    session.adapter.getSessionRevision() !== session.revision)) {
+    throw new ApiError(401, "The signed-in session changed", "SESSION_CHANGED");
+  }
 }
 
 async function retryToken(
@@ -158,7 +172,7 @@ export async function getJSON<T>(
   let request: TimedResponse | null = null;
   try {
     request = await fetchWithTimeout(`${API_BASE}${path}`, {
-      headers: options.lang ? languageHeaders(options.lang) : undefined
+      headers: nativeRequestHeaders(path, options.lang)
     });
     const { response } = request;
 
@@ -191,7 +205,7 @@ async function authedGetJSONInternal<T>(
     request = await fetchWithTimeout(`${API_BASE}${path}`, {
       headers: {
         authorization: `Bearer ${accessToken}`,
-        ...languageHeaders(options.lang)
+        ...nativeRequestHeaders(path, options.lang)
       }
     });
     const { response } = request;
@@ -209,7 +223,9 @@ async function authedGetJSONInternal<T>(
     if (!response.ok) {
       throw await apiError(response, path);
     }
-    return await successfulJSON<T>(response);
+    const data = await successfulJSON<T>(response);
+    assertCurrentSession(requestSession);
+    return data;
   } finally {
     request?.release();
   }
@@ -230,7 +246,7 @@ export function authedGetJSON<T>(
 }
 
 type MutationInit = {
-  method: "POST" | "DELETE";
+  method: "POST" | "DELETE" | "PUT";
   body?: unknown;
   idempotencyKey?: string;
 };
@@ -247,7 +263,8 @@ async function authedMutationJSONInternal<T>(
     method: init.method,
     headers: {
       ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
-      ...languageHeaders(options.lang),
+      ...nativeRequestHeaders(path, options.lang),
+      ...(options.refreshToken ? { "x-refresh-token": options.refreshToken } : {}),
       ...(init.idempotencyKey ? { "idempotency-key": init.idempotencyKey } : {}),
       ...(init.body === undefined ? {} : { "content-type": "application/json" })
     },
@@ -257,6 +274,7 @@ async function authedMutationJSONInternal<T>(
 
   try {
     if (response.status === 204) {
+      assertCurrentSession(requestSession);
       return null;
     }
     if (
@@ -281,7 +299,9 @@ async function authedMutationJSONInternal<T>(
     if (!response.ok) {
       throw await apiError(response, path);
     }
-    return await successfulJSON<T>(response);
+    const data = await successfulJSON<T>(response);
+    assertCurrentSession(requestSession);
+    return data;
   } finally {
     request.release();
   }
@@ -301,4 +321,10 @@ export function authedMutationJSON<T>(
     true,
     captureRequestSession(accessToken)
   );
+}
+
+export function authJSON<T>(action: "login" | "signup" | "refresh" | "logout", body?: unknown,
+  options: { lang?: FetchLanguage; refreshToken?: string } = {}): Promise<T | null> {
+  return authedMutationJSON(`/api/v1/auth/${action}`, null, { method: "POST", body },
+    { ...options, retryOn401: false });
 }

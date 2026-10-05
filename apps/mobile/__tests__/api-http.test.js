@@ -424,4 +424,23 @@ describe("mobile API HTTP transport", () => {
     await expect(http.authedGetJSON("/orders", "token")).rejects.toThrow("expired");
     expect(refreshAccessToken).not.toHaveBeenCalled();
   });
+
+  test("rejects a successful response belonging to an account that changed during its body read", async () => {
+    let revision = 1;
+    http.configureAuthSessionAdapter({ getAccessToken: () => "token", getSessionRevision: () => revision,
+      refreshAccessToken: async () => null });
+    global.fetch.mockResolvedValue({ ok: true, status: 200, text: async () => {
+      revision = 2; return JSON.stringify({ privateOrders: [1] });
+    } });
+    await expect(http.authedGetJSON("/orders", "token")).rejects.toMatchObject({ code: "SESSION_CHANGED" });
+  });
+
+  test.each([
+    ["public", () => http.getJSON("/bad-json", { throwOnError: true })],
+    ["authenticated", () => http.authedGetJSON("/bad-json", "token")],
+    ["mutation", () => http.authedMutationJSON("/bad-json", "token", { method: "PUT", body: {} })]
+  ])("malformed successful %s JSON retains its status and a safe machine-readable failure", async (_label, read) => {
+    global.fetch.mockResolvedValue({ ok: true, status: 200, text: async () => "<html>private upstream details</html>" });
+    await expect(read()).rejects.toMatchObject({ status: 200, code: "INVALID_PAYLOAD", message: "Invalid API response" });
+  });
 });

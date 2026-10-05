@@ -91,6 +91,22 @@ function requiredBilingualName(value: unknown, field: string): Bilingual {
   return { ar, en };
 }
 
+function requiredSlug(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) throw new Error("Invalid slug");
+  return value;
+}
+
+function requiredAmount(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new Error(`Invalid ${field}`);
+  return value;
+}
+
+function requiredStock(value: unknown): number {
+  const stock = requiredAmount(value, "stock");
+  if (!Number.isSafeInteger(stock)) throw new Error("Invalid stock");
+  return stock;
+}
+
 export function normalizeCategory(input: CategoryApiShape): Category {
   const sortOrder = Number(input.sortOrder);
   return {
@@ -99,7 +115,7 @@ export function normalizeCategory(input: CategoryApiShape): Category {
       input.parentId == null
         ? null
         : requiredPositiveId(input.parentId, "category parentId"),
-    slug: input.slug,
+    slug: requiredSlug(input.slug),
     imagePath: resolveNullableMediaUrl(input.imagePath),
     sortOrder:
       input.sortOrder != null && input.sortOrder !== "" && Number.isFinite(sortOrder)
@@ -128,6 +144,7 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T & Pro
     ...product,
     id: requiredPositiveId(product.id, "product id"),
     categoryId: requiredPositiveId(product.categoryId, "product categoryId"),
+    slug: requiredSlug(product.slug),
     name: requiredBilingualName(product.name, "product name"),
     imagePath:
       normalizedImagePath ||
@@ -141,6 +158,8 @@ export function normalizeProduct<T extends ProductApiShape>(product: T): T & Pro
       ...variant,
       id: requiredPositiveId(variant.id, "variant id"),
       productId: requiredPositiveId(variant.productId, "variant productId"),
+      price: requiredAmount(variant.price, "variant price"),
+      stock: requiredStock(variant.stock),
       discount: variant.discount
         ? {
             ...variant.discount,
@@ -163,6 +182,9 @@ function normalizeBundle<T extends OfferApiShape | CollectionApiShape>(bundle: T
   return {
     ...bundle,
     id: requiredPositiveId(bundle.id, "bundle id"),
+    slug: requiredSlug(bundle.slug),
+    price: requiredAmount(bundle.price, "bundle price"),
+    stock: requiredStock(bundle.stock),
     categoryId:
       bundle.categoryId == null
         ? null

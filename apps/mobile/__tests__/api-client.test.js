@@ -23,6 +23,7 @@ const product = {
 const offer = {
   id: 3,
   slug: "offer one",
+  price: 100, stock: 3,
   name: { ar: "عرض", en: "Offer" },
   imagePath: "/uploads/offer.jpg",
   media: [],
@@ -31,11 +32,17 @@ const offer = {
 const collection = {
   id: 4,
   slug: "collection one",
+  price: 100, stock: 3,
   name: { ar: "مجموعة", en: "Collection" },
   imagePath: "/uploads/collection.jpg",
   media: [],
   items: []
 };
+const order = { id: 5, orderCode: "ORD5", customerType: "registered", customerId: 7,
+  fullName: "Customer", phone: "01012345678", email: "customer@example.com", governorate: "Cairo",
+  cityArea: "City", addressLine: "Street", buildingApartment: "1", notes: null,
+  paymentMethod: "cod", paymentStatus: "pending", providerPaymentStatus: null,
+  refundedAmountCents: 0, totalAmount: 30, createdAt: "2026-10-05T10:00:00.000Z", items: [] };
 
 describe("mobile API client", () => {
   let client;
@@ -128,7 +135,9 @@ describe("mobile API client", () => {
 
   test("fetches advice, shop media, and paginated public reviews", async () => {
     global.fetch
-      .mockResolvedValueOnce(response(200, { items: [{ id: 1 }] }))
+      .mockResolvedValueOnce(response(200, { items: [{ id: 1, title: { ar: "نصيحة", en: "Advice" },
+        description: { ar: "وصف", en: "Description" }, videoUrl: "https://www.youtube.com/watch?v=abc",
+        status: "active", createdAt: "2026-10-05T10:00:00.000Z", updatedAt: "2026-10-05T10:00:00.000Z" }] }))
       .mockResolvedValueOnce(
         response(200, {
           items: [
@@ -148,7 +157,8 @@ describe("mobile API client", () => {
           ]
         })
       )
-      .mockResolvedValueOnce(response(200, { items: [], pagination: {} }));
+      .mockResolvedValueOnce(response(200, { items: [], summary: { averageRating: 0, reviewCount: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }, pagination: { page: 2, pageSize: 20, total: 0, totalPages: 0 } }));
 
     await client.fetchAdvices({ lang: "ar" });
     const sections = await client.fetchShopMediaSections({ lang: "ar" });
@@ -166,8 +176,8 @@ describe("mobile API client", () => {
 
   test("covers orders, reviews, and all wishlist operations", async () => {
     global.fetch
-      .mockResolvedValueOnce(response(200, { items: [{ id: 5 }] }))
-      .mockResolvedValueOnce(response(200, { id: 5 }))
+      .mockResolvedValueOnce(response(200, { items: [order] }))
+      .mockResolvedValueOnce(response(200, order))
       .mockResolvedValueOnce(response(201, { id: 9 }))
       .mockResolvedValueOnce(
         response(200, {
@@ -403,5 +413,20 @@ describe("mobile API client", () => {
     await expect(client.fetchProducts({ throwOnError: true })).rejects.toThrow(
       /Invalid product payload/
     );
+  });
+
+  test.each([
+    ["advice", c => c.fetchAdvices({ throwOnError: true }), { items: [{ id: 1 }] }],
+    ["orders", c => c.fetchCustomerOrders("token"), { items: [{ id: 5 }] }],
+    ["order detail", c => c.fetchCustomerOrderById(5, "token"), { ...order, totalAmount: "unknown" }],
+    ["reviews", c => c.fetchPublicReviews("product", 1, 1, 20, { throwOnError: true }), { items: [], pagination: {} }],
+    ["prompt", c => c.claimReviewPrompt("token"), { entityId: 0 }],
+    ["wishlist", c => c.fetchWishlist("token"), {}],
+    ["review submission", c => c.submitReview("token", {}), { id: 0 }],
+    ["wishlist mutation", c => c.addWishlistItem("token", "product", 1), { ok: false }]
+  ])("rejects malformed required %s data", async (_label, read, body) => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch.mockResolvedValue(response(200, body));
+    await expect(read(client)).rejects.toMatchObject({ code: "INVALID_PAYLOAD" });
   });
 });
