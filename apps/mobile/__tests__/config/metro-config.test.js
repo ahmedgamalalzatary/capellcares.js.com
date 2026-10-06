@@ -6,12 +6,12 @@ jest.mock("expo/metro-config", () => ({
 
 describe("Metro configuration", () => {
   test("strips .js from relative imports originating in @capella/shared", () => {
-    const config = require("../metro.config.js");
+    const config = require("../../metro.config.js");
     const defaultResolver = jest.fn((_context, moduleName) => ({ filePath: moduleName }));
     const context = {
       originModulePath: path.resolve(
         __dirname,
-        "../../../packages/shared/src/i18n/index.ts"
+        "../../../../packages/shared/src/i18n/index.ts"
       ),
       resolveRequest: defaultResolver
     };
@@ -23,7 +23,7 @@ describe("Metro configuration", () => {
   });
 
   test("falls back to a real .js file when no TypeScript source matches", () => {
-    const config = require("../metro.config.js");
+    const config = require("../../metro.config.js");
     const defaultResolver = jest.fn((_context, moduleName) => {
       if (moduleName === "./runtime") {
         throw new Error("not found");
@@ -33,7 +33,7 @@ describe("Metro configuration", () => {
     const context = {
       originModulePath: path.resolve(
         __dirname,
-        "../../../packages/shared/src/index.ts"
+        "../../../../packages/shared/src/index.ts"
       ),
       resolveRequest: defaultResolver
     };
@@ -46,10 +46,10 @@ describe("Metro configuration", () => {
   });
 
   test("does not rewrite .js imports originating outside @capella/shared", () => {
-    const config = require("../metro.config.js");
+    const config = require("../../metro.config.js");
     const defaultResolver = jest.fn((_context, moduleName) => ({ filePath: moduleName }));
     const context = {
-      originModulePath: path.resolve(__dirname, "../app/index.tsx"),
+      originModulePath: path.resolve(__dirname, "../../app/index.tsx"),
       resolveRequest: defaultResolver
     };
 

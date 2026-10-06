@@ -2,13 +2,13 @@ const React = require("react");
 const { View, Text, Linking } = require("react-native");
 const { render: nativeRender, fireEvent, act } = require("@testing-library/react-native");
 const { PaperProvider } = require("react-native-paper");
-const { paperTheme } = require("../src/components/ui/paper-theme");
+const { paperTheme } = require("../../src/components/ui/paper-theme");
 function render(element) { return nativeRender(element, { wrapper: ({ children }) =>
   <PaperProvider theme={paperTheme(mockLanguage)} settings={{ icon: () => null }}>{children}</PaperProvider> }); }
 let mockLanguage = "en";
 const mockPolicy = { recommendedUpdate: null, dismissRecommendedUpdate: async () => {}, config: { platform: "android" } };
-jest.mock("../src/lib/lang", () => ({ useLang: () => ({ lang: mockLanguage, dict: require("@capella/shared").getDict(mockLanguage) }) }));
-jest.mock("../src/lib/policy", () => ({ usePolicy: () => mockPolicy }));
+jest.mock("../../src/lib/lang", () => ({ useLang: () => ({ lang: mockLanguage, dict: require("@capella/shared").getDict(mockLanguage) }) }));
+jest.mock("../../src/lib/policy", () => ({ usePolicy: () => mockPolicy }));
 jest.mock("expo-video", () => ({ useVideoPlayer: jest.fn(), VideoView: require("react-native").View }));
 jest.mock("react-native-webview", () => ({ WebView: require("react-native").View }));
 beforeEach(() => { jest.clearAllMocks(); mockLanguage = "en"; mockPolicy.recommendedUpdate = null;
@@ -17,7 +17,7 @@ afterEach(async () => { await act(async () => {}); jest.restoreAllMocks(); });
 const requirement = { code: "APP_UPDATE_REQUIRED", feature: "checkout", policyRevision: "r2", requiredRelease: "r2",
   message: "Update", explanation: { ar: "حدّث التطبيق لإتمام الطلب", en: "Update to place an order" },
   storeUrl: "https://play.google.com/store/apps/details?id=com.capellacare.app" };
-function components() { try { return require("../src/components"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
+function components() { try { return require("../../src/components"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
 
 test("recommended updates are dismissible without hiding compatible content", async () => {
   const { RecommendedUpdate } = components(); expect(typeof RecommendedUpdate).toBe("function");

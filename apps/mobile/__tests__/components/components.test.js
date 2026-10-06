@@ -1,10 +1,10 @@
 const React = require("react");
-const { View, Text } = require("react-native");
+const { View } = require("react-native");
 const { render, fireEvent, act } = require("@testing-library/react-native");
 let mockLanguage = "en";
-jest.mock("../src/lib/lang", () => ({ useLang: () => ({ lang: mockLanguage,
+jest.mock("../../src/lib/lang", () => ({ useLang: () => ({ lang: mockLanguage,
   dict: require("@capella/shared").getDict(mockLanguage), isRtl: mockLanguage === "ar" }) }));
-jest.mock("../src/lib/policy", () => ({ usePolicy: () => ({ recommendedUpdate: null }) }));
+jest.mock("../../src/lib/policy", () => ({ usePolicy: () => ({ recommendedUpdate: null }) }));
 jest.mock("expo-image", () => ({ Image: props => require("react").createElement(require("react-native").Image, props) }));
 jest.mock("react-native-safe-area-context", () => ({ SafeAreaView: props => require("react").createElement(require("react-native").View, props) }));
 jest.mock("@expo/vector-icons", () => ({ Feather: props => require("react").createElement(require("react-native").View, props) }));
@@ -13,7 +13,7 @@ jest.mock("expo-video", () => ({ useVideoPlayer: jest.fn(), VideoView: require("
 jest.mock("react-native-webview", () => ({ WebView: require("react-native").View }));
 
 function components() {
-  try { return require("../src/components"); } catch (error) {
+  try { return require("../../src/components"); } catch (error) {
     if (error.code === "MODULE_NOT_FOUND") return {};
     throw error;
   }

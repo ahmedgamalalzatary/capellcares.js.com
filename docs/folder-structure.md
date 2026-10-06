@@ -360,14 +360,43 @@ capella/
 │  │
 │  ├─ mobile/
 │  │  ├─ __tests__/
-│  │  │  ├─ api-base.test.js
-│  │  │  ├─ api-client.test.js
-│  │  │  ├─ api-data.test.js
-│  │  │  ├─ api-http.test.js
-│  │  │  ├─ app-scaffold.test.js
-│  │  │  ├─ lang-provider.test.js
-│  │  │  ├─ metro-config.test.js
-│  │  │  └─ root-layout.test.js
+│  │  │  ├─ api/
+│  │  │  │  ├─ api-base.test.js
+│  │  │  │  ├─ api-client.test.js
+│  │  │  │  ├─ api-data.test.js
+│  │  │  │  ├─ api-http.test.js
+│  │  │  │  ├─ api-identity.test.js
+│  │  │  │  ├─ api-policy.test.js
+│  │  │  │  └─ api-transports.test.js
+│  │  │  ├─ app/
+│  │  │  │  ├─ app-scaffold.test.js
+│  │  │  │  └─ root-layout.test.js
+│  │  │  ├─ auth/
+│  │  │  │  ├─ auth-context.test.js
+│  │  │  │  └─ auth-token-store.test.js
+│  │  │  ├─ cart/
+│  │  │  │  ├─ cart-lines.test.js
+│  │  │  │  └─ cart-provider.test.js
+│  │  │  ├─ components/
+│  │  │  │  ├─ components.test.js
+│  │  │  │  ├─ gallery.test.js
+│  │  │  │  └─ update-presentations.test.js
+│  │  │  ├─ config/
+│  │  │  │  ├─ expo-config.test.ts
+│  │  │  │  ├─ metro-config.test.js
+│  │  │  │  └─ metro-js-specifier.test.ts
+│  │  │  ├─ i18n/
+│  │  │  │  ├─ lang-provider.test.js
+│  │  │  │  └─ shared-bundle.test.ts
+│  │  │  ├─ media/
+│  │  │  │  └─ media.test.js
+│  │  │  ├─ policy/
+│  │  │  │  └─ policy-provider.test.js
+│  │  │  ├─ storage/
+│  │  │  │  ├─ persistent-storage.test.js
+│  │  │  │  └─ storage-keys.test.ts
+│  │  │  └─ theme/
+│  │  │     └─ theme.test.ts
 │  │  ├─ app/
 │  │  │  ├─ _layout.tsx
 │  │  │  └─ index.tsx
@@ -387,12 +416,6 @@ capella/
 │  │  │  │  │  └─ types.ts
 │  │  │  │  └─ lang.tsx
 │  │  │  └─ theme.ts
-│  │  ├─ tests/
-│  │  │  ├─ expo-config.test.ts
-│  │  │  ├─ metro-js-specifier.test.ts
-│  │  │  ├─ shared-bundle.test.ts
-│  │  │  ├─ storage-keys.test.ts
-│  │  │  └─ theme.test.ts
 │  │  ├─ .env.example
 │  │  ├─ app.json
 │  │  ├─ babel.config.js

@@ -3,7 +3,7 @@ import {
   CART_STORAGE_KEY,
   CUSTOMER_REFRESH_TOKEN_KEY,
   LANG_STORAGE_KEY
-} from "../src/constants/storage";
+} from "../../src/constants/storage";
 
 describe("mobile storage keys", () => {
   it("reuses the storefront cart and auth keys and adds language and refresh-token keys", () => {

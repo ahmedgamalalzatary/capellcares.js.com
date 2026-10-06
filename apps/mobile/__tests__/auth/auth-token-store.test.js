@@ -15,14 +15,14 @@ const mockApiError = class ApiError extends Error {
     this.code = code;
   }
 };
-jest.mock("../src/lib/api/http", () => ({
+jest.mock("../../src/lib/api/http", () => ({
   authJSON: (...args) => mockAuthJSON(...args),
   ApiError: mockApiError
 }));
 
 const SecureStore = require("expo-secure-store");
-const { CUSTOMER_REFRESH_TOKEN_KEY } = require("../src/constants/storage");
-const tokenStore = require("../src/lib/auth/token-store");
+const { CUSTOMER_REFRESH_TOKEN_KEY } = require("../../src/constants/storage");
+const tokenStore = require("../../src/lib/auth/token-store");
 
 describe("auth token store", () => {
   beforeEach(async () => {

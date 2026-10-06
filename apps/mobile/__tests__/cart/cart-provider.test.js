@@ -7,7 +7,7 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 );
 
 const mockAuthState = { user: null, accessToken: null };
-jest.mock("../src/lib/auth/auth-context", () => ({
+jest.mock("../../src/lib/auth/auth-context", () => ({
   useAuth: () => mockAuthState
 }));
 
@@ -16,7 +16,7 @@ const mockReplaceCustomerCart = jest.fn();
 const mockFetchProducts = jest.fn();
 const mockFetchOffers = jest.fn();
 const mockFetchCollections = jest.fn();
-jest.mock("../src/lib/api/client", () => ({
+jest.mock("../../src/lib/api/client", () => ({
   fetchCustomerCart: (...args) => mockFetchCustomerCart(...args),
   replaceCustomerCart: (...args) => mockReplaceCustomerCart(...args),
   fetchProducts: (...args) => mockFetchProducts(...args),
@@ -26,8 +26,8 @@ jest.mock("../src/lib/api/client", () => ({
 
 const AsyncStorage = require("@react-native-async-storage/async-storage");
 const storageGet = AsyncStorage.getItem.getMockImplementation();
-const { CART_STORAGE_KEY, CART_SYNCED_STORAGE_KEY, CART_PENDING_STORAGE_KEY, CART_OWNER_STORAGE_KEY } = require("../src/constants/storage");
-const { CartProvider, useCart } = require("../src/lib/cart");
+const { CART_STORAGE_KEY, CART_SYNCED_STORAGE_KEY, CART_PENDING_STORAGE_KEY, CART_OWNER_STORAGE_KEY } = require("../../src/constants/storage");
+const { CartProvider, useCart } = require("../../src/lib/cart");
 
 const productLine = (qty) => ({ type: "product", productId: 1, variantId: 1, qty });
 
@@ -130,7 +130,7 @@ describe("CartProvider", () => {
     mockFetchCustomerCart.mockRejectedValueOnce(new Error("offline")).mockResolvedValue([]);
     const spy = jest.spyOn(AppState, "addEventListener");
 
-    const view = renderCart();
+    renderCart();
     await waitFor(() => expect(mockFetchCustomerCart).toHaveBeenCalledTimes(1));
 
     const handler = spy.mock.calls.find(([event]) => event === "change")?.[1];
@@ -149,7 +149,7 @@ describe("CartProvider", () => {
     mockFetchCustomerCart.mockResolvedValue([]);
     const spy = jest.spyOn(AppState, "addEventListener");
 
-    const view = renderCart();
+    renderCart();
     await waitFor(() => expect(mockFetchCustomerCart).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mockReplaceCustomerCart).toHaveBeenCalled());
 

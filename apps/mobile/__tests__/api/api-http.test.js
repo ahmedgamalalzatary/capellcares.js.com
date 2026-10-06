@@ -1,4 +1,4 @@
-jest.mock("../src/lib/api/base", () => ({
+jest.mock("../../src/lib/api/base", () => ({
   API_BASE: "https://api.example.com"
 }));
 
@@ -26,7 +26,7 @@ describe("mobile API HTTP transport", () => {
   beforeEach(() => {
     jest.resetModules();
     global.fetch = jest.fn();
-    http = require("../src/lib/api/http");
+    http = require("../../src/lib/api/http");
     http.configureAuthSessionAdapter(null);
   });
 

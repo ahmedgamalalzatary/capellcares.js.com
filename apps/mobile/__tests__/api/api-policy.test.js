@@ -1,4 +1,4 @@
-jest.mock("../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
+jest.mock("../../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
 const config = { schemaVersion: 1, policyRevision: "prelaunch-v1", platform: "android",
   cache: { maxAgeSeconds: 0 }, current: null, previous: null, recommendedUpdate: null, features: [] };
 const requirement = { code: "APP_UPDATE_REQUIRED", feature: "checkout", policyRevision: "r2",
@@ -10,7 +10,7 @@ const response = (status, body) => ({ ok: status >= 200 && status < 300, status,
 describe("native policy boundary", () => {
   let client, http;
   beforeEach(() => { jest.resetModules(); global.fetch = jest.fn();
-    http = require("../src/lib/api/http"); client = require("../src/lib/api/client"); });
+    http = require("../../src/lib/api/http"); client = require("../../src/lib/api/client"); });
   afterEach(() => { delete global.fetch; });
 
   test("fetches validated policy from the unversioned origin before login", async () => {

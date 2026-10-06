@@ -22,16 +22,16 @@ const mockApiError = class ApiError extends Error {
     this.code = code;
   }
 };
-jest.mock("../src/lib/api/http", () => ({
+jest.mock("../../src/lib/api/http", () => ({
   authJSON: (...args) => mockAuthJSON(...args),
   ApiError: mockApiError,
   configureAuthSessionAdapter: jest.fn()
 }));
 
 const AsyncStorage = require("@react-native-async-storage/async-storage");
-const { AUTH_STORAGE_KEY, CUSTOMER_REFRESH_TOKEN_KEY } = require("../src/constants/storage");
-const tokenStore = require("../src/lib/auth/token-store");
-const { AuthProvider, useAuth } = require("../src/lib/auth/auth-context");
+const { AUTH_STORAGE_KEY, CUSTOMER_REFRESH_TOKEN_KEY } = require("../../src/constants/storage");
+const tokenStore = require("../../src/lib/auth/token-store");
+const { AuthProvider, useAuth } = require("../../src/lib/auth/auth-context");
 
 function AuthProbe() {
   const { user, accessToken, hydrated, login, signup, logout } = useAuth();

@@ -14,8 +14,8 @@ jest.mock("expo", () => ({
 }));
 
 const AsyncStorage = require("@react-native-async-storage/async-storage");
-const { LANG_STORAGE_KEY } = require("../src/constants/storage");
-const { LangProvider, useLang } = require("../src/lib/lang");
+const { LANG_STORAGE_KEY } = require("../../src/constants/storage");
+const { LangProvider, useLang } = require("../../src/lib/lang");
 
 function LanguageProbe() {
   const { dict, direction, error, lang, pending, ready, retry, setLang, holdLanguageChanges } = useLang();

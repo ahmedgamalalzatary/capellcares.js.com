@@ -1,5 +1,5 @@
-jest.mock("../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
-function media() { try { return require("../src/lib/media"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
+jest.mock("../../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
+function media() { try { return require("../../src/lib/media"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
 test("supported YouTube forms become a controlled inline player", () => {
   const { resolveVideo } = media(); expect(typeof resolveVideo).toBe("function");
   for (const url of ["https://youtu.be/dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ",

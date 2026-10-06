@@ -1,4 +1,4 @@
-import { colors, fonts, radii, spacing } from "../src/theme";
+import { colors, fonts, radii, spacing } from "../../src/theme";
 
 describe("mobile parchment theme", () => {
   it("matches the sRGB conversions of the storefront OKLCH palette", () => {

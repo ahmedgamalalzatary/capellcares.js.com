@@ -1,9 +1,9 @@
 const React = require("react");
-const { AppState, View } = require("react-native");
+const { AppState } = require("react-native");
 const { render, fireEvent, act } = require("@testing-library/react-native");
-jest.mock("../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
-jest.mock("../src/lib/lang", () => ({ useLang: () => ({ lang: "en", dict: require("@capella/shared").getDict("en") }) }));
-jest.mock("../src/lib/policy", () => ({ usePolicy: () => ({ recommendedUpdate: null }) }));
+jest.mock("../../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
+jest.mock("../../src/lib/lang", () => ({ useLang: () => ({ lang: "en", dict: require("@capella/shared").getDict("en") }) }));
+jest.mock("../../src/lib/policy", () => ({ usePolicy: () => ({ recommendedUpdate: null }) }));
 jest.mock("expo-image", () => ({ Image: props => require("react").createElement(require("react-native").Image, props) }));
 jest.mock("@expo/vector-icons", () => ({ Feather: props => require("react").createElement(require("react-native").View, props) }));
 const mockListeners = new Map();
@@ -16,7 +16,7 @@ jest.mock("expo-video", () => ({ useVideoPlayer: () => mockPlayer,
   VideoView: props => require("react").createElement(require("react-native").View, props) }));
 jest.mock("react-native-webview", () => ({ WebView: props => require("react").createElement(require("react-native").View, props) }));
 jest.mock("react-native-safe-area-context", () => ({ SafeAreaView: props => require("react").createElement(require("react-native").View, props) }));
-function components() { try { return require("../src/components"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
+function components() { try { return require("../../src/components"); } catch (e) { if (e.code === "MODULE_NOT_FOUND") return {}; throw e; } }
 beforeEach(() => { mockPlayer.status = "readyToPlay"; mockPlayer.playing = false; mockListeners.clear(); });
 afterEach(async () => { await act(async () => {}); jest.restoreAllMocks(); });
 

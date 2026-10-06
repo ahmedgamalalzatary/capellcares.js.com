@@ -7,13 +7,13 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 );
 
 const mockFetchAppConfig = jest.fn();
-jest.mock("../src/lib/api/client", () => ({
+jest.mock("../../src/lib/api/client", () => ({
   fetchAppConfig: (...args) => mockFetchAppConfig(...args)
 }));
 
 const AsyncStorage = require("@react-native-async-storage/async-storage");
-const { APP_POLICY_STORAGE_KEY, APP_POLICY_DISMISSAL_STORAGE_KEY } = require("../src/constants/storage");
-const { PolicyProvider, usePolicy } = require("../src/lib/policy");
+const { APP_POLICY_STORAGE_KEY, APP_POLICY_DISMISSAL_STORAGE_KEY } = require("../../src/constants/storage");
+const { PolicyProvider, usePolicy } = require("../../src/lib/policy");
 
 function makeRelease() {
   return {

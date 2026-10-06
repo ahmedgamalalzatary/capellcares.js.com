@@ -1,4 +1,3 @@
-/* global jest, describe, beforeEach, test, expect */
 const React = require("react");
 const { fireEvent, render, waitFor } = require("@testing-library/react-native");
 
@@ -57,21 +56,21 @@ jest.mock("react-native-safe-area-context", () => {
         require("react-native-safe-area-context/jest/mock").default.SafeAreaProvider, null, children))
   };
 });
-jest.mock("../src/lib/lang", () => ({
+jest.mock("../../src/lib/lang", () => ({
   LangProvider: ({ children }) => children,
   useLang: () => ({ ready: mockLanguageReady, lang: mockLang, error: mockLanguageError, retry: mockRetryLanguage })
 }));
-jest.mock("../src/lib/auth/auth-context", () => ({
+jest.mock("../../src/lib/auth/auth-context", () => ({
   AuthProvider: ({ children }) => children
 }));
-jest.mock("../src/lib/policy", () => ({
+jest.mock("../../src/lib/policy", () => ({
   PolicyProvider: ({ children }) => children
 }));
-jest.mock("../src/lib/cart", () => ({
+jest.mock("../../src/lib/cart", () => ({
   CartProvider: ({ children }) => children
 }));
 
-const RootLayout = require("../app/_layout").default;
+const RootLayout = require("../../app/_layout").default;
 
 describe("mobile root layout", () => {
   beforeEach(() => {
@@ -185,7 +184,7 @@ describe("mobile root layout", () => {
     mockPreventAutoHideAsync.mockRejectedValueOnce(new Error("private native details"));
     const report = jest.spyOn(console, "error").mockImplementation(() => {});
     try {
-      jest.isolateModules(() => require("../app/_layout"));
+      jest.isolateModules(() => require("../../app/_layout"));
       await waitFor(() => expect(report).toHaveBeenCalledWith("Unable to hold the startup splash screen."));
     } finally {
       report.mockRestore();

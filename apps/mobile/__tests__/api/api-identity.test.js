@@ -1,4 +1,4 @@
-jest.mock("../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
+jest.mock("../../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
 jest.mock("expo-application", () => ({ __esModule: true, nativeApplicationVersion: "1.0.0", nativeBuildVersion: "23" }));
 jest.mock("expo-updates", () => ({ __esModule: true, runtimeVersion: "native-runtime-1", updateId: null, isEmbeddedLaunch: true }));
 jest.mock("expo-constants", () => ({ __esModule: true, default: { executionEnvironment: "standalone" } }));
@@ -15,7 +15,7 @@ describe("native identity across the real HTTP boundary", () => {
     platform = require("react-native").Platform;
     Object.defineProperty(platform, "OS", { value: "android", configurable: true });
     application = require("expo-application"); updates = require("expo-updates");
-    http = require("../src/lib/api/http");
+    http = require("../../src/lib/api/http");
   });
   afterEach(() => { delete global.fetch; global.__DEV__ = true; });
 

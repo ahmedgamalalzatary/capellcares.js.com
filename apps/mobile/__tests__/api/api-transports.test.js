@@ -1,4 +1,4 @@
-jest.mock("../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
+jest.mock("../../src/lib/api/base", () => ({ API_BASE: "https://api.example.com" }));
 
 const response = (body, status = 200) => ({
   ok: status >= 200 && status < 300, status,
@@ -22,7 +22,7 @@ const order = { id: 1, orderCode: "ORD1", customerType: "registered", customerId
 
 describe("mobile remaining transport boundaries", () => {
   let client;
-  beforeEach(() => { jest.resetModules(); global.fetch = jest.fn(); client = require("../src/lib/api/client"); });
+  beforeEach(() => { jest.resetModules(); global.fetch = jest.fn(); client = require("../../src/lib/api/client"); });
   afterEach(() => { delete global.fetch; });
 
   test("reads and replaces the server cart using authenticated PUT and the selected language", async () => {

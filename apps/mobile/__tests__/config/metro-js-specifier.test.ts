@@ -1,4 +1,4 @@
-import { rewriteSharedJsSpecifier } from "../metro-js-specifier";
+import { rewriteSharedJsSpecifier } from "../../metro-js-specifier";
 
 describe("rewriteSharedJsSpecifier", () => {
   const sharedOrigin = "/repo/packages/shared/src/i18n/index.ts";

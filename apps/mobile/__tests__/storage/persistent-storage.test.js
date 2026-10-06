@@ -1,4 +1,3 @@
-/* global describe, test, expect, jest */
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
 );
@@ -6,7 +5,7 @@ const {
   clearBrowsingCache,
   readPersistentValue,
   writePersistentValue
-} = require("../src/lib/persistent-storage");
+} = require("../../src/lib/persistent-storage");
 
 function storage(initial = {}) {
   const values = new Map(Object.entries(initial));

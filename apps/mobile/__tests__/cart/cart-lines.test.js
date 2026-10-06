@@ -8,7 +8,7 @@ const {
   mergeCartLines,
   normalizeCartLine,
   unionCartLines
-} = require("../src/lib/cart-lines");
+} = require("../../src/lib/cart-lines");
 
 const product = (qty, variantId = 1) => ({ type: "product", productId: 1, variantId, qty });
 const offer = (qty) => ({ type: "offer", offerId: 5, qty });

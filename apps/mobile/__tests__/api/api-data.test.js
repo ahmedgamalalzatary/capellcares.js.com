@@ -1,10 +1,10 @@
-jest.mock("../src/lib/api/base", () => ({
+jest.mock("../../src/lib/api/base", () => ({
   API_BASE: "https://api.example.com"
 }));
 
 describe("mobile API normalization", () => {
   test("resolves upload paths while preserving absolute and non-upload values", () => {
-    const normalizers = require("../src/lib/api/normalizers");
+    const normalizers = require("../../src/lib/api/normalizers");
 
     expect(typeof normalizers.resolveMediaUrl).toBe("function");
     expect(normalizers.resolveMediaUrl(" /uploads/product.jpg ")).toBe(
@@ -24,7 +24,7 @@ describe("mobile API normalization", () => {
   });
 
   test("normalizes category ids, names, sorting, and media", () => {
-    const { normalizeCategory } = require("../src/lib/api/normalizers");
+    const { normalizeCategory } = require("../../src/lib/api/normalizers");
 
     expect(
       normalizeCategory({
@@ -48,7 +48,7 @@ describe("mobile API normalization", () => {
   });
 
   test("normalizes products, variant ids, discounts, media, and related cards", () => {
-    const { normalizeProduct } = require("../src/lib/api/normalizers");
+    const { normalizeProduct } = require("../../src/lib/api/normalizers");
     const product = normalizeProduct({
       id: "8",
       categoryId: "3",
@@ -99,7 +99,7 @@ describe("mobile API normalization", () => {
   test.each(["normalizeOffer", "normalizeCollection"])(
     "%s resolves bundle and related-card media",
     (normalizerName) => {
-      const normalizer = require("../src/lib/api/normalizers")[normalizerName];
+      const normalizer = require("../../src/lib/api/normalizers")[normalizerName];
       const value = normalizer({
         id: 1,
         categoryId: 2,
@@ -129,7 +129,7 @@ describe("mobile API normalization", () => {
     const {
       normalizeShopMediaSection,
       normalizeWishlistEntry
-    } = require("../src/lib/api/normalizers");
+    } = require("../../src/lib/api/normalizers");
 
     const section = normalizeShopMediaSection({
       id: 1,
@@ -167,7 +167,7 @@ describe("mobile API normalization", () => {
     ["/collections/routine", "/collection/routine"],
     [null, null]
   ])("maps wishlist href %s to the native route", (href, expected) => {
-    const { normalizeWishlistEntry } = require("../src/lib/api/normalizers");
+    const { normalizeWishlistEntry } = require("../../src/lib/api/normalizers");
 
     expect(
       normalizeWishlistEntry({
@@ -180,7 +180,7 @@ describe("mobile API normalization", () => {
   });
 
   test("normalizes review-prompt media and its native href", () => {
-    const { normalizeReviewPrompt } = require("../src/lib/api/normalizers");
+    const { normalizeReviewPrompt } = require("../../src/lib/api/normalizers");
 
     expect(
       normalizeReviewPrompt({
@@ -196,7 +196,7 @@ describe("mobile API normalization", () => {
   });
 
   test("rejects invalid required product ids", () => {
-    const { normalizeProduct } = require("../src/lib/api/normalizers");
+    const { normalizeProduct } = require("../../src/lib/api/normalizers");
 
     expect(() =>
       normalizeProduct({ id: 0, categoryId: 1, variants: [], media: [] })
@@ -207,13 +207,13 @@ describe("mobile API normalization", () => {
     [{ slug: "" }, "slug"], [{ variants: [{ id: 1, productId: 8, price: "unknown", stock: 1 }] }, "price"],
     [{ variants: [{ id: 1, productId: 8, price: 10, stock: -1 }] }, "stock"]
   ])("rejects unusable product purchase data (%j)", (patch, field) => {
-    const { normalizeProduct } = require("../src/lib/api/normalizers");
+    const { normalizeProduct } = require("../../src/lib/api/normalizers");
     expect(() => normalizeProduct({ id: 8, categoryId: 3, slug: "serum", name: { ar: "سيروم", en: "Serum" },
       variants: [], media: [], ...patch })).toThrow(new RegExp(field));
   });
 
   test.each(["normalizeOffer", "normalizeCollection"])("%s rejects missing bundle prices", name => {
-    const normalize = require("../src/lib/api/normalizers")[name];
+    const normalize = require("../../src/lib/api/normalizers")[name];
     expect(() => normalize({ id: 1, slug: "bundle", stock: 1, name: { ar: "حزمة", en: "Bundle" }, items: [] })).toThrow(/price/);
   });
 });
@@ -226,7 +226,7 @@ describe("mobile catalog selectors", () => {
   ];
 
   test("finds active categories and builds a guarded ancestor path", () => {
-    const selectors = require("../src/lib/api/selectors");
+    const selectors = require("../../src/lib/api/selectors");
 
     expect(typeof selectors.getCategoryPath).toBe("function");
     expect(selectors.getCategoryById(categories, 3)).toBeUndefined();
@@ -238,7 +238,7 @@ describe("mobile catalog selectors", () => {
   });
 
   test("finds offers containing any variant of the requested product", () => {
-    const { getOffersForProduct } = require("../src/lib/api/selectors");
+    const { getOffersForProduct } = require("../../src/lib/api/selectors");
     const products = [{ id: 4, variants: [{ id: 10 }, { id: 11 }] }];
     const offers = [
       { id: 1, items: [{ variantId: 9 }] },

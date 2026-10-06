@@ -14,7 +14,7 @@ const mockSetLang = jest.fn().mockResolvedValue(undefined);
 const mockFetchProducts = jest.fn().mockResolvedValue([
   { id: 1, name: { ar: "Arabic serum", en: "English serum" } }
 ]);
-jest.mock("../src/lib/lang", () => ({
+jest.mock("../../src/lib/lang", () => ({
   useLang: () => ({
     dict: {
       brand: "Capella Arabic brand",
@@ -25,12 +25,12 @@ jest.mock("../src/lib/lang", () => ({
     setLang: mockSetLang
   })
 }));
-jest.mock("../src/lib/api/client", () => ({
+jest.mock("../../src/lib/api/client", () => ({
   fetchProducts: (...args) => mockFetchProducts(...args)
 }));
 
 async function renderHomeScreen() {
-  const HomeScreen = require("../app/index").default;
+  const HomeScreen = require("../../app/index").default;
   const view = render(<HomeScreen />);
   await act(async () => {});
   return view;
@@ -70,7 +70,7 @@ describe("Expo Router scaffold", () => {
   });
 
   test("lists products returned by the Phase 3 API client", async () => {
-    const view = await renderHomeScreen();
+    await renderHomeScreen();
 
     expect(mockFetchProducts).toHaveBeenCalledWith({
       lang: "ar",
