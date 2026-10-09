@@ -41,6 +41,32 @@ afterEach(() => {
   cleanup();
 });
 
+function makeVariantProduct(id: number, variantId: number, categoryId: number) {
+  return {
+    id,
+    sku: `P${id}`,
+    slug: `product-${id}`,
+    name: { ar: `منتج ${id}`, en: `Product ${id}` },
+    description: { ar: "", en: "" },
+    ingredients: { ar: "", en: "" },
+    howToUse: { ar: "", en: "" },
+    warnings: { ar: "", en: "" },
+    keywords: [],
+    buyingPrice: 10,
+    imagePath: "",
+    media: [],
+    hoverImagePath: "",
+    status: "active" as const,
+    isNew: false,
+    isBestseller: false,
+    categoryId,
+    deletedAt: null,
+    variants: [{ id: variantId, productId: id, size: "100ml", price: 50, stock: 5, sortOrder: 1 }],
+    createdAt: "",
+    updatedAt: ""
+  };
+}
+
 describe("CollectionForm", () => {
   it("loads the collection media gallery into the shared uploader", () => {
     render(createElement(CollectionForm, {
@@ -241,5 +267,77 @@ describe("CollectionForm", () => {
     });
 
     expect(result.current.errors.rows).toBe("كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية");
+  });
+
+  it("requires at least two different variants for a collection", async () => {
+    const { result } = renderHook(() => useCollectionForm({
+      mode: "edit",
+      initial: {
+        id: 1,
+        slug: "single-item",
+        name: { ar: "مجموعة", en: "Collection" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/collection.png",
+        price: 100,
+        originalTotal: 50,
+        categoryId: 1,
+        items: [{ id: 1, variantId: 11, qty: 1 }],
+        stock: 0,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: null
+      },
+      categories: [
+        { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null }
+      ],
+      products: [makeVariantProduct(10, 11, 1)]
+    }));
+
+    await act(async () => {
+      const saved = await result.current.save();
+      expect(saved).toBe(false);
+    });
+
+    expect(result.current.errors.rows).toBe("أضيفي منتجين مختلفين على الأقل");
+  });
+
+  it("rejects the same variant repeated inside a collection", async () => {
+    const { result } = renderHook(() => useCollectionForm({
+      mode: "edit",
+      initial: {
+        id: 1,
+        slug: "repeated-variant",
+        name: { ar: "مجموعة", en: "Collection" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/collection.png",
+        price: 100,
+        originalTotal: 150,
+        categoryId: 1,
+        items: [
+          { id: 1, variantId: 11, qty: 1 },
+          { id: 2, variantId: 11, qty: 1 },
+          { id: 3, variantId: 21, qty: 1 }
+        ],
+        stock: 0,
+        status: "active",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: null
+      },
+      categories: [
+        { id: 1, parentId: null, slug: "skin-care", name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null }
+      ],
+      products: [makeVariantProduct(10, 11, 1), makeVariantProduct(20, 21, 1)]
+    }));
+
+    await act(async () => {
+      const saved = await result.current.save();
+      expect(saved).toBe(false);
+    });
+
+    expect(result.current.errors.rows).toBe("لا يمكن تكرار نفس المقاس داخل المجموعة");
   });
 });

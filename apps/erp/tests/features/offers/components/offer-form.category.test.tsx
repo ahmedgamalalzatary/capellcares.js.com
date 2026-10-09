@@ -171,6 +171,21 @@ describe("OfferForm category", () => {
 
     expect(result.current.errors.rows).toBe("كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية");
   });
+
+  it("requires at least one item for an offer", async () => {
+    const { result } = renderHook(() => useOfferForm({
+      mode: "new",
+      categories,
+      products: [skinProduct]
+    } as any));
+
+    await act(async () => {
+      const saved = await result.current.save({ asStatus: "active" });
+      expect(saved).toBe(false);
+    });
+
+    expect(result.current.errors.rows).toBe("أضيفي منتجًا واحدًا على الأقل");
+  });
 });
 
 describe("OfferForm legacy offer with no category", () => {

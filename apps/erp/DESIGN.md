@@ -57,6 +57,7 @@ The base layer also sets selection, focus, scrollbars, `option { Canvas/CanvasTe
   paired cells have equal height.
 - No half-empty rows next to a short element; if two sections share a row, each takes half and fills it (e.g. related
   items | status). Lists inside a half-width section are one column.
+- `AdminShell` has no `width` prop — every page is full width.
 
 ## 5. Components
 
@@ -67,26 +68,27 @@ error) · `switch` (`Switch`, `SwitchField`) · `alert` · `badge` (`Badge`, `Sw
 signature, with first-letter fallback) · `empty-state` · `skeleton` (`Skeleton`, `FormSkeleton`) · `row-menu` · `modal`
 (Radix Dialog; bottom sheet on phones) · `file-button`. Icons: lucide-react only.
 
-`src/components/admin/`: `admin-list-header`, `stepper`, `editor-layout` (+ `ReadinessStatus`, `scrollToSection`),
-`form-save-bar`, `admin-confirm-modal`, `erp-forbidden-state`, `staff-editor-form`.
+`src/components/admin/`: `admin-list-header` (+ `tableSortSelect`, `ACTIVE_STATUS_FILTER_OPTIONS`), `list-table`,
+`permission-gate` (+ `ForbiddenPage`), `status-badge`, `reorder-buttons`, `stepper`, `editor-layout`,
+`form-save-bar`, `admin-confirm-modal`, `erp-forbidden-state`, `shipping-actions`.
 
 `src/components/shell/`: `admin-shell.tsx` (rail + mobile drawer + page header: breadcrumb, title, description,
 actions), `theme-menu.tsx`.
 
 Shared form parts (`src/components/forms/`, used by product/offer/collection/category/advice forms):
-`editor-form-parts.tsx` (`BilingualNameFields`, `BilingualEditorField` with ع/EN tags, `ImageFieldCard`, `EditorActions`),
-`category-picker.tsx`, `media-frame.tsx`, `product-media-upload.tsx`, `entity-media-upload.tsx`,
+`editor-form-parts.tsx` (`BilingualNameFields`, `BilingualEditorField`), `lang-tag.tsx` (the ع/EN chip),
+`status-choice.tsx`, `category-picker.tsx`, `media-frame.tsx`, `image-actions.tsx`, `entity-media-upload.tsx`,
 `hover-image-upload.tsx`, `single-image-field.tsx`, `related-items-field.tsx`.
 
-Dashboard: cards in `src/components/dashboard/`; calculations in `src/lib/dashboard.ts` (tests:
-`dashboard-metrics.test.ts`). It is a daily overview — attention strip (reconciliation, flagged orders, pending
+Dashboard: cards in `src/features/dashboard/components/`; calculations in `src/features/dashboard/lib/metrics.ts`
+(tests: `tests/features/dashboard/lib/metrics.test.ts`). It is a daily overview — attention strip (reconciliation, flagged orders, pending
 payments → `/orders?payment=pending`, sold-out sizes → `#stock`), sales pulse (today / 7 / 30-day tabs), best sellers +
 slow movers, stock alerts ranked by 30-day sales, discounts ending within 7 days, catalog health score, and a
 permission-aware "+ جديد" menu. The API sales report tags each order item with `productId` + `variantId`.
 
 ## 6. Patterns
 
-### List page (reference: `/products` — `app/products/page.tsx` + `components/products-table.tsx`)
+### List page (reference: `/products` — `app/products/page.tsx` + `features/products/components/products-table.tsx`)
 - Never show SKU in lists.
 - Toolbar = `AdminListHeader`: exactly **one search + one "تصفية" filter control + the count on the same row** (count
   also beside them on mobile). Sorting is covered by the sortable headers. Search inputs are `type="search"`.
@@ -100,7 +102,7 @@ permission-aware "+ جديد" menu. The API sales report tags each order item wi
 - Row actions = `RowMenu` (+ `RowMenuItem` / `RowMenuLink` / `RowMenuSeparator`). Destructive confirm =
   `AdminConfirmModal tone="danger"`.
 
-### New / edit page = wizard (reference: `components/forms/product-form.tsx`)
+### New / edit page = wizard (reference: `features/products/components/product-form.tsx`)
 The user designed this from their own mockup after rejecting: 2-column form, sticky side guide, capped width, tabs,
 Shopify ⅔/⅓.
 - `Stepper` card on top: equal-width step columns; the progress rule spans exactly those columns so its edge sits
@@ -133,8 +135,11 @@ Shopify ⅔/⅓.
 
 ## 8. Other files
 
-- Formatting: `lib/format.ts`. Sorting: `hooks/use-table-sort.ts`. Reorder: `hooks/use-list-reorder.ts`.
+- Formatting: `lib/format.ts`. Sorting: `hooks/use-table-sort.ts`. Reorder: `hooks/use-list-reorder.ts` + `lib/array.ts`.
+  Wizard steps: `hooks/use-wizard-steps.ts`. Image upload: `hooks/use-image-upload.ts` + `lib/media.ts`.
   Media queries: `hooks/use-media-query.ts`. `lib/utils.ts` — `cn` with custom tailwind-merge groups.
+- Offers and collections are the same editor/list (`features/bundles/*`); `features/offers` and `features/collections`
+  hold only their `*-config.ts`, thin `*-form.tsx`/`use-*-form.ts` wrappers, and `types.ts`.
 - Tests run with `NODE_ENV=test` (see `vitest.config.ts` + `tests/setup.ts`).
   Typecheck: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 

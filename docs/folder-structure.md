@@ -227,127 +227,149 @@ capella/
 │  │
 │  ├─ erp/
 │  │  ├─ src/
-│  │  │  ├─ app/
+│  │  │  ├─ app/                              routes only (Next App Router); each imports its feature's parts
 │  │  │  │  ├─ advices/
 │  │  │  │  │  ├─ [id]/edit/page.tsx
 │  │  │  │  │  ├─ new/page.tsx
 │  │  │  │  │  └─ page.tsx
-│  │  │  │  ├─ categories/
-│  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ page.tsx
-│  │  │  │  ├─ collections/
-│  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ api/health/route.ts
+│  │  │  │  ├─ categories/{[id]/edit,new}/page.tsx + page.tsx
+│  │  │  │  ├─ collections/{[id]/edit,new}/page.tsx + page.tsx
 │  │  │  │  ├─ dashboard/page.tsx
+│  │  │  │  ├─ discounts/page.tsx
 │  │  │  │  ├─ login/page.tsx
-│  │  │  │  ├─ offers/
-│  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ page.tsx
-│  │  │  │  ├─ orders/
-│  │  │  │  │  ├─ [id]/page.tsx
-│  │  │  │  │  └─ page.tsx
-│  │  │  │  ├─ products/
-│  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ offers/{[id]/edit,new}/page.tsx + page.tsx
+│  │  │  │  ├─ orders/[id]/page.tsx + orders/reconciliation/page.tsx + orders/page.tsx
+│  │  │  │  ├─ products/{[id]/discount,[id]/edit,new}/page.tsx + page.tsx
+│  │  │  │  ├─ reviews/page.tsx
 │  │  │  │  ├─ sales/page.tsx
-│  │  │  │  ├─ staff/
-│  │  │  │  │  ├─ [id]/edit/page.tsx
-│  │  │  │  │  ├─ new/page.tsx
-│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ shipping/page.tsx
+│  │  │  │  ├─ shop-media/page.tsx
+│  │  │  │  ├─ staff/{[id]/edit,new}/page.tsx + page.tsx
 │  │  │  │  ├─ trash/page.tsx
+│  │  │  │  ├─ globals.css
 │  │  │  │  ├─ layout.tsx
-│  │  │  │  ├─ page.tsx
-│  │  │  │  └─ globals.css
-│  │  │  ├─ components/
+│  │  │  │  └─ page.tsx
+│  │  │  ├─ components/                       shared, feature-agnostic UI
 │  │  │  │  ├─ admin/
 │  │  │  │  │  ├─ admin-confirm-modal.tsx
-│  │  │  │  │  ├─ admin-list-toolbar.tsx
-│  │  │  │  │  ├─ admin-status-badge.tsx
+│  │  │  │  │  ├─ admin-list-header.tsx
+│  │  │  │  │  ├─ editor-layout.tsx
 │  │  │  │  │  ├─ erp-forbidden-state.tsx
-│  │  │  │  │  └─ staff-editor-form.tsx
+│  │  │  │  │  ├─ form-save-bar.tsx
+│  │  │  │  │  ├─ list-table.tsx
+│  │  │  │  │  ├─ permission-gate.tsx
+│  │  │  │  │  ├─ reorder-buttons.tsx
+│  │  │  │  │  ├─ shipping-actions.tsx
+│  │  │  │  │  ├─ status-badge.tsx
+│  │  │  │  │  └─ stepper.tsx
 │  │  │  │  ├─ forms/
-│  │  │  │  │  ├─ advice-form.tsx
-│  │  │  │  │  ├─ category-form.tsx
 │  │  │  │  │  ├─ category-picker.tsx
-│  │  │  │  │  ├─ collection-form.tsx
 │  │  │  │  │  ├─ editor-form-parts.tsx
-│  │  │  │  │  ├─ form-slug.ts
-│  │  │  │  │  ├─ image-upload.tsx
-│  │  │  │  │  ├─ offer-form.tsx
-│  │  │  │  │  ├─ product-form.tsx
-│  │  │  │  │  ├─ product-hover-image-upload.tsx
-│  │  │  │  │  ├─ product-media-upload.tsx
+│  │  │  │  │  ├─ entity-media-upload.tsx
+│  │  │  │  │  ├─ hover-image-upload.tsx
+│  │  │  │  │  ├─ image-actions.tsx
+│  │  │  │  │  ├─ lang-tag.tsx
+│  │  │  │  │  ├─ media-frame.tsx
 │  │  │  │  │  ├─ related-items-field.tsx
-│  │  │  │  │  └─ related-options.ts
-│  │  │  │  ├─ orders/
-│  │  │  │  │  └─ order-details-view.tsx
+│  │  │  │  │  ├─ single-image-field.tsx
+│  │  │  │  │  └─ status-choice.tsx
 │  │  │  │  ├─ providers/
 │  │  │  │  │  ├─ admin-auth.tsx
 │  │  │  │  │  └─ erp-toaster.tsx
 │  │  │  │  ├─ shell/
-│  │  │  │  │  └─ admin-shell.tsx
-│  │  │  │  ├─ trash/
-│  │  │  │  │  └─ deleted-list.tsx
-│  │  │  │  ├─ ui/
-│  │  │  │  │  ├─ icons.tsx
-│  │  │  │  │  └─ modal.tsx
-│  │  │  │  └─ products-table.tsx
-│  │  │  ├─ hooks/
-│  │  │  │  ├─ forms/
-│  │  │  │  │  ├─ use-collection-form.ts
-│  │  │  │  │  ├─ use-offer-form.ts
-│  │  │  │  │  └─ use-product-form.ts
-│  │  │  │  ├─ use-products-page.ts
-│  │  │  │  └─ use-trash-page.ts
-│  │  │  ├─ lib/
-│  │  │  │  ├─ api/
-│  │  │  │  │  └─ client.ts
-│  │  │  │  ├─ store/
-│  │  │  │  │  ├─ core.ts
-│  │  │  │  │  ├─ normalizers.ts
+│  │  │  │  │  ├─ admin-shell.tsx
+│  │  │  │  │  └─ theme-menu.tsx
+│  │  │  │  └─ ui/
+│  │  │  │     ├─ alert.tsx
+│  │  │  │     ├─ badge.tsx
+│  │  │  │     ├─ button.tsx
+│  │  │  │     ├─ card.tsx
+│  │  │  │     ├─ empty-state.tsx
+│  │  │  │     ├─ field.tsx
+│  │  │  │     ├─ file-button.tsx
+│  │  │  │     ├─ input.tsx
+│  │  │  │     ├─ modal.tsx
+│  │  │  │     ├─ row-menu.tsx
+│  │  │  │     ├─ skeleton.tsx
+│  │  │  │     ├─ switch.tsx
+│  │  │  │     ├─ table.tsx
+│  │  │  │     └─ thumb.tsx
+│  │  │  ├─ features/                        one folder per feature; mirrors tests/features
+│  │  │  │  ├─ advices/components/{advice-form,advices-table}.tsx
+│  │  │  │  ├─ bundles/                      offers + collections shared code (§5.4)
+│  │  │  │  │  ├─ components/{bundle-form,bundles-table}.tsx
+│  │  │  │  │  ├─ hooks/{use-bundle-form,use-bundles-list}.ts
+│  │  │  │  │  ├─ bundle-config.ts
 │  │  │  │  │  └─ types.ts
-│  │  │  │  ├─ erp-permissions.ts
-│  │  │  │  ├─ errors.ts
-│  │  │  │  ├─ store.ts
-│  │  │  │  └─ utils.ts
-│  │  │  └─ types/
-│  │  │     ├─ forms/
-│  │  │     │  ├─ collection-form.types.ts
-│  │  │     │  ├─ offer-form.types.ts
-│  │  │     │  └─ product-form.types.ts
-│  │  │     └─ trash-page.types.ts
-│  │  ├─ tests/
-│  │  │  ├─ admin-list-toolbar.test.tsx
-│  │  │  ├─ admin-shell.test.tsx
-│  │  │  ├─ advices-page.test.tsx
-│  │  │  ├─ api-base.test.ts
-│  │  │  ├─ api-client-auth.test.ts
-│  │  │  ├─ category-form-toast.test.tsx
-│  │  │  ├─ category-form.test.tsx
-│  │  │  ├─ collection-edit-page.test.tsx
-│  │  │  ├─ collections-page.test.tsx
-│  │  │  ├─ editor-form-parts.test.tsx
-│  │  │  ├─ error-messages.test.ts
-│  │  │  ├─ form-slug.test.ts
-│  │  │  ├─ offer-form-related.test.tsx
-│  │  │  ├─ offers-page.test.tsx
-│  │  │  ├─ order-detail-page.test.tsx
-│  │  │  ├─ orders-page.test.tsx
-│  │  │  ├─ product-edit-page.test.tsx
-│  │  │  ├─ products-page.test.tsx
-│  │  │  ├─ sales-page.test.tsx
-│  │  │  ├─ shared-ui.test.tsx
-│  │  │  ├─ staff-edit-page.test.tsx
-│  │  │  ├─ staff-management-page.test.tsx
-│  │  │  ├─ staff-new-page.test.tsx
-│  │  │  ├─ store.test.ts
-│  │  │  ├─ trash-page.test.tsx
-│  │  │  ├─ upload-permissions.test.tsx
-│  │  │  └─ setup.ts
+│  │  │  │  ├─ categories/
+│  │  │  │  │  ├─ components/{category-form,category-tree}.tsx
+│  │  │  │  │  ├─ hooks/use-collapsed-categories.ts
+│  │  │  │  │  └─ lib/category-order.ts
+│  │  │  │  ├─ collections/
+│  │  │  │  │  ├─ components/collection-form.tsx      wrapper → BundleForm + collectionConfig
+│  │  │  │  │  ├─ hooks/use-collection-form.ts        wrapper → useBundleForm + collectionConfig
+│  │  │  │  │  ├─ collection-config.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  ├─ dashboard/
+│  │  │  │  │  ├─ components/{attention-strip,catalog-health,ending-discounts,new-menu,sales-pulse,stock-alerts,top-sellers}.tsx
+│  │  │  │  │  └─ lib/metrics.ts
+│  │  │  │  ├─ discounts/{components/selection-group.tsx,lib/discount.ts}
+│  │  │  │  ├─ offers/
+│  │  │  │  │  ├─ components/offer-form.tsx           wrapper → BundleForm + offerConfig
+│  │  │  │  │  ├─ hooks/use-offer-form.ts             wrapper → useBundleForm + offerConfig
+│  │  │  │  │  ├─ offer-config.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  ├─ orders/components/{order-details-view,order-review-flag-alerts,orders-table}.tsx
+│  │  │  │  ├─ products/
+│  │  │  │  │  ├─ components/{product-form,products-table}.tsx
+│  │  │  │  │  ├─ hooks/{use-product-form,use-products-page}.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  ├─ reviews/components/reviews-table.tsx
+│  │  │  │  ├─ shipping/{components/shipments-table.tsx,lib/labels.ts}
+│  │  │  │  ├─ shop-media/
+│  │  │  │  │  ├─ components/fold-button.tsx
+│  │  │  │  │  ├─ hooks/{use-collapsed-shop-media,use-collapsed-shop-media-items}.ts
+│  │  │  │  │  ├─ lib/editable-section.ts
+│  │  │  │  │  └─ types.ts
+│  │  │  │  ├─ staff/{components/{staff-editor-form,staff-table}.tsx,lib/staff-form-state.ts,types.ts}
+│  │  │  │  └─ trash/{components/deleted-list.tsx,hooks/use-trash-page.ts,types.ts}
+│  │  │  ├─ hooks/                           shared, feature-agnostic
+│  │  │  │  ├─ use-collapsed-set.ts
+│  │  │  │  ├─ use-hover-image-fields.ts
+│  │  │  │  ├─ use-image-upload.ts
+│  │  │  │  ├─ use-list-reorder.ts
+│  │  │  │  ├─ use-media-query.ts
+│  │  │  │  ├─ use-table-sort.ts
+│  │  │  │  └─ use-wizard-steps.ts
+│  │  │  └─ lib/
+│  │  │     ├─ api/client.ts
+│  │  │     ├─ store/{core,index,normalizers,types}.ts
+│  │  │     ├─ array.ts
+│  │  │     ├─ category-tree.ts
+│  │  │     ├─ erp-permissions.ts
+│  │  │     ├─ errors.ts
+│  │  │     ├─ format.ts
+│  │  │     ├─ media.ts
+│  │  │     ├─ order-review-flags.ts
+│  │  │     ├─ payment-status.ts
+│  │  │     ├─ related-options.ts
+│  │  │     ├─ slug.ts
+│  │  │     ├─ stock.ts
+│  │  │     ├─ theme-script.ts
+│  │  │     ├─ theme.ts
+│  │  │     └─ utils.ts
+│  │  ├─ tests/                              mirrors src/ 1:1 (same folders, <file>.test.ts(x))
+│  │  │  ├─ app/api/health/route.test.ts
+│  │  │  ├─ components/                      admin/, forms/, providers/, shell/ — mirroring src/components
+│  │  │  ├─ features/                        one folder per feature, mirroring src/features
+│  │  │  │  └─ bundles/{bundle-form-hover-image,bundle-form-item-reorder,bundles-reorder}.test.tsx
+│  │  │  ├─ hooks/{use-image-upload,use-list-reorder,use-table-sort,use-wizard-steps}.test.tsx
+│  │  │  ├─ lib/{array,category-tree,errors,format,media,slug,theme}.test.ts
+│  │  │  ├─ lib/api/client.test.ts
+│  │  │  ├─ lib/store/{core,normalizers}.test.ts
+│  │  │  ├─ setup.ts
+│  │  │  └─ shared-ui.test.tsx
 │  │  ├─ next-env.d.ts
 │  │  ├─ next.config.ts
 │  │  ├─ tailwind.config.ts
@@ -357,6 +379,13 @@ capella/
 │  │  ├─ components.json
 │  │  ├─ tsconfig.json
 │  │  └─ package.json
+│  │
+│  │  # Import rules (ERP)
+│  │  #  - features/A never imports from features/B. Only exception: offers/collections → bundles.
+│  │  #  - The shared layer (components/ui|admin|forms, hooks, lib) never imports from features/**.
+│  │  #  - The only shell→feature import is components/shell/admin-shell → features/orders/.../order-review-flag-alerts.
+│  │  #  - Use @/… absolute imports everywhere; relative ./x only inside the same folder.
+│  │  #  - Promotion rule: used by one feature → that feature; used by 2+ → the shared layer.
 │  │
 │  ├─ mobile/
 │  │  ├─ __tests__/
@@ -893,5 +922,5 @@ The following may be added when they create real value, but are not required jus
 - Do not expose ERP order-mutation (cancel/modify) UI in v1.
 - Do not move storefront or ERP to direct DB access.
 - Do not reintroduce `cat.txt`; the initial category tree is documented in `docs/storefront-erp-spec.md`.
-- Shared UI primitives now live in `packages/shared/src/ui`; per-app `components/ui` folders only hold app-specific primitives (storefront: icons/illustrations; ERP: icons/modal).
+- Shared UI primitives now live in `packages/shared/src/ui`; per-app `components/ui` folders only hold app-specific primitives. Storefront: icons/illustrations. ERP: the full primitive set under `apps/erp/src/components/ui` (alert, badge, button, card, empty-state, field, file-button, input, modal, row-menu, skeleton, switch, table, thumb), plus the cross-feature building blocks in `apps/erp/src/components/{admin,forms}`.
 - Do not expose ERP staff-management or role/permission editing without going through `erp-permissions` enforcement on the API side.
