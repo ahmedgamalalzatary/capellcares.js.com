@@ -319,10 +319,10 @@ export default function ShopMediaPage() {
     >
       <div className="grid gap-5">
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="وسائط المتجر">
-          <Button variant={tab === "images" ? "primary" : "secondary"} size="sm" role="tab" aria-selected={tab === "images"} onClick={() => setTab("images")}>
+          <Button variant={tab === "images" ? "primary" : "ghost"} size="sm" role="tab" aria-selected={tab === "images"} onClick={() => setTab("images")}>
             أقسام الصور
           </Button>
-          <Button variant={tab === "announcements" ? "primary" : "secondary"} size="sm" role="tab" aria-selected={tab === "announcements"} onClick={() => setTab("announcements")}>
+          <Button variant={tab === "announcements" ? "primary" : "ghost"} size="sm" role="tab" aria-selected={tab === "announcements"} onClick={() => setTab("announcements")}>
             شريط الإعلانات
           </Button>
         </div>

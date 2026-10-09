@@ -56,7 +56,7 @@ export default function TrashPage() {
           {tabs.map((tabConfig) => (
             <Button
               key={tabConfig.id}
-              variant={tab === tabConfig.id ? "primary" : "secondary"}
+              variant={tab === tabConfig.id ? "primary" : "ghost"}
               size="sm"
               role="tab"
               aria-selected={tab === tabConfig.id}

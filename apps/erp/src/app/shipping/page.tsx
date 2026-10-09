@@ -190,7 +190,7 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
         {SECTIONS.map((item) => (
           <Button
             key={item.key}
-            variant={section === item.key ? "primary" : "secondary"}
+            variant={section === item.key ? "primary" : "ghost"}
             size="sm"
             role="tab"
             aria-selected={section === item.key}
