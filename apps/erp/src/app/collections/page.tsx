@@ -215,7 +215,7 @@ export default function CollectionsListPage() {
         tone="danger"
         onConfirm={confirmDelete}
       >
-        <p>سيُنقل المجموعة إلى المحذوفات. يمكنك استعادتها لاحقًا من قسم المحذوفات.</p>
+        <p>ستُنقل المجموعة إلى المحذوفات. يمكنك استعادتها لاحقًا من قسم المحذوفات.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

@@ -30,10 +30,12 @@ export function AttentionStrip({
 }) {
   const [counts, setCounts] = useState<Counts>({ reconciliation: null, flags: null });
   const [showFlags, setShowFlags] = useState(false);
-  const [fetched, setFetched] = useState(!canReadOrders);
+  const [fetched, setFetched] = useState(false);
 
   useEffect(() => {
     if (!canReadOrders) return;
+    // Permissions can arrive after the first render; until this run settles the strip must stay in its loading state.
+    setFetched(false);
     let cancelled = false;
     const store = getStore();
     // A failed check hides its chip and shows a reload hint, rather than blocking the rest of the strip.
@@ -58,7 +60,7 @@ export function AttentionStrip({
 
   const flags = counts.flags ?? [];
   const failed = canReadOrders && fetched && (counts.reconciliation === null || counts.flags === null);
-  const ready = loaded && fetched;
+  const ready = loaded && (!canReadOrders || fetched);
 
   return (
     <Card aria-label="يحتاج انتباهك">

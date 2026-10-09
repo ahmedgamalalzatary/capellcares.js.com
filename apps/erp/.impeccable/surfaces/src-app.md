@@ -23,7 +23,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## User-approved rules (binding for every page)
 
-Full handoff (plan, progress, all rules, gotchas): `apps/erp/REDESIGN.md` — read it first in a new session.
+Full rules, design system and gotchas: `apps/erp/DESIGN.md` — read it first in a new session.
 
 Reference implementation: /products list (approved by the user). Copy its patterns.
 
@@ -37,11 +37,8 @@ Reference implementation: /products list (approved by the user). Copy its patter
 - Row actions: `RowMenu` + `RowMenuItem`/`RowMenuLink`/`RowMenuSeparator` (Radix). Dialogs: `Modal` / `AdminConfirmModal tone="danger"` (bottom sheet on phones).
 - New/edit pages = WIZARD (user-approved from their own mockup, after rejecting 2-col, sticky guide, capped width, tabs, Shopify ⅔/⅓): full page width (NEVER cap/shrink width — user: "give it bigger w, i don't know why u keep making it smaller"). `Stepper` (components/admin/stepper.tsx): equal-width step columns with the progress rule spanning exactly them, so the rule's edge sits at the step being viewed; "الخطوة n من N" (`StepCount`) lives in the step card header. One `Card` per step (question-style title + description), footer: إلغاء | السابق · حفظ كمسودة · التالي / final save. Creating: steps unlock in order, "التالي" runs `checkRequirements` for that step's keys; "حفظ كمسودة" = `save({ asStatus: "inactive" })` from any step. Editing: all steps clickable, "حفظ التعديلات" on every step. 4 steps (user removed the review step): last = التفاصيل والنشر — long text, SKU/YouTube, then one aligned row: العناصر المرتبطة | حالة المنتج (status tiles + "مطلوب قبل النشر" chips that jump to the step + badges). Inside steps: same two-column container-query grid so fields align (`grid gap-x-4 gap-y-5 @lg:grid-cols-2`). Image slots = horizontal `LangSlotRow`, AR+EN side by side.
 - Native `<option>` lists use system colours (`Canvas`/`CanvasText`, global base rule) — OS dropdowns can't paint oklch.
-- Components live in `src/components/ui/*` (button, input/select/textarea, badge/swatch, card, table, thumb, empty-state, skeleton, row-menu, modal). Old classes in `src/styles/legacy.css` — delete rules as pages migrate.
+- Components live in `src/components/ui/*` (button, input/select/textarea, badge/swatch, card, table, thumb, empty-state, skeleton, row-menu, modal).
 
 ## Workflow (user instructions)
 
-- Redesign page groups one at a time, STOP after each group for user review. Order: 1 Products (DONE, approved) → 2 Categories → 3 Offers → 4 Collections → 5 Discounts → 6 Orders & sales (orders, order detail, reconciliation, shipping, sales) → 7 Store content (advices list/new/edit, shop-media, reviews) → 8 Admin (dashboard, staff list/new/edit, trash, login).
-- Do NOT run tests until the whole UI task is finished (user: "keep tests failing"); typecheck (`npx tsc -p tsconfig.json --noEmit` in apps/erp) must pass.
-- Verify each page in Playwright at 1440/1920 desktop and 390 mobile, light + dark. Dev servers: ERP :3001, API :4000 (login admin@capella.eg / local .env password).
-- No sub-agents and no commits without explicit permission (AGENTS.md).
+See `apps/erp/DESIGN.md` §9–10 (how to work, environment). The redesign of all 8 page groups is finished.

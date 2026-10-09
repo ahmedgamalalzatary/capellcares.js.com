@@ -162,6 +162,21 @@ describe("DashboardPage", () => {
     expect(within(attention).queryByText("لا شيء يحتاج انتباهك الآن")).not.toBeInTheDocument();
   });
 
+  it("keeps the strip loading while checks start after the person's permissions arrive", () => {
+    mockedUseAdminAuth.mockReturnValue({ user: null, hydrated: true });
+    fetchPaymobReconciliation.mockReturnValue(new Promise(() => {}));
+    fetchOpenOrderReviewFlags.mockReturnValue(new Promise(() => {}));
+    const view = render(createElement(DashboardPage));
+
+    mockedUseAdminAuth.mockReturnValue({ user: admin, hydrated: true });
+    view.rerender(createElement(DashboardPage));
+    const attention = region("يحتاج انتباهك");
+
+    expect(within(attention).queryByText("تعذّر تحميل بعض التنبيهات، حدّثي الصفحة.")).not.toBeInTheDocument();
+    expect(within(attention).queryByText("لا شيء يحتاج انتباهك الآن")).not.toBeInTheDocument();
+    expect(within(attention).queryAllByRole("link")).toHaveLength(0);
+  });
+
   it("shows only what a staff member may read", async () => {
     mockedUseAdminAuth.mockReturnValue({ user: staff("products.read"), hydrated: true });
     render(createElement(DashboardPage));
