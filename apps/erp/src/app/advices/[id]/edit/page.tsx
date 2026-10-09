@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { notFound } from "next/navigation";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { AdviceForm } from "@/features/advices/components/advice-form";
@@ -19,17 +19,13 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
 
   if (!canReadErpModule(user, "advices")) {
     return (
-      <AdminShell title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى النصائح." />
-      </AdminShell>
+      <ForbiddenPage title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى النصائح." />
     );
   }
 
   if (!canUpdateErpModule(user, "advices")) {
     return (
-      <AdminShell title="تعديل النصيحة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل النصائح." />
-      </AdminShell>
+      <ForbiddenPage title="تعديل النصيحة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل النصائح." />
     );
   }
 

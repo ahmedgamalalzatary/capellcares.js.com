@@ -1,6 +1,6 @@
 "use client";
 
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { ProductForm } from "@/features/products/components/product-form";
@@ -17,9 +17,7 @@ export default function NewProductPage() {
 
   if (!canCreateErpModule(user, "products")) {
     return (
-      <AdminShell title="منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء المنتجات." />
-      </AdminShell>
+      <ForbiddenPage title="منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية إنشاء المنتجات." />
     );
   }
   return (

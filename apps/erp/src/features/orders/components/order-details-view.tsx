@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { PackageOpen } from "lucide-react";
 import type { AdminOrderDto, AdminOrderShippingStateDto, AdminRelatedShipmentDto, PaymentStatus } from "@capella/shared";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Alert } from "@/components/ui/alert";
@@ -174,13 +174,12 @@ export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; cru
   }
   if (!hasErpPermission(user, "orders.read")) {
     return (
-      <AdminShell
+      <ForbiddenPage
         title="تفاصيل الطلب"
         crumbs={[{ label: "الطلبات", href: "/orders" }, { label: "غير مصرح" }]}
         actions={<Button asChild variant="secondary"><Link href="/orders">رجوع للطلبات</Link></Button>}
-      >
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
-      </AdminShell>
+        message="لا تملكين صلاحية الوصول إلى الطلبات."
+      />
     );
   }
   return (

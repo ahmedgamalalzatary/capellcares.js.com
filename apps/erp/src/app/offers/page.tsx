@@ -6,11 +6,12 @@ import { Check, CircleDot, FolderTree, Plus } from "lucide-react";
 import type { Offer } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { tableSortSelect } from "@/components/admin/list-table";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Button } from "@/components/ui/button";
-import { OFFER_SORT_COLUMNS, OffersTable, offerSortAccessors, type OfferSortKey } from "@/features/offers/components/offers-table";
+import { OFFER_SORT_COLUMNS, OffersTable, offerSortAccessors } from "@/features/offers/components/offers-table";
 import { buildCategoryTreeOptions, isInCategoryTree } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
@@ -90,9 +91,7 @@ export default function OffersListPage() {
 
   if (!canReadErpModule(user, "offers")) {
     return (
-      <AdminShell title="العروض" crumbs={[{ label: "العروض" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
-      </AdminShell>
+      <ForbiddenPage title="العروض" crumbs={[{ label: "العروض" }]} message="لا تملكين صلاحية الوصول إلى العروض." />
     );
   }
 
@@ -121,20 +120,7 @@ export default function OffersListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={loaded ? `${formatNumber(filteredOffers.length)} عرض` : "جارٍ التحميل…"}
-        sort={{
-          value: sort ? `${sort.key}:${sort.direction}` : "",
-          onChange: (value) => {
-            const [key, direction] = value.split(":");
-            setSort(key ? { key: key as OfferSortKey, direction: direction as "asc" | "desc" } : null);
-          },
-          options: [
-            { value: "", label: "ترتيب المتجر" },
-            ...OFFER_SORT_COLUMNS.flatMap((column) => [
-              { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
-              { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
-            ])
-          ]
-        }}
+        sort={tableSortSelect(OFFER_SORT_COLUMNS, sort, setSort)}
         filters={[
           {
             key: "status",

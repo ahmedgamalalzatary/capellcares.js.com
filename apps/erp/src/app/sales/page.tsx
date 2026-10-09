@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart3 } from "lucide-react";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,7 @@ export default function SalesPage() {
 
   if (!canReadErpModule(user, "sales")) {
     return (
-      <AdminShell title="المبيعات" crumbs={[{ label: "المبيعات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المبيعات." />
-      </AdminShell>
+      <ForbiddenPage title="المبيعات" crumbs={[{ label: "المبيعات" }]} message="لا تملكين صلاحية الوصول إلى المبيعات." />
     );
   }
 

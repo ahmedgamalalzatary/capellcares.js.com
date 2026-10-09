@@ -5,7 +5,7 @@ import { notFound, useRouter } from "next/navigation";
 import { StaffEditorForm } from "@/features/staff/components/staff-editor-form";
 import { toFormState } from "@/features/staff/lib/staff-form-state";
 import type { StaffUser } from "@/features/staff/types";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { Alert } from "@/components/ui/alert";
@@ -65,9 +65,7 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
 
   if (user.role !== "admin") {
     return (
-      <AdminShell title="تعديل عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
-      </AdminShell>
+      <ForbiddenPage title="تعديل عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]} message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
     );
   }
 

@@ -2,7 +2,7 @@
 
 import { StaffEditorForm } from "@/features/staff/components/staff-editor-form";
 import { createEmptyStaffForm } from "@/features/staff/lib/staff-form-state";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -16,9 +16,7 @@ export default function StaffNewPage() {
 
   if (user.role !== "admin") {
     return (
-      <AdminShell title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
-      </AdminShell>
+      <ForbiddenPage title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]} message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
     );
   }
 

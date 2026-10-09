@@ -1,49 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Truck } from "lucide-react";
 import type { AdminShipmentListItemDto } from "@capella/shared";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { hasErpPermission } from "@/lib/erp-permissions";
-import { formatDate, formatMoney, localDateKey } from "@/lib/format";
-import { orderPaymentBadge } from "@/lib/payment-status";
 import { ShippingActions } from "@/components/admin/shipping-actions";
+import { ShipmentsTable } from "@/features/shipping/components/shipments-table";
+import { carrierStateLabels, custodyLabels, kindLabels, manualStateLabels, sizeLabels } from "@/features/shipping/lib/labels";
+import { hasErpPermission } from "@/lib/erp-permissions";
+import { localDateKey } from "@/lib/format";
 import { getStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
-
-const carrierStateLabels: Record<string, string> = {
-  created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق",
-  delivered: "تم التسليم", returned: "تم الإرجاع", cancelled: "تم الإلغاء", exception: "تحتاج متابعة"
-};
-const manualStateLabels: Record<string, string> = {
-  preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة",
-  delivered: "تم التسليم", returned: "تم الإرجاع"
-};
-const custodyLabels: Record<string, string> = {
-  unknown: "الحيازة غير مؤكدة", carrier: "مع شركة الشحن",
-  recipient: "تم التسليم للمستلم", warehouse_uninspected: "راجع للمخزن؛ بانتظار الفحص"
-};
-const kindLabels: Record<string, string> = { outgoing: "صادرة", return: "مرتجع", exchange: "استبدال" };
-const sizeLabels: Record<string, string> = { small: "صغير", medium: "وسط", large: "كبير" };
-const flagLabels: Record<string, string> = {
-  address_review: "مراجعة عنوان", expiry_review: "مراجعة المهلة", refund_review: "مراجعة استرداد",
-  amount_mismatch: "اختلاف المبلغ", custody_review: "مراجعة الحيازة",
-  cancellation_pending: "إلغاء قيد التأكيد", untouched_paid: "طلب مدفوع دون تجهيز"
-};
-const workItemStatusLabels: Record<string, string> = {
-  pending: "قيد الانتظار", processing: "قيد التنفيذ", succeeded: "تم", failed: "فشل", review_required: "يحتاج مراجعة"
-};
 
 const SECTIONS = [
   { key: "all", label: "كل الشحنات" },
@@ -68,9 +41,7 @@ export default function ShippingPage() {
 
   if (!hasErpPermission(user, "shipping.read")) {
     return (
-      <AdminShell title="الشحن" crumbs={[{ label: "الشحن" }]}>
-        <ErpForbiddenState message="لا تملك صلاحية الوصول إلى الشحن." />
-      </AdminShell>
+      <ForbiddenPage title="الشحن" crumbs={[{ label: "الشحن" }]} message="لا تملك صلاحية الوصول إلى الشحن." />
     );
   }
 
@@ -257,114 +228,17 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
           ) : null}
           {refreshError ? <AlertLine>تم إرسال الإجراء؛ تعذر تحديث القائمة. حدّثي الصفحة للتحقق من النتائج.</AlertLine> : null}
 
-          <Card className="overflow-hidden">
-            <Table>
-              <THead>
-                <tr>
-                  {canModify ? (
-                    <TH className="w-px">
-                      <input
-                        type="checkbox"
-                        className="size-4"
-                        aria-label="تحديد الطلبات الظاهرة"
-                        disabled={selectable.length === 0}
-                        checked={selectable.length > 0 && selectable.every((id) => selected.includes(id))}
-                        onChange={(event) => setSelected(event.target.checked ? selectable.slice(0, 50) : [])}
-                      />
-                    </TH>
-                  ) : null}
-                  <SortableTH direction={sort?.key === "code" ? sort.direction : null} onSort={() => toggleSort("code")}>كود الطلب</SortableTH>
-                  <SortableTH direction={sort?.key === "kind" ? sort.direction : null} onSort={() => toggleSort("kind")}>النوع</SortableTH>
-                  <SortableTH direction={sort?.key === "tracking" ? sort.direction : null} onSort={() => toggleSort("tracking")}>رقم التتبع</SortableTH>
-                  <SortableTH direction={sort?.key === "customer" ? sort.direction : null} onSort={() => toggleSort("customer")}>العميل</SortableTH>
-                  <SortableTH direction={sort?.key === "carrier" ? sort.direction : null} onSort={() => toggleSort("carrier")}>حالة بوسطة</SortableTH>
-                  <SortableTH direction={sort?.key === "manual" ? sort.direction : null} onSort={() => toggleSort("manual")}>الحالة اليدوية</SortableTH>
-                  <SortableTH direction={sort?.key === "custody" ? sort.direction : null} onSort={() => toggleSort("custody")}>الحيازة</SortableTH>
-                  <SortableTH direction={sort?.key === "size" ? sort.direction : null} onSort={() => toggleSort("size")}>الحجم</SortableTH>
-                  <SortableTH direction={sort?.key === "shipping" ? sort.direction : null} onSort={() => toggleSort("shipping")}>الشحن</SortableTH>
-                  <SortableTH direction={sort?.key === "payment" ? sort.direction : null} onSort={() => toggleSort("payment")}>الدفع</SortableTH>
-                  <TH>العلامات</TH>
-                  <SortableTH direction={sort?.key === "date" ? sort.direction : null} onSort={() => toggleSort("date")}>التاريخ</SortableTH>
-                  <TH className="w-px"><span className="sr-only">إجراءات</span></TH>
-                </tr>
-              </THead>
-              <TBody>
-                {sortedRows.map((item) => {
-                  const payment = orderPaymentBadge(item);
-                  return (
-                    <TR key={`${item.orderId}-${item.kind}-${item.shipmentId ?? "none"}`}>
-                      {canModify ? (
-                        <TD className="max-md:!col-span-2">
-                          {item.kind === "outgoing" ? (
-                            <input
-                              type="checkbox"
-                              className="size-4"
-                              aria-label={`تحديد ${item.orderCode}`}
-                              checked={selected.includes(item.orderId)}
-                              disabled={selected.length >= 50 && !selected.includes(item.orderId)}
-                              onChange={() => toggle(item.orderId)}
-                            />
-                          ) : null}
-                        </TD>
-                      ) : null}
-                      <TD data-cell="lead">
-                        <Link href={`/orders/${item.orderId}`} className="font-medium text-text-strong decoration-line-strong underline-offset-4 hover:underline">
-                          <code className="mono text-sm">{item.orderCode}</code>
-                        </Link>
-                      </TD>
-                      <TD data-label="النوع" className="whitespace-nowrap text-text-2">{kindLabels[item.kind]}</TD>
-                      <TD data-label="رقم التتبع" className="whitespace-nowrap text-text-2"><bdi>{item.trackingNumber ?? "—"}</bdi></TD>
-                      <TD data-label="العميل">
-                        <span className="block text-text-strong">{item.customerName}</span>
-                        <span dir="ltr" className="block text-end text-sm text-text-muted">{item.customerPhone}</span>
-                      </TD>
-                      <TD data-label="حالة بوسطة" className="grid gap-0.5">
-                        {item.carrierState
-                          ? <Badge tone={item.carrierState === "exception" ? "warning" : "success"}>{carrierStateLabels[item.carrierState]}</Badge>
-                          : <span className="text-text-muted">بانتظار الإنشاء</span>}
-                        {item.cancellationStatus === "cancelled" ? <span className="text-xs text-text-muted">تم الإلغاء</span> : null}
-                        {item.cancellationStatus === "pending" ? <span className="text-xs text-text-muted">الإلغاء قيد التأكيد</span> : null}
-                        {item.workItem && item.workItem.status !== "succeeded" ? <span className="text-xs text-text-muted">{workItemStatusLabels[item.workItem.status]}</span> : null}
-                        {item.workItem?.lastError ? <span className="text-xs text-text-muted">{item.workItem.lastError}</span> : null}
-                      </TD>
-                      <TD data-label="الحالة اليدوية" className="whitespace-nowrap text-text-2">{item.manualState ? manualStateLabels[item.manualState] : "—"}</TD>
-                      <TD data-label="الحيازة" className="text-text-muted">{custodyLabels[item.custodyState]}</TD>
-                      <TD data-label="الحجم" className="whitespace-nowrap text-text-2">
-                        {item.size ? sizeLabels[item.size] : "—"}
-                        {item.carrierSize ? <span dir="ltr" className="block text-xs text-text-muted">بوسطة: {item.carrierSize}</span> : null}
-                      </TD>
-                      <TD data-label="الشحن" className="num whitespace-nowrap font-medium text-text-strong">{formatMoney((item.shippingAmountCents ?? 0) / 100)}</TD>
-                      <TD data-label="الدفع"><Badge tone={payment.tone}>{payment.label}</Badge></TD>
-                      <TD data-label="العلامات">
-                        {item.openFlagTypes.length === 0 ? <span className="text-text-muted">—</span> : (
-                          <span className="flex flex-wrap gap-1">
-                            {item.openFlagTypes.map((flagType) => <Badge key={flagType} tone="warning">{flagLabels[flagType]}</Badge>)}
-                          </span>
-                        )}
-                      </TD>
-                      <TD data-label="التاريخ" className="whitespace-nowrap text-text-muted">
-                        {formatDate(item.orderCreatedAt)}
-                      </TD>
-                      <TD data-cell="actions">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/orders/${item.orderId}`}>التفاصيل</Link>
-                        </Button>
-                      </TD>
-                    </TR>
-                  );
-                })}
-                {sortedRows.length === 0 ? (
-                  <TableState colSpan={canModify ? 14 : 13}>
-                    <EmptyState
-                      icon={<Truck />}
-                      title={items.length === 0 ? "لا توجد شحنات بعد" : "لا توجد شحنات تطابق البحث"}
-                      description={items.length === 0 ? "ستظهر الشحنات هنا بمجرد إنشائها." : "جرّبي كلمة أخرى أو غيّري عوامل التصفية."}
-                    />
-                  </TableState>
-                ) : null}
-              </TBody>
-            </Table>
-          </Card>
+          <ShipmentsTable
+            items={sortedRows}
+            totalItems={items.length}
+            canModify={canModify}
+            selected={selected}
+            selectableIds={selectable}
+            onToggleRow={toggle}
+            onSelectAll={(checked) => setSelected(checked ? selectable.slice(0, 50) : [])}
+            sort={sort}
+            onSort={toggleSort}
+          />
 
           {nextCursor && !loading && !error ? (
             <div className="mt-4">

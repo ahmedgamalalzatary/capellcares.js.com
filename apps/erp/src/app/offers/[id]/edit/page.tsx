@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import type { RelatedItemRef } from "@capella/shared";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/features/offers/components/offer-form";
@@ -50,17 +50,13 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
   if (!canReadErpModule(user, "offers")) {
     return (
-      <AdminShell title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى العروض." />
-      </AdminShell>
+      <ForbiddenPage title="العروض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى العروض." />
     );
   }
 
   if (!canUpdateErpModule(user, "offers")) {
     return (
-      <AdminShell title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل العروض." />
-      </AdminShell>
+      <ForbiddenPage title="تعديل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل العروض." />
     );
   }
 

@@ -4,7 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import { getEffectiveVariantPrice, type ProductVariant } from "@capella/shared";
 import { Ruler } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { EditorLayout } from "@/components/admin/editor-layout";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -27,17 +27,13 @@ export default function ProductDiscountPage({ params }: { params: Promise<{ id: 
   const { user } = useAdminAuth();
   if (!canReadErpModule(user, "products")) {
     return (
-      <AdminShell title="خصومات المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
-      </AdminShell>
+      <ForbiddenPage title="خصومات المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى المنتجات." />
     );
   }
 
   if (!hasErpPermission(user, "products.discount")) {
     return (
-      <AdminShell title="خصومات المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل خصومات المنتجات." />
-      </AdminShell>
+      <ForbiddenPage title="خصومات المنتجات" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل خصومات المنتجات." />
     );
   }
 

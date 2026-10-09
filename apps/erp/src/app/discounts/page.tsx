@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -187,9 +187,7 @@ export default function DiscountsPage() {
 
   if (!hasErpPermission(user, "discounts.manage")) {
     return (
-      <AdminShell title="إدارة الخصومات" crumbs={[{ label: "إدارة الخصومات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إدارة الخصومات." />
-      </AdminShell>
+      <ForbiddenPage title="إدارة الخصومات" crumbs={[{ label: "إدارة الخصومات" }]} message="لا تملكين صلاحية إدارة الخصومات." />
     );
   }
 

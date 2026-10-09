@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { SingleImageField } from "@/components/forms/single-image-field";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,10 @@ import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/features/shop-media/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/features/shop-media/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
-import { cn } from "@/lib/utils";
 import type { Announcement, ShopMediaTargetType } from "@capella/shared";
 import type { EditableAnnouncement, EditableItem, EditableSection } from "@/features/shop-media/types";
 import { isDetailTargetType, toEditableSection } from "@/features/shop-media/lib/editable-section";
+import { FoldButton } from "@/features/shop-media/components/fold-button";
 
 const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
 
@@ -52,21 +52,6 @@ const slotPositionLabel: Record<1 | 2 | 3 | 4 | 5, string> = {
   4: "يظهر أسفل قسم الأكثر مبيعًا",
   5: "يظهر أسفل قسم وصل حديثًا"
 };
-
-function FoldButton({ collapsed, onClick, label }: { collapsed: boolean; onClick: () => void; label: string }) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      aria-label={label}
-      aria-expanded={!collapsed}
-      title={label}
-      onClick={onClick}
-    >
-      <ChevronDown className={cn("transition-transform duration-200", collapsed && "rotate-180")} />
-    </Button>
-  );
-}
 
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
@@ -125,9 +110,7 @@ export default function ShopMediaPage() {
 
   if (!canReadErpModule(user, "shop_media")) {
     return (
-      <AdminShell title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى وسائط المتجر." />
-      </AdminShell>
+      <ForbiddenPage title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]} message="لا تملكين صلاحية الوصول إلى وسائط المتجر." />
     );
   }
 

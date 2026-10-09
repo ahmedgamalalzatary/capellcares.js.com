@@ -1,6 +1,6 @@
 "use client";
 
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/features/offers/components/offer-form";
@@ -16,9 +16,7 @@ export default function NewOfferPage() {
   const collections = useStore((s) => s.collections);
   if (!canCreateErpModule(user, "offers")) {
     return (
-      <AdminShell title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء العروض." />
-      </AdminShell>
+      <ForbiddenPage title="عرض جديد" crumbs={[{ label: "العروض", href: "/offers" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية إنشاء العروض." />
     );
   }
   return (

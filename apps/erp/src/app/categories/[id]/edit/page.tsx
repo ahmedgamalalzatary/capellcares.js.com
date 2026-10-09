@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { notFound } from "next/navigation";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { CategoryForm } from "@/features/categories/components/category-form";
@@ -22,17 +22,13 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
 
   if (!canReadErpModule(user, "categories")) {
     return (
-      <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
-      </AdminShell>
+      <ForbiddenPage title="الأقسام" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى الأقسام." />
     );
   }
 
   if (!canUpdateErpModule(user, "categories")) {
     return (
-      <AdminShell title="تعديل القسم" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية تعديل الأقسام." />
-      </AdminShell>
+      <ForbiddenPage title="تعديل القسم" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل الأقسام." />
     );
   }
 

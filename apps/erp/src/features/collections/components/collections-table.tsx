@@ -6,10 +6,10 @@ import type { Collection } from "@capella/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { SortableTH, Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
 import { Thumb } from "@/components/ui/thumb";
 import type { SortState } from "@/hooks/use-table-sort";
 import { formatMoney, formatNumber } from "@/lib/format";
@@ -36,25 +36,6 @@ export function collectionSortAccessors(categories: Array<{ id: number; name: { 
     original: (collection: Collection) => collection.originalTotal,
     status: (collection: Collection) => (collection.status === "active" ? 0 : 1)
   } satisfies Record<CollectionSortKey, (collection: Collection) => string | number | null | undefined>;
-}
-
-function SkeletonRows() {
-  return Array.from({ length: 5 }, (_, index) => (
-    <TR key={index} aria-hidden>
-      <TD data-cell="lead">
-        <div className="flex items-center gap-3.5">
-          <Skeleton className="size-11 rounded-thumb" />
-          <div className="grid gap-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-28" /></div>
-        </div>
-      </TD>
-      <TD><Skeleton className="h-3.5 w-20" /></TD>
-      <TD><Skeleton className="h-3.5 w-14" /></TD>
-      <TD><Skeleton className="h-3.5 w-16" /></TD>
-      <TD><Skeleton className="h-3.5 w-16" /></TD>
-      <TD><Skeleton className="h-6 w-14 rounded-full" /></TD>
-      <TD data-cell="actions" />
-    </TR>
-  ));
 }
 
 export function CollectionsTable({
@@ -103,7 +84,24 @@ export function CollectionsTable({
           </tr>
         </THead>
         <TBody aria-busy={loading}>
-          {loading ? <SkeletonRows /> : null}
+          {loading ? (
+            <TableSkeletonRows
+              cells={[
+                <TD key="lead" data-cell="lead">
+                  <div className="flex items-center gap-3.5">
+                    <Skeleton className="size-11 rounded-thumb" />
+                    <div className="grid gap-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-28" /></div>
+                  </div>
+                </TD>,
+                <TD key="category"><Skeleton className="h-3.5 w-20" /></TD>,
+                <TD key="items"><Skeleton className="h-3.5 w-14" /></TD>,
+                <TD key="price"><Skeleton className="h-3.5 w-16" /></TD>,
+                <TD key="original"><Skeleton className="h-3.5 w-16" /></TD>,
+                <TD key="status"><Skeleton className="h-6 w-14 rounded-full" /></TD>,
+                <TD key="actions" data-cell="actions" />
+              ]}
+            />
+          ) : null}
           {!loading && collections.map((collection, index) => {
             const active = collection.status === "active";
             const initial = collection.name.en?.trim().charAt(0) || collection.name.ar?.trim().charAt(0) || "?";
@@ -177,13 +175,12 @@ export function CollectionsTable({
             );
           })}
           {!loading && collections.length === 0 ? (
-            <TableState colSpan={7}>
-              <EmptyState
-                icon={<Layers />}
-                title="لا توجد مجموعات تطابق البحث"
-                description="جرّبي كلمة أخرى أو غيّري فلتر الحالة أو القسم."
-              />
-            </TableState>
+            <TableEmptyRow
+              colSpan={7}
+              icon={<Layers />}
+              title="لا توجد مجموعات تطابق البحث"
+              description="جرّبي كلمة أخرى أو غيّري فلتر الحالة أو القسم."
+            />
           ) : null}
         </TBody>
       </Table>

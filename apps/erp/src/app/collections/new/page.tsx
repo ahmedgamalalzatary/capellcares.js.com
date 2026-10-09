@@ -2,7 +2,7 @@
 
 import { CollectionForm } from "@/features/collections/components/collection-form";
 import { buildRelatedOptions } from "@/lib/related-options";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { canCreateErpModule } from "@/lib/erp-permissions";
@@ -13,9 +13,7 @@ export default function NewCollectionPage() {
 
   if (!canCreateErpModule(user, "collections")) {
     return (
-      <AdminShell title="مجموعة جديدة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء المجموعات." />
-      </AdminShell>
+      <ForbiddenPage title="مجموعة جديدة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية إنشاء المجموعات." />
     );
   }
 

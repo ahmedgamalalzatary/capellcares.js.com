@@ -6,9 +6,9 @@ import type { Product } from "@capella/shared";
 import { Badge, Swatch } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
-import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { SortableTH, Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
 import type { SortState } from "@/hooks/use-table-sort";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Thumb } from "@/components/ui/thumb";
@@ -51,24 +51,6 @@ function StockCell({ stock }: { stock: number }) {
     );
   }
   return <span className="inline-flex items-center gap-2 text-text"><Swatch tone="success" /><span className="num">{formatNumber(stock)}</span></span>;
-}
-
-function SkeletonRows() {
-  return Array.from({ length: 5 }, (_, index) => (
-    <TR key={index} aria-hidden>
-      <TD data-cell="lead">
-        <div className="flex items-center gap-3.5">
-          <Skeleton className="size-11 rounded-thumb" />
-          <div className="grid gap-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-28" /></div>
-        </div>
-      </TD>
-      <TD><Skeleton className="h-3.5 w-20" /></TD>
-      <TD><Skeleton className="h-3.5 w-16" /></TD>
-      <TD><Skeleton className="h-3.5 w-12" /></TD>
-      <TD><Skeleton className="h-6 w-14 rounded-full" /></TD>
-      <TD data-cell="actions" />
-    </TR>
-  ));
 }
 
 export function ProductsTable({
@@ -121,7 +103,23 @@ export function ProductsTable({
           </tr>
         </THead>
         <TBody aria-busy={loading}>
-          {loading ? <SkeletonRows /> : null}
+          {loading ? (
+            <TableSkeletonRows
+              cells={[
+                <TD key="lead" data-cell="lead">
+                  <div className="flex items-center gap-3.5">
+                    <Skeleton className="size-11 rounded-thumb" />
+                    <div className="grid gap-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-28" /></div>
+                  </div>
+                </TD>,
+                <TD key="category"><Skeleton className="h-3.5 w-20" /></TD>,
+                <TD key="price"><Skeleton className="h-3.5 w-16" /></TD>,
+                <TD key="stock"><Skeleton className="h-3.5 w-12" /></TD>,
+                <TD key="status"><Skeleton className="h-6 w-14 rounded-full" /></TD>,
+                <TD key="actions" data-cell="actions" />
+              ]}
+            />
+          ) : null}
           {!loading && products.map((product, index) => {
             const prices = product.variants.map((variant) => variant.price);
             const stock = stockOf(product);
@@ -205,13 +203,12 @@ export function ProductsTable({
             );
           })}
           {!loading && products.length === 0 ? (
-            <TableState colSpan={6}>
-              <EmptyState
-                icon={<PackageOpen />}
-                title="لا توجد منتجات تطابق البحث"
-                description="جرّبي كلمة أخرى أو غيّري فلتر الحالة أو القسم."
-              />
-            </TableState>
+            <TableEmptyRow
+              colSpan={6}
+              icon={<PackageOpen />}
+              title="لا توجد منتجات تطابق البحث"
+              description="جرّبي كلمة أخرى أو غيّري فلتر الحالة أو القسم."
+            />
           ) : null}
         </TBody>
       </Table>

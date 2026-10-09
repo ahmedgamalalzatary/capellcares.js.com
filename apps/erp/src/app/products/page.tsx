@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
+import { tableSortSelect } from "@/components/admin/list-table";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
-import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable, type ProductSortKey } from "@/features/products/components/products-table";
+import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable } from "@/features/products/components/products-table";
 import { useTableSort } from "@/hooks/use-table-sort";
 import { useProductsPage } from "@/features/products/hooks/use-products-page";
 
@@ -45,9 +46,7 @@ export default function ProductsListPage() {
 
   if (!canReadErpModule(user, "products")) {
     return (
-      <AdminShell title="المنتجات" crumbs={[{ label: "المنتجات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المنتجات." />
-      </AdminShell>
+      <ForbiddenPage title="المنتجات" crumbs={[{ label: "المنتجات" }]} message="لا تملكين صلاحية الوصول إلى المنتجات." />
     );
   }
 
@@ -81,20 +80,7 @@ export default function ProductsListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={loaded ? `${filteredProducts.length} منتج` : "جارٍ التحميل…"}
-        sort={{
-          value: sort ? `${sort.key}:${sort.direction}` : "",
-          onChange: (value) => {
-            const [key, direction] = value.split(":");
-            setSort(key ? { key: key as ProductSortKey, direction: direction as "asc" | "desc" } : null);
-          },
-          options: [
-            { value: "", label: "ترتيب المتجر" },
-            ...PRODUCT_SORT_COLUMNS.flatMap((column) => [
-              { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
-              { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
-            ])
-          ]
-        }}
+        sort={tableSortSelect(PRODUCT_SORT_COLUMNS, sort, setSort)}
         filters={[
           {
             key: "status",

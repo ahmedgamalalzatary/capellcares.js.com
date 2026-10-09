@@ -6,11 +6,12 @@ import { Check, CircleDot, FolderTree, Plus } from "lucide-react";
 import type { Collection } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { tableSortSelect } from "@/components/admin/list-table";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Button } from "@/components/ui/button";
-import { COLLECTION_SORT_COLUMNS, CollectionsTable, collectionSortAccessors, type CollectionSortKey } from "@/features/collections/components/collections-table";
+import { COLLECTION_SORT_COLUMNS, CollectionsTable, collectionSortAccessors } from "@/features/collections/components/collections-table";
 import { buildCategoryTreeOptions, isInCategoryTree } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
@@ -90,9 +91,7 @@ export default function CollectionsListPage() {
 
   if (!canReadErpModule(user, "collections")) {
     return (
-      <AdminShell title="المجموعات" crumbs={[{ label: "المجموعات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المجموعات." />
-      </AdminShell>
+      <ForbiddenPage title="المجموعات" crumbs={[{ label: "المجموعات" }]} message="لا تملكين صلاحية الوصول إلى المجموعات." />
     );
   }
 
@@ -121,20 +120,7 @@ export default function CollectionsListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         countLabel={loaded ? `${formatNumber(filteredCollections.length)} مجموعة` : "جارٍ التحميل…"}
-        sort={{
-          value: sort ? `${sort.key}:${sort.direction}` : "",
-          onChange: (value) => {
-            const [key, direction] = value.split(":");
-            setSort(key ? { key: key as CollectionSortKey, direction: direction as "asc" | "desc" } : null);
-          },
-          options: [
-            { value: "", label: "ترتيب المتجر" },
-            ...COLLECTION_SORT_COLUMNS.flatMap((column) => [
-              { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
-              { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
-            ])
-          ]
-        }}
+        sort={tableSortSelect(COLLECTION_SORT_COLUMNS, sort, setSort)}
         filters={[
           {
             key: "status",

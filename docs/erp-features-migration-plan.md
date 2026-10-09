@@ -430,7 +430,7 @@ Extract only these 4 pieces. Do not build a generic data-grid.
 ```tsx
 export function TableSkeletonRows({ rows = 5, cells }: { rows?: number; cells: ReactNode[] }) // cells = one row's <TD>s
 export function TableEmptyRow({ colSpan, icon, title, description }: …)
-export function ReorderButtons({ index, count, onMove }: { index: number; count: number; onMove: (d: -1 | 1) => void })
+// ReorderButtons: NOT here. It lives in components/admin/reorder-buttons.tsx, shared with forms (§5.7 B6)
 export function tableSortSelect<K extends string>(columns: {key:K;label:string}[], sort: SortState<K>|null, setSort): ListSort
 ```
 
@@ -552,6 +552,64 @@ note it.
 is repeated in advices, offers, collections and products (`use-products-page`). Phase 4's `use-bundles-list` covers
 offers and collections. **Do not** build a generic hook for the other two. That would be over-engineering for 2 users.
 
+### 5.7 Shared-layer code consolidation (`components/`, `hooks/`, `lib/` after Phase 1)
+
+Audit of every file left in the shared layer on 2026-10-09 (~4.5k lines), plus their copies inside `app/**` and
+`features/**`. Moving files is not enough here: each item below is duplicated **code** that must be merged into one
+shared implementation, with call sites switched to it. Keep every `aria-label`, `data-testid` and Arabic string as it
+is today unless the row says otherwise. Each row is one TDD slice: write or adjust the test first, then merge, then
+go green. Ordered by value.
+
+#### A. Likely bugs found while auditing (fix first, test first)
+
+| # | Where | Problem | Fix |
+|---|---|---|---|
+| A1 | `components/providers/admin-auth.tsx:30-60` vs `lib/api/client.ts` `refreshAdminSession()` | The provider does its own `fetch(…/auth/refresh)` on mount, bypassing the shared `adminRefreshPromise`. The API **rotates** refresh tokens (`apps/api/src/modules/admin/auth/admin-auth.service.ts:113` `rotateRefreshSession`). If any request returns 401 while the provider's refresh is in flight (for example `OrderReviewFlagAlerts` or a page calling `api` directly before hydration), two refreshes race with the same token. The loser fails and `invalidateAdminSession()` logs the user out. Likely seen as random logouts on page load. | Export `refreshAdminSession` from `client.ts` and have the provider call it (one in-flight refresh for the whole app). Keep the provider's `setHydrated` / `setAdminAuthHydrated(true)` in `finally`. Test: start a provider refresh and an `api.get` 401 at the same time; assert `fetch(…/auth/refresh)` is called **once** and the user stays logged in. |
+| A2 | 11 places do `error instanceof Error ? error.message : "…"`: `app/{collections,offers,products}/[id]/edit/page.tsx`, `app/products/[id]/discount/page.tsx`, `components/forms/{entity-media-upload,hover-image-upload,single-image-field}.tsx`, `features/categories/components/category-form.tsx`, `lib/store/core.ts` | `api.request` throws `new Error("API 409 /api/erp/…")`, so these alerts show raw English technical text to staff instead of the Arabic message. `lib/errors.ts` `getErrorMessage(error, fallback)` already maps API reasons and bodies to Arabic. | Replace each with `getErrorMessage(error, "<same Arabic fallback>")`. `core.ts` `this.error` is internal; switch it too for consistency. Test one upload field: a rejected upload with body `{ message: "…" }` shows that message, not `API 4xx`. |
+
+#### B. Duplicated logic → one shared implementation
+
+| # | Duplicates (file:line) | Shared target | Notes |
+|---|---|---|---|
+| B1 | **Wizard step engine** copied 6×: `step`/`reached` state, `goTo` (set step, raise `reached`, `window.scrollTo`), `next` (check the current step's requirements, then advance), `stepIndex`, `stepItems` (done/missing/todo) in `features/{advices,categories,collections,offers,products}/components/*-form.tsx` (e.g. `offer-form.tsx:75-110`) and `app/discounts/page.tsx:122-132` | `hooks/use-wizard-steps.ts` → `useWizardSteps({ steps, requirements, editing, checkRequirements })` returning `{ step, current, goTo, next, back, stepIndex, stepItems, reached }` | Differences to keep as options: discounts' `next` always validates (`editing` false); forms skip validation when `editing`. `Stepper` / `StepCount` UI stays in `components/admin/stepper.tsx`. Tests: `tests/hooks/use-wizard-steps.test.tsx` (next blocked by an unmet requirement, allowed when editing, `reached` never decreases, `stepItems` states). |
+| B2 | **Single-image upload flow** (type check PNG/JPG/WEBP, 4 MB limit, busy, error, `api.uploadImage`): `components/forms/single-image-field.tsx:28-50`, `features/categories/components/category-form.tsx:52-75`, and without the checks in `components/forms/hover-image-upload.tsx:31-48` | `hooks/use-image-upload.ts` → `useImageUpload(uploadContext)` returning `{ busy, error, upload(files): Promise<string \| null> }`; validation in `lib/media.ts` `validateImageFile(file): string \| null` | Hover image currently skips the type/size check, so a bad file only fails server-side. Adding the same check is intended (same messages as single-image-field). `entity-media-upload` uploads multiple files and videos; it reuses only `validateImageFile` + `IMAGE_ACCEPT`, not the hook. |
+| B3 | **Image-accept constant** 3×: `media-frame.tsx:8` `IMAGE_ACCEPT`, `single-image-field.tsx:10` `ACCEPT`, `category-form.tsx:55,92` inline | `lib/media.ts` → `IMAGE_ACCEPT`, `VIDEO_ACCEPT` (move from `entity-media-upload.tsx:21`), `MAX_IMAGE_BYTES` | |
+| B4 | **Upload / replace / remove button group** (`FileButton` with `RefreshCw`/`Upload` + "استبدال"/"رفع صورة", then a `danger-ghost` trash button): `media-frame.tsx:66-77` (`LangSlotRow`), `single-image-field.tsx:62-75`, `category-form.tsx:89-100` | `components/forms/image-actions.tsx` → `<ImageActions hasImage busy canUpload onFiles onRemove removeLabel inputTestId replaceLabel? />` | category-form says "استبدال الصورة"; keep it via `replaceLabel`. |
+| B5 | **Array move by index**, 9 copies in two styles (swap and splice; same result for ±1): `hooks/use-list-reorder.ts:38-46`, `features/products/hooks/use-products-page.ts:116-125`, `features/{offers,collections}/hooks/use-*-form.ts:~68-81`, `components/forms/entity-media-upload.tsx:44-53`, `components/forms/related-items-field.tsx:130-137`, `app/categories/page.tsx:126-134`, `app/shop-media/page.tsx:259-262,343-355` | `lib/array.ts` → `moveItem<T>(items: readonly T[], index: number, delta: -1 \| 1): T[]` (returns the same array when out of bounds) | Tests: `tests/lib/array.test.ts` (first/last bounds, both directions, does not mutate). |
+| B6 | **Up/Down reorder buttons** (two `ghost icon-sm` buttons, `ArrowUp`/`ArrowDown`, "تحريك لأعلى/لأسفل", disabled at the ends) in 10 files: 3 tables, `category-tree.tsx`, `collection-form.tsx`, `offer-form.tsx`, `entity-media-upload.tsx`, `related-items-field.tsx`, `app/advices/page.tsx`, `app/shop-media/page.tsx` ×2 | `components/admin/reorder-buttons.tsx` → `<ReorderButtons index count onMove disabled? orientation?: "row" \| "column" />` | This **replaces** §5.1's `ReorderButtons` inside `list-table.tsx`: one component for tables and forms, so it lives in its own file. `entity-media-upload` stacks them vertically at `@2xl`, hence `orientation`. Keep each `title` attribute where it exists today. |
+| B7 | **Permission check** 3×: `lib/erp-permissions.ts` `hasErpPermission`, `components/shell/admin-shell.tsx:69` `canAccess`, `lib/store/core.ts:205` `canRead` inside `getPreloadRequests` | `hasErpPermission` (already shared) | `canAccess` has one extra rule (an item without `permission` is admin-only): keep it as `!item.permission ? user.role === "admin" : hasErpPermission(user, item.permission)`. `erp-permissions.ts` has a needless `"use client"` (pure functions); remove it so `core.ts` can import it cleanly. |
+| B8 | **Active/inactive status badge** `<Badge tone={active ? "success" : "neutral"}>{active ? "نشط" : "غير نشط"}</Badge>`, 9×: 3 tables, `app/{advices,reviews,staff}/page.tsx`, `app/shop-media/page.tsx:339,420,428` | `components/admin/status-badge.tsx` → `<StatusBadge active />` | Pairs with `ACTIVE_STATUS_FILTER_OPTIONS` (same labels): move that constant next to it and re-export from `admin-list-header.tsx`, or import from the new file. |
+| B9 | **Draft/active status radio cards** (`STATUS_OPTIONS` + the identical `<fieldset>` of styled radio labels with `Swatch`): `features/{advices,products,offers,collections}/components/*-form.tsx` (e.g. `offer-form.tsx:33-36` and `316-345`) | `components/forms/status-choice.tsx` → `<StatusChoice name value onChange legend options />`. `options` stays per entity because the hint wording is gendered ("مخفي" vs "مخفية"). | |
+| B10 | **Store "call API, then refetch"**: about 30 methods in `lib/store/core.ts:279-470` are `await api.X(…); await this.refetch();`, and 4 `hardDelete*` methods are the same "delete → filter local list → emit → background refetch" | Two private helpers in `ErpStore`: `private async mutate(call: () => Promise<unknown>)` and `private async hardDelete<K extends "products" \| "categories" \| "offers" \| "collections">(key: K, path: string, id: number)` | **Keep every public method name and signature** (pages and `tests/lib/store/core.test.ts` call them); only their bodies shrink. Also: the `sales` field initializer (`core.ts:35-40`) duplicates `createEmptySales()`, so use it there, and reset all fields in `refetch` via one `resetData()` helper used by both. |
+| B11 | **`api.uploadMedia` and `api.uploadImage` are byte-identical** (`lib/api/client.ts:205-228`) | One private `upload(file, context)`; keep both public names pointing at it | Callers use both names, so keep the names to avoid churn. |
+| B13 | **Language tag chip** ("ع" / "EN", `rounded-sm bg-sand-150 px-1.5 text-xs leading-5 text-text-muted`): `components/forms/editor-form-parts.tsx:9,41-50` and `components/forms/media-frame.tsx:63` | `components/forms/lang-tag.tsx` → `<LangTag lang />` | The positioning classes stay at the call site. |
+
+#### C. Layering and stale-API cleanups in the shared layer
+
+| # | Where | Fix |
+|---|---|---|
+| C1 | `lib/related-options.ts` imports the `RelatedOption` type from `@/components/forms/related-items-field` (lib depending on a component) | Move `RelatedOption` into `lib/related-options.ts` and have `related-items-field.tsx` import it from there. |
+| C2 | `components/shell/admin-shell.tsx` `width?: "full" \| "form" \| "narrow"` + `WIDTH_CLASS`: no page passes `width`, so only `"full"` is ever used. The `editor-layout.tsx:9-10` comment still tells callers to use `width="form"`, which contradicts the user rule "ERP pages are always full width" (`apps/erp/DESIGN.md`). | Delete the prop, `WIDTH_CLASS` and the stale comment lines. |
+| C3 | `components/admin/admin-confirm-modal.tsx` `confirmClassName` (`@deprecated`): no caller passes it any more | Delete the prop and the fallback; `variant = tone ?? "primary"`. |
+| C4 | `lib/store.ts` sits next to the `lib/store/` folder | Move it to `lib/store/index.ts`. `@/lib/store` imports keep resolving, so no call-site changes. |
+| C5 | `paymentStatusTone` (`lib/payment-status.ts:10`) and `orderPaymentBadge` re-declare the badge tone union by hand | Type them as `NonNullable<BadgeProps["tone"]>` (export `BadgeTone` from `components/ui/badge.tsx`), so a new tone can't drift. |
+
+**Leave alone (checked, not worth merging):** `lib/theme.ts` + `theme-script.ts` (the script must stay server-safe;
+§3.15). The localStorage try/catch in `use-collapsed-set.ts` vs `theme.ts` (2 tiny users, and their fallbacks differ).
+`CategoryPicker`'s own parent→children map (it builds chained selects, a different shape from
+`buildCategoryTreeOptions`' flat list). The close (X) buttons in `ui/modal.tsx:41-46`, the `admin-list-header.tsx:221`
+popover and the `admin-shell.tsx:~218` drawer: they differ in radius and icon size (`rounded-control`/18px,
+`rounded-md`/16px, 20px), so they are not true duplicates. `ui/*` primitives (no duplication found). `use-media-query`, `use-table-sort`,
+`format.ts`, `slug.ts`, `stock.ts`, `media.ts`, `category-tree.ts` (already single-source after Phase 1).
+
+**New/updated tests for §5.7:** `tests/hooks/use-wizard-steps.test.tsx`, `tests/hooks/use-image-upload.test.tsx`,
+`tests/lib/array.test.ts`, `tests/lib/media.test.ts` (+ `validateImageFile`),
+`tests/components/admin/reorder-buttons.test.tsx`, `tests/components/admin/status-badge.test.tsx`,
+`tests/components/forms/status-choice.test.tsx`, `tests/components/providers/admin-auth.test.tsx` (A1),
+plus extra cases in `tests/lib/store/core.test.ts` (B10: a mutation still refetches; `hardDelete` removes locally
+before the refetch) and `tests/lib/api/client.test.ts` (A1 single in-flight refresh; B11 both upload names hit
+`/api/erp/uploads`).
+
 ---
 
 
@@ -615,6 +673,11 @@ Do **not** extract components out of pages yet, except the moves §3 lists as "�
 **Phase 3: Shared UI extractions.** §5.1 (list-table pieces), §5.5 (`ForbiddenPage`), §5.6 (`FoldButton`, maybe
 products reorder). Then pull the inline tables out into `features/<f>/components/*-table.tsx` (advices, staff, reviews,
 orders, shipping) using the new pieces. One feature per slice, tests green after each.
+
+**Phase 3B: Shared-layer code consolidation (§5.7).** Order: A1, A2 (bugs) → B7, B11, C1–C5 (small, isolated) →
+B5, B6 (array move + reorder buttons) → B3, B2, B4, B13 (media) → B8, B9 (status UI) → B1 (wizard) → B10 (store). One row per slice, `pnpm typecheck && pnpm test` green after each. Do B1 and B9 **before**
+Phase 4 so the bundle merge starts from forms that already use the shared wizard and status pieces. Do **not** change
+copy, test ids, or the user-facing behaviour beyond what A1/A2/B2 state.
 
 **Phase 4:** `features/bundles` **merge (§5.4).**
 
@@ -688,3 +751,4 @@ Everything not listed here must keep its current behaviour.
 - [ ] typecheck, test, build, eslint green, plus root `typecheck:web` / `lint:web`.
 - [ ] `docs/folder-structure.md`, `apps/erp/DESIGN.md`, `apps/erp/REDESIGN.md` updated.
 - [ ] §9 decisions D1–D7 applied, each with a test.
+- [ ] §5.7 A1–A2, B1–B11, B13, C1–C5 done, each with its test; no remaining copies (re-run the greps in §5.7 B5/B6/B8).

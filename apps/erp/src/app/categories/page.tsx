@@ -7,7 +7,7 @@ import { Check, Layers, Plus } from "lucide-react";
 import { compareByScopedOrdering, type Category } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Button } from "@/components/ui/button";
@@ -177,9 +177,7 @@ export default function CategoriesPage() {
 
   if (!canReadErpModule(user, "categories")) {
     return (
-      <AdminShell title="الأقسام" crumbs={[{ label: "الأقسام" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الأقسام." />
-      </AdminShell>
+      <ForbiddenPage title="الأقسام" crumbs={[{ label: "الأقسام" }]} message="لا تملكين صلاحية الوصول إلى الأقسام." />
     );
   }
 

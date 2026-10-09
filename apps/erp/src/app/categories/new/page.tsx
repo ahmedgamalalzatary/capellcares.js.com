@@ -1,6 +1,6 @@
 "use client";
 
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { CategoryForm } from "@/features/categories/components/category-form";
@@ -12,9 +12,7 @@ export default function NewCategoryPage() {
   const categories = useStore((s) => s.categories);
   if (!canCreateErpModule(user, "categories")) {
     return (
-      <AdminShell title="قسم جديد" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية إنشاء الأقسام." />
-      </AdminShell>
+      <ForbiddenPage title="قسم جديد" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية إنشاء الأقسام." />
     );
   }
   return (

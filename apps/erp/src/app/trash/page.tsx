@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Alert } from "@/components/ui/alert";
@@ -43,9 +43,7 @@ export default function TrashPage() {
 
   if (!trashReadable) {
     return (
-      <AdminShell title="المحذوفات" crumbs={[{ label: "المحذوفات" }]}>
-        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المحذوفات." />
-      </AdminShell>
+      <ForbiddenPage title="المحذوفات" crumbs={[{ label: "المحذوفات" }]} message="لا تملكين صلاحية الوصول إلى المحذوفات." />
     );
   }
 
