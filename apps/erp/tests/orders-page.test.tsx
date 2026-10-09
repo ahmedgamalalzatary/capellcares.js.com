@@ -267,6 +267,37 @@ describe("OrdersPage", () => {
     expect(screen.queryByText("Accepted Out Of Range")).not.toBeInTheDocument();
   });
 
+  it("opens already filtered by the payment status in the link", () => {
+    mockState = {
+      loaded: true,
+      orders: [makeOrder(1, "Pending Customer", "pending"), makeOrder(2, "Accepted Customer", "accepted")]
+    };
+    window.history.replaceState(null, "", "/orders?payment=pending");
+    try {
+      render(createElement(OrdersPage));
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+
+    expect(screen.getByText("Pending Customer")).toBeInTheDocument();
+    expect(screen.queryByText("Accepted Customer")).not.toBeInTheDocument();
+  });
+
+  it("ignores an unknown payment status in the link", () => {
+    mockState = {
+      loaded: true,
+      orders: [makeOrder(1, "Pending Customer", "pending"), makeOrder(2, "Accepted Customer", "accepted")]
+    };
+    window.history.replaceState(null, "", "/orders?payment=bogus");
+    try {
+      render(createElement(OrdersPage));
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+
+    expect(screen.getByText("Accepted Customer")).toBeInTheDocument();
+  });
+
   it("keeps a Paymob-confirmed order out of the pending payment filter", () => {
     mockState = {
       loaded: true,

@@ -37,6 +37,13 @@ pass: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 `admin-status-badge`; the test suite is migrated to the redesign and **49/49 files pass** (`NODE_ENV=test`,
 `tsc` green); `DESIGN.md` written. The review/documenter agents still need explicit permission to run.
 
+**Dashboard v2 (after the redesign):** `/dashboard` rebuilt as a daily overview — attention strip (reconciliation,
+flagged orders list, pending payments → `/orders?payment=pending`, sold-out sizes → `#stock`), sales pulse with
+today / 7 / 30-day tabs, best sellers + slow movers, stock alerts ranked by 30-day sales, discounts ending within 7 days,
+catalog health score, and a permission-aware "+ جديد" menu. Calculations live in `src/lib/dashboard.ts`
+(tests: `dashboard-metrics.test.ts`); cards in `src/components/dashboard/`. The API sales report now tags each order
+item with `productId` + `variantId`.
+
 Group 1 leftovers to do before/at the start of Group 2:
 - Phone (390) + dark-mode check of the product wizard and the discount page (not re-checked after the last changes).
 - Two open bugs — **ask the user** whether to fix now or after the redesign:

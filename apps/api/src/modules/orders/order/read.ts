@@ -195,7 +195,7 @@ export async function getSalesAnalyticsRepo() {
     totalAmount: number;
     unitsSold: number;
     createdAt: string;
-    items: Array<{ label: string; unitsSold: number }>;
+    items: Array<{ label: string; productId: number; variantId: number; unitsSold: number }>;
   }>();
 
   let totalUnitsSold = 0;
@@ -246,7 +246,7 @@ export async function getSalesAnalyticsRepo() {
         const label = `${variant.productName} / ${variant.variantLabel}`;
         totalUnitsSold += unitsSold;
         orderBreakdown.unitsSold += unitsSold;
-        orderBreakdown.items.push({ label, unitsSold });
+        orderBreakdown.items.push({ label, productId: variant.productId, variantId: variant.variantId, unitsSold });
         mergeProductTotal(productTotals, variant.productId, variant.productName, unitsSold, revenue);
         mergeVariantTotal(variantTotals, variant.variantId, variant.productId, variant.productName, variant.variantLabel, unitsSold, revenue);
       }
@@ -267,7 +267,7 @@ export async function getSalesAnalyticsRepo() {
     const label = `${variant.productName} / ${variant.variantLabel}`;
     totalUnitsSold += unitsSold;
     orderBreakdown.unitsSold += unitsSold;
-    orderBreakdown.items.push({ label, unitsSold });
+    orderBreakdown.items.push({ label, productId: variant.productId, variantId: variant.variantId, unitsSold });
     mergeProductTotal(productTotals, variant.productId, variant.productName, unitsSold, revenue);
     mergeVariantTotal(variantTotals, variant.variantId, variant.productId, variant.productName, variant.variantLabel, unitsSold, revenue);
   }

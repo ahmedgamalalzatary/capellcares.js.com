@@ -62,7 +62,7 @@ export type SalesAnalytics = {
     totalAmount: number;
     unitsSold: number;
     createdAt: string;
-    items: Array<{ label: string; unitsSold: number }>;
+    items: Array<{ label: string; productId: number; variantId: number; unitsSold: number }>;
   }>;
 };
 export type ProductApiShape = {

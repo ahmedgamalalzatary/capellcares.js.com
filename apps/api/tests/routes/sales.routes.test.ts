@@ -236,3 +236,33 @@ test("erp sales expands offer quantities using underlying offer item quantities"
     assert.equal(orderBreakdown.unitsSold, 8);
   });
 });
+
+test("erp sales tags every order item with the product and variant it sold", async () => {
+  const ids = await getBaselineIds();
+  const [order] = await db.insert(orders).values({
+    orderCode: "TAG-001", customerType: "registered", customerId: ids.customerId,
+    fullName: "Tagged Items", phone: "01044444444", email: "tagged@capella.test",
+    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 4", buildingApartment: "4",
+    paymentMethod: "cod", paymentStatus: "accepted", totalAmount: "140.00"
+  }).$returningId();
+  await db.insert(orderItems).values([
+    { orderId: order.id, itemType: "product_variant", variantId: ids.firstVariantId, qty: 2, unitPrice: "35.00",
+      lineTotal: "70.00", snapshotNameEn: "Baseline Product 1", snapshotNameAr: "منتج تجريبي", snapshotSizeLabel: "100ml" },
+    { orderId: order.id, itemType: "offer", variantId: null, offerId: ids.offerId, qty: 1, unitPrice: "70.00",
+      lineTotal: "70.00", snapshotNameEn: "Baseline Offer", snapshotNameAr: "عرض تجريبي", snapshotSizeLabel: null }
+  ]);
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    const breakdown = response.json.orders.find((item: any) => item.orderId === order.id);
+    const tagged = breakdown.items
+      .map((item: any) => `${item.productId}/${item.variantId}x${item.unitsSold}`)
+      .sort();
+    assert.deepEqual(tagged, [
+      `${ids.productOneId}/${ids.firstVariantId}x1`,
+      `${ids.productOneId}/${ids.firstVariantId}x2`,
+      `${ids.productTwoId}/${ids.secondVariantId}x1`
+    ].sort());
+  });
+});

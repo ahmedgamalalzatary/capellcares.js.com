@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import type { PaymentStatus } from "@capella/shared";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { canReadErpModule } from "@/lib/erp-permissions";
 import { formatMoney } from "@/lib/format";
-import { orderMatchesPaymentStatusFilter, orderPaymentBadge, paymentStatusFilterOptions } from "@/lib/payment-status";
+import { orderMatchesPaymentStatusFilter, orderPaymentBadge, paymentStatusFilterOptions, paymentStatusLabel } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
 
@@ -65,6 +65,12 @@ function OrdersPageContent() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatus | "all">("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  // Links such as the dashboard's "awaiting payment" chip open the list pre-filtered with ?payment=<status>. Read after mount so the server render stays unfiltered.
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("payment");
+    if (status && Object.hasOwn(paymentStatusLabel, status)) setPaymentStatusFilter(status as PaymentStatus);
+  }, []);
 
   const filtered = useMemo(() => {
     const byStatus = paymentStatusFilter === "all"

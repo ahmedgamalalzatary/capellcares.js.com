@@ -6,7 +6,7 @@ import type { AdminOrderReviewFlagDto } from "@capella/shared";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { getStore } from "@/lib/store";
 
-const flagTitles: Record<AdminOrderReviewFlagDto["flagType"], string> = {
+export const flagTitles: Record<AdminOrderReviewFlagDto["flagType"], string> = {
   address_review: "مشكلة في عنوان الطلب",
   expiry_review: "مهلة الطلب انتهت وتحتاج مراجعة",
   refund_review: "استرداد يحتاج مراجعة",
