@@ -60,7 +60,7 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
   const carrierText = (value: unknown) => (typeof value === "string" ? value : "غير متوفر");
 
   return (
-    <Card>
+    <Card aria-label="حالات الشحن">
       <CardHeader title="حالات الشحن" />
       <CardBody className="grid gap-5 pt-0 sm:pt-0">
         <DetailGrid>
@@ -133,11 +133,11 @@ function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateD
 function RelatedShipments({ parcels }: { parcels: AdminRelatedShipmentDto[] }) {
   if (parcels.length === 0) return null;
   return (
-    <Card>
+    <Card aria-label="المرتجعات والاستبدالات">
       <CardHeader title="المرتجعات والاستبدالات" />
       <CardBody className="grid gap-5 pt-0 sm:pt-0">
         {parcels.map((parcel) => (
-          <section key={parcel.id} className="grid gap-4 border-b border-line pb-5 last:border-b-0 last:pb-0">
+          <section key={parcel.id} aria-label={`${parcel.kind === "return" ? "مرتجع" : "استبدال"} — ${parcel.trackingNumber}`} className="grid gap-4 border-b border-line pb-5 last:border-b-0 last:pb-0">
             <h4 className="text-base font-bold text-text-strong">
               {parcel.kind === "return" ? "مرتجع" : "استبدال"} — <bdi>{parcel.trackingNumber}</bdi>
             </h4>
@@ -326,7 +326,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
                     {order.items.length === 0 ? <TableState colSpan={4}><p className="py-6 text-center text-sm text-text-muted">لا توجد عناصر مسجلة لهذا الطلب.</p></TableState> : null}
                   </TBody>
                 </Table>
-                <div className="border-t border-line px-5 py-4 sm:px-6">
+                <div role="region" aria-label="ملخص المبالغ" className="border-t border-line px-5 py-4 sm:px-6">
                   <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                     {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 100)}</span></Detail> : null}
                     <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>

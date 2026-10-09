@@ -86,7 +86,7 @@ describe("bundle form item ordering", () => {
     const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products, categories }));
     const form = within(view.container);
 
-    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب (اختياري)"), {
+    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب"), {
       target: { value: " https://www.youtube.com/watch?v=offer " }
     });
     fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
@@ -105,7 +105,7 @@ describe("bundle form item ordering", () => {
     );
     const form = within(view.container);
 
-    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب (اختياري)"), {
+    fireEvent.change(form.getByLabelText("رابط فيديو يوتيوب"), {
       target: { value: " https://www.youtube.com/watch?v=collection " }
     });
     fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
@@ -120,6 +120,8 @@ describe("bundle form item ordering", () => {
   it("moves an offer item up and saves items in the new order", async () => {
     const view = render(createElement(OfferForm, { mode: "edit", initial: offerInitial, products, categories }));
     const form = within(view.container);
+
+    fireEvent.click(form.getByTestId("step-bundle"));
 
     const rows = form.getAllByTestId("bundle-item-row");
     fireEvent.click(within(rows[1]!).getByRole("button", { name: "تحريك لأعلى" }));
@@ -143,6 +145,8 @@ describe("bundle form item ordering", () => {
       createElement(CollectionForm, { mode: "edit", initial: collectionInitial, products, categories })
     );
     const form = within(view.container);
+
+    fireEvent.click(form.getByTestId("step-bundle"));
 
     const rows = form.getAllByTestId("bundle-item-row");
     fireEvent.click(within(rows[1]!).getByRole("button", { name: "تحريك لأعلى" }));

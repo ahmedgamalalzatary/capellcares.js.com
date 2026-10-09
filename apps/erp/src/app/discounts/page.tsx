@@ -120,7 +120,7 @@ export default function DiscountsPage() {
     { key: "items", label: "اختيار عنصر واحد على الأقل", target: "items", ok: included.length > 0 },
     { key: "value", label: "قيمة خصم صحيحة", target: "details", ok: value > 0 && Number.isFinite(value) && (type !== "percentage" || value <= 100) },
     { key: "dates", label: "فترة الخصم", target: "details", ok: validDates },
-    { key: "amounts", label: "مبالغ صحيحة", target: "details", ok: invalidFixed.length === 0 && !invalidZero }
+    { key: "amounts", label: "مبالغ صحيحة", target: "review", ok: invalidFixed.length === 0 && !invalidZero }
   ];
   const missing = requirements.filter((requirement) => !requirement.ok);
   const canApply = missing.length === 0 && !saving;

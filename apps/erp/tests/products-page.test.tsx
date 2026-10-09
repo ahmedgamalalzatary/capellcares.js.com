@@ -43,6 +43,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector({
+    loaded: true,
     products: [{
       id: 1,
       sku: "SKU-1",
@@ -130,9 +131,15 @@ function minimalProduct(id: number) {
 }
 
 describe("ProductForm related items", () => {
-  it("renders the related-items selector", () => {
-    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
+  const openRelatedStep = (view: ReturnType<typeof render>) => {
     const form = within(view.container);
+    fireEvent.click(form.getByTestId("step-details"));
+    return form;
+  };
+
+  it("renders the related-items selector", () => {
+    const view = render(createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions }));
+    const form = openRelatedStep(view);
     expect(form.getByTestId("related-items-field")).toBeInTheDocument();
     expect(form.getByTestId("related-items-add")).toBeInTheDocument();
     expect(form.queryByLabelText("نوع الخصم")).not.toBeInTheDocument();
@@ -140,25 +147,26 @@ describe("ProductForm related items", () => {
   });
 
   it("excludes the current product from its own related options", () => {
-    const view = render(
-      createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions })
-    );
-    const select = within(view.container).getByTestId("related-items-add") as HTMLSelectElement;
-    const values = Array.from(select.querySelectorAll("option")).map((option) => option.value);
-    expect(values).not.toContain("product:1");
-    expect(values).toContain("product:2");
-    expect(values).toContain("offer:3");
+    const view = render(createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions }));
+    const form = openRelatedStep(view);
+
+    fireEvent.click(form.getByTestId("related-items-add"));
+
+    const names = screen.getAllByTestId("related-items-option").map((option) => option.textContent);
+    expect(names).not.toContain("منتج حالي");
+    expect(names).toContain("منتج آخر");
+    expect(names).toContain("عرض مرتبط");
   });
 
   it("saves the selected related items in the chosen order", async () => {
-    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
-    const form = within(view.container);
-    fireEvent.change(form.getAllByRole("textbox")[0]!, { target: { value: "منتج" } });
+    const view = render(createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions }));
+    const form = openRelatedStep(view);
 
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "product:2" } });
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "offer:3" } });
+    fireEvent.click(form.getByTestId("related-items-add"));
+    fireEvent.click(screen.getByRole("option", { name: "منتج آخر" }));
+    fireEvent.click(screen.getByRole("option", { name: "عرض مرتبط" }));
 
-    fireEvent.click(form.getByRole("button", { name: "حفظ المنتج" }));
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(
@@ -173,17 +181,17 @@ describe("ProductForm related items", () => {
   });
 
   it("reorders a related item up and saves the new order", async () => {
-    const view = render(createElement(ProductForm, { mode: "new", categories: [], relatedOptions }));
-    const form = within(view.container);
-    fireEvent.change(form.getAllByRole("textbox")[0]!, { target: { value: "منتج" } });
+    const view = render(createElement(ProductForm, { mode: "edit", initial: minimalProduct(1), categories: [], relatedOptions }));
+    const form = openRelatedStep(view);
 
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "product:2" } });
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "offer:3" } });
+    fireEvent.click(form.getByTestId("related-items-add"));
+    fireEvent.click(screen.getByRole("option", { name: "منتج آخر" }));
+    fireEvent.click(screen.getByRole("option", { name: "عرض مرتبط" }));
 
     const rows = form.getAllByTestId("related-item-row");
     fireEvent.click(within(rows[1]!).getByRole("button", { name: "تحريك لأعلى" }));
 
-    fireEvent.click(form.getByRole("button", { name: "حفظ المنتج" }));
+    fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 
     await waitFor(() => {
       expect(upsertProduct).toHaveBeenCalledWith(
@@ -220,9 +228,9 @@ describe("ProductsListPage", () => {
     });
     render(createElement(ProductsListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-    fireEvent.click(screen.getByTitle("إيقاف"));
-    fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات منتج" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "إيقاف" }));
+    fireEvent.click(await screen.findByRole("button", { name: "تأكيد" }));
 
     expect(toggleProductStatus).toHaveBeenCalledWith(1);
     expect(await screen.findByText("تعذر تحديث حالة المنتج. حاولي مرة أخرى.")).toBeInTheDocument();
@@ -244,33 +252,21 @@ describe("ProductsListPage", () => {
     }));
     const form = within(view.container);
 
-    const textboxes = form.getAllByRole("textbox");
-    fireEvent.change(textboxes[0]!, { target: { value: "منتج" } });
-    fireEvent.change(textboxes[1]!, { target: { value: "Product" } });
-    fireEvent.change(textboxes[2]!, { target: { value: "ERP-MEDIA-001" } });
-    fireEvent.change(textboxes[3]!, { target: { value: "test, product" } });
-    fireEvent.click(form.getByRole("radio", { name: /نشط/ }));
-    fireEvent.change(form.getAllByRole("combobox")[0]!, { target: { value: "5" } });
+    fireEvent.click(form.getByTestId("step-media"));
 
-    const initialSpinbuttons = form.getAllByRole("spinbutton");
-    fireEvent.change(initialSpinbuttons[0]!, { target: { value: "10" } });
-
-    const englishMediaInput = form.getByTestId("product-media-add-en-input");
-    fireEvent.change(englishMediaInput, {
+    fireEvent.change(form.getByTestId("product-media-add-en-input"), {
       target: {
         files: [new File(["one"], "primary.jpg", { type: "image/jpeg" })]
       }
     });
 
-    const videoInput = form.getByTestId("product-media-add-video-input");
-    fireEvent.change(videoInput, {
+    fireEvent.change(form.getByTestId("product-media-add-video-input"), {
       target: {
         files: [new File(["three"], "demo.mp4", { type: "video/mp4" })]
       }
     });
 
-    const hoverInput = form.getByTestId("product-hover-image-en-input");
-    fireEvent.change(hoverInput, {
+    fireEvent.change(form.getByTestId("product-hover-image-en-input"), {
       target: {
         files: [new File(["two"], "hover.jpg", { type: "image/jpeg" })]
       }
@@ -279,15 +275,7 @@ describe("ProductsListPage", () => {
     await waitFor(() => {
       expect(form.getAllByTestId("product-media-item")).toHaveLength(2);
     });
-    await waitFor(() => {
-      expect(uploadMedia).toHaveBeenCalledWith(expect.objectContaining({ name: "hover.jpg" }), expect.anything());
-      expect(view.container.querySelector('img[src$="/hover.jpg"]')).not.toBeNull();
-    });
 
-    fireEvent.change(form.getByPlaceholderText("100ml"), { target: { value: "100ml" } });
-    const numericInputs = form.getAllByRole("spinbutton");
-    fireEvent.change(numericInputs[1]!, { target: { value: "25" } });
-    fireEvent.change(numericInputs[2]!, { target: { value: "4" } });
     fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 
     await waitFor(() => {

@@ -57,6 +57,7 @@ function makeBundle(id: number) {
 }
 
 const storeState = vi.hoisted(() => ({
+  loaded: true,
   offers: [] as any[],
   collections: [] as any[],
   categories: [] as any[]
@@ -104,7 +105,7 @@ describe("OffersListPage ordering", () => {
   it("hides reorder controls while searching", () => {
     render(createElement(OffersListPage));
 
-    fireEvent.change(screen.getByPlaceholderText("ابحثي عن عرض…"), { target: { value: "باقة" } });
+    fireEvent.change(screen.getByPlaceholderText("ابحثي باسم العرض…"), { target: { value: "باقة" } });
 
     expect(screen.queryByRole("button", { name: "تحريك لأعلى" })).not.toBeInTheDocument();
   });

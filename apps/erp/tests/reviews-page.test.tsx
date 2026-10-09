@@ -59,10 +59,13 @@ describe("ERP ReviewsPage", () => {
     expect(screen.getByLabelText("5 من 5 نجوم")).toBeInTheDocument();
     expect(screen.getByText("منتج ممتاز")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "تعطيل" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات تقييم Sara Ali" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "تعطيل" }));
     await waitFor(() => expect(post).toHaveBeenCalledWith("/api/erp/reviews/4/toggle-status"));
 
-    fireEvent.click(screen.getByRole("button", { name: "حذف" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات تقييم Sara Ali" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "حذف" }));
+    fireEvent.click(await screen.findByRole("button", { name: "حذف التقييم" }));
     await waitFor(() => expect(del).toHaveBeenCalledWith("/api/erp/reviews/4"));
   });
 
@@ -79,7 +82,8 @@ describe("ERP ReviewsPage", () => {
     post.mockRejectedValueOnce(new Error("toggle failed"));
     render(createElement(ReviewsPage));
 
-    fireEvent.click(await screen.findByRole("button", { name: "تعطيل" }));
+    fireEvent.pointerDown(await screen.findByRole("button", { name: "إجراءات تقييم Sara Ali" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "تعطيل" }));
 
     await waitFor(() => expect(showErrorToast).toHaveBeenCalledWith(
       expect.any(Error),

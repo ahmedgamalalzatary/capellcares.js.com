@@ -94,7 +94,7 @@ describe("OfferForm category", () => {
 
     const categorySelect = screen.getByLabelText("القسم");
 
-    expect(categorySelect).toHaveDisplayValue("— اختاري —");
+    expect(categorySelect).toHaveDisplayValue("اختاري القسم");
     expect(screen.getByRole("option", { name: "العناية بالبشرة" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "العناية بالشعر" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "كريمات" })).not.toBeInTheDocument();
@@ -102,12 +102,30 @@ describe("OfferForm category", () => {
 
   it("lists only products inside the selected category tree", () => {
     render(createElement(OfferForm, {
-      mode: "new",
+      mode: "edit",
+      initial: {
+        id: 1,
+        slug: "cat-offer",
+        name: { ar: "عرض", en: "Offer" },
+        description: { ar: "", en: "" },
+        imagePath: "/uploads/offer.png",
+        media: [],
+        price: 100,
+        originalTotal: 110,
+        categoryId: 1,
+        items: [],
+        stock: 0,
+        status: "inactive",
+        visibility: "visible",
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: null
+      },
       categories,
       products: [skinProduct, hairProduct]
     } as any));
 
-    fireEvent.change(screen.getByLabelText("القسم"), { target: { value: "1" } });
+    fireEvent.click(screen.getByTestId("step-bundle"));
     fireEvent.click(screen.getByRole("button", { name: /إضافة منتج/ }));
 
     expect(screen.getByRole("option", { name: "غسول" })).toBeInTheDocument();
@@ -122,7 +140,7 @@ describe("OfferForm category", () => {
     } as any));
 
     await act(async () => {
-      const saved = await result.current.save();
+      const saved = await result.current.save({ asStatus: "active" });
       expect(saved).toBe(false);
     });
 
@@ -191,6 +209,8 @@ describe("OfferForm legacy offer with no category", () => {
       categories,
       products: [skinProduct, hairProduct]
     } as any));
+
+    fireEvent.click(screen.getByTestId("step-bundle"));
 
     const row = screen.getAllByTestId("bundle-item-row")[0]!;
     const productSelect = within(row).getAllByRole("combobox")[0]! as HTMLSelectElement;

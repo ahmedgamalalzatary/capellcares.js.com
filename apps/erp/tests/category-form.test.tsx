@@ -28,28 +28,38 @@ const categories = [
   { id: 3, parentId: 2, slug: "dry-hair", name: { ar: "شعر جاف", en: "Dry Hair" }, isLeaf: true, deletedAt: null }
 ];
 
+const fillNames = () => {
+  const [nameArInput, nameEnInput] = screen.getAllByRole("textbox");
+  fireEvent.change(nameArInput!, { target: { value: "قسم جديد" } });
+  fireEvent.change(nameEnInput!, { target: { value: "New Category" } });
+};
+
 describe("CategoryForm", () => {
-  it("shows parent options as a hierarchical dropdown with a visible selected path", () => {
+  it("shows the category tree as indented options and previews the selected path", () => {
     render(createElement(CategoryForm, { mode: "new", categories }));
 
     expect(screen.getByRole("option", { name: "العناية بالشعر" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "↳ زيوت الشعر (العناية بالشعر)" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "↳ ↳ شعر جاف (العناية بالشعر › زيوت الشعر)" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "— زيوت الشعر" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "— — شعر جاف" })).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "3" } });
 
-    expect(screen.getByText("المسار: العناية بالشعر › زيوت الشعر › شعر جاف")).toBeInTheDocument();
+    expect(screen.getByTestId("category-path")).toHaveTextContent("شعر جاف");
   });
 
-  it("keeps image upload unavailable until the category is a direct child of a root", () => {
+  it("offers the image slot only once the category is a direct child of a root", () => {
     render(createElement(CategoryForm, { mode: "new", categories }));
 
-    expect(screen.getByText("صورة القسم غير متاحة إلا للأقسام الفرعية المباشرة تحت القسم الرئيسي.")).toBeInTheDocument();
-    expect(screen.getByText("رفع الصور غير متاح لهذا المستوى من الأقسام.")).toBeInTheDocument();
+    fillNames();
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
 
+    expect(screen.getByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
 
-    expect(screen.queryByText("رفع الصور غير متاح لهذا المستوى من الأقسام.")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "اختيار صورة" })).toBeInTheDocument();
+    expect(screen.queryByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).not.toBeInTheDocument();
+    expect(screen.getByText("رفع صورة")).toBeInTheDocument();
   });
 });

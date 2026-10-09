@@ -42,11 +42,21 @@ const rowBase = {
 
 describe("shipping ERP surface", () => {
   beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false
+    }));
     mockedUseAdminAuth.mockReset();
     fetchShippingOverview.mockReset();
     runBulkShippingAction.mockReset();
   });
-  afterEach(() => cleanup());
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
   it("renders shipment rows with carrier and manual states for authorized staff", async () => {
     fetchShippingOverview.mockResolvedValue({ items: [rowBase], nextCursor: null });
@@ -129,7 +139,7 @@ describe("shipping ERP surface", () => {
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    fireEvent.change(screen.getByRole("textbox", { name: "بحث في الشحنات" }), { target: { value: "5108002" } });
+    fireEvent.change(screen.getByLabelText("بحث في الشحنات"), { target: { value: "5108002" } });
     expect(screen.getByText("CAP-007")).toBeInTheDocument();
     expect(screen.queryByText("CAP-009")).not.toBeInTheDocument();
   });
@@ -181,7 +191,8 @@ describe("shipping ERP surface", () => {
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    fireEvent.change(screen.getByRole("combobox", { name: "حالة الناقل" }), { target: { value: "cancelled" } });
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
+    fireEvent.change(screen.getByLabelText("حالة الناقل"), { target: { value: "cancelled" } });
     expect(screen.queryByText("CAP-007")).not.toBeInTheDocument();
     expect(screen.getByText("CAP-008")).toBeInTheDocument();
   });

@@ -52,7 +52,7 @@ describe("StaffNewPage", () => {
 
     render(createElement(StaffNewPage));
 
-    expect(screen.getByText("إضافة عضو")).toBeInTheDocument();
+    expect(screen.getByText("بيانات العضو")).toBeInTheDocument();
     expect(screen.getByTestId("staff-editor-form")).toBeInTheDocument();
   });
 });

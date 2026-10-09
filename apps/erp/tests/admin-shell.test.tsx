@@ -110,7 +110,7 @@ describe("AdminShell", () => {
       logout: vi.fn().mockResolvedValue(undefined)
     });
     render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-    expect(screen.getAllByRole("link", { name: "إدارة الخصومات" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "الخصومات" }).length).toBeGreaterThan(0);
   });
 
   it("shows reviews navigation only when the reviews module is readable", () => {

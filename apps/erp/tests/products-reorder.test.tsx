@@ -59,6 +59,7 @@ function makeProduct(id: number, categoryId: number, orderings: Array<{ scopeTyp
 }
 
 const storeState = vi.hoisted(() => ({
+  loaded: true,
   products: [] as any[],
   categories: [] as any[]
 }));
@@ -76,9 +77,21 @@ import ProductsListPage from "@/app/products/page";
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
+  // Force the phone filter panel so the category filter is a plain labelled select the tests can drive.
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  }));
   reorderProducts.mockClear();
   storeState.categories = [
     { id: 5, parentId: null, slug: "root-cat", name: { ar: "قسم رئيسي", en: "Root" }, isLeaf: false, deletedAt: null },
@@ -95,6 +108,7 @@ describe("ProductsListPage ordering", () => {
   it("offers categories of every depth in the category filter", () => {
     render(createElement(ProductsListPage));
 
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
     const filter = screen.getByTestId("products-category-filter") as HTMLSelectElement;
     const values = Array.from(filter.querySelectorAll("option")).map((option) => option.value);
 
@@ -123,6 +137,7 @@ describe("ProductsListPage ordering", () => {
 
     render(createElement(ProductsListPage));
 
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
     fireEvent.change(screen.getByTestId("products-category-filter"), { target: { value: "6" } });
 
     const secondRow = screen.getByTestId("product-row-2");
@@ -142,6 +157,7 @@ describe("ProductsListPage ordering", () => {
 
     render(createElement(ProductsListPage));
 
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
     fireEvent.change(screen.getByTestId("products-category-filter"), { target: { value: "7" } });
 
     expect(screen.getByTestId("product-row-1")).toBeInTheDocument();
@@ -170,7 +186,7 @@ describe("ProductsListPage ordering", () => {
   it("hides reorder controls while searching", () => {
     render(createElement(ProductsListPage));
 
-    fireEvent.change(screen.getByPlaceholderText("ابحثي بالاسم أو SKU…"), { target: { value: "منتج" } });
+    fireEvent.change(screen.getByPlaceholderText("ابحثي باسم المنتج…"), { target: { value: "منتج" } });
 
     expect(screen.queryByRole("button", { name: "تحريك لأعلى" })).not.toBeInTheDocument();
   });

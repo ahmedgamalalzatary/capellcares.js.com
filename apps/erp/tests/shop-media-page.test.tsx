@@ -58,8 +58,8 @@ vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children, actions }: any) => createElement("div", null, actions, children)
 }));
 
-vi.mock("@/components/forms/image-upload", () => ({
-  ImageUpload: ({ onChange, label }: any) => createElement("button", { type: "button", onClick: () => onChange(`/uploads/changed-${label}.jpg`) }, label ?? "image-upload")
+vi.mock("@/components/forms/single-image-field", () => ({
+  SingleImageField: ({ onChange, label }: any) => createElement("button", { type: "button", onClick: () => onChange(`/uploads/changed-${label}.jpg`) }, label ?? "image-slot")
 }));
 
 vi.mock("@/lib/store", () => ({
@@ -114,7 +114,7 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
     openAnnouncementsTab();
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "تفعيل شريط الإعلانات" }));
+    fireEvent.click(screen.getByRole("switch", { name: "تفعيل شريط الإعلانات" }));
     fireEvent.click(screen.getByRole("button", { name: "حفظ الإعلانات" }));
 
     expect(replaceAnnouncements).toHaveBeenCalledWith(expect.objectContaining({
@@ -159,11 +159,11 @@ describe("ShopMediaPage", () => {
     openAnnouncementsTab();
 
     fireEvent.click(screen.getByRole("button", { name: "إضافة إعلان" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "إزالة" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "إزالة الإعلان" })[0]!);
     fireEvent.click(screen.getByRole("button", { name: "إضافة إعلان" }));
 
     const arabicFields = screen.getAllByLabelText("النص العربي") as HTMLInputElement[];
-    const englishFields = screen.getAllByLabelText("English text") as HTMLInputElement[];
+    const englishFields = screen.getAllByLabelText("النص بالإنجليزية") as HTMLInputElement[];
     expect(arabicFields).toHaveLength(2);
     fireEvent.change(arabicFields[0]!, { target: { value: "الأولى" } });
     fireEvent.change(englishFields[0]!, { target: { value: "First" } });
@@ -186,7 +186,7 @@ describe("ShopMediaPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "إضافة إعلان" }));
     const arabicFields = screen.getAllByLabelText("النص العربي") as HTMLInputElement[];
-    const englishFields = screen.getAllByLabelText("English text") as HTMLInputElement[];
+    const englishFields = screen.getAllByLabelText("النص بالإنجليزية") as HTMLInputElement[];
     fireEvent.change(arabicFields[1]!, { target: { value: "عرض جديد" } });
     fireEvent.change(englishFields[1]!, { target: { value: "New offer" } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ الإعلانات" }));
@@ -221,10 +221,10 @@ describe("ShopMediaPage", () => {
 
 
     for (const label of [
-      "صورة سطح المكتب — العربية",
-      "صورة الموبايل — العربية",
-      "صورة سطح المكتب — الإنجليزية",
-      "صورة الموبايل — الإنجليزية"
+      "سطح المكتب — العربية",
+      "الموبايل — العربية",
+      "سطح المكتب — الإنجليزية",
+      "الموبايل — الإنجليزية"
     ]) {
       fireEvent.click(screen.getByRole("button", { name: label }));
     }
@@ -232,10 +232,10 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       items: [expect.objectContaining({
-        arImagePath: "/uploads/changed-صورة سطح المكتب — العربية.jpg",
-        arMobileImagePath: "/uploads/changed-صورة الموبايل — العربية.jpg",
-        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
-        enMobileImagePath: "/uploads/changed-صورة الموبايل — الإنجليزية.jpg"
+        arImagePath: "/uploads/changed-سطح المكتب — العربية.jpg",
+        arMobileImagePath: "/uploads/changed-الموبايل — العربية.jpg",
+        enImagePath: "/uploads/changed-سطح المكتب — الإنجليزية.jpg",
+        enMobileImagePath: "/uploads/changed-الموبايل — الإنجليزية.jpg"
       })]
     }));
   });
@@ -244,7 +244,7 @@ describe("ShopMediaPage", () => {
     const view = render(createElement(ShopMediaPage));
 
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("سطح المكتب — الإنجليزية")[0]!);
 
     mockState = makeMockState();
     view.rerender(createElement(ShopMediaPage));
@@ -253,7 +253,7 @@ describe("ShopMediaPage", () => {
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       items: [expect.objectContaining({
-        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
+        enImagePath: "/uploads/changed-سطح المكتب — الإنجليزية.jpg",
         enMobileImagePath: "/uploads/original-mobile.jpg"
       })]
     }));
@@ -263,15 +263,15 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
 
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
-    fireEvent.click(screen.getAllByText("صورة الموبايل — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("سطح المكتب — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("الموبايل — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
       status: "active",
       items: [expect.objectContaining({
-        enImagePath: "/uploads/changed-صورة سطح المكتب — الإنجليزية.jpg",
-        enMobileImagePath: "/uploads/changed-صورة الموبايل — الإنجليزية.jpg",
+        enImagePath: "/uploads/changed-سطح المكتب — الإنجليزية.jpg",
+        enMobileImagePath: "/uploads/changed-الموبايل — الإنجليزية.jpg",
         targetType: "offers"
       })]
     }));
@@ -314,7 +314,7 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
 
 
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "تفعيل القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("switch", { name: "تفعيل القسم" })[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
@@ -330,7 +330,7 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
 
 
-    fireEvent.click(screen.getAllByText("صورة سطح المكتب — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("سطح المكتب — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     await waitFor(() => {
@@ -342,7 +342,7 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
 
 
-    const toggle = screen.getAllByRole("checkbox", { name: "تفعيل القسم" })[0]!;
+    const toggle = screen.getAllByRole("switch", { name: "تفعيل القسم" })[0]!;
     expect(toggle).toBeChecked();
 
     fireEvent.click(toggle);
@@ -407,7 +407,7 @@ describe("ShopMediaPage", () => {
     render(createElement(ShopMediaPage));
 
 
-    fireEvent.click(screen.getAllByText("صورة الموبايل — الإنجليزية")[0]!);
+    fireEvent.click(screen.getAllByText("الموبايل — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
 
     expect(updateShopMediaSection).not.toHaveBeenCalled();

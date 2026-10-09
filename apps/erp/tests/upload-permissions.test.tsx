@@ -78,6 +78,8 @@ describe("ERP upload permissions", () => {
     }));
     const form = within(view.container);
 
+    fireEvent.click(view.getByTestId("step-media"));
+
     fireEvent.change(form.getByTestId("product-media-add-en-input"), {
       target: {
         files: [new File(["one"], "primary.jpg", { type: "image/jpeg" })]

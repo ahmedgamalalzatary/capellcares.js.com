@@ -37,6 +37,7 @@ vi.mock("sonner", () => ({
 
 // The state object must be a stable reference: the page derives memoized arrays from `categories`, and a fresh array per render causes an infinite re-render loop.
 const storeState = vi.hoisted(() => ({
+    loaded: true,
     categories: [
       { id: 1, parentId: null, slug: "body-care", sortOrder: 2, name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false, deletedAt: null },
       { id: 2, parentId: null, slug: "skin-care", sortOrder: 1, name: { ar: "العناية بالبشرة", en: "Skin Care" }, isLeaf: false, deletedAt: null },

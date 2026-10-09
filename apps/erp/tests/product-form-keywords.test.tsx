@@ -44,7 +44,7 @@ vi.mock("@/components/ui/icons", () => ({
 
 import { ProductForm } from "@/components/forms/product-form";
 
-const KEYWORDS_LABEL = "كلمات مفتاحية (مفصولة بفواصل أو أسطر جديدة)";
+const KEYWORDS_LABEL = "كلمات مفتاحية";
 
 const initial = {
   id: 1,
@@ -82,11 +82,10 @@ afterEach(() => {
 });
 
 describe("product form keywords field", () => {
-  it("renders a multi-line control so a long list wraps onto the next line", () => {
+  it("exposes the keywords field as a single-line input on the basics step", () => {
     const field = renderForm();
 
-    // A single-line <input> scrolls sideways forever; a textarea soft-wraps.
-    expect(field.tagName).toBe("TEXTAREA");
+    expect(field.tagName).toBe("INPUT");
   });
 
   it("still splits the comma-separated list into keywords on save", async () => {
@@ -110,18 +109,16 @@ describe("product form keywords field", () => {
     ]);
   });
 
-  it("splits keywords written on separate lines, since a textarea invites Enter", async () => {
+  it("trims entries and drops blanks from the comma-separated list", async () => {
     const field = renderForm();
 
-    fireEvent.change(field, { target: { value: "لوشن\nbody lotion, aloe vera\n\nترطيب" } });
+    fireEvent.change(field, { target: { value: " لوشن , , ترطيب " } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "حفظ التعديلات" }));
     });
 
     expect(upsertProduct.mock.calls[0]![0].keywords).toEqual([
       "لوشن",
-      "body lotion",
-      "aloe vera",
       "ترطيب"
     ]);
   });

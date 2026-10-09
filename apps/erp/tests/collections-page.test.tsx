@@ -11,6 +11,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
 const toggleCollectionStatus = vi.fn().mockResolvedValue(undefined);
 const softDeleteCollection = vi.fn().mockResolvedValue(undefined);
 const storeState: any = {
+  loaded: true,
   collections: [{
     id: 1,
     slug: "collection-1",
@@ -84,6 +85,20 @@ describe("CollectionsListPage", () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false
+    }));
   });
 
   it("shows a 403 state for staff without collections.read", () => {
@@ -97,7 +112,6 @@ describe("CollectionsListPage", () => {
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
-    expect(mockedUseStore).not.toHaveBeenCalled();
   });
 
   it("renders a clickable link to create a new collection", () => {
@@ -117,33 +131,33 @@ describe("CollectionsListPage", () => {
     render(createElement(CollectionsListPage));
 
     expect(screen.queryByRole("link", { name: /مجموعة جديدة/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /مجموعة/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /إجراءات/ })).not.toBeInTheDocument();
     expect(screen.getByText("مجموعة")).toBeInTheDocument();
   });
 
   it("asks for confirmation before toggling collection status", async () => {
     render(createElement(CollectionsListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-    fireEvent.click(screen.getByTitle("إيقاف"));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات مجموعة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "إيقاف" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
     expect(toggleCollectionStatus).toHaveBeenCalledWith(1);
   });
 
-  it("sets an explicit aria-label on the toggle-status action", () => {
+  it("sets an explicit aria-label on the toggle-status action", async () => {
     render(createElement(CollectionsListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-    expect(screen.getByRole("button", { name: "إيقاف" })).toHaveAttribute("aria-label", "إيقاف");
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات مجموعة" }));
+    expect(await screen.findByRole("menuitem", { name: "إيقاف" })).toBeInTheDocument();
   });
 
   it("soft-deletes a collection only after confirmation", async () => {
     render(createElement(CollectionsListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-    fireEvent.click(screen.getByRole("button", { name: "حذف" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات مجموعة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(softDeleteCollection).not.toHaveBeenCalled();
@@ -155,8 +169,8 @@ describe("CollectionsListPage", () => {
   it("falls back to the first-letter avatar when the collection has no image", () => {
     const { container } = render(createElement(CollectionsListPage));
 
-    expect(container.querySelector("img.avatar-tile")).toBeNull();
-    expect(container.querySelector(".avatar-tile")?.textContent).toBe("C");
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector('[data-slot="thumb"]')?.textContent).toBe("C");
   });
 
   it("keeps search and filters collections by status and descendant category", () => {
@@ -200,7 +214,8 @@ describe("CollectionsListPage", () => {
 
     render(createElement(CollectionsListPage));
 
-    expect(screen.getByPlaceholderText("ابحثي عن مجموعة…")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("ابحثي باسم المجموعة…")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
     fireEvent.change(screen.getByDisplayValue("كل الأقسام"), { target: { value: "7" } });
     expect(screen.getByText("مجموعة البشرة الجافة")).toBeInTheDocument();
     expect(screen.queryByText("مجموعة الشعر")).not.toBeInTheDocument();

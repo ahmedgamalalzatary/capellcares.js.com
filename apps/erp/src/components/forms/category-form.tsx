@@ -242,7 +242,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
             </Select>
           </Field>
           <Field label="الموقع في الشجرة">
-            <div className="flex h-10 min-w-0 items-center gap-1.5 overflow-hidden rounded-control bg-sunken px-3 shadow-[inset_0_0_0_1px_var(--line)] pointer-coarse:h-11">
+            <div data-testid="category-path" className="flex h-10 min-w-0 items-center gap-1.5 overflow-hidden rounded-control bg-sunken px-3 shadow-[inset_0_0_0_1px_var(--line)] pointer-coarse:h-11">
               {selectedPath.length === 0 ? (
                 <span className="text-sm text-text-muted">قسم رئيسي</span>
               ) : (

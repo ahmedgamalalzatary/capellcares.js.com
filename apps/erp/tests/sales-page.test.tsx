@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatPrice } from "@capella/shared";
+import { formatMoney } from "@/lib/format";
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
@@ -9,6 +9,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector({
+    loaded: true,
     sales: {
       summary: {
         totalOrders: 2,
@@ -33,12 +34,15 @@ vi.mock("@/lib/store", () => ({
 
 import SalesPage from "@/app/sales/page";
 
-// formatPrice emits a non-breaking space that testing-library normalizes away on the DOM side only, so compare with all whitespace stripped from both sides.
+// formatMoney may emit a non-breaking space that testing-library normalizes away on the DOM side only, so compare with all whitespace stripped from both sides.
 function money(value: number) {
-  const expected = formatPrice(value, "ar").replace(/\s+/gu, "");
+  const expected = formatMoney(value).replace(/\s+/gu, "");
   return (_content: string, element: Element | null) =>
     element?.textContent?.replace(/\s+/gu, "") === expected;
 }
+
+// Item rows split the label and the quantity across elements, so match on the whole text content instead of a direct text node.
+const exactly = (expected: string) => (_content: string, element: Element | null) => element?.textContent === expected;
 
 describe("SalesPage", () => {
   afterEach(() => {
@@ -71,7 +75,7 @@ describe("SalesPage", () => {
     expect(screen.getByText("Baseline Product 1")).toBeInTheDocument();
     expect(screen.getByText("SALE-001")).toBeInTheDocument();
     expect(screen.getAllByText("Baseline Product 1 / 100ml").length).toBeGreaterThan(0);
-    expect(screen.getByText("Baseline Product 1 / 100ml x2")).toBeInTheDocument();
-    expect(screen.getByText("Baseline Product 2 / 200ml x1")).toBeInTheDocument();
+    expect(screen.getAllByText(exactly("Baseline Product 1 / 100ml × 2")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(exactly("Baseline Product 2 / 200ml × 1")).length).toBeGreaterThan(0);
   });
 });

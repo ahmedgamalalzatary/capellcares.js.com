@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const upsertOffer = vi.fn().mockResolvedValue(undefined);
@@ -20,7 +20,7 @@ vi.mock("@/lib/store", () => ({
   getStore: () => ({ upsertOffer })
 }));
 
-vi.mock("@/components/forms/entity-media-upload", () => ({
+vi.mock("@/components/forms/product-media-upload", () => ({
   EntityMediaUpload: ({ value, onChange }: any) => createElement(
     "button",
     {
@@ -100,6 +100,7 @@ describe("OfferForm related items", () => {
     );
     const form = within(view.container);
 
+    fireEvent.click(form.getByTestId("step-media"));
     fireEvent.click(form.getByTestId("offer-media-upload"));
     fireEvent.click(form.getByRole("button", { name: /حفظ التعديلات/ }));
 
@@ -116,8 +117,9 @@ describe("OfferForm related items", () => {
   });
 
   it("renders the related-items selector", () => {
-    const view = render(createElement(OfferForm, { mode: "new", products, categories, relatedOptions }));
+    const view = render(createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions }));
     const form = within(view.container);
+    fireEvent.click(form.getByTestId("step-related"));
     expect(form.getByTestId("related-items-field")).toBeInTheDocument();
     expect(form.getByTestId("related-items-add")).toBeInTheDocument();
   });
@@ -126,11 +128,15 @@ describe("OfferForm related items", () => {
     const view = render(
       createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions })
     );
-    const select = within(view.container).getByTestId("related-items-add") as HTMLSelectElement;
-    const values = Array.from(select.querySelectorAll("option")).map((option) => option.value);
-    expect(values).not.toContain("offer:1");
-    expect(values).toContain("offer:2");
-    expect(values).toContain("product:10");
+    const form = within(view.container);
+    fireEvent.click(form.getByTestId("step-related"));
+
+    fireEvent.click(form.getByTestId("related-items-add"));
+
+    const names = screen.getAllByTestId("related-items-option").map((option) => option.textContent);
+    expect(names).not.toContain("العرض الحالي");
+    expect(names).toContain("عرض آخر");
+    expect(names).toContain("منتج باقة");
   });
 
   it("saves the selected related items in the chosen order", async () => {
@@ -138,9 +144,11 @@ describe("OfferForm related items", () => {
       createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions })
     );
     const form = within(view.container);
+    fireEvent.click(form.getByTestId("step-related"));
 
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "product:10" } });
-    fireEvent.change(form.getByTestId("related-items-add"), { target: { value: "offer:2" } });
+    fireEvent.click(form.getByTestId("related-items-add"));
+    fireEvent.click(screen.getByRole("option", { name: "منتج باقة" }));
+    fireEvent.click(screen.getByRole("option", { name: "عرض آخر" }));
 
     fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 
@@ -172,6 +180,7 @@ describe("OfferForm related items", () => {
     );
     const form = within(view.container);
 
+    fireEvent.click(form.getByTestId("step-bundle"));
     fireEvent.change(form.getByDisplayValue("1"), { target: { value: "3" } });
     fireEvent.click(form.getByRole("button", { name: "حفظ التعديلات" }));
 

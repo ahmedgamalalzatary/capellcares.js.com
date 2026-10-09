@@ -103,7 +103,7 @@ export default function TrashPage() {
           ) : null}
           {tab === "reviews" ? (
             reviewsLoading ? (
-              <div className="grid gap-2 p-4" aria-hidden>
+              <div role="status" aria-label="جارٍ تحميل التقييمات" className="grid gap-2 p-4">
                 {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="h-11 rounded-control" />)}
               </div>
             ) : reviewsError ? (

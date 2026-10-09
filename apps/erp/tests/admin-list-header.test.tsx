@@ -1,11 +1,26 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminListHeader } from "@/components/admin/admin-list-header";
 
+// The filter panel (plain labelled selects) is the phone layout; force it so the tests can drive the filters directly.
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  }));
+});
+
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 const statusFilter = {
@@ -18,6 +33,10 @@ const statusFilter = {
     { value: "active", label: "نشط" },
     { value: "inactive", label: "غير نشط" }
   ]
+};
+
+const openPanel = () => {
+  fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
 };
 
 describe("AdminListHeader", () => {
@@ -33,7 +52,7 @@ describe("AdminListHeader", () => {
 
     expect(screen.getByDisplayValue("rose")).toBeInTheDocument();
     expect(screen.getByText("3 عناصر")).toBeInTheDocument();
-    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /تصفية/ })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("ابحثي…"), { target: { value: "serum" } });
     expect(onSearchChange).toHaveBeenCalledWith("serum");
@@ -49,6 +68,8 @@ describe("AdminListHeader", () => {
       countLabel: "3 عناصر",
       filters: [{ ...statusFilter, onChange }]
     }));
+
+    openPanel();
 
     const select = screen.getByLabelText("حالة العنصر") as HTMLSelectElement;
     expect(select).toHaveValue("all");
@@ -71,6 +92,8 @@ describe("AdminListHeader", () => {
         { key: "category", label: "القسم", value: "", onChange: vi.fn(), options: [{ value: "", label: "كل الأقسام" }] }
       ]
     }));
+
+    openPanel();
 
     const labels = screen.getAllByRole("combobox").map((select) => select.getAttribute("aria-label"));
     expect(labels).toEqual(["حالة العنصر", "نوع العنصر", "القسم"]);
@@ -97,7 +120,7 @@ describe("AdminListHeader", () => {
     expect(screen.getByLabelText("البحث في التقييمات")).toBeInTheDocument();
   });
 
-  it("renders custom filter controls in the shared filter group", () => {
+  it("renders custom filter controls inside the filter panel", () => {
     render(createElement(AdminListHeader, {
       searchPlaceholder: "Search",
       searchValue: "",
@@ -106,20 +129,24 @@ describe("AdminListHeader", () => {
       customFilters: createElement("input", { "aria-label": "من تاريخ", type: "date" })
     }));
 
+    openPanel();
+
     const dateInput = screen.getByLabelText("من تاريخ");
     expect(dateInput).toHaveAttribute("type", "date");
-    expect(dateInput.parentElement).toHaveClass("list-header__filters");
   });
 
-  it("styles filters with the shared select class so pages cannot drift", () => {
+  it("echoes an active filter as a removable chip and resets it", () => {
+    const onChange = vi.fn();
+
     render(createElement(AdminListHeader, {
       searchPlaceholder: "ابحثي…",
       searchValue: "",
       onSearchChange: vi.fn(),
       countLabel: "3 عناصر",
-      filters: [statusFilter]
+      filters: [{ ...statusFilter, value: "active", onChange }]
     }));
 
-    expect(screen.getByLabelText("حالة العنصر")).toHaveClass("select");
+    fireEvent.click(screen.getByLabelText("إزالة فلتر حالة العنصر"));
+    expect(onChange).toHaveBeenCalledWith("all");
   });
 });

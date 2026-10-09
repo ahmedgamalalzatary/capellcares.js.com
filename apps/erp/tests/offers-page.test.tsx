@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toggleOfferStatus = vi.fn().mockRejectedValue(new Error("toggle failed"));
 
@@ -21,7 +21,7 @@ function makeOffer(id: number, nameAr: string, status: "active" | "inactive") {
   };
 }
 
-const makeMockState = () => ({ categories: [], offers: [makeOffer(1, "عرض", "active")] });
+const makeMockState = () => ({ loaded: true, categories: [], offers: [makeOffer(1, "عرض", "active")] });
 let mockState: any = makeMockState();
 
 vi.mock("@/components/providers/admin-auth", () => ({
@@ -40,24 +40,47 @@ vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector(mockState),
   getStore: () => ({
     softDeleteOffer: vi.fn(),
-    toggleOfferStatus
+    toggleOfferStatus,
+    reorderOffers: vi.fn()
   })
 }));
 
 import OffersListPage from "@/app/offers/page";
 
+// The filter panel (plain labelled selects) is the phone layout; force it so the tests can drive the filters.
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  }));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+const openPanel = () => {
+  fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
+};
+
 describe("OffersListPage", () => {
   beforeEach(() => {
-    cleanup();
     mockState = makeMockState();
   });
 
   it("keeps the toggle modal open and shows an error when status toggle fails", async () => {
     render(createElement(OffersListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
-    fireEvent.click(screen.getByTitle("إيقاف"));
-    fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات عرض" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "إيقاف" }));
+    fireEvent.click(await screen.findByRole("button", { name: "تأكيد" }));
 
     expect(toggleOfferStatus).toHaveBeenCalledWith(1);
     expect(await screen.findByText("تعذر تحديث حالة العرض. حاولي مرة أخرى.")).toBeInTheDocument();
@@ -66,6 +89,7 @@ describe("OffersListPage", () => {
 
   it("filters the list by offer status", () => {
     mockState = {
+      loaded: true,
       categories: [],
       offers: [makeOffer(1, "عرض نشط", "active"), makeOffer(2, "عرض متوقف", "inactive")]
     };
@@ -73,7 +97,8 @@ describe("OffersListPage", () => {
 
     expect(screen.getByText("2 عرض")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("حالة العرض"), { target: { value: "inactive" } });
+    openPanel();
+    fireEvent.change(screen.getByLabelText("الحالة"), { target: { value: "inactive" } });
 
     expect(screen.queryByText("عرض نشط")).not.toBeInTheDocument();
     expect(screen.getByText("عرض متوقف")).toBeInTheDocument();
@@ -83,12 +108,12 @@ describe("OffersListPage", () => {
 
 describe("OffersListPage category filter", () => {
   beforeEach(() => {
-    cleanup();
     mockState = makeMockState();
   });
 
   it("filters offers by descendant category", () => {
     mockState = {
+      loaded: true,
       categories: [
         { id: 7, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: false },
         { id: 8, parentId: 7, slug: "body-lotion", name: { ar: "لوشن الجسم", en: "Body Lotion" }, isLeaf: true },
@@ -102,7 +127,8 @@ describe("OffersListPage category filter", () => {
 
     render(createElement(OffersListPage));
 
-    fireEvent.change(screen.getByDisplayValue("كل الأقسام"), { target: { value: "7" } });
+    openPanel();
+    fireEvent.change(screen.getByTestId("offers-category-filter"), { target: { value: "7" } });
 
     expect(screen.getByText("عرض الجسم")).toBeInTheDocument();
     expect(screen.queryByText("عرض الشعر")).not.toBeInTheDocument();
@@ -110,6 +136,7 @@ describe("OffersListPage category filter", () => {
 
   it("shows the offer category name in the table", () => {
     mockState = {
+      loaded: true,
       categories: [
         { id: 7, parentId: null, slug: "body-care", name: { ar: "العناية بالجسم", en: "Body Care" }, isLeaf: true }
       ],
@@ -118,7 +145,6 @@ describe("OffersListPage category filter", () => {
 
     render(createElement(OffersListPage));
 
-    // The name also appears as a filter <option>, so assert on the row itself.
     const row = screen.getByTestId("offer-row-1");
     expect(within(row).getByText("العناية بالجسم")).toBeInTheDocument();
   });
@@ -126,22 +152,21 @@ describe("OffersListPage category filter", () => {
 
 describe("OffersListPage uncategorised offers", () => {
   beforeEach(() => {
-    cleanup();
     mockState = makeMockState();
   });
 
   it("does not offer activation for an offer that has no category", () => {
     mockState = {
+      loaded: true,
       categories: [],
       offers: [{ ...makeOffer(1, "عرض قديم", "inactive"), categoryId: null }]
     };
 
     render(createElement(OffersListPage));
 
-    fireEvent.click(screen.getByLabelText("إجراءات"));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات عرض قديم" }));
 
-    expect(screen.queryByTitle("تفعيل")).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "تفعيل" })).not.toBeInTheDocument();
     expect(screen.getByText("اختاري قسمًا للعرض قبل تفعيله")).toBeInTheDocument();
   });
 });
-

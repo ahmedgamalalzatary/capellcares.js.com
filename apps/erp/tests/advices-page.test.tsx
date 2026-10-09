@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toggleAdviceStatus = vi.fn().mockResolvedValue(undefined);
 const reorderAdvices = vi.fn().mockResolvedValue(undefined);
@@ -31,6 +31,7 @@ function makeAdvice(id: number, titleAr: string, status: "active" | "inactive", 
 }
 
 const makeMockState = () => ({
+  loaded: true,
   advices: [makeAdvice(1, "نصيحة", "active", 1), makeAdvice(2, "ثانية", "active", 2)]
 });
 
@@ -48,13 +49,32 @@ vi.mock("@/lib/store", () => ({
 
 import AdvicesPage from "@/app/advices/page";
 
+beforeEach(() => {
+  // The filter panel (plain labelled selects) is the phone layout; force it so the tests can drive the filters.
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  }));
+});
+
 describe("AdvicesPage", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     reorderAdvices.mockClear();
     toggleAdviceStatus.mockClear();
     mockState = makeMockState();
   });
+
+  const openPanel = () => {
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
+  };
 
   it("reorders advices and saves the full id order", async () => {
     render(createElement(AdvicesPage));
@@ -68,7 +88,7 @@ describe("AdvicesPage", () => {
   it("hides advice reorder controls while searching", () => {
     render(createElement(AdvicesPage));
 
-    fireEvent.change(screen.getByPlaceholderText("ابحثي عن نصيحة…"), { target: { value: "Advice" } });
+    fireEvent.change(screen.getByPlaceholderText("ابحثي باسم النصيحة…"), { target: { value: "Advice" } });
 
     expect(screen.queryByLabelText("تحريك لأسفل")).not.toBeInTheDocument();
   });
@@ -76,8 +96,8 @@ describe("AdvicesPage", () => {
   it("asks for confirmation before toggling advice status", async () => {
     render(createElement(AdvicesPage));
 
-    fireEvent.click(screen.getAllByLabelText("إجراءات")[0]!);
-    fireEvent.click(screen.getByTitle("إيقاف"));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات نصيحة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "إيقاف" }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
@@ -92,13 +112,15 @@ describe("AdvicesPage", () => {
 
   it("filters the list by advice status", () => {
     mockState = {
+      loaded: true,
       advices: [makeAdvice(1, "نصيحة", "active", 1), makeAdvice(2, "ثانية", "inactive", 2)]
     };
     render(createElement(AdvicesPage));
 
     expect(screen.getByText("2 نصيحة")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("حالة النصيحة"), { target: { value: "inactive" } });
+    openPanel();
+    fireEvent.change(screen.getByLabelText("الحالة"), { target: { value: "inactive" } });
 
     expect(screen.queryByText("نصيحة")).not.toBeInTheDocument();
     expect(screen.getByText("ثانية")).toBeInTheDocument();
@@ -108,7 +130,8 @@ describe("AdvicesPage", () => {
   it("hides advice reorder controls while a status filter hides part of the list", () => {
     render(createElement(AdvicesPage));
 
-    fireEvent.change(screen.getByLabelText("حالة النصيحة"), { target: { value: "active" } });
+    openPanel();
+    fireEvent.change(screen.getByLabelText("الحالة"), { target: { value: "active" } });
 
     expect(screen.queryByLabelText("تحريك لأسفل")).not.toBeInTheDocument();
   });

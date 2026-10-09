@@ -189,7 +189,7 @@ describe("EditProductPage data plumbing", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/تعذر تحميل العناصر المرتبطة/)).toBeInTheDocument();
+      expect(capturedProps?.relatedItemsAvailable).toBe(false);
     });
     expect(screen.getByTestId("product-form")).toBeInTheDocument();
     expect(capturedProps.initial.id).toBe(1);

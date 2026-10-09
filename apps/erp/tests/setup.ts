@@ -24,3 +24,24 @@ if (typeof window.matchMedia !== "function") {
 
 // jsdom implements neither; page code calls scrollTo on step changes.
 window.scrollTo = (() => {}) as unknown as typeof window.scrollTo;
+
+// Radix primitives (menus, popovers, switches) need these browser APIs that jsdom lacks.
+if (typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof window.ResizeObserver;
+}
+if (typeof Element.prototype.scrollIntoView !== "function") {
+  Element.prototype.scrollIntoView = () => {};
+}
+if (typeof Element.prototype.hasPointerCapture !== "function") {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (typeof Element.prototype.setPointerCapture !== "function") {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (typeof Element.prototype.releasePointerCapture !== "function") {
+  Element.prototype.releasePointerCapture = () => {};
+}

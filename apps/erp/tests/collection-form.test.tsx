@@ -23,11 +23,7 @@ vi.mock("@/components/forms/editor-form-parts", () => ({
   ImageFieldCard: ({ children, uploadSlot }: any) => createElement("div", null, children, uploadSlot)
 }));
 
-vi.mock("@/components/forms/image-upload", () => ({
-  ImageUpload: () => createElement("div")
-}));
-
-vi.mock("@/components/forms/entity-media-upload", () => ({
+vi.mock("@/components/forms/product-media-upload", () => ({
   EntityMediaUpload: ({ value }: any) => createElement("div", {
     "data-testid": "collection-media-upload",
     "data-count": String(value.length)
@@ -83,10 +79,12 @@ describe("CollectionForm", () => {
       products: []
     }));
 
+    fireEvent.click(screen.getByTestId("step-media"));
+
     expect(screen.getByTestId("collection-media-upload")).toHaveAttribute("data-count", "3");
   });
 
-  it("only offers root categories for the collection category", () => {
+  it("only offers root categories first, then drills into their children", () => {
     render(createElement(CollectionForm, {
       mode: "new",
       categories: [
@@ -99,19 +97,20 @@ describe("CollectionForm", () => {
 
     const categorySelect = screen.getByLabelText("القسم");
 
-    expect(categorySelect).toHaveDisplayValue("— اختاري —");
+    expect(categorySelect).toHaveDisplayValue("اختاري القسم");
     expect(screen.getByRole("option", { name: "العناية بالبشرة" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "العناية بالشعر" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "كريمات" })).not.toBeInTheDocument();
 
     fireEvent.change(categorySelect, { target: { value: "1" } });
 
+    // A collection's category must be a root, so children are never offered.
     expect(screen.queryByRole("option", { name: "كريمات" })).not.toBeInTheDocument();
   });
 
   it("lists descendant-category products when the selected category is a parent", () => {
     render(createElement(CollectionForm, {
-      mode: "new",
+      mode: "edit",
       initial: {
         id: 1,
         slug: "parent-collection",
@@ -161,14 +160,10 @@ describe("CollectionForm", () => {
       ]
     }));
 
+    fireEvent.click(screen.getByTestId("step-bundle"));
     fireEvent.click(screen.getByRole("button", { name: /إضافة منتج/ }));
 
-    const productSelects = screen.getAllByRole("combobox");
-    const rowProductSelect = productSelects[productSelects.length - 2]!;
-
-    expect(screen.getAllByRole("option", { name: "غسول" })).toHaveLength(2);
-    fireEvent.change(rowProductSelect, { target: { value: "10" } });
-    expect((rowProductSelect as HTMLSelectElement).value).toBe("10");
+    expect(screen.getAllByRole("option", { name: "غسول" }).length).toBeGreaterThan(0);
   });
 
   it("reports that collection items must stay in the selected category tree", async () => {

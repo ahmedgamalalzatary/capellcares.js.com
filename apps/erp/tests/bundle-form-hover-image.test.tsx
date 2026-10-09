@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -84,13 +84,15 @@ afterEach(() => {
 
 describe("bundle forms hover image", () => {
   it("renders the hover-image upload section on the offer form", () => {
-    render(createElement(OfferForm, { mode: "edit", categories, products: [product] } as any));
+    const view = render(createElement(OfferForm, { mode: "edit", categories, products: [product] } as any));
+    fireEvent.click(view.getByTestId("step-media"));
     expect(screen.getByTestId("offer-hover-image-ar-input")).toBeInTheDocument();
     expect(screen.getByTestId("offer-hover-image-en-input")).toBeInTheDocument();
   });
 
   it("renders the hover-image upload section on the collection form", () => {
-    render(createElement(CollectionForm, { mode: "edit", categories, products: [product] } as any));
+    const view = render(createElement(CollectionForm, { mode: "edit", categories, products: [product] } as any));
+    fireEvent.click(view.getByTestId("step-media"));
     expect(screen.getByTestId("collection-hover-image-ar-input")).toBeInTheDocument();
     expect(screen.getByTestId("collection-hover-image-en-input")).toBeInTheDocument();
   });

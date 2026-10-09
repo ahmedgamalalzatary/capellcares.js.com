@@ -29,6 +29,9 @@ vi.mock("@/components/shell/admin-shell", () => ({
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({ user: { role: "admin", name: "Admin", email: "admin@test", permissionKeys: [] } })
 }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() })
+}));
 vi.mock("@/lib/store", () => ({
   useStore: (selector: (value: typeof state) => unknown) => selector(state),
   getStore: () => ({ refetch })
@@ -40,13 +43,21 @@ import DiscountsPage from "@/app/discounts/page";
 afterEach(() => cleanup());
 beforeEach(() => { apiPost.mockClear(); refetch.mockClear(); state.error = null; state.offers[0].price = 80; });
 
+const exactly = (expected: string) => (_content: string, element: Element | null) => element?.textContent === expected;
+const next = () => fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+const fillDiscount = (value = "20") => {
+  fireEvent.change(screen.getByLabelText("قيمة الخصم"), { target: { value } });
+  fireEvent.change(screen.getByLabelText("بداية الخصم"), { target: { value: "2026-10-01T10:00" } });
+  fireEvent.change(screen.getByLabelText("نهاية الخصم"), { target: { value: "2026-11-01T10:00" } });
+};
+
 it("blocks a percentage discount for a zero-priced offer", () => {
   state.offers[0].price = 0;
   render(createElement(DiscountsPage));
   fireEvent.click(screen.getByLabelText("عرض: عرض العناية"));
-  fireEvent.change(screen.getByLabelText("قيمة الخصم"), { target: { value: "20" } });
-  fireEvent.change(screen.getByLabelText("بداية الخصم"), { target: { value: "2026-10-01T10:00" } });
-  fireEvent.change(screen.getByLabelText("نهاية الخصم"), { target: { value: "2026-11-01T10:00" } });
+  next();
+  fillDiscount();
+  next();
   expect(screen.getByRole("button", { name: "تطبيق الخصم" })).toBeDisabled();
 });
 
@@ -56,10 +67,10 @@ it("combines two categories with an individual offer and collection, then saves 
   fireEvent.click(screen.getByLabelText("قسم: الجسم"));
   fireEvent.click(screen.getByLabelText("عرض: عرض العناية"));
   fireEvent.click(screen.getByLabelText("مجموعة: مجموعة العناية"));
-  expect(screen.getByText("4 عناصر مستهدفة")).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText("قيمة الخصم"), { target: { value: "20" } });
-  fireEvent.change(screen.getByLabelText("بداية الخصم"), { target: { value: "2026-10-01T10:00" } });
-  fireEvent.change(screen.getByLabelText("نهاية الخصم"), { target: { value: "2026-11-01T10:00" } });
+  next();
+  fillDiscount();
+  next();
+  expect(screen.getAllByText(exactly("4 عنصر مستهدف")).length).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole("button", { name: "تطبيق الخصم" }));
   await waitFor(() => expect(apiPost).toHaveBeenCalledWith("/api/erp/discounts/bulk", expect.objectContaining({
     categoryIds: [2, 3], offerIds: [21], collectionIds: [31],
@@ -71,14 +82,20 @@ it("combines two categories with an individual offer and collection, then saves 
 it("can exclude one product variant after expanding a category", () => {
   render(createElement(DiscountsPage));
   fireEvent.click(screen.getByLabelText("قسم: العناية"));
+  next();
+  fillDiscount();
+  next();
   fireEvent.click(screen.getByLabelText("استبعاد كريم — 100ml"));
-  expect(screen.getByText("3 عناصر مستهدفة")).toBeInTheDocument();
+  expect(screen.getAllByText(exactly("3 عنصر مستهدف")).length).toBeGreaterThan(0);
 });
 
 it("removes discounts from a mixed selection after confirmation", async () => {
   render(createElement(DiscountsPage));
-  fireEvent.click(screen.getByLabelText("منتج: كريم (CREAM)"));
+  fireEvent.click(screen.getByLabelText("منتج: كريم"));
   fireEvent.click(screen.getByLabelText("عرض: عرض العناية"));
+  next();
+  fillDiscount();
+  next();
   fireEvent.click(screen.getByRole("button", { name: "إزالة الخصومات" }));
   fireEvent.click(screen.getByRole("button", { name: "تأكيد الإزالة" }));
   await waitFor(() => expect(apiPost).toHaveBeenCalledWith("/api/erp/discounts/bulk", expect.objectContaining({

@@ -40,6 +40,7 @@ describe("CategoryForm toast errors", () => {
 
     fireEvent.change(nameArInput, { target: { value: "العناية بالجسم" } });
     fireEvent.change(nameEnInput, { target: { value: "Body Care" } });
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
     fireEvent.click(screen.getByRole("button", { name: "إنشاء القسم" }));
 
     await waitFor(() => {

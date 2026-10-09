@@ -116,7 +116,7 @@ describe("OrderDetailsPage", () => {
     expect(returned.getByText("راجع للمخزن؛ بانتظار الفحص")).toBeInTheDocument();
     expect(returned.getByText("Returned to business")).toBeInTheDocument();
     expect(returned.getByText(/RETURN_READ_FAILED/)).toBeInTheDocument();
-    expect(returned.getByText("٤٦")).toBeInTheDocument();
+    expect(returned.getByText("46")).toBeInTheDocument();
     expect(returned.getByText("CUSTOMER_RETURN_PICKUP")).toBeInTheDocument();
     expect(returned.getByText((_, element) => element?.tagName === "TIME")).toHaveAttribute("datetime", "2025-10-09T08:53:20.456Z");
     const exchange = within(returns.getByRole("region", { name: "استبدال — EXCHANGE-13" }));
@@ -220,7 +220,7 @@ describe("OrderDetailsPage", () => {
     expect(region.getByText("في الطريق (بوسطة)")).toBeInTheDocument();
     expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
     expect(region.getByText("التحصيل مؤكد")).toBeInTheDocument();
-    expect(region.getByText(/٢٠٠/)).toBeInTheDocument();
+    expect(region.getByText(/200/)).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
   });
   it("shows staff and Bosta states separately while retaining independent payment, custody and collection evidence", async () => {
@@ -284,9 +284,9 @@ describe("OrderDetailsPage", () => {
     expect(screen.getByText("تجريبي")).toBeInTheDocument();
     expect(screen.getByText("بطاقة بنكية")).toBeInTheDocument();
     const summary = within(screen.getByRole("region", { name: "ملخص المبالغ" }));
-    expect(summary.getByText(/٥٠٫٢٥/)).toBeInTheDocument();
-    expect(summary.getByText(/١٤٩٫٧٥/)).toBeInTheDocument();
-    expect(summary.getByText(/٢٠٠/)).toBeInTheDocument();
+    expect(summary.getByText(/50\.25/)).toBeInTheDocument();
+    expect(summary.getByText(/149\.75/)).toBeInTheDocument();
+    expect(summary.getByText(/200/)).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "حالة الدفع عند الاستلام" })).not.toBeInTheDocument();
   });
 

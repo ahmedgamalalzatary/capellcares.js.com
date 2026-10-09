@@ -102,6 +102,9 @@ vi.mock("@/lib/store", () => ({
 
 import TrashPage from "@/app/trash/page";
 
+const openMenu = (label: string) => fireEvent.pointerDown(screen.getByRole("button", { name: label }));
+const openTab = (name: RegExp) => fireEvent.click(screen.getByRole("tab", { name }));
+
 describe("TrashPage hard delete", () => {
   beforeEach(() => {
     hardDeleteProduct.mockReset();
@@ -146,15 +149,17 @@ describe("TrashPage hard delete", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows the hard-delete button on the products tab", () => {
+  it("offers permanent delete on the products tab", async () => {
     render(createElement(TrashPage));
-    expect(screen.getByRole("button", { name: /حذف نهائي/ })).toBeInTheDocument();
+    openMenu("إجراءات منتج محذوف");
+    expect(await screen.findByRole("menuitem", { name: /حذف نهائي/ })).toBeInTheDocument();
   });
 
-  it("opens a confirmation modal and does nothing when cancelled", () => {
+  it("opens a confirmation modal and does nothing when cancelled", async () => {
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
+    openMenu("إجراءات منتج محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/تأكيد الحذف النهائي/)).toBeInTheDocument();
 
@@ -167,65 +172,67 @@ describe("TrashPage hard delete", () => {
     hardDeleteProduct.mockResolvedValue(undefined);
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
-    // confirm button inside the modal — second matching button
-    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openMenu("إجراءات منتج محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
     expect(hardDeleteProduct).toHaveBeenCalledWith(7);
   });
 
-  it("shows the hard-delete button on the categories tab when permission is present", () => {
+  it("offers permanent delete on the categories tab when permission is present", async () => {
     render(createElement(TrashPage));
-    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
-    expect(screen.getByText("حذف نهائي")).toBeInTheDocument();
+    openTab(/الأقسام/);
+    openMenu("إجراءات قسم محذوف");
+    expect(await screen.findByRole("menuitem", { name: /حذف نهائي/ })).toBeInTheDocument();
   });
 
-  it("calls hardDeleteCategory when the categories modal confirm button is clicked", () => {
+  it("calls hardDeleteCategory when the categories modal confirm button is clicked", async () => {
     hardDeleteCategory.mockResolvedValue(undefined);
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
-    fireEvent.click(screen.getByText("حذف نهائي"));
-    const confirmButtons = screen.getAllByText("حذف نهائي");
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openTab(/الأقسام/);
+    openMenu("إجراءات قسم محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
     expect(hardDeleteCategory).toHaveBeenCalledWith(3);
   });
 
-  it("shows the hard-delete button on the offers tab when permission is present", () => {
+  it("offers permanent delete on the offers tab when permission is present", async () => {
     render(createElement(TrashPage));
-    fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
-    expect(screen.getByText("حذف نهائي")).toBeInTheDocument();
+    openTab(/العروض/);
+    openMenu("إجراءات عرض محذوف");
+    expect(await screen.findByRole("menuitem", { name: /حذف نهائي/ })).toBeInTheDocument();
   });
 
-  it("calls hardDeleteOffer when the offers modal confirm button is clicked", () => {
+  it("calls hardDeleteOffer when the offers modal confirm button is clicked", async () => {
     hardDeleteOffer.mockResolvedValue(undefined);
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
-    fireEvent.click(screen.getByText("حذف نهائي"));
-    const confirmButtons = screen.getAllByText("حذف نهائي");
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openTab(/العروض/);
+    openMenu("إجراءات عرض محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
     expect(hardDeleteOffer).toHaveBeenCalledWith(5);
   });
 
-  it("restores collections from a dedicated trash tab", () => {
+  it("restores collections from a dedicated trash tab", async () => {
     restoreCollection.mockResolvedValue(undefined);
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
-    fireEvent.click(screen.getByRole("button", { name: /استعادة/ }));
+    openTab(/المجموعات/);
+    openMenu("إجراءات مجموعة محذوفة");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
 
     expect(restoreCollection).toHaveBeenCalledWith(9);
   });
 
-  it("permanently deletes collections from a dedicated trash tab", () => {
+  it("permanently deletes collections from a dedicated trash tab", async () => {
     hardDeleteCollection.mockResolvedValue(undefined);
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
-    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openTab(/المجموعات/);
+    openMenu("إجراءات مجموعة محذوفة");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
 
     expect(hardDeleteCollection).toHaveBeenCalledWith(9);
   });
@@ -238,10 +245,10 @@ describe("TrashPage hard delete", () => {
     }));
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /المجموعات/ }));
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
-    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openTab(/المجموعات/);
+    openMenu("إجراءات مجموعة محذوفة");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
 
     expect(await screen.findByText("لا يمكن الحذف النهائي لأن العنصر مرتبط بطلبات سابقة.")).toBeInTheDocument();
   });
@@ -255,10 +262,10 @@ describe("TrashPage hard delete", () => {
     }));
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
-    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openTab(/الأقسام/);
+    openMenu("إجراءات قسم محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
 
     expect(await screen.findByText(message)).toBeInTheDocument();
   });
@@ -278,10 +285,10 @@ describe("TrashPage hard delete", () => {
     expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /حذف نهائي/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /الأقسام/ }));
+    openTab(/الأقسام/);
     expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /العروض/ }));
+    openTab(/العروض/);
     expect(screen.queryByRole("button", { name: /استعادة/ })).not.toBeInTheDocument();
   });
 
@@ -305,20 +312,21 @@ describe("TrashPage hard delete", () => {
     render(createElement(TrashPage));
 
     expect(apiGet).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole("button", { name: /التقييمات/ }));
+    openTab(/التقييمات/);
     expect(await screen.findByText("غسول — Sara Ali")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /استعادة/ }));
+    openMenu("إجراءات غسول — Sara Ali");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
     expect(apiPost).toHaveBeenCalledWith("/api/erp/reviews/11/restore");
   });
 
   it("permanently deletes reviews from the dedicated trash tab", async () => {
     render(createElement(TrashPage));
 
-    fireEvent.click(await screen.findByRole("button", { name: /التقييمات/ }));
+    openTab(/التقييمات/);
     expect(await screen.findByText("غسول — Sara Ali")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
-    const confirmButtons = screen.getAllByRole("button", { name: /حذف نهائي/ });
-    fireEvent.click(confirmButtons[confirmButtons.length - 1]!);
+    openMenu("إجراءات غسول — Sara Ali");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "حذف نهائي" }));
     expect(apiDel).toHaveBeenCalledWith("/api/erp/reviews/11/permanent");
   });
 
@@ -335,7 +343,7 @@ describe("TrashPage hard delete", () => {
 
     render(createElement(TrashPage));
 
-    fireEvent.click(await screen.findByRole("button", { name: /التقييمات/ }));
+    openTab(/التقييمات/);
     expect(await screen.findByText("عرض قديم — Mona Said")).toBeInTheDocument();
     expect(apiGet).toHaveBeenNthCalledWith(2, "/api/erp/reviews?deleted=true&page=2&pageSize=100");
   });
@@ -345,7 +353,7 @@ describe("TrashPage hard delete", () => {
     apiGet.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectRequest = reject; }));
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /التقييمات/ }));
+    openTab(/التقييمات/);
     expect(screen.getByRole("status")).toBeInTheDocument();
     rejectRequest(new Error("trash failed"));
 
@@ -357,14 +365,16 @@ describe("TrashPage hard delete", () => {
     apiPost.mockRejectedValueOnce(new Error("restore failed"));
     render(createElement(TrashPage));
 
-    fireEvent.click(screen.getByRole("button", { name: /التقييمات/ }));
+    openTab(/التقييمات/);
     expect(await screen.findByText(/Sara Ali/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /استعادة/ }));
+    openMenu("إجراءات غسول — Sara Ali");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
 
     await waitFor(() => expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), expect.any(String)));
     expect(screen.getByText(/Sara Ali/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /حذف نهائي/ }));
+    openMenu("إجراءات غسول — Sara Ali");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف نهائي/ }));
     expect(screen.getByRole("dialog")).not.toHaveTextContent("تعذر استعادة التقييم");
   });
 });
