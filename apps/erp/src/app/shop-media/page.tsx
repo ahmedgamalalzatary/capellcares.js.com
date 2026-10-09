@@ -2,11 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
-import { ImageUpload } from "@/components/forms/image-upload";
-import { Icon } from "@/components/ui/icons";
+import { SingleImageField } from "@/components/forms/single-image-field";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input, Select } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Thumb } from "@/components/ui/thumb";
 import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { API_BASE } from "@/lib/api/client";
@@ -14,6 +22,7 @@ import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
+import { cn } from "@/lib/utils";
 import type { Announcement, ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
 
 type EditableItem = {
@@ -90,6 +99,21 @@ function resolvePreviewSrc(value: string) {
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith("/uploads/")) return `${API_BASE}${value}`;
   return value;
+}
+
+function FoldButton({ collapsed, onClick, label }: { collapsed: boolean; onClick: () => void; label: string }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      aria-expanded={!collapsed}
+      title={label}
+      onClick={onClick}
+    >
+      <ChevronDown className={cn("transition-transform duration-200", collapsed && "rotate-180")} />
+    </Button>
+  );
 }
 
 export default function ShopMediaPage() {
@@ -171,24 +195,19 @@ export default function ShopMediaPage() {
 
   const saveSection = async (section: EditableSection) => {
     if (section.items.some((item) => (
-      !item.arImagePath
-      && !item.arMobileImagePath
-      && !item.enImagePath
-      && !item.enMobileImagePath
+      !item.arImagePath && !item.arMobileImagePath && !item.enImagePath && !item.enMobileImagePath
     ) || (isDetailTargetType(item.targetType) && item.targetId === null))) {
       const validationError = new Error("أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
       setError(validationError.message);
       showErrorToast(validationError, validationError.message);
       return;
     }
-
     if (section.items.some(hasMissingTarget)) {
       const missingTargetError = new Error("العنصر المرتبط بإحدى الصور محذوف. اختاري عنصرًا جديدًا قبل الحفظ.");
       setError(missingTargetError.message);
       showErrorToast(missingTargetError, missingTargetError.message);
       return;
     }
-
     try {
       setSavingSlot(section.slot);
       setError(null);
@@ -246,12 +265,7 @@ export default function ShopMediaPage() {
 
   const addAnnouncement = () => markAnnouncementsDirty((current) => [
     ...current,
-    {
-      id: crypto.randomUUID(),
-      arText: "",
-      enText: "",
-      status: "active"
-    }
+    { id: crypto.randomUUID(), arText: "", enText: "", status: "active" }
   ]);
 
   const saveAnnouncements = async () => {
@@ -261,7 +275,6 @@ export default function ShopMediaPage() {
       showErrorToast(validationError, validationError.message);
       return;
     }
-
     try {
       setSavingAnnouncements(true);
       setError(null);
@@ -299,484 +312,316 @@ export default function ShopMediaPage() {
   });
 
   return (
-    <AdminShell title="وسائط المتجر" crumbs={[{ label: "وسائط المتجر" }]}>
-      <div className="shop-media-sections">
-      <div className="card shop-media-tabs-card">
-        <div className="card__head trash-tabs__head">
-          <div className="trash-tabs" role="tablist" aria-label="وسائط المتجر">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "images"}
-              className="trash-tab"
-              data-active={tab === "images"}
-              onClick={() => setTab("images")}
-            >
-              أقسام الصور
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "announcements"}
-              className="trash-tab"
-              data-active={tab === "announcements"}
-              onClick={() => setTab("announcements")}
-            >
-              شريط الإعلانات
-            </button>
-          </div>
+    <AdminShell
+      title="وسائط المتجر"
+      crumbs={[{ label: "وسائط المتجر" }]}
+      description="أقسام الصور وشريط الإعلانات في واجهة المتجر."
+    >
+      <div className="grid gap-5">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="وسائط المتجر">
+          <Button variant={tab === "images" ? "primary" : "secondary"} size="sm" role="tab" aria-selected={tab === "images"} onClick={() => setTab("images")}>
+            أقسام الصور
+          </Button>
+          <Button variant={tab === "announcements" ? "primary" : "secondary"} size="sm" role="tab" aria-selected={tab === "announcements"} onClick={() => setTab("announcements")}>
+            شريط الإعلانات
+          </Button>
         </div>
-      </div>
+
         {tab === "announcements" ? (() => {
           const isAnnouncementsCollapsed = collapsedItems.has("announcements");
           return (
-        <div className="card">
-          <div className="shop-media-head">
-            <div className="shop-media-head__main-flex">
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => toggleCollapsedItem("announcements")}
-                aria-label={isAnnouncementsCollapsed ? "توسيع القسم" : "طي القسم"}
-                aria-expanded={!isAnnouncementsCollapsed}
-              >
-                <Icon.Chevron size={14} className={isAnnouncementsCollapsed ? "rotate-180" : undefined} />
-              </button>
-              <div className="shop-media-head__main">
-                <h3 className="card__title">شريط الإعلانات</h3>
-                <span className="shop-media-head__sub">يظهر أعلى المتجر ويتبدل بين الرسائل النشطة</span>
-              </div>
-            </div>
-            <div className="shop-media-head__tools">
-              <span className="tag">{announcementItems.length} رسالة</span>
-              {announcementsDirty ? <span className="shop-media-dirty">تغييرات غير محفوظة</span> : null}
-              {canEdit ? (
-                <>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      aria-label="تفعيل شريط الإعلانات"
-                      checked={barStatus === "active"}
-                      onChange={(event) => setBarStatusDirty(event.target.checked ? "active" : "inactive")}
-                    />
-                    <span className="switch__track" />
-                    <span className="switch__text"><span className="switch__title">{barStatus === "active" ? "الشريط ظاهر" : "الشريط مخفي"}</span></span>
-                  </label>
-                  <button type="button" className="btn btn--primary" disabled={savingAnnouncements || !announcementsDirty} onClick={() => void saveAnnouncements()}>
-                    حفظ الإعلانات
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-          {isAnnouncementsCollapsed ? null : (
-          <div className="card__body form-stack">
-            {announcementItems.length === 0 ? (
-              <div className="shop-media-empty">لا توجد رسائل إعلانية بعد.</div>
-            ) : (
-              <div className="shop-media-list">
-                {announcementItems.map((item, index) => {
-                  const itemKey = `announcement:${item.id}`;
-                  const isItemCollapsed = collapsedItems.has(itemKey);
-                  const summary = item.arText.trim() || item.enText.trim() || "بدون نص";
-                  return (
-                  <div key={item.id} className="shop-media-item">
-                    <div className="shop-media-item__bar">
-                      <div className="shop-media-item__bar-start">
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => toggleCollapsedItem(itemKey)}
-                          aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
-                          aria-expanded={!isItemCollapsed}
-                        >
-                          <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
-                        </button>
-                        <span className="shop-media-tile__index">{index + 1}</span>
-                        {isItemCollapsed ? (
-                          <span className="faint shop-media-item__summary">{summary}</span>
-                        ) : null}
-                      </div>
-                      {canEdit ? (
-                        <div className="shop-media-item__bar-end">
-                          <label className="switch">
-                            <input
-                              type="checkbox"
-                              aria-label="تفعيل الإعلان"
-                              checked={item.status === "active"}
-                              onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: event.target.checked ? "active" : "inactive" } : entry))}
-                            />
-                            <span className="switch__track" />
-                            <span className="switch__text"><span className="switch__title">{item.status === "active" ? "نشط" : "غير نشط"}</span></span>
-                          </label>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            aria-label="تحريك الإعلان لأعلى"
-                            disabled={index === 0}
-                            onClick={() => markAnnouncementsDirty((current) => {
-                              if (index === 0) return current;
-                              const next = [...current];
-                              const [moved] = next.splice(index, 1);
-                              next.splice(index - 1, 0, moved!);
-                              return next;
-                            })}
-                          >
-                            <Icon.Chevron size={14} className="rotate-180" />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            aria-label="تحريك الإعلان لأسفل"
-                            disabled={index === announcementItems.length - 1}
-                            onClick={() => markAnnouncementsDirty((current) => {
-                              if (index >= current.length - 1) return current;
-                              const next = [...current];
-                              const [moved] = next.splice(index, 1);
-                              next.splice(index + 1, 0, moved!);
-                              return next;
-                            })}
-                          >
-                            <Icon.Chevron size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => markAnnouncementsDirty((current) => current.filter((entry) => entry.id !== item.id))}
-                          >
-                            إزالة
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                    {isItemCollapsed ? null : (
-                    <div className="shop-media-item__body">
-                      <div className="field">
-                        <label htmlFor={`announcement-ar-${item.id}`}>النص العربي</label>
-                        <input
-                          id={`announcement-ar-${item.id}`}
-                          className="input"
-                          value={item.arText}
-                          disabled={!canEdit}
-                          onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, arText: event.target.value } : entry))}
-                        />
-                      </div>
-                      <div className="field">
-                        <label htmlFor={`announcement-en-${item.id}`}>English text</label>
-                        <input
-                          id={`announcement-en-${item.id}`}
-                          className="input"
-                          value={item.enText}
-                          disabled={!canEdit}
-                          onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, enText: event.target.value } : entry))}
-                        />
-                      </div>
-                    </div>
-                    )}
+            <Card>
+              <header className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FoldButton collapsed={isAnnouncementsCollapsed} onClick={() => toggleCollapsedItem("announcements")} label={isAnnouncementsCollapsed ? "توسيع القسم" : "طي القسم"} />
+                  <div className="min-w-0">
+                    <h2 className="text-md font-bold">شريط الإعلانات</h2>
+                    <p className="text-sm text-text-muted">يظهر أعلى المتجر ويتبدّل بين الرسائل النشطة.</p>
                   </div>
-                  );
-                })}
-              </div>
-            )}
-            {canEdit ? (
-              <button type="button" className="shop-media-add" onClick={addAnnouncement}>
-                <Icon.Plus /> إضافة إعلان
-              </button>
-            ) : null}
-          </div>
-          )}
-        </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge tone="neutral" swatch={false}>{announcementItems.length} رسالة</Badge>
+                  {announcementsDirty ? <span className="text-xs font-medium text-warning">تغييرات غير محفوظة</span> : null}
+                  {canEdit ? (
+                    <>
+                      <label className="flex items-center gap-2 text-sm text-text-2">
+                        <Switch checked={barStatus === "active"} onCheckedChange={(checked) => setBarStatusDirty(checked ? "active" : "inactive")} aria-label="تفعيل شريط الإعلانات" />
+                        {barStatus === "active" ? "الشريط ظاهر" : "الشريط مخفي"}
+                      </label>
+                      <Button variant="primary" size="sm" disabled={savingAnnouncements || !announcementsDirty} onClick={() => { void saveAnnouncements(); }}>
+                        {savingAnnouncements ? "جارٍ الحفظ…" : "حفظ الإعلانات"}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </header>
+
+              {isAnnouncementsCollapsed ? null : (
+                <CardBody className="grid gap-3">
+                  {announcementItems.length === 0 ? (
+                    <div className="rounded-well border border-dashed border-line-strong bg-sunken px-6 py-8 text-center text-sm text-text-muted">
+                      لا توجد رسائل إعلانية بعد.
+                    </div>
+                  ) : (
+                    <ol className="grid gap-3">
+                      {announcementItems.map((item, index) => {
+                        const itemKey = `announcement:${item.id}`;
+                        const isItemCollapsed = collapsedItems.has(itemKey);
+                        const summary = item.arText.trim() || item.enText.trim() || "بدون نص";
+                        return (
+                          <li key={item.id} className="grid gap-3 rounded-well bg-sunken p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <FoldButton collapsed={isItemCollapsed} onClick={() => toggleCollapsedItem(itemKey)} label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"} />
+                                <span className="num grid size-7 shrink-0 place-items-center rounded-full bg-surface text-sm font-medium text-text-2 shadow-inset">{index + 1}</span>
+                                {isItemCollapsed ? <span className="truncate text-sm text-text-muted">{summary}</span> : null}
+                              </div>
+                              {canEdit ? (
+                                <div className="flex items-center gap-2">
+                                  <label className="flex items-center gap-2 text-sm text-text-2">
+                                    <Switch
+                                      checked={item.status === "active"}
+                                      onCheckedChange={(checked) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: checked ? "active" : "inactive" } : entry))}
+                                      aria-label="تفعيل الإعلان"
+                                    />
+                                    {item.status === "active" ? "نشط" : "غير نشط"}
+                                  </label>
+                                  <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => markAnnouncementsDirty((current) => {
+                                    if (index === 0) return current;
+                                    const next = [...current];
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index - 1, 0, moved!);
+                                    return next;
+                                  })}>
+                                    <ArrowUp />
+                                  </Button>
+                                  <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === announcementItems.length - 1} onClick={() => markAnnouncementsDirty((current) => {
+                                    if (index >= current.length - 1) return current;
+                                    const next = [...current];
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index + 1, 0, moved!);
+                                    return next;
+                                  })}>
+                                    <ArrowDown />
+                                  </Button>
+                                  <Button variant="danger-ghost" size="icon-sm" aria-label="إزالة الإعلان" onClick={() => markAnnouncementsDirty((current) => current.filter((entry) => entry.id !== item.id))}>
+                                    <Trash2 />
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </div>
+                            {isItemCollapsed ? null : (
+                              <div className="grid gap-3 @lg:grid-cols-2">
+                                <Field label="النص العربي" htmlFor={`announcement-ar-${item.id}`}>
+                                  <Input id={`announcement-ar-${item.id}`} value={item.arText} disabled={!canEdit} onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, arText: event.target.value } : entry))} />
+                                </Field>
+                                <Field label="النص بالإنجليزية" htmlFor={`announcement-en-${item.id}`}>
+                                  <Input id={`announcement-en-${item.id}`} dir="ltr" value={item.enText} disabled={!canEdit} onChange={(event) => markAnnouncementsDirty((current) => current.map((entry) => entry.id === item.id ? { ...entry, enText: event.target.value } : entry))} />
+                                </Field>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                  {canEdit ? (
+                    <Button variant="secondary" size="sm" className="justify-self-start" onClick={addAnnouncement}>
+                      <Plus /> إضافة إعلان
+                    </Button>
+                  ) : null}
+                </CardBody>
+              )}
+            </Card>
           );
         })() : null}
+
         {tab === "images" ? sections.map((section) => {
           const isActive = section.status === "active";
           const isDirty = dirtySlots.has(section.slot);
           const isSaving = savingSlot === section.slot;
           const isCollapsed = collapsedSlots.has(section.slot);
           const previewItems = section.items
-            .map((item) => resolvePreviewSrc(
-              item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath
-            ))
+            .map((item) => resolvePreviewSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath))
             .filter((src): src is string => Boolean(src));
 
           return (
-            <div key={section.slot} className="card">
-              <div className="shop-media-head">
-                <div className="shop-media-head__main-flex">
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => toggleCollapsed(section.slot)}
-                    aria-label={isCollapsed ? "توسيع القسم" : "طي القسم"}
-                    aria-expanded={!isCollapsed}
-                  >
-                    <Icon.Chevron size={14} className={isCollapsed ? "rotate-180" : undefined} />
-                  </button>
-                  <div className="shop-media-head__main">
-                    <h3 className="card__title">القسم {section.slot}</h3>
-                    <span className="shop-media-head__sub">{slotPositionLabel[section.slot]}</span>
+            <Card key={section.slot}>
+              <header className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FoldButton collapsed={isCollapsed} onClick={() => toggleCollapsed(section.slot)} label={isCollapsed ? "توسيع القسم" : "طي القسم"} />
+                  <div className="min-w-0">
+                    <h2 className="text-md font-bold">القسم {section.slot}</h2>
+                    <p className="text-sm text-text-muted">{slotPositionLabel[section.slot]}</p>
                   </div>
                 </div>
-                <div className="shop-media-head__tools">
-                  <span className="tag">{section.items.length} صورة</span>
-                  {canEdit ? (
-                    <label className="switch">
-                      <input
-                        type="checkbox"
-                        aria-label="تفعيل القسم"
-                        checked={isActive}
-                        onChange={() => setSection(section.slot, (current) => ({
-                          ...current,
-                          status: current.status === "active" ? "inactive" : "active"
-                        }))}
-                      />
-                      <span className="switch__track" />
-                      <span className="switch__text">
-                        <span className="switch__title">{isActive ? "نشط" : "غير نشط"}</span>
-                      </span>
-                    </label>
-                  ) : (
-                    <span className={`status ${isActive ? "status--active" : "status--inactive"}`}>
-                      {isActive ? "نشط" : "غير نشط"}
-                    </span>
-                  )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge tone="neutral" swatch={false}>{section.items.length} صورة</Badge>
                   {canEdit ? (
                     <>
-                      {isDirty ? <span className="shop-media-dirty">تغييرات غير محفوظة</span> : null}
-                      <button
-                        type="button"
-                        className="btn btn--primary"
-                        disabled={!isDirty || isSaving}
-                        onClick={() => { void saveSection(section); }}
-                      >
+                      <label className="flex items-center gap-2 text-sm text-text-2">
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={() => setSection(section.slot, (current) => ({ ...current, status: current.status === "active" ? "inactive" : "active" }))}
+                          aria-label="تفعيل القسم"
+                        />
+                        {isActive ? "نشط" : "غير نشط"}
+                      </label>
+                      {isDirty ? <span className="text-xs font-medium text-warning">تغييرات غير محفوظة</span> : null}
+                      <Button variant="primary" size="sm" disabled={!isDirty || isSaving} onClick={() => { void saveSection(section); }}>
                         {isSaving ? "جارٍ الحفظ…" : "حفظ القسم"}
-                      </button>
+                      </Button>
                     </>
-                  ) : null}
+                  ) : (
+                    <Badge tone={isActive ? "success" : "neutral"}>{isActive ? "نشط" : "غير نشط"}</Badge>
+                  )}
                 </div>
-              </div>
+              </header>
 
               {previewItems.length > 0 ? (
-                <div className="shop-media-preview-strip" aria-hidden="true">
+                <div className="flex flex-wrap gap-2 px-5 pb-3 sm:px-6" aria-hidden="true">
                   {previewItems.map((src, index) => (
-                    <img key={index} src={src} alt="" className="shop-media-preview-strip__thumb" />
+                    <Thumb key={index} src={src} size="md" className="rounded-thumb" />
                   ))}
                 </div>
               ) : null}
 
-              <div className="card__body form-stack" hidden={isCollapsed}>
-                {section.items.length === 0 ? (
-                  <div className="shop-media-empty">
-                    <div className="shop-media-empty__icon"><Icon.Plus /></div>
-                    <div>لا توجد صور في هذا القسم بعد.</div>
-                    {canEdit ? (
-                      <button type="button" className="btn btn--soft btn--sm" onClick={() => addItem(section.slot)}>
-                        <Icon.Plus /> أضيفي أول صورة
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <>
-                    <div className="shop-media-list">
-                      {section.items.map((item, index) => {
-                        const detailOptions = isDetailTargetType(item.targetType)
-                          ? targetOptionsByType[item.targetType]
-                          : [];
-                        const isDetail = isDetailTargetType(item.targetType);
-                        const itemKey = `${section.slot}:${item.id}`;
-                        const isItemCollapsed = collapsedItems.has(itemKey);
-                        const typeLabel = [...listingTargetOptions, ...detailTargetOptions]
-                          .find((option) => option.value === item.targetType)?.label ?? item.targetType;
-                        const targetMissing = hasMissingTarget(item);
-                        const targetSummary = isDetail
-                          ? (detailOptions.find((option) => option.id === item.targetId)?.label
-                            ?? (targetMissing ? "العنصر محذوف — الصفحة الرئيسية" : "بدون عنصر"))
-                          : typeLabel;
-                        const thumbSrc = resolvePreviewSrc(
-                          item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath
-                        );
+              {isCollapsed ? null : (
+                <CardBody className="grid gap-3">
+                  {section.items.length === 0 ? (
+                    <div className="grid justify-items-center gap-3 rounded-well border border-dashed border-line-strong bg-sunken px-6 py-8 text-center">
+                      <p className="text-sm text-text-muted">لا توجد صور في هذا القسم بعد.</p>
+                      {canEdit ? (
+                        <Button variant="secondary" size="sm" onClick={() => addItem(section.slot)}>
+                          <Plus /> أضيفي أول صورة
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <>
+                      <ol className="grid gap-3">
+                        {section.items.map((item, index) => {
+                          const detailOptions = isDetailTargetType(item.targetType) ? targetOptionsByType[item.targetType] : [];
+                          const isDetail = isDetailTargetType(item.targetType);
+                          const itemKey = `${section.slot}:${item.id}`;
+                          const isItemCollapsed = collapsedItems.has(itemKey);
+                          const typeLabel = [...listingTargetOptions, ...detailTargetOptions].find((option) => option.value === item.targetType)?.label ?? item.targetType;
+                          const targetMissing = hasMissingTarget(item);
+                          const targetSummary = isDetail
+                            ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? (targetMissing ? "العنصر محذوف — الصفحة الرئيسية" : "بدون عنصر"))
+                            : typeLabel;
+                          const thumbSrc = resolvePreviewSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath);
 
-                        return (
-                          <div key={item.id} className="shop-media-item">
-                            <div className="shop-media-item__bar">
-                              <div className="shop-media-item__bar-start">
-                                <button
-                                  type="button"
-                                  className="btn btn--ghost btn--sm"
-                                  onClick={() => toggleCollapsedItem(itemKey)}
-                                  aria-label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"}
-                                  aria-expanded={!isItemCollapsed}
-                                >
-                                  <Icon.Chevron size={14} className={isItemCollapsed ? "rotate-180" : undefined} />
-                                </button>
-                                <span className="shop-media-tile__index">{index + 1}</span>
-                                {thumbSrc ? (
-                                  <img src={thumbSrc} alt="" className="shop-media-item__thumb" />
-                                ) : null}
-                                {isItemCollapsed ? (
-                                  <span className="faint shop-media-item__summary">{typeLabel} · {targetSummary}</span>
+                          return (
+                            <li key={item.id} className="grid gap-3 rounded-well bg-sunken p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <FoldButton collapsed={isItemCollapsed} onClick={() => toggleCollapsedItem(itemKey)} label={isItemCollapsed ? "توسيع العنصر" : "طي العنصر"} />
+                                  <span className="num grid size-7 shrink-0 place-items-center rounded-full bg-surface text-sm font-medium text-text-2 shadow-inset">{index + 1}</span>
+                                  {thumbSrc ? <Thumb src={thumbSrc} size="sm" /> : null}
+                                  {isItemCollapsed ? <span className="truncate text-sm text-text-muted">{typeLabel} · {targetSummary}</span> : null}
+                                </div>
+                                {canEdit ? (
+                                  <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => moveItem(section.slot, item.id, -1)}>
+                                      <ArrowUp />
+                                    </Button>
+                                    <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === section.items.length - 1} onClick={() => moveItem(section.slot, item.id, 1)}>
+                                      <ArrowDown />
+                                    </Button>
+                                    <Button
+                                      variant="danger-ghost"
+                                      size="icon-sm"
+                                      aria-label="إزالة الصورة"
+                                      onClick={() => setSection(section.slot, (current) => ({ ...current, items: current.items.filter((entry) => entry.id !== item.id) }))}
+                                    >
+                                      <Trash2 />
+                                    </Button>
+                                  </div>
                                 ) : null}
                               </div>
-                              {canEdit ? (
-                                <div className="shop-media-item__bar-end">
-                                  <button
-                                    type="button"
-                                    className="btn btn--ghost btn--sm"
-                                    onClick={() => moveItem(section.slot, item.id, -1)}
-                                    aria-label="تحريك لأعلى"
-                                    disabled={index === 0}
-                                  >
-                                    <Icon.Chevron size={14} className="rotate-180" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn--ghost btn--sm"
-                                    onClick={() => moveItem(section.slot, item.id, 1)}
-                                    aria-label="تحريك لأسفل"
-                                    disabled={index === section.items.length - 1}
-                                  >
-                                    <Icon.Chevron size={14} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn--ghost btn--sm"
-                                    onClick={() => setSection(section.slot, (current) => ({
-                                      ...current,
-                                      items: current.items.filter((entry) => entry.id !== item.id)
-                                    }))}
-                                  >
-                                    <Icon.Trash size={14} /> إزالة
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
 
-                            {isItemCollapsed ? null : (
-                              <div className="shop-media-item__body">
-                                <div className="shop-media-item__images">
-                                  <ImageUpload
-                                    label="صورة سطح المكتب — العربية"
-                                    value={item.arImagePath || null}
-                                    onChange={(value) => setSection(section.slot, (current) => ({
-                                      ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, arImagePath: value ?? "" } : entry)
-                                    }))}
-                                    uploadContext="shop_media.update"
-                                  />
-                                  <ImageUpload
-                                    label="صورة الموبايل — العربية"
-                                    value={item.arMobileImagePath || null}
-                                    onChange={(value) => setSection(section.slot, (current) => ({
-                                      ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, arMobileImagePath: value ?? "" } : entry)
-                                    }))}
-                                    uploadContext="shop_media.update"
-                                  />
-                                  <ImageUpload
-                                    label="صورة سطح المكتب — الإنجليزية"
-                                    value={item.enImagePath || null}
-                                    onChange={(value) => setSection(section.slot, (current) => ({
-                                      ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, enImagePath: value ?? "" } : entry)
-                                    }))}
-                                    uploadContext="shop_media.update"
-                                  />
-                                  <ImageUpload
-                                    label="صورة الموبايل — الإنجليزية"
-                                    value={item.enMobileImagePath || null}
-                                    onChange={(value) => setSection(section.slot, (current) => ({
-                                      ...current,
-                                      items: current.items.map((entry) => entry.id === item.id ? { ...entry, enMobileImagePath: value ?? "" } : entry)
-                                    }))}
-                                    uploadContext="shop_media.update"
-                                  />
-                                </div>
-
-                                <div className="editor-fields-2">
-                                  <div className="field">
-                                    <label htmlFor={`target-type-${section.slot}-${item.id}`}>نوع الوجهة</label>
-                                    <select
-                                      id={`target-type-${section.slot}-${item.id}`}
-                                      className="select"
-                                      value={item.targetType}
-                                      onChange={(event) => {
-                                        const nextType = event.target.value as ShopMediaTargetType;
-                                        setSection(section.slot, (current) => ({
-                                          ...current,
-                                          items: current.items.map((entry) => entry.id === item.id ? {
-                                            ...entry,
-                                            targetType: nextType,
-                                            targetId: isDetailTargetType(nextType) ? entry.targetId : null
-                                          } : entry)
-                                        }));
-                                      }}
-                                      disabled={!canEdit}
-                                    >
-                                      {listingTargetOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                      ))}
-                                      {detailTargetOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                      ))}
-                                    </select>
+                              {isItemCollapsed ? null : (
+                                <div className="grid gap-4">
+                                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                    <SingleImageField label="سطح المكتب — العربية" value={item.arImagePath || null} uploadContext="shop_media.update" disabled={!canEdit} onChange={(value) => setSection(section.slot, (current) => ({ ...current, items: current.items.map((entry) => entry.id === item.id ? { ...entry, arImagePath: value ?? "" } : entry) }))} />
+                                    <SingleImageField label="الموبايل — العربية" value={item.arMobileImagePath || null} uploadContext="shop_media.update" disabled={!canEdit} onChange={(value) => setSection(section.slot, (current) => ({ ...current, items: current.items.map((entry) => entry.id === item.id ? { ...entry, arMobileImagePath: value ?? "" } : entry) }))} />
+                                    <SingleImageField label="سطح المكتب — الإنجليزية" value={item.enImagePath || null} uploadContext="shop_media.update" disabled={!canEdit} onChange={(value) => setSection(section.slot, (current) => ({ ...current, items: current.items.map((entry) => entry.id === item.id ? { ...entry, enImagePath: value ?? "" } : entry) }))} />
+                                    <SingleImageField label="الموبايل — الإنجليزية" value={item.enMobileImagePath || null} uploadContext="shop_media.update" disabled={!canEdit} onChange={(value) => setSection(section.slot, (current) => ({ ...current, items: current.items.map((entry) => entry.id === item.id ? { ...entry, enMobileImagePath: value ?? "" } : entry) }))} />
                                   </div>
 
-                                  {isDetail ? (
-                                    <div className="field">
-                                      <label htmlFor={`target-id-${section.slot}-${item.id}`}>العنصر</label>
-                                      <select
-                                        id={`target-id-${section.slot}-${item.id}`}
-                                        className="select"
-                                        value={item.targetId ?? ""}
-                                        onChange={(event) => setSection(section.slot, (current) => ({
-                                          ...current,
-                                          items: current.items.map((entry) => entry.id === item.id ? {
-                                            ...entry,
-                                            targetId: event.target.value ? Number(event.target.value) : null
-                                          } : entry)
-                                        }))}
+                                  <div className="grid gap-3 @lg:grid-cols-2">
+                                    <Field label="نوع الوجهة" htmlFor={`target-type-${section.slot}-${item.id}`}>
+                                      <Select
+                                        id={`target-type-${section.slot}-${item.id}`}
+                                        value={item.targetType}
                                         disabled={!canEdit}
+                                        onChange={(event) => {
+                                          const nextType = event.target.value as ShopMediaTargetType;
+                                          setSection(section.slot, (current) => ({
+                                            ...current,
+                                            items: current.items.map((entry) => entry.id === item.id ? {
+                                              ...entry,
+                                              targetType: nextType,
+                                              targetId: isDetailTargetType(nextType) ? entry.targetId : null
+                                            } : entry)
+                                          }));
+                                        }}
                                       >
-                                        <option value="">اختاري عنصرًا</option>
-                                        {detailOptions.map((option) => (
-                                          <option key={option.id} value={option.id}>
-                                            {`${"— ".repeat(option.depth)}${option.label}`}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {targetMissing ? (
-                                        <p className="shop-media-item__missing-target">
-                                          العنصر المرتبط محذوف — تفتح هذه الصورة الصفحة الرئيسية حتى تختاري عنصرًا جديدًا.
-                                        </p>
-                                      ) : null}
-                                    </div>
-                                  ) : (
-                                    <div className="field">
-                                      <label>الرابط</label>
-                                      <div className="shop-media-item__no-target">صفحة قائمة — بدون عنصر محدد</div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                                        {listingTargetOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        {detailTargetOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                      </Select>
+                                    </Field>
 
-                    {canEdit ? (
-                      <button type="button" className="shop-media-add" onClick={() => addItem(section.slot)}>
-                        <Icon.Plus /> إضافة صورة
-                      </button>
-                    ) : null}
-                  </>
-                )}
-              </div>
-            </div>
+                                    {isDetail ? (
+                                      <Field label="العنصر" htmlFor={`target-id-${section.slot}-${item.id}`}>
+                                        <Select
+                                          id={`target-id-${section.slot}-${item.id}`}
+                                          value={item.targetId ?? ""}
+                                          disabled={!canEdit}
+                                          onChange={(event) => setSection(section.slot, (current) => ({
+                                            ...current,
+                                            items: current.items.map((entry) => entry.id === item.id ? { ...entry, targetId: event.target.value ? Number(event.target.value) : null } : entry)
+                                          }))}
+                                        >
+                                          <option value="">اختاري عنصرًا</option>
+                                          {detailOptions.map((option) => (
+                                            <option key={option.id} value={option.id}>{`${"— ".repeat(option.depth)}${option.label}`}</option>
+                                          ))}
+                                        </Select>
+                                      </Field>
+                                    ) : (
+                                      <Field label="الرابط">
+                                        <div className="flex h-10 items-center rounded-control bg-surface px-3 text-sm text-text-muted shadow-[inset_0_0_0_1px_var(--line)] pointer-coarse:h-11">
+                                          صفحة قائمة — بدون عنصر محدد
+                                        </div>
+                                      </Field>
+                                    )}
+                                  </div>
+                                  {targetMissing ? (
+                                    <p className="text-sm text-warning">العنصر المرتبط محذوف — تفتح هذه الصورة الصفحة الرئيسية حتى تختاري عنصرًا جديدًا.</p>
+                                  ) : null}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+
+                      {canEdit ? (
+                        <Button variant="secondary" size="sm" className="justify-self-start" onClick={() => addItem(section.slot)}>
+                          <Plus /> إضافة صورة
+                        </Button>
+                      ) : null}
+                    </>
+                  )}
+                </CardBody>
+              )}
+            </Card>
           );
         }) : null}
 
-        {error ? <p className="form-error-note">{error}</p> : null}
+        {error ? <Alert tone="danger">{error}</Alert> : null}
       </div>
     </AdminShell>
   );

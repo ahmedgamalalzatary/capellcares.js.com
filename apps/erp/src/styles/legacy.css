@@ -744,9 +744,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   cursor: default;
 }
 
-/* File input kept in the DOM only so a button can trigger .click(). */
-.file-input-hidden { display: none; }
-
 /* Empty / loading / error placeholder inside a table, card or panel. */
 .state-note,
 .table .state-note { padding: 40px; text-align: center; }
@@ -835,28 +832,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 .media-tile { padding: 10px; border: 1px solid var(--hairline); border-radius: 8px; }
 .media-tile__preview { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
 .icon-flip { display: inline-block; transform: rotate(180deg); }
-
-.dropzone {
-  border: 1.5px dashed var(--hairline);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  padding: 22px;
-  display: grid;
-  gap: 12px;
-  place-items: center;
-  text-align: center;
-  transition: border-color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo);
-}
-.dropzone[data-drag-over="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.dropzone__label { font-weight: 700; font-size: 13px; }
-.dropzone__preview { max-height: 160px; border-radius: 8px; }
-.dropzone__icon {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--warm-soft); color: var(--accent);
-  display: grid; place-items: center;
-}
-.dropzone__title { font-weight: 700; font-size: 13.5px; }
-.dropzone__hint { font-size: 12px; margin-top: 4px; }
 
 /* ── Order list ── */
 .order-email { display: inline-block; max-width: 260px; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 4px; }
