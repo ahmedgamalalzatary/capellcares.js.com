@@ -7,6 +7,9 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { CollectionForm } from "@/components/forms/collection-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { api } from "@/lib/api/client";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
@@ -63,8 +66,8 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل المجموعة..." crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "تحميل" }]}>
-        <div className="card">جاري تحميل بيانات المجموعة...</div>
+      <AdminShell title="تحميل المجموعة…" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "تحميل" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -72,7 +75,11 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
   if (error && !collection) {
     return (
       <AdminShell title="تعذر تحميل المجموعة" crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "خطأ" }]}>
-        <div className="card">{error}</div>
+        <Card>
+          <div className="p-5 sm:p-6">
+            <Alert tone="danger" title="تعذر تحميل بيانات المجموعة">{error}</Alert>
+          </div>
+        </Card>
       </AdminShell>
     );
   }
@@ -82,18 +89,20 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
   if (relatedItems === null && !relatedItemsError) {
     return (
       <AdminShell title={`تعديل: ${collection.name.ar}`} crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "تعديل" }]}>
-        <div className="card">جاري تحميل بيانات المجموعة...</div>
+        <FormSkeleton />
       </AdminShell>
     );
   }
 
   return (
     <AdminShell title={`تعديل: ${collection.name.ar}`} crumbs={[{ label: "المجموعات", href: "/collections" }, { label: "تعديل" }]}>
-      {relatedItemsError && (
-        <div className="card card--spaced-bottom">
-          تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المجموعة، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+      {relatedItemsError ? (
+        <div className="mb-5">
+          <Alert tone="warning">
+            تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المجموعة، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+          </Alert>
         </div>
-      )}
+      ) : null}
       <CollectionForm
         mode="edit"
         initial={relatedItems === null ? collection : { ...collection, relatedItems }}

@@ -304,7 +304,7 @@ export function StaffEditorForm({
                     <label
                       key={item.key}
                       className={cn(
-                        "flex cursor-pointer items-center gap-2.5 rounded-control bg-surface px-3 py-2 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
+                        "flex cursor-pointer items-center gap-2.5 rounded-control bg-surface px-3 py-2 transition-shadow",
                         "hover:shadow-[0_0_0_1px_var(--line-strong)]",
                         checked && "bg-sunken shadow-[0_0_0_2px_var(--sand-900)]",
                         "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
