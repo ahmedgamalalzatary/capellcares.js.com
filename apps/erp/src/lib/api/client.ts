@@ -106,28 +106,31 @@ export async function refreshAdminSession(): Promise<string | null> {
   }
 
   adminRefreshPromise = (async () => {
-    const response = await fetch(`${API_BASE}/api/erp/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store"
-    });
+    try {
+      const response = await fetch(`${API_BASE}/api/erp/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store"
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        invalidateAdminSession();
+        return null;
+      }
+
+      const data = await response.json() as { accessToken?: string | null; user?: AdminAuthUser | null };
+      setAdminAccessToken(data.accessToken ?? null);
+      setAdminAuthUser(data.user ?? null);
+      return data.accessToken ?? null;
+    } catch {
+      // Never reject: joiners of an in-flight refresh must get the same null result, not a thrown error.
       invalidateAdminSession();
       return null;
     }
-
-    const data = await response.json() as { accessToken?: string | null; user?: AdminAuthUser | null };
-    setAdminAccessToken(data.accessToken ?? null);
-    setAdminAuthUser(data.user ?? null);
-    return data.accessToken ?? null;
   })();
 
   try {
     return await adminRefreshPromise;
-  } catch {
-    invalidateAdminSession();
-    return null;
   } finally {
     adminRefreshPromise = null;
   }

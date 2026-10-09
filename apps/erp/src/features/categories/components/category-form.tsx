@@ -75,6 +75,7 @@ function ImageWell({
             hasImage={Boolean(value)}
             busy={busy}
             canUpload={!disabled && !busy}
+            disabled={disabled}
             onFiles={(files) => { void handleFiles(files); }}
             onRemove={() => onChange(null)}
             removeLabel="إزالة الصورة"

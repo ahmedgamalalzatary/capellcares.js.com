@@ -92,6 +92,24 @@ describe("ERP API client auth invalidation", () => {
     );
   });
 
+  it("resolves null for every caller, including joiners, when the refresh itself fails", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new Error("network down");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+
+    const [first, second] = await Promise.all([
+      client.refreshAdminSession(),
+      client.refreshAdminSession()
+    ]);
+
+    expect(first).toBeNull();
+    expect(second).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("sends both upload helpers to the /api/erp/uploads endpoint", async () => {
     const fetchMock = vi.fn(async (input: string) => {
       void input;

@@ -9,6 +9,8 @@ interface Props {
   hasImage: boolean;
   busy: boolean;
   canUpload: boolean;
+  /** Read-only field: the image cannot be removed either. */
+  disabled?: boolean;
   onFiles: (files: FileList | null) => void;
   onRemove: () => void;
   removeLabel: string;
@@ -22,6 +24,7 @@ export function ImageActions({
   hasImage,
   busy,
   canUpload,
+  disabled = false,
   onFiles,
   onRemove,
   removeLabel,
@@ -44,7 +47,7 @@ export function ImageActions({
         {hasImage ? replaceLabel : "رفع صورة"}
       </FileButton>
       {hasImage ? (
-        <Button variant="danger-ghost" size="icon-sm" aria-label={removeLabel} disabled={busy} onClick={onRemove}>
+        <Button variant="danger-ghost" size="icon-sm" aria-label={removeLabel} disabled={busy || disabled} onClick={onRemove}>
           <Trash2 />
         </Button>
       ) : null}
