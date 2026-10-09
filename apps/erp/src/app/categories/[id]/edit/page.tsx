@@ -6,6 +6,9 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { CategoryForm } from "@/components/forms/category-form";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
@@ -35,8 +38,8 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل القسم..." crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "تحميل" }]}>
-        <div className="card">جاري تحميل بيانات القسم...</div>
+      <AdminShell title="تحميل القسم…" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "تحميل" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -44,7 +47,11 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
   if (error && !category) {
     return (
       <AdminShell title="تعذر تحميل القسم" crumbs={[{ label: "الأقسام", href: "/categories" }, { label: "خطأ" }]}>
-        <div className="card">{error}</div>
+        <Card>
+          <div className="p-5 sm:p-6">
+            <Alert tone="danger" title="تعذر تحميل بيانات القسم">{error}</Alert>
+          </div>
+        </Card>
       </AdminShell>
     );
   }

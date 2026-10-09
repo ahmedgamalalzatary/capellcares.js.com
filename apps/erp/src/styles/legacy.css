@@ -3,7 +3,6 @@
    Utility primitives
    ============================================================ */
 .muted { color: var(--ink-3); }
-.selected-parent-path { margin-top: 6px; font-size: 12px; }
 .faint { color: var(--ink-4); }
 .row { display: flex; align-items: center; gap: 12px; }
 .row--between { justify-content: space-between; }
@@ -524,89 +523,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
   gap: 8px;
 }
 
-.tree {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.tree__item {
-  margin-bottom: 6px;
-}
-
-.tree__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  /* Each nesting level indents the row by a further 20px. */
-  padding-inline-start: calc(12px + var(--depth, 0) * 20px);
-  border-radius: var(--radius);
-  border: 1px solid transparent;
-  transition: background var(--motion-fast), border-color var(--motion-fast);
-}
-
-.tree__row[data-root="true"] {
-  background: color-mix(in oklch, var(--warm-soft) 72%, var(--surface));
-  border-color: color-mix(in oklch, var(--warm) 30%, transparent);
-}
-
-.tree__row:hover {
-  background: color-mix(in oklch, var(--warm-soft) 55%, var(--surface));
-  border-color: color-mix(in oklch, var(--warm) 24%, transparent);
-}
-
-.tree__title {
-  flex: 1;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.tree__meta {
-  font-size: 12px;
-  color: var(--ink-4);
-}
-
-/* ── Fold / unfold ── */
-.tree__fold {
-  width: 28px;
-  padding: 0;
-  flex-shrink: 0;
-}
-.tree__fold svg {
-  transition: transform var(--motion) var(--ease-out-expo);
-  transform-origin: 50% 50%;
-}
-
-/* Collapsible subtree: animate height via grid-template-rows 1fr ↔ 0fr,
-   with a slight slide + fade for a polished open/close. */
-.tree__subtree {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows var(--motion) var(--ease-out-expo),
-              opacity var(--motion) var(--ease-out-expo);
-  opacity: 1;
-}
-.tree__subtree[data-collapsed="true"] {
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-.tree__subtree-inner {
-  overflow: hidden;
-  min-height: 0;
-  transform: translateY(0);
-  transition: transform var(--motion) var(--ease-out-expo);
-}
-.tree__subtree[data-collapsed="true"] .tree__subtree-inner {
-  transform: translateY(-4px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tree__fold svg,
-  .tree__subtree,
-  .tree__subtree-inner { transition: none; }
-}
-
 /* Row actions dropdown (⋯) */
 .row-menu { display: inline-flex; }
 .row-menu__dropdown {
@@ -874,7 +790,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 .card--pad { padding: 20px; }
 .card--pad-md { padding: 22px; }
 .card--pad-lg { padding: 24px; }
-.card--narrow { max-width: 640px; }
 .card--spaced-top { margin-top: 16px; }
 .card--spaced-bottom { margin-bottom: 16px; }
 .card__pad { padding: 16px; }
@@ -947,10 +862,6 @@ html[lang="ar"] .stat__label { letter-spacing: 0.04em; text-transform: none; }
 .order-email { display: inline-block; max-width: 260px; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 4px; }
 .order-email:hover { text-decoration-color: currentColor; }
 .order-email:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-
-/* ── Categories tree ── */
-.tree__fold-spacer { display: inline-block; width: 28px; }
-.tag--accent { background: var(--accent-soft); color: var(--accent); }
 
 /* ── Trash tabs ── */
 .trash-tabs__head { padding: 0; border-bottom: 1px solid var(--hairline); }
