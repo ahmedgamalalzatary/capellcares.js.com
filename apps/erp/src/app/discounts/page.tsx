@@ -3,18 +3,17 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
-import { Input, InputWithAddon, InputWithIcon, Select } from "@/components/ui/input";
+import { Input, InputWithAddon, Select } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
@@ -23,6 +22,8 @@ import { formatMoney, formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { getStore, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { SelectionGroup } from "@/features/discounts/components/selection-group";
+import { inCategory, previewPrice, toggleId } from "@/features/discounts/lib/discount";
 
 type Target = { kind: "variant" | "offer" | "collection"; id: number; label: string; price: number; hasDiscount: boolean };
 
@@ -35,26 +36,6 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]["id"];
 
 const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
-
-function inCategory(categoryId: number, selected: Set<number>, parents: Map<number, number | null>) {
-  let current: number | null | undefined = categoryId;
-  const seen = new Set<number>();
-  while (current != null && !seen.has(current)) {
-    if (selected.has(current)) return true;
-    seen.add(current);
-    current = parents.get(current);
-  }
-  return false;
-}
-
-function toggleId(current: number[], id: number) {
-  return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-}
-
-function previewPrice(price: number, type: "percentage" | "fixed", value: number) {
-  if (!Number.isFinite(value) || value <= 0) return price;
-  return Math.max(0, Number((type === "percentage" ? price * (1 - value / 100) : price - value).toFixed(2)));
-}
 
 export default function DiscountsPage() {
   const router = useRouter();
@@ -377,43 +358,3 @@ export default function DiscountsPage() {
   );
 }
 
-function SelectionGroup({ title, prefix, items, selected, onToggle }: {
-  title: string;
-  prefix: string;
-  items: Array<{ id: number; label: string; depth?: number }>;
-  selected: number[];
-  onToggle: (id: number) => void;
-}) {
-  const [search, setSearch] = useState("");
-  const visible = items.filter((item) => item.label.toLowerCase().includes(search.trim().toLowerCase()));
-  return (
-    <section className="grid content-start gap-3 rounded-well bg-sunken p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-bold text-text-strong">{title}</h3>
-        <Badge tone={selected.length > 0 ? "nude" : "neutral"} swatch={false}>
-          <span className="num">{formatNumber(selected.length)}</span> مختار
-        </Badge>
-      </div>
-      <InputWithIcon
-        icon={<Search />}
-        type="search"
-        aria-label={`بحث في ${title}`}
-        placeholder={`ابحثي في ${title}`}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
-      <div role="group" aria-label={title} className="grid max-h-56 gap-0.5 overflow-y-auto">
-        {visible.length === 0 ? (
-          <p className="px-2 py-4 text-center text-sm text-text-muted">لا توجد نتائج.</p>
-        ) : (
-          visible.map((item) => (
-            <label key={item.id} className="flex min-h-9 cursor-pointer items-center gap-3 rounded-md px-2.5 transition-colors hover:bg-hover pointer-coarse:min-h-11">
-              <input type="checkbox" className="size-4 shrink-0" aria-label={`${prefix}: ${item.label}`} checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />
-              <span className="min-w-0 truncate text-base text-text" style={{ paddingInlineStart: `${(item.depth ?? 0) * 14}px` }}>{item.label}</span>
-            </label>
-          ))
-        )}
-      </div>
-    </section>
-  );
-}

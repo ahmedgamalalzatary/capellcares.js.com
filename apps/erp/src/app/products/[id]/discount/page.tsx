@@ -21,34 +21,7 @@ import { formatMoney, formatNumber } from "@/lib/format";
 import { canReadErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { api } from "@/lib/api/client";
 import { getStore, useStore } from "@/lib/store";
-
-type VariantDiscountState = NonNullable<ProductVariant["discount"]>;
-
-function toDateTimeLocal(value: string) {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  const hours = String(parsed.getHours()).padStart(2, "0");
-  const minutes = String(parsed.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function toIsoOrEmpty(value: string) {
-  return value ? new Date(value).toISOString() : "";
-}
-
-function buildDiscountState(variant: ProductVariant): VariantDiscountState {
-  return variant.discount ?? {
-    type: "percentage",
-    value: 0,
-    startsAt: "",
-    endsAt: "",
-    status: "inactive"
-  };
-}
+import { buildDiscountState, toDateTimeLocal, toIsoOrEmpty, type VariantDiscountState } from "@/features/discounts/lib/discount";
 
 export default function ProductDiscountPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAdminAuth();

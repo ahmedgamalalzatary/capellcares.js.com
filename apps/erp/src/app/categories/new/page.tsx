@@ -3,7 +3,7 @@
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { CategoryForm } from "@/components/forms/category-form";
+import { CategoryForm } from "@/features/categories/components/category-form";
 import { canCreateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 

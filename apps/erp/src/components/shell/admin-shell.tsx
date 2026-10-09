@@ -9,7 +9,7 @@ import {
   LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Truck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
-import { OrderReviewFlagAlerts } from "@/components/orders/order-review-flag-alerts";
+import { OrderReviewFlagAlerts } from "@/features/orders/components/order-review-flag-alerts";
 import { cn } from "@/lib/utils";
 import { ThemeMenu } from "./theme-menu";
 

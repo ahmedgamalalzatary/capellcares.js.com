@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import type { RelatedItemRef } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
-import { CollectionForm } from "@/components/forms/collection-form";
+import { CollectionForm } from "@/features/collections/components/collection-form";
 import { buildRelatedOptions } from "@/lib/related-options";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";

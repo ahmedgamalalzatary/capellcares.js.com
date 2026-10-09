@@ -10,8 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { canRestoreErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { formatNumber } from "@/lib/format";
-import { DeletedList } from "../../components/trash/deleted-list";
-import { useTrashPage } from "../../hooks/use-trash-page";
+import { DeletedList } from "@/features/trash/components/deleted-list";
+import { useTrashPage } from "@/features/trash/hooks/use-trash-page";
 
 export default function TrashPage() {
   const { user } = useAdminAuth();

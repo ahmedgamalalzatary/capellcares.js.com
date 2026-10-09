@@ -4,19 +4,26 @@ Scope: `apps/erp` only. Audited against the working tree on 2026-10-09 (branch `
 Audience: the engineer/AI executing the migration. Read this whole file first, then `AGENTS.md` (repo root),
 `apps/erp/DESIGN.md`, and `apps/erp/REDESIGN.md` (user rules: pages always full width, Arabic copy, tokens only).
 
+> **Revision (2026-10-09, later):** route pages stay in `src/app/**`. Only each feature's `components/`, `hooks/`,
+> `lib/` and `types.ts` move into `src/features/<feature>/`. Pages are not moved and are not turned into re-exports;
+> they import their feature's building blocks by absolute path. Every `app/…/page.tsx → features/…` row below is
+> therefore obsolete and the page is kept where it is.
+
 ---
 
 ## 0. Goals and non-goals
 
 **Goals**
 
-1. Every domain's code lives under one folder `src/features/<feature>/`, so a feature's page, table, form, hooks, helpers
-  and types sit together.
-2. `src/app/**` route files become thin: they only re-export the feature's page component.
+1. Every domain's components, hooks, helpers and types live under one folder `src/features/<feature>/`.
+2. `src/app/**` keeps the route pages. A page is not moved; it imports its feature's `components/`, `hooks/`, `lib/`
+   and `types.ts` by absolute path.
 3. Code used by two or more features lives in the shared layer (`components/ui`, `components/admin`, `components/forms`,
-  `hooks`, `lib`). Duplicated code is folded into that layer.
-4. `tests/**` mirrors `src/**` exactly, so the test for `src/features/products/components/products-table.tsx` lives at
-  `tests/features/products/components/products-table.test.tsx`.
+   `hooks`, `lib`). Duplicated code is folded into that layer.
+4. `tests/**` mirrors the source it exercises. Feature component/hook/lib tests live at
+   `tests/features/<feature>/...` (e.g. `src/features/products/components/products-table.tsx` →
+   `tests/features/products/components/products-table.test.tsx`). Page tests stay with their feature under
+   `tests/features/<feature>/`.
 5. Behaviour, Arabic copy, `data-testid`s, routes and permissions stay unchanged, except where §9 says otherwise.
 
 **Non-goals (do NOT do)**
@@ -24,6 +31,7 @@ Audience: the engineer/AI executing the migration. Read this whole file first, t
 - No visual or redesign changes. The redesign is finished (see `REDESIGN.md`).
 - No splitting of the global store (`lib/store/*`). It is one shared `ErpStore` instance used everywhere and stays in `lib/`.
 - No barrel `index.ts` files per feature, no path aliases per feature, and no new libraries. Import files directly by path.
+- No moving of route pages out of `src/app/**`. Pages stay where Next.js needs them.
 - No API or `@capella/shared` changes.
 - No commits unless the user explicitly asks (see `AGENTS.md`).
 
@@ -81,15 +89,16 @@ Relative `./x` is fine inside the same folder.
 - Promotion rule: code used by **one** feature goes in that feature. Code used by **two or more** features goes in the
 shared layer. Do not create shared code "just in case".
 
-Route file pattern (all client pages already have `"use client"` in the moved file):
+Page rule: route pages stay in `src/app/**` (all are client components with `"use client"`). A page imports its
+feature's building blocks by absolute path, e.g.:
 
 ```tsx
 // src/app/products/page.tsx
-export { default } from "@/features/products/products-page";
+import { ProductsTable } from "@/features/products/components/products-table";
 ```
 
-`src/app/orders/[id]/page.tsx` is an async server component that unwraps `params`. Keep it as is and only change its
-import to the feature's `order-details-view`. Keep `src/app/layout.tsx`, `src/app/page.tsx` (redirect),
+`src/app/orders/[id]/page.tsx` is an async server component that unwraps `params`; it imports
+`@/features/orders/components/order-details-view`. Keep `src/app/layout.tsx`, `src/app/page.tsx` (redirect),
 `src/app/globals.css` and `src/app/api/health/route.ts` where they are.
 
 ---
@@ -99,14 +108,13 @@ import to the feature's `order-details-view`. Keep `src/app/layout.tsx`, `src/ap
 ## 3. Target features (14) and full file move map
 
 `→` means move with `git mv`, which keeps the history. "NEW" means create the file. "DELETE" means remove it.
-Paths are relative to `apps/erp/src/`.
+Paths are relative to `apps/erp/src/`. **Route pages are not moved** (see the Revision note): every
+`app/…/page.tsx → features/…` row below is obsolete and the page stays in `src/app/`.
 
 ### 3.1 `features/auth`
 
 
-| From                        | To                             |
-| --------------------------- | ------------------------------ |
-| `app/login/page.tsx` (body) | `features/auth/login-page.tsx` |
+Nothing moves for auth: the login view stays at `src/app/login/page.tsx`.
 
 
 
@@ -116,7 +124,6 @@ Paths are relative to `apps/erp/src/`.
 
 | From                                        | To                                                   |
 | ------------------------------------------- | ---------------------------------------------------- |
-| `app/dashboard/page.tsx` (body)             | `features/dashboard/dashboard-page.tsx`              |
 | `components/dashboard/attention-strip.tsx`  | `features/dashboard/components/attention-strip.tsx`  |
 | `components/dashboard/catalog-health.tsx`   | `features/dashboard/components/catalog-health.tsx`   |
 | `components/dashboard/ending-discounts.tsx` | `features/dashboard/components/ending-discounts.tsx` |
@@ -134,9 +141,6 @@ Paths are relative to `apps/erp/src/`.
 
 | From                                     | To                                                |
 | ---------------------------------------- | ------------------------------------------------- |
-| `app/products/page.tsx` (body)           | `features/products/products-page.tsx`             |
-| `app/products/new/page.tsx` (body)       | `features/products/new-product-page.tsx`          |
-| `app/products/[id]/edit/page.tsx` (body) | `features/products/edit-product-page.tsx`         |
 | `components/products-table.tsx`          | `features/products/components/products-table.tsx` |
 | `components/forms/product-form.tsx`      | `features/products/components/product-form.tsx`   |
 | `hooks/use-products-page.ts`             | `features/products/hooks/use-products-page.ts`    |
@@ -152,9 +156,6 @@ media file (see §3.15) because it is just `EntityMediaUpload` with a fixed labe
 
 | From                                   | To                                            |
 | -------------------------------------- | --------------------------------------------- |
-| `app/offers/page.tsx` (body)           | `features/offers/offers-page.tsx`             |
-| `app/offers/new/page.tsx` (body)       | `features/offers/new-offer-page.tsx`          |
-| `app/offers/[id]/edit/page.tsx` (body) | `features/offers/edit-offer-page.tsx`         |
 | `components/offers-table.tsx`          | `features/offers/components/offers-table.tsx` |
 | `components/forms/offer-form.tsx`      | `features/offers/components/offer-form.tsx`   |
 | `hooks/forms/use-offer-form.ts`        | `features/offers/hooks/use-offer-form.ts`     |
@@ -170,9 +171,6 @@ Same shape as offers:
 
 | From                                        | To                                                      |
 | ------------------------------------------- | ------------------------------------------------------- |
-| `app/collections/page.tsx` (body)           | `features/collections/collections-page.tsx`             |
-| `app/collections/new/page.tsx` (body)       | `features/collections/new-collection-page.tsx`          |
-| `app/collections/[id]/edit/page.tsx` (body) | `features/collections/edit-collection-page.tsx`         |
 | `components/collections-table.tsx`          | `features/collections/components/collections-table.tsx` |
 | `components/forms/collection-form.tsx`      | `features/collections/components/collection-form.tsx`   |
 | `hooks/forms/use-collection-form.ts`        | `features/collections/hooks/use-collection-form.ts`     |
@@ -188,15 +186,12 @@ See §5.4. It starts empty and is only created when that phase runs.
 ### 3.7 `features/categories`
 
 
-| From                                                  | To                                                      |
-| ----------------------------------------------------- | ------------------------------------------------------- |
-| `app/categories/page.tsx` (body, 513 lines)           | `features/categories/categories-page.tsx`               |
-| ↳ inner `Tree`, `TreeSkeleton`, `CountPill`           | `features/categories/components/category-tree.tsx`      |
-| ↳ `categoryParentKey`, `buildPersistedCategoryOrders` | `features/categories/lib/category-order.ts`             |
-| `app/categories/new/page.tsx` (body)                  | `features/categories/new-category-page.tsx`             |
-| `app/categories/[id]/edit/page.tsx` (body)            | `features/categories/edit-category-page.tsx`            |
-| `components/forms/category-form.tsx`                  | `features/categories/components/category-form.tsx`      |
-| `hooks/use-collapsed-categories.ts`                   | `features/categories/hooks/use-collapsed-categories.ts` |
+| From                                                                          | To                                                      |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `app/categories/page.tsx` ↳ inner `Tree`, `TreeSkeleton`, `CountPill`         | `features/categories/components/category-tree.tsx`      |
+| `app/categories/page.tsx` ↳ `categoryParentKey`, `buildPersistedCategoryOrders` | `features/categories/lib/category-order.ts`           |
+| `components/forms/category-form.tsx`                                          | `features/categories/components/category-form.tsx`      |
+| `hooks/use-collapsed-categories.ts`                                           | `features/categories/hooks/use-collapsed-categories.ts` |
 
 
 `components/forms/category-picker.tsx` is used by the product, offer and collection forms, so it **stays shared**.
@@ -205,13 +200,10 @@ See §5.4. It starts empty and is only created when that phase runs.
 ### 3.8 `features/advices`
 
 
-| From                                    | To                                                                                     |
-| --------------------------------------- | -------------------------------------------------------------------------------------- |
-| `app/advices/page.tsx` (body)           | `features/advices/advices-page.tsx`                                                    |
-| ↳ inline table (lines ~126–210)         | `features/advices/components/advices-table.tsx` (same shape as products/offers tables) |
-| `app/advices/new/page.tsx` (body)       | `features/advices/new-advice-page.tsx`                                                 |
-| `app/advices/[id]/edit/page.tsx` (body) | `features/advices/edit-advice-page.tsx`                                                |
-| `components/forms/advice-form.tsx`      | `features/advices/components/advice-form.tsx`                                          |
+| From                                                   | To                                                                                     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `app/advices/page.tsx` ↳ inline table (lines ~126–210) | `features/advices/components/advices-table.tsx` (same shape as products/offers tables) |
+| `components/forms/advice-form.tsx`                     | `features/advices/components/advice-form.tsx`                                          |
 
 
 
@@ -219,15 +211,12 @@ See §5.4. It starts empty and is only created when that phase runs.
 ### 3.9 `features/staff`
 
 
-| From                                     | To                                                                              |
-| ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `app/staff/page.tsx` (body)              | `features/staff/staff-page.tsx`                                                 |
-| ↳ inline table                           | `features/staff/components/staff-table.tsx`                                     |
-| `app/staff/new/page.tsx` (body)          | `features/staff/new-staff-page.tsx`                                             |
-| `app/staff/[id]/edit/page.tsx` (body)    | `features/staff/edit-staff-page.tsx`                                            |
-| ↳ `toFormState` (edit page)              | `features/staff/lib/staff-form-state.ts` (together with `createEmptyStaffForm`) |
-| `components/admin/staff-editor-form.tsx` | `features/staff/components/staff-editor-form.tsx`                               |
-| ↳ types `StaffUser`, `StaffFormState`    | `features/staff/types.ts`                                                       |
+| From                                                                          | To                                                                              |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `app/staff/page.tsx` ↳ inline table                                           | `features/staff/components/staff-table.tsx`                                     |
+| `app/staff/[id]/edit/page.tsx` ↳ `toFormState`                                | `features/staff/lib/staff-form-state.ts` (together with `createEmptyStaffForm`) |
+| `components/admin/staff-editor-form.tsx`                                      | `features/staff/components/staff-editor-form.tsx`                               |
+| `components/admin/staff-editor-form.tsx` ↳ types `StaffUser`, `StaffFormState` | `features/staff/types.ts`                                                      |
 
 
 
@@ -237,9 +226,7 @@ See §5.4. It starts empty and is only created when that phase runs.
 
 | From                                             | To                                                          |
 | ------------------------------------------------ | ----------------------------------------------------------- |
-| `app/orders/page.tsx` (body)                     | `features/orders/orders-page.tsx`                           |
-| ↳ inline table                                   | `features/orders/components/orders-table.tsx`               |
-| `app/orders/reconciliation/page.tsx` (body)      | `features/orders/reconciliation-page.tsx`                   |
+| `app/orders/page.tsx` ↳ inline table             | `features/orders/components/orders-table.tsx`               |
 | `components/orders/order-details-view.tsx`       | `features/orders/components/order-details-view.tsx`         |
 | `components/orders/shipping-actions.tsx`         | `components/admin/shipping-actions.tsx` (shared, see §3.11) |
 | `components/orders/order-review-flag-alerts.tsx` | `features/orders/components/order-review-flag-alerts.tsx`   |
@@ -250,11 +237,10 @@ See §5.4. It starts empty and is only created when that phase runs.
 ### 3.11 `features/shipping`
 
 
-| From                                      | To                                                      |
-| ----------------------------------------- | ------------------------------------------------------- |
-| `app/shipping/page.tsx` (body, 390 lines) | `features/shipping/shipping-page.tsx`                   |
-| ↳ inline shipments table                  | `features/shipping/components/shipments-table.tsx`      |
-| ↳ `SECTIONS`, `AlertLine`                 | stay in `shipping-page.tsx` unless the table needs them |
+| From                                                      | To                                                          |
+| --------------------------------------------------------- | ----------------------------------------------------------- |
+| `app/shipping/page.tsx` ↳ inline shipments table          | `features/shipping/components/shipments-table.tsx`          |
+| `app/shipping/page.tsx` ↳ `SECTIONS`, `AlertLine`         | stay in `app/shipping/page.tsx` unless the table needs them |
 
 
 `ShippingActions` is used by `features/orders` (order details) **and** `features/shipping`. By the rule in §2 it is
@@ -263,9 +249,7 @@ shared, so it lives in `components/admin/shipping-actions.tsx`.
 ### 3.12 `features/sales`
 
 
-| From                        | To                                                                   |
-| --------------------------- | -------------------------------------------------------------------- |
-| `app/sales/page.tsx` (body) | `features/sales/sales-page.tsx` (keep `Metric` / `TableEmpty` local) |
+Nothing moves for sales: the page and its `Metric` / `TableEmpty` helpers stay in `src/app/sales/page.tsx`.
 
 
 
@@ -273,10 +257,9 @@ shared, so it lives in `components/admin/shipping-actions.tsx`.
 ### 3.13 `features/reviews`
 
 
-| From                                    | To                                              |
-| --------------------------------------- | ----------------------------------------------- |
-| `app/reviews/page.tsx` (body)           | `features/reviews/reviews-page.tsx`             |
-| ↳ inline table + `Stars`, `entityLabel` | `features/reviews/components/reviews-table.tsx` |
+| From                                                          | To                                              |
+| ------------------------------------------------------------- | ----------------------------------------------- |
+| `app/reviews/page.tsx` ↳ inline table + `Stars`, `entityLabel` | `features/reviews/components/reviews-table.tsx` |
 
 
 
@@ -284,22 +267,18 @@ shared, so it lives in `components/admin/shipping-actions.tsx`.
 ### 3.14 `features/discounts`, `features/shop-media`, `features/trash`
 
 
-| From                                                        | To                                                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `app/discounts/page.tsx` (body, bulk discounts)             | `features/discounts/bulk-discounts-page.tsx`                                                       |
-| ↳ `SelectionGroup`                                          | `features/discounts/components/selection-group.tsx`                                                |
-| ↳ `inCategory`, `toggleId`, `previewPrice`                  | `features/discounts/lib/discount.ts` (`inCategory` is replaced, see §5.2)                          |
-| `app/products/[id]/discount/page.tsx` (body)                | `features/discounts/product-discount-page.tsx` (route stays `/products/[id]/discount`)             |
-| ↳ `toDateTimeLocal`, `toIsoOrEmpty`, `buildDiscountState`   | `features/discounts/lib/discount.ts`                                                               |
-| `app/shop-media/page.tsx` (body, 628 lines)                 | `features/shop-media/shop-media-page.tsx`                                                          |
-| ↳ `toEditableSection`, `isDetailTargetType`, editable types | `features/shop-media/lib/editable-section.ts` + `features/shop-media/types.ts`                     |
-| ↳ section editor / announcement editor JSX blocks           | `features/shop-media/components/*.tsx` (split only where the page has clear self-contained blocks) |
-| `hooks/use-collapsed-shop-media.ts`                         | `features/shop-media/hooks/use-collapsed-shop-media.ts`                                            |
-| `hooks/use-collapsed-shop-media-items.ts`                   | `features/shop-media/hooks/use-collapsed-shop-media-items.ts`                                      |
-| `app/trash/page.tsx` (body)                                 | `features/trash/trash-page.tsx`                                                                    |
-| `components/trash/deleted-list.tsx`                         | `features/trash/components/deleted-list.tsx`                                                       |
-| `hooks/use-trash-page.ts`                                   | `features/trash/hooks/use-trash-page.ts`                                                           |
-| `types/trash-page.types.ts`                                 | `features/trash/types.ts`                                                                          |
+| From                                                                          | To                                                                                                 |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `app/discounts/page.tsx` ↳ `SelectionGroup`                                   | `features/discounts/components/selection-group.tsx`                                                |
+| `app/discounts/page.tsx` ↳ `inCategory`, `toggleId`, `previewPrice`           | `features/discounts/lib/discount.ts` (`inCategory` is replaced, see §5.2)                          |
+| `app/products/[id]/discount/page.tsx` ↳ `toDateTimeLocal`, `toIsoOrEmpty`, `buildDiscountState` | `features/discounts/lib/discount.ts`                                             |
+| `app/shop-media/page.tsx` ↳ `toEditableSection`, `isDetailTargetType`, editable types | `features/shop-media/lib/editable-section.ts` + `features/shop-media/types.ts`             |
+| `app/shop-media/page.tsx` ↳ section editor / announcement editor JSX blocks   | `features/shop-media/components/*.tsx` (split only where the page has clear self-contained blocks) |
+| `hooks/use-collapsed-shop-media.ts`                                           | `features/shop-media/hooks/use-collapsed-shop-media.ts`                                            |
+| `hooks/use-collapsed-shop-media-items.ts`                                     | `features/shop-media/hooks/use-collapsed-shop-media-items.ts`                                      |
+| `components/trash/deleted-list.tsx`                                           | `features/trash/components/deleted-list.tsx`                                                       |
+| `hooks/use-trash-page.ts`                                                     | `features/trash/hooks/use-trash-page.ts`                                                           |
+| `types/trash-page.types.ts`                                                   | `features/trash/types.ts`                                                                          |
 
 
 Why the product discount page goes in `discounts`: it shares the percentage/fixed and datetime-local logic with the bulk
@@ -342,9 +321,11 @@ page. Its route and its permission (`products.discount`) do not change.
 
 ## 4. Test move map (`apps/erp/tests/` → mirrored)
 
-Rule: one test file per source file it mainly exercises, at the mirrored path. Page tests follow the feature page file.
-`tests/setup.ts` stays where it is (`vitest.config.ts` → `setupFiles: ["./tests/setup.ts"]`). Vitest's default `include`
-already picks up nested folders, so no config change is needed.
+Rule: one test file per source file it mainly exercises, at the mirrored path. Feature component/hook/lib tests live
+under `tests/features/<feature>/...`. Page tests stay with their feature under `tests/features/<feature>/`
+even though the page itself lives in `src/app/`; every page-test row's import is `@/app/<route>/page` (pages are not
+moved), not `@/features/...`. `tests/setup.ts` stays where it is (`vitest.config.ts` → `setupFiles: ["./tests/setup.ts"]`).
+Vitest's default `include` already picks up nested folders, so no config change is needed.
 
 
 | Current test                                              | New path                                                                                                                                                                          | Also update                                                                                                                                                                                                                               |
@@ -617,18 +598,19 @@ Each phase ends with: `pnpm typecheck && pnpm test` in `apps/erp` (sequential), 
 6. Move the shared tests to mirrored paths (`tests/lib/**`, `tests/hooks/**`, `tests/components/**`,
   `tests/app/api/health/route.test.ts`).
 
-**Phase 2: Move features, one per slice, with no logic changes.** For each feature, in this order:
-`auth → sales → reviews → trash → staff → advices → categories → shop-media → discounts → dashboard → shipping → orders → products → offers → collections`
-(small and isolated first; heavily-tested catalog last).
+**Phase 2: Move each feature's building blocks, one per slice, with no logic changes.** For each feature, in this
+order: `trash → staff → advices → categories → shop-media → discounts → dashboard → shipping → orders → products →
+offers → collections` (pages never move; `auth`/`sales` have nothing to move besides the page).
 For each feature:
 
-1. `git mv` the files per §3. Create `features/<f>/<f>-page.tsx` from the route body and make the route a 1-line re-export.
+1. `git mv` the components/hooks/lib/types per §3. Pages stay in `src/app/**` and keep importing `@/…` (including
+   `@/features/<feature>/…` for anything that moved).
 2. Fix imports (absolute `@/…`).
 3. `git mv` its tests per §4 and update the imports and `vi.mock` paths.
 4. `pnpm typecheck && pnpm test` → green before the next feature.
 
 Do **not** extract components out of pages yet, except the moves §3 lists as "↳" that are pure cut and paste
-(helpers and inner components already defined at file top level).
+(helpers and inner components already defined at file top level). Inline tables are Phase 3.
 
 **Phase 3: Shared UI extractions.** §5.1 (list-table pieces), §5.5 (`ForbiddenPage`), §5.6 (`FoldButton`, maybe
 products reorder). Then pull the inline tables out into `features/<f>/components/*-table.tsx` (advices, staff, reviews,
@@ -695,12 +677,12 @@ Everything not listed here must keep its current behaviour.
 
 ## 10. Done checklist
 
-- [ ] `src/app/**/page.tsx` are 1-line re-exports (except `orders/[id]` server wrapper, `page.tsx` redirect, `layout.tsx`).
+- [ ] `src/app/**/page.tsx` stay in place (only `orders/[id]` is a server wrapper; `page.tsx` redirect, `layout.tsx`, `api/health/route.ts` untouched) and import their feature's building blocks from `@/features/<feature>/…`.
 - [ ] No files left in `src/types/`, `src/hooks/forms/`, `src/components/{dashboard,orders,trash}/`, or `src/components/*.tsx` at root.
 - [ ] `grep -rn "@/features/" src/components src/hooks src/lib` → only `components/shell/admin-shell.tsx` (order-review-flag-alerts).
 - [ ] `grep -rnE "@/features/(\w+)" src/features` → each file imports only its own feature (or `bundles` from offers/collections).
 - [ ] No relative `../` imports that leave a feature folder.
-- [ ] Every `tests/**` file sits at the mirror path of the source it tests. `tests/` root holds only `setup.ts` and `shared-ui.test.tsx`.
+- [ ] Feature component/hook/lib tests sit at the mirror path under `tests/features/<feature>/`; page tests stay with their feature there too. `tests/` root holds only `setup.ts` and `shared-ui.test.tsx`.
 - [ ] Every `vi.mock("@/…")` path exists.
 - [ ] Test count ≥ baseline, and new tests from §4 are added.
 - [ ] typecheck, test, build, eslint green, plus root `typecheck:web` / `lint:web`.

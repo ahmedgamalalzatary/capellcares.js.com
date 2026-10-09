@@ -18,7 +18,7 @@ import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/compo
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { formatDate, formatMoney, localDateKey } from "@/lib/format";
 import { orderPaymentBadge } from "@/lib/payment-status";
-import { ShippingActions } from "@/components/orders/shipping-actions";
+import { ShippingActions } from "@/components/admin/shipping-actions";
 import { getStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
 

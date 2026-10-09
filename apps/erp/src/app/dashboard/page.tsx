@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { AttentionStrip } from "@/components/dashboard/attention-strip";
-import { CatalogHealth } from "@/components/dashboard/catalog-health";
-import { EndingDiscounts } from "@/components/dashboard/ending-discounts";
-import { NewMenu } from "@/components/dashboard/new-menu";
-import { rangeLabels, SalesPulse } from "@/components/dashboard/sales-pulse";
-import { StockAlerts } from "@/components/dashboard/stock-alerts";
-import { TopSellers } from "@/components/dashboard/top-sellers";
+import { AttentionStrip } from "@/features/dashboard/components/attention-strip";
+import { CatalogHealth } from "@/features/dashboard/components/catalog-health";
+import { EndingDiscounts } from "@/features/dashboard/components/ending-discounts";
+import { NewMenu } from "@/features/dashboard/components/new-menu";
+import { rangeLabels, SalesPulse } from "@/features/dashboard/components/sales-pulse";
+import { StockAlerts } from "@/features/dashboard/components/stock-alerts";
+import { TopSellers } from "@/features/dashboard/components/top-sellers";
 import { Button } from "@/components/ui/button";
 import {
   catalogHealth,
@@ -20,7 +20,7 @@ import {
   stockAlerts,
   topSellers,
   type DashboardRange,
-} from "@/lib/dashboard";
+} from "@/features/dashboard/lib/metrics";
 import { canReadErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 

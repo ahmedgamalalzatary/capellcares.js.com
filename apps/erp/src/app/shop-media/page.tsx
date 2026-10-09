@@ -19,34 +19,13 @@ import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { resolveMediaSrc } from "@/lib/media";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
-import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
-import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
+import { useCollapsedShopMedia } from "@/features/shop-media/hooks/use-collapsed-shop-media";
+import { useCollapsedShopMediaItems } from "@/features/shop-media/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import { cn } from "@/lib/utils";
-import type { Announcement, ShopMediaSection, ShopMediaTargetType } from "@capella/shared";
-
-type EditableItem = {
-  id: string;
-  arImagePath: string;
-  arMobileImagePath: string;
-  enImagePath: string;
-  enMobileImagePath: string;
-  targetType: ShopMediaTargetType;
-  targetId: number | null;
-};
-
-type EditableSection = {
-  slot: 1 | 2 | 3 | 4 | 5;
-  status: "active" | "inactive";
-  items: EditableItem[];
-};
-
-type EditableAnnouncement = {
-  id: string;
-  arText: string;
-  enText: string;
-  status: "active" | "inactive";
-};
+import type { Announcement, ShopMediaTargetType } from "@capella/shared";
+import type { EditableAnnouncement, EditableItem, EditableSection } from "@/features/shop-media/types";
+import { isDetailTargetType, toEditableSection } from "@/features/shop-media/lib/editable-section";
 
 const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
 
@@ -73,26 +52,6 @@ const slotPositionLabel: Record<1 | 2 | 3 | 4 | 5, string> = {
   4: "يظهر أسفل قسم الأكثر مبيعًا",
   5: "يظهر أسفل قسم وصل حديثًا"
 };
-
-function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 3 | 4 | 5): EditableSection {
-  return {
-    slot,
-    status: section?.status ?? "inactive",
-    items: (section?.items ?? []).map((item) => ({
-      id: String(item.id),
-      arImagePath: item.arImagePath ?? "",
-      arMobileImagePath: item.arMobileImagePath ?? "",
-      enImagePath: item.enImagePath ?? "",
-      enMobileImagePath: item.enMobileImagePath ?? "",
-      targetType: item.targetType,
-      targetId: item.targetId
-    }))
-  };
-}
-
-function isDetailTargetType(targetType: ShopMediaTargetType) {
-  return targetType === "product" || targetType === "offer" || targetType === "collection" || targetType === "category";
-}
 
 function FoldButton({ collapsed, onClick, label }: { collapsed: boolean; onClick: () => void; label: string }) {
   return (

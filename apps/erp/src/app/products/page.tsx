@@ -9,9 +9,9 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
-import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable, type ProductSortKey } from "@/components/products-table";
+import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable, type ProductSortKey } from "@/features/products/components/products-table";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { useProductsPage } from "../../hooks/use-products-page";
+import { useProductsPage } from "@/features/products/hooks/use-products-page";
 
 export default function ProductsListPage() {
   const { user } = useAdminAuth();

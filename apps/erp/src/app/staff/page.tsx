@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Users } from "lucide-react";
-import { type StaffUser } from "@/components/admin/staff-editor-form";
+import { type StaffUser } from "@/features/staff/types";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";

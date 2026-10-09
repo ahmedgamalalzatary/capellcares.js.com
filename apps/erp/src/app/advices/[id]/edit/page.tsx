@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { AdviceForm } from "@/components/forms/advice-form";
+import { AdviceForm } from "@/features/advices/components/advice-form";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";

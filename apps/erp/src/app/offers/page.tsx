@@ -10,7 +10,7 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Button } from "@/components/ui/button";
-import { OFFER_SORT_COLUMNS, OffersTable, offerSortAccessors, type OfferSortKey } from "@/components/offers-table";
+import { OFFER_SORT_COLUMNS, OffersTable, offerSortAccessors, type OfferSortKey } from "@/features/offers/components/offers-table";
 import { buildCategoryTreeOptions, isInCategoryTree } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";

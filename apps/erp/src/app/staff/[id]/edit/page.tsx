@@ -2,7 +2,9 @@
 
 import { use, useEffect, useState } from "react";
 import { notFound, useRouter } from "next/navigation";
-import { StaffEditorForm, type StaffFormState, type StaffUser } from "@/components/admin/staff-editor-form";
+import { StaffEditorForm } from "@/features/staff/components/staff-editor-form";
+import { toFormState } from "@/features/staff/lib/staff-form-state";
+import type { StaffUser } from "@/features/staff/types";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -11,16 +13,6 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/errors";
-
-function toFormState(staffUser: StaffUser): StaffFormState {
-  return {
-    name: staffUser.name,
-    email: staffUser.email,
-    password: "",
-    isActive: staffUser.isActive,
-    permissionKeys: staffUser.permissionKeys
-  };
-}
 
 export default function StaffEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, hydrated } = useAdminAuth();

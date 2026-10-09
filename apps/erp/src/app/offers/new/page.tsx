@@ -3,7 +3,7 @@
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { OfferForm } from "@/components/forms/offer-form";
+import { OfferForm } from "@/features/offers/components/offer-form";
 import { buildRelatedOptions } from "@/lib/related-options";
 import { canCreateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";

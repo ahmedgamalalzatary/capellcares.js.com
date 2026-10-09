@@ -1,6 +1,7 @@
 "use client";
 
-import { createEmptyStaffForm, StaffEditorForm } from "@/components/admin/staff-editor-form";
+import { StaffEditorForm } from "@/features/staff/components/staff-editor-form";
+import { createEmptyStaffForm } from "@/features/staff/lib/staff-form-state";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";

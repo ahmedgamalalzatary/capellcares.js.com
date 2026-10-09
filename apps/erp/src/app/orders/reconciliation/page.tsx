@@ -15,10 +15,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { getStore } from "@/lib/store";
-
-type ReconciliationPayload = Awaited<ReturnType<ReturnType<typeof getStore>["fetchPaymobReconciliation"]>>;
-type ReconciliationItem = ReconciliationPayload["items"][number];
-type CallbackProblem = ReconciliationPayload["callbackProblems"][number];
+import type { PaymobCallbackProblem as CallbackProblem, PaymobReconciliationItem as ReconciliationItem } from "@/lib/store/types";
 
 const ageLabel = (ageMs: number) => `${formatNumber(Math.max(1, Math.floor(ageMs / 60000)))} د`;
 
