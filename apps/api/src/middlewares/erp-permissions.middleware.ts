@@ -9,7 +9,7 @@ async function resolvePermission(permission: PermissionResolver, req: ErpAuthent
 }
 
 export function requireErpPermission(permission: PermissionResolver) {
-  return async function erpPermissionMiddleware(req: ErpAuthenticatedRequest, res: Response, next: NextFunction) {
+  const middleware = async function erpPermissionMiddleware(req: ErpAuthenticatedRequest, res: Response, next: NextFunction) {
     const adminUser = req.adminUser;
     if (!adminUser) {
       return res.status(401).json({ message: "Admin auth required" });
@@ -29,5 +29,10 @@ export function requireErpPermission(permission: PermissionResolver) {
     }
 
     return next();
+  };
+
+  // Express 4 ignores rejected promises; forward a failed permission lookup to the error middleware instead of crashing the process.
+  return (req: ErpAuthenticatedRequest, res: Response, next: NextFunction) => {
+    void middleware(req, res, next).catch(next);
   };
 }
