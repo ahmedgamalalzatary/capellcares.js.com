@@ -1,0 +1,448 @@
+import { createElement } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const fetchOrder = vi.fn();
+const updateOrderPaymentStatus = vi.fn();
+const performShippingAction = vi.fn();
+const mockedUseAdminAuth = vi.fn(() => ({
+  user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+  hydrated: true,
+  logout: vi.fn()
+}));
+
+vi.mock("@/components/shell/admin-shell", () => ({
+  AdminShell: ({ children }: any) => createElement("div", null, children)
+}));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
+}));
+
+vi.mock("next/link", () => ({
+  default: (props: any) => {
+    const { children, href, ...rest } = props;
+    return createElement("a", { href, ...rest }, children);
+  }
+}));
+
+vi.mock("@/lib/store", () => ({
+  getStore: () => ({
+    fetchOrder,
+    updateOrderPaymentStatus,
+    performShippingAction
+  })
+}));
+
+import { OrderDetailsView } from "@/features/orders/components/order-details-view";
+
+const detailedOrder = {
+  id: 5, orderCode: "YMFI-005", customerType: "guest", customerId: null,
+  fullName: "Checkout Customer", phone: "01012345678", email: "checkout@example.test",
+  governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10",
+  buildingApartment: "Building 4, floor 3, apartment 12", notes: "Call before delivery\nAfter 6 pm",
+  paymentMethod: "cod", paymentStatus: "pending", providerPaymentStatus: null,
+  refundedAmountCents: 0, totalAmount: 200, createdAt: "2026-09-21T09:00:00.000Z",
+  updatedAt: "2026-09-21T10:00:00.000Z", codExpiresAt: "2026-09-23T09:00:00.000Z", payment: null,
+  items: [{ id: 11, orderId: 5, itemType: "product_variant", variantId: 7, offerId: null,
+    collectionId: null, qty: 2, unitPrice: 100, lineTotal: 200,
+    snapshotNameAr: "شامبو", snapshotNameEn: "Shampoo", snapshotSizeLabel: "100ml",
+    snapshotBaseUnitPrice: 125, snapshotDiscountType: "percentage", snapshotDiscountValue: 20 }]
+};
+
+afterEach(() => {
+  cleanup();
+});
+
+beforeEach(() => {
+  mockedUseAdminAuth.mockReset();
+  mockedUseAdminAuth.mockReturnValue({
+    user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+    hydrated: true,
+    logout: vi.fn()
+  });
+  fetchOrder.mockReset();
+  updateOrderPaymentStatus.mockReset();
+  performShippingAction.mockReset();
+});
+
+describe("OrderDetailsPage", () => {
+  it.each(["cod", "paymob"])("shows shipping refresh failures for %s and clears them on a new refresh", async paymentMethod => {
+    const shipping = { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true },
+      history: [], flags: [], workItem: null };
+    let resolveRefresh!: (value: unknown) => void;
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod, shipping })
+      .mockRejectedValueOnce(new Error("Refresh failed"))
+      .mockImplementationOnce(() => new Promise(resolve => { resolveRefresh = resolve; }));
+    performShippingAction.mockResolvedValue({ ok: true });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "manual_state" } });
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("تعذر تحميل البيانات المحدثة");
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    await act(async () => { resolveRefresh({ ...detailedOrder, paymentMethod, shipping: { ...shipping, manualState: "preparing" } }); });
+    expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
+  });
+  it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
+      rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },
+      processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      editEnabled: true, hasPendingEdit: true, workItem: { operation: "edit_delivery", status: "failed", lastError: "EDIT_REJECTED" } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const actions = await screen.findByLabelText("إجراء الشحن");
+    expect(within(actions).getByRole("option", { name: "التحقق من النتيجة لدى بوسطة" })).toBeInTheDocument();
+    expect(within(actions).queryByRole("option", { name: "تعديل بيانات الشحنة / حجم العبوة" })).not.toBeInTheDocument();
+    expect(within(actions).queryByRole("option", { name: "إلغاء قبل الطباعة والاستلام" })).not.toBeInTheDocument();
+  });
+  it("shows each linked return/exchange parcel separately and read-only for order readers", async () => {
+    mockedUseAdminAuth.mockReturnValue({ user: { name: "Reader", email: "reader@example.test", role: "staff", permissionKeys: ["orders.read"] }, hydrated: true, logout: vi.fn() });
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: "delivered", carrierState: "delivered",
+      rawProviderCode: 45, rawProviderType: "SEND", custodyState: "recipient", collection: { confirmed: true, amountCents: 20000 },
+      processing: { startedAtMs: 1760000000123, pickupAtMs: 1760000000123, addressBlockedAtMs: null, untouchedExpiryApplies: false }, history: [],
+      relatedShipments: [
+        { id: 12, kind: "return", trackingNumber: "RETURN-12", manualState: null, carrierState: "returned", rawProviderState: "Returned to business",
+          rawProviderCode: 46, rawProviderType: "CUSTOMER_RETURN_PICKUP", custodyState: "warehouse_uninspected", providerEventAtMs: 1760000000456,
+          workItem: { operation: "sync_delivery", status: "failed", lastError: "RETURN_READ_FAILED" } },
+        { id: 13, kind: "exchange", trackingNumber: "EXCHANGE-13", manualState: "preparing", carrierState: "exception", rawProviderState: "Damaged",
+          rawProviderCode: 101, rawProviderType: "EXCHANGE", custodyState: "unknown", providerEventAtMs: null, workItem: null }
+      ] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const returns = within(await screen.findByRole("region", { name: "المرتجعات والاستبدالات" }));
+    const returned = within(returns.getByRole("region", { name: "مرتجع — RETURN-12" }));
+    expect(returned.getByText("تم الإرجاع (بوسطة)")).toBeInTheDocument();
+    expect(returned.getByText("لا توجد حالة يدوية")).toBeInTheDocument();
+    expect(returned.getByText("راجع للمخزن؛ بانتظار الفحص")).toBeInTheDocument();
+    expect(returned.getByText("Returned to business")).toBeInTheDocument();
+    expect(returned.getByText(/RETURN_READ_FAILED/)).toBeInTheDocument();
+    expect(returned.getByText("46")).toBeInTheDocument();
+    expect(returned.getByText("CUSTOMER_RETURN_PICKUP")).toBeInTheDocument();
+    expect(returned.getByText((_, element) => element?.tagName === "TIME")).toHaveAttribute("datetime", "2025-10-09T08:53:20.456Z");
+    const exchange = within(returns.getByRole("region", { name: "استبدال — EXCHANGE-13" }));
+    expect(exchange.getByText("تحتاج متابعة (بوسطة)")).toBeInTheDocument();
+    expect(exchange.getByText("Damaged")).toBeInTheDocument();
+    expect(exchange.getByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
+    expect(returns.queryByRole("button")).not.toBeInTheDocument();
+    expect(returns.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("إجراء الشحن")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["succeeded", 0, "مدفوع عبر باي موب"],
+    ["partially_refunded", 5025, "مسترد جزئيًا عبر باي موب"],
+    ["refunded", 20000, "مسترد عبر باي موب"]
+  ])("returned parcels preserve independent %s Paymob refund evidence", async (status, amount, label) => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, paymentMethod: "paymob", paymentStatus: "accepted", providerPaymentStatus: status, refundedAmountCents: amount,
+      shipping: { manualState: null, carrierState: "delivered", rawProviderCode: 45, rawProviderType: "SEND", custodyState: "recipient",
+        collection: { confirmed: false, amountCents: 0 }, processing: { startedAtMs: null, pickupAtMs: 1760000000123, addressBlockedAtMs: null, untouchedExpiryApplies: false }, history: [],
+        relatedShipments: [{ id: 12, kind: "return", trackingNumber: "RETURN-12", manualState: null, carrierState: "returned", rawProviderState: "Returned to business",
+          rawProviderCode: 46, rawProviderType: "CUSTOMER_RETURN_PICKUP", custodyState: "warehouse_uninspected", providerEventAtMs: null, workItem: null }] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByRole("region", { name: "المرتجعات والاستبدالات" })).toBeInTheDocument();
+    expect(screen.getByText(label)).toBeInTheDocument();
+    if (amount === 0) expect(screen.queryByText("المبلغ المسترد")).not.toBeInTheDocument();
+    else expect(screen.getByText("المبلغ المسترد")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "المرتجعات والاستبدالات" })).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("authorized shipping actions save a manual state and reload the recorded order", async () => {
+    const shipping = { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      flags: [], workItem: null };
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shipping }).mockResolvedValue({ ...detailedOrder, shipping: { ...shipping, manualState: "preparing" } });
+    performShippingAction.mockResolvedValue({ ok: true });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "manual_state" } });
+    fireEvent.change(screen.getByLabelText("الحالة اليدوية الجديدة"), { target: { value: "preparing" } });
+    expect(screen.queryByRole("option", { name: "تم الإرجاع" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(performShippingAction).toHaveBeenCalledWith(5, { action: "manual_state", state: "preparing" }));
+    expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
+  });
+
+  it("shipping edits submit only changed no-money fields and keep failures reviewable", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: null, rawProviderCode: null, rawProviderType: null, custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      flags: [], workItem: null, editEnabled: true, destination: { cityId: "c", zoneId: "z", districtId: "d" } } });
+    performShippingAction.mockRejectedValue(new Error("Request rejected"));
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByLabelText("إجراء الشحن"), { target: { value: "shipment_edit" } });
+    fireEvent.change(screen.getByLabelText("حجم العبوة الجديد"), { target: { value: "medium" } });
+    fireEvent.click(screen.getByRole("button", { name: "تنفيذ الإجراء" }));
+    await waitFor(() => expect(performShippingAction).toHaveBeenCalledWith(5, { action: "shipment_edit", patch: { size: "medium" } }));
+    expect(await screen.findByText(/تعذر تنفيذ إجراء الشحن/)).toBeInTheDocument();
+    expect(screen.getByLabelText("حجم العبوة الجديد")).toHaveValue("medium");
+  });
+  it("shows current carrier recipient, address and notes alongside the original order details", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+      collection: { confirmed: false, amountCents: null }, processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+      carrierSnapshot: { recipient: { fullName: "Edited carrier buyer", phone: "+201011111111" }, address: { firstLine: "Edited carrier street" }, notes: "Edited carrier instructions", size: "MEDIUM" } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("Edited carrier buyer")).toBeInTheDocument();
+    expect(screen.getByText("Edited carrier street")).toBeInTheDocument();
+    expect(screen.getByText("Edited carrier instructions")).toBeInTheDocument();
+    expect(screen.getByText("Checkout Customer")).toBeInTheDocument();
+    expect(screen.getByText("Street 10")).toBeInTheDocument();
+  });
+  it.each(["pending", "cancelled"])("shows %s cancellation separately from carrier, payment and manual refund", async (status) => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod: "paymob", paymentStatus: "accepted", providerPaymentStatus: "succeeded",
+      shipping: { manualState: null, carrierState: "created", rawProviderCode: 10, rawProviderType: "SEND", custodyState: "unknown",
+        collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [],
+        cancellation: { status, requestedAtMs: 1760000000123, completedAtMs: status === "cancelled" ? 1760000000456 : null,
+          stockRestoredAtMs: status === "cancelled" ? 1760000000456 : null, refundRequiredCents: status === "cancelled" ? 20000 : 0 } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText(status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب")).toBeInTheDocument();
+    expect(region.getByText("تم الإنشاء (بوسطة)")).toBeInTheDocument();
+    if (status === "cancelled") expect(region.getByText(/استرداد كامل يدوي عبر باي موب/)).toBeInTheDocument();
+  });
+  it.each(["pending", "cancelled"])("unsent %s cancellations do not claim a future carrier creation", async (status) => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: null, rawProviderCode: null,
+      rawProviderType: null, custodyState: "unknown", collection: { confirmed: false, amountCents: null },
+      processing: { startedAtMs: null, pickupAtMs: null, addressBlockedAtMs: null, untouchedExpiryApplies: true }, history: [], relatedShipments: [],
+      cancellation: { status, requestedAtMs: 1760000000123, completedAtMs: null, stockRestoredAtMs: null, refundRequiredCents: 0 } } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.queryByText("بانتظار إنشاء الشحنة")).not.toBeInTheDocument();
+    expect(region.getByText("لا توجد شحنة مرتبطة ببوسطة")).toBeInTheDocument();
+    expect(region.getByText(status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "المرتجعات والاستبدالات" })).not.toBeInTheDocument();
+  });
+  it("shows verified collection independently of a contradictory current carrier state", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentStatus: "accepted", shippingQuoteId: "quote",
+      shipping: { manualState: null, carrierState: "in_transit", rawProviderCode: 41, rawProviderType: "SEND",
+        custodyState: "carrier", collection: { confirmed: true, amountCents: 20000 },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: 1760000000123, addressBlockedAtMs: null, untouchedExpiryApplies: false }, history: [] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("في الطريق (بوسطة)")).toBeInTheDocument();
+    expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
+    expect(region.getByText("التحصيل مؤكد")).toBeInTheDocument();
+    expect(region.getByText(/200/)).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
+  });
+  it("shows staff and Bosta states separately while retaining independent payment, custody and collection evidence", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shippingQuoteId: "quote", shippingAmountCents: 9700,
+      shipping: { manualState: "delivered", carrierState: "in_transit", rawProviderCode: 41, rawProviderType: "SEND",
+        custodyState: "carrier", collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: 1760000000456, addressBlockedAtMs: null, untouchedExpiryApplies: false },
+        history: [{ id: 1, state: "delivered", actorType: "staff", actorId: 7, atMs: 1760000000123, reason: "Staff report" }] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("تم التسليم (الموظفة)")).toBeInTheDocument();
+    expect(region.getByText("في الطريق (بوسطة)")).toBeInTheDocument();
+    expect(region.getByText("مع شركة الشحن")).toBeInTheDocument();
+    expect(region.getByText("التحصيل غير مؤكد")).toBeInTheDocument();
+    expect(region.getByText("Staff report")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("pending");
+    expect(within(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).getByRole("option", { name: "مقبول" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+    expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
+  });
+  it("shows the original deadline again for pre-pickup address trouble and never treats a return as approved restocking", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, shippingQuoteId: "quote",
+      shipping: { manualState: "preparing", carrierState: "returned", rawProviderCode: 46, rawProviderType: "RTO",
+        custodyState: "warehouse_uninspected", collection: { confirmed: false, amountCents: null },
+        processing: { startedAtMs: 1760000000123, pickupAtMs: null, addressBlockedAtMs: 1760000000456, untouchedExpiryApplies: true }, history: [] } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const region = within(await screen.findByRole("region", { name: "حالات الشحن" }));
+    expect(region.getByText("راجع للمخزن؛ بانتظار الفحص")).toBeInTheDocument();
+    expect(region.getByText("مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة")).toBeInTheDocument();
+    expect(screen.getByText("مهلة مراجعة الدفع عند الاستلام")).toBeInTheDocument();
+  });
+  it("shows the checkout contact, complete delivery instructions, and recorded dates", async () => {
+    fetchOrder.mockResolvedValueOnce(detailedOrder);
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    expect(await screen.findByRole("link", { name: "checkout@example.test" }))
+      .toHaveAttribute("href", "mailto:checkout@example.test");
+    expect(screen.getByRole("link", { name: "01012345678" })).toHaveAttribute("href", "tel:01012345678");
+    expect(screen.getByText(detailedOrder.buildingApartment)).toBeInTheDocument();
+    expect(screen.getByText(/Call before delivery/)).toHaveTextContent("After 6 pm");
+    expect(screen.getByText("ضيف")).toBeInTheDocument();
+    for (const value of [detailedOrder.createdAt, detailedOrder.updatedAt, detailedOrder.codExpiresAt]) {
+      expect(document.querySelector(`time[datetime="${value}"]`)).not.toBeNull();
+    }
+    expect(screen.getByText("منتج")).toBeInTheDocument();
+    expect(screen.queryByText("pending")).not.toBeInTheDocument();
+  });
+
+  it("shows Paymob references and converts refunded minor units without reducing the original total", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, paymentMethod: "paymob", codExpiresAt: null,
+      providerPaymentStatus: "partially_refunded", refundedAmountCents: 5025,
+      payment: { environment: "test", paymentMethod: "card", attemptNumber: 2,
+        paymobOrderId: "987654", paymobTransactionId: "123456789", merchantReference: "capella_reference",
+        integrationId: 5885253, createdAt: "2026-09-21T08:58:00.000Z" } });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    expect(await screen.findByText("123456789")).toBeInTheDocument();
+    expect(screen.getByText("987654")).toBeInTheDocument();
+    expect(screen.getByText("capella_reference")).toBeInTheDocument();
+    expect(screen.getByText("تجريبي")).toBeInTheDocument();
+    expect(screen.getByText("بطاقة بنكية")).toBeInTheDocument();
+    const summary = within(screen.getByRole("region", { name: "ملخص المبالغ" }));
+    expect(summary.getByText(/50\.25/)).toBeInTheDocument();
+    expect(summary.getByText(/149\.75/)).toBeInTheDocument();
+    expect(summary.getByText(/200/)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "حالة الدفع عند الاستلام" })).not.toBeInTheDocument();
+  });
+
+  it("waits for read permission before fetching and survives access changes", async () => {
+    mockedUseAdminAuth.mockReturnValue({ user: { name: "Staff", email: "staff@example.test", role: "staff", permissionKeys: [] },
+      hydrated: true, logout: vi.fn() });
+    const view = render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(fetchOrder).not.toHaveBeenCalled();
+    fetchOrder.mockResolvedValueOnce(detailedOrder);
+    mockedUseAdminAuth.mockReturnValue({ user: { name: "Staff", email: "staff@example.test", role: "staff", permissionKeys: ["orders.read"] },
+      hydrated: true, logout: vi.fn() });
+    view.rerender(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("YMFI-005")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
+  });
+
+  it("prevents overlapping payment changes and preserves the saved status when an update fails", async () => {
+    fetchOrder.mockResolvedValueOnce(detailedOrder);
+    let rejectUpdate!: (error: Error) => void;
+    updateOrderPaymentStatus.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectUpdate = reject; }));
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const select = await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" });
+    fireEvent.change(select, { target: { value: "accepted" } });
+    expect(select).toBeDisabled();
+    await act(async () => { rejectUpdate(new Error("Request failed")); });
+    expect(screen.getByRole("alert")).toHaveTextContent("تعذر تحديث حالة الدفع");
+    expect(select).toHaveValue("pending");
+    expect(select).toBeEnabled();
+  });
+  it("shows provider-confirmed Paymob payment separately and blocks manual payment changes", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, id: 9, orderCode: "PAY-009", fullName: "Online Customer",
+      phone: "01012345678", governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+      paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "succeeded",
+      totalAmount: 35, createdAt: "2026-09-11T12:00:00.000Z", items: [] });
+    render(createElement(OrderDetailsView, { orderId: 9, crumbLabel: "9" }));
+    expect(await screen.findByText("PAY-009")).toBeInTheDocument();
+    expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeNull();
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+  });
+  it("disables payment-status mutation for staff without orders.update_payment_status", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+    fetchOrder.mockResolvedValueOnce({
+      ...detailedOrder,
+      id: 5,
+      orderCode: "YMFI-005",
+      fullName: "Capella User",
+      phone: "01012345678",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street 10",
+      paymentStatus: "pending",
+      items: []
+    });
+
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
+    expect(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+  });
+
+  it("renders the fetched admin order detail and updates payment status", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, paymentStatus: "accepted" });
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+    fetchOrder.mockResolvedValueOnce({
+      ...detailedOrder,
+      id: 5,
+      orderCode: "YMFI-005",
+      fullName: "Capella User",
+      phone: "01012345678",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street 10",
+      paymentStatus: "pending",
+      items: [
+        {
+          id: 11,
+          itemType: "product_variant",
+          qty: 2,
+          unitPrice: 100,
+          lineTotal: 200,
+          snapshotNameAr: "شامبو",
+          snapshotNameEn: "Shampoo",
+          snapshotSizeLabel: "100ml"
+        }
+      ]
+    });
+    updateOrderPaymentStatus.mockResolvedValueOnce(undefined);
+
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
+    expect((await screen.findAllByText(/YMFI-005/)).length).toBeGreaterThan(0);
+    expect(await screen.findByText("100ml")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
+
+    await waitFor(() => expect(updateOrderPaymentStatus).toHaveBeenCalledWith(5, "accepted"));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted"));
+  });
+
+  it("locks payment-status changes when the order is already denied", async () => {
+    fetchOrder.mockResolvedValueOnce({
+      ...detailedOrder,
+      id: 5,
+      orderCode: "YMFI-005",
+      fullName: "Capella User",
+      phone: "01012345678",
+      governorate: "Cairo",
+      cityArea: "Nasr City",
+      addressLine: "Street 10",
+      paymentStatus: "denied",
+      items: []
+    });
+
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
+    expect(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
+    expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
+  });
+
+  it("refreshes recorded order data after a successful payment change", async () => {
+    fetchOrder.mockResolvedValueOnce(detailedOrder).mockResolvedValueOnce({ ...detailedOrder,
+      paymentStatus: "accepted", updatedAt: "2026-09-21T11:00:00.000Z" });
+    updateOrderPaymentStatus.mockResolvedValueOnce(undefined);
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
+    await waitFor(() => expect(document.querySelector('time[datetime="2026-09-21T11:00:00.000Z"]')).not.toBeNull());
+    expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
+    expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
+  });
+
+  it("shows an error state instead of hanging when order fetch fails", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+    fetchOrder.mockRejectedValueOnce(new Error("fetch failed"));
+
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+
+    await waitFor(() => expect(fetchOrder).toHaveBeenCalledWith(5));
+    expect(await screen.findByText("تعذر تحميل تفاصيل الطلب. حاولي مرة أخرى.")).toBeInTheDocument();
+    expect(screen.queryByText("جارٍ التحميل…")).not.toBeInTheDocument();
+  });
+});
