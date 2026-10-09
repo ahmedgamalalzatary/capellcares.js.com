@@ -91,4 +91,45 @@ describe("ERP API client auth invalidation", () => {
       expect.objectContaining({ method: "POST", credentials: "include" })
     );
   });
+
+  it("refreshes and retries when a protected request returns Admin auth required", async () => {
+    const fetchMock = vi.fn(async (input: string) => {
+      if (input.endsWith("/api/erp/orders")) {
+        const attempt = fetchMock.mock.calls.filter(([url]) => url === input).length;
+        if (attempt === 1) {
+          return {
+            ok: false,
+            status: 401,
+            json: async () => ({ message: "Admin auth required" })
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({ items: [] })
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          accessToken: "fresh-admin-token",
+          user: {
+            name: "Admin User",
+            email: "admin@capella.test",
+            role: "admin",
+            permissionKeys: ["orders.read"]
+          }
+        })
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+
+    await expect(client.api.get("/api/erp/orders")).resolves.toEqual({ items: [] });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/erp/auth/refresh"),
+      expect.objectContaining({ method: "POST", credentials: "include" })
+    );
+  });
 });

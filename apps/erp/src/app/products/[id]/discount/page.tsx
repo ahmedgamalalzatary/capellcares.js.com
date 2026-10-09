@@ -222,7 +222,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
                         variant.id,
                         checked
                           ? { ...discount, status: "active" }
-                          : variant.discount == null
+                          : !discount.startsAt && !discount.endsAt && discount.value <= 0
                             ? null
                             : { ...discount, status: "inactive" }
                       )}

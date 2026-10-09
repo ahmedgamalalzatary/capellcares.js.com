@@ -8,9 +8,9 @@ export type ThemePreference = "light" | "dark" | "system";
 function readPreference(): ThemePreference {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
-    return value === "light" || value === "dark" ? value : "system";
+    return value === "light" || value === "dark" || value === "system" ? value : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
@@ -21,7 +21,7 @@ function apply(preference: ThemePreference) {
 
 /** Per-viewer theme choice (a browser convenience, not shared state). */
 export function useThemePreference() {
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
+  const [preference, setPreferenceState] = useState<ThemePreference>("light");
 
   useEffect(() => {
     setPreferenceState(readPreference());
@@ -38,8 +38,8 @@ export function useThemePreference() {
 
   const setPreference = useCallback((next: ThemePreference) => {
     try {
-      if (next === "system") localStorage.removeItem(STORAGE_KEY);
-      else localStorage.setItem(STORAGE_KEY, next);
+      // Persist every choice including "system" so the light default only applies before the viewer ever chooses.
+      localStorage.setItem(STORAGE_KEY, next);
     } catch {
       // Storage unavailable (private mode): the choice still applies for this visit.
     }

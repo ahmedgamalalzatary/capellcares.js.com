@@ -84,6 +84,7 @@ beforeEach(() => {
       logout: vi.fn()
   });
   apiPost.mockClear();
+  mockedUseStore.mockImplementation((selector: any) => selector(storeState));
   storeState.products[0]!.variants[0]!.discount = null;
   storeState.products[0]!.variants[1]!.discount = null;
 });
@@ -115,8 +116,8 @@ beforeEach(() => {
     fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
     fireEvent.change(screen.getAllByLabelText("نوع الخصم")[0]!, { target: { value: "percentage" } });
     fireEvent.change(screen.getAllByLabelText("قيمة الخصم")[0]!, { target: { value: "20" } });
-    fireEvent.change(screen.getAllByLabelText("بداية الخصم")[0]!, { target: { value: "2026-06-01T10:00" } });
-    fireEvent.change(screen.getAllByLabelText("نهاية الخصم")[0]!, { target: { value: "2026-06-30T22:00" } });
+    fireEvent.change(screen.getAllByLabelText("يبدأ في")[0]!, { target: { value: "2026-06-01T10:00" } });
+    fireEvent.change(screen.getAllByLabelText("ينتهي في")[0]!, { target: { value: "2026-06-30T22:00" } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ الخصومات" }));
 
     await waitFor(() => {
@@ -153,8 +154,8 @@ beforeEach(() => {
       render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
     });
 
-    const startsAtInput = screen.getAllByLabelText("بداية الخصم")[0] as HTMLInputElement;
-    const endsAtInput = screen.getAllByLabelText("نهاية الخصم")[0] as HTMLInputElement;
+    const startsAtInput = screen.getAllByLabelText("يبدأ في")[0] as HTMLInputElement;
+    const endsAtInput = screen.getAllByLabelText("ينتهي في")[0] as HTMLInputElement;
 
     const expectedStart = new Date("2026-06-01T10:00:00.000Z");
     const expectedEnd = new Date("2026-06-01T12:30:00.000Z");
@@ -182,8 +183,8 @@ beforeEach(() => {
 
     fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
     fireEvent.change(screen.getAllByLabelText("قيمة الخصم")[0]!, { target: { value: "10" } });
-    fireEvent.change(screen.getAllByLabelText("بداية الخصم")[0]!, { target: { value: "2026-06-01T10:00" } });
-    fireEvent.change(screen.getAllByLabelText("نهاية الخصم")[0]!, { target: { value: "2026-06-01T12:00" } });
+    fireEvent.change(screen.getAllByLabelText("يبدأ في")[0]!, { target: { value: "2026-06-01T10:00" } });
+    fireEvent.change(screen.getAllByLabelText("ينتهي في")[0]!, { target: { value: "2026-06-01T12:00" } });
     expect(saveButton).not.toBeDisabled();
 
     fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
@@ -204,7 +205,7 @@ beforeEach(() => {
       view = render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
     });
 
-    expect(screen.getByText("جاري تحميل بيانات المنتج...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
 
     delayedState.loaded = true;
     delayedState.products = storeState.products;
@@ -216,6 +217,39 @@ beforeEach(() => {
     await waitFor(() => {
       expect(screen.getByTestId("discount-variant-11")).toBeInTheDocument();
       expect(screen.getByTestId("discount-variant-12")).toBeInTheDocument();
+    });
+  });
+
+  it("keeps Save enabled when a new discount is switched on then off without dates", async () => {
+    await act(async () => {
+      render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
+    });
+
+    const saveButton = screen.getByRole("button", { name: "حفظ الخصومات" });
+
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+
+    expect(saveButton).not.toBeDisabled();
+    expect(screen.queryByText(/راجعي بيانات الخصم/)).not.toBeInTheDocument();
+  });
+
+  it("clears a discarded new discount to null on save", async () => {
+    await act(async () => {
+      render(createElement(Suspense, { fallback: null }, createElement(ProductDiscountPage, { params: Promise.resolve({ id: "1" }) })));
+    });
+
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+    fireEvent.click(screen.getAllByLabelText("تفعيل الخصم")[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "حفظ الخصومات" }));
+
+    await waitFor(() => {
+      expect(apiPost).toHaveBeenCalledWith("/api/erp/products/1/discount", {
+        variants: [
+          expect.objectContaining({ id: 11, discount: null }),
+          expect.objectContaining({ id: 12, discount: null })
+        ]
+      });
     });
   });
 });

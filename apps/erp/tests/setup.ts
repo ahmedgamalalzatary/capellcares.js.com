@@ -7,3 +7,20 @@ import { afterEach } from "vitest";
 afterEach(() => {
   cleanup();
 });
+
+// jsdom ships no matchMedia; components that read a media query (AdminListHeader, the theme hook) would throw without it.
+if (typeof window.matchMedia !== "function") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false
+  })) as unknown as typeof window.matchMedia;
+}
+
+// jsdom implements neither; page code calls scrollTo on step changes.
+window.scrollTo = (() => {}) as unknown as typeof window.scrollTo;

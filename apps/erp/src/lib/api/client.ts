@@ -175,7 +175,8 @@ async function request<T>(path: string, init?: RequestInit, allowRefresh = true)
     let body: unknown = null;
     try { body = await res.json(); } catch {}
     const message = body && typeof body === "object" && "message" in body ? (body as { message?: unknown }).message : undefined;
-    if (res.status === 401 && message === "Invalid admin token") {
+    // A request can land before the session is restored, so "Admin auth required" is refreshable too (not only "Invalid admin token").
+    if (res.status === 401 && (message === "Invalid admin token" || message === "Admin auth required")) {
       if (allowRefresh) {
         const refreshedToken = await refreshAdminSession();
         if (refreshedToken) {
