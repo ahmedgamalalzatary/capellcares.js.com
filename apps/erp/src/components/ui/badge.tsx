@@ -20,6 +20,8 @@ const badgeVariants = cva(
   },
 );
 
+export type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["tone"]>;
+
 type BadgeProps = ComponentProps<"span"> & VariantProps<typeof badgeVariants> & { swatch?: boolean };
 
 export function Badge({ className, tone, swatch = true, children, ...props }: BadgeProps) {
@@ -41,6 +43,6 @@ const SWATCH_COLOR = {
   nude: "bg-nude-strong",
 } as const;
 
-export function Swatch({ tone, className }: { tone?: BadgeProps["tone"]; className?: string }) {
+export function Swatch({ tone, className }: { tone?: BadgeTone; className?: string }) {
   return <span aria-hidden className={cn("inline-block size-2 shrink-0 rounded-full", SWATCH_COLOR[tone ?? "neutral"], className)} />;
 }

@@ -114,6 +114,31 @@ describe("ERP store", () => {
     expect(store.collections).toEqual([]);
   });
 
+  it("removes a product locally before the background refetch", async () => {
+    // Keep the background refetch pending so the local removal is observable.
+    apiGet.mockReturnValue(new Promise(() => {}));
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+    store.products = [{ id: 1 }, { id: 2 }] as any;
+
+    await store.hardDeleteProduct(1);
+
+    expect(apiDel).toHaveBeenCalledWith("/api/erp/products/1/permanent");
+    expect(store.products).toEqual([{ id: 2 }]);
+    expect(apiGet).toHaveBeenCalled();
+  });
+
+  it("refetches after a mutation", async () => {
+    apiGet.mockResolvedValue({ items: [] });
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    await store.reorderOffers({ ids: [2, 1] });
+
+    expect(apiPost).toHaveBeenCalledWith("/api/erp/offers/reorder", { ids: [2, 1] });
+    expect(apiGet).toHaveBeenCalled();
+  });
+
   it("hydrates advices and orders during refetch", async () => {
     apiGet
       .mockResolvedValueOnce({ items: [] })

@@ -4,7 +4,8 @@ import { useState } from "react";
 import type { Language } from "@capella/shared";
 import { Alert } from "@/components/ui/alert";
 import { api, type ErpUploadContext } from "@/lib/api/client";
-import { resolveMediaSrc } from "@/lib/media";
+import { getErrorMessage } from "@/lib/errors";
+import { resolveMediaSrc, validateImageFile } from "@/lib/media";
 import { LangSlotRow } from "./media-frame";
 
 interface Props {
@@ -35,13 +36,19 @@ export function HoverImageUpload({
       return;
     }
 
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setUploading(lang);
     setError(null);
     try {
       const result = await api.uploadImage(file, uploadContext);
       onChange(lang, result.url);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع صورة التمرير");
+      setError(getErrorMessage(uploadError, "تعذر رفع صورة التمرير"));
     } finally {
       setUploading(null);
     }

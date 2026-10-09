@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { API_BASE } from "@/lib/api/client";
-import { resolveMediaSrc } from "@/lib/media";
+import { MAX_IMAGE_BYTES, resolveMediaSrc, validateImageFile } from "@/lib/media";
+
+describe("validateImageFile", () => {
+  const file = (type: string, size = 1024) => ({ type, size }) as File;
+
+  it("accepts PNG, JPG and WEBP within the size cap", () => {
+    expect(validateImageFile(file("image/png"))).toBeNull();
+    expect(validateImageFile(file("image/jpeg"))).toBeNull();
+    expect(validateImageFile(file("image/webp", MAX_IMAGE_BYTES))).toBeNull();
+  });
+
+  it("rejects an unsupported type", () => {
+    expect(validateImageFile(file("image/gif"))).toBe("نوع الصورة غير مدعوم. استخدمي PNG أو JPG أو WEBP.");
+  });
+
+  it("rejects a file larger than the cap", () => {
+    expect(validateImageFile(file("image/png", MAX_IMAGE_BYTES + 1))).toBe("حجم الصورة أكبر من 4 ميجابايت.");
+  });
+});
 
 describe("resolveMediaSrc", () => {
   it("returns http and https URLs unchanged", () => {

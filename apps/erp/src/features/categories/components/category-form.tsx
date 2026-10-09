@@ -2,17 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronLeft, ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, ImagePlus } from "lucide-react";
 import type { Category } from "@capella/shared";
-import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { StepCount, Stepper } from "@/components/admin/stepper";
+import { useWizardSteps } from "@/hooks/use-wizard-steps";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
-import { FileButton } from "@/components/ui/file-button";
 import { Select } from "@/components/ui/input";
 import { resolveMediaSrc } from "@/lib/media";
-import { api, type ErpUploadContext } from "@/lib/api/client";
+import { useImageUpload } from "@/hooks/use-image-upload";
+import { ImageActions } from "@/components/forms/image-actions";
+import type { ErpUploadContext } from "@/lib/api/client";
 import { buildCategoryTreeOptions, getDescendantCategoryIds } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { getStore } from "@/lib/store";
@@ -46,30 +48,11 @@ function ImageWell({
   uploadContext: ErpUploadContext;
   disabled?: boolean;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, upload } = useImageUpload(uploadContext);
 
   const handleFiles = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setError("نوع الصورة غير مدعوم. استخدمي PNG أو JPG أو WEBP.");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setError("حجم الصورة أكبر من 4 ميجابايت.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await api.uploadImage(file, uploadContext);
-      onChange(result.url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة.");
-    } finally {
-      setBusy(false);
-    }
+    const url = await upload(files);
+    if (url) onChange(url);
   };
 
   return (
@@ -87,21 +70,16 @@ function ImageWell({
         <div className="grid min-w-0 gap-1">
           <span className="text-base font-medium text-text-strong">{value ? "الصورة مضافة" : "لا توجد صورة"}</span>
           <span className="text-xs text-text-muted">PNG أو JPG أو WEBP — حتى 4 ميجابايت.</span>
-          <div className="mt-1 flex items-center gap-1">
-            <FileButton
-              accept="image/png,image/jpeg,image/webp"
-              disabled={disabled || busy}
-              onChange={(event) => { void handleFiles(event.target.files); event.target.value = ""; }}
-            >
-              {value ? <RefreshCw /> : <Upload />}
-              {value ? "استبدال الصورة" : "رفع صورة"}
-            </FileButton>
-            {value ? (
-              <Button variant="danger-ghost" size="icon-sm" aria-label="إزالة الصورة" disabled={busy} onClick={() => onChange(null)}>
-                <Trash2 />
-              </Button>
-            ) : null}
-          </div>
+          <ImageActions
+            className="mt-1"
+            hasImage={Boolean(value)}
+            busy={busy}
+            canUpload={!disabled && !busy}
+            onFiles={(files) => { void handleFiles(files); }}
+            onRemove={() => onChange(null)}
+            removeLabel="إزالة الصورة"
+            replaceLabel="استبدال الصورة"
+          />
         </div>
       </div>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
@@ -112,8 +90,6 @@ function ImageWell({
 export function CategoryForm({ mode, initial, categories }: Props) {
   const router = useRouter();
   const editing = mode === "edit";
-  const [step, setStep] = useState(0);
-  const [reached, setReached] = useState(editing ? STEPS.length - 1 : 0);
   const [nameAr, setNameAr] = useState(initial?.name.ar ?? "");
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
   const [parentId, setParentId] = useState<number | null>(initial?.parentId ?? null);
@@ -146,8 +122,6 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   const canEditImage = selectedDepth === 1;
   const uploadContext: ErpUploadContext = mode === "edit" ? "categories.update" : "categories.create";
 
-  const stepIndex = (id: StepId) => STEPS.findIndex((candidate) => candidate.id === id);
-
   const requirements = useMemo(() => [
     { key: "nameAr", label: "الاسم بالعربية", target: "basics", ok: nameAr.trim().length > 0 },
     { key: "nameEn", label: "الاسم بالإنجليزية", target: "basics", ok: nameEn.trim().length > 0 }
@@ -164,17 +138,13 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     return failing.length === 0;
   };
 
-  const goTo = (index: number) => {
-    setStep(index);
-    setReached((current) => Math.max(current, index));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const next = () => {
-    const keys = requirements.filter((requirement) => requirement.target === STEPS[step]!.id).map((requirement) => requirement.key);
-    if (!checkRequirements(keys)) return;
-    goTo(step + 1);
-  };
+  const { step, current, goTo, next, stepIndex, stepItems, reached } = useWizardSteps({
+    steps: STEPS,
+    requirements,
+    editing,
+    validateWhenEditing: true,
+    checkRequirements
+  });
 
   const save = async () => {
     const nextErrors: Record<string, string> = {};
@@ -204,15 +174,6 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     }
   };
 
-  const stepItems: StepItem[] = STEPS.map((item, index) => {
-    const required = requirements.filter((requirement) => requirement.target === item.id);
-    const unmet = required.some((requirement) => !requirement.ok);
-    const seen = editing || index < step || index < reached;
-    if (unmet) return { id: item.id, label: item.label, state: seen ? "missing" : "todo" };
-    return { id: item.id, label: item.label, state: seen ? "done" : "todo" };
-  });
-
-  const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
 
   const stepContent: Record<StepId, ReactNode> = {

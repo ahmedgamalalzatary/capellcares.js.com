@@ -34,12 +34,7 @@ export interface ListSort {
   options: ListFilterOption[];
 }
 
-/** The active/inactive filter shared by every toggleable ERP entity. */
-export const ACTIVE_STATUS_FILTER_OPTIONS: ListFilterOption[] = [
-  { value: "all", label: "كل الحالات" },
-  { value: "active", label: "نشط" },
-  { value: "inactive", label: "غير نشط" }
-];
+export { ACTIVE_STATUS_FILTER_OPTIONS } from "@/components/admin/status-badge";
 
 interface AdminListHeaderProps {
   searchPlaceholder: string;

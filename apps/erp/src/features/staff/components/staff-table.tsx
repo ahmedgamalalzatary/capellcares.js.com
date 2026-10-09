@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Pencil, Plus, Users } from "lucide-react";
 import type { StaffUser } from "@/features/staff/types";
 import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,7 +63,7 @@ export function StaffTable({
             <TR key={staffUser.id}>
               <TD data-cell="lead" className="font-medium text-text-strong">{staffUser.name}</TD>
               <TD data-label="البريد الإلكتروني" className="text-text-2"><span dir="ltr">{staffUser.email}</span></TD>
-              <TD data-label="الحالة"><Badge tone={staffUser.isActive ? "success" : "neutral"}>{staffUser.isActive ? "نشط" : "غير نشط"}</Badge></TD>
+              <TD data-label="الحالة"><StatusBadge active={staffUser.isActive} /></TD>
               <TD data-label="الصلاحيات" className="text-text-2">
                 {staffUser.permissionKeys.length === 0
                   ? <span className="text-text-muted">بدون صلاحيات</span>

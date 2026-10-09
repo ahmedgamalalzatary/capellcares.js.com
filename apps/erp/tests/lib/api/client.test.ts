@@ -92,6 +92,27 @@ describe("ERP API client auth invalidation", () => {
     );
   });
 
+  it("sends both upload helpers to the /api/erp/uploads endpoint", async () => {
+    const fetchMock = vi.fn(async (input: string) => {
+      void input;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ url: "/uploads/x.png", path: "x.png", fileName: "x.png" })
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+    const file = { name: "x.png", type: "image/png", arrayBuffer: async () => new ArrayBuffer(0) } as unknown as File;
+
+    await client.api.uploadImage(file, "products.create");
+    await client.api.uploadMedia(file, "products.update");
+
+    const uploadCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/api/erp/uploads"));
+    expect(uploadCalls).toHaveLength(2);
+  });
+
   it("refreshes and retries when a protected request returns Admin auth required", async () => {
     const fetchMock = vi.fn(async (input: string) => {
       if (input.endsWith("/api/erp/orders")) {

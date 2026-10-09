@@ -3,9 +3,8 @@
 import { useId, type ChangeEvent } from "react";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
+import { LangTag } from "@/components/forms/lang-tag";
 import { cn } from "@/lib/utils";
-
-const LANG_TAG = { ar: "ع", en: "EN" } as const;
 
 interface LocalizedTextFieldProps {
   lang: "ar" | "en";
@@ -37,13 +36,13 @@ function LocalizedTextField({ lang, value, onChange, placeholder, multiline = fa
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute rounded-sm bg-sand-150 px-1.5 text-xs font-medium leading-5 text-text-muted",
+          "pointer-events-none absolute",
           // Pinned to the control's own inline end (English fields run left-to-right).
           lang === "en" ? "right-2.5" : "left-2.5",
           multiline ? "bottom-2.5" : "top-1/2 -translate-y-1/2",
         )}
       >
-        {LANG_TAG[lang]}
+        <LangTag lang={lang} className="font-medium" />
       </span>
     </span>
   );

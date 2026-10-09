@@ -12,6 +12,8 @@ import {
   type AdminAuthUser
 } from "../api/client";
 import { normalizeCategory, normalizeProduct } from "./normalizers";
+import { getErrorMessage } from "@/lib/errors";
+import { hasErpPermission } from "@/lib/erp-permissions";
 import type {
   CategoryApiShape,
   CategoryUpsertInput,
@@ -32,12 +34,7 @@ export class ErpStore {
   announcements: Announcement[] = [];
   announcementBarStatus: "active" | "inactive" = "active";
   orders: OrderSummary[] = [];
-  sales: SalesAnalytics = {
-    summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
-    productTotals: [],
-    variantTotals: [],
-    orders: []
-  };
+  sales: SalesAnalytics = this.createEmptySales();
   loaded = false;
   loading = false;
   error: string | null = null;
@@ -84,6 +81,34 @@ export class ErpStore {
     };
   }
 
+  private resetData() {
+    this.products = [];
+    this.categories = [];
+    this.collections = [];
+    this.offers = [];
+    this.advices = [];
+    this.shopMediaSections = [];
+    this.announcements = [];
+    this.announcementBarStatus = "active";
+    this.orders = [];
+    this.sales = this.createEmptySales();
+  }
+
+  /** Runs a write call, then refetches so the store mirrors the server. */
+  private async mutate(call: () => Promise<unknown>) {
+    await call();
+    await this.refetch();
+  }
+
+  /** Deletes, drops the row locally so the UI updates immediately, then refetches in the background. */
+  private async hardDelete(key: "products" | "categories" | "offers" | "collections", path: string, id: number) {
+    await api.del(path);
+    const remaining = (this[key] as Array<{ id: number }>).filter((item) => item.id !== id);
+    (this as unknown as Record<string, Array<{ id: number }>>)[key] = remaining;
+    this.emit();
+    void this.refetch();
+  }
+
   async refetch() {
     const reqId = ++this.latestRefetchId;
     this.loading = true;
@@ -96,16 +121,7 @@ export class ErpStore {
       if (reqId !== this.latestRefetchId) {
         return;
       }
-      this.products = [];
-      this.categories = [];
-      this.collections = [];
-      this.offers = [];
-      this.advices = [];
-      this.shopMediaSections = [];
-      this.announcements = [];
-      this.announcementBarStatus = "active";
-      this.orders = [];
-      this.sales = this.createEmptySales();
+      this.resetData();
       let firstError: unknown = null;
       results.forEach((result, index) => {
         if (result.status === "fulfilled") {
@@ -127,7 +143,7 @@ export class ErpStore {
       if (reqId !== this.latestRefetchId) {
         return;
       }
-      this.error = e instanceof Error ? e.message : "Failed to load";
+      this.error = getErrorMessage(e, "Failed to load");
     } finally {
       if (reqId === this.latestRefetchId) {
         this.loading = false;
@@ -204,9 +220,7 @@ export class ErpStore {
   }
 
   private getPreloadRequests(authUser: AdminAuthUser | null) {
-    const canRead = authUser?.role === "admin"
-      ? () => true
-      : (permissionKey: string) => authUser?.permissionKeys.includes(permissionKey) ?? false;
+    const canRead = (permissionKey: string) => hasErpPermission(authUser, permissionKey);
 
     return [
       canRead("products.read") && {
@@ -277,66 +291,52 @@ export class ErpStore {
   }
 
   async upsertProduct(p: Product) {
-    await api.post("/api/erp/products", p);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/products", p));
   }
 
   async softDeleteProduct(id: number) {
-    await api.del(`/api/erp/products/${id}`);
-    await this.refetch();
+    await this.mutate(() => api.del(`/api/erp/products/${id}`));
   }
 
   async restoreProduct(id: number) {
-    await api.post(`/api/erp/products/${id}/restore`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/products/${id}/restore`));
   }
 
   async hardDeleteProduct(id: number) {
-    await api.del(`/api/erp/products/${id}/permanent`);
-    this.products = this.products.filter((p) => p.id !== id);
-    this.emit();
-    void this.refetch();
+    await this.hardDelete("products", `/api/erp/products/${id}/permanent`, id);
   }
 
   async toggleProductStatus(id: number) {
-    await api.post(`/api/erp/products/${id}/toggle-status`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/products/${id}/toggle-status`));
   }
 
   async setVariantStock(productId: number, variantId: number, stock: number) {
-    await api.post(`/api/erp/products/${productId}/variants/${variantId}/stock`, { stock });
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/products/${productId}/variants/${variantId}/stock`, { stock }));
   }
 
   async reorderProducts(input: { categoryId: number | null; ids: number[] }) {
-    await api.post("/api/erp/products/reorder", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/products/reorder", input));
   }
 
   async reorderOffers(input: { ids: number[] }) {
-    await api.post("/api/erp/offers/reorder", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/offers/reorder", input));
   }
 
   async reorderCollections(input: { ids: number[] }) {
-    await api.post("/api/erp/collections/reorder", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/collections/reorder", input));
   }
 
   async upsertCategory(c: CategoryUpsertInput) {
-    await api.post("/api/erp/categories", c);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/categories", c));
   }
 
   async reorderCategories(input: { parentId: number | null; ids: number[] }) {
-    await api.post("/api/erp/categories/reorder", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/categories/reorder", input));
   }
 
   async softDeleteCategory(id: number): Promise<{ ok: true } | { ok: false; reason: "has-products" }> {
     try {
-      await api.del(`/api/erp/categories/${id}`);
-      await this.refetch();
+      await this.mutate(() => api.del(`/api/erp/categories/${id}`));
       return { ok: true };
     } catch (e: unknown) {
       const err = e as { status?: number; body?: { reason?: string } };
@@ -348,89 +348,67 @@ export class ErpStore {
   }
 
   async restoreCategory(id: number) {
-    await api.post(`/api/erp/categories/${id}/restore`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/categories/${id}/restore`));
   }
 
   async hardDeleteCategory(id: number) {
-    await api.del(`/api/erp/categories/${id}/permanent`);
-    this.categories = this.categories.filter((category) => category.id !== id);
-    this.emit();
-    void this.refetch();
+    await this.hardDelete("categories", `/api/erp/categories/${id}/permanent`, id);
   }
 
   async upsertOffer(o: Omit<Offer, "id"> & { id?: number }) {
-    await api.post("/api/erp/offers", o);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/offers", o));
   }
 
   async upsertCollection(collection: Omit<Collection, "id"> & { id?: number }) {
-    await api.post("/api/erp/collections", collection);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/collections", collection));
   }
 
   async softDeleteOffer(id: number) {
-    await api.del(`/api/erp/offers/${id}`);
-    await this.refetch();
+    await this.mutate(() => api.del(`/api/erp/offers/${id}`));
   }
 
   async softDeleteCollection(id: number) {
-    await api.del(`/api/erp/collections/${id}`);
-    await this.refetch();
+    await this.mutate(() => api.del(`/api/erp/collections/${id}`));
   }
 
   async restoreOffer(id: number) {
-    await api.post(`/api/erp/offers/${id}/restore`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/offers/${id}/restore`));
   }
 
   async hardDeleteOffer(id: number) {
-    await api.del(`/api/erp/offers/${id}/permanent`);
-    this.offers = this.offers.filter((offer) => offer.id !== id);
-    this.emit();
-    void this.refetch();
+    await this.hardDelete("offers", `/api/erp/offers/${id}/permanent`, id);
   }
 
   async hardDeleteCollection(id: number) {
-    await api.del(`/api/erp/collections/${id}/permanent`);
-    this.collections = this.collections.filter((collection) => collection.id !== id);
-    this.emit();
-    void this.refetch();
+    await this.hardDelete("collections", `/api/erp/collections/${id}/permanent`, id);
   }
 
   async restoreCollection(id: number) {
-    await api.post(`/api/erp/collections/${id}/restore`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/collections/${id}/restore`));
   }
 
   async toggleOfferStatus(id: number) {
-    await api.post(`/api/erp/offers/${id}/toggle-status`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/offers/${id}/toggle-status`));
   }
 
   async toggleCollectionStatus(id: number) {
-    await api.post(`/api/erp/collections/${id}/toggle-status`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/collections/${id}/toggle-status`));
   }
 
   async upsertAdvice(advice: Omit<Advice, "id" | "createdAt" | "updatedAt" | "sortOrder"> & { id?: number }) {
-    await api.post("/api/erp/advices", advice);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/advices", advice));
   }
 
   async reorderAdvices(input: { ids: number[] }) {
-    await api.post("/api/erp/advices/reorder", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/advices/reorder", input));
   }
 
   async toggleAdviceStatus(id: number) {
-    await api.post(`/api/erp/advices/${id}/toggle-status`);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/advices/${id}/toggle-status`));
   }
 
   async deleteAdvice(id: number) {
-    await api.del(`/api/erp/advices/${id}`);
-    await this.refetch();
+    await this.mutate(() => api.del(`/api/erp/advices/${id}`));
   }
 
   async updateShopMediaSection(
@@ -445,8 +423,7 @@ export class ErpStore {
       sortOrder: number;
     }> }
   ) {
-    await api.post(`/api/erp/shop-media-sections/${slot}`, input);
-    await this.refetch();
+    await this.mutate(() => api.post(`/api/erp/shop-media-sections/${slot}`, input));
   }
 
   async replaceAnnouncements(input: {
@@ -458,8 +435,7 @@ export class ErpStore {
       sortOrder: number;
     }>;
   }) {
-    await api.post("/api/erp/announcements", input);
-    await this.refetch();
+    await this.mutate(() => api.post("/api/erp/announcements", input));
   }
 
   async fetchOrder(id: number): Promise<AdminOrderDto> {

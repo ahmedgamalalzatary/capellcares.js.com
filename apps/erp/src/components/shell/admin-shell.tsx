@@ -11,6 +11,8 @@ import {
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { OrderReviewFlagAlerts } from "@/features/orders/components/order-review-flag-alerts";
 import { cn } from "@/lib/utils";
+import { hasErpPermission } from "@/lib/erp-permissions";
+import type { AdminAuthUser } from "@/lib/api/client";
 import { ThemeMenu } from "./theme-menu";
 
 interface Crumb { label: string; href?: string }
@@ -21,15 +23,8 @@ interface Props {
   description?: ReactNode;
   crumbs?: Crumb[];
   actions?: ReactNode;
-  /**
-   * full: lists and tables use the whole area. form: editors with a side column (centered, 1400px).
-   * narrow: single-column editors (centered, 960px). Header and content share the same width.
-   */
-  width?: "full" | "form" | "narrow";
   children: ReactNode;
 }
-
-const WIDTH_CLASS = { full: "", form: "mx-auto max-w-[1400px]", narrow: "mx-auto max-w-[960px]" } as const;
 
 interface NavItem { href: string; label: string; icon: LucideIcon; permission?: string }
 interface NavGroup { label?: string; items: NavItem[] }
@@ -71,11 +66,9 @@ const NAV: NavGroup[] = [
   },
 ];
 
-function canAccess(user: { role: "admin" | "staff"; permissionKeys?: string[] }, item: NavItem) {
-  if (user.role === "admin") return true;
+function canAccess(user: AdminAuthUser, item: NavItem) {
   // Staff management is admin-only.
-  if (!item.permission) return false;
-  return (user.permissionKeys ?? []).includes(item.permission);
+  return !item.permission ? user.role === "admin" : hasErpPermission(user, item.permission);
 }
 
 function isActive(pathname: string, href: string) {
@@ -167,7 +160,7 @@ function RailContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ title, description, crumbs = [], actions, width = "full", children }: Props) {
+export function AdminShell({ title, description, crumbs = [], actions, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, hydrated } = useAdminAuth();
@@ -226,7 +219,6 @@ export function AdminShell({ title, description, crumbs = [], actions, width = "
 
       <div className="lg:ps-(--rail-width)">
         <main className="w-full px-4 pt-5 pb-16 sm:px-6 lg:px-[5%] lg:pt-8">
-          <div className={WIDTH_CLASS[width]}>
           <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:mb-8">
             <div className="min-w-0">
               <nav aria-label="مسار الصفحة" className="mb-1.5">
@@ -249,7 +241,6 @@ export function AdminShell({ title, description, crumbs = [], actions, width = "
           </header>
 
           {children}
-          </div>
         </main>
       </div>
     </div>

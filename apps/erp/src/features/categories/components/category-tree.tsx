@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 import type { Category } from "@capella/shared";
-import { Button } from "@/components/ui/button";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Thumb } from "@/components/ui/thumb";
@@ -138,28 +138,12 @@ function Tree({
 
               <div className="flex shrink-0 items-center gap-0.5">
                 {reorderEnabled && siblingIds.length > 1 ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="تحريك لأعلى"
-                      title="تحريك لأعلى"
-                      disabled={siblingIndex <= 0}
-                      onClick={() => onMoveCategory(category.parentId, category.id, -1)}
-                    >
-                      <ArrowUp />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="تحريك لأسفل"
-                      title="تحريك لأسفل"
-                      disabled={siblingIndex === -1 || siblingIndex >= siblingIds.length - 1}
-                      onClick={() => onMoveCategory(category.parentId, category.id, 1)}
-                    >
-                      <ArrowDown />
-                    </Button>
-                  </>
+                  <ReorderButtons
+                    index={siblingIndex}
+                    count={siblingIds.length}
+                    className="gap-0.5"
+                    onMove={(_i, delta) => onMoveCategory(category.parentId, category.id, delta)}
+                  />
                 ) : null}
                 {canEdit || canDelete ? (
                   <RowMenu label={`إجراءات ${category.name.ar}`}>

@@ -6,8 +6,7 @@ import { FormSaveBar } from "@/components/admin/form-save-bar";
 /**
  * Shared shell for every new/edit page, after Shopify's resource-detail pattern: a ⅔ main column for the
  * content being edited and a ⅓ side column for short settings (status, organization, internal data).
- * Pair it with `<AdminShell width="form">` so the page is centered at a readable width; editors without
- * settings pass no `side` and use `width="narrow"`. The save bar rides the bottom of the viewport.
+ * Editors without a `side` render a single full-width column. The save bar rides the bottom of the viewport.
  */
 export function EditorLayout({
   main,

@@ -1,5 +1,5 @@
 import type { Category, EntityMedia, Offer, Product, RelatedItemRef } from "@capella/shared";
-import type { RelatedOption } from "../../components/forms/related-items-field";
+import type { RelatedOption } from "@/lib/related-options";
 
 export interface OfferFormProps {
   mode: "new" | "edit";

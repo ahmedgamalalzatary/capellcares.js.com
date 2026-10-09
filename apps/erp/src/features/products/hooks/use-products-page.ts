@@ -6,6 +6,7 @@ import { compareByScopedOrdering, type Product } from "@capella/shared";
 import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
+import { moveItem } from "@/lib/array";
 
 function scopeRank(product: Product, scopeCategoryId: number | null) {
   return product.orderings?.find((entry) =>
@@ -115,13 +116,10 @@ export function useProductsPage() {
   const moveProduct = (id: number, direction: -1 | 1) => {
     const current = displayProducts.map((product) => product.id);
     const index = current.indexOf(id);
-    const nextIndex = index + direction;
-    if (index === -1 || nextIndex < 0 || nextIndex >= current.length) {
+    if (index === -1) {
       return;
     }
-    const next = current.slice();
-    [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
-    setDraftOrder(next);
+    setDraftOrder(moveItem(current, index, direction));
   };
 
   const saveOrder = async () => {

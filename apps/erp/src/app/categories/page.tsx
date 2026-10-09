@@ -17,6 +17,7 @@ import { Modal } from "@/components/ui/modal";
 import { showErrorToast } from "@/lib/errors";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { formatNumber } from "@/lib/format";
+import { moveItem } from "@/lib/array";
 import { getStore, useStore } from "@/lib/store";
 import { Tree, TreeSkeleton } from "@/features/categories/components/category-tree";
 import { useCollapsedCategories } from "@/features/categories/hooks/use-collapsed-categories";
@@ -125,13 +126,11 @@ export default function CategoriesPage() {
     setDraftOrders((current) => {
       const source = current[groupKey] ?? persistedOrders.get(groupKey) ?? [];
       const index = source.indexOf(id);
-      const nextIndex = index + direction;
-      if (index === -1 || nextIndex < 0 || nextIndex >= source.length) {
+      if (index === -1) {
         return current;
       }
-      const next = source.slice();
-      [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
-      return { ...current, [groupKey]: next };
+      const next = moveItem(source, index, direction);
+      return next === source ? current : { ...current, [groupKey]: next };
     });
   };
 

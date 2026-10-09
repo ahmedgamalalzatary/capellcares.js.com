@@ -2,10 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowRight, Plus, Trash2, ArrowUp } from "lucide-react";
-import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
+import { StepCount, Stepper } from "@/components/admin/stepper";
+import { useWizardSteps } from "@/hooks/use-wizard-steps";
 import { Alert } from "@/components/ui/alert";
 import { Swatch } from "@/components/ui/badge";
+import { StatusChoice } from "@/components/forms/status-choice";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -41,8 +44,6 @@ const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
 export function CollectionForm({ mode, initial, products, categories, relatedOptions = [], relatedItemsAvailable = true }: CollectionFormProps) {
   const router = useRouter();
   const editing = mode === "edit";
-  const [step, setStep] = useState(0);
-  const [reached, setReached] = useState(editing ? STEPS.length - 1 : 0);
   const [saving, setSaving] = useState(false);
   const {
     nameAr, setNameAr,
@@ -63,6 +64,13 @@ export function CollectionForm({ mode, initial, products, categories, relatedOpt
     save
   } = useCollectionForm({ mode, initial, products, categories, relatedOptions, relatedItemsAvailable });
 
+  const { step, current, goTo, next, stepIndex, stepItems, reached } = useWizardSteps({
+    steps: STEPS,
+    requirements,
+    editing,
+    checkRequirements
+  });
+
   const uploadContext = editing ? "collections.update" : "collections.create";
   const savings = originalTotal - Number(price || 0);
   const rootCategories = categories.filter((category) => category.parentId == null);
@@ -71,20 +79,6 @@ export function CollectionForm({ mode, initial, products, categories, relatedOpt
   const categoryProducts = products.filter(
     (product) => !product.deletedAt && (allowedCategoryIds == null || allowedCategoryIds.has(product.categoryId))
   );
-
-  const stepIndex = (id: StepId) => STEPS.findIndex((candidate) => candidate.id === id);
-
-  const goTo = (index: number) => {
-    setStep(index);
-    setReached((current) => Math.max(current, index));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const next = () => {
-    const keys = requirements.filter((requirement) => requirement.target === STEPS[step]!.id).map((requirement) => requirement.key);
-    if (!editing && !checkRequirements(keys)) return;
-    goTo(step + 1);
-  };
 
   const submit = async (asStatus?: "inactive") => {
     setSaving(true);
@@ -99,15 +93,6 @@ export function CollectionForm({ mode, initial, products, categories, relatedOpt
     if (target) goTo(stepIndex(target as StepId));
   };
 
-  const stepItems: StepItem[] = STEPS.map((item, index) => {
-    const required = requirements.filter((requirement) => requirement.target === item.id);
-    const unmet = required.some((requirement) => !requirement.ok);
-    const seen = editing || index < step || index < reached;
-    if (unmet) return { id: item.id, label: item.label, state: seen ? "missing" : "todo" };
-    return { id: item.id, label: item.label, state: seen ? "done" : "todo" };
-  });
-
-  const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
   const primaryLabel = editing ? "حفظ التعديلات" : status === "active" ? "نشر المجموعة" : "حفظ المجموعة";
 
@@ -219,14 +204,7 @@ export function CollectionForm({ mode, initial, products, categories, relatedOpt
                     </div>
                     <div className="col-span-2 flex items-center justify-end gap-0.5 @2xl:col-span-1">
                       {rows.length > 1 ? (
-                        <>
-                          <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => moveRow(index, -1)}>
-                            <ArrowUp />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === rows.length - 1} onClick={() => moveRow(index, 1)}>
-                            <ArrowDown />
-                          </Button>
-                        </>
+                        <ReorderButtons index={index} count={rows.length} className="gap-0.5" onMove={moveRow} />
                       ) : null}
                       <Button variant="danger-ghost" size="icon-sm" aria-label="حذف العنصر" className="hidden @2xl:inline-flex" onClick={() => removeRow(index)}>
                         <Trash2 />
@@ -317,34 +295,7 @@ export function CollectionForm({ mode, initial, products, categories, relatedOpt
             <h3 className="text-base font-bold text-text-strong">حالة المجموعة</h3>
             <p className="text-sm text-text-muted">المسودة مخفية عن المتجر حتى تنشريها.</p>
           </div>
-          <fieldset className="grid grid-cols-2 gap-2">
-            <legend className="sr-only">حالة المجموعة</legend>
-            {STATUS_OPTIONS.map((option) => (
-              <label
-                key={option.value}
-                className={cn(
-                  "grid cursor-pointer gap-0.5 rounded-control bg-surface p-3 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
-                  "hover:shadow-[0_0_0_1px_var(--line-strong)]",
-                  "has-checked:bg-sunken has-checked:shadow-[0_0_0_2px_var(--sand-900)]",
-                  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
-                )}
-              >
-                <input
-                  type="radio"
-                  name="collection-status"
-                  value={option.value}
-                  className="sr-only"
-                  checked={status === option.value}
-                  onChange={() => setStatus(option.value)}
-                />
-                <span className="flex items-center gap-2 text-base font-medium text-text-strong">
-                  <Swatch tone={option.tone} />
-                  {option.label}
-                </span>
-                <span className="text-xs text-text-muted">{option.hint}</span>
-              </label>
-            ))}
-          </fieldset>
+          <StatusChoice name="collection-status" value={status} onChange={setStatus} legend="حالة المجموعة" options={STATUS_OPTIONS} />
           {canPublish ? (
             <p className="flex items-center gap-2 text-sm text-text-2">
               <Swatch tone="success" /> كل بيانات النشر مكتملة.

@@ -3,7 +3,7 @@
 // API-backed ERP store: initial state hydrated from /api/erp, mutations go through the API and trigger a refetch so storefront sees the same data.
 
 import { useSyncExternalStore } from "react";
-import { ErpStore } from "./store/core";
+import { ErpStore } from "./core";
 
 let _instance: ErpStore | null = null;
 export function getStore(): ErpStore {

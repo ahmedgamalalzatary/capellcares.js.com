@@ -1,5 +1,3 @@
-"use client";
-
 import type { AdminAuthUser } from "@/lib/api/client";
 
 export function hasErpPermission(user: AdminAuthUser | null, permissionKey: string) {
@@ -11,7 +9,7 @@ export function hasErpPermission(user: AdminAuthUser | null, permissionKey: stri
     return true;
   }
 
-  return user.permissionKeys.includes(permissionKey);
+  return (user.permissionKeys ?? []).includes(permissionKey);
 }
 
 export function canReadErpModule(user: AdminAuthUser | null, moduleName: string) {

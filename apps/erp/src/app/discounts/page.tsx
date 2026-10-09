@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
-import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { StepCount, Stepper } from "@/components/admin/stepper";
+import { useWizardSteps } from "@/hooks/use-wizard-steps";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Alert } from "@/components/ui/alert";
@@ -46,8 +47,6 @@ export default function DiscountsPage() {
   const categories = useStore((state) => state.categories);
   const loaded = useStore((state) => state.loaded);
   const loadError = useStore((state) => state.error);
-  const [step, setStep] = useState(0);
-  const [reached, setReached] = useState(0);
   const [productIds, setProductIds] = useState<number[]>([]);
   const [offerIds, setOfferIds] = useState<number[]>([]);
   const [collectionIds, setCollectionIds] = useState<number[]>([]);
@@ -106,8 +105,6 @@ export default function DiscountsPage() {
   const missing = requirements.filter((requirement) => !requirement.ok);
   const canApply = missing.length === 0 && !saving;
 
-  const stepIndex = (id: StepId) => STEPS.findIndex((candidate) => candidate.id === id);
-
   const checkRequirements = (keys: string[]) => {
     const failing = requirements.filter((requirement) => keys.includes(requirement.key) && !requirement.ok);
     setErrors((current) => {
@@ -119,17 +116,11 @@ export default function DiscountsPage() {
     return failing.length === 0;
   };
 
-  const goTo = (index: number) => {
-    setStep(index);
-    setReached((current) => Math.max(current, index));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const next = () => {
-    const keys = requirements.filter((requirement) => requirement.target === STEPS[step]!.id).map((requirement) => requirement.key);
-    if (!checkRequirements(keys)) return;
-    goTo(step + 1);
-  };
+  const { step, current, goTo, next, stepIndex, stepItems, reached } = useWizardSteps({
+    steps: STEPS,
+    requirements,
+    checkRequirements
+  });
 
   const selectionPayload = () => ({
     productIds, offerIds, collectionIds, categoryIds,
@@ -191,14 +182,6 @@ export default function DiscountsPage() {
     );
   }
 
-  const stepItems: StepItem[] = STEPS.map((item, index) => {
-    const required = requirements.filter((requirement) => requirement.target === item.id);
-    const unmet = required.some((requirement) => !requirement.ok);
-    const seen = index < step || index < reached;
-    if (unmet) return { id: item.id, label: item.label, state: seen ? "missing" : "todo" };
-    return { id: item.id, label: item.label, state: seen ? "done" : "todo" };
-  });
-  const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
 
   const stepContent: Record<StepId, ReactNode> = {

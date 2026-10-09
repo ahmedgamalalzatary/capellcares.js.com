@@ -10,8 +10,6 @@ interface AdminConfirmModalProps {
   cancelLabel?: string;
   /** Visual weight of the confirm button. */
   tone?: "primary" | "danger";
-  /** @deprecated legacy pages pass a class string; only its "danger" intent is read. */
-  confirmClassName?: string;
   disableCancel?: boolean;
   disableConfirm?: boolean;
   onClose: () => void;
@@ -26,7 +24,6 @@ export function AdminConfirmModal({
   confirmLabel,
   cancelLabel = "إلغاء",
   tone,
-  confirmClassName,
   disableCancel = false,
   disableConfirm = false,
   onClose,
@@ -34,7 +31,7 @@ export function AdminConfirmModal({
   footerExtra,
   children
 }: AdminConfirmModalProps) {
-  const variant = tone ?? (confirmClassName?.includes("danger") ? "danger" : "primary");
+  const variant = tone ?? "primary";
   return (
     <Modal
       open={open}

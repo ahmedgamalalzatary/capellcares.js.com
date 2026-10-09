@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ImageOff, ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FileButton } from "@/components/ui/file-button";
-
-export const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
+import { ImageOff, ImagePlus } from "lucide-react";
+import { ImageActions } from "@/components/forms/image-actions";
+import { LangTag } from "@/components/forms/lang-tag";
 
 function FramedImage({ src }: { src: string }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -64,21 +62,20 @@ export function LangSlotRow({
       </div>
       <div className="grid min-w-0 gap-1.5">
         <span className="flex items-center gap-1.5 text-base font-medium text-text-strong">
-          <span className="rounded-sm bg-sand-150 px-1.5 text-xs leading-5 text-text-muted">{lang === "ar" ? "ع" : "EN"}</span>
+          <LangTag lang={lang} />
           {title}
         </span>
         <span className="text-xs text-text-muted">{src ? "مضافة" : emptyNote}</span>
-        <div className="mt-1 flex items-center gap-1">
-          <FileButton data-testid={inputTestId} accept={IMAGE_ACCEPT} disabled={!canUpload} onChange={(event) => onFiles(event.target.files)}>
-            {src ? <RefreshCw /> : <Upload />}
-            {src ? "استبدال" : "رفع صورة"}
-          </FileButton>
-          {src ? (
-            <Button variant="danger-ghost" size="icon-sm" aria-label={removeLabel} disabled={busy} onClick={onRemove}>
-              <Trash2 />
-            </Button>
-          ) : null}
-        </div>
+        <ImageActions
+          className="mt-1"
+          hasImage={Boolean(src)}
+          busy={busy}
+          canUpload={canUpload}
+          onFiles={onFiles}
+          onRemove={onRemove}
+          removeLabel={removeLabel}
+          inputTestId={inputTestId}
+        />
       </div>
     </div>
   );

@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { SingleImageField } from "@/components/forms/single-image-field";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -16,6 +18,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Thumb } from "@/components/ui/thumb";
 import { showErrorToast } from "@/lib/errors";
+import { moveItem as moveArrayItem } from "@/lib/array";
 import { getStore, useStore } from "@/lib/store";
 import { resolveMediaSrc } from "@/lib/media";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
@@ -236,14 +239,11 @@ export default function ShopMediaPage() {
 
   const moveItem = (slot: 1 | 2 | 3 | 4 | 5, itemId: string, direction: -1 | 1) => setSection(slot, (current) => {
     const index = current.items.findIndex((entry) => entry.id === itemId);
-    const targetIndex = index + direction;
-    if (index === -1 || targetIndex < 0 || targetIndex >= current.items.length) {
+    if (index === -1) {
       return current;
     }
-    const items = [...current.items];
-    const [moved] = items.splice(index, 1);
-    items.splice(targetIndex, 0, moved);
-    return { ...current, items };
+    const items = moveArrayItem(current.items, index, direction);
+    return items === current.items ? current : { ...current, items };
   });
 
   return (
@@ -321,24 +321,7 @@ export default function ShopMediaPage() {
                                     />
                                     {item.status === "active" ? "نشط" : "غير نشط"}
                                   </label>
-                                  <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => markAnnouncementsDirty((current) => {
-                                    if (index === 0) return current;
-                                    const next = [...current];
-                                    const [moved] = next.splice(index, 1);
-                                    next.splice(index - 1, 0, moved!);
-                                    return next;
-                                  })}>
-                                    <ArrowUp />
-                                  </Button>
-                                  <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === announcementItems.length - 1} onClick={() => markAnnouncementsDirty((current) => {
-                                    if (index >= current.length - 1) return current;
-                                    const next = [...current];
-                                    const [moved] = next.splice(index, 1);
-                                    next.splice(index + 1, 0, moved!);
-                                    return next;
-                                  })}>
-                                    <ArrowDown />
-                                  </Button>
+                                  <ReorderButtons index={index} count={announcementItems.length} className="gap-2" onMove={(i, delta) => markAnnouncementsDirty((current) => moveArrayItem(current, i, delta))} />
                                   <Button variant="danger-ghost" size="icon-sm" aria-label="إزالة الإعلان" onClick={() => markAnnouncementsDirty((current) => current.filter((entry) => entry.id !== item.id))}>
                                     <Trash2 />
                                   </Button>
@@ -408,7 +391,7 @@ export default function ShopMediaPage() {
                       </Button>
                     </>
                   ) : (
-                    <Badge tone={isActive ? "success" : "neutral"}>{isActive ? "نشط" : "غير نشط"}</Badge>
+                    <StatusBadge active={isActive} />
                   )}
                 </div>
               </header>
@@ -458,12 +441,7 @@ export default function ShopMediaPage() {
                                 </div>
                                 {canEdit ? (
                                   <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => moveItem(section.slot, item.id, -1)}>
-                                      <ArrowUp />
-                                    </Button>
-                                    <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === section.items.length - 1} onClick={() => moveItem(section.slot, item.id, 1)}>
-                                      <ArrowDown />
-                                    </Button>
+                                    <ReorderButtons index={index} count={section.items.length} className="gap-1" onMove={(_i, delta) => moveItem(section.slot, item.id, delta)} />
                                     <Button
                                       variant="danger-ghost"
                                       size="icon-sm"

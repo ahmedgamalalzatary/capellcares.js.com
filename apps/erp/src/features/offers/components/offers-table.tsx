@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Gift, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
+import { Gift, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
 import type { Offer } from "@capella/shared";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Card } from "@/components/ui/card";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -145,19 +145,12 @@ export function OffersTable({
                   )}
                 </TD>
                 <TD data-label="الحالة">
-                  <Badge tone={active ? "success" : "neutral"}>{active ? "نشط" : "غير نشط"}</Badge>
+                  <StatusBadge active={active} />
                 </TD>
                 <TD data-cell="actions">
                   <div className="flex items-center justify-end gap-0.5">
                     {showReorder ? (
-                      <>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" title="تحريك لأعلى" disabled={index === 0} onClick={() => onMove?.(offer.id, -1)}>
-                          <ArrowUp />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" title="تحريك لأسفل" disabled={index === offers.length - 1} onClick={() => onMove?.(offer.id, 1)}>
-                          <ArrowDown />
-                        </Button>
-                      </>
+                      <ReorderButtons index={index} count={offers.length} className="gap-0.5" onMove={(_i, delta) => onMove?.(offer.id, delta)} />
                     ) : null}
                     {hasMenu ? (
                       <RowMenu label={`إجراءات ${offer.name.ar}`}>

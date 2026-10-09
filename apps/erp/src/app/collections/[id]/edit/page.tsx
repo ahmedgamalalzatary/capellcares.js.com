@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { api } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/errors";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
@@ -40,7 +41,7 @@ export default function EditCollectionPage({ params }: { params: Promise<{ id: s
       })
       .catch((fetchError) => {
         if (active) {
-          setRelatedItemsError(fetchError instanceof Error ? fetchError.message : "تعذر تحميل العناصر المرتبطة.");
+          setRelatedItemsError(getErrorMessage(fetchError, "تعذر تحميل العناصر المرتبطة."));
         }
       });
     return () => {

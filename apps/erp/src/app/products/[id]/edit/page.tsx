@@ -11,6 +11,7 @@ import { FormSkeleton } from "@/components/ui/skeleton";
 import { ProductForm } from "@/features/products/components/product-form";
 import { buildRelatedOptions } from "@/lib/related-options";
 import { api } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/errors";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
@@ -54,7 +55,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
       })
       .catch((error) => {
         if (active) {
-          setRelatedItemsError(error instanceof Error ? error.message : "تعذر تحميل العناصر المرتبطة.");
+          setRelatedItemsError(getErrorMessage(error, "تعذر تحميل العناصر المرتبطة."));
         }
       });
     return () => {

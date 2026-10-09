@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { resolveLocalizedEntityMediaUrl, type Collection, type CollectionItem, type RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
+import { moveItem } from "@/lib/array";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "@/lib/slug";
 import { useHoverImageFields } from "@/hooks/use-hover-image-fields";
@@ -64,15 +65,7 @@ export function useCollectionForm({
 
   // Row order is the collection's product order on the storefront.
   const moveRow = (index: number, direction: -1 | 1) => {
-    setRows((state) => {
-      const nextIndex = index + direction;
-      if (index < 0 || index >= state.length || nextIndex < 0 || nextIndex >= state.length) {
-        return state;
-      }
-      const next = [...state];
-      [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
-      return next;
-    });
+    setRows((state) => moveItem(state, index, direction));
   };
 
   const updateRow = (index: number, patch: Partial<CollectionFormRow>) => {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors";
+import { moveItem as moveItemInArray } from "@/lib/array";
 
 /** Draft up/down reordering over a persisted id order. The draft resets whenever the persisted order changes (e.g. after a refetch). */
 export function useListReorder(input: {
@@ -37,13 +38,10 @@ export function useListReorder(input: {
 
   const moveItem = (id: number, direction: -1 | 1) => {
     const index = orderedIds.indexOf(id);
-    const nextIndex = index + direction;
-    if (index === -1 || nextIndex < 0 || nextIndex >= orderedIds.length) {
+    if (index === -1) {
       return;
     }
-    const next = orderedIds.slice();
-    [next[index], next[nextIndex]] = [next[nextIndex]!, next[index]!];
-    setDraft(next);
+    setDraft(moveItemInArray(orderedIds, index, direction));
   };
 
   const saveOrder = async () => {

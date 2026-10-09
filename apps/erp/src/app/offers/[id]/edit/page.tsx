@@ -12,6 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/errors";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
@@ -40,7 +41,7 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
       })
       .catch((error) => {
         if (active) {
-          setRelatedItemsError(error instanceof Error ? error.message : "تعذر تحميل العناصر المرتبطة.");
+          setRelatedItemsError(getErrorMessage(error, "تعذر تحميل العناصر المرتبطة."));
         }
       });
     return () => {

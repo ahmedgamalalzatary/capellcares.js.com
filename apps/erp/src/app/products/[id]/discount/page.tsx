@@ -20,6 +20,7 @@ import { SwitchField } from "@/components/ui/switch";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { canReadErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { api } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { buildDiscountState, toDateTimeLocal, toIsoOrEmpty, type VariantDiscountState } from "@/features/discounts/lib/discount";
 
@@ -108,7 +109,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
       await getStore().refetch();
       router.push("/products");
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "تعذر حفظ الخصومات.");
+      setSaveError(getErrorMessage(error, "تعذر حفظ الخصومات."));
     } finally {
       setSaving(false);
     }

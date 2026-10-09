@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FileButton } from "@/components/ui/file-button";
+import { ImagePlus } from "lucide-react";
+import { ImageActions } from "@/components/forms/image-actions";
+import { useImageUpload } from "@/hooks/use-image-upload";
 import { resolveMediaSrc } from "@/lib/media";
-import { api, type ErpUploadContext } from "@/lib/api/client";
-
-const ACCEPT = "image/png,image/jpeg,image/webp";
+import type { ErpUploadContext } from "@/lib/api/client";
 
 /** One optional image: a framed preview with a label and upload/replace/remove controls. */
 export function SingleImageField({
@@ -23,30 +20,11 @@ export function SingleImageField({
   uploadContext: ErpUploadContext;
   disabled?: boolean;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, upload } = useImageUpload(uploadContext);
 
   const handleFiles = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    if (!ACCEPT.split(",").includes(file.type)) {
-      setError("نوع الصورة غير مدعوم. استخدمي PNG أو JPG أو WEBP.");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setError("حجم الصورة أكبر من 4 ميجابايت.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await api.uploadImage(file, uploadContext);
-      onChange(result.url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة.");
-    } finally {
-      setBusy(false);
-    }
+    const url = await upload(files);
+    if (url) onChange(url);
   };
 
   return (
@@ -59,21 +37,14 @@ export function SingleImageField({
         )}
       </div>
       <span className="text-sm font-medium text-text-strong">{label}</span>
-      <div className="flex items-center gap-1">
-        <FileButton
-          accept={ACCEPT}
-          disabled={disabled || busy}
-          onChange={(event) => { void handleFiles(event.target.files); event.target.value = ""; }}
-        >
-          {value ? <RefreshCw /> : <Upload />}
-          {value ? "استبدال" : "رفع صورة"}
-        </FileButton>
-        {value ? (
-          <Button variant="danger-ghost" size="icon-sm" aria-label={`إزالة ${label}`} disabled={busy} onClick={() => onChange(null)}>
-            <Trash2 />
-          </Button>
-        ) : null}
-      </div>
+      <ImageActions
+        hasImage={Boolean(value)}
+        busy={busy}
+        canUpload={!disabled && !busy}
+        onFiles={(files) => { void handleFiles(files); }}
+        onRemove={() => onChange(null)}
+        removeLabel={`إزالة ${label}`}
+      />
       {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { API_BASE, setAdminAccessToken, setAdminAuthHydrated, setAdminAuthUser, subscribeAdminSessionInvalidation, type AdminAuthUser } from "@/lib/api/client";
+import { API_BASE, getAdminAuthUser, refreshAdminSession, setAdminAccessToken, setAdminAuthHydrated, setAdminAuthUser, subscribeAdminSessionInvalidation, type AdminAuthUser } from "@/lib/api/client";
 interface AdminAuthValue {
   user: AdminAuthUser | null;
   hydrated: boolean;
@@ -33,27 +33,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
 
-    fetch(`${API_BASE}/api/erp/auth/refresh`, {
-      method: "POST",
-      credentials: "include"
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          if (!cancelled) setUser(null);
-          return;
-        }
-        const data = await res.json();
-        if (!cancelled) {
-          setAdminAccessToken(data.accessToken ?? null);
-          setUser(data.user ?? null);
-          setAdminAuthUser(data.user ?? null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setUser(null);
-          setAdminAuthUser(null);
-        }
+    // Share the client's single in-flight refresh so the rotating refresh token is never raced
+    // by a second refresh (which would invalidate the session and log the user out).
+    void refreshAdminSession()
+      .then((token) => {
+        if (!cancelled) setUser(token ? getAdminAuthUser() : null);
       })
       .finally(() => {
         if (!cancelled) {

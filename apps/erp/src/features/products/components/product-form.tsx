@@ -4,9 +4,11 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
 import { useProductForm } from "@/features/products/hooks/use-product-form";
-import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { StepCount, Stepper } from "@/components/admin/stepper";
+import { useWizardSteps } from "@/hooks/use-wizard-steps";
 import { Alert } from "@/components/ui/alert";
 import { Swatch } from "@/components/ui/badge";
+import { StatusChoice } from "@/components/forms/status-choice";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -45,8 +47,6 @@ const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
 export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
   const router = useRouter();
   const editing = mode === "edit";
-  const [step, setStep] = useState(0);
-  const [reached, setReached] = useState(editing ? STEPS.length - 1 : 0);
   const [saving, setSaving] = useState(false);
   const {
     nameAr, setNameAr,
@@ -85,20 +85,14 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     save
   } = useProductForm({ initial, relatedOptions });
 
+  const { step, current, goTo, next, stepIndex, stepItems, reached } = useWizardSteps({
+    steps: STEPS,
+    requirements,
+    editing,
+    checkRequirements
+  });
+
   const uploadContext = editing ? "products.update" : "products.create";
-  const stepIndex = (id: StepId) => STEPS.findIndex((s) => s.id === id);
-
-  const goTo = (index: number) => {
-    setStep(index);
-    setReached((r) => Math.max(r, index));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const next = () => {
-    const keys = requirements.filter((r) => r.target === STEPS[step]!.id).map((r) => r.key);
-    if (!editing && !checkRequirements(keys)) return;
-    goTo(step + 1);
-  };
 
   const submit = async (asStatus?: "inactive") => {
     setSaving(true);
@@ -114,15 +108,6 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     if (target) goTo(stepIndex(target as StepId));
   };
 
-  const stepItems: StepItem[] = STEPS.map((s, index) => {
-    const required = requirements.filter((r) => r.target === s.id);
-    const unmet = required.some((r) => !r.ok);
-    const seen = editing || index < step || index < reached;
-    if (unmet) return { id: s.id, label: s.label, state: seen ? "missing" : "todo" };
-    return { id: s.id, label: s.label, state: seen ? "done" : "todo" };
-  });
-
-  const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
 
   const stepContent: Record<StepId, ReactNode> = {
@@ -301,34 +286,7 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
               <h3 className="text-base font-bold text-text-strong">حالة المنتج</h3>
               <p className="text-sm text-text-muted">المسودة مخفية عن المتجر حتى تنشريها.</p>
             </div>
-            <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="sr-only">حالة المنتج</legend>
-              {STATUS_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className={cn(
-                    "grid cursor-pointer gap-0.5 rounded-control bg-surface p-3 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
-                    "hover:shadow-[0_0_0_1px_var(--line-strong)]",
-                    "has-checked:bg-sunken has-checked:shadow-[0_0_0_2px_var(--sand-900)]",
-                    "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="product-status"
-                    value={option.value}
-                    className="sr-only"
-                    checked={status === option.value}
-                    onChange={() => setStatus(option.value)}
-                  />
-                  <span className="flex items-center gap-2 text-base font-medium text-text-strong">
-                    <Swatch tone={option.tone} />
-                    {option.label}
-                  </span>
-                  <span className="text-xs text-text-muted">{option.hint}</span>
-                </label>
-              ))}
-            </fieldset>
+            <StatusChoice name="product-status" value={status} onChange={setStatus} legend="حالة المنتج" options={STATUS_OPTIONS} />
             {canActivate ? (
               <p className="flex items-center gap-2 text-sm text-text-2">
                 <Swatch tone="success" /> كل بيانات النشر مكتملة.

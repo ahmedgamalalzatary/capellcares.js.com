@@ -100,7 +100,7 @@ function scheduleAdminRefresh(token: string | null) {
   }, refreshInMs);
 }
 
-async function refreshAdminSession(): Promise<string | null> {
+export async function refreshAdminSession(): Promise<string | null> {
   if (adminRefreshPromise) {
     return adminRefreshPromise;
   }
@@ -196,33 +196,24 @@ async function request<T>(path: string, init?: RequestInit, allowRefresh = true)
   return res.json() as Promise<T>;
 }
 
+const upload = (file: File, context?: ErpUploadContext) =>
+  file.arrayBuffer().then((buffer) =>
+    request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
+      method: "POST",
+      headers: context ? { "x-capella-upload-context": context } : undefined,
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type,
+        contentBase64: arrayBufferToBase64(buffer)
+      })
+    })
+  );
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  uploadMedia: (file: File, context?: ErpUploadContext) =>
-    file.arrayBuffer().then((buffer) =>
-      request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
-        method: "POST",
-        headers: context ? { "x-capella-upload-context": context } : undefined,
-        body: JSON.stringify({
-          fileName: file.name,
-          mimeType: file.type,
-          contentBase64: arrayBufferToBase64(buffer)
-        })
-      })
-    ),
-  uploadImage: (file: File, context?: ErpUploadContext) =>
-    file.arrayBuffer().then((buffer) =>
-      request<{ url: string; path: string; fileName: string }>("/api/erp/uploads", {
-        method: "POST",
-        headers: context ? { "x-capella-upload-context": context } : undefined,
-        body: JSON.stringify({
-          fileName: file.name,
-          mimeType: file.type,
-          contentBase64: arrayBufferToBase64(buffer)
-        })
-      })
-    )
+  uploadMedia: upload,
+  uploadImage: upload
 };

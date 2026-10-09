@@ -2,18 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { Popover } from "radix-ui";
-import { ArrowDown, ArrowUp, Plus, Search, X } from "lucide-react";
-import type { Bilingual, RelatedItemRef, RelatedItemType } from "@capella/shared";
+import { Plus, Search, X } from "lucide-react";
+import type { RelatedItemRef, RelatedItemType } from "@capella/shared";
 import { Badge } from "@/components/ui/badge";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Button } from "@/components/ui/button";
 import { InputWithIcon } from "@/components/ui/input";
-
-export interface RelatedOption {
-  type: RelatedItemType;
-  id: number;
-  name: Bilingual;
-  slug?: string;
-}
+import type { RelatedOption } from "@/lib/related-options";
+import { moveItem } from "@/lib/array";
 
 interface Props {
   value: RelatedItemRef[];
@@ -127,13 +123,9 @@ export function RelatedItemsField({ value, options, onChange, disabled = false }
     onChange(value.filter((_, i) => i !== index));
   };
 
-  const move = (index: number, delta: number) => {
-    const target = index + delta;
-    if (disabled || target < 0 || target >= value.length) return;
-    const next = [...value];
-    const [moved] = next.splice(index, 1);
-    next.splice(target, 0, moved!);
-    onChange(next);
+  const move = (index: number, delta: -1 | 1) => {
+    if (disabled) return;
+    onChange(moveItem(value, index, delta));
   };
 
   const nameFor = (ref: RelatedItemRef): string => {
@@ -155,12 +147,7 @@ export function RelatedItemsField({ value, options, onChange, disabled = false }
             >
               <Badge swatch={false}>{TYPE_LABEL[ref.type]}</Badge>
               <span className="min-w-0 flex-1 truncate text-base text-text-strong">{nameFor(ref)}</span>
-              <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={disabled || index === 0} onClick={() => move(index, -1)}>
-                <ArrowUp />
-              </Button>
-              <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={disabled || index === value.length - 1} onClick={() => move(index, 1)}>
-                <ArrowDown />
-              </Button>
+              <ReorderButtons index={index} count={value.length} onMove={move} disabled={disabled} className="gap-2" />
               <Button variant="danger-ghost" size="icon-sm" aria-label="إزالة" disabled={disabled} onClick={() => remove(index)}>
                 <X />
               </Button>

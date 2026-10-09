@@ -1,5 +1,11 @@
-import type { Collection, Offer, Product } from "@capella/shared";
-import type { RelatedOption } from "@/components/forms/related-items-field";
+import type { Bilingual, Collection, Offer, Product, RelatedItemType } from "@capella/shared";
+
+export interface RelatedOption {
+  type: RelatedItemType;
+  id: number;
+  name: Bilingual;
+  slug?: string;
+}
 
 /** Builds the selectable related-item options from the ERP store: active, non-deleted products and offers. The forms themselves drop the current entity so it can't relate to itself. */
 export function buildRelatedOptions(products: Product[], offers: Offer[], collections: Collection[] = []): RelatedOption[] {

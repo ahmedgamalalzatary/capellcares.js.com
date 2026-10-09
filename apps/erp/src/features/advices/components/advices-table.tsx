@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Lightbulb, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
+import { Lightbulb, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
 import type { Advice } from "@capella/shared";
 import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Card } from "@/components/ui/card";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,18 +89,11 @@ export function AdvicesTable({
                 <TD data-label="الفيديو" className="max-w-md">
                   <bdi className="block truncate text-sm text-text-2">{advice.videoUrl}</bdi>
                 </TD>
-                <TD data-label="الحالة"><Badge tone={active ? "success" : "neutral"}>{active ? "نشط" : "غير نشط"}</Badge></TD>
+                <TD data-label="الحالة"><StatusBadge active={active} /></TD>
                 <TD data-cell="actions">
                   <div className="flex items-center justify-end gap-0.5">
                     {showReorder ? (
-                      <>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" disabled={index === 0} onClick={() => onMove(advice.id, -1)}>
-                          <ArrowUp />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" disabled={index === advices.length - 1} onClick={() => onMove(advice.id, 1)}>
-                          <ArrowDown />
-                        </Button>
-                      </>
+                      <ReorderButtons index={index} count={advices.length} className="gap-0.5" onMove={(_i, delta) => onMove(advice.id, delta)} />
                     ) : null}
                     {canToggle || canEdit || canDelete ? (
                       <RowMenu label={`إجراءات ${advice.title.ar}`}>

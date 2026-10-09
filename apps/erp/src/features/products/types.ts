@@ -1,5 +1,5 @@
 import type { Category, Product } from "@capella/shared";
-import type { RelatedOption } from "../../components/forms/related-items-field";
+import type { RelatedOption } from "@/lib/related-options";
 
 export interface ProductFormProps {
   mode: "new" | "edit";

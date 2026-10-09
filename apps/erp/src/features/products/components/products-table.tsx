@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, PackageOpen, Pencil, Percent, Power, PowerOff, Trash2 } from "lucide-react";
+import { PackageOpen, Pencil, Percent, Power, PowerOff, Trash2 } from "lucide-react";
 import type { Product } from "@capella/shared";
 import { Badge, Swatch } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { Card } from "@/components/ui/card";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { SortableTH, Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -156,19 +157,12 @@ export function ProductsTable({
                 </TD>
                 <TD data-label="المخزون" className="whitespace-nowrap"><StockCell stock={stock} /></TD>
                 <TD data-label="الحالة">
-                  <Badge tone={active ? "success" : "neutral"}>{active ? "نشط" : "غير نشط"}</Badge>
+                  <StatusBadge active={active} />
                 </TD>
                 <TD data-cell="actions">
                   <div className="flex items-center justify-end gap-0.5">
                     {showReorder ? (
-                      <>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" title="تحريك لأعلى" disabled={index === 0} onClick={() => onMove?.(product.id, -1)}>
-                          <ArrowUp />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" title="تحريك لأسفل" disabled={index === products.length - 1} onClick={() => onMove?.(product.id, 1)}>
-                          <ArrowDown />
-                        </Button>
-                      </>
+                      <ReorderButtons index={index} count={products.length} className="gap-0.5" onMove={(_i, delta) => onMove?.(product.id, delta)} />
                     ) : null}
                     {hasMenu ? (
                       <RowMenu label={`إجراءات ${product.name.ar}`}>

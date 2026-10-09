@@ -4,8 +4,10 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Advice } from "@capella/shared";
-import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { StepCount, Stepper } from "@/components/admin/stepper";
+import { useWizardSteps } from "@/hooks/use-wizard-steps";
 import { Swatch } from "@/components/ui/badge";
+import { StatusChoice } from "@/components/forms/status-choice";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
@@ -43,8 +45,6 @@ const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
 export function AdviceForm({ mode, initial }: Props) {
   const router = useRouter();
   const editing = mode === "edit";
-  const [step, setStep] = useState(0);
-  const [reached, setReached] = useState(editing ? STEPS.length - 1 : 0);
   const [form, setForm] = useState<AdviceDraft>(
     initial
       ? { title: initial.title, description: initial.description, videoUrl: initial.videoUrl, status: initial.status }
@@ -54,8 +54,6 @@ export function AdviceForm({ mode, initial }: Props) {
   const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof AdviceDraft>(key: K, value: AdviceDraft[K]) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const stepIndex = (id: StepId) => STEPS.findIndex((candidate) => candidate.id === id);
 
   const requirements = [
     { key: "titleAr", label: "العنوان بالعربية", target: "basics", ok: form.title.ar.trim().length > 0 },
@@ -73,17 +71,12 @@ export function AdviceForm({ mode, initial }: Props) {
     return failing.length === 0;
   };
 
-  const goTo = (index: number) => {
-    setStep(index);
-    setReached((current) => Math.max(current, index));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const next = () => {
-    const keys = requirements.filter((requirement) => requirement.target === STEPS[step]!.id).map((requirement) => requirement.key);
-    if (!editing && !checkRequirements(keys)) return;
-    goTo(step + 1);
-  };
+  const { step, current, goTo, next, stepIndex, stepItems, reached } = useWizardSteps({
+    steps: STEPS,
+    requirements,
+    editing,
+    checkRequirements
+  });
 
   const submit = async (asStatus?: "inactive") => {
     const draft = asStatus ? { ...form, status: asStatus } : form;
@@ -107,15 +100,6 @@ export function AdviceForm({ mode, initial }: Props) {
     }
   };
 
-  const stepItems: StepItem[] = STEPS.map((item, index) => {
-    const required = requirements.filter((requirement) => requirement.target === item.id);
-    const unmet = required.some((requirement) => !requirement.ok);
-    const seen = editing || index < step || index < reached;
-    if (unmet) return { id: item.id, label: item.label, state: seen ? "missing" : "todo" };
-    return { id: item.id, label: item.label, state: seen ? "done" : "todo" };
-  });
-
-  const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
   const missing = requirements.filter((requirement) => !requirement.ok);
   const canPublish = missing.length === 0;
@@ -168,34 +152,7 @@ export function AdviceForm({ mode, initial }: Props) {
               <h3 className="text-base font-bold text-text-strong">حالة النصيحة</h3>
               <p className="text-sm text-text-muted">المسودة مخفية عن المتجر حتى تنشريها.</p>
             </div>
-            <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="sr-only">حالة النصيحة</legend>
-              {STATUS_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className={cn(
-                    "grid cursor-pointer gap-0.5 rounded-control bg-surface p-3 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
-                    "hover:shadow-[0_0_0_1px_var(--line-strong)]",
-                    "has-checked:bg-sunken has-checked:shadow-[0_0_0_2px_var(--sand-900)]",
-                    "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="advice-status"
-                    value={option.value}
-                    className="sr-only"
-                    checked={form.status === option.value}
-                    onChange={() => set("status", option.value)}
-                  />
-                  <span className="flex items-center gap-2 text-base font-medium text-text-strong">
-                    <Swatch tone={option.tone} />
-                    {option.label}
-                  </span>
-                  <span className="text-xs text-text-muted">{option.hint}</span>
-                </label>
-              ))}
-            </fieldset>
+            <StatusChoice name="advice-status" value={form.status} onChange={(value) => set("status", value)} legend="حالة النصيحة" options={STATUS_OPTIONS} />
             {canPublish ? (
               <p className="flex items-center gap-2 text-sm text-text-2">
                 <Swatch tone="success" /> كل بيانات النشر مكتملة.

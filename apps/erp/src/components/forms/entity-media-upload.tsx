@@ -2,13 +2,17 @@
 
 import { useRef, useState } from "react";
 import type { EntityMedia, Language } from "@capella/shared";
-import { ArrowDown, ArrowUp, Film, ImagePlus, Trash2 } from "lucide-react";
+import { Film, ImagePlus, Trash2 } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Button } from "@/components/ui/button";
 import { api, type ErpUploadContext } from "@/lib/api/client";
+import { IMAGE_ACCEPT, VIDEO_ACCEPT } from "@/lib/media";
+import { getErrorMessage } from "@/lib/errors";
+import { moveItem } from "@/lib/array";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { IMAGE_ACCEPT, LangSlotRow } from "./media-frame";
+import { LangSlotRow } from "./media-frame";
 
 interface Props {
   value: EntityMedia[];
@@ -17,8 +21,6 @@ interface Props {
   entityLabel?: string;
   testIdPrefix?: "product" | "offer" | "collection";
 }
-
-const VIDEO_ACCEPT = "video/mp4,video/webm";
 
 export function EntityMediaUpload({
   value,
@@ -42,14 +44,8 @@ export function EntityMediaUpload({
   };
 
   const move = (index: number, delta: -1 | 1) => {
-    const target = index + delta;
-    if (target < 0 || target >= latestValueRef.current.length) return;
-    commit((current) => {
-      const next = current.slice();
-      const [item] = next.splice(index, 1);
-      next.splice(target, 0, item!);
-      return next;
-    });
+    if (index + delta < 0 || index + delta >= latestValueRef.current.length) return;
+    commit((current) => moveItem(current, index, delta));
   };
 
   const upload = async (files: FileList | null) => {
@@ -90,7 +86,7 @@ export function EntityMediaUpload({
         ];
       });
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "فشل رفع الصور");
+      setError(getErrorMessage(uploadError, "فشل رفع الصور"));
     } finally {
       setUploading(false);
     }
@@ -107,7 +103,7 @@ export function EntityMediaUpload({
       const [uploaded] = await upload(files);
       if (uploaded) commit((current) => [...current, { type: "video", url: uploaded.url }]);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "فشل رفع الفيديو");
+      setError(getErrorMessage(uploadError, "فشل رفع الفيديو"));
     } finally {
       setUploading(false);
     }
@@ -126,7 +122,7 @@ export function EntityMediaUpload({
         ? { ...item, [lang === "ar" ? "arUrl" : "enUrl"]: uploaded.url }
         : item));
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "فشل استبدال الصورة");
+      setError(getErrorMessage(uploadError, "فشل استبدال الصورة"));
     } finally {
       setUploading(false);
     }
@@ -209,14 +205,7 @@ export function EntityMediaUpload({
                       {index + 1}
                     </span>
                     {primary ? <span className="text-xs font-medium text-nude-strong">الأساسية</span> : null}
-                    <span className="ms-auto flex items-center @2xl:ms-0 @2xl:flex-col">
-                      <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={uploading || index === 0}>
-                        <ArrowUp />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={uploading || index === value.length - 1}>
-                        <ArrowDown />
-                      </Button>
-                    </span>
+                    <ReorderButtons index={index} count={value.length} onMove={move} disabled={uploading} className="ms-auto @2xl:ms-0 @2xl:flex-col" />
                   </div>
 
                   {item.type === "video" ? (
