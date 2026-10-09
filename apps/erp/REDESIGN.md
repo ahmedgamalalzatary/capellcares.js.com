@@ -30,7 +30,7 @@ pass: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 | 5 | Discounts | discounts | **Done — awaiting review** (master-detail, `discounts.css` deleted) |
 | 6 | Orders & sales | orders · order detail · reconciliation · shipping · sales | **Done — awaiting review** (`order-details.css` + `order-format.ts` deleted) |
 | 7 | Store content | advices (list/new/edit) · shop media · reviews | **Done — awaiting review** |
-| 8 | Admin | dashboard · staff (list/new/edit) · trash · login | todo |
+| 8 | Admin | dashboard · staff (list/new/edit) · trash · login | **Done — awaiting review** |
 
 **End of project:** delete `src/styles/legacy.css`, `app/discounts/discounts.css`, `components/orders/order-details.css`,
 `components/ui/icons.tsx` usages; fix tests; write `DESIGN.md`; finish review + documenter agents **only with explicit

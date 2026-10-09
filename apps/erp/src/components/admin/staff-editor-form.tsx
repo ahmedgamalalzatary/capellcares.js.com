@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/errors";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 const MODULE_LABELS: Record<string, string> = {
   dashboard: "لوحة التحكم",
@@ -83,9 +90,7 @@ function normalizePermissionKeys(keys: string[], dependencies: Record<string, st
     if (resolved.has(key)) {
       return;
     }
-
     resolved.add(key);
-
     for (const dependency of dependencies[key] ?? []) {
       addKey(dependency);
     }
@@ -105,7 +110,6 @@ function getPermissionDependencies(items: PermissionItem[]) {
     if (!Array.isArray(item.dependencies) || item.dependencies.some((dependency) => typeof dependency !== "string")) {
       throw new Error(`Invalid dependencies for permission ${item.key}`);
     }
-
     dependencies[item.key] = [...item.dependencies];
   }
 
@@ -139,6 +143,7 @@ export function StaffEditorForm({
   // Re-sync only when the target record/mode changes, not on every parent re-render (initialValues is a fresh object each render at the call sites).
   useEffect(() => {
     setForm(initialValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffId, mode]);
 
   useEffect(() => {
@@ -148,12 +153,8 @@ export function StaffEditorForm({
 
     api.get<{ items: PermissionItem[] }>("/api/erp/staff/permissions")
       .then((response) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setPermissionCatalog(response.items);
-
         try {
           setPermissionDependencies(getPermissionDependencies(response.items));
         } catch {
@@ -161,35 +162,26 @@ export function StaffEditorForm({
         }
       })
       .catch((loadError) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setPermissionCatalog([]);
         setPermissionDependencies({});
         setError(getErrorMessage(loadError));
       })
       .finally(() => {
-        if (active) {
-          setLoadingPermissions(false);
-        }
+        if (active) setLoadingPermissions(false);
       });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
   const permissionGroups = useMemo(() => {
     const groups = new Map<string, PermissionItem[]>();
-
     for (const item of permissionCatalog) {
       const moduleName = item.key.split(".")[0] ?? "general";
       const current = groups.get(moduleName) ?? [];
       current.push(item);
       groups.set(moduleName, current);
     }
-
     return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
   }, [permissionCatalog]);
 
@@ -209,7 +201,6 @@ export function StaffEditorForm({
 
   function togglePermissionGroup(items: PermissionItem[], checked: boolean) {
     const groupKeys = items.map((item) => item.key);
-
     setForm((current) => ({
       ...current,
       permissionKeys: checked
@@ -237,14 +228,8 @@ export function StaffEditorForm({
       } else {
         await api.put(`/api/erp/staff/${staffId}`, payload);
       }
-
-      if (onSuccess) {
-        await onSuccess();
-      }
-
-      if (mode === "create") {
-        setForm(createEmptyStaffForm());
-      }
+      if (onSuccess) await onSuccess();
+      if (mode === "create") setForm(createEmptyStaffForm());
     } catch (saveError) {
       setError(getErrorMessage(saveError));
     } finally {
@@ -253,117 +238,107 @@ export function StaffEditorForm({
   }
 
   return (
-    <form onSubmit={submitForm} className="staff-form">
-      <div className="staff-fields">
-        <label className="field">
-          <span>الاسم</span>
-          <input
-            className="input"
-            value={form.name}
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-          />
-        </label>
-        <label className="field">
-          <span>البريد الإلكتروني</span>
-          <input
-            className="input"
-            value={form.email}
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-          />
-        </label>
-        <label className="field">
-          <span>{mode === "create" ? "كلمة المرور" : "كلمة المرور الجديدة"}</span>
-          <input
-            className="input"
+    <form onSubmit={submitForm} className="grid gap-6">
+      <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
+        <Field label="الاسم" htmlFor="staff-name">
+          <Input id="staff-name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+        </Field>
+        <Field label="البريد الإلكتروني" htmlFor="staff-email">
+          <Input id="staff-email" dir="ltr" type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
+        </Field>
+        <Field label={mode === "create" ? "كلمة المرور" : "كلمة المرور الجديدة"} htmlFor="staff-password">
+          <Input
+            id="staff-password"
             type="password"
             value={form.password}
             onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            placeholder={mode === "create" ? "" : "اتركيه فارغًا للإبقاء عليها كما هي"}
+            placeholder={mode === "create" ? undefined : "اتركيه فارغًا للإبقاء عليها كما هي"}
           />
+        </Field>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-well bg-sunken p-4">
+        <Switch
+          id="staff-active"
+          checked={form.isActive}
+          onCheckedChange={(checked) => setForm((current) => ({ ...current, isActive: checked }))}
+          className="mt-0.5"
+        />
+        <label htmlFor="staff-active" className="grid cursor-pointer gap-0.5">
+          <span className="text-base font-medium text-text-strong">الحساب نشط</span>
+          <span className="text-xs text-text-muted">
+            {form.isActive ? "يمكن للعضو تسجيل الدخول واستخدام صلاحياته." : "العضو موقوف ولا يمكنه تسجيل الدخول."}
+          </span>
         </label>
       </div>
 
-      <label className="switch">
-        <input
-          type="checkbox"
-          checked={form.isActive}
-          onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
-        />
-        <span className="switch__track" aria-hidden="true" />
-        <span className="switch__text">
-          <span className="switch__title">الحساب نشط</span>
-          <span className="switch__hint">
-            {form.isActive ? "يمكن للعضو تسجيل الدخول واستخدام صلاحياته." : "العضو موقوف ولا يمكنه تسجيل الدخول."}
-          </span>
-        </span>
-      </label>
-
-      <div className="stack">
-        <div className="row row--between row--baseline">
-          <h3 className="staff-form__heading">الصلاحيات</h3>
-          <span className="muted fs-12">{form.permissionKeys.length} مفعّلة</span>
+      <div className="grid gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-md font-bold text-text-strong">الصلاحيات</h3>
+          <span className="text-sm text-text-muted"><span className="num">{form.permissionKeys.length}</span> مفعّلة</span>
         </div>
 
-        {loadingPermissions ? <p className="muted">جارٍ تحميل الصلاحيات...</p> : null}
+        {loadingPermissions ? <p className="text-sm text-text-muted">جارٍ تحميل الصلاحيات…</p> : null}
 
         {!loadingPermissions && permissionGroups.map(([moduleName, items]) => {
           const selectedCount = items.filter((item) => form.permissionKeys.includes(item.key)).length;
           const allSelected = selectedCount === items.length && items.length > 0;
 
           return (
-            <div key={moduleName} className="perm-group">
-              <div className="perm-group__head">
-                <span className="perm-group__title">{moduleLabel(moduleName)}</span>
-                <span className="perm-group__count" data-full={allSelected || undefined}>
-                  {selectedCount}/{items.length}
+            <section key={moduleName} className="grid gap-3 rounded-well bg-sunken p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-2">
+                  <span className="text-base font-medium text-text-strong">{moduleLabel(moduleName)}</span>
+                  <Badge tone={allSelected ? "success" : "neutral"} swatch={false}>
+                    <span className="num">{selectedCount}/{items.length}</span>
+                  </Badge>
                 </span>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm perm-group__all"
-                  onClick={() => togglePermissionGroup(items, !allSelected)}
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={() => togglePermissionGroup(items, !allSelected)}>
                   {allSelected ? "إلغاء الكل" : "تحديد الكل"}
-                </button>
+                </Button>
               </div>
-              <div className="perm-grid">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((item) => {
                   const checked = form.permissionKeys.includes(item.key);
-
                   return (
-                    <label key={item.key} className="perm-chip" data-checked={checked || undefined}>
+                    <label
+                      key={item.key}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2.5 rounded-control bg-surface px-3 py-2 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
+                        "hover:shadow-[0_0_0_1px_var(--line-strong)]",
+                        checked && "bg-sunken shadow-[0_0_0_2px_var(--sand-900)]",
+                        "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
+                      )}
+                    >
                       <input
                         type="checkbox"
+                        className="size-4 shrink-0"
                         checked={checked}
                         onChange={(event) => togglePermission(item.key, event.target.checked)}
                         aria-label={`${moduleLabel(moduleName)} / ${actionLabel(item.key)}`}
                       />
-                      <span className="perm-chip__box" aria-hidden="true">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12l4 4 10-10" />
-                        </svg>
-                      </span>
-                      <span className="perm-chip__text">
-                        <span className="perm-chip__label">{actionLabel(item.key)}</span>
-                        <span className="perm-chip__key">{item.key}</span>
+                      <span className="grid min-w-0 gap-0.5">
+                        <span className="text-base text-text-strong">{actionLabel(item.key)}</span>
+                        <span dir="ltr" className="truncate text-xs text-text-muted">{item.key}</span>
                       </span>
                     </label>
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
 
-      {error ? <p className="form-error-note">{error}</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
 
-      <div className="row row--gap-lg">
-        <button className="btn btn--primary btn--sm" type="submit" disabled={saving || loadingPermissions}>
-          {saving ? "جارٍ الحفظ..." : submitLabel ?? (mode === "create" ? "إنشاء العضو" : "حفظ التعديلات")}
-        </button>
-        <button className="btn btn--ghost btn--sm" type="button" onClick={resetForm} disabled={saving}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant="primary" disabled={saving || loadingPermissions}>
+          {saving ? "جارٍ الحفظ…" : submitLabel ?? (mode === "create" ? "إنشاء العضو" : "حفظ التعديلات")}
+        </Button>
+        <Button type="button" variant="ghost" onClick={resetForm} disabled={saving}>
           {resetLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

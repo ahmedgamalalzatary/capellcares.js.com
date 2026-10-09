@@ -62,7 +62,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: product.id,
           title: product.name.ar,
           subtitle: product.sku,
-          meta: new Date(product.deletedAt!).toLocaleDateString("ar-EG")
+          meta: new Date(product.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
         })),
     [products]
   );
@@ -75,7 +75,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: category.id,
           title: category.name.ar,
           subtitle: category.name.en,
-          meta: new Date(category.deletedAt!).toLocaleDateString("ar-EG")
+          meta: new Date(category.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
         })),
     [categories]
   );
@@ -88,7 +88,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: offer.id,
           title: offer.name.ar,
           subtitle: offer.name.en,
-          meta: new Date(offer.deletedAt!).toLocaleDateString("ar-EG")
+          meta: new Date(offer.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
         })),
     [offers]
   );
@@ -101,7 +101,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: collection.id,
           title: collection.name.ar,
           subtitle: collection.name.en,
-          meta: new Date(collection.deletedAt!).toLocaleDateString("ar-EG")
+          meta: new Date(collection.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
         })),
     [collections]
   );
@@ -111,7 +111,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
       id: review.id,
       title: `${review.entityName.ar || review.entityName.en} — ${review.customerName}`,
       subtitle: `${"★".repeat(review.rating)} · ${review.comment}`,
-      meta: new Date(review.deletedAt!).toLocaleDateString("ar-EG")
+      meta: new Date(review.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
     })),
     [reviews]
   );

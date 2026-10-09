@@ -1,8 +1,10 @@
 "use client";
 
 import { createEmptyStaffForm, StaffEditorForm } from "@/components/admin/staff-editor-form";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
 
 export default function StaffNewPage() {
   const { user, hydrated } = useAdminAuth();
@@ -14,25 +16,19 @@ export default function StaffNewPage() {
   if (user.role !== "admin") {
     return (
       <AdminShell title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]}>
-        <section className="card card--pad-lg forbidden-state">
-          <h2>غير مصرح</h2>
-          <p>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
-        </section>
+        <ErpForbiddenState message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
       </AdminShell>
     );
   }
 
   return (
     <AdminShell title="إضافة عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "إضافة عضو" }]}>
-      <section className="card card--pad">
-        <div className="staff-form__head">
-          <h2 className="staff-form__heading">إضافة عضو</h2>
-          <p className="muted staff-form__sub">
-            أنشئي حسابات الموظفين وحددي الصلاحيات المطلوبة لكل عضو.
-          </p>
-        </div>
-        <StaffEditorForm initialValues={createEmptyStaffForm()} mode="create" />
-      </section>
+      <Card>
+        <CardHeader title="بيانات العضو" description="أنشئي حساب الموظف وحدّدي الصلاحيات المطلوبة له." />
+        <CardBody>
+          <StaffEditorForm initialValues={createEmptyStaffForm()} mode="create" />
+        </CardBody>
+      </Card>
     </AdminShell>
   );
 }

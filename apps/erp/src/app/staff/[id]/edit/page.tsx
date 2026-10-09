@@ -3,8 +3,12 @@
 import { use, useEffect, useState } from "react";
 import { notFound, useRouter } from "next/navigation";
 import { StaffEditorForm, type StaffFormState, type StaffUser } from "@/components/admin/staff-editor-form";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -46,31 +50,21 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
 
     api.get<{ item: StaffUser }>(`/api/erp/staff/${staffId}`)
       .then((response) => {
-        if (active) {
-          setStaffUser(response.item);
-        }
+        if (active) setStaffUser(response.item);
       })
       .catch((loadError: Error & { status?: number }) => {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         if (loadError.status === 404) {
           setMissing(true);
           return;
         }
-
         setError(getErrorMessage(loadError));
       })
       .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [hydrated, staffId, user?.role]);
 
   if (!hydrated || !user) {
@@ -80,10 +74,7 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
   if (user.role !== "admin") {
     return (
       <AdminShell title="تعديل عضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "غير مصرح" }]}>
-        <section className="card card--pad-lg forbidden-state">
-          <h2>غير مصرح</h2>
-          <p>إدارة فريق العمل متاحة للمسؤول الرئيسي فقط.</p>
-        </section>
+        <ErpForbiddenState message="إدارة فريق العمل متاحة للمسؤول الرئيسي فقط." />
       </AdminShell>
     );
   }
@@ -94,8 +85,8 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
 
   if (loading) {
     return (
-      <AdminShell title="تحميل العضو..." crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "تحميل" }]}>
-        <div className="card">جارٍ تحميل بيانات العضو...</div>
+      <AdminShell title="تحميل العضو…" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "تحميل" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -103,30 +94,31 @@ export default function StaffEditPage({ params }: { params: Promise<{ id: string
   if (error || !staffUser) {
     return (
       <AdminShell title="تعذر تحميل العضو" crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "خطأ" }]}>
-        <div className="card">{error ?? "تعذر تحميل بيانات العضو."}</div>
+        <Card>
+          <CardBody className="pt-5 sm:pt-6">
+            <Alert tone="danger">{error ?? "تعذر تحميل بيانات العضو."}</Alert>
+          </CardBody>
+        </Card>
       </AdminShell>
     );
   }
 
   return (
     <AdminShell title={`تعديل: ${staffUser.name}`} crumbs={[{ label: "فريق العمل", href: "/staff" }, { label: "تعديل" }]}>
-      <section className="card card--pad">
-        <div className="staff-form__head">
-          <h2 className="staff-form__heading">تعديل عضو</h2>
-          <p className="muted staff-form__sub">
-            حددي بيانات العضو وصلاحياته ثم احفظي التعديلات.
-          </p>
-        </div>
-        <StaffEditorForm
-          mode="edit"
-          staffId={staffUser.id}
-          initialValues={toFormState(staffUser)}
-          resetLabel="إعادة تعيين"
-          onSuccess={() => {
-            router.push("/staff");
-          }}
-        />
-      </section>
+      <Card>
+        <CardHeader title="بيانات العضو" description="حدّدي بيانات العضو وصلاحياته ثم احفظي التعديلات." />
+        <CardBody>
+          <StaffEditorForm
+            mode="edit"
+            staffId={staffUser.id}
+            initialValues={toFormState(staffUser)}
+            resetLabel="إعادة تعيين"
+            onSuccess={() => {
+              router.push("/staff");
+            }}
+          />
+        </CardBody>
+      </Card>
     </AdminShell>
   );
 }
