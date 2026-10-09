@@ -5,9 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { authHref, NEXT_PARAM, resolveAuthDestination } from "@/lib/auth-redirect";
-import type { Language } from "@capella/shared";
+import { signupSchema, type Language } from "@capella/shared";
 
 type Mode = "login" | "signup";
+
+// The API validates signup with the same shared schema; check it here first so the customer sees which rule failed instead of a generic error.
+const SIGNUP_ERROR_KEYS = { name: "nameTooShort", email: "invalidEmail", password: "passwordTooShort" } as const;
+
+function signupErrorKey(name: string, email: string, password: string) {
+  const result = signupSchema.safeParse({ name, email, password });
+  if (result.success) return null;
+  const field = result.error.issues[0]?.path[0] as keyof typeof SIGNUP_ERROR_KEYS | undefined;
+  return field ? SIGNUP_ERROR_KEYS[field] : "genericError";
+}
 
 export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dict: any }) {
   const router = useRouter();
@@ -39,12 +49,20 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       return;
     }
 
+    if (mode === "signup") {
+      const errorKey = signupErrorKey(name.trim(), email.trim(), password);
+      if (errorKey) {
+        setError(dict.auth[errorKey]);
+        return;
+      }
+    }
+
     setBusy(true);
     try {
       if (mode === "login") {
         await login(email, password);
       } else {
-        await signup(name, email, password);
+        await signup(name.trim(), email.trim(), password);
       }
       router.replace(destination);
     } catch {

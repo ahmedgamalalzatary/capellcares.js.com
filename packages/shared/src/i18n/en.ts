@@ -326,6 +326,9 @@ export const en = {
     signupHere: "Sign up",
     loginHere: "Log in",
     genericError: "Something went wrong. Please try again.",
+    nameTooShort: "Please enter your full name (at least 2 characters).",
+    invalidEmail: "Please enter a valid email address.",
+    passwordTooShort: "Password must be at least 8 characters.",
     loginSubtitle: "Welcome back. Sign in to pick up where you left off.",
     signupSubtitle: "One quick step before your Capella routine begins."
   },

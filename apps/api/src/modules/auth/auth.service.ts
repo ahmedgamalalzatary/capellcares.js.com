@@ -3,6 +3,7 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import { createCustomer, findCustomerByEmail, findCustomerById } from "./customer.repository.js";
 import {
   createRefreshSession,
+  RefreshTokenRejectedError,
   rotateRefreshSession,
   revokeRefreshSession
 } from "../../services/auth-session.service.js";
@@ -50,9 +51,9 @@ export async function login(input: { email: string; password: string }) {
 
 export async function refreshCustomerSession(token: string) {
   const session = await rotateRefreshSession(token, "customer");
-  if (!session.customerId) throw new Error("Invalid refresh session");
+  if (!session.customerId) throw new RefreshTokenRejectedError("Invalid refresh session");
   const customer = await findCustomerById(session.customerId);
-  if (!customer) throw new Error("Invalid refresh session");
+  if (!customer) throw new RefreshTokenRejectedError("Invalid refresh session");
   return {
     accessToken: issueAccessToken(customer.id, session.sessionId),
     refreshToken: session.refreshToken

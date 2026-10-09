@@ -386,3 +386,137 @@ test("mobile logout revokes a refresh token supplied in the header", async () =>
     assert.equal(refreshResponse.status, 401);
   });
 });
+
+test("signup route rejects an invalid body without creating a customer", async () => {
+  const email = "route-auth-signup-invalid@capella.test";
+  await withTestServer(app, async (request) => {
+    const invalid = await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "A", email, password: "short" })
+    });
+    assert.equal(invalid.status, 400);
+
+    const valid = await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Valid Later", email, password })
+    });
+    assert.equal(valid.status, 201);
+  });
+});
+
+test("login route rejects a malformed body instead of treating it as bad credentials", async () => {
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "not-an-email", password: "" })
+    });
+
+    assert.equal(response.status, 400);
+  });
+});
+
+test("signup route rate limits repeated attempts for the same identity", async () => {
+  const email = "route-auth-signup-limited@capella.test";
+  await withTestServer(app, async (request) => {
+    const attempt = () =>
+      request("/api/v1/auth/signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Limiter", email, password: "short" })
+      });
+
+    for (let index = 0; index < 10; index += 1) {
+      const allowed = await attempt();
+      assert.equal(allowed.status, 400, `attempt ${index + 1} should pass the limiter`);
+    }
+
+    const blocked = await attempt();
+    assert.equal(blocked.status, 429);
+  });
+});
+
+test("logout immediately invalidates the access token of the revoked session", async () => {
+  const email = "route-auth-revoke-access@capella.test";
+  await withTestServer(app, async (request) => {
+    await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Revoke Access", email, password })
+    });
+    const loginResponse = await request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-client": "mobile" },
+      body: JSON.stringify({ email, password })
+    });
+    const accessToken = loginResponse.json.accessToken;
+    const refreshToken = loginResponse.json.refreshToken;
+
+    const before = await request("/api/v1/cart", {
+      headers: { authorization: `Bearer ${accessToken}` }
+    });
+    assert.equal(before.status, 200);
+
+    const logoutResponse = await request("/api/v1/auth/logout", {
+      method: "POST",
+      headers: { "x-client": "mobile", "x-refresh-token": refreshToken }
+    });
+    assert.equal(logoutResponse.status, 204);
+
+    const after = await request("/api/v1/cart", {
+      headers: { authorization: `Bearer ${accessToken}` }
+    });
+    assert.equal(after.status, 401);
+  });
+});
+
+test("rotating a refresh session invalidates the superseded access token", async () => {
+  const email = "route-auth-revoke-rotated@capella.test";
+  await withTestServer(app, async (request) => {
+    await request("/api/v1/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Rotate Revoke", email, password })
+    });
+    const loginResponse = await request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-client": "mobile" },
+      body: JSON.stringify({ email, password })
+    });
+    const firstAccessToken = loginResponse.json.accessToken;
+
+    const refreshResponse = await request("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { "x-client": "mobile", "x-refresh-token": loginResponse.json.refreshToken }
+    });
+    assert.equal(refreshResponse.status, 200);
+    const secondAccessToken = refreshResponse.json.accessToken;
+
+    const superseded = await request("/api/v1/cart", {
+      headers: { authorization: `Bearer ${firstAccessToken}` }
+    });
+    assert.equal(superseded.status, 401);
+
+    const current = await request("/api/v1/cart", {
+      headers: { authorization: `Bearer ${secondAccessToken}` }
+    });
+    assert.equal(current.status, 200);
+  });
+});
+
+test("signup is throttled by source IP even when the email changes", async () => {
+  await withTestServer(app, async (request) => {
+    let throttled = false;
+    for (let index = 0; index < 60 && !throttled; index += 1) {
+      const response = await request("/api/v1/auth/signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Rotating", email: `route-auth-ip-${index}@capella.test`, password: "short" })
+      });
+      if (response.status === 429) throttled = true;
+    }
+    assert.equal(throttled, true, "rotating the email must not bypass the per-IP signup limiter");
+  });
+});
