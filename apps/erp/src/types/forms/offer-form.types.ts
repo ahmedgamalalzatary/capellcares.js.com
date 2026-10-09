@@ -17,6 +17,14 @@ export interface OfferFormRow {
   qty: number;
 }
 
+/** A thing the offer needs before it can be saved live; `target` is the wizard step that owns it. */
+export interface OfferRequirement {
+  key: string;
+  label: string;
+  target: string;
+  ok: boolean;
+}
+
 export interface UseOfferFormResult {
   nameAr: string;
   setNameAr: (value: string) => void;
@@ -57,4 +65,8 @@ export interface UseOfferFormResult {
   moveRow: (index: number, direction: -1 | 1) => void;
   updateRow: (index: number, patch: Partial<OfferFormRow>) => void;
   save: () => Promise<boolean>;
+  requirements: OfferRequirement[];
+  checkRequirements: (keys: string[]) => boolean;
+  missing: OfferRequirement[];
+  canPublish: boolean;
 }

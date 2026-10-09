@@ -8,6 +8,9 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/components/forms/offer-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
@@ -63,8 +66,8 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل العرض..." crumbs={[{ label: "العروض", href: "/offers" }, { label: "تحميل" }]}>
-        <div className="card">جاري تحميل بيانات العرض...</div>
+      <AdminShell title="تحميل العرض…" crumbs={[{ label: "العروض", href: "/offers" }, { label: "تحميل" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -72,7 +75,11 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   if (error && !offer) {
     return (
       <AdminShell title="تعذر تحميل العرض" crumbs={[{ label: "العروض", href: "/offers" }, { label: "خطأ" }]}>
-        <div className="card">{error}</div>
+        <Card>
+          <div className="p-5 sm:p-6">
+            <Alert tone="danger" title="تعذر تحميل بيانات العرض">{error}</Alert>
+          </div>
+        </Card>
       </AdminShell>
     );
   }
@@ -82,18 +89,20 @@ export default function EditOfferPage({ params }: { params: Promise<{ id: string
   if (relatedItems === null && !relatedItemsError) {
     return (
       <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
-        <div className="card">جاري تحميل بيانات العرض...</div>
+        <FormSkeleton />
       </AdminShell>
     );
   }
 
   return (
     <AdminShell title={`تعديل: ${offer.name.ar}`} crumbs={[{ label: "العروض", href: "/offers" }, { label: "تعديل" }]}>
-      {relatedItemsError && (
-        <div className="card card--spaced-bottom">
-          تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات العرض، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+      {relatedItemsError ? (
+        <div className="mb-5">
+          <Alert tone="warning">
+            تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات العرض، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
+          </Alert>
         </div>
-      )}
+      ) : null}
       <OfferForm
         mode="edit"
         initial={relatedItems === null ? offer : { ...offer, relatedItems }}

@@ -7,7 +7,16 @@ import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
 import { useHoverImageFields } from "./use-hover-image-fields";
-import type { OfferFormProps, OfferFormRow, UseOfferFormResult } from "../../types/forms/offer-form.types";
+import type { OfferFormProps, OfferFormRow, OfferRequirement, UseOfferFormResult } from "../../types/forms/offer-form.types";
+
+const REQUIREMENT_ERROR: Record<string, string> = {
+  nameAr: "أدخلي الاسم بالعربية",
+  nameEn: "أدخلي الاسم بالإنجليزية",
+  categoryId: "اختاري قسمًا",
+  price: "أدخلي سعرًا للعرض",
+  rows: "أضيفي عنصرًا صحيحًا واحدًا على الأقل",
+  image: "أضيفي صورة العرض"
+};
 
 export function useOfferForm({
   initial,
@@ -87,6 +96,43 @@ export function useOfferForm({
       return next;
     });
   };
+
+  const rowsValid = useMemo(() => {
+    if (rows.length === 0) return false;
+    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) return false;
+    if (categoryId) {
+      const allowed = getDescendantCategoryIds(categories, categoryId);
+      return rows.every((row) => {
+        const product = products.find((candidate) => candidate.id === row.productId);
+        return Boolean(product) && allowed.has(product!.categoryId);
+      });
+    }
+    return true;
+  }, [rows, categoryId, products, categories]);
+
+  const requirements: OfferRequirement[] = useMemo(() => [
+    { key: "nameAr", label: "الاسم بالعربية", target: "basics", ok: nameAr.trim().length > 0 },
+    { key: "nameEn", label: "الاسم بالإنجليزية", target: "basics", ok: nameEn.trim().length > 0 },
+    { key: "categoryId", label: "اختيار قسم", target: "basics", ok: !!categoryId },
+    { key: "price", label: "سعر الباقة", target: "bundle", ok: price > 0 },
+    { key: "rows", label: "عناصر الباقة", target: "bundle", ok: rowsValid },
+    { key: "image", label: "صورة العرض", target: "media", ok: media.some((item) => item.type === "image") }
+  ], [nameAr, nameEn, categoryId, price, rowsValid, media]);
+
+  /** Marks the given requirements' fields as errors when unmet; returns true when all are met. */
+  const checkRequirements = (keys: string[]) => {
+    const failing = requirements.filter((requirement) => keys.includes(requirement.key) && !requirement.ok);
+    setErrors((current) => {
+      const next = { ...current };
+      for (const key of keys) delete next[key];
+      for (const requirement of failing) next[requirement.key] = REQUIREMENT_ERROR[requirement.key] ?? "مطلوب";
+      return next;
+    });
+    return failing.length === 0;
+  };
+
+  const missing = requirements.filter((requirement) => !requirement.ok);
+  const canPublish = missing.length === 0;
 
   const save = async () => {
     const nextErrors: Record<string, string> = {};
@@ -188,6 +234,10 @@ export function useOfferForm({
     removeRow,
     moveRow,
     updateRow,
-    save
+    save,
+    requirements,
+    checkRequirements,
+    missing,
+    canPublish
   };
 }

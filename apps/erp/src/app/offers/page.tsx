@@ -2,21 +2,22 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Check, CircleDot, FolderTree, Plus } from "lucide-react";
+import type { Category, Offer } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
-import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
-import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
-import { EntityAvatar } from "@/components/admin/entity-avatar";
-import { RowMenu } from "@/components/ui/row-menu";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { useStore, getStore } from "@/lib/store";
-import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
-import { formatPrice, type Category, type Offer } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
-import { showErrorToast } from "@/lib/errors";
+import { Button } from "@/components/ui/button";
+import { OFFER_SORT_COLUMNS, OffersTable, offerSortAccessors, type OfferSortKey } from "@/components/offers-table";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
+import { showErrorToast } from "@/lib/errors";
+import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
+import { formatNumber } from "@/lib/format";
+import { getStore, useStore } from "@/lib/store";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
+import { useTableSort } from "@/hooks/use-table-sort";
 
 function isInCategoryTree(categories: Category[], categoryId: number | null, selectedCategoryId: number) {
   if (categoryId == null) return false;
@@ -26,9 +27,7 @@ function isInCategoryTree(categories: Category[], categoryId: number | null, sel
     if (visited.has(current.id)) return false;
     if (current.id === selectedCategoryId) return true;
     visited.add(current.id);
-    current = current.parentId != null
-      ? categories.find((category) => category.id === current!.parentId)
-      : undefined;
+    current = current.parentId != null ? categories.find((category) => category.id === current!.parentId) : undefined;
   }
   return false;
 }
@@ -37,40 +36,65 @@ export default function OffersListPage() {
   const { user } = useAdminAuth();
   const offers = useStore((s) => s.offers);
   const categories = useStore((s) => s.categories);
+  const loaded = useStore((s) => s.loaded);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Offer | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
   const [toggleError, setToggleError] = useState<string | null>(null);
 
-  const visibleOffers = useMemo(() => offers.filter((o) => !o.deletedAt), [offers]);
+  const visibleOffers = useMemo(() => offers.filter((offer) => !offer.deletedAt), [offers]);
   const reorder = useListReorder({
-    persistedIds: useMemo(() => visibleOffers.map((o) => o.id), [visibleOffers]),
+    persistedIds: useMemo(() => visibleOffers.map((offer) => offer.id), [visibleOffers]),
     save: (ids) => getStore().reorderOffers({ ids }),
     successMessage: "تم حفظ ترتيب العروض.",
     errorMessage: "تعذر حفظ ترتيب العروض. حاولي مرة أخرى."
   });
   const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
-  // Reordering needs the complete list, so it is hidden while a filter hides part of it.
-  const canReorder = !search.trim() && statusFilter === "all" && categoryFilter === "" && canUpdateErpModule(user, "offers");
 
-  const filtered = useMemo(() => {
+  const filteredOffers = useMemo(() => {
     const ordered = sortByIdOrder(visibleOffers, reorder.orderedIds)
-      .filter((o) => statusFilter === "all" || o.status === statusFilter)
-      .filter((o) => categoryFilter === "" || isInCategoryTree(categories, o.categoryId, categoryFilter));
+      .filter((offer) => statusFilter === "all" || offer.status === statusFilter)
+      .filter((offer) => categoryFilter === "" || isInCategoryTree(categories, offer.categoryId, categoryFilter));
     if (!search.trim()) return ordered;
-    const s = search.trim().toLowerCase();
-    return ordered.filter((o) =>
-      o.name.ar.toLowerCase().includes(s) ||
-      o.name.en.toLowerCase().includes(s)
-    );
+    const needle = search.trim().toLowerCase();
+    return ordered.filter((offer) => offer.name.ar.toLowerCase().includes(needle) || offer.name.en.toLowerCase().includes(needle));
   }, [visibleOffers, search, statusFilter, categories, categoryFilter, reorder.orderedIds]);
 
-  const onDelete = () => {
+  const { sort, setSort, toggleSort, sortedRows } = useTableSort(filteredOffers, offerSortAccessors(categories));
+  const reorderEnabled = canUpdateErpModule(user, "offers") && !search.trim() && statusFilter === "all" && categoryFilter === "";
+
+  const closeToggleModal = () => {
+    if (isToggling) return;
+    setPendingToggle(null);
+    setToggleError(null);
+  };
+
+  const confirmDelete = async () => {
     if (pendingDelete == null) return;
-    getStore().softDeleteOffer(pendingDelete);
-    setPendingDelete(null);
+    try {
+      await getStore().softDeleteOffer(pendingDelete);
+      setPendingDelete(null);
+    } catch (error) {
+      showErrorToast(error, "تعذر حذف العرض. حاولي مرة أخرى.");
+    }
+  };
+
+  const confirmToggle = async () => {
+    if (!pendingToggle) return;
+    try {
+      setIsToggling(true);
+      setToggleError(null);
+      await getStore().toggleOfferStatus(pendingToggle.id);
+      setPendingToggle(null);
+    } catch (error) {
+      showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+      setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   if (!canReadErpModule(user, "offers")) {
@@ -85,40 +109,55 @@ export default function OffersListPage() {
     <AdminShell
       title="العروض"
       crumbs={[{ label: "العروض" }]}
+      description="باقات المنتجات التي تظهر للعملاء بسعر مخفّض."
       actions={
         <>
-          {reorder.isDirty && canUpdateErpModule(user, "offers") && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => {
-                void reorder.saveOrder();
-              }}
-              disabled={reorder.saving}
-            >
-              <Icon.Check /> حفظ ترتيب العروض
-            </button>
-          )}
-          {canCreateErpModule(user, "offers") ? <Link href="/offers/new" className="btn btn--primary btn--sm"><Icon.Plus /> عرض جديد</Link> : undefined}
+          {reorder.isDirty && canUpdateErpModule(user, "offers") ? (
+            <Button variant="secondary" onClick={() => { void reorder.saveOrder(); }} disabled={reorder.saving}>
+              <Check /> حفظ ترتيب العروض
+            </Button>
+          ) : null}
+          {canCreateErpModule(user, "offers") ? (
+            <Button asChild variant="primary">
+              <Link href="/offers/new"><Plus /> عرض جديد</Link>
+            </Button>
+          ) : undefined}
         </>
       }
     >
       <AdminListHeader
-        searchPlaceholder="ابحثي عن عرض…"
+        searchPlaceholder="ابحثي باسم العرض…"
         searchValue={search}
         onSearchChange={setSearch}
-        countLabel={`${filtered.length} عرض`}
+        countLabel={loaded ? `${formatNumber(filteredOffers.length)} عرض` : "جارٍ التحميل…"}
+        sort={{
+          value: sort ? `${sort.key}:${sort.direction}` : "",
+          onChange: (value) => {
+            const [key, direction] = value.split(":");
+            setSort(key ? { key: key as OfferSortKey, direction: direction as "asc" | "desc" } : null);
+          },
+          options: [
+            { value: "", label: "ترتيب المتجر" },
+            ...OFFER_SORT_COLUMNS.flatMap((column) => [
+              { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
+              { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
+            ])
+          ]
+        }}
         filters={[
           {
             key: "status",
-            label: "حالة العرض",
+            label: "الحالة",
+            icon: CircleDot,
             value: statusFilter,
             onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
             options: ACTIVE_STATUS_FILTER_OPTIONS
           },
           {
             key: "category",
-            label: "قسم العرض",
+            label: "القسم",
+            icon: FolderTree,
+            testId: "offers-category-filter",
             value: String(categoryFilter),
             onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
             options: [
@@ -132,135 +171,36 @@ export default function OffersListPage() {
         ]}
       />
 
-      <div className="card">
-        <div className="table-outer"><table className="table">
-          <thead>
-            <tr>
-              <th>الصورة</th>
-              <th>الاسم</th>
-              <th>القسم</th>
-              <th>عدد المنتجات</th>
-              <th>سعر الباقة</th>
-              <th>السعر الأصلي</th>
-              <th>التوفير</th>
-              <th>الحالة</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((o, index) => {
-              const savings = o.originalTotal - o.price;
-              const category = categories.find((item) => item.id === o.categoryId);
-              return (
-                <tr key={o.id} data-testid={`offer-row-${o.id}`}>
-                  <td>
-                    <EntityAvatar src={o.imagePath} fallback={o.name.en[0] ?? "?"} wide />
-                  </td>
-                  <td>
-                    <Link href={`/offers/${o.id}/edit`} className="table-title">{o.name.ar}</Link>
-                    <div className="table-subtitle">{o.name.en}</div>
-                  </td>
-                  <td>{category ? category.name.ar : "—"}</td>
-                  <td>{o.items.reduce((acc, it) => acc + it.qty, 0)} عنصر</td>
-                   <td>{formatPrice(o.price, "ar")}</td>
-                   <td className="faint cell-strike">{formatPrice(o.originalTotal, "ar")}</td>
-                   <td><span className="status status--active">{formatPrice(savings, "ar")}</span></td>
-                   <td><AdminStatusBadge active={o.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
-                   <td>
-                     <div className="row row--actions">
-                     {canReorder && filtered.length > 1 && (
-                       <>
-                         <button
-                           type="button"
-                           className="btn btn--ghost btn--sm"
-                           onClick={() => reorder.moveItem(o.id, -1)}
-                           aria-label="تحريك لأعلى"
-                           disabled={index === 0}
-                         >
-                           <Icon.Chevron size={14} className="rotate-180" />
-                         </button>
-                         <button
-                           type="button"
-                           className="btn btn--ghost btn--sm"
-                           onClick={() => reorder.moveItem(o.id, 1)}
-                           aria-label="تحريك لأسفل"
-                           disabled={index === filtered.length - 1}
-                         >
-                           <Icon.Chevron size={14} />
-                         </button>
-                       </>
-                     )}
-                     {(canToggleErpModule(user, "offers") || canUpdateErpModule(user, "offers") || canSoftDeleteErpModule(user, "offers")) && (
-                       <RowMenu>
-                         {canToggleErpModule(user, "offers") && (
-                           // An offer with no category predates classification and has to be completed in the editor before it can go live. The API rejects the activation anyway, so the action is not offered here at all.
-                           o.status !== "active" && o.categoryId == null ? (
-                             <span className="row-menu__item row-menu__item--disabled">
-                               اختاري قسمًا للعرض قبل تفعيله
-                             </span>
-                           ) : (
-                             <button
-                               type="button"
-                               className="row-menu__item"
-                               onClick={() => {
-                                 setToggleError(null);
-                                 setPendingToggle(o);
-                               }}
-                               title={o.status === "active" ? "إيقاف" : "تفعيل"}
-                             >
-                               {o.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
-                             </button>
-                           )
-                         )}
-                         {canUpdateErpModule(user, "offers") && (
-                           <Link href={`/offers/${o.id}/edit`} className="row-menu__item"><Icon.Edit /> تعديل</Link>
-                         )}
-                         {canSoftDeleteErpModule(user, "offers") && (
-                           <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => setPendingDelete(o.id)}>
-                             <Icon.Trash /> حذف
-                           </button>
-                         )}
-                       </RowMenu>
-                     )}
-                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr><td colSpan={9} className="state-note state-note--muted">لا توجد عروض.</td></tr>
-            )}
-          </tbody>
-        </table>
-        </div>
-      </div>
+      <OffersTable
+        loading={!loaded}
+        offers={sortedRows}
+        sort={sort}
+        onSort={toggleSort}
+        categories={categories}
+        canToggle={canToggleErpModule(user, "offers")}
+        canEdit={canUpdateErpModule(user, "offers")}
+        canDelete={canSoftDeleteErpModule(user, "offers")}
+        canReorder={reorderEnabled}
+        onMove={reorder.moveItem}
+        onToggle={setPendingToggle}
+        onDelete={setPendingDelete}
+      />
 
       <AdminConfirmModal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
-        onClose={() => {
-          setPendingToggle(null);
-          setToggleError(null);
-        }}
-        confirmLabel="تأكيد"
-        onConfirm={async () => {
-          if (!pendingToggle) return;
-          try {
-            setToggleError(null);
-            await getStore().toggleOfferStatus(pendingToggle.id);
-            setPendingToggle(null);
-          } catch (error) {
-            showErrorToast(error, "تعذر تحديث حالة العرض. حاولي مرة أخرى.");
-            setToggleError("تعذر تحديث حالة العرض. حاولي مرة أخرى.");
-          }
-        }}
+        onClose={closeToggleModal}
+        confirmLabel={isToggling ? "جارٍ التحديث…" : "تأكيد"}
+        disableCancel={isToggling}
+        disableConfirm={isToggling}
+        onConfirm={confirmToggle}
       >
-        <p className="modal-note">
+        <p>
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذا العرض ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا العرض ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
-        {toggleError ? <p className="modal-note modal-note--error">{toggleError}</p> : null}
+        {toggleError ? <p role="alert" className="mt-3 text-sm font-medium text-danger">{toggleError}</p> : null}
       </AdminConfirmModal>
 
       <AdminConfirmModal
@@ -268,10 +208,10 @@ export default function OffersListPage() {
         title="تأكيد الحذف"
         onClose={() => setPendingDelete(null)}
         confirmLabel="حذف العرض"
-        confirmClassName="btn btn--danger btn--sm"
-        onConfirm={onDelete}
+        tone="danger"
+        onConfirm={confirmDelete}
       >
-        <p className="modal-note">سيتم نقل العرض إلى المحذوفات. يمكنك استعادته لاحقًا.</p>
+        <p>سيُنقل العرض إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
       </AdminConfirmModal>
     </AdminShell>
   );
