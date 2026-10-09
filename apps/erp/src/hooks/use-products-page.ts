@@ -36,6 +36,7 @@ function isInCategoryBranch(categoryId: number, selectedId: number, categoryById
 export function useProductsPage() {
   const products = useStore((state) => state.products);
   const categories = useStore((state) => state.categories);
+  const loaded = useStore((state) => state.loaded);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [categoryFilter, setCategoryFilter] = useState<number | "">("");
@@ -179,6 +180,7 @@ export function useProductsPage() {
   };
 
   return {
+    loaded,
     categories,
     search,
     setSearch,

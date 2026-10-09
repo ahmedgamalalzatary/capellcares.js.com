@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 
 interface AdminConfirmModalProps {
@@ -7,6 +8,9 @@ interface AdminConfirmModalProps {
   title: string;
   confirmLabel: string;
   cancelLabel?: string;
+  /** Visual weight of the confirm button. */
+  tone?: "primary" | "danger";
+  /** @deprecated legacy pages pass a class string; only its "danger" intent is read. */
   confirmClassName?: string;
   disableCancel?: boolean;
   disableConfirm?: boolean;
@@ -21,7 +25,8 @@ export function AdminConfirmModal({
   title,
   confirmLabel,
   cancelLabel = "إلغاء",
-  confirmClassName = "btn btn--primary btn--sm",
+  tone,
+  confirmClassName,
   disableCancel = false,
   disableConfirm = false,
   onClose,
@@ -29,16 +34,18 @@ export function AdminConfirmModal({
   footerExtra,
   children
 }: AdminConfirmModalProps) {
+  const variant = tone ?? (confirmClassName?.includes("danger") ? "danger" : "primary");
   return (
     <Modal
       open={open}
       title={title}
+      size="sm"
       onClose={onClose}
       footer={(
         <>
-          <button className="btn btn--ghost btn--sm" disabled={disableCancel} onClick={onClose}>{cancelLabel}</button>
+          <Button variant="ghost" disabled={disableCancel} onClick={onClose}>{cancelLabel}</Button>
           {footerExtra}
-          <button className={confirmClassName} disabled={disableConfirm} onClick={() => void onConfirm()}>{confirmLabel}</button>
+          <Button variant={variant} disabled={disableConfirm} onClick={() => void onConfirm()}>{confirmLabel}</Button>
         </>
       )}
     >

@@ -23,7 +23,7 @@ export default function NewProductPage() {
     );
   }
   return (
-    <AdminShell title="منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "منتج جديد" }]}>
+    <AdminShell title="إضافة منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "منتج جديد" }]}>
       <ProductForm mode="new" categories={categories} relatedOptions={buildRelatedOptions(products, offers, collections)} />
     </AdminShell>
   );

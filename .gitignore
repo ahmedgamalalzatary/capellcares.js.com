@@ -55,3 +55,6 @@ Thumbs.db
 test-results/
 # Command Code scratch commit-message files
 .w*-msg.txt
+
+# Playwright MCP output
+.playwright-mcp/

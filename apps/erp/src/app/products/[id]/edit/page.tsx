@@ -6,6 +6,8 @@ import type { RelatedItemRef } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { Alert } from "@/components/ui/alert";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { ProductForm } from "@/components/forms/product-form";
 import { buildRelatedOptions } from "@/components/forms/related-options";
 import { api } from "@/lib/api/client";
@@ -66,8 +68,8 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل المنتج..." crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تحميل" }]}>
-        <div className="card">جاري تحميل بيانات المنتج...</div>
+      <AdminShell title="تعديل المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -75,7 +77,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
   if (error && !product) {
     return (
       <AdminShell title="تعذر تحميل المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خطأ" }]}>
-        <div className="card">{error}</div>
+        <Alert tone="danger" title="تعذر تحميل بيانات المنتج">{error}</Alert>
       </AdminShell>
     );
   }
@@ -85,7 +87,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
   if (relatedItems === null && !relatedItemsError) {
     return (
       <AdminShell title={`تعديل: ${product.name.ar}`} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}>
-        <div className="card">جاري تحميل بيانات المنتج...</div>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -95,11 +97,6 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
       title={`تعديل: ${product.name.ar}`}
       crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تعديل" }]}
     >
-      {relatedItemsError && (
-        <div className="card card--spaced-bottom">
-          تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي بيانات المنتج، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية. {relatedItemsError}
-        </div>
-      )}
       <ProductForm
         mode="edit"
         initial={relatedItems === null ? product : { ...product, relatedItems }}

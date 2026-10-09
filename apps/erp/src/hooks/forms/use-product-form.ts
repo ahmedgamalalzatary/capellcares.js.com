@@ -8,6 +8,16 @@ import { slugifyFormName } from "../../components/forms/form-slug";
 import { useHoverImageFields } from "./use-hover-image-fields";
 import type { ProductFormErrors, ProductFormProps, Requirement } from "../../types/forms/product-form.types";
 
+const REQUIREMENT_ERROR: Record<string, string> = {
+  nameAr: "أدخلي الاسم بالعربية",
+  nameEn: "أدخلي الاسم بالإنجليزية",
+  buyingPrice: "أدخلي سعر شراء أكبر من صفر",
+  keywords: "أضيفي كلمات مفتاحية",
+  categoryId: "اختاري قسمًا",
+  image: "أضيفي صورة المنتج",
+  variants: "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح"
+};
+
 // Negative, monotonically-decreasing temp ids never collide with positive DB autoincrement ids.
 let tempVariantIdCounter = 0;
 function newVariantId() {
@@ -66,24 +76,34 @@ export function useProductForm({
   };
 
   const requirements: Requirement[] = useMemo(() => [
-    { key: "nameAr", label: "الاسم بالعربية", target: "section-basics", ok: nameAr.trim().length > 0 },
-    { key: "nameEn", label: "Name (EN)", target: "section-basics", ok: nameEn.trim().length > 0 },
-    { key: "buyingPrice", label: "سعر الشراء", target: "section-basics", ok: !!buyingPrice && buyingPrice > 0 },
-    { key: "keywords", label: "كلمات مفتاحية", target: "section-basics", ok: keywords.trim().length > 0 },
-    { key: "categoryId", label: "اختيار قسم", target: "section-publish", ok: !!categoryId },
-    { key: "image", label: "صورة المنتج", target: "section-media", ok: media.some((item) => item.type === "image") },
-    { key: "variants", label: "مقاس وسعر", target: "section-variants", ok: variants.length > 0 && variants.every((v) => v.size.trim() && v.price > 0) }
+    { key: "nameAr", label: "الاسم بالعربية", target: "basics", ok: nameAr.trim().length > 0 },
+    { key: "nameEn", label: "الاسم بالإنجليزية", target: "basics", ok: nameEn.trim().length > 0 },
+    { key: "buyingPrice", label: "سعر الشراء", target: "pricing", ok: !!buyingPrice && buyingPrice > 0 },
+    { key: "keywords", label: "كلمات مفتاحية", target: "basics", ok: keywords.trim().length > 0 },
+    { key: "categoryId", label: "اختيار قسم", target: "basics", ok: !!categoryId },
+    { key: "image", label: "صورة المنتج", target: "media", ok: media.some((item) => item.type === "image") },
+    { key: "variants", label: "مقاس وسعر", target: "pricing", ok: variants.length > 0 && variants.every((v) => v.size.trim() && v.price > 0) }
   ], [nameAr, nameEn, buyingPrice, keywords, categoryId, media, variants]);
+
+  /** Marks the given requirements' fields as errors when unmet; returns true when all are met. */
+  const checkRequirements = (keys: string[]) => {
+    const failing = requirements.filter((r) => keys.includes(r.key) && !r.ok);
+    setErrors((current) => {
+      const next = { ...current };
+      for (const key of keys) delete next[key];
+      for (const r of failing) next[r.key] = REQUIREMENT_ERROR[r.key] ?? "مطلوب";
+      return next;
+    });
+    return failing.length === 0;
+  };
 
   const completedCount = requirements.filter((r) => r.ok).length;
   const totalCount = requirements.length;
   const missing = requirements.filter((r) => !r.ok);
   const canActivate = missing.length === 0;
-  const wantActive = status === "active";
-
-  const validate = () => {
+  const validate = (effectiveStatus: Product["status"]) => {
     const next: ProductFormErrors = {};
-    if (wantActive) {
+    if (effectiveStatus === "active") {
       if (!nameAr.trim()) next.nameAr = "مطلوب لتفعيل المنتج";
       if (!nameEn.trim()) next.nameEn = "مطلوب لتفعيل المنتج";
       if (!buyingPrice || buyingPrice <= 0) next.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
@@ -98,7 +118,7 @@ export function useProductForm({
     return Object.keys(next).length === 0;
   };
 
-  const buildProduct = (): Product => {
+  const buildProduct = (effectiveStatus: Product["status"]): Product => {
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
     const primaryMedia = media.find((item) => item.type === "image");
@@ -119,7 +139,7 @@ export function useProductForm({
       ...hoverImagePayload,
       media,
       youtubeUrl: youtubeUrl.trim() || undefined,
-      status,
+      status: effectiveStatus,
       isNew,
       isBestseller,
       categoryId: categoryId ?? 0,
@@ -142,10 +162,12 @@ export function useProductForm({
     return product;
   };
 
-  const save = async () => {
-    if (!validate()) return false;
+  /** Saves with the chosen status, or `asStatus` for this save only (e.g. saving a draft from any step). */
+  const save = async ({ asStatus }: { asStatus?: Product["status"] } = {}) => {
+    const effectiveStatus = asStatus ?? status;
+    if (!validate(effectiveStatus)) return false;
     try {
-      await getStore().upsertProduct(buildProduct());
+      await getStore().upsertProduct(buildProduct(effectiveStatus));
       return true;
     } catch (error) {
       showErrorToast(error, "تعذر حفظ المنتج. حاولي مرة أخرى.");
@@ -184,6 +206,7 @@ export function useProductForm({
     addVariant,
     removeVariant,
     requirements,
+    checkRequirements,
     completedCount,
     totalCount,
     missing,

@@ -1,43 +1,54 @@
 "use client";
 
 import { useId, type ChangeEvent, type ReactNode } from "react";
+import { FormSaveBar } from "@/components/admin/form-save-bar";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input, Textarea } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+const LANG_TAG = { ar: "ع", en: "EN" } as const;
 
 interface LocalizedTextFieldProps {
+  lang: "ar" | "en";
   value: string;
   onChange: (value: string) => void;
-  placeholder: string;
-  dir?: "ltr";
+  placeholder?: string;
   multiline?: boolean;
-  error?: string;
+  invalid?: boolean;
   id?: string;
+  ariaLabel?: string;
 }
 
-function LocalizedTextField({
-  value,
-  onChange,
-  placeholder,
-  dir,
-  multiline = false,
-  error,
-  id
-}: LocalizedTextFieldProps) {
-  const commonProps = {
+/** One language of a bilingual value; a small corner tag names the language once the placeholder is gone. */
+function LocalizedTextField({ lang, value, onChange, placeholder, multiline = false, invalid, id, ariaLabel }: LocalizedTextFieldProps) {
+  const common = {
     id,
     value,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
+    lang,
+    dir: lang === "en" ? ("ltr" as const) : undefined,
     placeholder,
-    ...(dir ? { dir } : {})
+    "aria-label": ariaLabel,
+    "aria-invalid": invalid || undefined,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
   };
 
   return (
-    <div className="field">
-      {multiline ? (
-        <textarea className="textarea" {...commonProps} />
-      ) : (
-        <input className="input" {...commonProps} />
-      )}
-      {error ? <span className="field-error">{error}</span> : null}
-    </div>
+    <span className="relative flex min-w-0">
+      {multiline ? <Textarea className="pb-8" {...common} /> : <Input className="pe-11" {...common} />}
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute rounded-sm bg-sand-150 px-1.5 text-xs font-medium leading-5 text-text-muted",
+          // Pinned to the control's own inline end (English fields run left-to-right).
+          lang === "en" ? "right-2.5" : "left-2.5",
+          multiline ? "bottom-2.5" : "top-1/2 -translate-y-1/2",
+        )}
+      >
+        {LANG_TAG[lang]}
+      </span>
+    </span>
   );
 }
 
@@ -50,22 +61,15 @@ interface BilingualEditorFieldProps {
   multiline?: boolean;
 }
 
-export function BilingualEditorField({
-  label,
-  arValue,
-  enValue,
-  onArChange,
-  onEnChange,
-  multiline = false
-}: BilingualEditorFieldProps) {
+export function BilingualEditorField({ label, arValue, enValue, onArChange, onEnChange, multiline = false }: BilingualEditorFieldProps) {
   return (
-    <div className="field">
-      <label>{label}</label>
-      <div className="editor-fields-2">
-        <LocalizedTextField value={arValue} onChange={onArChange} placeholder="العربية" multiline={multiline} />
-        <LocalizedTextField value={enValue} onChange={onEnChange} placeholder="English" dir="ltr" multiline={multiline} />
+    <fieldset className="@container grid min-w-0 gap-1.5">
+      <legend className="mb-1.5 text-sm font-medium text-text-2">{label}</legend>
+      <div className="grid gap-x-4 gap-y-3 @lg:grid-cols-2">
+        <LocalizedTextField lang="ar" value={arValue} onChange={onArChange} placeholder="بالعربية" ariaLabel={`${label} بالعربية`} multiline={multiline} />
+        <LocalizedTextField lang="en" value={enValue} onChange={onEnChange} placeholder="In English" ariaLabel={`${label} بالإنجليزية`} multiline={multiline} />
       </div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -78,58 +82,43 @@ interface BilingualNameFieldsProps {
   enError?: string;
 }
 
-export function BilingualNameFields({
-  arValue,
-  enValue,
-  onArChange,
-  onEnChange,
-  arError,
-  enError
-}: BilingualNameFieldsProps) {
+/** Two grid cells (Arabic, English); the caller's grid lays them out. */
+export function BilingualNameFields({ arValue, enValue, onArChange, onEnChange, arError, enError }: BilingualNameFieldsProps) {
   const arId = useId();
   const enId = useId();
   return (
     <>
-      <div className="field">
-        <label htmlFor={arId}>الاسم بالعربية</label>
-        <LocalizedTextField id={arId} value={arValue} onChange={onArChange} placeholder="" error={arError} />
-      </div>
-      <div className="field">
-        <label htmlFor={enId}>Name (English)</label>
-        <LocalizedTextField id={enId} value={enValue} onChange={onEnChange} placeholder="" dir="ltr" error={enError} />
-      </div>
+      <Field label="الاسم بالعربية" htmlFor={arId} error={arError}>
+        <LocalizedTextField lang="ar" id={arId} value={arValue} onChange={onArChange} invalid={Boolean(arError)} />
+      </Field>
+      <Field label="الاسم بالإنجليزية" htmlFor={enId} error={enError}>
+        <LocalizedTextField lang="en" id={enId} value={enValue} onChange={onEnChange} invalid={Boolean(enError)} />
+      </Field>
     </>
   );
 }
 
 interface ImageFieldCardProps {
   title: string;
+  description?: ReactNode;
   uploadSlot: ReactNode;
   error?: string;
-  /** Set on editors whose main column numbers its sections (e.g. "04"). */
-  step?: string;
   id?: string;
 }
 
-export function ImageFieldCard({ title, uploadSlot, error, step, id }: ImageFieldCardProps) {
+export function ImageFieldCard({ title, description, uploadSlot, error, id }: ImageFieldCardProps) {
   return (
-    <section className="card" id={id}>
-      <div className="card__head">
-        {step ? (
-          <div className="section-num">
-            <span className="section-num__digit">{step}</span>
-            <span className="section-num__rule" />
-            <h3 className="card__title">{title}</h3>
-          </div>
-        ) : (
-          <h3 className="card__title">{title}</h3>
-        )}
-      </div>
-      <div className="card__body">
+    <Card id={id}>
+      <CardHeader title={title} description={description} />
+      <CardBody className="grid gap-3">
         {uploadSlot}
-        {error ? <div className="field-error field-error--offset">{error}</div> : null}
-      </div>
-    </section>
+        {error ? (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
+      </CardBody>
+    </Card>
   );
 }
 
@@ -138,13 +127,14 @@ interface EditorActionsProps {
   saveLabel: string;
   onCancel: () => void;
   onSave: () => void;
+  status?: ReactNode;
 }
 
-export function EditorActions({ cancelLabel, saveLabel, onCancel, onSave }: EditorActionsProps) {
+export function EditorActions({ cancelLabel, saveLabel, onCancel, onSave, status }: EditorActionsProps) {
   return (
-    <div className="editor-actions">
-      <button type="button" className="btn btn--ghost" onClick={onCancel}>{cancelLabel}</button>
-      <button type="button" className="btn btn--primary" onClick={onSave}>{saveLabel}</button>
-    </div>
+    <FormSaveBar status={status}>
+      <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
+      <Button variant="primary" onClick={onSave}>{saveLabel}</Button>
+    </FormSaveBar>
   );
 }

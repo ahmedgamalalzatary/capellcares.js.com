@@ -2,9 +2,13 @@
 
 import { useRef, useState } from "react";
 import type { EntityMedia, Language } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
+import { ArrowDown, ArrowUp, Film, ImagePlus, Trash2 } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { api, type ErpUploadContext } from "@/lib/api/client";
-import "./entity-media.css";
+import { formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { IMAGE_ACCEPT, LangSlotRow } from "./media-frame";
 
 interface Props {
   value: EntityMedia[];
@@ -14,13 +18,7 @@ interface Props {
   testIdPrefix?: "product" | "offer" | "collection";
 }
 
-const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 const VIDEO_ACCEPT = "video/mp4,video/webm";
-
-const LANG_LABEL: Record<Language, { title: string; code: string }> = {
-  ar: { title: "الصورة العربية", code: "AR" },
-  en: { title: "الصورة الإنجليزية", code: "EN" }
-};
 
 export function EntityMediaUpload({
   value,
@@ -152,150 +150,123 @@ export function EntityMediaUpload({
   const canUpload = Boolean(uploadContext) && !uploading;
 
   return (
-    <div className="emedia">
-      <div className="emedia__bar">
-        <div className="emedia__summary">
-          <span className="emedia__pill">{imageCount}</span>
-          <span>{imageCount === 1 ? "صورة" : "صور"}</span>
-          {hasVideo ? <span className="muted fs-12">· فيديو واحد</span> : null}
-        </div>
-        <div className="emedia__actions">
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addArRef.current?.click()} disabled={!canUpload}>
-            <Icon.Upload size={14} /> صور عربية
-          </button>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addEnRef.current?.click()} disabled={!canUpload}>
-            <Icon.Upload size={14} /> صور إنجليزية
-          </button>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => addVideoRef.current?.click()} disabled={!canUpload || hasVideo}>
-            <Icon.Upload size={14} /> فيديو
-          </button>
+    <div className="@container grid gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="flex-1 text-sm text-text-2">
+          <span className="num font-medium text-text-strong">{formatNumber(imageCount)}</span> {imageCount === 1 ? "صورة" : "صور"}
+          {hasVideo ? " · فيديو واحد" : ""}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => addArRef.current?.click()} disabled={!canUpload}>
+            <ImagePlus /> صور عربية
+          </Button>
+          <Button size="sm" onClick={() => addEnRef.current?.click()} disabled={!canUpload}>
+            <ImagePlus /> صور إنجليزية
+          </Button>
+          <Button size="sm" onClick={() => addVideoRef.current?.click()} disabled={!canUpload || hasVideo}>
+            <Film /> فيديو
+          </Button>
         </div>
       </div>
 
-      <p className="emedia__hint">
-        الصورة الأولى هي الأساسية في المتجر. لكل صورة نسخة عربية وإنجليزية اختيارية، ويُعرض المتاح منهما عند غياب الأخرى.
-      </p>
-
-      <input ref={addArRef} data-testid={`${testIdPrefix}-media-add-ar-input`} type="file" accept={IMAGE_ACCEPT} multiple className="file-input-hidden" onChange={(event) => { void addImages(event.target.files, "ar"); }} />
-      <input ref={addEnRef} data-testid={`${testIdPrefix}-media-add-en-input`} type="file" accept={IMAGE_ACCEPT} multiple className="file-input-hidden" onChange={(event) => { void addImages(event.target.files, "en"); }} />
-      <input ref={addVideoRef} data-testid={`${testIdPrefix}-media-add-video-input`} type="file" accept={VIDEO_ACCEPT} className="file-input-hidden" onChange={(event) => { void addVideo(event.target.files); }} />
+      <input ref={addArRef} data-testid={`${testIdPrefix}-media-add-ar-input`} type="file" accept={IMAGE_ACCEPT} multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(event) => { void addImages(event.target.files, "ar"); }} />
+      <input ref={addEnRef} data-testid={`${testIdPrefix}-media-add-en-input`} type="file" accept={IMAGE_ACCEPT} multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(event) => { void addImages(event.target.files, "en"); }} />
+      <input ref={addVideoRef} data-testid={`${testIdPrefix}-media-add-video-input`} type="file" accept={VIDEO_ACCEPT} className="sr-only" tabIndex={-1} aria-hidden onChange={(event) => { void addVideo(event.target.files); }} />
 
       {value.length === 0 ? (
-        <div className="emedia__empty-state">
-          <span className="emedia__empty-icon"><Icon.Upload size={20} /></span>
-          <strong className="fs-13">لا توجد وسائط بعد</strong>
-          <span className="fs-12">ارفعي صور {entityLabel} وفيديوه إن وجد، باستخدام الأزرار بالأعلى.</span>
+        <div className="grid justify-items-center gap-2 rounded-well border border-dashed border-line-strong bg-sunken px-6 py-10 text-center">
+          <ImagePlus aria-hidden className="size-6 text-text-muted" />
+          <p className="text-base font-medium text-text-strong">لا توجد وسائط بعد</p>
+          <p className="max-w-sm text-sm text-text-muted">ارفعي صور ال{entityLabel} وفيديو إن وجد من الأزرار بالأعلى. الصورة الأولى هي الأساسية في المتجر.</p>
         </div>
       ) : (
-        <div className="emedia__grid">
-          {value.map((item, index) => {
-            const key = item.type === "video"
-              ? `video-${item.url}-${index}`
-              : `image-${item.arUrl}-${item.enUrl}-${index}`;
+        <>
+          <p className="text-xs text-text-muted">
+            الصورة الأولى هي الأساسية في المتجر. لكل صورة نسخة عربية وإنجليزية، ويُعرض المتاح منهما عند غياب الأخرى.
+          </p>
+          <ol className="grid gap-3">
+            {value.map((item, index) => {
+              const key = item.type === "video"
+                ? `video-${item.url}-${index}`
+                : `image-${item.arUrl}-${item.enUrl}-${index}`;
+              const primary = index === 0 && item.type === "image";
 
-            return (
-              <div key={key} data-testid={`${testIdPrefix}-media-item`} className={`emedia__card${item.type === "video" ? " emedia__card--video" : ""}`}>
-                <div className="emedia__head">
-                  <div className="emedia__head-start">
-                    <span className="emedia__index">{index + 1}</span>
-                    {item.type === "video"
-                      ? <span className="fs-13 fw-600">فيديو مشترك</span>
-                      : index === 0 ? <span className="emedia__tag">الصورة الأساسية</span> : null}
+              return (
+                <li
+                  key={key}
+                  data-testid={`${testIdPrefix}-media-item`}
+                  className="grid items-center gap-3 border-b border-line pb-3 last:border-0 last:pb-0 @2xl:grid-cols-[3.25rem_minmax(0,1fr)_minmax(0,1fr)]"
+                >
+                  {/* Order: number (nude when it is the store's main image) + move controls.
+                      Reordering or removing mid-upload would land the pending file on the wrong row, so the panel freezes. */}
+                  <div className="flex items-center gap-1 @2xl:flex-col">
+                    <span
+                      className={cn(
+                        "num grid size-7 place-items-center rounded-full text-sm font-medium",
+                        primary ? "bg-nude-soft text-nude-strong" : "bg-sunken text-text-2",
+                      )}
+                    >
+                      {index + 1}
+                    </span>
+                    {primary ? <span className="text-xs font-medium text-nude-strong">الأساسية</span> : null}
+                    <span className="ms-auto flex items-center @2xl:ms-0 @2xl:flex-col">
+                      <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={uploading || index === 0}>
+                        <ArrowUp />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={uploading || index === value.length - 1}>
+                        <ArrowDown />
+                      </Button>
+                    </span>
                   </div>
-                  <div className="emedia__head-end">
-                    {/* Reordering or removing mid-upload would land the pending
-                        file on the wrong card, so the whole panel freezes. */}
-                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأعلى" onClick={() => move(index, -1)} disabled={uploading || index === 0}>
-                      <span className="icon-flip"><Icon.Chevron size={14} /></span>
-                    </button>
-                    <button type="button" className="btn btn--ghost btn--sm" aria-label="تحريك لأسفل" onClick={() => move(index, 1)} disabled={uploading || index === value.length - 1}>
-                      <Icon.Chevron size={14} />
-                    </button>
-                    {item.type === "video" ? (
-                      <button type="button" className="btn btn--ghost btn--sm" aria-label="إزالة" disabled={uploading} onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
-                        <Icon.Trash size={14} />
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
 
-                {item.type === "video" ? (
-                  <div className="emedia__video-row">
-                    <div className="emedia__video-frame">
-                      <video data-testid={`${testIdPrefix}-media-video-${index}`} src={item.url} className="emedia__video" controls>
-                        <track kind="captions" />
-                      </video>
+                  {item.type === "video" ? (
+                    <div className="flex min-w-0 items-center gap-4 rounded-well bg-sunken p-3 @2xl:col-span-2">
+                      <div className="w-40 shrink-0 overflow-hidden rounded-thumb bg-sand-950 sm:w-52">
+                        <video data-testid={`${testIdPrefix}-media-video-${index}`} src={item.url} className="aspect-video w-full" controls>
+                          <track kind="captions" />
+                        </video>
+                      </div>
+                      <div className="grid min-w-0 gap-1.5">
+                        <span className="text-base font-medium text-text-strong">فيديو</span>
+                        <span className="text-xs text-text-muted">يُعرض للغتين معًا.</span>
+                        <Button
+                          variant="danger-ghost"
+                          size="sm"
+                          className="mt-1 justify-self-start"
+                          disabled={uploading}
+                          onClick={() => commit((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                        >
+                          <Trash2 /> إزالة الفيديو
+                        </Button>
+                      </div>
                     </div>
-                    <span className="muted fs-12">يُعرض هذا الفيديو للغتين معًا.</span>
-                  </div>
-                ) : (
-                  <div className="emedia__langs">
-                    {(["ar", "en"] as const).map((lang) => {
-                      const url = lang === "ar" ? item.arUrl : item.enUrl;
-                      const label = LANG_LABEL[lang];
-                      const inputTestId = `${testIdPrefix}-media-image-${lang}-input-${index}`;
-
-                      return (
-                        <div key={lang} className="emedia__lang">
-                          <span className="emedia__label">
-                            <span className="emedia__label-flag">{label.code}</span>
-                            {label.title}
-                          </span>
-
-                          {url ? (
-                            <div className="emedia__frame">
-                              <img src={url} alt="" className="emedia__img" />
-                              <div className="emedia__overlay">
-                                <label className="emedia__chip">
-                                  <Icon.Upload size={12} /> استبدال
-                                  <input
-                                    data-testid={inputTestId}
-                                    type="file"
-                                    accept={IMAGE_ACCEPT}
-                                    className="file-input-hidden"
-                                    disabled={!canUpload}
-                                    onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
-                                  />
-                                </label>
-                                <button
-                                  type="button"
-                                  className="emedia__chip emedia__chip--danger"
-                                  aria-label={`إزالة ${label.title}`}
-                                  disabled={uploading}
-                                  onClick={() => removeImageLanguage(index, lang)}
-                                >
-                                  <Icon.Trash size={12} />
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <label className="emedia__frame emedia__frame--empty">
-                              <Icon.Upload size={16} />
-                              <span>غير مضافة — ستُستخدم صورة اللغة الأخرى</span>
-                              <input
-                                data-testid={inputTestId}
-                                type="file"
-                                accept={IMAGE_ACCEPT}
-                                className="file-input-hidden"
-                                disabled={!canUpload}
-                                onChange={(event) => { void replaceImageLanguage(index, lang, event.target.files); }}
-                              />
-                            </label>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  ) : (
+                    (["ar", "en"] as const).map((lang) => (
+                      <LangSlotRow
+                        key={lang}
+                        lang={lang}
+                        title={lang === "ar" ? "الصورة العربية" : "الصورة الإنجليزية"}
+                        emptyNote="غير مضافة — تُعرض صورة اللغة الأخرى"
+                        src={lang === "ar" ? item.arUrl : item.enUrl}
+                        inputTestId={`${testIdPrefix}-media-image-${lang}-input-${index}`}
+                        canUpload={canUpload}
+                        busy={uploading}
+                        onFiles={(files) => { void replaceImageLanguage(index, lang, files); }}
+                        onRemove={() => removeImageLanguage(index, lang)}
+                        removeLabel={`إزالة الصورة ${lang === "ar" ? "العربية" : "الإنجليزية"}`}
+                      />
+                    ))
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
 
-      {uploading ? <div className="muted fs-12">جارِ رفع الوسائط...</div> : null}
-      {!uploadContext ? <div className="muted fs-12">رفع الوسائط متاح فقط أثناء تعديل عنصر موجود.</div> : null}
-      {error ? <div className="field-error">{error}</div> : null}
+      {uploading ? <p role="status" className="text-sm text-text-muted">جارٍ رفع الوسائط…</p> : null}
+      {!uploadContext ? <p className="text-sm text-text-muted">رفع الوسائط متاح فقط أثناء تعديل عنصر موجود.</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </div>
   );
 }

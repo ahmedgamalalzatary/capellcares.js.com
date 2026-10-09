@@ -3,70 +3,174 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { Dialog } from "radix-ui";
+import {
+  ChartColumn, ChevronLeft, FolderTree, Gift, Images, Layers, LayoutDashboard, Lightbulb,
+  LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Truck, Users, X, type LucideIcon,
+} from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { OrderReviewFlagAlerts } from "@/components/orders/order-review-flag-alerts";
-import { Icon } from "@/components/ui/icons";
-import "./admin-shell.css";
+import { cn } from "@/lib/utils";
+import { ThemeMenu } from "./theme-menu";
 
 interface Crumb { label: string; href?: string }
 
 interface Props {
   title: string;
+  /** One line under the title saying what the page is for. */
+  description?: ReactNode;
   crumbs?: Crumb[];
   actions?: ReactNode;
+  /**
+   * full: lists and tables use the whole area. form: editors with a side column (centered, 1400px).
+   * narrow: single-column editors (centered, 960px). Header and content share the same width.
+   */
+  width?: "full" | "form" | "narrow";
   children: ReactNode;
 }
 
-const NAV = [
-  { href: "/dashboard",  label: "الرئيسية",  icon: <Icon.Dashboard /> },
-  { href: "/products",   label: "المنتجات",  icon: <Icon.Box />       },
-  { href: "/discounts",  label: "إدارة الخصومات", icon: <Icon.Tag /> },
-  { href: "/categories", label: "الأقسام",   icon: <Icon.Folder />    },
-  { href: "/offers",     label: "العروض",    icon: <Icon.Tag />       },
-  { href: "/collections", label: "المجموعات", icon: <Icon.Tag />      },
-  { href: "/advices",    label: "نصائح",     icon: <Icon.Sparkle />   },
-  { href: "/shop-media", label: "وسائط المتجر", icon: <Icon.Sparkle />  },
-  { href: "/orders",     label: "الطلبات",   icon: <Icon.Eye />       },
-  { href: "/shipping",   label: "الشحن",     icon: <Icon.Box />       },
-  { href: "/reviews",    label: "التقييمات", icon: <Icon.Sparkle />   },
-  { href: "/sales",      label: "المبيعات",  icon: <Icon.Tag />       },
-  { href: "/staff",      label: "فريق العمل", icon: <Icon.Eye />      },
-  { href: "/trash",      label: "المحذوفات", icon: <Icon.Trash />     },
-] as const;
+const WIDTH_CLASS = { full: "", form: "mx-auto max-w-[1400px]", narrow: "mx-auto max-w-[960px]" } as const;
 
-function canAccessNavItem(user: { role: "admin" | "staff"; permissionKeys?: string[] }, href: string) {
-  if (user.role === "admin") {
-    return true;
-  }
+interface NavItem { href: string; label: string; icon: LucideIcon; permission?: string }
+interface NavGroup { label?: string; items: NavItem[] }
 
-  if (href === "/staff") {
-    return false;
-  }
+const NAV: NavGroup[] = [
+  { items: [{ href: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, permission: "dashboard.read" }] },
+  {
+    label: "الكتالوج",
+    items: [
+      { href: "/products", label: "المنتجات", icon: Package, permission: "products.read" },
+      { href: "/categories", label: "الأقسام", icon: FolderTree, permission: "categories.read" },
+      { href: "/offers", label: "العروض", icon: Gift, permission: "offers.read" },
+      { href: "/collections", label: "المجموعات", icon: Layers, permission: "collections.read" },
+      { href: "/discounts", label: "الخصومات", icon: Percent, permission: "discounts.manage" },
+    ],
+  },
+  {
+    label: "الطلبات والمبيعات",
+    items: [
+      { href: "/orders", label: "الطلبات", icon: ShoppingBag, permission: "orders.read" },
+      { href: "/shipping", label: "الشحن", icon: Truck, permission: "shipping.read" },
+      { href: "/sales", label: "المبيعات", icon: ChartColumn, permission: "sales.read" },
+    ],
+  },
+  {
+    label: "محتوى المتجر",
+    items: [
+      { href: "/advices", label: "النصائح", icon: Lightbulb, permission: "advices.read" },
+      { href: "/shop-media", label: "وسائط المتجر", icon: Images, permission: "shop_media.read" },
+      { href: "/reviews", label: "التقييمات", icon: Star, permission: "reviews.read" },
+    ],
+  },
+  {
+    label: "الإدارة",
+    items: [
+      { href: "/staff", label: "فريق العمل", icon: Users },
+      { href: "/trash", label: "المحذوفات", icon: Trash2, permission: "trash.read" },
+    ],
+  },
+];
 
-  const requiredPermissionByHref: Record<string, string> = {
-    "/dashboard": "dashboard.read",
-    "/products": "products.read",
-    "/discounts": "discounts.manage",
-    "/categories": "categories.read",
-    "/offers": "offers.read",
-    "/collections": "collections.read",
-    "/advices": "advices.read",
-    "/shop-media": "shop_media.read",
-    "/orders": "orders.read",
-    "/shipping": "shipping.read",
-    "/reviews": "reviews.read",
-    "/sales": "sales.read",
-    "/trash": "trash.read"
-  };
-
-  const requiredPermission = requiredPermissionByHref[href];
-  return requiredPermission ? (user.permissionKeys ?? []).includes(requiredPermission) : false;
+function canAccess(user: { role: "admin" | "staff"; permissionKeys?: string[] }, item: NavItem) {
+  if (user.role === "admin") return true;
+  // Staff management is admin-only.
+  if (!item.permission) return false;
+  return (user.permissionKeys ?? []).includes(item.permission);
 }
 
-export function AdminShell({ title, crumbs = [], actions, children }: Props) {
-  const router   = useRouter();
+function isActive(pathname: string, href: string) {
+  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function BrandMark({ className }: { className?: string }) {
+  // The logo's face circle, cropped from the official lockup.
+  return (
+    <span
+      aria-hidden
+      className={cn("block size-9 shrink-0 rounded-full bg-[url('/brand/capella-logo.jpg')] bg-[length:auto_108%] bg-[position:2%_50%] shadow-[0_0_0_1px_oklch(1_0_0/0.08)]", className)}
+    />
+  );
+}
+
+function RailContent({ onNavigate }: { onNavigate?: () => void }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const { user, hydrated, logout } = useAdminAuth();
+  const { user, logout } = useAdminAuth();
+  if (!user) return null;
+
+  const groups = NAV
+    .map((group) => ({ ...group, items: group.items.filter((item) => canAccess(user, item)) }))
+    .filter((group) => group.items.length > 0);
+
+  return (
+    <div className="flex h-full flex-col bg-rail text-rail-text">
+      <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3 px-5 pt-5 pb-4">
+        <BrandMark />
+        <span className="grid leading-tight">
+          <span className="text-md font-bold tracking-wide text-rail-strong">Capella</span>
+          <span className="text-xs text-rail-muted">لوحة إدارة المتجر</span>
+        </span>
+      </Link>
+
+      <nav aria-label="القائمة الرئيسية" className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-color:var(--rail-line)_transparent]">
+        {groups.map((group, index) => (
+          <div key={group.label ?? index} className={cn(index > 0 && "mt-4")}>
+            {group.label ? <p className="mb-1.5 px-3 text-xs font-medium text-rail-muted">{group.label}</p> : null}
+            <ul className="grid gap-0.5">
+              {group.items.map((item) => {
+                const active = isActive(pathname, item.href);
+                const ItemIcon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "group flex h-9 items-center gap-3 rounded-control px-3 text-base transition-colors duration-150 pointer-coarse:h-11",
+                        "focus-visible:outline-rail-accent",
+                        active ? "bg-rail-active font-medium text-rail-strong" : "text-rail-text hover:bg-rail-hover hover:text-rail-strong",
+                      )}
+                    >
+                      <ItemIcon aria-hidden strokeWidth={1.75} className={cn("size-[18px] shrink-0", active ? "text-rail-accent" : "text-rail-muted group-hover:text-rail-text")} />
+                      <span className="truncate">{item.label}</span>
+                      {active ? <span aria-hidden className="ms-auto size-1.5 rounded-full bg-rail-accent" /> : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="flex items-center gap-1 border-t border-rail-line px-4 py-4">
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-rail-active text-sm font-bold text-rail-accent">
+          {user.name.trim().charAt(0)}
+        </span>
+        <span className="ms-2 me-1 grid min-w-0 flex-1 leading-tight">
+          <span className="truncate text-sm font-medium text-rail-strong">{user.name}</span>
+          <span dir="ltr" className="truncate text-end text-xs text-rail-muted">{user.email}</span>
+        </span>
+        <ThemeMenu />
+        <button
+          type="button"
+          aria-label="تسجيل الخروج"
+          title="تسجيل الخروج"
+          onClick={() => { void logout().finally(() => router.replace("/login")); }}
+          className="grid size-9 shrink-0 place-items-center rounded-control text-rail-muted transition-colors hover:bg-rail-hover hover:text-rail-strong focus-visible:outline-rail-accent"
+        >
+          <LogOut className="size-[18px] rtl:-scale-x-100" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function AdminShell({ title, description, crumbs = [], actions, width = "full", children }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, hydrated } = useAdminAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
@@ -75,148 +179,79 @@ export function AdminShell({ title, crumbs = [], actions, children }: Props) {
     if (hydrated && !user) router.replace("/login");
   }, [hydrated, user, router]);
 
-  if (!hydrated) return null;
-  if (!user) return null;
+  useEffect(() => {
+    document.title = `${title} · Capella ERP`;
+  }, [title]);
 
-  const nav = NAV.filter((item) => canAccessNavItem(user, item.href));
-  const bottomNav = nav.slice(0, 4);
-  const moreNav = nav.slice(4);
-  const isMore = moreNav.some((n) => pathname.startsWith(n.href));
+  if (!hydrated || !user) return null;
 
   return (
-    <div className="app-shell">
+    <div className="min-h-dvh bg-canvas">
       <OrderReviewFlagAlerts />
-      {/* ── Desktop sidebar ───────────────────────────── */}
-      <aside className="sidebar">
-        <div className="sidebar__brand">
-          <Icon.Logo size={34} />
-          <div className="sidebar__brand-text">
-            <div className="sidebar__brand-name">Capella</div>
-            <div className="sidebar__brand-tag">ERP</div>
-          </div>
-        </div>
 
-        <div className="sidebar__nav">
-          {nav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="sidebar__link"
-              data-active={n.href === "/dashboard" ? pathname === n.href : pathname.startsWith(n.href)}
-            >
-              {n.icon}<span>{n.label}</span>
-            </Link>
-          ))}
-        </div>
-
-        <div className="sidebar__user">
-          <div className="sidebar__avatar">{user.name[0]}</div>
-          <div className="sidebar__user-info">
-            <div className="sidebar__user-name">{user.name}</div>
-            <div className="sidebar__user-email">{user.email}</div>
-          </div>
-          <button
-            className="sidebar__logout"
-            onClick={() => { void logout().finally(() => router.replace("/login")); }}
-            aria-label="تسجيل الخروج"
-            title="تسجيل الخروج"
-          >
-            <Icon.Logout />
-          </button>
-        </div>
+      {/* Desktop rail */}
+      <aside className="fixed inset-y-0 start-0 z-30 hidden w-(--rail-width) border-e border-rail-line lg:block">
+        <RailContent />
       </aside>
 
-      {/* ── Main content ──────────────────────────────── */}
-      <div className="shell-main">
-        <header className="topbar">
-          <div>
-            <nav className="crumbs">
-              <Link href="/dashboard">الرئيسية</Link>
-              {crumbs.map((c, i) => (
-                <span key={i}>{c.href ? <Link href={c.href}>{c.label}</Link> : <span>{c.label}</span>}</span>
-              ))}
-            </nav>
-            <h1 className="page-title">{title}</h1>
-          </div>
-          <div className="row">{actions}</div>
-        </header>
-
-        <main className="page">{children}</main>
-      </div>
-
-      {/* ── Mobile bottom navigation bar ─────────────── */}
-      <nav className="mobile-nav" aria-label="التنقل">
-        {bottomNav.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className="mobile-nav__item"
-            data-active={n.href === "/dashboard" ? pathname === n.href : pathname.startsWith(n.href)}
+      {/* Tablet / phone top bar + drawer */}
+      <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-canvas/95 px-4 backdrop-blur-sm lg:hidden">
+          <Dialog.Trigger
+            aria-label="فتح القائمة"
+            className="-ms-2 grid size-11 place-items-center rounded-control text-text-strong hover:bg-hover"
           >
-            {n.icon}
-            <span>{n.label}</span>
+            <Menu className="size-[22px]" />
+          </Dialog.Trigger>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <BrandMark className="size-7" />
+            <span className="text-md font-bold text-text-strong">Capella</span>
           </Link>
-        ))}
-
-        {/* More button */}
-        <button
-          className="mobile-nav__item"
-          data-active={isMore || drawerOpen}
-          onClick={() => setDrawerOpen(true)}
-          aria-label="المزيد"
-        >
-          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
-          </svg>
-          <span>المزيد</span>
-        </button>
-      </nav>
-
-      {/* ── Mobile "more" drawer ──────────────────────── */}
-      {drawerOpen && (
-        <div className="mobile-drawer-overlay">
-          <button
-            type="button"
-            aria-label="إغلاق"
-            onClick={() => setDrawerOpen(false)}
-            className="overlay-dismiss"
-          />
-          <div className="mobile-drawer">
-            <div className="mobile-drawer__handle" />
-
-            <div className="mobile-drawer__user">
-              <div className="sidebar__avatar mobile-drawer__avatar">{user.name[0]}</div>
-              <div className="mobile-drawer__identity">
-                <div className="mobile-drawer__name">{user.name}</div>
-                <div className="mobile-drawer__email">{user.email}</div>
-              </div>
-            </div>
-
-            <div className="mobile-drawer__links">
-              {moreNav.map((n) => (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className="mobile-drawer__link"
-                  data-active={pathname.startsWith(n.href)}
-                >
-                  <span className="mobile-drawer__link-icon">{n.icon}</span>
-                  <span>{n.label}</span>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mobile-drawer__footer">
-              <button
-                className="btn btn--danger btn--block"
-                onClick={() => { void logout().finally(() => router.replace("/login")); }}
-              >
-                <Icon.Logout /> تسجيل الخروج
-              </button>
-            </div>
-          </div>
         </div>
-      )}
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 lg:hidden" />
+          <Dialog.Content
+            dir="rtl"
+            aria-describedby={undefined}
+            className="fixed inset-y-0 start-0 z-50 w-[min(300px,86vw)] shadow-float outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right lg:hidden"
+          >
+            <Dialog.Title className="sr-only">القائمة الرئيسية</Dialog.Title>
+            <Dialog.Close aria-label="إغلاق القائمة" className="absolute end-3 top-5 z-10 grid size-10 place-items-center rounded-control text-rail-muted hover:bg-rail-hover hover:text-rail-strong">
+              <X className="size-5" />
+            </Dialog.Close>
+            <RailContent onNavigate={() => setDrawerOpen(false)} />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <div className="lg:ps-(--rail-width)">
+        <main className="w-full px-4 pt-5 pb-16 sm:px-6 lg:px-[5%] lg:pt-8">
+          <div className={WIDTH_CLASS[width]}>
+          <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:mb-8">
+            <div className="min-w-0">
+              <nav aria-label="مسار الصفحة" className="mb-1.5">
+                <ol className="flex flex-wrap items-center gap-1 text-sm text-text-muted">
+                  <li><Link href="/dashboard" className="rounded-sm hover:text-text-strong">الرئيسية</Link></li>
+                  {crumbs.map((crumb, index) => (
+                    <li key={index} className="flex items-center gap-1">
+                      <ChevronLeft aria-hidden className="size-3.5 text-icon-faint" />
+                      {crumb.href
+                        ? <Link href={crumb.href} className="rounded-sm hover:text-text-strong">{crumb.label}</Link>
+                        : <span aria-current={index === crumbs.length - 1 ? "page" : undefined}>{crumb.label}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+              <h1 className="text-xl font-bold text-text-strong sm:text-[28px] sm:leading-tight">{title}</h1>
+              {description ? <p className="mt-1 max-w-2xl text-base text-text-muted">{description}</p> : null}
+            </div>
+            {actions ? <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:[&>*]:flex-1">{actions}</div> : null}
+          </header>
+
+          {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

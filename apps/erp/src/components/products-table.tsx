@@ -1,16 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, formatPriceRange, type Product } from "@capella/shared";
-import { AdminStatusBadge } from "@/components/admin/admin-status-badge";
-import { EntityAvatar } from "@/components/admin/entity-avatar";
-import { Icon } from "@/components/ui/icons";
-import { RowMenu } from "@/components/ui/row-menu";
+import { ArrowDown, ArrowUp, PackageOpen, Pencil, Percent, Power, PowerOff, Trash2 } from "lucide-react";
+import type { Product } from "@capella/shared";
+import { Badge, Swatch } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
+import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import type { SortState } from "@/hooks/use-table-sort";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Thumb } from "@/components/ui/thumb";
 import type { AdminAuthUser } from "@/lib/api/client";
 import { hasErpPermission } from "@/lib/erp-permissions";
+import { formatMoney, formatMoneyRange, formatNumber } from "@/lib/format";
+
+const LOW_STOCK = 10;
+
+export type ProductSortKey = "name" | "category" | "price" | "stock" | "status";
+export const PRODUCT_SORT_COLUMNS: Array<{ key: ProductSortKey; label: string }> = [
+  { key: "name", label: "المنتج" },
+  { key: "category", label: "القسم" },
+  { key: "price", label: "السعر" },
+  { key: "stock", label: "المخزون" },
+  { key: "status", label: "الحالة" },
+];
+
+const stockOf = (product: Product) => product.variants.reduce((sum, variant) => sum + variant.stock, 0);
+
+/** What each sortable column sorts by. */
+export function productSortAccessors(categories: Array<{ id: number; name: { ar: string } }>) {
+  return {
+    name: (product: Product) => product.name.ar,
+    category: (product: Product) => categories.find((candidate) => candidate.id === product.categoryId)?.name.ar,
+    price: (product: Product) => (product.variants.length ? Math.min(...product.variants.map((variant) => variant.price)) : null),
+    stock: stockOf,
+    status: (product: Product) => (product.status === "active" ? 0 : 1),
+  } satisfies Record<ProductSortKey, (product: Product) => string | number | null | undefined>;
+}
+
+function StockCell({ stock }: { stock: number }) {
+  if (stock === 0) {
+    return <span className="inline-flex items-center gap-2 text-danger"><Swatch tone="danger" />نفد المخزون</span>;
+  }
+  if (stock < LOW_STOCK) {
+    return (
+      <span className="inline-flex items-center gap-2 text-warning">
+        <Swatch tone="warning" /><span className="num">{formatNumber(stock)}</span> · منخفض
+      </span>
+    );
+  }
+  return <span className="inline-flex items-center gap-2 text-text"><Swatch tone="success" /><span className="num">{formatNumber(stock)}</span></span>;
+}
+
+function SkeletonRows() {
+  return Array.from({ length: 5 }, (_, index) => (
+    <TR key={index} aria-hidden>
+      <TD data-cell="lead">
+        <div className="flex items-center gap-3.5">
+          <Skeleton className="size-11 rounded-thumb" />
+          <div className="grid gap-2"><Skeleton className="h-3.5 w-40" /><Skeleton className="h-3 w-28" /></div>
+        </div>
+      </TD>
+      <TD><Skeleton className="h-3.5 w-20" /></TD>
+      <TD><Skeleton className="h-3.5 w-16" /></TD>
+      <TD><Skeleton className="h-3.5 w-12" /></TD>
+      <TD><Skeleton className="h-6 w-14 rounded-full" /></TD>
+      <TD data-cell="actions" />
+    </TR>
+  ));
+}
 
 export function ProductsTable({
+  loading = false,
   products,
+  sort,
+  onSort,
   categories,
   user,
   canToggle,
@@ -21,7 +87,11 @@ export function ProductsTable({
   onDelete,
   onMove
 }: {
+  loading?: boolean;
+  /** Rows already filtered and sorted by the page. */
   products: Product[];
+  sort: SortState<ProductSortKey> | null;
+  onSort: (key: ProductSortKey) => void;
   categories: Array<{ id: number; name: { ar: string; en: string } }>;
   user: AdminAuthUser | null;
   canToggle: boolean;
@@ -32,116 +102,120 @@ export function ProductsTable({
   onDelete: (id: number) => void;
   onMove?: (id: number, direction: -1 | 1) => void;
 }) {
-  const canManageDiscount = (user: AdminAuthUser | null) => hasErpPermission(user, "products.discount");
+  const canManageDiscount = hasErpPermission(user, "products.discount");
+  const hasMenu = canToggle || canEdit || canDelete || canManageDiscount;
+  const categoryName = (product: Product) => categories.find((candidate) => candidate.id === product.categoryId)?.name.ar;
+  // Manual reordering only makes sense in the store's own order.
+  const showReorder = canReorder && Boolean(onMove) && products.length > 1 && !sort;
+
   return (
-    <div className="card">
-      <div className="table-outer">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>الصورة</th>
-              <th>الاسم</th>
-              <th>SKU</th>
-              <th>القسم</th>
-              <th>السعر</th>
-              <th>المخزون</th>
-              <th>الحالة</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product, index) => {
-              const category = categories.find((candidate) => candidate.id === product.categoryId);
-              const prices = product.variants.map((variant) => variant.price);
-              const stockSum = product.variants.reduce((accumulator, variant) => accumulator + variant.stock, 0);
-              const avatarInitial = product.name.en?.trim().charAt(0) || product.name.ar?.trim().charAt(0) || "?";
-              return (
-                <tr key={product.id} data-testid={`product-row-${product.id}`}>
-                  <td>
-                    <EntityAvatar src={product.imagePath} fallback={avatarInitial} />
-                  </td>
-                  <td>
-                    <Link href={`/products/${product.id}/edit`} className="table-title">{product.name.ar}</Link>
-                    <div className="table-subtitle">{product.name.en}</div>
-                    {(product.offerIds?.length ?? 0) > 0 ? (
-                      <div className="cell-badge-row">
-                        <span className="status status--active">ضمن عرض</span>
+    <Card className="overflow-hidden">
+      <Table>
+        <THead>
+          <tr>
+            {PRODUCT_SORT_COLUMNS.map((column) => (
+              <SortableTH key={column.key} direction={sort?.key === column.key ? sort.direction : null} onSort={() => onSort(column.key)}>
+                {column.label}
+              </SortableTH>
+            ))}
+            <TH className="w-px"><span className="sr-only">إجراءات</span></TH>
+          </tr>
+        </THead>
+        <TBody aria-busy={loading}>
+          {loading ? <SkeletonRows /> : null}
+          {!loading && products.map((product, index) => {
+            const prices = product.variants.map((variant) => variant.price);
+            const stock = stockOf(product);
+            const initial = product.name.en?.trim().charAt(0) || product.name.ar?.trim().charAt(0) || "?";
+            const inOffer = (product.offerIds?.length ?? 0) > 0;
+            const active = product.status === "active";
+
+            return (
+              <TR key={product.id} data-testid={`product-row-${product.id}`}>
+                <TD data-cell="lead">
+                  <div className="flex min-w-0 items-center gap-3.5">
+                    <Thumb src={product.imagePath} fallback={initial} size="md" />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Link
+                          href={`/products/${product.id}/edit`}
+                          className="truncate font-medium text-text-strong decoration-line-strong underline-offset-4 hover:underline"
+                        >
+                          {product.name.ar}
+                        </Link>
+                        {inOffer ? <Badge tone="nude">ضمن عرض</Badge> : null}
                       </div>
-                    ) : null}
-                  </td>
-                  <td><code className="mono">{product.sku}</code></td>
-                  <td>{category?.name.ar ?? "—"}</td>
-                  <td>{prices.length > 1 ? formatPriceRange(Math.min(...prices), Math.max(...prices), "ar") : formatPrice(prices[0] ?? 0, "ar")}</td>
-                  <td>
-                    {stockSum === 0 ? <span className="status status--deleted">نفد</span>
-                      : stockSum < 10 ? <span className="status status--draft">{stockSum}</span>
-                      : <span className="status status--active">{stockSum}</span>}
-                  </td>
-                  <td><AdminStatusBadge active={product.status === "active"} activeLabel="نشط" inactiveLabel="غير نشط" /></td>
-                  <td>
-                    <div className="row row--actions">
-                    {canReorder && onMove && products.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => onMove(product.id, -1)}
-                          aria-label="تحريك لأعلى"
-                          disabled={index === 0}
-                        >
-                          <Icon.Chevron size={14} className="rotate-180" />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--sm"
-                          onClick={() => onMove(product.id, 1)}
-                          aria-label="تحريك لأسفل"
-                          disabled={index === products.length - 1}
-                        >
-                          <Icon.Chevron size={14} />
-                        </button>
-                      </>
-                    )}
-                    {(canToggle || canEdit || canDelete || canManageDiscount(user)) && (
-                      <RowMenu>
-                        {canToggle && (
-                          <button
-                            type="button"
-                            className="row-menu__item"
-                            onClick={() => onToggle(product)}
-                            title={product.status === "active" ? "إيقاف" : "تفعيل"}
-                          >
-                            {product.status === "active" ? <><Icon.X /> إيقاف</> : <><Icon.Check /> تفعيل</>}
-                          </button>
-                        )}
-                        {canManageDiscount(user) && (
-                          <Link href={`/products/${product.id}/discount`} className="row-menu__item" aria-label={`خصم ${product.name.ar}`}>
-                            <Icon.Tag /> خصم
-                          </Link>
-                        )}
-                        {canEdit && (
-                          <Link href={`/products/${product.id}/edit`} className="row-menu__item" aria-label={`تعديل ${product.name.ar}`}>
-                            <Icon.Edit /> تعديل
-                          </Link>
-                        )}
-                        {canDelete && (
-                          <button type="button" className="row-menu__item row-menu__item--danger" onClick={() => onDelete(product.id)} aria-label={`حذف ${product.name.ar}`}>
-                            <Icon.Trash /> حذف
-                          </button>
-                        )}
-                      </RowMenu>
-                    )}
+                      {product.name.en ? <p dir="ltr" className="mt-0.5 truncate text-end text-sm text-text-muted">{product.name.en}</p> : null}
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {products.length === 0 && (
-              <tr><td colSpan={8} className="state-note state-note--muted">لا توجد منتجات تطابق الفلتر.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  </div>
+                </TD>
+                <TD data-label="القسم" className="text-text-2">{categoryName(product) ?? "—"}</TD>
+                <TD data-label="السعر" className="whitespace-nowrap">
+                  <span className="num text-text-strong">
+                    {prices.length > 1
+                      ? formatMoneyRange(Math.min(...prices), Math.max(...prices))
+                      : formatMoney(prices[0] ?? 0)}
+                  </span>
+                </TD>
+                <TD data-label="المخزون" className="whitespace-nowrap"><StockCell stock={stock} /></TD>
+                <TD data-label="الحالة">
+                  <Badge tone={active ? "success" : "neutral"}>{active ? "نشط" : "غير نشط"}</Badge>
+                </TD>
+                <TD data-cell="actions">
+                  <div className="flex items-center justify-end gap-0.5">
+                    {showReorder ? (
+                      <>
+                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأعلى" title="تحريك لأعلى" disabled={index === 0} onClick={() => onMove?.(product.id, -1)}>
+                          <ArrowUp />
+                        </Button>
+                        <Button variant="ghost" size="icon-sm" aria-label="تحريك لأسفل" title="تحريك لأسفل" disabled={index === products.length - 1} onClick={() => onMove?.(product.id, 1)}>
+                          <ArrowDown />
+                        </Button>
+                      </>
+                    ) : null}
+                    {hasMenu ? (
+                      <RowMenu label={`إجراءات ${product.name.ar}`}>
+                        {canEdit ? (
+                          <RowMenuLink href={`/products/${product.id}/edit`} aria-label={`تعديل ${product.name.ar}`}>
+                            <Pencil /> تعديل
+                          </RowMenuLink>
+                        ) : null}
+                        {canManageDiscount ? (
+                          <RowMenuLink href={`/products/${product.id}/discount`} aria-label={`خصم ${product.name.ar}`}>
+                            <Percent /> خصم
+                          </RowMenuLink>
+                        ) : null}
+                        {canToggle ? (
+                          <RowMenuItem onClick={() => onToggle(product)}>
+                            {active ? <><PowerOff /> إيقاف</> : <><Power /> تفعيل</>}
+                          </RowMenuItem>
+                        ) : null}
+                        {canDelete ? (
+                          <>
+                            <RowMenuSeparator />
+                            <RowMenuItem danger onClick={() => onDelete(product.id)} aria-label={`حذف ${product.name.ar}`}>
+                              <Trash2 /> حذف
+                            </RowMenuItem>
+                          </>
+                        ) : null}
+                      </RowMenu>
+                    ) : null}
+                  </div>
+                </TD>
+              </TR>
+            );
+          })}
+          {!loading && products.length === 0 ? (
+            <TableState colSpan={6}>
+              <EmptyState
+                icon={<PackageOpen />}
+                title="لا توجد منتجات تطابق البحث"
+                description="جرّبي كلمة أخرى أو غيّري فلتر الحالة أو القسم."
+              />
+            </TableState>
+          ) : null}
+        </TBody>
+      </Table>
+    </Card>
   );
 }

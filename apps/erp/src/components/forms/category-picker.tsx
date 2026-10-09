@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { Fragment, useMemo } from "react";
+import { ChevronLeft } from "lucide-react";
 import type { Category } from "@capella/shared";
+import { Select } from "@/components/ui/input";
 
 interface Props {
   categories: Category[];
@@ -45,36 +47,39 @@ export function CategoryPicker({ categories, value, onChange, id }: Props) {
   }, [path, childrenOf]);
 
   return (
-    <div className="stack stack--sm">
-      {/* The column count follows the depth of the selected path, so it rides
-          along as a custom property instead of a literal inline grid. */}
-      <div className="category-picker__levels" style={{ "--levels": levels.length } as CSSProperties}>
-        {levels.map((level, depth) => {
-          const selectedAtDepth = path[depth]?.id ?? "";
-          return (
-            <select
-              key={depth}
-              id={depth === 0 ? id : undefined}
-              className="select"
-              value={selectedAtDepth}
-              onChange={(e) => {
-                const id = e.target.value ? Number(e.target.value) : null;
-                onChange(id);
-              }}
-            >
-              <option value="">— اختاري —</option>
-              {level.map((c) => (
-                <option key={c.id} value={c.id}>{c.name.ar}</option>
-              ))}
-            </select>
-          );
-        })}
+    <div className="grid gap-2">
+      {/* Levels sit side by side when the surrounding form section is wide enough. */}
+      <div className="grid gap-2 @lg:grid-cols-2">
+        {levels.map((level, depth) => (
+          <Select
+            key={depth}
+            id={depth === 0 ? id : undefined}
+            aria-label={depth === 0 ? undefined : `القسم الفرعي ${depth}`}
+            className="w-full"
+            value={path[depth]?.id ?? ""}
+            onChange={(e) => {
+              // Clearing a sub-level keeps the parent picked instead of wiping the whole path.
+              const picked = e.target.value ? Number(e.target.value) : null;
+              onChange(picked ?? path[depth - 1]?.id ?? null);
+            }}
+          >
+            <option value="">{depth === 0 ? "اختاري القسم" : "بدون قسم فرعي"}</option>
+            {level.map((c) => (
+              <option key={c.id} value={c.id}>{c.name.ar}</option>
+            ))}
+          </Select>
+        ))}
       </div>
-      {value != null && (() => {
-        const cur = byId.get(value);
-        if (!cur) return null;
-        return <div className="muted fs-12">القسم المختار: {path.map((p) => p.name.ar).join(" › ")}</div>;
-      })()}
+      {path.length > 1 ? (
+        <p className="flex flex-wrap items-center gap-1 text-xs text-text-muted">
+          {path.map((p, index) => (
+            <Fragment key={p.id}>
+              {index > 0 ? <ChevronLeft aria-hidden className="size-3.5" /> : null}
+              <span className={index === path.length - 1 ? "font-medium text-text-2" : undefined}>{p.name.ar}</span>
+            </Fragment>
+          ))}
+        </p>
+      ) : null}
     </div>
   );
 }

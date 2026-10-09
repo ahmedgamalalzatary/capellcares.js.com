@@ -1,102 +1,67 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "@/components/ui/icons";
+import Link from "next/link";
+import { DropdownMenu } from "radix-ui";
+import { Ellipsis } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const VIEWPORT_MARGIN = 8;
-
-/** A single "⋯" trigger that reveals a dropdown of row actions (edit, delete, …).
- * It renders in a portal with fixed positioning (never clipped by an ancestor's `overflow: hidden` or painted under a following row), is clamped to the viewport, and closes on outside click, Escape, scroll/resize, or after an item is clicked. */
+/** A single "⋯" trigger that reveals a row's actions (edit, delete, …). Keyboard and screen-reader support come from Radix. */
 export function RowMenu({ label = "إجراءات", children }: { label?: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Measure the trigger and the (already-mounted) dropdown, then clamp into view.
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current || !dropdownRef.current) return;
-    const trigger = triggerRef.current.getBoundingClientRect();
-    const menu = dropdownRef.current.getBoundingClientRect();
-
-    // RTL default: align the dropdown's right edge with the trigger's right edge.
-    let left = trigger.right - menu.width;
-    const maxLeft = window.innerWidth - menu.width - VIEWPORT_MARGIN;
-    left = Math.max(VIEWPORT_MARGIN, Math.min(left, maxLeft));
-
-    // Default below the trigger; flip above if it would overflow the bottom.
-    let top = trigger.bottom + 4;
-    if (top + menu.height > window.innerHeight - VIEWPORT_MARGIN) {
-      top = Math.max(VIEWPORT_MARGIN, trigger.top - 4 - menu.height);
-    }
-
-    setPosition({ top, left });
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (!triggerRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    const close = () => setOpen(false);
-
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-    };
-  }, [open]);
-
-  const toggle = () => {
-    setPosition(null);
-    setOpen((value) => !value);
-  };
-
   return (
-    <div className="row-menu">
-      <button
-        ref={triggerRef}
-        type="button"
-        className="btn btn--ghost btn--sm"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={label}
-        title={label}
-        onClick={toggle}
-      >
-        <Icon.More />
-      </button>
-      {open && typeof document !== "undefined" &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            className="row-menu__dropdown"
-            role="menu"
-            // Measured coordinates are the only truly dynamic values here, so they travel as custom properties; `data-positioned` keeps the menu hidden until it is measured/clamped, avoiding a one-frame jump.
-            data-positioned={position ? "true" : "false"}
-            style={{
-              "--row-menu-top": `${position?.top ?? 0}px`,
-              "--row-menu-left": `${position?.left ?? 0}px`
-            } as CSSProperties}
-            onClick={() => setOpen(false)}
-          >
-            {children}
-          </div>,
-          document.body
-        )}
-    </div>
+    <DropdownMenu.Root dir="rtl" modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={label} title={label}>
+          <Ellipsis />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={6}
+          collisionPadding={8}
+          className={cn(
+            "z-50 grid min-w-44 gap-0.5 rounded-control bg-surface p-1.5 shadow-float",
+            "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          )}
+        >
+          {children}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
+}
+
+const itemClass = (danger?: boolean) =>
+  cn(
+    "flex h-9 w-full cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 text-start text-base outline-none pointer-coarse:h-11",
+    "[&_svg]:size-4 [&_svg]:shrink-0",
+    danger
+      ? "text-danger data-[highlighted]:bg-danger-soft"
+      : "text-text data-[highlighted]:bg-hover data-[highlighted]:text-text-strong [&_svg]:text-text-muted",
+  );
+
+export function RowMenuItem({
+  danger,
+  className,
+  ...props
+}: ComponentProps<"button"> & { danger?: boolean }) {
+  return (
+    <DropdownMenu.Item asChild>
+      <button type="button" className={cn(itemClass(danger), className)} {...props} />
+    </DropdownMenu.Item>
+  );
+}
+
+export function RowMenuLink({ className, ...props }: ComponentProps<typeof Link>) {
+  return (
+    <DropdownMenu.Item asChild>
+      <Link className={cn(itemClass(false), className)} {...props} />
+    </DropdownMenu.Item>
+  );
+}
+
+export function RowMenuSeparator() {
+  return <DropdownMenu.Separator className="my-1 h-px bg-line" />;
 }

@@ -1,19 +1,53 @@
 "use client";
 
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { CSSProperties } from "react";
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
 import { useProductForm } from "../../hooks/forms/use-product-form";
-import { Icon } from "@/components/ui/icons";
+import { StepCount, Stepper, type StepItem } from "@/components/admin/stepper";
+import { Alert } from "@/components/ui/alert";
+import { Swatch } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input, InputWithAddon } from "@/components/ui/input";
+import { SwitchField } from "@/components/ui/switch";
+import { formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { CategoryPicker } from "./category-picker";
-import { BilingualEditorField, BilingualNameFields, ImageFieldCard } from "./editor-form-parts";
+import { BilingualEditorField, BilingualNameFields } from "./editor-form-parts";
 import { HoverImageUpload } from "./hover-image-upload";
 import { ProductMediaUpload } from "./product-media-upload";
 import { RelatedItemsField } from "./related-items-field";
-import "./product-form.css";
 import type { ProductFormProps } from "../../types/forms/product-form.types";
 
+const STEPS = [
+  { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والكلمات المفتاحية." },
+  { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو، وصورة التمرير التي تظهر على بطاقة المنتج." },
+  { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والأسعار", description: "لكل مقاس سعر بيع ومخزون، وسعر الشراء للاستخدام الداخلي." },
+  { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والتحذيرات، ثم العناصر المرتبطة وحالة المنتج." },
+] as const;
+
+type StepId = (typeof STEPS)[number]["id"];
+
+const STATUS_OPTIONS = [
+  { value: "inactive", label: "مسودة", hint: "مخفي عن المتجر", tone: "neutral" },
+  { value: "active", label: "نشط", hint: "يظهر في المتجر", tone: "success" },
+] as const;
+
+/** Same two-column grid on every step so fields line up in rows and columns. */
+const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
+
+/**
+ * Product editor as a wizard. Creating: steps unlock in order and "التالي" checks the step's required
+ * data ("حفظ كمسودة" saves from any step). Editing: every step is clickable and "حفظ التعديلات" works anywhere.
+ */
 export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
   const router = useRouter();
+  const editing = mode === "edit";
+  const [step, setStep] = useState(0);
+  const [reached, setReached] = useState(editing ? STEPS.length - 1 : 0);
+  const [saving, setSaving] = useState(false);
   const {
     nameAr, setNameAr,
     nameEn, setNameEn,
@@ -44,283 +78,326 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     updateVariant,
     addVariant,
     removeVariant,
-    completedCount,
-    totalCount,
+    requirements,
+    checkRequirements,
     missing,
     canActivate,
     save
   } = useProductForm({ initial, relatedOptions });
 
-  const scrollTo = (id: string) => {
-    if (typeof document === "undefined") return;
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  const uploadContext = editing ? "products.update" : "products.create";
+  const stepIndex = (id: StepId) => STEPS.findIndex((s) => s.id === id);
+
+  const goTo = (index: number) => {
+    setStep(index);
+    setReached((r) => Math.max(r, index));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const heroTitle = nameAr.trim() || nameEn.trim();
-  const eyebrow = mode === "new" ? "منتج جديد · مسودة" : "تعديل منتج";
-  const sub = mode === "edit" && initial?.sku ? `SKU · ${initial.sku}` : "اكتمال البيانات يفعّل ظهور المنتج في المتجر";
+  const next = () => {
+    const keys = requirements.filter((r) => r.target === STEPS[step]!.id).map((r) => r.key);
+    if (!editing && !checkRequirements(keys)) return;
+    goTo(step + 1);
+  };
+
+  const submit = async (asStatus?: "inactive") => {
+    setSaving(true);
+    const saved = await save(asStatus ? { asStatus } : {});
+    setSaving(false);
+    if (saved) {
+      router.push("/products");
+      return;
+    }
+    // Open the step holding the first problem (validation mirrors use-product-form).
+    const publishing = (asStatus ?? status) === "active";
+    const target = publishing ? missing[0]?.target : !nameAr.trim() && !nameEn.trim() ? "basics" : undefined;
+    if (target) goTo(stepIndex(target as StepId));
+  };
+
+  const stepItems: StepItem[] = STEPS.map((s, index) => {
+    const required = requirements.filter((r) => r.target === s.id);
+    const unmet = required.some((r) => !r.ok);
+    const seen = editing || index < step || index < reached;
+    if (unmet) return { id: s.id, label: s.label, state: seen ? "missing" : "todo" };
+    return { id: s.id, label: s.label, state: seen ? "done" : "todo" };
+  });
+
+  const current = STEPS[step]!;
+  const isLast = step === STEPS.length - 1;
+
+  const stepContent: Record<StepId, ReactNode> = {
+    basics: (
+      <div className="grid gap-5">
+        <div className={FIELD_GRID}>
+          <BilingualNameFields
+            arValue={nameAr}
+            enValue={nameEn}
+            onArChange={setNameAr}
+            onEnChange={setNameEn}
+            arError={errors.nameAr}
+            enError={errors.nameEn}
+          />
+        </div>
+        <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
+        <Field label="القسم" htmlFor="product-category" error={errors.categoryId}>
+          <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
+        </Field>
+        <Field label="كلمات مفتاحية" htmlFor="product-keywords" hint="افصلي بينها بفاصلة. تساعد العملاء في البحث." error={errors.keywords}>
+          <Input
+            id="product-keywords"
+            aria-invalid={Boolean(errors.keywords) || undefined}
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            placeholder="مثال: ترطيب، جسم، لوشن"
+          />
+        </Field>
+      </div>
+    ),
+    media: (
+      <div className="grid gap-6">
+        <div className="grid gap-3">
+          <ProductMediaUpload value={media} onChange={setMedia} uploadContext={uploadContext} />
+          {errors.image ? (
+            <p role="alert" className="text-sm text-danger">
+              {errors.image}
+            </p>
+          ) : null}
+        </div>
+        <section className="grid gap-3 border-t border-line pt-5">
+          <div>
+            <h3 className="text-base font-bold text-text-strong">صورة التمرير</h3>
+            <p className="text-sm text-text-muted">تظهر على بطاقة المنتج عند مرور المؤشر عليها. اختيارية.</p>
+          </div>
+          <HoverImageUpload
+            arValue={arHoverImagePath}
+            enValue={enHoverImagePath}
+            onChange={(lang, value) => (lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value))}
+            uploadContext={uploadContext}
+            entityLabel="منتج"
+            testIdPrefix="product"
+          />
+        </section>
+      </div>
+    ),
+    pricing: (
+      <div className="grid gap-6">
+        <section className="grid gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-bold text-text-strong">المقاسات</h3>
+            <Button size="sm" onClick={addVariant}>
+              <Plus /> إضافة مقاس
+            </Button>
+          </div>
+          {errors.variants ? <Alert tone="danger">{errors.variants}</Alert> : null}
+          <div aria-hidden className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-3 px-0.5 text-xs font-medium text-text-muted @lg:grid">
+            <span>المقاس</span>
+            <span>سعر البيع</span>
+            <span>المخزون</span>
+          </div>
+          <ol className="grid gap-2">
+            {variants.map((v, index) => (
+              <li
+                key={v.id}
+                className="grid grid-cols-2 gap-x-3 gap-y-2.5 rounded-control bg-sunken p-3 @lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] @lg:items-center @lg:bg-transparent @lg:p-0"
+              >
+                <div className="col-span-2 flex items-center justify-between @lg:hidden">
+                  <span className="text-sm font-medium text-text-2">
+                    مقاس <span className="num">{formatNumber(index + 1)}</span>
+                  </span>
+                  <Button variant="danger-ghost" size="icon-sm" aria-label="حذف المقاس" disabled={variants.length === 1} onClick={() => removeVariant(v.id)}>
+                    <Trash2 />
+                  </Button>
+                </div>
+                <Field label={<span className="@lg:sr-only">المقاس</span>} htmlFor={`variant-size-${v.id}`} className="col-span-2 @lg:col-span-1">
+                  <Input id={`variant-size-${v.id}`} value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
+                </Field>
+                <Field label={<span className="@lg:sr-only">سعر البيع</span>} htmlFor={`variant-price-${v.id}`}>
+                  <InputWithAddon
+                    id={`variant-price-${v.id}`}
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    className="num"
+                    addon="ج.م"
+                    value={v.price}
+                    onChange={(e) => updateVariant(v.id, { price: Number(e.target.value) })}
+                  />
+                </Field>
+                <Field label={<span className="@lg:sr-only">المخزون</span>} htmlFor={`variant-stock-${v.id}`}>
+                  <Input
+                    id={`variant-stock-${v.id}`}
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    className="num"
+                    value={v.stock}
+                    onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })}
+                  />
+                </Field>
+                <Button
+                  variant="danger-ghost"
+                  size="icon"
+                  aria-label="حذف المقاس"
+                  className="hidden @lg:inline-flex"
+                  disabled={variants.length === 1}
+                  onClick={() => removeVariant(v.id)}
+                >
+                  <Trash2 />
+                </Button>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
+          <Field label="سعر الشراء" htmlFor="product-buying-price" hint="للاستخدام الداخلي، لا يظهر للعملاء." error={errors.buyingPrice}>
+            <InputWithAddon
+              id="product-buying-price"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              className="num"
+              addon="ج.م"
+              aria-invalid={Boolean(errors.buyingPrice) || undefined}
+              value={buyingPrice}
+              onChange={(e) => setBuyingPrice(Number(e.target.value))}
+            />
+          </Field>
+        </div>
+      </div>
+    ),
+    details: (
+      <div className="grid gap-5">
+        <BilingualEditorField label="المكونات" arValue={ingAr} onArChange={setIngAr} enValue={ingEn} onEnChange={setIngEn} multiline />
+        <BilingualEditorField label="طريقة الاستخدام" arValue={useAr} onArChange={setUseAr} enValue={useEn} onEnChange={setUseEn} multiline />
+        <BilingualEditorField label="تحذيرات" arValue={warnAr} onArChange={setWarnAr} enValue={warnEn} onEnChange={setWarnEn} multiline />
+        <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
+          <Field label="رمز المنتج (SKU)" htmlFor="product-sku" hint="اختياري — يُنشأ تلقائيًا إذا تُرك فارغًا.">
+            <Input id="product-sku" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
+          </Field>
+          <Field label="رابط فيديو يوتيوب" htmlFor="product-youtube" hint="اختياري.">
+            <Input id="product-youtube" dir="ltr" inputMode="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/…" />
+          </Field>
+        </div>
+        <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
+          <section className="grid content-start gap-3">
+            <div>
+              <h3 className="text-base font-bold text-text-strong">العناصر المرتبطة</h3>
+              <p className="text-sm text-text-muted">منتجات أو عروض أو مجموعات تُقترح مع هذا المنتج.</p>
+            </div>
+            {!relatedItemsAvailable ? (
+              <Alert tone="warning">
+                تعذر تحميل العناصر المرتبطة الحالية، لذلك أُوقف هذا القسم مؤقتًا حتى لا تُحذف. يمكنك تعديل باقي البيانات وحفظها.
+              </Alert>
+            ) : null}
+            <RelatedItemsField
+              value={relatedItems ?? []}
+              options={relatedSelectableOptions}
+              onChange={setRelatedItems}
+              disabled={!relatedItemsAvailable}
+            />
+          </section>
+          <section className="grid content-start gap-4">
+            <div>
+              <h3 className="text-base font-bold text-text-strong">حالة المنتج</h3>
+              <p className="text-sm text-text-muted">المسودة مخفية عن المتجر حتى تنشريها.</p>
+            </div>
+            <fieldset className="grid grid-cols-2 gap-2">
+              <legend className="sr-only">حالة المنتج</legend>
+              {STATUS_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={cn(
+                    "grid cursor-pointer gap-0.5 rounded-control bg-surface p-3 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
+                    "hover:shadow-[0_0_0_1px_var(--line-strong)]",
+                    "has-checked:bg-sunken has-checked:shadow-[0_0_0_2px_var(--sand-900)]",
+                    "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="product-status"
+                    value={option.value}
+                    className="sr-only"
+                    checked={status === option.value}
+                    onChange={() => setStatus(option.value)}
+                  />
+                  <span className="flex items-center gap-2 text-base font-medium text-text-strong">
+                    <Swatch tone={option.tone} />
+                    {option.label}
+                  </span>
+                  <span className="text-xs text-text-muted">{option.hint}</span>
+                </label>
+              ))}
+            </fieldset>
+            {canActivate ? (
+              <p className="flex items-center gap-2 text-sm text-text-2">
+                <Swatch tone="success" /> كل بيانات النشر مكتملة.
+              </p>
+            ) : (
+              <div className="grid gap-1.5">
+                <p className="text-sm text-text-2">مطلوب قبل النشر:</p>
+                <ul className="flex flex-wrap gap-1.5">
+                  {missing.map((r) => (
+                    <li key={r.key}>
+                      <button
+                        type="button"
+                        onClick={() => goTo(stepIndex(r.target as StepId))}
+                        className="inline-flex h-7 items-center rounded-full bg-warning-soft px-2.5 text-xs font-medium text-warning transition-colors hover:bg-warning-soft/70 pointer-coarse:h-9"
+                      >
+                        {r.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="grid gap-4 border-t border-line pt-4">
+              <SwitchField label="شارة «جديد»" checked={isNew} onCheckedChange={setIsNew} />
+              <SwitchField label="شارة «الأكثر مبيعًا»" checked={isBestseller} onCheckedChange={setIsBestseller} />
+            </div>
+          </section>
+        </div>
+      </div>
+    ),
+  };
+
+  const primaryLabel = editing ? "حفظ التعديلات" : status === "active" ? "نشر المنتج" : "حفظ المنتج";
 
   return (
-    <div className="stack stack--lg">
-      <header className="editor-hero">
-        <div className="editor-hero__lead">
-          <div className="editor-hero__eyebrow">{eyebrow}</div>
-          {heroTitle ? (
-            <h2 className="editor-hero__title">{heroTitle}</h2>
-          ) : (
-            <h2 className="editor-hero__title editor-hero__title--placeholder">بدون اسم بعد…</h2>
-          )}
-          <div className="editor-hero__sub">{sub}</div>
-        </div>
-        <div className="editor-hero__meta">
-          <span className={`status status--${status}`}>{status === "active" ? "نشط" : "غير نشط"}</span>
-          <div className={`completion-meter${canActivate ? " completion-meter--done" : ""}`}>
-            <div className="completion-meter__head">
-              <span>اكتمال البيانات</span>
-              <span className="completion-meter__count">{completedCount} / {totalCount}</span>
-            </div>
-            <div className="completion-meter__bar">
-              <div
-                className="completion-meter__fill"
-                style={{ "--completion": `${(completedCount / totalCount) * 100}%` } as CSSProperties}
-              />
-            </div>
+    <div className="grid gap-5">
+      <Stepper steps={stepItems} current={step} isReachable={(index) => index <= reached} onSelect={goTo} />
+
+      <Card>
+        <CardHeader title={current.title} description={current.description} actions={<StepCount current={step} total={STEPS.length} />} />
+        <CardBody className="@container">{stepContent[current.id]}</CardBody>
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-4 sm:px-6">
+          <Button variant="ghost" onClick={() => router.push("/products")}>
+            إلغاء
+          </Button>
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            {step > 0 ? (
+              <Button variant="ghost" onClick={() => goTo(step - 1)}>
+                <ArrowRight /> السابق
+              </Button>
+            ) : null}
+            {!editing && !isLast ? (
+              <Button variant="ghost" className="underline underline-offset-4" disabled={saving} onClick={() => void submit("inactive")}>
+                حفظ كمسودة
+              </Button>
+            ) : null}
+            {!isLast ? (
+              <Button variant={editing ? "secondary" : "primary"} onClick={next}>
+                التالي <ArrowLeft />
+              </Button>
+            ) : null}
+            {editing || isLast ? (
+              <Button variant="primary" disabled={saving} onClick={() => void submit()}>
+                {saving ? "جارٍ الحفظ…" : primaryLabel}
+              </Button>
+            ) : null}
           </div>
-        </div>
-      </header>
-
-      <div className="editor-grid-v2">
-        <div className="stack stack--lg">
-          <section className="card" id="section-basics">
-            <div className="card__head">
-              <div className="section-num">
-                <span className="section-num__digit">01</span>
-                <span className="section-num__rule" />
-                <h3 className="card__title">المعلومات الأساسية</h3>
-              </div>
-            </div>
-            <div className="card__body stack stack--lg">
-              <div className="editor-fields-2">
-                <BilingualNameFields
-                  arValue={nameAr}
-                  enValue={nameEn}
-                  onArChange={setNameAr}
-                  onEnChange={setNameEn}
-                  arError={errors.nameAr}
-                  enError={errors.nameEn}
-                />
-                <div className="field">
-                  <label htmlFor="product-sku">SKU</label>
-                  <input id="product-sku" className="input" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
-                </div>
-                <div className="field">
-                  <label htmlFor="product-buying-price">سعر الشراء (للداخلية)</label>
-                  <input id="product-buying-price" className="input" type="number" min="0" value={buyingPrice} onChange={(e) => setBuyingPrice(Number(e.target.value))} />
-                  {errors.buyingPrice && <span className="field-error">{errors.buyingPrice}</span>}
-                </div>
-                <div className="field field--full">
-                  <label htmlFor="product-keywords">كلمات مفتاحية (مفصولة بفواصل أو أسطر جديدة)</label>
-                  <textarea id="product-keywords" className="textarea" rows={3} value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ورد, لوشن, ترطيب" />
-                  {errors.keywords && <span className="field-error">{errors.keywords}</span>}
-                </div>
-                <div className="field field--full">
-                  <label htmlFor="product-youtube">رابط فيديو يوتيوب (اختياري)</label>
-                  <input id="product-youtube" className="input" dir="ltr" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/…" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card__head">
-              <div className="section-num">
-                <span className="section-num__digit">02</span>
-                <span className="section-num__rule" />
-                <h3 className="card__title">المحتوى التسويقي</h3>
-              </div>
-            </div>
-            <div className="card__body stack stack--lg">
-              <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
-              <BilingualEditorField label="المكونات" arValue={ingAr} onArChange={setIngAr} enValue={ingEn} onEnChange={setIngEn} multiline />
-              <BilingualEditorField label="طريقة الاستخدام" arValue={useAr} onArChange={setUseAr} enValue={useEn} onEnChange={setUseEn} multiline />
-              <BilingualEditorField label="تحذيرات" arValue={warnAr} onArChange={setWarnAr} enValue={warnEn} onEnChange={setWarnEn} multiline />
-            </div>
-          </section>
-
-          <section className="card" id="section-variants">
-            <div className="card__head">
-              <div className="section-num">
-                <span className="section-num__digit">03</span>
-                <span className="section-num__rule" />
-                <h3 className="card__title">المقاسات والمخزون</h3>
-              </div>
-              <button className="btn btn--soft btn--sm" onClick={addVariant}><Icon.Plus /> إضافة مقاس</button>
-            </div>
-            <div className="card__body">
-              {errors.variants && <div className="field-error field-error--spaced">{errors.variants}</div>}
-              <div className="variant-rows">
-                {variants.map((v) => (
-                  <div className="variant-row" key={v.id}>
-                    <div className="field">
-                      <label htmlFor={`variant-size-${v.id}`}>المقاس</label>
-                      <input id={`variant-size-${v.id}`} className="input" value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
-                    </div>
-                    <div className="field">
-                      <label htmlFor={`variant-price-${v.id}`}>السعر</label>
-                      <input id={`variant-price-${v.id}`} className="input" type="number" min="0" value={v.price} onChange={(e) => updateVariant(v.id, { price: Number(e.target.value) })} />
-                    </div>
-                    <div className="field">
-                      <label htmlFor={`variant-stock-${v.id}`}>المخزون</label>
-                      <input id={`variant-stock-${v.id}`} className="input" type="number" min="0" value={v.stock} onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })} />
-                    </div>
-                    <button
-                      type="button"
-                      className="variant-row__remove"
-                      disabled={variants.length === 1}
-                      onClick={() => removeVariant(v.id)}
-                      aria-label="حذف المقاس"
-                    >
-                      <Icon.Trash />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Media lives in the wide column: the language pairs need room to
-              breathe, which the 340px rail never had. */}
-          <ImageFieldCard
-            id="section-media"
-            step="04"
-            title="وسائط المنتج"
-            error={errors.image}
-            uploadSlot={<ProductMediaUpload value={media} onChange={setMedia} uploadContext={mode === "edit" ? "products.update" : "products.create"} />}
-          />
-
-          <ImageFieldCard
-            step="05"
-            title="صورة Hover لبطاقة المنتج"
-            uploadSlot={<HoverImageUpload
-              arValue={arHoverImagePath}
-              enValue={enHoverImagePath}
-              onChange={(lang, value) => lang === "ar" ? setArHoverImagePath(value) : setEnHoverImagePath(value)}
-              uploadContext={mode === "edit" ? "products.update" : "products.create"}
-              entityLabel="منتج"
-              testIdPrefix="product"
-            />}
-          />
-        </div>
-
-        <aside className="editor-rail" id="section-publish">
-          <section className="card">
-            <div className="card__head">
-              <div className="section-num">
-                <span className="section-num__digit">06</span>
-                <span className="section-num__rule" />
-                <h3 className="card__title">النشر</h3>
-              </div>
-            </div>
-            <div className="card__body stack stack--lg">
-              <div className="status-tiles">
-                <label
-                  className="status-tile"
-                  data-checked={status === "inactive"}
-                  data-tone="inactive"
-                >
-                  <input type="radio" name="st" checked={status === "inactive"} onChange={() => setStatus("inactive")} />
-                  <span className="status-tile__label"><span className="status-tile__dot" /> مسودة</span>
-                  <span className="status-tile__hint">مخفي عن المتجر — للعمل عليه دون نشر.</span>
-                </label>
-                <label
-                  className="status-tile"
-                  data-checked={status === "active"}
-                  data-tone="active"
-                >
-                  <input type="radio" name="st" checked={status === "active"} onChange={() => setStatus("active")} />
-                  <span className="status-tile__label"><span className="status-tile__dot" /> نشط</span>
-                  <span className="status-tile__hint">يظهر فورًا في صفحات المتجر.</span>
-                </label>
-              </div>
-
-              <div className="stack stack--sm">
-                <label className="check">
-                  <input type="checkbox" checked={isNew} onChange={(e) => setIsNew(e.target.checked)} />
-                  شارة «جديد»
-                </label>
-                <label className="check">
-                  <input type="checkbox" checked={isBestseller} onChange={(e) => setIsBestseller(e.target.checked)} />
-                  شارة «الأكثر مبيعًا»
-                </label>
-              </div>
-
-              <div className="field">
-                <label htmlFor="product-category">القسم</label>
-                <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
-                {errors.categoryId && <div className="field-error field-error--offset">{errors.categoryId}</div>}
-              </div>
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card__head">
-              <div className="section-num">
-                <span className="section-num__digit">07</span>
-                <span className="section-num__rule" />
-                <h3 className="card__title">العناصر المرتبطة</h3>
-              </div>
-            </div>
-            <div className="card__body">
-              {!relatedItemsAvailable && (
-                <div className="field-error field-error--spaced">
-                  تعذر تحميل العناصر المرتبطة الحالية. يمكنك تعديل باقي البيانات، لكن تم تعطيل هذا القسم لتجنب حذف العلاقات الحالية.
-                </div>
-              )}
-              <RelatedItemsField
-                value={relatedItems ?? []}
-                options={relatedSelectableOptions}
-                onChange={setRelatedItems}
-                disabled={!relatedItemsAvailable}
-              />
-            </div>
-          </section>
-
-        </aside>
-      </div>
-
-      <div className="save-bar">
-        <div className="save-bar__hints">
-          {canActivate ? (
-            <span className="save-bar__hints--ready">جاهز للتفعيل · جميع البيانات مكتملة.</span>
-          ) : (
-            <>
-              <span className="save-bar__hints-lead">المتبقي للتفعيل</span>
-              {missing.map((m) => (
-                <button
-                  type="button"
-                  key={m.key}
-                  className="save-bar__hint"
-                  onClick={() => scrollTo(m.target)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-        <div className="save-bar__actions">
-          <button type="button" className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
-          <button type="button" className="btn btn--primary" onClick={async () => {
-            const saved = await save();
-            if (saved) {
-              router.push("/products");
-            }
-          }}>
-            {mode === "new" ? "حفظ المنتج" : "حفظ التعديلات"}
-          </button>
-        </div>
-      </div>
+        </footer>
+      </Card>
     </div>
   );
 }

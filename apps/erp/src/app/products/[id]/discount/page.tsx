@@ -1,11 +1,23 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
-import { formatPrice, getEffectiveVariantPrice, type ProductVariant } from "@capella/shared";
+import { getEffectiveVariantPrice, type ProductVariant } from "@capella/shared";
+import { Ruler } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
+import { EditorLayout } from "@/components/admin/editor-layout";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { Alert } from "@/components/ui/alert";
+import { Swatch } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Field } from "@/components/ui/field";
+import { Input, InputWithAddon, Select } from "@/components/ui/input";
+import { FormSkeleton } from "@/components/ui/skeleton";
+import { SwitchField } from "@/components/ui/switch";
+import { formatMoney, formatNumber } from "@/lib/format";
 import { canReadErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { api } from "@/lib/api/client";
 import { getStore, useStore } from "@/lib/store";
@@ -92,8 +104,8 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل الخصومات..." crumbs={[{ label: "المنتجات", href: "/products" }, { label: "تحميل" }]}>
-        <div className="card">جاري تحميل بيانات المنتج...</div>
+      <AdminShell title="خصومات المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خصم" }]}>
+        <FormSkeleton />
       </AdminShell>
     );
   }
@@ -101,7 +113,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
   if (error && !product) {
     return (
       <AdminShell title="تعذر تحميل المنتج" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خطأ" }]}>
-        <div className="card">{error}</div>
+        <Alert tone="danger" title="تعذر تحميل بيانات المنتج">{error}</Alert>
       </AdminShell>
     );
   }
@@ -133,112 +145,139 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
     }
   };
 
+  const activeCount = variants.filter((variant) => variant.discount?.status === "active").length;
+
   return (
-    <AdminShell title={title} crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خصم" }]}>
-      <div className="card">
-        <div className="card__head">
-          <h3 className="card__title">خصومات المقاسات</h3>
-        </div>
-        <div className="card__body stack stack--lg">
-          {variants.map((variant) => {
+    <AdminShell
+      title={title}
+      description="خصم مستقل لكل مقاس، بفترة بداية ونهاية."
+      crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خصم" }]}
+    >
+      {variants.length === 0 ? (
+        <Card>
+          <EmptyState icon={<Ruler />} title="لا توجد مقاسات لهذا المنتج" description="أضيفي مقاسًا من صفحة تعديل المنتج أولًا، ثم عودي لتحديد الخصم." />
+        </Card>
+      ) : (
+        <EditorLayout
+          notice={
+            hasInvalidDiscount || saveError ? (
+              <div className="grid gap-2">
+                {hasInvalidDiscount ? (
+                  <Alert tone="warning" title="راجعي بيانات الخصم">
+                    لكل خصم: وقت بداية قبل وقت النهاية، وقيمة أكبر من صفر لا تتجاوز 100% ولا تُنزل السعر إلى صفر أو أقل.
+                  </Alert>
+                ) : null}
+                {saveError ? <Alert tone="danger">{saveError}</Alert> : null}
+              </div>
+            ) : null
+          }
+          status={
+            <span className="flex items-center gap-2">
+              <Swatch tone={activeCount > 0 ? "success" : "neutral"} />
+              <span>
+                خصم مفعّل على <span className="num">{formatNumber(activeCount)}</span> من <span className="num">{formatNumber(variants.length)}</span> {variants.length === 1 ? "مقاس" : "مقاسات"}
+              </span>
+            </span>
+          }
+          actions={
+            <>
+              <Button variant="ghost" onClick={() => router.push("/products")}>إلغاء</Button>
+              <Button variant="primary" onClick={() => void save()} disabled={saving || hasInvalidDiscount}>
+                {saving ? "جارٍ الحفظ…" : "حفظ الخصومات"}
+              </Button>
+            </>
+          }
+          main={variants.map((variant) => {
             const discount = buildDiscountState(variant);
             const isActive = discount.status === "active";
             const effectivePrice = variant.discount ? getEffectiveVariantPrice(variant) : variant.price;
+            const discounted = isActive && effectivePrice < variant.price;
             return (
-              <section key={variant.id} className="card" data-testid={`discount-variant-${variant.id}`}>
-                <div className="card__body stack">
-                  <div className="row row--between">
-                    <div>
-                      <div className="fw-700">{variant.size}</div>
-                      <div className="muted">السعر الأصلي: {formatPrice(variant.price, "ar")}</div>
-                      <div className="muted">المخزون: {variant.stock}</div>
-                      <div className="muted">السعر بعد الخصم: {formatPrice(effectivePrice, "ar")}</div>
+              <Card key={variant.id}>
+                <CardHeader
+                  title={variant.size || "بدون مقاس"}
+                  description={
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      {discounted ? (
+                        <>
+                          <span className="num text-text-muted line-through">{formatMoney(variant.price)}</span>
+                          <span className="num font-medium text-nude-strong">{formatMoney(effectivePrice)}</span>
+                        </>
+                      ) : (
+                        <span className="num">{formatMoney(variant.price)}</span>
+                      )}
+                      <span aria-hidden>·</span>
+                      <span>
+                        المخزون <span className="num">{formatNumber(variant.stock)}</span>
+                      </span>
+                    </span>
+                  }
+                />
+                <CardBody className="@container">
+                  <div data-testid={`discount-variant-${variant.id}`} className="grid gap-5">
+                    <SwitchField
+                      label="تفعيل الخصم"
+                      checked={isActive}
+                      onCheckedChange={(checked) => updateVariantDiscount(
+                        variant.id,
+                        checked
+                          ? { ...discount, status: "active" }
+                          : variant.discount == null
+                            ? null
+                            : { ...discount, status: "inactive" }
+                      )}
+                    />
+                    <div className="grid gap-x-4 gap-y-5 @lg:grid-cols-2">
+                      <Field label="نوع الخصم" htmlFor={`discount-type-${variant.id}`}>
+                        <Select
+                          id={`discount-type-${variant.id}`}
+                          value={discount.type}
+                          onChange={(e) => updateVariantDiscount(variant.id, { ...discount, type: e.target.value as VariantDiscountState["type"] })}
+                        >
+                          <option value="percentage">نسبة مئوية</option>
+                          <option value="fixed">مبلغ ثابت</option>
+                        </Select>
+                      </Field>
+                      <Field label="قيمة الخصم" htmlFor={`discount-value-${variant.id}`}>
+                        <InputWithAddon
+                          id={`discount-value-${variant.id}`}
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          className="num"
+                          addon={discount.type === "percentage" ? "%" : "ج.م"}
+                          value={discount.value}
+                          onChange={(e) => updateVariantDiscount(variant.id, { ...discount, value: Number(e.target.value) })}
+                        />
+                      </Field>
+                      <Field label="يبدأ في" htmlFor={`discount-start-${variant.id}`}>
+                        <Input
+                          id={`discount-start-${variant.id}`}
+                          type="datetime-local"
+                          dir="ltr"
+                          className="num"
+                          value={toDateTimeLocal(discount.startsAt)}
+                          onChange={(e) => updateVariantDiscount(variant.id, { ...discount, startsAt: toIsoOrEmpty(e.target.value) })}
+                        />
+                      </Field>
+                      <Field label="ينتهي في" htmlFor={`discount-end-${variant.id}`}>
+                        <Input
+                          id={`discount-end-${variant.id}`}
+                          type="datetime-local"
+                          dir="ltr"
+                          className="num"
+                          value={toDateTimeLocal(discount.endsAt)}
+                          onChange={(e) => updateVariantDiscount(variant.id, { ...discount, endsAt: toIsoOrEmpty(e.target.value) })}
+                        />
+                      </Field>
                     </div>
-                    <label className="check">
-                      <input
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={(e) => updateVariantDiscount(
-                          variant.id,
-                          e.target.checked
-                            ? { ...discount, status: "active" }
-                            : variant.discount == null
-                              ? null
-                              : { ...discount, status: "inactive" }
-                        )}
-                      />
-                      تفعيل الخصم
-                    </label>
                   </div>
-
-                  <div className="editor-fields-2">
-                    <div className="field">
-                      <label htmlFor={`discount-type-${variant.id}`}>نوع الخصم</label>
-                      <select
-                        id={`discount-type-${variant.id}`}
-                        className="select"
-                        value={discount.type}
-                        onChange={(e) => updateVariantDiscount(variant.id, { ...discount, type: e.target.value as VariantDiscountState["type"] })}
-                      >
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed</option>
-                      </select>
-                    </div>
-                    <div className="field">
-                      <label htmlFor={`discount-value-${variant.id}`}>قيمة الخصم</label>
-                      <input
-                        id={`discount-value-${variant.id}`}
-                        className="input"
-                        type="number"
-                        min="0"
-                        value={discount.value}
-                        onChange={(e) => updateVariantDiscount(variant.id, { ...discount, value: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor={`discount-start-${variant.id}`}>بداية الخصم</label>
-                      <input
-                        id={`discount-start-${variant.id}`}
-                        className="input"
-                        type="datetime-local"
-                        value={toDateTimeLocal(discount.startsAt)}
-                        onChange={(e) => updateVariantDiscount(variant.id, { ...discount, startsAt: toIsoOrEmpty(e.target.value) })}
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor={`discount-end-${variant.id}`}>نهاية الخصم</label>
-                      <input
-                        id={`discount-end-${variant.id}`}
-                        className="input"
-                        type="datetime-local"
-                        value={toDateTimeLocal(discount.endsAt)}
-                        onChange={(e) => updateVariantDiscount(variant.id, { ...discount, endsAt: toIsoOrEmpty(e.target.value) })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
+                </CardBody>
+              </Card>
             );
           })}
-
-          {saveError ? <div className="field-error">{saveError}</div> : null}
-          {hasInvalidDiscount ? (
-            <div className="field-error">راجعي بيانات الخصم: يجب إدخال وقت بداية ونهاية صالحين، وقيمة خصم صحيحة لا تُسقط السعر للصفر أو أقل.</div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="save-bar">
-        <div className="save-bar__hints">
-          <span className="save-bar__hints-lead">هذه الصفحة مخصصة لإدارة الخصومات فقط.</span>
-        </div>
-        <div className="save-bar__actions">
-          <button type="button" className="btn btn--ghost" onClick={() => router.push("/products")}>إلغاء</button>
-          <button type="button" className="btn btn--primary" onClick={() => void save()} disabled={saving || hasInvalidDiscount}>
-            {saving ? "جارٍ الحفظ..." : "حفظ الخصومات"}
-          </button>
-        </div>
-      </div>
+        />
+      )}
     </AdminShell>
   );
 }

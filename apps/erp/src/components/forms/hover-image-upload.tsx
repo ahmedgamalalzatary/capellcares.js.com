@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { Language } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
+import { Alert } from "@/components/ui/alert";
 import { API_BASE, api, type ErpUploadContext } from "@/lib/api/client";
-import "./entity-media.css";
+import { LangSlotRow } from "./media-frame";
 
 interface Props {
   arValue: string;
@@ -37,7 +37,7 @@ export function HoverImageUpload({
     const file = files?.[0];
     if (!file) return;
     if (!uploadContext) {
-      setError("رفع صورة hover متاح فقط داخل مسارات التعديل المصرح بها.");
+      setError("رفع صورة التمرير متاح فقط داخل مسارات التعديل المصرح بها.");
       return;
     }
 
@@ -47,76 +47,36 @@ export function HoverImageUpload({
       const result = await api.uploadImage(file, uploadContext);
       onChange(lang, result.url);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "فشل رفع صورة hover");
+      setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع صورة التمرير");
     } finally {
       setUploading(null);
     }
   };
 
   return (
-    <div className="emedia">
-      <p className="emedia__hint">
-        صور hover اختيارية. يستخدم المتجر صورة اللغة الأخرى تلقائيًا عند غياب النسخة المطلوبة.
-      </p>
-      {/* Same card/frame vocabulary as the main media panel, so both blocks in
-          the editor read as one system. */}
-      <div className="emedia__card">
-        <div className="emedia__langs">
-          {(["ar", "en"] as const).map((lang) => {
-            const value = lang === "ar" ? arValue : enValue;
-            const inputTestId = `${testIdPrefix}-hover-image-${lang}-input`;
-            const input = (
-              <input
-                data-testid={inputTestId}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="file-input-hidden"
-                disabled={uploading !== null || !uploadContext}
-                onChange={(event) => { void handleFile(lang, event.target.files); }}
-              />
-            );
-
-            return (
-              <div key={lang} className="emedia__lang">
-                <span className="emedia__label">
-                  <span className="emedia__label-flag">{lang === "ar" ? "AR" : "EN"}</span>
-                  {lang === "ar" ? `صورة hover العربية لل${entityLabel}` : `صورة hover الإنجليزية لل${entityLabel}`}
-                </span>
-
-                {value ? (
-                  <div className="emedia__frame">
-                    <img src={resolvePreviewSrc(value)} alt="" className="emedia__img" />
-                    <div className="emedia__overlay">
-                      <label className="emedia__chip">
-                        <Icon.Upload size={12} /> استبدال
-                        {input}
-                      </label>
-                      <button
-                        type="button"
-                        className="emedia__chip emedia__chip--danger"
-                        aria-label={`إزالة صورة hover ${lang === "ar" ? "العربية" : "الإنجليزية"}`}
-                        onClick={() => onChange(lang, "")}
-                        disabled={uploading !== null}
-                      >
-                        <Icon.Trash size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="emedia__frame emedia__frame--empty">
-                    <Icon.Upload size={16} />
-                    <span>غير مضافة</span>
-                    {input}
-                  </label>
-                )}
-              </div>
-            );
-          })}
-        </div>
+    <div className="@container grid gap-3">
+      <div className="grid gap-4 @lg:grid-cols-2">
+        {(["ar", "en"] as const).map((lang) => {
+          const value = lang === "ar" ? arValue : enValue;
+          return (
+            <LangSlotRow
+              key={lang}
+              lang={lang}
+              title={lang === "ar" ? "الصورة العربية" : "الصورة الإنجليزية"}
+              src={value ? resolvePreviewSrc(value) : null}
+              inputTestId={`${testIdPrefix}-hover-image-${lang}-input`}
+              canUpload={uploading === null && Boolean(uploadContext)}
+              busy={uploading !== null}
+              onFiles={(files) => { void handleFile(lang, files); }}
+              onRemove={() => onChange(lang, "")}
+              removeLabel={`إزالة صورة التمرير ${lang === "ar" ? "العربية" : "الإنجليزية"}`}
+            />
+          );
+        })}
       </div>
-      {!uploadContext ? <div className="muted fs-12">رفع صور hover متاح فقط أثناء تعديل {entityLabel} موجود.</div> : null}
-      {uploading ? <div className="muted fs-12">جارِ رفع صورة hover...</div> : null}
-      {error ? <div className="field-error">{error}</div> : null}
+      {!uploadContext ? <p className="text-sm text-text-muted">رفع صور التمرير متاح فقط أثناء تعديل {entityLabel} موجود.</p> : null}
+      {uploading ? <p role="status" className="text-sm text-text-muted">جارٍ رفع الصورة…</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </div>
   );
 }

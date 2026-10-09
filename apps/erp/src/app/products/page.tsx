@@ -6,14 +6,17 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { Icon } from "@/components/ui/icons";
+import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
-import { ProductsTable } from "../../components/products-table";
+import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable, type ProductSortKey } from "@/components/products-table";
+import { useTableSort } from "@/hooks/use-table-sort";
 import { useProductsPage } from "../../hooks/use-products-page";
 
 export default function ProductsListPage() {
   const { user } = useAdminAuth();
   const {
+    loaded,
     categories,
     search,
     setSearch,
@@ -38,6 +41,7 @@ export default function ProductsListPage() {
     confirmToggle,
     confirmDelete
   } = useProductsPage();
+  const { sort, setSort, toggleSort, sortedRows } = useTableSort(filteredProducts, productSortAccessors(categories));
 
   if (!canReadErpModule(user, "products")) {
     return (
@@ -51,49 +55,59 @@ export default function ProductsListPage() {
     <AdminShell
       title="المنتجات"
       crumbs={[{ label: "المنتجات" }]}
+      description="كل منتجات المتجر بمقاساتها وأسعارها ومخزونها."
       actions={
         <>
           {hasErpPermission(user, "discounts.manage") && (
-            <Link href="/discounts" className="btn btn--ghost btn--sm">
-              <Icon.Tag /> إدارة الخصومات
-            </Link>
+            <Button asChild variant="secondary">
+              <Link href="/discounts"><Percent /> إدارة الخصومات</Link>
+            </Button>
           )}
           {isOrderDirty && canUpdateErpModule(user, "products") && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => {
-                void saveOrder();
-              }}
-              disabled={savingOrder}
-            >
-              <Icon.Check /> حفظ ترتيب المنتجات
-            </button>
+            <Button variant="secondary" onClick={() => { void saveOrder(); }} disabled={savingOrder}>
+              <Check /> حفظ ترتيب المنتجات
+            </Button>
           )}
           {canCreateErpModule(user, "products") ? (
-            <Link href="/products/new" className="btn btn--primary btn--sm">
-              <Icon.Plus /> منتج جديد
-            </Link>
+            <Button asChild variant="primary">
+              <Link href="/products/new"><Plus /> منتج جديد</Link>
+            </Button>
           ) : undefined}
         </>
       }
     >
       <AdminListHeader
-        searchPlaceholder="ابحثي بالاسم أو SKU…"
+        searchPlaceholder="ابحثي باسم المنتج…"
         searchValue={search}
         onSearchChange={setSearch}
-        countLabel={`${filteredProducts.length} منتج`}
+        countLabel={loaded ? `${filteredProducts.length} منتج` : "جارٍ التحميل…"}
+        sort={{
+          value: sort ? `${sort.key}:${sort.direction}` : "",
+          onChange: (value) => {
+            const [key, direction] = value.split(":");
+            setSort(key ? { key: key as ProductSortKey, direction: direction as "asc" | "desc" } : null);
+          },
+          options: [
+            { value: "", label: "ترتيب المتجر" },
+            ...PRODUCT_SORT_COLUMNS.flatMap((column) => [
+              { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
+              { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
+            ])
+          ]
+        }}
         filters={[
           {
             key: "status",
-            label: "حالة المنتج",
+            label: "الحالة",
+            icon: CircleDot,
             value: statusFilter,
             onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
             options: ACTIVE_STATUS_FILTER_OPTIONS
           },
           {
             key: "category",
-            label: "قسم المنتج",
+            label: "القسم",
+            icon: FolderTree,
             testId: "products-category-filter",
             value: String(categoryFilter),
             onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
@@ -109,7 +123,10 @@ export default function ProductsListPage() {
       />
 
       <ProductsTable
-        products={filteredProducts}
+        loading={!loaded}
+        products={sortedRows}
+        sort={sort}
+        onSort={toggleSort}
         categories={categories}
         user={user}
         canToggle={canToggleErpModule(user, "products")}
@@ -132,12 +149,12 @@ export default function ProductsListPage() {
         disableConfirm={isToggling}
         onConfirm={confirmToggle}
       >
-        <p className="modal-note">
+        <p>
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذا المنتج ولن يظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذا المنتج ليظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
-        {toggleError ? <p className="modal-note modal-note--error">{toggleError}</p> : null}
+        {toggleError ? <p role="alert" className="mt-3 text-sm font-medium text-danger">{toggleError}</p> : null}
       </AdminConfirmModal>
 
       <AdminConfirmModal
@@ -145,10 +162,10 @@ export default function ProductsListPage() {
         title="تأكيد الحذف"
         onClose={() => setPendingDelete(null)}
         confirmLabel="حذف المنتج"
-        confirmClassName="btn btn--danger btn--sm"
+        tone="danger"
         onConfirm={confirmDelete}
       >
-        <p className="modal-note">سيتم نقل المنتج إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
+        <p>سيتم نقل المنتج إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

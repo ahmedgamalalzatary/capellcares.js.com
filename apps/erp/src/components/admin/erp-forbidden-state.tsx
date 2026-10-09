@@ -1,10 +1,13 @@
 "use client";
 
+import { Lock } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+
 export function ErpForbiddenState({ message }: { message: string }) {
   return (
-    <div className="card forbidden-state">
-      <h2>غير مصرح</h2>
-      <p>{message}</p>
-    </div>
+    <Card>
+      <EmptyState icon={<Lock />} title="غير مصرح" description={message} />
+    </Card>
   );
 }
