@@ -27,7 +27,7 @@ pass: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 | 2 | Categories | list · new · edit | **Done — awaiting review** (tree list; 2-step wizard form) |
 | 3 | Offers | list · new · edit | **Done — awaiting review** (4-step wizard; status + draft) |
 | 4 | Collections | list · new · edit | **Done — awaiting review** (4-step wizard; status + draft) |
-| 5 | Discounts | discounts | todo |
+| 5 | Discounts | discounts | **Done — awaiting review** (master-detail, `discounts.css` deleted) |
 | 6 | Orders & sales | orders · order detail · reconciliation · shipping · sales | todo |
 | 7 | Store content | advices (list/new/edit) · shop media · reviews | todo |
 | 8 | Admin | dashboard · staff (list/new/edit) · trash · login | todo |
