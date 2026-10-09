@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { resolveLocalizedEntityMediaUrl, type Product, type ProductVariant, type RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
-import { slugifyFormName } from "../../components/forms/form-slug";
-import { useHoverImageFields } from "./use-hover-image-fields";
+import { slugifyFormName } from "@/lib/slug";
+import { useHoverImageFields } from "@/hooks/use-hover-image-fields";
 import type { ProductFormErrors, ProductFormProps, Requirement } from "../../types/forms/product-form.types";
 
 const REQUIREMENT_ERROR: Record<string, string> = {

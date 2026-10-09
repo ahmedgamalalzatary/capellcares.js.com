@@ -15,16 +15,13 @@ vi.mock("@/lib/store", () => ({
 vi.mock("@/components/forms/editor-form-parts", () => ({
   BilingualEditorField: () => createElement("div"),
   BilingualNameFields: () => createElement("div"),
-  ImageFieldCard: ({ children, uploadSlot }: any) => createElement("div", null, children, uploadSlot)
 }));
 
-vi.mock("@/components/forms/product-media-upload", () => ({
+vi.mock("@/components/forms/entity-media-upload", () => ({
   ProductMediaUpload: () => createElement("div")
 }));
 
-vi.mock("@/components/forms/product-hover-image-upload", () => ({
-  ProductHoverImageUpload: () => createElement("div")
-}));
+
 
 vi.mock("@/components/forms/related-items-field", () => ({
   RelatedItemsField: () => createElement("div")
@@ -34,13 +31,7 @@ vi.mock("@/components/forms/category-picker", () => ({
   CategoryPicker: () => createElement("div")
 }));
 
-vi.mock("@/components/ui/icons", () => ({
-  Icon: {
-    Plus: () => createElement("span", null, "+"),
-    Trash: () => createElement("span", null, "x"),
-    Upload: () => createElement("span", null, "upload")
-  }
-}));
+
 
 import { ProductForm } from "@/components/forms/product-form";
 

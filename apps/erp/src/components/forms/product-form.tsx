@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields } from "./editor-form-parts";
 import { HoverImageUpload } from "./hover-image-upload";
-import { ProductMediaUpload } from "./product-media-upload";
+import { ProductMediaUpload } from "@/components/forms/entity-media-upload";
 import { RelatedItemsField } from "./related-items-field";
 import type { ProductFormProps } from "../../types/forms/product-form.types";
 

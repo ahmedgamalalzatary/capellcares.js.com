@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { canReadErpModule } from "@/lib/erp-permissions";
-import { formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, localDateKey } from "@/lib/format";
 import { orderMatchesPaymentStatusFilter, orderPaymentBadge, paymentStatusFilterOptions, paymentStatusLabel } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
@@ -31,18 +31,6 @@ const ORDER_SORT_COLUMNS: Array<{ key: OrderSortKey; label: string }> = [
   { key: "payment", label: "حالة الدفع" },
   { key: "date", label: "تاريخ الطلب" }
 ];
-
-function localDateKey(value: string) {
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatOrderDate(value: string) {
-  return new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 export default function OrdersPage() {
   const { user } = useAdminAuth();
@@ -182,7 +170,7 @@ function OrdersPageContent() {
                     <span className="num font-medium text-text-strong">{formatMoney(order.totalAmount)}</span>
                   </TD>
                   <TD data-label="حالة الدفع"><Badge tone={payment.tone}>{payment.label}</Badge></TD>
-                  <TD data-label="تاريخ الطلب" className="whitespace-nowrap text-text-2">{formatOrderDate(order.createdAt)}</TD>
+                  <TD data-label="تاريخ الطلب" className="whitespace-nowrap text-text-2">{formatDate(order.createdAt)}</TD>
                   <TD data-cell="actions">
                     <Button asChild variant="ghost" size="sm">
                       <Link href={`/orders/${order.id}`}>التفاصيل</Link>

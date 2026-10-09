@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { uploadImage, uploadMedia } = vi.hoisted(() => ({
-  uploadImage: vi.fn(async (_file: File, _context?: string) => ({
+  uploadImage: vi.fn(async () => ({
     url: "http://localhost:4000/uploads/image.jpg",
     path: "/uploads/image.jpg",
     fileName: "image.jpg"

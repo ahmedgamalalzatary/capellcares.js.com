@@ -1,22 +1,35 @@
 "use client";
 
 import { BarChart3 } from "lucide-react";
+import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
+import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { formatMoney, formatNumber } from "@/lib/format";
+import { canReadErpModule } from "@/lib/erp-permissions";
+import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { paymentStatusLabel, paymentStatusTone } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" });
+export default function SalesPage() {
+  const { user } = useAdminAuth();
+
+  if (!canReadErpModule(user, "sales")) {
+    return (
+      <AdminShell title="المبيعات" crumbs={[{ label: "المبيعات" }]}>
+        <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى المبيعات." />
+      </AdminShell>
+    );
+  }
+
+  return <SalesPageContent />;
 }
 
-export default function SalesPage() {
+function SalesPageContent() {
   const sales = useStore((s) => s.sales);
   const loaded = useStore((s) => s.loaded);
 

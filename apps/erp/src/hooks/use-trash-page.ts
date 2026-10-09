@@ -5,6 +5,7 @@ import type { AdminReview, AdminReviewPage } from "@capella/shared";
 import { getStore, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
 import { showErrorToast } from "@/lib/errors";
+import { formatDateShort } from "@/lib/format";
 import type { HardDeleteTarget, TrashListRow, TrashTab, TrashTabConfig } from "../types/trash-page.types";
 
 export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
@@ -62,7 +63,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: product.id,
           title: product.name.ar,
           subtitle: product.sku,
-          meta: new Date(product.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
+          meta: formatDateShort(product.deletedAt!)
         })),
     [products]
   );
@@ -75,7 +76,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: category.id,
           title: category.name.ar,
           subtitle: category.name.en,
-          meta: new Date(category.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
+          meta: formatDateShort(category.deletedAt!)
         })),
     [categories]
   );
@@ -88,7 +89,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: offer.id,
           title: offer.name.ar,
           subtitle: offer.name.en,
-          meta: new Date(offer.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
+          meta: formatDateShort(offer.deletedAt!)
         })),
     [offers]
   );
@@ -101,7 +102,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
           id: collection.id,
           title: collection.name.ar,
           subtitle: collection.name.en,
-          meta: new Date(collection.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
+          meta: formatDateShort(collection.deletedAt!)
         })),
     [collections]
   );
@@ -111,7 +112,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
       id: review.id,
       title: `${review.entityName.ar || review.entityName.en} — ${review.customerName}`,
       subtitle: `${"★".repeat(review.rating)} · ${review.comment}`,
-      meta: new Date(review.deletedAt!).toLocaleDateString("ar-EG-u-nu-latn")
+      meta: formatDateShort(review.deletedAt!)
     })),
     [reviews]
   );

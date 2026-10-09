@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, CircleDot, FolderTree, Plus } from "lucide-react";
-import type { Category, Collection } from "@capella/shared";
+import type { Collection } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
@@ -11,26 +11,13 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Button } from "@/components/ui/button";
 import { COLLECTION_SORT_COLUMNS, CollectionsTable, collectionSortAccessors, type CollectionSortKey } from "@/components/collections-table";
-import { buildCategoryTreeOptions } from "@/lib/category-tree";
+import { buildCategoryTreeOptions, isInCategoryTree } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { formatNumber } from "@/lib/format";
 import { getStore, useStore } from "@/lib/store";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 import { useTableSort } from "@/hooks/use-table-sort";
-
-function isInCategoryTree(categories: Category[], categoryId: number | null, selectedCategoryId: number) {
-  if (categoryId == null) return false;
-  let current = categories.find((category) => category.id === categoryId);
-  const visited = new Set<number>();
-  while (current) {
-    if (visited.has(current.id)) return false;
-    if (current.id === selectedCategoryId) return true;
-    visited.add(current.id);
-    current = current.parentId != null ? categories.find((category) => category.id === current!.parentId) : undefined;
-  }
-  return false;
-}
 
 export default function CollectionsListPage() {
   const { user } = useAdminAuth();

@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { BilingualEditorField } from "@/components/forms/editor-form-parts";
 import { BilingualNameFields } from "@/components/forms/editor-form-parts";
-import { EditorActions } from "@/components/forms/editor-form-parts";
-import { ImageFieldCard } from "@/components/forms/editor-form-parts";
 
 describe("editor form parts", () => {
   it("renders bilingual textarea fields and forwards changes", () => {
@@ -28,24 +26,6 @@ describe("editor form parts", () => {
     expect(setEn).toHaveBeenCalledWith("New");
   });
 
-  it("renders shared editor actions and forwards button clicks", () => {
-    const onCancel = vi.fn();
-    const onSave = vi.fn();
-
-    render(createElement(EditorActions, {
-      cancelLabel: "إلغاء",
-      saveLabel: "حفظ",
-      onCancel,
-      onSave
-    }));
-
-    fireEvent.click(screen.getByRole("button", { name: "إلغاء" }));
-    fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
-
-    expect(onCancel).toHaveBeenCalledTimes(1);
-    expect(onSave).toHaveBeenCalledTimes(1);
-  });
-
   it("renders shared bilingual name fields with validation messages", () => {
     const setAr = vi.fn();
     const setEn = vi.fn();
@@ -66,17 +46,5 @@ describe("editor form parts", () => {
     expect(setEn).toHaveBeenCalledWith("New");
     expect(screen.getByText("الاسم العربي مطلوب")).toBeInTheDocument();
     expect(screen.getByText("English name is required")).toBeInTheDocument();
-  });
-
-  it("renders a shared image field card with upload control and error state", () => {
-    render(createElement(ImageFieldCard, {
-      title: "صورة المنتج",
-      error: "أضيفي صورة المنتج",
-      uploadSlot: createElement("div", null, "image-upload-slot")
-    }));
-
-    expect(screen.getByText("صورة المنتج")).toBeInTheDocument();
-    expect(screen.getByText("image-upload-slot")).toBeInTheDocument();
-    expect(screen.getByText("أضيفي صورة المنتج")).toBeInTheDocument();
   });
 });

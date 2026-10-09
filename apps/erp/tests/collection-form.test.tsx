@@ -19,11 +19,9 @@ vi.mock("@/lib/store", () => ({
 vi.mock("@/components/forms/editor-form-parts", () => ({
   BilingualEditorField: () => createElement("div"),
   BilingualNameFields: () => createElement("div"),
-  EditorActions: () => createElement("div"),
-  ImageFieldCard: ({ children, uploadSlot }: any) => createElement("div", null, children, uploadSlot)
 }));
 
-vi.mock("@/components/forms/product-media-upload", () => ({
+vi.mock("@/components/forms/entity-media-upload", () => ({
   EntityMediaUpload: ({ value }: any) => createElement("div", {
     "data-testid": "collection-media-upload",
     "data-count": String(value.length)
@@ -34,14 +32,7 @@ vi.mock("@/components/forms/related-items-field", () => ({
   RelatedItemsField: () => createElement("div")
 }));
 
-vi.mock("@/components/ui/icons", () => ({
-  Icon: {
-    Plus: () => createElement("span", null, "+"),
-    Trash: () => createElement("span", null, "x"),
-    Chevron: () => createElement("span", null, "^"),
-    Upload: () => createElement("span", null, "upload")
-  }
-}));
+
 
 import { CollectionForm } from "@/components/forms/collection-form";
 import { useCollectionForm } from "@/hooks/forms/use-collection-form";

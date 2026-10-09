@@ -6,12 +6,6 @@ export const paymentStatusLabel: Record<PaymentStatus, string> = {
   denied: "مرفوض"
 };
 
-export const paymentStatusChip: Record<PaymentStatus, string> = {
-  pending: "status status--draft",
-  accepted: "status status--active",
-  denied: "status status--deleted"
-};
-
 /** Badge tone for a raw payment status (sales tables). */
 export const paymentStatusTone: Record<PaymentStatus, "neutral" | "success" | "warning" | "danger"> = {
   pending: "warning",
@@ -27,7 +21,7 @@ export const paymentStatusFilterOptions = [
   }))
 ];
 
-/** Paymob orders display the provider's state (see orderPaymentDisplay) while COD orders display the operational status, so the list filter has to read the same source as the label it sits next to instead of comparing raw enums across both payment methods. */
+/** Paymob orders display the provider's state while COD orders display the operational status, so the list filter has to read the same source as the label it sits next to instead of comparing raw enums across both payment methods. */
 export function orderMatchesPaymentStatusFilter(
   order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">,
   filter: PaymentStatus
@@ -47,20 +41,7 @@ export function orderMatchesPaymentStatusFilter(
   return providerStatus !== "succeeded" && !reversedOrFailed;
 }
 
-export function orderPaymentDisplay(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">) {
-  if (order.paymentMethod === "cod") {
-    return { label: paymentStatusLabel[order.paymentStatus], chip: paymentStatusChip[order.paymentStatus] };
-  }
-  const status = order.providerPaymentStatus;
-  if (status === "succeeded") return { label: "مدفوع عبر باي موب", chip: "status status--active" };
-  if (status === "partially_refunded") return { label: "مسترد جزئيًا عبر باي موب", chip: "status status--draft" };
-  if (status === "refunded") return { label: "مسترد عبر باي موب", chip: "status status--deleted" };
-  if (status === "failed") return { label: "فشل الدفع عبر باي موب", chip: "status status--deleted" };
-  if (status === "voided") return { label: "أُلغي الدفع عبر باي موب", chip: "status status--deleted" };
-  return { label: "قيد تأكيد باي موب", chip: "status status--draft" };
-}
-
-/** Same display as orderPaymentDisplay, but as a Badge tone for the new tables. */
+/** Badge label and tone for an order's payment state, shared by the order list, details and sales tables. */
 export function orderPaymentBadge(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): {
   label: string;
   tone: "neutral" | "success" | "warning" | "danger";

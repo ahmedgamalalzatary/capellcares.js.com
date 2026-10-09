@@ -11,14 +11,14 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { FileButton } from "@/components/ui/file-button";
 import { Select } from "@/components/ui/input";
-import { resolveMediaSrc } from "@/components/ui/thumb";
+import { resolveMediaSrc } from "@/lib/media";
 import { api, type ErpUploadContext } from "@/lib/api/client";
 import { buildCategoryTreeOptions, getDescendantCategoryIds } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { getStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { BilingualNameFields } from "./editor-form-parts";
-import { slugifyFormName } from "./form-slug";
+import { slugifyFormName } from "@/lib/slug";
 
 interface Props {
   mode: "new" | "edit";

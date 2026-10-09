@@ -104,6 +104,20 @@ describe("OffersListPage", () => {
     expect(screen.getByText("عرض متوقف")).toBeInTheDocument();
     expect(screen.getByText("1 عرض")).toBeInTheDocument();
   });
+
+  it("finds an offer by its slug", () => {
+    mockState = {
+      loaded: true,
+      categories: [],
+      offers: [makeOffer(1, "عرض أول", "active"), makeOffer(2, "عرض ثاني", "active")]
+    };
+    render(createElement(OffersListPage));
+
+    fireEvent.change(screen.getByPlaceholderText("ابحثي باسم العرض…"), { target: { value: "offer-2" } });
+
+    expect(screen.queryByText("عرض أول")).not.toBeInTheDocument();
+    expect(screen.getByText("عرض ثاني")).toBeInTheDocument();
+  });
 });
 
 describe("OffersListPage category filter", () => {

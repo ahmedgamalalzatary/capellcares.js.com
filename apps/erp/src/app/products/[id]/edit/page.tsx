@@ -9,7 +9,7 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import { Alert } from "@/components/ui/alert";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { ProductForm } from "@/components/forms/product-form";
-import { buildRelatedOptions } from "@/components/forms/related-options";
+import { buildRelatedOptions } from "@/lib/related-options";
 import { api } from "@/lib/api/client";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";

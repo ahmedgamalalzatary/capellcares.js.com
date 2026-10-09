@@ -20,7 +20,7 @@ vi.mock("@/lib/store", () => ({
   getStore: () => ({ upsertOffer })
 }));
 
-vi.mock("@/components/forms/product-media-upload", () => ({
+vi.mock("@/components/forms/entity-media-upload", () => ({
   EntityMediaUpload: ({ value, onChange }: any) => createElement(
     "button",
     {

@@ -6,13 +6,6 @@ vi.mock("@/lib/api/client", () => ({
   api: { uploadImage: vi.fn() }
 }));
 
-vi.mock("@/components/ui/icons", () => ({
-  Icon: {
-    Upload: () => <span>upload</span>,
-    Trash: () => <span>trash</span>
-  }
-}));
-
 import { HoverImageUpload } from "@/components/forms/hover-image-upload";
 
 afterEach(cleanup);

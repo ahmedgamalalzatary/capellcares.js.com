@@ -18,7 +18,7 @@ import type { OfferFormProps } from "../../types/forms/offer-form.types";
 import { CategoryPicker } from "./category-picker";
 import { BilingualEditorField, BilingualNameFields } from "./editor-form-parts";
 import { HoverImageUpload } from "./hover-image-upload";
-import { EntityMediaUpload } from "./product-media-upload";
+import { EntityMediaUpload } from "@/components/forms/entity-media-upload";
 import { RelatedItemsField } from "./related-items-field";
 
 const STEPS = [

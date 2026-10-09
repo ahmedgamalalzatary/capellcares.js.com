@@ -15,8 +15,7 @@ import { Thumb } from "@/components/ui/thumb";
 import type { AdminAuthUser } from "@/lib/api/client";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { formatMoney, formatMoneyRange, formatNumber } from "@/lib/format";
-
-const LOW_STOCK = 10;
+import { LOW_STOCK_LIMIT } from "@/lib/stock";
 
 export type ProductSortKey = "name" | "category" | "price" | "stock" | "status";
 export const PRODUCT_SORT_COLUMNS: Array<{ key: ProductSortKey; label: string }> = [
@@ -44,7 +43,7 @@ function StockCell({ stock }: { stock: number }) {
   if (stock === 0) {
     return <span className="inline-flex items-center gap-2 text-danger"><Swatch tone="danger" />نفد المخزون</span>;
   }
-  if (stock < LOW_STOCK) {
+  if (stock <= LOW_STOCK_LIMIT) {
     return (
       <span className="inline-flex items-center gap-2 text-warning">
         <Swatch tone="warning" /><span className="num">{formatNumber(stock)}</span> · منخفض

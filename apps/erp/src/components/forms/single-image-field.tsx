@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileButton } from "@/components/ui/file-button";
-import { resolveMediaSrc } from "@/components/ui/thumb";
+import { resolveMediaSrc } from "@/lib/media";
 import { api, type ErpUploadContext } from "@/lib/api/client";
 
 const ACCEPT = "image/png,image/jpeg,image/webp";

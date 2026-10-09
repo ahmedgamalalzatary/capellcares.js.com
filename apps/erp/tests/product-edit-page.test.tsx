@@ -13,7 +13,7 @@ const defaultAdminAuth = {
 
 const mockedUseAdminAuth = vi.fn(() => defaultAdminAuth);
 
-import { buildRelatedOptions } from "@/components/forms/related-options";
+import { buildRelatedOptions } from "@/lib/related-options";
 
 const apiGet = vi.fn();
 const mockedUseStore = vi.fn((selector: any) => selector(storeState));

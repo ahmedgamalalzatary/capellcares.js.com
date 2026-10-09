@@ -5,8 +5,8 @@ import { resolveLocalizedEntityMediaUrl, type Collection, type CollectionItem, t
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
-import { slugifyFormName } from "../../components/forms/form-slug";
-import { useHoverImageFields } from "./use-hover-image-fields";
+import { slugifyFormName } from "@/lib/slug";
+import { useHoverImageFields } from "@/hooks/use-hover-image-fields";
 import type { CollectionFormProps, CollectionFormRow, CollectionRequirement, UseCollectionFormResult } from "../../types/forms/collection-form.types";
 
 const REQUIREMENT_ERROR: Record<string, string> = {

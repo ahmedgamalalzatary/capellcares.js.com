@@ -26,6 +26,19 @@ export function buildCategoryTreeOptions(categories: Category[]): CategoryTreeOp
   return options;
 }
 
+export function isInCategoryTree(categories: Category[], categoryId: number | null, selectedCategoryId: number) {
+  if (categoryId == null) return false;
+  let current = categories.find((category) => category.id === categoryId);
+  const visited = new Set<number>();
+  while (current) {
+    if (visited.has(current.id)) return false;
+    if (current.id === selectedCategoryId) return true;
+    visited.add(current.id);
+    current = current.parentId != null ? categories.find((category) => category.id === current!.parentId) : undefined;
+  }
+  return false;
+}
+
 export function getDescendantCategoryIds(categories: Category[], rootId: number): Set<number> {
   const ids = new Set<number>([rootId]);
   let changed = true;

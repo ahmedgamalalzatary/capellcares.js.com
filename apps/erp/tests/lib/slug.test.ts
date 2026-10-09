@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { slugifyFormName } from "@/components/forms/form-slug";
+import { slugifyFormName } from "@/lib/slug";
 
 describe("slugifyFormName", () => {
   it("normalizes English names into URL-safe slugs", () => {

@@ -7,7 +7,7 @@ import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { OfferForm } from "@/components/forms/offer-form";
-import { buildRelatedOptions } from "@/components/forms/related-options";
+import { buildRelatedOptions } from "@/lib/related-options";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeleton";

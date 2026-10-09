@@ -1,5 +1,6 @@
-import type { Offer, OrderSummary, Product, ProductVariant, VariantDiscount } from "@capella/shared";
+import type { Offer, OrderSummary, Product, VariantDiscount } from "@capella/shared";
 import { orderMatchesPaymentStatusFilter } from "./payment-status";
+import { LOW_STOCK_LIMIT } from "./stock";
 import type { SalesAnalytics } from "./store/types";
 
 export type DashboardRange = "today" | "7d" | "30d";
@@ -101,8 +102,6 @@ export function slowMovers(products: Product[], orders: SaleOrder[], now: Date, 
     product.variants.some((variant) => variant.stock > 0) &&
     !sold.has(product.id));
 }
-
-export const LOW_STOCK_LIMIT = 5;
 
 /** Sizes that ran out or have at most LOW_STOCK_LIMIT left, ordered by units sold in the last `days` days so a best seller running out comes first. */
 export function stockAlerts(products: Product[], orders: SaleOrder[], now: Date, days: number) {

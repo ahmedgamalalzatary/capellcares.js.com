@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { getStore } from "@/lib/store";

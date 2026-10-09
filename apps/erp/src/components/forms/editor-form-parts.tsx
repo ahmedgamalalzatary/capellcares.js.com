@@ -1,9 +1,6 @@
 "use client";
 
-import { useId, type ChangeEvent, type ReactNode } from "react";
-import { FormSaveBar } from "@/components/admin/form-save-bar";
-import { Button } from "@/components/ui/button";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { useId, type ChangeEvent } from "react";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -95,46 +92,5 @@ export function BilingualNameFields({ arValue, enValue, onArChange, onEnChange, 
         <LocalizedTextField lang="en" id={enId} value={enValue} onChange={onEnChange} invalid={Boolean(enError)} />
       </Field>
     </>
-  );
-}
-
-interface ImageFieldCardProps {
-  title: string;
-  description?: ReactNode;
-  uploadSlot: ReactNode;
-  error?: string;
-  id?: string;
-}
-
-export function ImageFieldCard({ title, description, uploadSlot, error, id }: ImageFieldCardProps) {
-  return (
-    <Card id={id}>
-      <CardHeader title={title} description={description} />
-      <CardBody className="grid gap-3">
-        {uploadSlot}
-        {error ? (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
-        ) : null}
-      </CardBody>
-    </Card>
-  );
-}
-
-interface EditorActionsProps {
-  cancelLabel: string;
-  saveLabel: string;
-  onCancel: () => void;
-  onSave: () => void;
-  status?: ReactNode;
-}
-
-export function EditorActions({ cancelLabel, saveLabel, onCancel, onSave, status }: EditorActionsProps) {
-  return (
-    <FormSaveBar status={status}>
-      <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
-      <Button variant="primary" onClick={onSave}>{saveLabel}</Button>
-    </FormSaveBar>
   );
 }

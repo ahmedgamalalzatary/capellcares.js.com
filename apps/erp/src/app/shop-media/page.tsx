@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Thumb } from "@/components/ui/thumb";
 import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
-import { API_BASE } from "@/lib/api/client";
+import { resolveMediaSrc } from "@/lib/media";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/hooks/use-collapsed-shop-media-items";
@@ -92,13 +92,6 @@ function toEditableSection(section: ShopMediaSection | undefined, slot: 1 | 2 | 
 
 function isDetailTargetType(targetType: ShopMediaTargetType) {
   return targetType === "product" || targetType === "offer" || targetType === "collection" || targetType === "category";
-}
-
-function resolvePreviewSrc(value: string) {
-  if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/uploads/")) return `${API_BASE}${value}`;
-  return value;
 }
 
 function FoldButton({ collapsed, onClick, label }: { collapsed: boolean; onClick: () => void; label: string }) {
@@ -442,7 +435,7 @@ export default function ShopMediaPage() {
           const isSaving = savingSlot === section.slot;
           const isCollapsed = collapsedSlots.has(section.slot);
           const previewItems = section.items
-            .map((item) => resolvePreviewSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath))
+            .map((item) => resolveMediaSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath))
             .filter((src): src is string => Boolean(src));
 
           return (
@@ -510,7 +503,7 @@ export default function ShopMediaPage() {
                           const targetSummary = isDetail
                             ? (detailOptions.find((option) => option.id === item.targetId)?.label ?? (targetMissing ? "العنصر محذوف — الصفحة الرئيسية" : "بدون عنصر"))
                             : typeLabel;
-                          const thumbSrc = resolvePreviewSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath);
+                          const thumbSrc = resolveMediaSrc(item.arImagePath || item.arMobileImagePath || item.enImagePath || item.enMobileImagePath);
 
                           return (
                             <li key={item.id} className="grid gap-3 rounded-well bg-sunken p-3">

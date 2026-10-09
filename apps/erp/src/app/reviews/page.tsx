@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/lib/api/client";
 import { showErrorToast } from "@/lib/errors";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 
 const emptyPage: AdminReviewPage = {
@@ -186,7 +186,7 @@ export default function ReviewsPage() {
                 <TD data-label="التعليق" className="max-w-md whitespace-normal text-text-2">{review.comment}</TD>
                 <TD data-label="الحالة"><Badge tone={review.status === "active" ? "success" : "neutral"}>{review.status === "active" ? "نشط" : "معطّل"}</Badge></TD>
                 <TD data-label="التاريخ" className="whitespace-nowrap text-text-muted">
-                  {new Date(review.createdAt).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" })}
+                  {formatDate(review.createdAt)}
                 </TD>
                 <TD data-cell="actions">
                   <div className="flex justify-end">

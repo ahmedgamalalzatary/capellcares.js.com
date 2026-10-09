@@ -143,7 +143,6 @@ export function StaffEditorForm({
   // Re-sync only when the target record/mode changes, not on every parent re-render (initialValues is a fresh object each render at the call sites).
   useEffect(() => {
     setForm(initialValues);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffId, mode]);
 
   useEffect(() => {

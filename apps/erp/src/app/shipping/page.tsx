@@ -16,12 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortableTH, Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { hasErpPermission } from "@/lib/erp-permissions";
-import { formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, localDateKey } from "@/lib/format";
 import { orderPaymentBadge } from "@/lib/payment-status";
 import { ShippingActions } from "@/components/orders/shipping-actions";
 import { getStore } from "@/lib/store";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { cn } from "@/lib/utils";
 
 const carrierStateLabels: Record<string, string> = {
   created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق",
@@ -51,11 +50,6 @@ const SECTIONS = [
   { key: "needs_attention", label: "تحتاج انتباه" },
   { key: "returns", label: "المرتجعات والاستبدالات" }
 ] as const;
-
-function localDateKey(value: string) {
-  const date = new Date(value);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 export default function ShippingPage() {
   const { user, hydrated } = useAdminAuth();
@@ -349,7 +343,7 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
                         )}
                       </TD>
                       <TD data-label="التاريخ" className="whitespace-nowrap text-text-muted">
-                        {new Date(item.orderCreatedAt).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" })}
+                        {formatDate(item.orderCreatedAt)}
                       </TD>
                       <TD data-cell="actions">
                         <Button asChild variant="ghost" size="sm">

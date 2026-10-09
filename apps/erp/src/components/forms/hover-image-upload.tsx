@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { Language } from "@capella/shared";
 import { Alert } from "@/components/ui/alert";
-import { API_BASE, api, type ErpUploadContext } from "@/lib/api/client";
+import { api, type ErpUploadContext } from "@/lib/api/client";
+import { resolveMediaSrc } from "@/lib/media";
 import { LangSlotRow } from "./media-frame";
 
 interface Props {
@@ -13,13 +14,6 @@ interface Props {
   uploadContext?: ErpUploadContext;
   entityLabel?: string;
   testIdPrefix?: "product" | "offer" | "collection";
-}
-
-function resolvePreviewSrc(value: string) {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/uploads/")) return `${API_BASE}${value}`;
-  return value;
 }
 
 export function HoverImageUpload({
@@ -63,7 +57,7 @@ export function HoverImageUpload({
               key={lang}
               lang={lang}
               title={lang === "ar" ? "الصورة العربية" : "الصورة الإنجليزية"}
-              src={value ? resolvePreviewSrc(value) : null}
+              src={value ? resolveMediaSrc(value) : null}
               inputTestId={`${testIdPrefix}-hover-image-${lang}-input`}
               canUpload={uploading === null && Boolean(uploadContext)}
               busy={uploading !== null}

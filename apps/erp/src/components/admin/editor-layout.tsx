@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { FormSaveBar } from "@/components/admin/form-save-bar";
-import { formatNumber } from "@/lib/format";
 
 /**
  * Shared shell for every new/edit page, after Shopify's resource-detail pattern: a ⅔ main column for the
@@ -41,35 +40,5 @@ export function EditorLayout({
         {actions}
       </FormSaveBar>
     </div>
-  );
-}
-
-export function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-/** Readiness line for editors with publish requirements. */
-export function ReadinessStatus({ missingCount, onShowMissing }: { missingCount: number; onShowMissing?: () => void }) {
-  if (missingCount === 0) {
-    return (
-      <span className="flex items-center gap-2">
-        <span aria-hidden className="size-2 rounded-full bg-success" /> جاهز للنشر
-      </span>
-    );
-  }
-  const label = (
-    <>
-      <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
-      <span>
-        ينقص <span className="num">{formatNumber(missingCount)}</span> {missingCount === 1 ? "بيان" : "بيانات"} للنشر
-      </span>
-    </>
-  );
-  return onShowMissing ? (
-    <button type="button" onClick={onShowMissing} className="flex items-center gap-2 text-start underline-offset-4 hover:text-text-strong hover:underline">
-      {label}
-    </button>
-  ) : (
-    <span className="flex items-center gap-2">{label}</span>
   );
 }

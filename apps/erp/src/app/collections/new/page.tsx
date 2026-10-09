@@ -1,7 +1,7 @@
 "use client";
 
 import { CollectionForm } from "@/components/forms/collection-form";
-import { buildRelatedOptions } from "@/components/forms/related-options";
+import { buildRelatedOptions } from "@/lib/related-options";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";

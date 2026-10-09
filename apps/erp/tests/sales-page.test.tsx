@@ -7,6 +7,13 @@ vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children }: any) => createElement("div", null, children)
 }));
 
+const allowedUser = { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["sales.read"] };
+const mockedUseAdminAuth = vi.fn(() => ({ user: allowedUser, hydrated: true, logout: vi.fn() }));
+
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
+}));
+
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector({
     loaded: true,
@@ -47,6 +54,21 @@ const exactly = (expected: string) => (_content: string, element: Element | null
 describe("SalesPage", () => {
   afterEach(() => {
     cleanup();
+    mockedUseAdminAuth.mockReset();
+    mockedUseAdminAuth.mockReturnValue({ user: allowedUser, hydrated: true, logout: vi.fn() });
+  });
+
+  it("shows a 403 state for staff without sales.read", () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+
+    render(createElement(SalesPage));
+
+    expect(screen.getByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى المبيعات.")).toBeInTheDocument();
   });
 
   it("formats every money figure with the shared price formatter", () => {

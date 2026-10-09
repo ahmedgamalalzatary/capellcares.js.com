@@ -8,15 +8,9 @@ vi.mock("@/lib/api/client", () => ({
   api: { uploadMedia }
 }));
 
-vi.mock("@/components/ui/icons", () => ({
-  Icon: {
-    Upload: () => <span>upload</span>,
-    Trash: () => <span>trash</span>,
-    Chevron: () => <span>move</span>
-  }
-}));
 
-import { EntityMediaUpload } from "@/components/forms/product-media-upload";
+
+import { EntityMediaUpload } from "@/components/forms/entity-media-upload";
 
 afterEach(() => {
   cleanup();
