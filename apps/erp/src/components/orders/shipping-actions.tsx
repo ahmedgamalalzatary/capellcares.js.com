@@ -3,14 +3,24 @@
 import { useId, useRef, useState } from "react";
 import type { AdminOrderDto, ShipmentEdit, ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import { shipmentEditSchema } from "@capella/shared";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input, Select, Textarea } from "@/components/ui/input";
 import { getStore } from "@/lib/store";
 
-const actions = { manual_state: "تحديث الحالة اليدوية", retry: "إعادة محاولة الإرسال", reconcile: "التحقق من النتيجة لدى بوسطة",
-  shipment_edit: "تعديل بيانات الشحنة / حجم العبوة", cancel: "إلغاء قبل الطباعة والاستلام", resolve_flags: "حل علامة متابعة" };
+const actions = {
+  manual_state: "تحديث الحالة اليدوية", retry: "إعادة محاولة الإرسال", reconcile: "التحقق من النتيجة لدى بوسطة",
+  shipment_edit: "تعديل بيانات الشحنة / حجم العبوة", cancel: "إلغاء قبل الطباعة والاستلام", resolve_flags: "حل علامة متابعة"
+};
 const states = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم" };
 
 export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }: {
-  orderIds: number[]; order?: AdminOrderDto; orderCodes?: Record<number, string>; onComplete: () => void;
+  orderIds: number[];
+  order?: AdminOrderDto;
+  orderCodes?: Record<number, string>;
+  onComplete: () => void;
 }) {
   const id = useId();
   const [action, setAction] = useState<ShippingBulkRequest["action"]>("manual_state");
@@ -31,7 +41,7 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
   const [results, setResults] = useState<ShippingBulkResult[]>([]);
   const shipping = order?.shipping;
   const locked = !!shipping?.cancellation || order?.paymentStatus === "denied";
-  const printed = shipping?.history.some(event => ["printed", "delivered", "returned"].includes(event.state)) ||
+  const printed = shipping?.history.some((event) => ["printed", "delivered", "returned"].includes(event.state)) ||
     ["printed", "delivered", "returned"].includes(shipping?.manualState ?? "");
   const pickedUp = shipping?.processing.pickupAtMs != null;
   const pendingEdit = shipping?.hasPendingEdit ?? (shipping?.workItem?.operation === "edit_delivery" && ["processing", "review_required"].includes(shipping.workItem.status));
@@ -40,7 +50,7 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
   // Fields without verified merchant evidence are hidden/disabled client-side; the server still refuses them, so this is only a UI courtesy.
   const editFields = shipping?.editFields;
   const allowsField = (field: "recipientName" | "notes" | "size") => !editFields || editFields.includes(field);
-  const currentFlagId = shipping?.flags?.some(flag => flag.id === flagId) ? flagId : shipping?.flags?.[0]?.id;
+  const currentFlagId = shipping?.flags?.some((flag) => flag.id === flagId) ? flagId : shipping?.flags?.[0]?.id;
 
   const allowed = (key: ShippingBulkRequest["action"]) => {
     if (!order) return true;
@@ -81,7 +91,10 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
         input.patch = patch;
       }
     }
-    savingRef.current = true; setSaving(true); setError(""); setResults([]);
+    savingRef.current = true;
+    setSaving(true);
+    setError("");
+    setResults([]);
     try {
       if (order) {
         await getStore().performShippingAction(order.id, input);
@@ -91,48 +104,120 @@ export function ShippingActions({ orderIds, order, orderCodes = {}, onComplete }
         setResults(response.results);
       }
       onComplete();
-    } catch { setError("تعذر تنفيذ إجراء الشحن. تحققي من حالة الطلب لدى بوسطة ثم أعيدي تحميل البيانات."); }
-    finally { savingRef.current = false; setSaving(false); }
+    } catch {
+      setError("تعذر تنفيذ إجراء الشحن. تحققي من حالة الطلب لدى بوسطة ثم أعيدي تحميل البيانات.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   }
 
   if (!currentAction) return null;
-  return <section className="card card--pad-lg" aria-label="إجراءات الشحن">
-    <form onSubmit={submit} className="stack">
-      <h3>إجراءات الشحن{!order && ` — ${orderIds.length} طلب`}</h3>
-      {!order && <p className="muted">الطلبات المحددة: {orderIds.map(value => orderCodes[value] ?? `#${value}`).join("، ")}</p>}
-      <fieldset disabled={saving} className="stack" style={{ border: 0, padding: 0, margin: 0 }}>
-        <div className="field"><label htmlFor={`${id}-action`}>إجراء الشحن</label>
-          <select id={`${id}-action`} className="select" value={currentAction} onChange={e => { setAction(e.target.value as typeof action); setError(""); }}>
-            {(Object.entries(actions) as [ShippingBulkRequest["action"], string][]).filter(([key]) => allowed(key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select></div>
-        {currentAction === "manual_state" && <div className="field"><label htmlFor={`${id}-state`}>الحالة اليدوية الجديدة</label>
-          <select id={`${id}-state`} className="select" value={state} onChange={e => setState(e.target.value as typeof state)}>
-            {Object.entries(states).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select></div>}
-        {["manual_state", "cancel"].includes(currentAction) && <div className="field"><label htmlFor={`${id}-reason`}>سبب الإجراء (اختياري)</label>
-          <input id={`${id}-reason`} className="input" maxLength={1000} value={reason} onChange={e => setReason(e.target.value)} /></div>}
-        {currentAction === "cancel" && <p className="muted">الإلغاء الآمن يعيد المخزون بعد التحقق. استرداد باي موب يتم يدويًا من لوحته.</p>}
-        {currentAction === "shipment_edit" && <>
-          <p className="muted">عدّلي الحقول المطلوبة فقط. تكلفة الطلب ثابتة؛ تغيير المنطقة يحتاج طلبًا جديدًا.</p>
-          <div className="field"><label htmlFor={`${id}-name`}>اسم المستلم الجديد</label><input id={`${id}-name`} className="input" maxLength={255} value={fullName} disabled={!allowsField("recipientName")} onChange={e => setFullName(e.target.value)} />{!allowsField("recipientName") && <span className="muted">غير متاح لحسابك حتى يتم التحقق منه.</span>}</div>
-          <div className="field"><label htmlFor={`${id}-phone`}>هاتف المستلم الجديد</label><input id={`${id}-phone`} className="input" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} /></div>
-          <div className="field"><label htmlFor={`${id}-address`}>العنوان الجديد</label><input id={`${id}-address`} className="input" maxLength={255} value={addressLine} onChange={e => setAddressLine(e.target.value)} /></div>
-          <div className="field"><label htmlFor={`${id}-building`}>المبنى / الشقة الجديدة</label><input id={`${id}-building`} className="input" maxLength={255} value={building} onChange={e => setBuilding(e.target.value)} /></div>
-          <div className="field"><label htmlFor={`${id}-size`}>حجم العبوة الجديد</label><select id={`${id}-size`} className="select" value={size} disabled={!allowsField("size")} onChange={e => setSize(e.target.value)}>
-            <option value="">بدون تغيير</option><option value="small">صغير</option><option value="medium">وسط</option><option value="large">كبير</option></select>{!allowsField("size") && <span className="muted">غير متاح لحسابك حتى يتم التحقق منه.</span>}</div>
-          <label><input type="checkbox" checked={editNotes} disabled={!allowsField("notes")} onChange={e => setEditNotes(e.target.checked)} /> تعديل الملاحظات</label>
-          {editNotes && allowsField("notes") && <div className="field"><label htmlFor={`${id}-notes`}>ملاحظات الشحنة الجديدة</label><textarea id={`${id}-notes`} className="input" maxLength={4000} value={notes} onChange={e => setNotes(e.target.value)} /></div>}
-        </>}
-        {currentAction === "resolve_flags" && <>
-          {order && <div className="field"><label htmlFor={`${id}-flag`}>علامة المتابعة</label><select id={`${id}-flag`} className="select" value={currentFlagId} onChange={e => setFlagId(Number(e.target.value))}>
-            {shipping?.flags?.map(flag => <option key={flag.id} value={flag.id}>{flag.reason}</option>)}</select></div>}
-          <div className="field"><label htmlFor={`${id}-note`}>ما الذي تم التحقق منه؟</label><textarea id={`${id}-note`} className="input" required maxLength={1000} value={note} onChange={e => setNote(e.target.value)} /></div>
-          <p className="muted">حل العلامة يسجل المتابعة فقط؛ لا يؤكد الدفع أو الإلغاء أو استعادة المخزون.</p>
-        </>}
-        <button type="submit" className="btn" disabled={!orderIds.length || orderIds.length > 50}>{saving ? "جارٍ التنفيذ…" : "تنفيذ الإجراء"}</button>
-      </fieldset>
-      {error && <p role="alert">{error}</p>}
-      <div aria-live="polite">{results.map(result => <p key={result.orderId}>{orderCodes[result.orderId] ?? order?.orderCode ?? `#${result.orderId}`}: {result.status === "ok" ? "تم" : `تعذر التنفيذ — ${result.message}`}</p>)}</div>
-    </form>
-  </section>;
+
+  return (
+    <Card>
+      <CardHeader
+        title={order ? "إجراءات الشحن" : `إجراءات الشحن — ${orderIds.length} طلب`}
+        description={!order ? `الطلبات المحددة: ${orderIds.map((value) => orderCodes[value] ?? `#${value}`).join("، ")}` : undefined}
+      />
+      <CardBody>
+        <form onSubmit={submit} className="grid gap-4">
+          <fieldset disabled={saving} className="grid gap-4">
+            <Field label="إجراء الشحن" htmlFor={`${id}-action`}>
+              <Select id={`${id}-action`} value={currentAction} onChange={(event) => { setAction(event.target.value as typeof action); setError(""); }}>
+                {(Object.entries(actions) as [ShippingBulkRequest["action"], string][]).filter(([key]) => allowed(key)).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </Select>
+            </Field>
+
+            {currentAction === "manual_state" ? (
+              <Field label="الحالة اليدوية الجديدة" htmlFor={`${id}-state`}>
+                <Select id={`${id}-state`} value={state} onChange={(event) => setState(event.target.value as typeof state)}>
+                  {Object.entries(states).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </Select>
+              </Field>
+            ) : null}
+
+            {["manual_state", "cancel"].includes(currentAction) ? (
+              <Field label="سبب الإجراء" htmlFor={`${id}-reason`} hint="اختياري.">
+                <Input id={`${id}-reason`} maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} />
+              </Field>
+            ) : null}
+            {currentAction === "cancel" ? <Alert tone="info">الإلغاء الآمن يعيد المخزون بعد التحقق. استرداد باي موب يتم يدويًا من لوحته.</Alert> : null}
+
+            {currentAction === "shipment_edit" ? (
+              <>
+                <Alert tone="info">عدّلي الحقول المطلوبة فقط. تكلفة الطلب ثابتة؛ تغيير المنطقة يحتاج طلبًا جديدًا.</Alert>
+                <div className="grid gap-x-4 gap-y-4 @lg:grid-cols-2">
+                  <Field label="اسم المستلم الجديد" htmlFor={`${id}-name`} hint={!allowsField("recipientName") ? "غير متاح لحسابك حتى يتم التحقق منه." : undefined}>
+                    <Input id={`${id}-name`} maxLength={255} value={fullName} disabled={!allowsField("recipientName")} onChange={(event) => setFullName(event.target.value)} />
+                  </Field>
+                  <Field label="هاتف المستلم الجديد" htmlFor={`${id}-phone`}>
+                    <Input id={`${id}-phone`} dir="ltr" value={phone} onChange={(event) => setPhone(event.target.value)} />
+                  </Field>
+                  <Field label="العنوان الجديد" htmlFor={`${id}-address`}>
+                    <Input id={`${id}-address`} maxLength={255} value={addressLine} onChange={(event) => setAddressLine(event.target.value)} />
+                  </Field>
+                  <Field label="المبنى / الشقة الجديدة" htmlFor={`${id}-building`}>
+                    <Input id={`${id}-building`} maxLength={255} value={building} onChange={(event) => setBuilding(event.target.value)} />
+                  </Field>
+                  <Field label="حجم العبوة الجديد" htmlFor={`${id}-size`} hint={!allowsField("size") ? "غير متاح لحسابك حتى يتم التحقق منه." : undefined}>
+                    <Select id={`${id}-size`} value={size} disabled={!allowsField("size")} onChange={(event) => setSize(event.target.value)}>
+                      <option value="">بدون تغيير</option>
+                      <option value="small">صغير</option>
+                      <option value="medium">وسط</option>
+                      <option value="large">كبير</option>
+                    </Select>
+                  </Field>
+                </div>
+                <label className="flex items-center gap-2 text-base text-text-2">
+                  <input type="checkbox" className="size-4" checked={editNotes} disabled={!allowsField("notes")} onChange={(event) => setEditNotes(event.target.checked)} />
+                  تعديل الملاحظات
+                </label>
+                {editNotes && allowsField("notes") ? (
+                  <Field label="ملاحظات الشحنة الجديدة" htmlFor={`${id}-notes`}>
+                    <Textarea id={`${id}-notes`} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
+                  </Field>
+                ) : null}
+              </>
+            ) : null}
+
+            {currentAction === "resolve_flags" ? (
+              <>
+                {order ? (
+                  <Field label="علامة المتابعة" htmlFor={`${id}-flag`}>
+                    <Select id={`${id}-flag`} value={currentFlagId} onChange={(event) => setFlagId(Number(event.target.value))}>
+                      {shipping?.flags?.map((flag) => <option key={flag.id} value={flag.id}>{flag.reason}</option>)}
+                    </Select>
+                  </Field>
+                ) : null}
+                <Field label="ما الذي تم التحقق منه؟" htmlFor={`${id}-note`}>
+                  <Textarea id={`${id}-note`} required maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} />
+                </Field>
+                <Alert tone="info">حل العلامة يسجل المتابعة فقط؛ لا يؤكد الدفع أو الإلغاء أو استعادة المخزون.</Alert>
+              </>
+            ) : null}
+
+            <div>
+              <Button type="submit" variant="primary" disabled={!orderIds.length || orderIds.length > 50}>
+                {saving ? "جارٍ التنفيذ…" : "تنفيذ الإجراء"}
+              </Button>
+            </div>
+          </fieldset>
+
+          {error ? <Alert tone="danger">{error}</Alert> : null}
+          {results.length > 0 ? (
+            <div aria-live="polite" className="grid gap-1 text-sm text-text-2">
+              {results.map((result) => (
+                <p key={result.orderId}>
+                  {orderCodes[result.orderId] ?? order?.orderCode ?? `#${result.orderId}`}: {result.status === "ok" ? "تم" : `تعذر التنفيذ — ${result.message}`}
+                </p>
+              ))}
+            </div>
+          ) : null}
+        </form>
+      </CardBody>
+    </Card>
+  );
 }

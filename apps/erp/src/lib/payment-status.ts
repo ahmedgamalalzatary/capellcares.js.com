@@ -12,6 +12,13 @@ export const paymentStatusChip: Record<PaymentStatus, string> = {
   denied: "status status--deleted"
 };
 
+/** Badge tone for a raw payment status (sales tables). */
+export const paymentStatusTone: Record<PaymentStatus, "neutral" | "success" | "warning" | "danger"> = {
+  pending: "warning",
+  accepted: "success",
+  denied: "danger"
+};
+
 export const paymentStatusFilterOptions = [
   { value: "all", label: "كل حالات الدفع" },
   ...(Object.keys(paymentStatusLabel) as PaymentStatus[]).map((status) => ({
@@ -51,4 +58,21 @@ export function orderPaymentDisplay(order: Pick<OrderSummary, "paymentMethod" | 
   if (status === "failed") return { label: "فشل الدفع عبر باي موب", chip: "status status--deleted" };
   if (status === "voided") return { label: "أُلغي الدفع عبر باي موب", chip: "status status--deleted" };
   return { label: "قيد تأكيد باي موب", chip: "status status--draft" };
+}
+
+/** Same display as orderPaymentDisplay, but as a Badge tone for the new tables. */
+export function orderPaymentBadge(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): {
+  label: string;
+  tone: "neutral" | "success" | "warning" | "danger";
+} {
+  if (order.paymentMethod === "cod") {
+    return { label: paymentStatusLabel[order.paymentStatus], tone: paymentStatusTone[order.paymentStatus] };
+  }
+  const status = order.providerPaymentStatus;
+  if (status === "succeeded") return { label: "مدفوع عبر باي موب", tone: "success" };
+  if (status === "partially_refunded") return { label: "مسترد جزئيًا عبر باي موب", tone: "warning" };
+  if (status === "refunded") return { label: "مسترد عبر باي موب", tone: "danger" };
+  if (status === "failed") return { label: "فشل الدفع عبر باي موب", tone: "danger" };
+  if (status === "voided") return { label: "أُلغي الدفع عبر باي موب", tone: "danger" };
+  return { label: "قيد تأكيد باي موب", tone: "warning" };
 }

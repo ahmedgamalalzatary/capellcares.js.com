@@ -2,123 +2,203 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { PackageOpen } from "lucide-react";
 import type { AdminOrderDto, AdminOrderShippingStateDto, AdminRelatedShipmentDto, PaymentStatus } from "@capella/shared";
 import { ErpForbiddenState } from "@/components/admin/erp-forbidden-state";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Field } from "@/components/ui/field";
+import { Select } from "@/components/ui/input";
+import { FormSkeleton } from "@/components/ui/skeleton";
+import { Table, TableState, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { hasErpPermission } from "@/lib/erp-permissions";
-import { orderPaymentDisplay, paymentStatusLabel } from "@/lib/payment-status";
+import { formatMoney } from "@/lib/format";
+import { orderPaymentBadge, paymentStatusLabel } from "@/lib/payment-status";
 import { getStore } from "@/lib/store";
-import { formatOrderAmount } from "@/lib/order-format";
+import { cn } from "@/lib/utils";
 import { ShippingActions } from "./shipping-actions";
-import "./order-details.css";
 
 const manualStateLabels = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم", returned: "تم الإرجاع" };
 const carrierStateLabels = { created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق", delivered: "تم التسليم", returned: "تم الإرجاع", cancelled: "تم الإلغاء", exception: "تحتاج متابعة" };
 const custodyLabels = { unknown: "الحيازة غير مؤكدة", carrier: "مع شركة الشحن", recipient: "تم التسليم للمستلم", warehouse_uninspected: "راجع للمخزن؛ بانتظار الفحص" };
+const itemTypeLabels = { product_variant: "منتج", offer: "عرض", collection: "مجموعة" } as const;
+
+function Detail({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid min-w-0 gap-0.5">
+      <dt className="text-sm text-text-muted">{label}</dt>
+      <dd className="min-w-0 text-base text-text-strong">{children ?? "غير متوفر"}</dd>
+    </div>
+  );
+}
+
+function DetailGrid({ children, className }: { children: ReactNode; className?: string }) {
+  return <dl className={cn("grid gap-x-4 gap-y-4 sm:grid-cols-2", className)}>{children}</dl>;
+}
+
+function OrderDate({ value }: { value?: string | null }) {
+  if (!value || Number.isNaN(new Date(value).getTime())) return <>غير متوفر</>;
+  return (
+    <time dateTime={value}>
+      {new Date(value).toLocaleString("ar-EG-u-nu-latn", {
+        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo"
+      })}
+    </time>
+  );
+}
 
 function ShippingStateDetails({ shipping }: { shipping: AdminOrderShippingStateDto }) {
   const collectionConfirmed = shipping.collection.confirmed && shipping.collection.amountCents !== null;
   const carrier = shipping.carrierSnapshot;
   const recipient = carrier?.recipient as Record<string, unknown> | undefined;
   const address = carrier?.address as Record<string, unknown> | undefined;
-  const carrierText = (value: unknown) => typeof value === "string" ? value : "غير متوفر";
-  return <section className="card" aria-labelledby="order-shipping-state-heading">
-    <div className="card__head"><h3 id="order-shipping-state-heading" className="card__title">حالات الشحن</h3></div>
-    <div className="order-section-body">
-      <dl className="order-fields order-fields--two">
-        <Detail label="حالة الموظفة">{shipping.manualState ? `${manualStateLabels[shipping.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
-        <Detail label="حالة بوسطة">{shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)`
-          : shipping.cancellation ? "لا توجد شحنة مرتبطة ببوسطة" : "بانتظار إنشاء الشحنة"}</Detail>
-        <Detail label="حيازة الشحنة">{custodyLabels[shipping.custodyState]}</Detail>
-        {shipping.cancellation && <>
-          <Detail label="إلغاء الطلب">{shipping.cancellation.status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب"}</Detail>
-          <Detail label="المخزون">{shipping.cancellation.stockRestoredAtMs !== null ? "تمت استعادة المخزون" : "المخزون محجوز لحين تأكيد الإلغاء والحيازة"}</Detail>
-        </>}
-        <Detail label="إثبات التحصيل">{collectionConfirmed ? "التحصيل مؤكد" : "التحصيل غير مؤكد"}</Detail>
-        <Detail label="المبلغ المحصل">{shipping.collection.amountCents !== null ? formatOrderAmount(shipping.collection.amountCents / 100) : "غير متوفر"}</Detail>
-        {shipping.processing.startedAtMs !== null && <Detail label="بدء المعالجة"><OrderDate value={new Date(shipping.processing.startedAtMs).toISOString()} /></Detail>}
-      </dl>
-      {carrier && <div aria-label="بيانات بوسطة الحالية"><h4>بيانات بوسطة الحالية</h4><dl className="order-fields order-fields--two">
-        <Detail label="المستلم لدى بوسطة">{carrierText(recipient?.fullName)}</Detail>
-        <Detail label="الهاتف لدى بوسطة">{carrierText(recipient?.phone)}</Detail>
-        <Detail label="العنوان لدى بوسطة">{carrierText(address?.firstLine)}</Detail>
-        <Detail label="الحجم لدى بوسطة">{carrierText(carrier.size)}</Detail>
-        <Detail label="الملاحظات لدى بوسطة">{carrierText(carrier.notes)}</Detail>
-      </dl></div>}
-      {!!shipping.flags?.length && <div aria-label="علامات المتابعة">{shipping.flags.map(flag => <p key={flag.id} className="order-note">{flag.reason}</p>)}</div>}
-      {shipping.workItem && ["failed", "review_required", "processing"].includes(shipping.workItem.status) &&
-        <p className="order-note">متابعة الإرسال: {shipping.workItem.lastError ?? "قيد التنفيذ"}</p>}
-      {shipping.processing.addressBlockedAtMs !== null && <p className="order-note">مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة</p>}
-      {shipping.cancellation?.status === "pending" && <p className="order-note">الإرسال محظور حتى تأكيد الإلغاء؛ تعذر الاتصال ببوسطة لا يعيد المخزون تلقائيًا.</p>}
-      {(shipping.cancellation?.refundRequiredCents ?? 0) > 0 && <p className="order-note">استرداد كامل يدوي عبر باي موب مطلوب: {formatOrderAmount(shipping.cancellation!.refundRequiredCents / 100)}. بانتظار تأكيد باي موب.</p>}
-      <p className="order-note">الحالة اليدوية لا تؤكد الدفع أو استعادة المخزون. الإرجاع يحتاج فحصًا وموافقة قبل إعادة البيع.</p>
-      {shipping.history.length > 0 && <div aria-label="سجل حالات الموظفة">
-        {shipping.history.map(event => <div key={event.id} className="order-note">
-          <strong>{manualStateLabels[event.state]}</strong>{" — "}
-          <OrderDate value={new Date(event.atMs).toISOString()} />{" — "}
-          {event.actorType === "staff" ? `الموظفة #${event.actorId ?? "—"}` : "النظام"}
-          {event.reason && <p>{event.reason}</p>}
-        </div>)}
-      </div>}
-    </div>
-  </section>;
+  const carrierText = (value: unknown) => (typeof value === "string" ? value : "غير متوفر");
+
+  return (
+    <Card>
+      <CardHeader title="حالات الشحن" />
+      <CardBody className="grid gap-5 pt-0 sm:pt-0">
+        <DetailGrid>
+          <Detail label="حالة الموظفة">{shipping.manualState ? `${manualStateLabels[shipping.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
+          <Detail label="حالة بوسطة">
+            {shipping.carrierState ? `${carrierStateLabels[shipping.carrierState]} (بوسطة)` : shipping.cancellation ? "لا توجد شحنة مرتبطة ببوسطة" : "بانتظار إنشاء الشحنة"}
+          </Detail>
+          <Detail label="حيازة الشحنة">{custodyLabels[shipping.custodyState]}</Detail>
+          {shipping.cancellation ? (
+            <>
+              <Detail label="إلغاء الطلب">{shipping.cancellation.status === "pending" ? "الإلغاء قيد التأكيد" : "تم إلغاء الطلب"}</Detail>
+              <Detail label="المخزون">{shipping.cancellation.stockRestoredAtMs !== null ? "تمت استعادة المخزون" : "المخزون محجوز لحين تأكيد الإلغاء والحيازة"}</Detail>
+            </>
+          ) : null}
+          <Detail label="إثبات التحصيل">{collectionConfirmed ? "التحصيل مؤكد" : "التحصيل غير مؤكد"}</Detail>
+          <Detail label="المبلغ المحصل">{shipping.collection.amountCents !== null ? formatMoney(shipping.collection.amountCents / 100) : "غير متوفر"}</Detail>
+          {shipping.processing.startedAtMs !== null ? (
+            <Detail label="بدء المعالجة"><OrderDate value={new Date(shipping.processing.startedAtMs).toISOString()} /></Detail>
+          ) : null}
+        </DetailGrid>
+
+        {carrier ? (
+          <div className="grid gap-4">
+            <h4 className="text-base font-bold text-text-strong">بيانات بوسطة الحالية</h4>
+            <DetailGrid>
+              <Detail label="المستلم لدى بوسطة">{carrierText(recipient?.fullName)}</Detail>
+              <Detail label="الهاتف لدى بوسطة">{carrierText(recipient?.phone)}</Detail>
+              <Detail label="العنوان لدى بوسطة">{carrierText(address?.firstLine)}</Detail>
+              <Detail label="الحجم لدى بوسطة">{carrierText(carrier.size)}</Detail>
+              <Detail label="الملاحظات لدى بوسطة">{carrierText(carrier.notes)}</Detail>
+            </DetailGrid>
+          </div>
+        ) : null}
+
+        {shipping.flags?.length ? (
+          <div className="grid gap-1.5">
+            {shipping.flags.map((flag) => <p key={flag.id} className="text-sm text-warning">{flag.reason}</p>)}
+          </div>
+        ) : null}
+        {shipping.workItem && ["failed", "review_required", "processing"].includes(shipping.workItem.status) ? (
+          <p className="text-sm text-text-muted">متابعة الإرسال: {shipping.workItem.lastError ?? "قيد التنفيذ"}</p>
+        ) : null}
+        {shipping.processing.addressBlockedAtMs !== null ? <p className="text-sm text-warning">مشكلة عنوان قبل الاستلام؛ المهلة الأصلية قائمة</p> : null}
+        {shipping.cancellation?.status === "pending" ? (
+          <p className="text-sm text-text-muted">الإرسال محظور حتى تأكيد الإلغاء؛ تعذر الاتصال ببوسطة لا يعيد المخزون تلقائيًا.</p>
+        ) : null}
+        {(shipping.cancellation?.refundRequiredCents ?? 0) > 0 ? (
+          <Alert tone="warning">استرداد كامل يدوي عبر باي موب مطلوب: {formatMoney(shipping.cancellation!.refundRequiredCents / 100)}. بانتظار تأكيد باي موب.</Alert>
+        ) : null}
+        <p className="text-sm text-text-muted">الحالة اليدوية لا تؤكد الدفع أو استعادة المخزون. الإرجاع يحتاج فحصًا وموافقة قبل إعادة البيع.</p>
+
+        {shipping.history.length > 0 ? (
+          <ol className="grid gap-2 border-t border-line pt-4">
+            {shipping.history.map((event) => (
+              <li key={event.id} className="grid gap-0.5 text-sm text-text-2">
+                <span className="font-medium text-text-strong">{manualStateLabels[event.state]}</span>
+                <span className="text-text-muted">
+                  <OrderDate value={new Date(event.atMs).toISOString()} /> — {event.actorType === "staff" ? `الموظفة #${event.actorId ?? "—"}` : "النظام"}
+                </span>
+                {event.reason ? <span>{event.reason}</span> : null}
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </CardBody>
+    </Card>
+  );
 }
 
 function RelatedShipments({ parcels }: { parcels: AdminRelatedShipmentDto[] }) {
   if (parcels.length === 0) return null;
-  return <section className="card" aria-labelledby="order-related-shipments-heading">
-    <div className="card__head"><h3 id="order-related-shipments-heading" className="card__title">المرتجعات والاستبدالات</h3></div>
-    <div className="order-section-body">
-      {parcels.map(parcel => <section key={parcel.id} aria-labelledby={`related-shipment-${parcel.id}`}>
-        <h4 id={`related-shipment-${parcel.id}`}>{parcel.kind === "return" ? "مرتجع" : "استبدال"}{" — "}<bdi>{parcel.trackingNumber}</bdi></h4>
-        <dl className="order-fields order-fields--two">
-          <Detail label="حالة بوسطة">{carrierStateLabels[parcel.carrierState]} (بوسطة)</Detail>
-          <Detail label="وصف بوسطة"><span dir="auto">{parcel.rawProviderState}</span></Detail>
-          <Detail label="رمز الحالة لدى بوسطة">{parcel.rawProviderCode?.toLocaleString("ar-EG") ?? "غير متوفر"}</Detail>
-          <Detail label="نوع الشحنة لدى بوسطة"><bdi>{parcel.rawProviderType ?? "غير متوفر"}</bdi></Detail>
-          <Detail label="حالة الموظفة">{parcel.manualState ? `${manualStateLabels[parcel.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
-          <Detail label="حيازة الشحنة">{custodyLabels[parcel.custodyState]}</Detail>
-          <Detail label="آخر حالة مؤكدة من بوسطة"><OrderDate value={parcel.providerEventAtMs === null ? null : new Date(parcel.providerEventAtMs).toISOString()} /></Detail>
-        </dl>
-        {parcel.workItem && ["failed", "review_required", "processing"].includes(parcel.workItem.status) &&
-          <p className="order-note" dir="auto">متابعة الشحنة: {parcel.workItem.lastError ?? "قيد التنفيذ"}</p>}
-      </section>)}
-      <p className="order-note">حالة الإرجاع أو الاستبدال لا تؤكد استرداد الدفع أو إعادة المخزون. تُحدّث استردادات باي موب من تأكيداته، وإعادة المخزون تتم يدويًا بعد الفحص.</p>
-    </div>
-  </section>;
-}
-
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="order-detail-field"><dt>{label}</dt><dd>{children ?? "غير متوفر"}</dd></div>;
-}
-
-function OrderDate({ value }: { value?: string | null }) {
-  if (!value || Number.isNaN(new Date(value).getTime())) return <>غير متوفر</>;
-  return <time dateTime={value}>{new Date(value).toLocaleString("ar-EG", {
-    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo"
-  })}</time>;
+  return (
+    <Card>
+      <CardHeader title="المرتجعات والاستبدالات" />
+      <CardBody className="grid gap-5 pt-0 sm:pt-0">
+        {parcels.map((parcel) => (
+          <section key={parcel.id} className="grid gap-4 border-b border-line pb-5 last:border-b-0 last:pb-0">
+            <h4 className="text-base font-bold text-text-strong">
+              {parcel.kind === "return" ? "مرتجع" : "استبدال"} — <bdi>{parcel.trackingNumber}</bdi>
+            </h4>
+            <DetailGrid>
+              <Detail label="حالة بوسطة">{carrierStateLabels[parcel.carrierState]} (بوسطة)</Detail>
+              <Detail label="وصف بوسطة"><span dir="auto">{parcel.rawProviderState}</span></Detail>
+              <Detail label="رمز الحالة لدى بوسطة">{parcel.rawProviderCode?.toString() ?? "غير متوفر"}</Detail>
+              <Detail label="نوع الشحنة لدى بوسطة"><bdi>{parcel.rawProviderType ?? "غير متوفر"}</bdi></Detail>
+              <Detail label="حالة الموظفة">{parcel.manualState ? `${manualStateLabels[parcel.manualState]} (الموظفة)` : "لا توجد حالة يدوية"}</Detail>
+              <Detail label="حيازة الشحنة">{custodyLabels[parcel.custodyState]}</Detail>
+              <Detail label="آخر حالة مؤكدة من بوسطة">
+                <OrderDate value={parcel.providerEventAtMs === null ? null : new Date(parcel.providerEventAtMs).toISOString()} />
+              </Detail>
+            </DetailGrid>
+            {parcel.workItem && ["failed", "review_required", "processing"].includes(parcel.workItem.status) ? (
+              <p className="text-sm text-text-muted" dir="auto">متابعة الشحنة: {parcel.workItem.lastError ?? "قيد التنفيذ"}</p>
+            ) : null}
+          </section>
+        ))}
+        <p className="text-sm text-text-muted">حالة الإرجاع أو الاستبدال لا تؤكد استرداد الدفع أو إعادة المخزون. تُحدّث استردادات باي موب من تأكيداته، وإعادة المخزون تتم يدويًا بعد الفحص.</p>
+      </CardBody>
+    </Card>
+  );
 }
 
 export function OrderDetailsView({ orderId, crumbLabel }: { orderId: number; crumbLabel: string }) {
   const { user, hydrated } = useAdminAuth();
-  if (!hydrated) return <AdminShell title="تفاصيل الطلب"><p role="status">جارٍ تحميل تفاصيل الطلب…</p></AdminShell>;
+  if (!hydrated) {
+    return (
+      <AdminShell title="تفاصيل الطلب" crumbs={[{ label: "الطلبات", href: "/orders" }, { label: "تحميل" }]}>
+        <FormSkeleton />
+      </AdminShell>
+    );
+  }
   if (!hasErpPermission(user, "orders.read")) {
     return (
-      <AdminShell title="تفاصيل الطلب"
+      <AdminShell
+        title="تفاصيل الطلب"
         crumbs={[{ label: "الطلبات", href: "/orders" }, { label: "غير مصرح" }]}
-        actions={<Link href="/orders" className="btn btn--ghost btn--sm">رجوع للطلبات</Link>}>
+        actions={<Button asChild variant="secondary"><Link href="/orders">رجوع للطلبات</Link></Button>}
+      >
         <ErpForbiddenState message="لا تملكين صلاحية الوصول إلى الطلبات." />
       </AdminShell>
     );
   }
-  return <OrderDetailsContent key={orderId} orderId={orderId} crumbLabel={crumbLabel}
-    canUpdatePaymentStatus={hasErpPermission(user, "orders.update_payment_status")}
-    canUpdateShipping={hasErpPermission(user, "shipping.update_state")} />;
+  return (
+    <OrderDetailsContent
+      key={orderId}
+      orderId={orderId}
+      crumbLabel={crumbLabel}
+      canUpdatePaymentStatus={hasErpPermission(user, "orders.update_payment_status")}
+      canUpdateShipping={hasErpPermission(user, "shipping.update_state")}
+    />
+  );
 }
 
 function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canUpdateShipping }: {
-  orderId: number; crumbLabel: string; canUpdatePaymentStatus: boolean; canUpdateShipping: boolean;
+  orderId: number;
+  crumbLabel: string;
+  canUpdatePaymentStatus: boolean;
+  canUpdateShipping: boolean;
 }) {
   const [order, setOrder] = useState<AdminOrderDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,177 +245,220 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
     }
   }
 
-  const paymentDisplay = order ? orderPaymentDisplay(order) : null;
+  const paymentDisplay = order ? orderPaymentBadge(order) : null;
   const shippingPaymentManaged = Boolean(order?.shipping || order?.shippingQuoteId || (order?.shippingAmountCents ?? 0) > 0);
   const refunded = order?.paymentMethod === "paymob" ? (order.refundedAmountCents ?? 0) : 0;
   const savings = order?.items.reduce((sum, item) => sum + Math.max(0,
     Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 100) - Math.round(item.unitPrice * 100)) * item.qty, 0) ?? 0;
 
   return (
-    <AdminShell title="تفاصيل الطلب"
+    <AdminShell
+      title="تفاصيل الطلب"
       crumbs={[{ label: "الطلبات", href: "/orders" }, { label: order?.orderCode ?? crumbLabel }]}
-      actions={<Link href="/orders" className="btn btn--ghost btn--sm">رجوع للطلبات</Link>}>
+      actions={<Button asChild variant="secondary"><Link href="/orders">رجوع للطلبات</Link></Button>}
+    >
       {loading ? (
-        <div className="card state-note state-note--lg state-note--muted" role="status">جارٍ تحميل تفاصيل الطلب…</div>
+        <FormSkeleton />
       ) : error ? (
-        <div className="card card--pad-lg stack">
-          <p className="c-error" role="alert">{error}</p>
-          <button className="btn" onClick={() => setReload((value) => value + 1)}>إعادة المحاولة</button>
-        </div>
+        <Card>
+          <CardBody className="grid justify-items-start gap-3 pt-5 sm:pt-6">
+            <Alert tone="danger">{error}</Alert>
+            <Button variant="secondary" onClick={() => setReload((value) => value + 1)}>إعادة المحاولة</Button>
+          </CardBody>
+        </Card>
       ) : !order ? (
-        <div className="card state-note state-note--lg state-note--muted">لا يمكن العثور على هذا الطلب.</div>
+        <Card>
+          <EmptyState icon={<PackageOpen />} title="لا يمكن العثور على هذا الطلب" />
+        </Card>
       ) : (
-        <div className="order-details">
-          <header className="order-overview">
-            <div>
-              <p className="order-overview__label">كود الطلب</p>
-              <h2 className="order-overview__code" dir="ltr">{order.orderCode}</h2>
-              <p className="order-overview__date"><OrderDate value={order.createdAt} /></p>
-            </div>
-            <div className="order-overview__status">
-              <span className={paymentDisplay?.chip}>{paymentDisplay?.label}</span>
-              <span className="muted">{order.paymentMethod === "paymob" ? "دفع إلكتروني عبر باي موب" : "الدفع عند الاستلام"}</span>
-            </div>
-          </header>
+        <div className="grid gap-5">
+          <Card>
+            <CardBody className="flex flex-wrap items-center justify-between gap-4 pt-5 sm:pt-6">
+              <div className="grid gap-1">
+                <span className="text-sm text-text-muted">كود الطلب</span>
+                <span className="num text-xl font-bold text-text-strong" dir="ltr">{order.orderCode}</span>
+                <span className="text-sm text-text-muted"><OrderDate value={order.createdAt} /></span>
+              </div>
+              <div className="grid justify-items-end gap-1.5">
+                <Badge tone={paymentDisplay?.tone}>{paymentDisplay?.label}</Badge>
+                <span className="text-sm text-text-muted">{order.paymentMethod === "paymob" ? "دفع إلكتروني عبر باي موب" : "الدفع عند الاستلام"}</span>
+              </div>
+            </CardBody>
+          </Card>
 
-          <div className="order-detail-layout">
-            <div className="order-detail-main">
-              <section className="card" aria-labelledby="order-items-heading">
-                <div className="card__head">
-                  <h3 id="order-items-heading" className="card__title">عناصر الطلب</h3>
-                  <span className="muted">{order.items.length} عنصر / {order.items.reduce((sum, item) => sum + item.qty, 0)} إجمالي الكميات</span>
-                </div>
-                <div className="table-outer">
-                  <table className="table order-items-table">
-                    <thead><tr>
-                      <th scope="col">العنصر</th>
-                      <th scope="col">الكمية</th>
-                      <th scope="col">سعر الوحدة</th>
-                      <th scope="col">الإجمالي</th>
-                    </tr></thead>
-                    <tbody>
-                      {order.items.map((item) => (
-                        <tr key={item.id}>
-                          <td>
-                            <span className="order-item__type">{item.itemType === "offer" ? "عرض" : item.itemType === "collection" ? "مجموعة" : "منتج"}</span>
-                            <div className="order-item__name">{item.snapshotNameAr || item.snapshotNameEn || "عنصر غير مسمى"}</div>
-                            {item.snapshotNameEn && item.snapshotNameAr && <div className="muted cell-subline" dir="auto">{item.snapshotNameEn}</div>}
-                            {item.snapshotSizeLabel && <div className="order-item__size" dir="auto">{item.snapshotSizeLabel}</div>}
-                          </td>
-                          <td><span className="order-item__quantity">{item.qty}</span></td>
-                          <td className="order-money">
-                            {item.snapshotBaseUnitPrice != null && item.snapshotBaseUnitPrice > item.unitPrice && (
-                              <del className="order-item__base-price" aria-label="سعر الوحدة قبل الخصم">{formatOrderAmount(item.snapshotBaseUnitPrice)}</del>
-                            )}
-                            {formatOrderAmount(item.unitPrice)}
-                          </td>
-                          <td className="order-money fw-700">{formatOrderAmount(item.lineTotal)}</td>
-                        </tr>
-                      ))}
-                      {order.items.length === 0 && <tr><td colSpan={4} className="state-note">لا توجد عناصر مسجلة لهذا الطلب.</td></tr>}
-                    </tbody>
-                  </table>
-                </div>
-                <section className="order-amounts" aria-label="ملخص المبالغ">
-                  <dl>
-                    {savings > 0 && <Detail label="التوفير على المنتجات"><span className="order-money">{formatOrderAmount(savings / 100)}</span></Detail>}
-                    <Detail label="إجمالي الطلب"><strong className="order-money">{formatOrderAmount(order.totalAmount)}</strong></Detail>
-                    {refunded > 0 && <>
-                      <Detail label="المبلغ المسترد"><span className="order-money">{formatOrderAmount(refunded / 100)}</span></Detail>
-                      <Detail label="الصافي بعد الاسترداد"><strong className="order-money">{formatOrderAmount((Math.round(order.totalAmount * 100) - refunded) / 100)}</strong></Detail>
-                    </>}
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="grid gap-5">
+              <Card className="overflow-hidden">
+                <CardHeader
+                  title="عناصر الطلب"
+                  description={`${order.items.length} عنصر / ${order.items.reduce((sum, item) => sum + item.qty, 0)} إجمالي الكميات`}
+                />
+                <Table>
+                  <THead>
+                    <tr>
+                      <TH>العنصر</TH>
+                      <TH>الكمية</TH>
+                      <TH>سعر الوحدة</TH>
+                      <TH>الإجمالي</TH>
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {order.items.map((item) => (
+                      <TR key={item.id}>
+                        <TD data-cell="lead">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <Badge tone="nude" swatch={false}>{itemTypeLabels[item.itemType]}</Badge>
+                            <span className="text-text-strong">{item.snapshotNameAr || item.snapshotNameEn || "عنصر غير مسمى"}</span>
+                          </div>
+                          {item.snapshotNameEn && item.snapshotNameAr ? <p dir="auto" className="mt-0.5 text-sm text-text-muted">{item.snapshotNameEn}</p> : null}
+                          {item.snapshotSizeLabel ? <p dir="auto" className="text-sm text-text-muted">{item.snapshotSizeLabel}</p> : null}
+                        </TD>
+                        <TD data-label="الكمية" className="num whitespace-nowrap text-text-2">{item.qty}</TD>
+                        <TD data-label="سعر الوحدة" className="whitespace-nowrap">
+                          {item.snapshotBaseUnitPrice != null && item.snapshotBaseUnitPrice > item.unitPrice ? (
+                            <del className="num me-2 text-text-muted">{formatMoney(item.snapshotBaseUnitPrice)}</del>
+                          ) : null}
+                          <span className="num text-text-strong">{formatMoney(item.unitPrice)}</span>
+                        </TD>
+                        <TD data-label="الإجمالي" className="num whitespace-nowrap font-bold text-text-strong">{formatMoney(item.lineTotal)}</TD>
+                      </TR>
+                    ))}
+                    {order.items.length === 0 ? <TableState colSpan={4}><p className="py-6 text-center text-sm text-text-muted">لا توجد عناصر مسجلة لهذا الطلب.</p></TableState> : null}
+                  </TBody>
+                </Table>
+                <div className="border-t border-line px-5 py-4 sm:px-6">
+                  <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                    {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 100)}</span></Detail> : null}
+                    <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>
+                    {refunded > 0 ? (
+                      <>
+                        <Detail label="المبلغ المسترد"><span className="num">{formatMoney(refunded / 100)}</span></Detail>
+                        <Detail label="الصافي بعد الاسترداد"><strong className="num">{formatMoney((Math.round(order.totalAmount * 100) - refunded) / 100)}</strong></Detail>
+                      </>
+                    ) : null}
                   </dl>
-                </section>
-              </section>
+                </div>
+              </Card>
 
-              {order.shipping && <ShippingStateDetails shipping={order.shipping} />}
-              {order.shipping && <RelatedShipments parcels={order.shipping.relatedShipments ?? []} />}
-              {order.shipping && canUpdateShipping && <ShippingActions orderIds={[order.id]} order={order}
-                onComplete={() => {
-                  setShippingRefreshError(null);
-                  void getStore().fetchOrder(orderId).then(setOrder).catch(() => setShippingRefreshError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب."));
-                }} />}
-              {shippingRefreshError && <p className="c-error" role="alert">{shippingRefreshError}</p>}
+              {order.shipping ? <ShippingStateDetails shipping={order.shipping} /> : null}
+              {order.shipping ? <RelatedShipments parcels={order.shipping.relatedShipments ?? []} /> : null}
+              {order.shipping && canUpdateShipping ? (
+                <ShippingActions
+                  orderIds={[order.id]}
+                  order={order}
+                  onComplete={() => {
+                    setShippingRefreshError(null);
+                    void getStore().fetchOrder(orderId).then(setOrder).catch(() => setShippingRefreshError("تعذر تحميل البيانات المحدثة. أعيدي تحميل الطلب."));
+                  }}
+                />
+              ) : null}
+              {shippingRefreshError ? <Alert tone="danger">{shippingRefreshError}</Alert> : null}
 
-              <section className="card" aria-labelledby="order-payment-heading">
-                <div className="card__head"><h3 id="order-payment-heading" className="card__title">تفاصيل الدفع</h3></div>
-                <div className="order-section-body">
-                  {order.paymentMethod === "paymob" ? <>
-                    <p className="order-note">تُحدّث حالة الدفع تلقائيًا من باي موب. تتم عمليات الاسترداد من لوحة باي موب.</p>
-                    {order.payment ? <dl className="order-fields order-fields--two">
-                      <Detail label="وسيلة الدفع">{order.payment.paymentMethod === "card" ? "بطاقة بنكية" : order.payment.paymentMethod === "wallet" ? "محفظة إلكترونية" : "غير متوفر"}</Detail>
-                      <Detail label="بيئة الدفع"><span className={order.payment.environment === "test" ? "status status--draft" : "status status--active"}>{order.payment.environment === "test" ? "تجريبي" : "فعلي"}</span></Detail>
-                      <Detail label="رقم المعاملة في باي موب"><bdi>{order.payment.paymobTransactionId ?? "غير متوفر"}</bdi></Detail>
-                      <Detail label="رقم الطلب في باي موب"><bdi>{order.payment.paymobOrderId ?? "غير متوفر"}</bdi></Detail>
-                      <Detail label="مرجع الدفع"><bdi>{order.payment.merchantReference}</bdi></Detail>
-                      <Detail label="رقم تكامل الدفع"><bdi>{order.payment.integrationId ?? "غير متوفر"}</bdi></Detail>
-                      <Detail label="رقم محاولة الدفع">{order.payment.attemptNumber}</Detail>
-                      <Detail label="بدء محاولة الدفع"><OrderDate value={order.payment.createdAt} /></Detail>
-                    </dl> : <p className="muted">تفاصيل معاملة باي موب غير متوفرة لهذا الطلب.</p>}
-                  </> : <>
-                    <div className="order-payment-control">
-                      <div className="field">
-                        <label htmlFor="order-payment-status">حالة الدفع عند الاستلام</label>
-                        <select id="order-payment-status" className="select" value={order.paymentStatus}
-                          disabled={!canUpdatePaymentStatus || order.paymentStatus === "denied" || !!order.shipping?.cancellation || saving}
-                          onChange={(event) => { void updatePaymentStatus(event.target.value as PaymentStatus); }}>
-                          {(Object.keys(paymentStatusLabel) as PaymentStatus[]).map((status) => (
-                            <option key={status} value={status} disabled={shippingPaymentManaged && status !== "denied"}>{paymentStatusLabel[status]}</option>
-                          ))}
-                        </select>
+              <Card>
+                <CardHeader title="تفاصيل الدفع" />
+                <CardBody className="grid gap-4 pt-0 sm:pt-0">
+                  {order.paymentMethod === "paymob" ? (
+                    <>
+                      <Alert tone="info">تُحدّث حالة الدفع تلقائيًا من باي موب. تتم عمليات الاسترداد من لوحة باي موب.</Alert>
+                      {order.payment ? (
+                        <DetailGrid>
+                          <Detail label="وسيلة الدفع">{order.payment.paymentMethod === "card" ? "بطاقة بنكية" : order.payment.paymentMethod === "wallet" ? "محفظة إلكترونية" : "غير متوفر"}</Detail>
+                          <Detail label="بيئة الدفع"><Badge tone={order.payment.environment === "test" ? "warning" : "success"}>{order.payment.environment === "test" ? "تجريبي" : "فعلي"}</Badge></Detail>
+                          <Detail label="رقم المعاملة في باي موب"><bdi>{order.payment.paymobTransactionId ?? "غير متوفر"}</bdi></Detail>
+                          <Detail label="رقم الطلب في باي موب"><bdi>{order.payment.paymobOrderId ?? "غير متوفر"}</bdi></Detail>
+                          <Detail label="مرجع الدفع"><bdi>{order.payment.merchantReference}</bdi></Detail>
+                          <Detail label="رقم تكامل الدفع"><bdi>{order.payment.integrationId ?? "غير متوفر"}</bdi></Detail>
+                          <Detail label="رقم محاولة الدفع">{order.payment.attemptNumber}</Detail>
+                          <Detail label="بدء محاولة الدفع"><OrderDate value={order.payment.createdAt} /></Detail>
+                        </DetailGrid>
+                      ) : <p className="text-sm text-text-muted">تفاصيل معاملة باي موب غير متوفرة لهذا الطلب.</p>}
+                    </>
+                  ) : (
+                    <>
+                      <div className="max-w-md">
+                        <Field label="حالة الدفع عند الاستلام" htmlFor="order-payment-status">
+                          <Select
+                            id="order-payment-status"
+                            value={order.paymentStatus}
+                            disabled={!canUpdatePaymentStatus || order.paymentStatus === "denied" || !!order.shipping?.cancellation || saving}
+                            onChange={(event) => { void updatePaymentStatus(event.target.value as PaymentStatus); }}
+                          >
+                            {(Object.keys(paymentStatusLabel) as PaymentStatus[]).map((status) => (
+                              <option key={status} value={status} disabled={shippingPaymentManaged && status !== "denied"}>{paymentStatusLabel[status]}</option>
+                            ))}
+                          </Select>
+                        </Field>
                       </div>
-                      <p className="order-note">{order.paymentStatus === "denied" ? "الطلب مرفوض؛ لا يمكن تغيير حالة الدفع بعد الرفض."
-                        : !canUpdatePaymentStatus ? "لديكِ صلاحية عرض الطلب فقط."
-                          : shippingPaymentManaged ? "تُحدّث حالة الدفع من تحصيل بوسطة. الرفض يحتاج تأكيد الإلغاء وحيازة المخزون."
-                            : "رفض الطلب يعيد الكميات إلى المخزون ويمنع تغيير حالته لاحقًا."}</p>
-                    </div>
-                    <div aria-live="polite">{saving ? <p className="order-note">جارٍ حفظ حالة الدفع…</p> : saved ? <p className="order-note">تم تحديث حالة الدفع.</p> : null}</div>
-                    {saveError && <div className="order-save-error">
-                      <p role="alert">{saveError}</p>
-                      <button className="btn btn--sm" onClick={() => { setSaveError(null); setSaved(false); setReload((value) => value + 1); }}>إعادة تحميل الطلب</button>
-                    </div>}
-                  </>}
-                </div>
-              </section>
-
-              <section className="order-record" aria-labelledby="order-record-heading">
-                <div className="order-record__heading"><h3 id="order-record-heading">بيانات الطلب</h3><span>التوقيت المحلي للقاهرة</span></div>
-                <dl className="order-fields order-fields--two">
-                  <Detail label="رقم الطلب الداخلي"><bdi>#{order.id}</bdi></Detail>
-                  <Detail label="آخر تحديث"><OrderDate value={order.updatedAt} /></Detail>
-                  {order.paymentMethod !== "paymob" && order.paymentStatus === "pending" && order.codExpiresAt && (!order.shipping || order.shipping.processing.untouchedExpiryApplies) && (
-                    <Detail label="مهلة مراجعة الدفع عند الاستلام"><OrderDate value={order.codExpiresAt} /></Detail>
+                      <p className="text-sm text-text-muted">
+                        {order.paymentStatus === "denied" ? "الطلب مرفوض؛ لا يمكن تغيير حالة الدفع بعد الرفض."
+                          : !canUpdatePaymentStatus ? "لديكِ صلاحية عرض الطلب فقط."
+                            : shippingPaymentManaged ? "تُحدّث حالة الدفع من تحصيل بوسطة. الرفض يحتاج تأكيد الإلغاء وحيازة المخزون."
+                              : "رفض الطلب يعيد الكميات إلى المخزون ويمنع تغيير حالته لاحقًا."}
+                      </p>
+                    </>
                   )}
-                </dl>
-              </section>
+                  <div aria-live="polite" className="text-sm text-text-muted">
+                    {saving ? "جارٍ حفظ حالة الدفع…" : saved ? "تم تحديث حالة الدفع." : null}
+                  </div>
+                  {saveError ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p role="alert" className="text-sm text-danger">{saveError}</p>
+                      <Button variant="secondary" size="sm" onClick={() => { setSaveError(null); setSaved(false); setReload((value) => value + 1); }}>إعادة تحميل الطلب</Button>
+                    </div>
+                  ) : null}
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="بيانات الطلب" description="التوقيت المحلي للقاهرة" />
+                <CardBody className="pt-0 sm:pt-0">
+                  <DetailGrid>
+                    <Detail label="رقم الطلب الداخلي"><bdi>#{order.id}</bdi></Detail>
+                    <Detail label="آخر تحديث"><OrderDate value={order.updatedAt} /></Detail>
+                    {order.paymentMethod !== "paymob" && order.paymentStatus === "pending" && order.codExpiresAt && (!order.shipping || order.shipping.processing.untouchedExpiryApplies) ? (
+                      <Detail label="مهلة مراجعة الدفع عند الاستلام"><OrderDate value={order.codExpiresAt} /></Detail>
+                    ) : null}
+                  </DetailGrid>
+                </CardBody>
+              </Card>
             </div>
 
-            <aside className="order-detail-side" aria-label="بيانات العميل والتوصيل">
-              <section className="card" aria-labelledby="order-customer-heading">
-                <div className="card__head"><h3 id="order-customer-heading" className="card__title">بيانات العميل</h3>
-                  <span className="order-customer-type">{order.customerType === "registered" ? "عميل مسجل" : "ضيف"}</span></div>
-                <div className="order-section-body">
-                  <p className="order-customer-name">{order.fullName}</p>
-                  <dl className="order-fields">
-                    <Detail label="رقم الهاتف"><a className="order-contact" dir="ltr" href={`tel:${order.phone}`}>{order.phone}</a></Detail>
-                    <Detail label="البريد الإلكتروني عند الطلب">{order.email ? <a className="order-contact" dir="ltr" href={`mailto:${order.email}`}>{order.email}</a> : "غير متوفر"}</Detail>
-                    {order.customerId != null && <Detail label="رقم حساب العميل"><bdi>#{order.customerId}</bdi></Detail>}
+            <aside className="grid gap-5">
+              <Card>
+                <CardHeader
+                  title="بيانات العميل"
+                  actions={<Badge tone="neutral" swatch={false}>{order.customerType === "registered" ? "عميل مسجل" : "ضيف"}</Badge>}
+                />
+                <CardBody className="grid gap-4 pt-0 sm:pt-0">
+                  <p className="text-base font-medium text-text-strong">{order.fullName}</p>
+                  <dl className="grid gap-4">
+                    <Detail label="رقم الهاتف"><a className="text-text-strong decoration-line-strong underline-offset-4 hover:underline" dir="ltr" href={`tel:${order.phone}`}>{order.phone}</a></Detail>
+                    <Detail label="البريد الإلكتروني عند الطلب">
+                      {order.email ? <a className="text-text-strong decoration-line-strong underline-offset-4 hover:underline" dir="ltr" href={`mailto:${order.email}`}>{order.email}</a> : "غير متوفر"}
+                    </Detail>
+                    {order.customerId != null ? <Detail label="رقم حساب العميل"><bdi>#{order.customerId}</bdi></Detail> : null}
                   </dl>
-                </div>
-              </section>
-              <section className="card" aria-labelledby="order-delivery-heading">
-                <div className="card__head"><h3 id="order-delivery-heading" className="card__title">عنوان التوصيل</h3></div>
-                <dl className="order-fields order-section-body">
-                  <Detail label="المحافظة">{order.governorate}</Detail>
-                  <Detail label="المدينة / المنطقة">{order.cityArea}</Detail>
-                  <Detail label="العنوان">{order.addressLine}</Detail>
-                  <Detail label="المبنى / الشقة">{order.buildingApartment}</Detail>
-                </dl>
-              </section>
-              <section className="order-customer-notes" aria-labelledby="order-notes-heading">
-                <h3 id="order-notes-heading">ملاحظات العميل</h3>
-                <p>{order.notes?.trim() ? order.notes : "لا توجد ملاحظات من العميل."}</p>
-              </section>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="عنوان التوصيل" />
+                <CardBody className="pt-0 sm:pt-0">
+                  <dl className="grid gap-4">
+                    <Detail label="المحافظة">{order.governorate}</Detail>
+                    <Detail label="المدينة / المنطقة">{order.cityArea}</Detail>
+                    <Detail label="العنوان">{order.addressLine}</Detail>
+                    <Detail label="المبنى / الشقة">{order.buildingApartment}</Detail>
+                  </dl>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="ملاحظات العميل" />
+                <CardBody className="pt-0 sm:pt-0">
+                  <p className="text-base text-text-2">{order.notes?.trim() ? order.notes : "لا توجد ملاحظات من العميل."}</p>
+                </CardBody>
+              </Card>
             </aside>
           </div>
         </div>
