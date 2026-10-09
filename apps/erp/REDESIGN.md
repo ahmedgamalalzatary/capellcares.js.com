@@ -32,9 +32,10 @@ pass: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 | 7 | Store content | advices (list/new/edit) · shop media · reviews | **Done — awaiting review** |
 | 8 | Admin | dashboard · staff (list/new/edit) · trash · login | **Done — awaiting review** |
 
-**End of project:** delete `src/styles/legacy.css`, `app/discounts/discounts.css`, `components/orders/order-details.css`,
-`components/ui/icons.tsx` usages; fix tests; write `DESIGN.md`; finish review + documenter agents **only with explicit
-permission**.
+**End of project — done:** legacy CSS removed (`styles/legacy.css`, `app/discounts/discounts.css`,
+`components/orders/order-details.css`) along with `ui/icons.tsx`, `image-upload`, `entity-avatar` and
+`admin-status-badge`; the test suite is migrated to the redesign and **49/49 files pass** (`NODE_ENV=test`,
+`tsc` green); `DESIGN.md` written. The review/documenter agents still need explicit permission to run.
 
 Group 1 leftovers to do before/at the start of Group 2:
 - Phone (390) + dark-mode check of the product wizard and the discount page (not re-checked after the last changes).
