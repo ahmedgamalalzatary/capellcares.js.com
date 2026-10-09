@@ -44,6 +44,8 @@ export interface UseOfferFormResult {
   setArHoverImagePath: (value: string) => void;
   enHoverImagePath: string;
   setEnHoverImagePath: (value: string) => void;
+  status: "active" | "inactive";
+  setStatus: (value: "active" | "inactive") => void;
   categoryId: number | null;
   setCategoryId: (value: number | null) => void;
   rows: OfferFormRow[];
@@ -64,7 +66,7 @@ export interface UseOfferFormResult {
   removeRow: (index: number) => void;
   moveRow: (index: number, direction: -1 | 1) => void;
   updateRow: (index: number, patch: Partial<OfferFormRow>) => void;
-  save: () => Promise<boolean>;
+  save: (options?: { asStatus?: "active" | "inactive" }) => Promise<boolean>;
   requirements: OfferRequirement[];
   checkRequirements: (keys: string[]) => boolean;
   missing: OfferRequirement[];

@@ -30,6 +30,11 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
+const STATUS_OPTIONS = [
+  { value: "inactive", label: "مسودة", hint: "مخفي عن المتجر", tone: "neutral" },
+  { value: "active", label: "نشط", hint: "يظهر في المتجر", tone: "success" }
+] as const;
+
 /** Same two-column grid on every step so fields line up in rows and columns. */
 const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
 
@@ -49,6 +54,7 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
     media, setMedia,
     arHoverImagePath, setArHoverImagePath,
     enHoverImagePath, setEnHoverImagePath,
+    status, setStatus,
     categoryId, setCategoryId,
     rows, relatedItems, setRelatedItems,
     errors, relatedSelectableOptions, computed,
@@ -80,15 +86,16 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
     goTo(step + 1);
   };
 
-  const submit = async () => {
+  const submit = async (asStatus?: "inactive") => {
     setSaving(true);
-    const didSave = await save();
+    const didSave = await save(asStatus ? { asStatus } : {});
     setSaving(false);
     if (didSave) {
       router.push("/offers");
       return;
     }
-    const target = missing[0]?.target;
+    const publishing = (asStatus ?? status) === "active";
+    const target = publishing ? missing[0]?.target : !nameAr.trim() && !nameEn.trim() ? "basics" : undefined;
     if (target) goTo(stepIndex(target as StepId));
   };
 
@@ -102,6 +109,7 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
 
   const current = STEPS[step]!;
   const isLast = step === STEPS.length - 1;
+  const primaryLabel = editing ? "حفظ التعديلات" : status === "active" ? "نشر العرض" : "حفظ العرض";
 
   const stepContent: Record<StepId, ReactNode> = {
     basics: (
@@ -116,13 +124,15 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
             enError={errors.nameEn}
           />
         </div>
-        <Field label="القسم" htmlFor="offer-category" error={errors.categoryId}>
-          <CategoryPicker id="offer-category" categories={rootCategories} value={categoryId} onChange={setCategoryId} />
-        </Field>
+        <div className={FIELD_GRID}>
+          <Field label="القسم" htmlFor="offer-category" error={errors.categoryId}>
+            <CategoryPicker id="offer-category" categories={rootCategories} value={categoryId} onChange={setCategoryId} />
+          </Field>
+          <Field label="رابط فيديو يوتيوب" htmlFor="offer-youtube" hint="اختياري.">
+            <Input id="offer-youtube" dir="ltr" inputMode="url" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="https://youtube.com/…" />
+          </Field>
+        </div>
         <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
-        <Field label="رابط فيديو يوتيوب" htmlFor="offer-youtube" hint="اختياري.">
-          <Input id="offer-youtube" dir="ltr" inputMode="url" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} placeholder="https://youtube.com/…" />
-        </Field>
       </div>
     ),
     bundle: (
@@ -144,7 +154,16 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
               <p className="max-w-sm text-sm text-text-muted">اضغطي «إضافة منتج» لاختيار أول منتج في الباقة.</p>
             </div>
           ) : (
-            <ol className="grid gap-2">
+            <>
+              <div aria-hidden className="hidden gap-3 px-0.5 text-xs font-medium text-text-muted @2xl:grid @2xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_5.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem]">
+                <span>المنتج</span>
+                <span>المقاس</span>
+                <span>الكمية</span>
+                <span>السعر الفردي</span>
+                <span>المجموع</span>
+                <span />
+              </div>
+              <ol className="grid gap-2">
               {rows.map((row, index) => {
                 const product = products.find((candidate) => candidate.id === row.productId);
                 const variants = product?.variants ?? [];
@@ -217,6 +236,7 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
                 );
               })}
             </ol>
+            </>
           )}
         </section>
 
@@ -234,24 +254,20 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
               onChange={(event) => setPrice(Number(event.target.value))}
             />
           </Field>
+          <div className="grid content-start gap-1.5">
+            <span className="text-sm font-medium text-text-2">ملخّص الحساب</span>
+            <div className="grid gap-1.5 rounded-control bg-sunken px-3 py-2.5 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">السعر الأصلي</span>
+                <span className="num text-text-2">{formatMoney(computed.originalTotal)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-muted">التوفير</span>
+                <span className={cn("num font-medium", savings > 0 ? "text-success" : "text-text-muted")}>{formatMoney(Math.max(0, savings))}</span>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <section className="grid gap-3 rounded-well bg-sunken p-4 @lg:grid-cols-3">
-          <div className="grid gap-1">
-            <span className="text-sm text-text-muted">السعر الأصلي</span>
-            <span className="num text-base text-text-2">{formatMoney(computed.originalTotal)}</span>
-          </div>
-          <div className="grid gap-1">
-            <span className="text-sm text-text-muted">سعر الباقة</span>
-            <span className="num text-base font-medium text-text-strong">{formatMoney(Number(price || 0))}</span>
-          </div>
-          <div className="grid gap-1">
-            <span className="text-sm text-text-muted">التوفير</span>
-            <span className={cn("num text-base font-bold", savings > 0 ? "text-success" : "text-text-muted")}>
-              {formatMoney(Math.max(0, savings))}
-            </span>
-          </div>
-        </section>
         {savings < 0 ? <Alert tone="warning">سعر الباقة أعلى من السعر الأصلي لمجموع المنتجات.</Alert> : null}
       </div>
     ),
@@ -278,40 +294,80 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
       </div>
     ),
     related: (
-      <div className="grid gap-5">
-        {!relatedItemsAvailable ? (
-          <Alert tone="warning">
-            تعذر تحميل العناصر المرتبطة الحالية، لذلك أُوقف هذا القسم مؤقتًا حتى لا تُحذف. يمكنك تعديل باقي البيانات وحفظها.
-          </Alert>
-        ) : null}
-        <RelatedItemsField
-          value={relatedItems ?? []}
-          options={relatedSelectableOptions}
-          onChange={setRelatedItems}
-          disabled={!relatedItemsAvailable}
-        />
-        {canPublish ? (
-          <p className="flex items-center gap-2 text-sm text-text-2">
-            <Swatch tone="success" /> كل بيانات العرض مكتملة.
-          </p>
-        ) : (
-          <div className="grid gap-1.5 border-t border-line pt-4">
-            <p className="text-sm text-text-2">مطلوب قبل الحفظ:</p>
-            <ul className="flex flex-wrap gap-1.5">
-              {missing.map((requirement) => (
-                <li key={requirement.key}>
-                  <button
-                    type="button"
-                    onClick={() => goTo(stepIndex(requirement.target as StepId))}
-                    className="inline-flex h-7 items-center rounded-full bg-warning-soft px-2.5 text-xs font-medium text-warning transition-colors hover:bg-warning-soft/70 pointer-coarse:h-9"
-                  >
-                    {requirement.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
+      <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
+        <section className="grid content-start gap-3">
+          <div>
+            <h3 className="text-base font-bold text-text-strong">العناصر المرتبطة</h3>
+            <p className="text-sm text-text-muted">منتجات أو عروض أو مجموعات تُقترح مع هذا العرض.</p>
           </div>
-        )}
+          {!relatedItemsAvailable ? (
+            <Alert tone="warning">
+              تعذر تحميل العناصر المرتبطة الحالية، لذلك أُوقف هذا القسم مؤقتًا حتى لا تُحذف. يمكنك تعديل باقي البيانات وحفظها.
+            </Alert>
+          ) : null}
+          <RelatedItemsField
+            value={relatedItems ?? []}
+            options={relatedSelectableOptions}
+            onChange={setRelatedItems}
+            disabled={!relatedItemsAvailable}
+          />
+        </section>
+        <section className="grid content-start gap-4">
+          <div>
+            <h3 className="text-base font-bold text-text-strong">حالة العرض</h3>
+            <p className="text-sm text-text-muted">المسودة مخفية عن المتجر حتى تنشريها.</p>
+          </div>
+          <fieldset className="grid grid-cols-2 gap-2">
+            <legend className="sr-only">حالة العرض</legend>
+            {STATUS_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={cn(
+                  "grid cursor-pointer gap-0.5 rounded-control bg-surface p-3 shadow-[0_0_0_1px_var(--line-control)] transition-shadow",
+                  "hover:shadow-[0_0_0_1px_var(--line-strong)]",
+                  "has-checked:bg-sunken has-checked:shadow-[0_0_0_2px_var(--sand-900)]",
+                  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="offer-status"
+                  value={option.value}
+                  className="sr-only"
+                  checked={status === option.value}
+                  onChange={() => setStatus(option.value)}
+                />
+                <span className="flex items-center gap-2 text-base font-medium text-text-strong">
+                  <Swatch tone={option.tone} />
+                  {option.label}
+                </span>
+                <span className="text-xs text-text-muted">{option.hint}</span>
+              </label>
+            ))}
+          </fieldset>
+          {canPublish ? (
+            <p className="flex items-center gap-2 text-sm text-text-2">
+              <Swatch tone="success" /> كل بيانات النشر مكتملة.
+            </p>
+          ) : (
+            <div className="grid gap-1.5">
+              <p className="text-sm text-text-2">مطلوب قبل النشر:</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {missing.map((requirement) => (
+                  <li key={requirement.key}>
+                    <button
+                      type="button"
+                      onClick={() => goTo(stepIndex(requirement.target as StepId))}
+                      className="inline-flex h-7 items-center rounded-full bg-warning-soft px-2.5 text-xs font-medium text-warning transition-colors hover:bg-warning-soft/70 pointer-coarse:h-9"
+                    >
+                      {requirement.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
       </div>
     )
   };
@@ -336,9 +392,14 @@ export function OfferForm({ mode, initial, products, categories, relatedOptions 
                 التالي <ArrowLeft />
               </Button>
             ) : null}
+            {!editing && !isLast ? (
+              <Button variant="ghost" className="underline underline-offset-4" disabled={saving} onClick={() => { void submit("inactive"); }}>
+                حفظ كمسودة
+              </Button>
+            ) : null}
             {editing || isLast ? (
               <Button variant="primary" disabled={saving} onClick={() => { void submit(); }}>
-                {saving ? "جارٍ الحفظ…" : editing ? "حفظ التعديلات" : "حفظ العرض"}
+                {saving ? "جارٍ الحفظ…" : primaryLabel}
               </Button>
             ) : null}
           </div>

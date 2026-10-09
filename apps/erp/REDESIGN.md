@@ -24,9 +24,9 @@ pass: `cd apps/erp && npx tsc -p tsconfig.json --noEmit`.
 | # | Group | Pages | State |
 |---|---|---|---|
 | 1 | Products | list · new · edit · product discount | **Done, approved** ("more than happy") |
-| 2 | Categories | list · new · edit | **Done — awaiting review** (tree kept, `المستوى` filter) |
-| 3 | Offers | list · new · edit | **Done — awaiting review** (4-step wizard) |
-| 4 | Collections | list · new · edit | todo |
+| 2 | Categories | list · new · edit | **Done — awaiting review** (tree list; 2-step wizard form) |
+| 3 | Offers | list · new · edit | **Done — awaiting review** (4-step wizard; status + draft) |
+| 4 | Collections | list · new · edit | **Done — awaiting review** (4-step wizard; status + draft) |
 | 5 | Discounts | discounts | todo |
 | 6 | Orders & sales | orders · order detail · reconciliation · shipping · sales | todo |
 | 7 | Store content | advices (list/new/edit) · shop media · reviews | todo |

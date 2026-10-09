@@ -7,7 +7,16 @@ import { showErrorToast } from "@/lib/errors";
 import { getDescendantCategoryIds } from "@/lib/category-tree";
 import { slugifyFormName } from "../../components/forms/form-slug";
 import { useHoverImageFields } from "./use-hover-image-fields";
-import type { CollectionFormProps, CollectionFormRow, UseCollectionFormResult } from "../../types/forms/collection-form.types";
+import type { CollectionFormProps, CollectionFormRow, CollectionRequirement, UseCollectionFormResult } from "../../types/forms/collection-form.types";
+
+const REQUIREMENT_ERROR: Record<string, string> = {
+  nameAr: "أدخلي الاسم بالعربية",
+  nameEn: "أدخلي الاسم بالإنجليزية",
+  categoryId: "اختاري قسمًا",
+  price: "أدخلي سعر المجموعة",
+  rows: "أضيفي منتجين مختلفين على الأقل",
+  image: "أضيفي صورة المجموعة"
+};
 
 export function useCollectionForm({
   initial,
@@ -27,6 +36,7 @@ export function useCollectionForm({
       : [])
   );
   const { arHoverImagePath, setArHoverImagePath, enHoverImagePath, setEnHoverImagePath, hoverImagePayload } = useHoverImageFields(initial);
+  const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<CollectionFormRow[]>(() => {
     if (!initial) return [];
@@ -80,34 +90,80 @@ export function useCollectionForm({
     });
   };
 
-  const save = async () => {
-    const nextErrors: Record<string, string> = {};
-    const distinctVariantIds = new Set(rows.map((row) => row.variantId).filter(Boolean));
-
-    if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
-    if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
-    if (!categoryId) nextErrors.categoryId = "اختاري القسم";
-    if (price <= 0) nextErrors.price = "أدخلي سعر المجموعة";
-    if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
-    const rowsComplete = !rows.some((row) => !row.productId || !row.variantId || row.qty <= 0);
-    if (rows.length < 2 || distinctVariantIds.size < 2) {
-      nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
-    } else if (!rowsComplete) {
-      nextErrors.rows = "أكملي بيانات كل عنصر";
-    } else if (distinctVariantIds.size !== rows.length) {
-      nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
-    } else if (rows.some((row) => {
-      const product = products.find((candidate) => candidate.id === row.productId);
-      return !product || !getDescendantCategoryIds(categories, categoryId as number).has(product.categoryId);
-    })) {
-      nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
+  const rowsValid = useMemo(() => {
+    if (rows.length < 2) return false;
+    if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) return false;
+    const distinctVariants = new Set(rows.map((row) => row.variantId).filter(Boolean));
+    if (distinctVariants.size < 2 || distinctVariants.size !== rows.length) return false;
+    if (categoryId) {
+      const allowed = getDescendantCategoryIds(categories, categoryId);
+      return rows.every((row) => {
+        const product = products.find((candidate) => candidate.id === row.productId);
+        return Boolean(product) && allowed.has(product!.categoryId);
+      });
     }
+    return true;
+  }, [rows, categoryId, products, categories]);
 
+  const requirements: CollectionRequirement[] = useMemo(() => [
+    { key: "nameAr", label: "الاسم بالعربية", target: "basics", ok: nameAr.trim().length > 0 },
+    { key: "nameEn", label: "الاسم بالإنجليزية", target: "basics", ok: nameEn.trim().length > 0 },
+    { key: "categoryId", label: "اختيار قسم", target: "basics", ok: !!categoryId },
+    { key: "price", label: "سعر المجموعة", target: "bundle", ok: price > 0 },
+    { key: "rows", label: "عناصر المجموعة", target: "bundle", ok: rowsValid },
+    { key: "image", label: "صورة المجموعة", target: "media", ok: media.some((item) => item.type === "image") }
+  ], [nameAr, nameEn, categoryId, price, rowsValid, media]);
+
+  /** Marks the given requirements' fields as errors when unmet; returns true when all are met. */
+  const checkRequirements = (keys: string[]) => {
+    const failing = requirements.filter((requirement) => keys.includes(requirement.key) && !requirement.ok);
+    setErrors((current) => {
+      const next = { ...current };
+      for (const key of keys) delete next[key];
+      for (const requirement of failing) next[requirement.key] = REQUIREMENT_ERROR[requirement.key] ?? "مطلوب";
+      return next;
+    });
+    return failing.length === 0;
+  };
+
+  const missing = requirements.filter((requirement) => !requirement.ok);
+  const canPublish = missing.length === 0;
+
+  const validate = (effectiveStatus: Collection["status"]) => {
+    const nextErrors: Record<string, string> = {};
+    if (effectiveStatus === "active") {
+      const distinctVariantIds = new Set(rows.map((row) => row.variantId).filter(Boolean));
+      if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
+      if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
+      if (!categoryId) nextErrors.categoryId = "اختاري القسم";
+      if (price <= 0) nextErrors.price = "أدخلي سعر المجموعة";
+      if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
+      const rowsComplete = !rows.some((row) => !row.productId || !row.variantId || row.qty <= 0);
+      if (rows.length < 2 || distinctVariantIds.size < 2) {
+        nextErrors.rows = "أضيفي منتجين مختلفين على الأقل";
+      } else if (!rowsComplete) {
+        nextErrors.rows = "أكملي بيانات كل عنصر";
+      } else if (distinctVariantIds.size !== rows.length) {
+        nextErrors.rows = "لا يمكن تكرار نفس المقاس داخل المجموعة";
+      } else if (categoryId && rows.some((row) => {
+        const product = products.find((candidate) => candidate.id === row.productId);
+        return !product || !getDescendantCategoryIds(categories, categoryId).has(product.categoryId);
+      })) {
+        nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
+      }
+    } else if (!nameAr.trim() && !nameEn.trim()) {
+      nextErrors.nameAr = "أدخلي اسم المجموعة بالعربية أو الإنجليزية على الأقل";
+    }
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  /** Saves with the chosen status, or `asStatus` for this save only (e.g. saving a draft from any step). */
+  const save = async ({ asStatus }: { asStatus?: Collection["status"] } = {}) => {
+    const effectiveStatus = asStatus ?? status;
+    if (!validate(effectiveStatus)) {
       return false;
     }
-
     const safeCategoryId = categoryId as number;
     const collection: Omit<Collection, "id"> & { id?: number } = {
       id: initial?.id,
@@ -126,7 +182,7 @@ export function useCollectionForm({
       categoryId: safeCategoryId,
       items: rows.map((row): CollectionItem => ({ id: row.id, variantId: row.variantId, qty: row.qty })),
       stock: initial?.stock ?? 0,
-      status: initial?.status ?? "active",
+      status: effectiveStatus,
       visibility: initial?.visibility ?? "visible",
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -164,6 +220,8 @@ export function useCollectionForm({
     setArHoverImagePath,
     enHoverImagePath,
     setEnHoverImagePath,
+    status,
+    setStatus,
     categoryId,
     setCategoryId: (value) => {
       setCategoryId(value);
@@ -184,6 +242,10 @@ export function useCollectionForm({
     removeRow,
     moveRow,
     updateRow,
-    save
+    save,
+    requirements,
+    checkRequirements,
+    missing,
+    canPublish
   };
 }

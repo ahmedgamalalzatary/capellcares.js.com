@@ -36,6 +36,7 @@ export function useOfferForm({
       : [])
   );
   const { arHoverImagePath, setArHoverImagePath, enHoverImagePath, setEnHoverImagePath, hoverImagePayload } = useHoverImageFields(initial);
+  const [status, setStatus] = useState<"active" | "inactive">(initial?.status ?? "inactive");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
   const [rows, setRows] = useState<OfferFormRow[]>(() => {
     if (!initial) {
@@ -134,28 +135,37 @@ export function useOfferForm({
   const missing = requirements.filter((requirement) => !requirement.ok);
   const canPublish = missing.length === 0;
 
-  const save = async () => {
+  const validate = (effectiveStatus: Offer["status"]) => {
     const nextErrors: Record<string, string> = {};
-    if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
-    if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
-    if (!categoryId) nextErrors.categoryId = "اختاري القسم";
-    if (price <= 0) nextErrors.price = "أدخلي سعرًا للعرض";
-    if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
-    if (rows.length === 0) {
-      nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
-    } else if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) {
-      nextErrors.rows = "أكملي بيانات كل عنصر";
-    } else if (categoryId && rows.some((row) => {
-      const product = products.find((candidate) => candidate.id === row.productId);
-      return !product || !getDescendantCategoryIds(categories, categoryId).has(product.categoryId);
-    })) {
-      nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
+    if (effectiveStatus === "active") {
+      if (!nameAr.trim()) nextErrors.nameAr = "مطلوب";
+      if (!nameEn.trim()) nextErrors.nameEn = "مطلوب";
+      if (!categoryId) nextErrors.categoryId = "اختاري القسم";
+      if (price <= 0) nextErrors.price = "أدخلي سعرًا للعرض";
+      if (!media.some((item) => item.type === "image")) nextErrors.image = "أضيفي صورة";
+      if (rows.length === 0) {
+        nextErrors.rows = "أضيفي منتجًا واحدًا على الأقل";
+      } else if (rows.some((row) => !row.productId || !row.variantId || row.qty <= 0)) {
+        nextErrors.rows = "أكملي بيانات كل عنصر";
+      } else if (categoryId && rows.some((row) => {
+        const product = products.find((candidate) => candidate.id === row.productId);
+        return !product || !getDescendantCategoryIds(categories, categoryId).has(product.categoryId);
+      })) {
+        nextErrors.rows = "كل العناصر يجب أن تنتمي إلى القسم المختار أو أقسامه الفرعية";
+      }
+    } else if (!nameAr.trim() && !nameEn.trim()) {
+      nextErrors.nameAr = "أدخلي اسم العرض بالعربية أو الإنجليزية على الأقل";
     }
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  /** Saves with the chosen status, or `asStatus` for this save only (e.g. saving a draft from any step). */
+  const save = async ({ asStatus }: { asStatus?: Offer["status"] } = {}) => {
+    const effectiveStatus = asStatus ?? status;
+    if (!validate(effectiveStatus)) {
       return false;
     }
-
     const id = initial?.id;
     const slug = initial?.slug ?? slugifyFormName(nameEn);
     const items: OfferItem[] = rows.map((row) => ({ id: row.id, variantId: row.variantId, qty: row.qty }));
@@ -176,7 +186,7 @@ export function useOfferForm({
       categoryId: categoryId as number,
       stock: initial?.stock ?? 0,
       items,
-      status: initial?.status ?? "active",
+      status: effectiveStatus,
       visibility: initial?.visibility ?? "visible",
       createdAt: initial?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -213,6 +223,8 @@ export function useOfferForm({
     setArHoverImagePath,
     enHoverImagePath,
     setEnHoverImagePath,
+    status,
+    setStatus,
     categoryId,
     // Changing the category clears any row whose product falls outside the new subtree, so an offer can never keep a member from another category.
     setCategoryId: (value) => {

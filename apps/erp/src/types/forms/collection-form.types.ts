@@ -17,6 +17,14 @@ export interface CollectionFormRow {
   qty: number;
 }
 
+/** A thing the collection needs before it can be saved live; `target` is the wizard step that owns it. */
+export interface CollectionRequirement {
+  key: string;
+  label: string;
+  target: string;
+  ok: boolean;
+}
+
 export interface UseCollectionFormResult {
   nameAr: string;
   setNameAr: (value: string) => void;
@@ -36,6 +44,8 @@ export interface UseCollectionFormResult {
   setArHoverImagePath: (value: string) => void;
   enHoverImagePath: string;
   setEnHoverImagePath: (value: string) => void;
+  status: "active" | "inactive";
+  setStatus: (value: "active" | "inactive") => void;
   categoryId: number | null;
   setCategoryId: (value: number | null) => void;
   rows: CollectionFormRow[];
@@ -48,5 +58,9 @@ export interface UseCollectionFormResult {
   removeRow: (index: number) => void;
   moveRow: (index: number, direction: -1 | 1) => void;
   updateRow: (index: number, patch: Partial<CollectionFormRow>) => void;
-  save: () => Promise<boolean>;
+  save: (options?: { asStatus?: "active" | "inactive" }) => Promise<boolean>;
+  requirements: CollectionRequirement[];
+  checkRequirements: (keys: string[]) => boolean;
+  missing: CollectionRequirement[];
+  canPublish: boolean;
 }
