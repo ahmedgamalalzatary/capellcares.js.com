@@ -1,8 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 
-export function errorMiddleware(error: unknown, _req: Request, res: Response, _next: NextFunction) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Express only treats 4-argument handlers as error middleware.
+export function errorMiddleware(error: unknown, req: Request, res: Response, _next: NextFunction) {
   if (process.env.NODE_ENV !== "test") {
-    console.error("Unhandled API error", error instanceof Error ? error.name : "unknown");
+    // Full error (message + stack) stays in server logs only; the query string is dropped so tokens never reach the log.
+    console.error(`Unhandled API error on ${req.method} ${req.originalUrl.split("?")[0]}`, error);
   }
   const statusCode = 500;
   res.status(statusCode).json({ error: "Internal server error" });

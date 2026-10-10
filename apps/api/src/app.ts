@@ -11,7 +11,8 @@ export const app = express();
 
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
-app.use(cors({ origin: resolveAllowedOrigins(), credentials: true }));
+// maxAge lets browsers reuse a preflight answer (Firefox up to 24h, Chromium caps at 2h) instead of sending OPTIONS before every ERP call.
+app.use(cors({ origin: resolveAllowedOrigins(), credentials: true, maxAge: 86_400 }));
 app.use(bostaWebhookRoutes);
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());

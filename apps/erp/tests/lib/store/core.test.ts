@@ -312,12 +312,56 @@ describe("ERP store", () => {
 
     expect(store.products[0]?.variants[0]?.stock).toBe(2);
 
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 61_000);
     window.dispatchEvent(new Event("focus"));
     await flush();
 
     expect(store.products[0]?.variants[0]?.stock).toBe(0);
     // One focus event refetches once through the current store only; the products endpoint being fetched exactly twice proves no stale listener added a third.
     expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(2);
+  });
+
+  it("skips the focus refetch when the data was loaded less than a minute ago", async () => {
+    apiGet.mockImplementation(async (path: string) => (
+      path === "/api/erp/sales"
+        ? { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] }
+        : { items: [] }
+    ));
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 59_000);
+    window.dispatchEvent(new Event("focus"));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await flush();
+
+    expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(1);
+  });
+
+  it("does not refetch when the session silently renews the token for the same user", async () => {
+    apiGet.mockImplementation(async (path: string) => (
+      path === "/api/erp/sales"
+        ? { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] }
+        : { items: [] }
+    ));
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    store.ensureLoaded();
+    await flush();
+
+    // refreshAdminSession sets the new token, then the same user as a fresh object.
+    authTokenListeners.forEach((listener) => listener("renewed-access-token"));
+    authUserListeners.forEach((listener) => listener(structuredClone(adminAuthUser)));
+    await flush();
+
+    expect(apiGet.mock.calls.filter(([path]) => path === "/api/erp/products")).toHaveLength(1);
+    expect(store.loaded).toBe(true);
   });
 
   it("refetches after an admin access token is restored on tab reload", async () => {

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, ne, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { entityMedia, products } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../catalog/categories/category.repository.js";
@@ -194,10 +194,25 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         return res.status(400).json({ ok: false, reason: "invalid-variant-discount" });
       }
     }
+    const productSku = incoming.sku ?? "";
+    const productId = incoming.id ? Number(incoming.id) : undefined;
+    // Trashed products keep their slug and SKU, so a clash must be reported instead of failing on the unique index.
+    const [clash] = await db
+      .select({ slug: products.slug, sku: products.sku })
+      .from(products)
+      .where(and(
+        or(eq(products.slug, resolvedSlug), eq(products.sku, productSku)),
+        productId ? ne(products.id, productId) : undefined
+      ))
+      .limit(1);
+    if (clash) {
+      const reason = clash.slug === resolvedSlug ? "product-slug-conflict" : "product-sku-conflict";
+      return res.status(409).json({ ok: false, reason });
+    }
     await db.transaction(async (tx) => {
       const product = await createAdminProductRepo({
-        id: incoming.id ? Number(incoming.id) : undefined,
-        sku: incoming.sku ?? "",
+        id: productId,
+        sku: productSku,
         slug: resolvedSlug,
         arName: productNameAr,
         enName: productNameEn,

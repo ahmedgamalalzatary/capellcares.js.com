@@ -1387,3 +1387,47 @@ serialTest("admin product revalidation includes the previous slug when a product
     categorySlugs: ["body-care", "body-lotion"]
   });
 });
+
+serialTest("admin product create rejects a slug still held by a trashed product with a clear conflict", async () => {
+  const ids = await getBaselineIds();
+  await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: "ROUTE-SLUG-CONFLICT",
+        slug: "test-product-baseline-1",
+        status: "inactive"
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.json, { ok: false, reason: "product-slug-conflict" });
+  });
+});
+
+serialTest("admin product create rejects an SKU already used by another product with a clear conflict", async () => {
+  const ids = await getBaselineIds();
+  const [baseline] = await db.select({ sku: products.sku }).from(products).where(eq(products.id, ids.productOneId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: baseline!.sku,
+        slug: "route-sku-conflict",
+        status: "inactive"
+      })
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.json, { ok: false, reason: "product-sku-conflict" });
+  });
+});

@@ -24,6 +24,14 @@ import type {
   SalesAnalytics
 } from "./types";
 
+/** Focus/visibility refetches are skipped while the last load is younger than this. */
+const FOCUS_REFRESH_MIN_AGE_MS = 60_000;
+
+/** Identity + permissions of a user; the preload set only changes when this does. */
+function authUserKey(user: AdminAuthUser | null) {
+  return user ? JSON.stringify([user.email, user.role, [...(user.permissionKeys ?? [])].sort()]) : "";
+}
+
 export class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
@@ -40,6 +48,8 @@ export class ErpStore {
   error: string | null = null;
   private listeners = new Set<Listener>();
   private latestRefetchId = 0;
+  private lastLoadedAt = 0;
+  private loadedUserKey: string | null = null;
   private browserRefreshBound = false;
   private authRefreshBound = false;
   private authHydrationBound = false;
@@ -115,6 +125,7 @@ export class ErpStore {
     this.emit();
     try {
       const authUser = getAdminAuthUser();
+      this.loadedUserKey = authUserKey(authUser);
       const requests = this.getPreloadRequests(authUser);
       const results = await Promise.allSettled(requests.map((request) => request.load()));
       // Ignore stale responses: a newer refetch has superseded this one.
@@ -134,6 +145,7 @@ export class ErpStore {
         }
       });
       this.loaded = true;
+      this.lastLoadedAt = Date.now();
       this.error = firstError instanceof Error
         ? firstError.message
         : firstError != null
@@ -169,7 +181,7 @@ export class ErpStore {
       if (document.visibilityState === "hidden") {
         return;
       }
-      if (this.loaded && !this.loading) {
+      if (this.loaded && !this.loading && Date.now() - this.lastLoadedAt >= FOCUS_REFRESH_MIN_AGE_MS) {
         void this.refetch();
       }
     };
@@ -184,8 +196,9 @@ export class ErpStore {
       return;
     }
 
+    // A silent session renewal changes only the token, so reload only when there is nothing good to keep.
     subscribeAdminAccessToken((token) => {
-      if (token && isAdminAuthHydrated() && !this.loading) {
+      if (token && isAdminAuthHydrated() && !this.loading && (!this.loaded || this.error)) {
         void this.refetch();
       }
     });
@@ -210,7 +223,11 @@ export class ErpStore {
       return;
     }
 
-    subscribeAdminAuthUser(() => {
+    subscribeAdminAuthUser((user) => {
+      // Session renewal re-sets the same user; only a different user or permission set changes what may be preloaded.
+      if (authUserKey(user) === this.loadedUserKey) {
+        return;
+      }
       this.loaded = false;
       if (isAdminAuthHydrated() && !this.loading) {
         void this.refetch();

@@ -39,6 +39,14 @@ describe("getErrorMessage", () => {
     expect(getErrorMessage(error)).toBe(expected);
   });
 
+  it.each([
+    ["product-slug-conflict", "اسم المنتج الإنجليزي مستخدم بالفعل لمنتج آخر (قد يكون في سلة المحذوفات). غيّري الاسم أو احذفي المنتج القديم نهائيًا."],
+    ["product-sku-conflict", "رمز المنتج (SKU) مستخدم بالفعل لمنتج آخر (قد يكون في سلة المحذوفات). غيّري الرمز أو احذفي المنتج القديم نهائيًا."]
+  ])("maps %s to a message naming the clashing field", (reason, expected) => {
+    const error = Object.assign(new Error("API 409 /api/erp/products"), { status: 409, body: { reason } });
+    expect(getErrorMessage(error)).toBe(expected);
+  });
+
   it("falls back to the original error message when there is no known mapping", () => {
     expect(getErrorMessage(new Error("toggle failed"))).toBe("toggle failed");
   });
