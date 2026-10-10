@@ -25,8 +25,8 @@ import {
   reviews,
   variantDiscounts
 } from "../../drizzle/schema.js";
-import { db } from "../db.js";
-import { assertDisposableTestDatabaseUrl, resolveDatabaseUrl } from "../env.js";
+import { db } from "../../src/db.js";
+import { assertDisposableTestDatabaseUrl, resolveDatabaseUrl } from "../../src/env.js";
 
 const seedSkus = ["TEST-SKU-001", "TEST-SKU-002"];
 const seedOfferSlug = "test-offer-baseline";

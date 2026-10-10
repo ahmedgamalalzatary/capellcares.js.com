@@ -1431,3 +1431,60 @@ serialTest("admin product create rejects an SKU already used by another product 
     assert.deepEqual(response.json, { ok: false, reason: "product-sku-conflict" });
   });
 });
+
+serialTest("admin product upsert gives each Arabic-only draft its own temporary slug and switches to the English slug once named", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const saveDraft = (body: Record<string, unknown>) => request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ categoryId: ids.leafCategoryId, status: "inactive", variants: [], ...body })
+    });
+
+    assert.equal((await saveDraft({ sku: "ROUTE-AR-DRAFT-1", slug: "", name: { ar: "مسودة 1", en: "" } })).status, 200);
+    assert.equal((await saveDraft({ sku: "ROUTE-AR-DRAFT-2", slug: "", name: { ar: "مسودة 2", en: "" } })).status, 200);
+
+    const drafts = await db
+      .select({ id: products.id, slug: products.slug })
+      .from(products)
+      .where(or(eq(products.sku, "ROUTE-AR-DRAFT-1"), eq(products.sku, "ROUTE-AR-DRAFT-2")))
+      .orderBy(asc(products.id));
+    assert.equal(drafts.length, 2);
+    assert.match(drafts[0]!.slug, /^draft-[0-9a-f]{8}$/);
+    assert.match(drafts[1]!.slug, /^draft-[0-9a-f]{8}$/);
+    assert.notEqual(drafts[0]!.slug, drafts[1]!.slug);
+
+    // The ERP resends the stored slug on edit; a still-Arabic-only save keeps it stable.
+    assert.equal((await saveDraft({ id: drafts[0]!.id, sku: "ROUTE-AR-DRAFT-1", slug: drafts[0]!.slug, name: { ar: "مسودة 1", en: "" } })).status, 200);
+    const [unchanged] = await db.select({ slug: products.slug }).from(products).where(eq(products.id, drafts[0]!.id));
+    assert.equal(unchanged!.slug, drafts[0]!.slug);
+
+    assert.equal((await saveDraft({ id: drafts[0]!.id, sku: "ROUTE-AR-DRAFT-1", slug: drafts[0]!.slug, name: { ar: "مسودة 1", en: "Rose Lotion" } })).status, 200);
+    const [named] = await db.select({ slug: products.slug }).from(products).where(eq(products.id, drafts[0]!.id));
+    assert.equal(named!.slug, "rose-lotion");
+  });
+});
+
+serialTest("admin product toggle-status refuses to switch on an incomplete draft and leaves it hidden", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const saved = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ sku: "ROUTE-TOGGLE-DRAFT", name: { ar: "مسودة", en: "" }, categoryId: ids.leafCategoryId, status: "inactive", variants: [] })
+    });
+    assert.equal(saved.status, 200);
+    const [draft] = await db.select({ id: products.id }).from(products).where(eq(products.sku, "ROUTE-TOGGLE-DRAFT"));
+
+    const response = await request(`/api/erp/products/${draft!.id}/toggle-status`, { method: "POST", headers: authHeaders });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { ok: false, reason: "cannot-activate-incomplete-product" });
+    const [after] = await db.select({ status: products.status }).from(products).where(eq(products.id, draft!.id));
+    assert.equal(after!.status, "inactive");
+  });
+});

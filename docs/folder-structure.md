@@ -472,11 +472,9 @@ capella/
 │     │  │  │  │  ├─ admin-offers.controller.ts
 │     │  │  │  │  └─ admin-offers.mapper.ts
 │     │  │  │  ├─ products/
-│     │  │  │  │  ├─ lib/
-│     │  │  │  │  │  └─ admin-product-input.ts
-│     │  │  │  │  ├─ admin-products.controller.ts
-│     │  │  │  │  └─ admin-products.service.ts
+│     │  │  │  │  └─ admin-products.controller.ts
 │     │  │  │  ├─ shared/
+│     │  │  │  │  ├─ activation.ts
 │     │  │  │  │  ├─ db-errors.ts
 │     │  │  │  │  └─ related-items.ts
 │     │  │  │  └─ staff-management/
@@ -629,14 +627,12 @@ capella/
 │     │  │  └─ x-lang.routes.test.ts
 │     │  ├─ services/
 │     │  │  ├─ admin-auth.service.test.ts
-│     │  │  ├─ admin-products.service.test.ts
 │     │  │  ├─ auth-session.service.test.ts
 │     │  │  ├─ checkout.service.test.ts
 │     │  │  ├─ erp-permissions.service.test.ts
 │     │  │  └─ uploads.test.ts
 │     │  └─ unit/
 │     │     ├─ admin-auth.middleware.test.ts
-│     │     ├─ admin-product-input.test.ts
 │     │     ├─ auth.middleware.test.ts
 │     │     ├─ bundle-inventory.test.ts
 │     │     ├─ checkout.schemas.test.ts
@@ -811,9 +807,11 @@ capella/
 │     │  ├─ env.ts
 │     │  └─ seeds/
 │     │     ├─ categories.seed.ts
-│     │     ├─ index.ts
-│     │     └─ test.seed.ts
+│     │     └─ index.ts
 │     ├─ tests/
+│     │  ├─ helpers/
+│     │  │  ├─ mysql-errors.ts
+│     │  │  └─ test-seed.ts
 │     │  ├─ env.test.ts
 │     │  └─ integrity.test.ts
 │     ├─ scripts/

@@ -225,6 +225,7 @@ test("offer upsert persists product ordering inside the offer from item order", 
         price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
+        imagePath: "/uploads/ordered-bundle.png",
         visibility: "visible",
         items: [
           { variantId: ids.secondVariantId, qty: 1 },
@@ -269,6 +270,7 @@ test("storefront offer detail returns items following the offer's product order"
         price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
+        imagePath: "/uploads/ordered-bundle.png",
         visibility: "visible",
         items: [
           { variantId: ids.firstVariantId, qty: 1 },
@@ -291,6 +293,7 @@ test("storefront offer detail returns items following the offer's product order"
         price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
+        imagePath: "/uploads/ordered-bundle.png",
         visibility: "visible",
         items: [
           { variantId: ids.secondVariantId, qty: 1 },
@@ -323,6 +326,7 @@ test("collection upsert persists product ordering inside the collection from ite
         price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
+        imagePath: "/uploads/ordered-bundle.png",
         visibility: "visible",
         items: [
           { variantId: ids.secondVariantId, qty: 1 },
@@ -371,6 +375,7 @@ test("storefront collection detail returns items following the collection's prod
         price: 80,
         categoryId: ids.rootCategoryId,
         status: "active",
+        imagePath: "/uploads/ordered-bundle.png",
         visibility: "visible",
         items: [
           { variantId: ids.secondVariantId, qty: 1 },

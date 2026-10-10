@@ -34,7 +34,7 @@ import {
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { assertDisposableTestDatabaseUrl, resolveDatabaseUrl } from "@capella/database/src/env";
-import { clearTestSeed, seedTestData } from "@capella/database/src/seeds/test.seed";
+import { clearTestSeed, seedTestData } from "@capella/database/tests/helpers/test-seed";
 
 export async function resetApiTestDatabase() {
   // Every delete below is destructive, and most run before clearTestSeed's own guard, so refuse up front unless the target is an explicitly disposable schema.

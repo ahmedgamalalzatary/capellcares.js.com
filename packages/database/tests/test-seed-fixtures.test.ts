@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "../src/db.js";
-import { clearTestSeed, seedTestData } from "../src/seeds/test.seed.js";
+import { clearTestSeed, seedTestData } from "./helpers/test-seed.js";
 import { categories, collections, offers } from "../drizzle/schema.js";
 
 const ROOT_ONLY = "must be classified under a root category";

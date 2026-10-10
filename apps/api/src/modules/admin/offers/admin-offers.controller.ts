@@ -16,9 +16,10 @@ import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
 } from "../../shared/related-items/related-item.repository.js";
-import { toSlug } from "../../../services/slug.service.js";
+import { resolveEntitySlug } from "../../../services/slug.service.js";
 import { calculateBundleInventory, computeBundleInventoryFromMap, validateBundlePriceBelowParts } from "../../inventory/bundle-inventory.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
+import { canActivateBundle, findBundleActivationRepo, incomingHasImage } from "../shared/activation.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminOffer } from "../offers/admin-offers.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
@@ -169,7 +170,7 @@ export async function adminGetOffer(req: Request, res: Response) {
 export async function adminUpsertOffer(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
-    const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
+    const slug = resolveEntitySlug(incoming.slug, incoming.name?.en ?? incoming.enName);
     const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
     if (!Number.isFinite(fixedPrice) || fixedPrice < 0) {
       return res.status(400).json({ ok: false, reason: "invalid-fixed-price" });
@@ -195,20 +196,30 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
     if (priceError) {
       return res.status(400).json({ ok: false, reason: priceError });
     }
+    const media = parseEntityMediaInput(incoming.media);
+    const arName = incoming.name?.ar ?? incoming.arName ?? "";
+    const enName = incoming.name?.en ?? incoming.enName ?? "";
+    const status = incoming.status ?? "inactive";
+    if (
+      status === "active" &&
+      !canActivateBundle({ arName, enName, categoryId, price: fixedPrice, hasImage: await incomingHasImage("offer", incoming, media) })
+    ) {
+      return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-offer" });
+    }
     const { id: offerId } = await upsertOfferRepo({
       id: incoming.id,
       slug,
-      arName: incoming.name?.ar ?? incoming.arName ?? "",
-      enName: incoming.name?.en ?? incoming.enName ?? "",
+      arName,
+      enName,
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       youtubeUrl: incoming.youtubeUrl ?? null,
       imagePath: incoming.imagePath ?? null,
       ...parseHoverImageInput(incoming),
-      media: parseEntityMediaInput(incoming.media),
+      media,
       fixedPrice,
       categoryId,
-      status: incoming.status ?? "inactive",
+      status,
       visibility: incoming.visibility,
       items
     });
@@ -232,7 +243,7 @@ export async function adminUpsertOffer(req: Request, res: Response, next: NextFu
       return res.status(400).json({ ok: false, reason: "invalid-hover-image" });
     }
     if (isDuplicateEntryError(error)) {
-      return res.status(409).json({ ok: false, reason: "slug-conflict" });
+      return res.status(409).json({ ok: false, reason: "offer-slug-conflict" });
     }
     if ((error as { code?: string })?.code === "OFFER_CATEGORY_MUST_BE_ROOT") {
       return res.status(400).json({ ok: false, reason: "offer-category-must-be-root" });
@@ -284,6 +295,11 @@ export async function adminHardDeleteOffer(req: Request, res: Response, next: Ne
 export async function adminToggleOfferStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { toggleOfferStatusRepo } = await import("../../catalog/offers/offer.repository.js");
+    // An uncategorised offer keeps its dedicated reason from the repo; anything else missing blocks switching on here.
+    const activation = await findBundleActivationRepo("offer", Number(req.params.id));
+    if (activation?.status === "inactive" && activation.facts.categoryId != null && !canActivateBundle(activation.facts)) {
+      return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-offer" });
+    }
     const revalidation = await findOfferRevalidationData(Number(req.params.id));
     await toggleOfferStatusRepo(Number(req.params.id));
     if (revalidation) {

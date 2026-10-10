@@ -15,11 +15,12 @@ import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
 } from "../../shared/related-items/related-item.repository.js";
-import { toSlug } from "../../../services/slug.service.js";
+import { resolveEntitySlug } from "../../../services/slug.service.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
 import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.repository.js";
 import { parseHoverImageInput } from "../../shared/hover-image/hover-image.js";
 import { parseRelatedItems } from "../shared/related-items.js";
+import { canActivateProduct, findProductActivationRepo } from "../shared/activation.js";
 
 type NormalizedVariantDiscount = {
   type: "percentage" | "fixed";
@@ -149,7 +150,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
       : null;
     const productNameAr = incoming.name?.ar ?? incoming.arName ?? "";
     const productNameEn = incoming.name?.en ?? incoming.enName ?? "";
-    const resolvedSlug = toSlug(incoming.slug || productNameEn || productNameAr);
+    const resolvedSlug = resolveEntitySlug(incoming.slug, productNameEn);
     const productVariants = incoming.variants ?? [];
     const productKeywords = Array.isArray(incoming.keywords) ? incoming.keywords : [];
     const productStatus = incoming.status ?? "inactive";
@@ -176,14 +177,14 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         : undefined;
     if (
       productStatus === "active" &&
-      (
-        !productNameAr ||
-        !productNameEn ||
-        productKeywords.length === 0 ||
-        !hasLocalizedProductImage ||
-        !incoming.categoryId ||
-        productVariants.length === 0
-      )
+      !canActivateProduct({
+        arName: productNameAr,
+        enName: productNameEn,
+        categoryId: incoming.categoryId ? Number(incoming.categoryId) : null,
+        hasImage: hasLocalizedProductImage,
+        keywordCount: productKeywords.length,
+        variantCount: productVariants.length
+      })
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
     }
@@ -370,6 +371,10 @@ export async function adminHardDeleteProduct(req: Request, res: Response, next: 
 }
 
 export async function adminToggleProductStatus(req: Request, res: Response) {
+  const activation = await findProductActivationRepo(Number(req.params.id));
+  if (activation?.status === "inactive" && !canActivateProduct(activation.facts)) {
+    return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
+  }
   const { toggleProductStatusRepo } = await import("../../catalog/products/product.repository.js");
   const revalidation = await findProductRevalidationData(Number(req.params.id));
   await toggleProductStatusRepo(Number(req.params.id));

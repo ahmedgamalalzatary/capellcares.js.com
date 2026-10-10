@@ -1433,3 +1433,92 @@ serialTest("admin offer upsert rejects non-string hover image values", async () 
     .where(sql`${offers.slug} like 'route-offer-hover-invalid-%'`);
   assert.equal(rows.length, 0, "expected no offer to be created from an invalid hover payload");
 });
+
+function makeOfferDraft(ids: Awaited<ReturnType<typeof getBaselineIds>>, overrides: Record<string, unknown>) {
+  return {
+    name: { ar: "اختبار", en: "Route Offer Draft" },
+    price: 120,
+    categoryId: ids.rootCategoryId,
+    status: "inactive",
+    items: [
+      { variantId: ids.firstVariantId, qty: 1 },
+      { variantId: ids.secondVariantId, qty: 2 }
+    ],
+    ...overrides
+  };
+}
+
+serialTest("admin offer upsert reports a slug clash as a offer-specific conflict", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeOfferDraft(ids, { slug: "test-offer-baseline" }))
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.json, { ok: false, reason: "offer-slug-conflict" });
+  });
+});
+
+serialTest("admin offer upsert gives an Arabic-only draft a temporary non-empty slug", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeOfferDraft(ids, { slug: "", name: { ar: "مسودة عربية", en: "" } }))
+    });
+    assert.equal(response.status, 200);
+
+    const [created] = await db.select({ slug: offers.slug }).from(offers).where(eq(offers.arName, "مسودة عربية"));
+    assert.match(created!.slug, /^draft-[0-9a-f]{8}$/);
+  });
+});
+
+serialTest("admin offer upsert refuses to publish a offer without an English name", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeOfferDraft(ids, {
+        name: { ar: "منشور عربي", en: "" },
+        status: "active",
+        media: [{ type: "image", url: "/uploads/offer.png" }]
+      }))
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { ok: false, reason: "cannot-activate-incomplete-offer" });
+  });
+});
+
+serialTest("admin offer toggle-status refuses to switch on an incomplete draft and leaves it hidden", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const saved = await request("/api/erp/offers", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeOfferDraft(ids, { slug: "", name: { ar: "مسودة للتفعيل", en: "" } }))
+    });
+    assert.equal(saved.status, 200);
+    const [draft] = await db.select({ id: offers.id }).from(offers).where(eq(offers.arName, "مسودة للتفعيل"));
+
+    const response = await request(`/api/erp/offers/${draft!.id}/toggle-status`, { method: "POST", headers: authHeaders });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { ok: false, reason: "cannot-activate-incomplete-offer" });
+    const [after] = await db.select({ status: offers.status }).from(offers).where(eq(offers.id, draft!.id));
+    assert.equal(after!.status, "inactive");
+  });
+});

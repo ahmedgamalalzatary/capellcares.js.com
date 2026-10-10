@@ -17,9 +17,10 @@ import {
   listRelatedLinksForSourceRepo,
   setRelatedLinksForSourceRepo
 } from "../../shared/related-items/related-item.repository.js";
-import { toSlug } from "../../../services/slug.service.js";
+import { resolveEntitySlug } from "../../../services/slug.service.js";
 import { calculateBundleInventory, computeBundleInventoryFromMap, validateBundlePriceBelowParts } from "../../inventory/bundle-inventory.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
+import { canActivateBundle, findBundleActivationRepo, incomingHasImage } from "../shared/activation.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { toAdminCollection } from "./admin-collections.mapper.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
@@ -177,7 +178,7 @@ export async function adminGetCollection(req: Request, res: Response) {
 export async function adminUpsertCollection(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
-    const slug = toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName);
+    const slug = resolveEntitySlug(incoming.slug, incoming.name?.en ?? incoming.enName);
     const fixedPrice = Number(incoming.price ?? incoming.fixedPrice ?? 0);
     if (!Number.isFinite(fixedPrice) || fixedPrice < 0) {
       return res.status(400).json({ ok: false, reason: "invalid-fixed-price" });
@@ -202,20 +203,30 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
     if (priceError) {
       return res.status(400).json({ ok: false, reason: priceError });
     }
+    const media = parseEntityMediaInput(incoming.media);
+    const arName = incoming.name?.ar ?? incoming.arName ?? "";
+    const enName = incoming.name?.en ?? incoming.enName ?? "";
+    const status = incoming.status ?? "inactive";
+    if (
+      status === "active" &&
+      !canActivateBundle({ arName, enName, categoryId, price: fixedPrice, hasImage: await incomingHasImage("collection", incoming, media) })
+    ) {
+      return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-collection" });
+    }
     const { id: collectionId } = await upsertCollectionRepo({
       id: incoming.id,
       slug,
-      arName: incoming.name?.ar ?? incoming.arName ?? "",
-      enName: incoming.name?.en ?? incoming.enName ?? "",
+      arName,
+      enName,
       arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
       enDescription: incoming.description?.en ?? incoming.enDescription ?? null,
       youtubeUrl: incoming.youtubeUrl ?? null,
       imagePath: incoming.imagePath ?? null,
       ...parseHoverImageInput(incoming),
-      media: parseEntityMediaInput(incoming.media),
+      media,
       fixedPrice,
       categoryId,
-      status: incoming.status ?? "inactive",
+      status,
       visibility: incoming.visibility,
       items
     });
@@ -239,7 +250,7 @@ export async function adminUpsertCollection(req: Request, res: Response, next: N
       return res.status(400).json({ ok: false, reason: "invalid-hover-image" });
     }
     if (isDuplicateEntryError(error)) {
-      return res.status(409).json({ ok: false, reason: "slug-conflict" });
+      return res.status(409).json({ ok: false, reason: "collection-slug-conflict" });
     }
     if ((error as { code?: string })?.code === "COLLECTION_CATEGORY_MUST_BE_ROOT") {
       return res.status(400).json({ ok: false, reason: "collection-category-must-be-root" });
@@ -290,6 +301,10 @@ export async function adminHardDeleteCollection(req: Request, res: Response, nex
 }
 
 export async function adminToggleCollectionStatus(req: Request, res: Response) {
+  const activation = await findBundleActivationRepo("collection", Number(req.params.id));
+  if (activation?.status === "inactive" && !canActivateBundle(activation.facts)) {
+    return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-collection" });
+  }
   const revalidation = await findCollectionRevalidationData(Number(req.params.id));
   await toggleCollectionStatusRepo(Number(req.params.id));
   if (revalidation) {

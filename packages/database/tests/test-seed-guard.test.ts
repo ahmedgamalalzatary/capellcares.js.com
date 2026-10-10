@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { after } from "node:test";
 
-import { clearTestSeed } from "../src/seeds/test.seed.js";
+import { clearTestSeed } from "./helpers/test-seed.js";
 
 /** `clearTestSeed` truncates every seeded table, so a misconfigured connection would destroy real data.
  * The guard is asserted by pointing the resolved URL at a production-looking schema; the pool was created from the real test URL at import time, so nothing here touches a live connection. */

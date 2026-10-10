@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { db } from "../src/db.js";
-import { clearTestSeed, rebuildCategoryPaths, seedTestData } from "../src/seeds/test.seed.js";
+import { clearTestSeed, rebuildCategoryPaths, seedTestData } from "./helpers/test-seed.js";
 import { categoryPaths } from "../drizzle/schema.js";
 
 /** `rebuildCategoryPaths` deletes every closure row and reinserts the rebuilt set in one transaction, so a failed insert cannot leave the closure table empty; these cases assert that observable outcome rather than searching the source for a keyword.

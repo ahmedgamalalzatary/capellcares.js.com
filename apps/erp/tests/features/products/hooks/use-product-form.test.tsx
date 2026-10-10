@@ -100,3 +100,18 @@ describe("product hover image through normalization", () => {
     expect(payload.enHoverImagePath).toBe("/uploads/product-hover-legacy.jpg");
   });
 });
+
+describe("product slug on save", () => {
+  it("leaves the slug empty for an Arabic-only draft so digits in the Arabic name never become the link", async () => {
+    const { result } = renderHook(() => useProductForm({}));
+
+    act(() => {
+      result.current.setNameAr("منتج 2");
+    });
+    await act(async () => {
+      await result.current.save({ asStatus: "inactive" });
+    });
+
+    expect(upsertProduct.mock.calls[0]?.[0].slug).toBe("");
+  });
+});

@@ -18,7 +18,7 @@ import {
   wishlists
 } from "../drizzle/schema.js";
 import { db, mysqlPool } from "../src/db.js";
-import { clearTestSeed, seedTestData } from "../src/seeds/test.seed.js";
+import { clearTestSeed, seedTestData } from "./helpers/test-seed.js";
 import {
   CHECK_VIOLATION,
   FK_MISSING_ROW,

@@ -120,7 +120,7 @@ export function useProductForm({
 
   const buildProduct = (effectiveStatus: Product["status"]): Product => {
     const id = initial?.id;
-    const slug = initial?.slug ?? slugifyFormName(nameEn || nameAr || "product");
+    const slug = initial?.slug ?? slugifyFormName(nameEn);
     const primaryMedia = media.find((item) => item.type === "image");
     const primaryImage = primaryMedia ? resolveLocalizedEntityMediaUrl(primaryMedia, "en") : "";
     const product: Product = {

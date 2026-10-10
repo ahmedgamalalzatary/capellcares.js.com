@@ -927,3 +927,92 @@ serialTest("admin collection permanent delete keeps a hover file still reference
   await assert.rejects(access(orphanAbsolutePath), "expected the orphaned hover file to be unlinked");
   await assert.doesNotReject(access(sharedAbsolutePath), "expected the shared hover file to survive");
 });
+
+function makeCollectionDraft(ids: Awaited<ReturnType<typeof getBaselineIds>>, overrides: Record<string, unknown>) {
+  return {
+    name: { ar: "اختبار", en: "Route Collection Draft" },
+    price: 120,
+    categoryId: ids.rootCategoryId,
+    status: "inactive",
+    items: [
+      { variantId: ids.firstVariantId, qty: 1 },
+      { variantId: ids.secondVariantId, qty: 2 }
+    ],
+    ...overrides
+  };
+}
+
+serialTest("admin collection upsert reports a slug clash as a collection-specific conflict", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeCollectionDraft(ids, { slug: "test-collection-baseline" }))
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.json, { ok: false, reason: "collection-slug-conflict" });
+  });
+});
+
+serialTest("admin collection upsert gives an Arabic-only draft a temporary non-empty slug", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeCollectionDraft(ids, { slug: "", name: { ar: "مسودة عربية", en: "" } }))
+    });
+    assert.equal(response.status, 200);
+
+    const [created] = await db.select({ slug: collections.slug }).from(collections).where(eq(collections.arName, "مسودة عربية"));
+    assert.match(created!.slug, /^draft-[0-9a-f]{8}$/);
+  });
+});
+
+serialTest("admin collection upsert refuses to publish a collection without an English name", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeCollectionDraft(ids, {
+        name: { ar: "منشور عربي", en: "" },
+        status: "active",
+        media: [{ type: "image", url: "/uploads/collection.png" }]
+      }))
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { ok: false, reason: "cannot-activate-incomplete-collection" });
+  });
+});
+
+serialTest("admin collection toggle-status refuses to switch on an incomplete draft and leaves it hidden", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const saved = await request("/api/erp/collections", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify(makeCollectionDraft(ids, { slug: "", name: { ar: "مسودة للتفعيل", en: "" } }))
+    });
+    assert.equal(saved.status, 200);
+    const [draft] = await db.select({ id: collections.id }).from(collections).where(eq(collections.arName, "مسودة للتفعيل"));
+
+    const response = await request(`/api/erp/collections/${draft!.id}/toggle-status`, { method: "POST", headers: authHeaders });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(response.json, { ok: false, reason: "cannot-activate-incomplete-collection" });
+    const [after] = await db.select({ status: collections.status }).from(collections).where(eq(collections.id, draft!.id));
+    assert.equal(after!.status, "inactive");
+  });
+});

@@ -41,8 +41,12 @@ describe("getErrorMessage", () => {
 
   it.each([
     ["product-slug-conflict", "اسم المنتج الإنجليزي مستخدم بالفعل لمنتج آخر (قد يكون في سلة المحذوفات). غيّري الاسم أو احذفي المنتج القديم نهائيًا."],
-    ["product-sku-conflict", "رمز المنتج (SKU) مستخدم بالفعل لمنتج آخر (قد يكون في سلة المحذوفات). غيّري الرمز أو احذفي المنتج القديم نهائيًا."]
-  ])("maps %s to a message naming the clashing field", (reason, expected) => {
+    ["product-sku-conflict", "رمز المنتج (SKU) مستخدم بالفعل لمنتج آخر (قد يكون في سلة المحذوفات). غيّري الرمز أو احذفي المنتج القديم نهائيًا."],
+    ["offer-slug-conflict", "اسم العرض الإنجليزي مستخدم بالفعل لعرض آخر (قد يكون في سلة المحذوفات). غيّري الاسم أو احذفي العرض القديم نهائيًا."],
+    ["collection-slug-conflict", "اسم المجموعة الإنجليزي مستخدم بالفعل لمجموعة أخرى (قد تكون في سلة المحذوفات). غيّري الاسم أو احذفي المجموعة القديمة نهائيًا."],
+    ["cannot-activate-incomplete-offer", "لا يمكن تفعيل العرض قبل استكمال كل البيانات المطلوبة: الاسمان والقسم والسعر والصورة."],
+    ["cannot-activate-incomplete-collection", "لا يمكن تفعيل المجموعة قبل استكمال كل البيانات المطلوبة: الاسمان والقسم والسعر والصورة."]
+  ])("maps %s to its human-readable message", (reason, expected) => {
     const error = Object.assign(new Error("API 409 /api/erp/products"), { status: 409, body: { reason } });
     expect(getErrorMessage(error)).toBe(expected);
   });
