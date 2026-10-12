@@ -442,7 +442,7 @@ Screen/account guards must also cover a response arriving after logout, a differ
 
 ### Approved version/update scope — five items
 
-The user selected only **client identity, `GET /app-config`, update enforcement, the three-state support policy, and OTA delivery** for this layer. General app crash/failure notifications already approved in D12 remain a separate operational requirement. Dedicated version analytics, unique-user/device tracking, revenue attribution, analytics dashboards, general feature rollout flags and emergency kill-switch systems are not additional V1 requirements. Basic release identity in diagnostic records supports these five items without becoming an analytics project.
+The user selected only **client identity, `GET /app-config`, update enforcement, the three-state support policy, and OTA delivery** for this layer. General app crash/failure notifications already approved in D12 remain a separate operational requirement. **Sales-channel attribution is in V1 scope (decided 2026-10-12):** each checkout session/order records its channel (`web` | `ios` | `android`) from `X-Platform`, so sales can be reported by channel; design in "HTTP headers, security and sales channel" → H3 below. Dedicated version analytics, unique-user/device tracking, analytics dashboards, general feature rollout flags and emergency kill-switch systems are not additional V1 requirements. Basic release identity in diagnostic records supports these items without becoming an analytics project.
 
 | Item | V1 implementation contract |
 |---|---|
@@ -458,7 +458,7 @@ The user selected only **client identity, `GET /app-config`, update enforcement,
 |---|---|
 | `X-App-Version` | Native app/store version, e.g. the configured appVersion; not `package.json`'s workspace version |
 | `X-App-Build` | Android versionCode or iOS buildNumber, serialized as a string; compare only within the relevant platform/contract |
-| `X-Platform` | `android` or `ios` |
+| `X-Platform` | `android` or `ios`; also stamps the order sales channel at checkout (web sends nothing → `web`) |
 | `X-Runtime-Version` | Actual Expo runtime identifier for the installed binary |
 | `X-Update-Id` | Actual executing Expo update ID when available; use the documented `embedded` marker only when the executing embedded bundle has no update ID |
 
@@ -513,6 +513,89 @@ The first public binary must understand policy responses and a stable structured
 
 **Acceptance**: retain the first public embedded bundle as a regression fixture and test each currently promised current/previous/candidate binary/OTA/contract combination after backend changes. Older retired fixtures test graceful feature rejection, not indefinite supported behavior. Cover missing/invalid metadata, supported/retired clients, newer candidates, staggered platform availability, optional/required feature prompts, continued compatible operation, policy offline/cached failures, stale OTA, successful OTA/rollback, and backend rollback with the deployed schema. Include auth, cart, checkout, shipping, orders/cancellation, wishlist and reviews. Passing current shared types is insufficient evidence.
 
+## HTTP headers, security and sales channel (cross-app)
+
+Planning only — not implemented unless marked. Audited 2026-10-12 against `main` after merging `feat/mobile-app-phases`. Applies to API, storefront and ERP, not only mobile. Owner rule (2026-10-12): current product behavior is intentional until further notice; these items are additive.
+
+### What exists
+
+| Header | Direction | Where | Purpose |
+|---|---|---|---|
+| `x-lang` (`ar`\|`en`, default `ar`) | client → API | `apps/api/src/middlewares/locale.middleware.ts` | Response language |
+| `x-client: mobile` (+ no `Origin`) | mobile → API | `apps/api/src/modules/auth/mobile-client.ts`; sent by `apps/mobile/src/lib/api/identity.ts` on `/api/v1/auth/*` | Auth **transport** only, not identity or auth |
+| `x-refresh-token` | mobile → API | `mobile-client.ts` | Mobile refresh token |
+| `X-App-Version`, `X-App-Build`, `X-Platform`, `X-Runtime-Version`, `X-Update-Id`, `X-Client-Revision` | mobile → API | `identity.ts` (production native builds only); parsed in `apps/api/src/modules/app-policy/app-policy.ts` | Version policy and diagnostics — see Phase 3 |
+| `idempotency-key` | client → API | `checkout.controller.ts`; storefront `use-checkout.ts`, mobile `http.ts` | Prevents duplicate orders on retry |
+| `X-Bosta-Webhook-Secret` | Bosta → API | `bosta-webhook.routes.ts` | Webhook authentication |
+| CORS (`credentials: true`, `maxAge: 86400`) | API → browser | `apps/api/src/app.ts`, `config/cors.ts` | Explicit allowlist; production throws if `CORS_ALLOWED_ORIGINS` is missing |
+| `Cache-Control: no-store` | API → client | `/health`, `/app-config` | — |
+| `x-powered-by` disabled, `trust proxy = 1` | API | `app.ts` | — |
+
+Rate limiting is custom (`rate-limit.middleware.ts`); a 429 returns `{ message }` with no `Retry-After`.
+
+### Gaps (priority order)
+
+| # | Gap | Severity | Why |
+|---|---|---|---|
+| H1 | **No security headers anywhere** — API has no helmet, Next configs set none, **production nginx sets none (owner-confirmed 2026-10-12)** | Must | ERP can be framed (clickjacking an admin), `/uploads` served without `nosniff`, no HSTS |
+| H2 | **No request ID** | Must | Errors are `console.error(...)` with no correlation; a customer/mobile failure cannot be matched to a server log line |
+| H3 | **No sales channel on orders** | Must (V1, see D2) | `orders` / `checkout_sessions` have no channel column; mobile-vs-web sales cannot be reported |
+| H4 | `Cache-Control: no-store` on personal/admin responses | Should (no CDN in scope — owner 2026-10-12; Must if one is added) | Stops a shared cache serving one user's data to another |
+| H5 | `Retry-After` on 429 | Nice | Lets clients back off correctly |
+
+Not needed: a governorate header (already stored per order in `orders.governorate`), `Accept-Language` (`x-lang` covers it), an API-version header (versioning goes through `/app-config`).
+
+### How
+
+**H1 — security headers.** Set in the apps (versioned, testable), not nginx; one place per header.
+
+| App | Mechanism | Headers |
+|---|---|---|
+| API | `helmet`, mounted in `app.ts` **before** the `/uploads` static | `nosniff`, HSTS, `frame-ancestors`/`X-Frame-Options`, `Referrer-Policy` |
+| Storefront | `headers()` in `next.config` | same + CSP |
+| ERP | `headers()` in `next.config` | same + `frame-ancestors 'none'` + CSP |
+
+- helmet's default `Cross-Origin-Resource-Policy: same-origin` **breaks `/uploads` images** loaded cross-origin by storefront/ERP — set `cross-origin` (at least for `/uploads`).
+- HSTS: short `max-age`, no `preload`; `includeSubDomains` only once every subdomain is HTTPS.
+- CSP: ship `Content-Security-Policy-Report-Only` first, enforce after a clean period. Paymob is a redirect, not an iframe. Owner: videos/analytics are self-hosted; fonts are external; existing YouTube/Instagram embeds stay (intentional). Origins found in code:
+
+| Directive | Origin | Source |
+|---|---|---|
+| `script-src` | `'self'` + Next.js runtime, `https://www.instagram.com` (`embed.js`) | `storefront/src/lib/advice-video.ts:114` |
+| `frame-src` | `https://www.youtube.com` (`/embed/…`), `https://www.instagram.com` | `advice-video.ts`, `section-card.tsx`, `entity-media-gallery.tsx` |
+| `img-src` | `'self'`, API/uploads origin, `https://i.ytimg.com`, `data:` | `advice-video.ts:80` |
+| `style-src` / `font-src` | `https://fonts.googleapis.com` / `https://fonts.gstatic.com` | `storefront/src/app/layout.tsx` |
+| `connect-src` | `'self'`, API origin | — |
+
+Social links (`constants/socials.ts`) are plain links. ERP only validates `youtube.com` URLs in forms; no embed origins needed unless it previews them.
+
+**H2 — request ID.** First API middleware: reuse an incoming `X-Request-Id` only if it matches a strict format (UUID / ≤64 safe chars), else `crypto.randomUUID()`; set on the response, attach to `req`, print in `error.middleware.ts`. **Add it to CORS `exposedHeaders`** or browser JS cannot read it. Optional: nginx passes `$request_id`.
+
+**H3 — sales channel.** No separate endpoints; one immutable column stamped once.
+
+```
+mobile ──X-Platform──┐
+web ──(none)─────────┼─► same checkout endpoint
+                     ▼
+checkout_sessions.channel ──► orders.channel   (web | ios | android)
+                     ▼
+reports: GROUP BY channel  (best product / governorate per channel)
+```
+
+- Add `channel` (enum `web|ios|android`, not null, default `web`) to **`checkout_sessions` and `orders`**; optional nullable `app_version`.
+- Stamp it in the checkout controller from the identity parsed by `app-policy.ts` (reuse that parser; no second one).
+- COD → `apps/api/src/modules/orders/order/write.ts` (request in hand). Paymob → `paymob-transaction.service.ts` writes the order from the **provider callback** (no client headers) → **copy from the checkout session**.
+- Development/Expo Go and Chrome preview send no identity (by design) → recorded as `web`; acceptable, but test channel attribution on a production-identity build.
+- Backfill existing rows as `web`. Metadata is untrusted: fine for reporting, never for permissions/pricing/payment.
+
+**H4/H5.** Middleware after auth sets `no-store` on authenticated customer/admin responses; rate limiter sets `Retry-After` = seconds until the bucket's `resetAt`.
+
+**Order:** H1 → H2 → H4/H5 → H3.
+
+### Open questions
+- **Production identity failure blocks requests.** `identity.ts` throws `NativeIdentityError` before sending when installed metadata cannot be read, so every API call fails. Documented as deliberate in Phase 3, but it can act as the whole-app wall this plan forbids. Decide: keep, or send without identity and let only gated features fail. Needs device evidence either way.
+- Offer detail "in stock" uses `items.every(...)`, which is `true` for an offer with zero items while the server reports stock `0`. Matters only if an itemless offer can be saved/shown.
+
 ## Upstream and current-client issue register
 
 This register records audit findings and dated implementation evidence. Assign resolution/evidence before accepting the relevant phase; a documentation checkbox alone never establishes a fix.
@@ -538,7 +621,7 @@ The answers below supersede the earlier open questions. Do not reopen settled pr
 | ID | Confirmed choice / recommendation | Remaining detail / acceptance |
 |---|---|---|
 | D1 | **Confirmed:** current deployed, immediate previous, and one under-review candidate; keep it simple, no additional support window. | Apply the promotion/staggered-store rules above; map runtime/OTA/API fixtures to each release state. |
-| D2 | **Confirmed:** version/update layer is identity headers, `GET /app-config`, feature-only enforcement, current/previous/review support and OTA. Keep compatible features running. | Implement the specified headers/route and shared policy/error contracts; cached/offline handling, freshness and prompt behavior follow this section. Thresholds derive from supported release/capability policy. No additional analytics/kill-switch/feature-experiment system is required. |
+| D2 | **Confirmed:** version/update layer is identity headers, `GET /app-config`, feature-only enforcement, current/previous/review support and OTA. Keep compatible features running. | Implement the specified headers/route and shared policy/error contracts; cached/offline handling, freshness and prompt behavior follow this section. Thresholds derive from supported release/capability policy. **Updated 2026-10-12:** sales-channel attribution per order is included (see version-layer scope above); no other analytics/kill-switch/feature-experiment system is required. |
 | D3 | **Professional recommendation requested:** use the platform browser sheet for existing Paymob hosted checkout (Safari view on iOS / Custom Tabs on Android), with app return and API status recovery, rather than a custom payment WebView. | Recommendation, not a claim of device/provider acceptance. Select the appropriate Expo browser API, validate bank verification/wallet redirects, return-link/domain configuration and both-platform failure/resume paths before Phase 7 acceptance. |
 | D4 | **Confirmed:** videos play inside the app. | Select native uploaded-video playback and embedded YouTube/Instagram presentation; test full-screen, errors, controls and background pause. |
 | D5 | **Confirmed:** ask for re-login if recovery is unsafe; logout must invalidate the session immediately. | U2/U3/U4 must enforce server revocation once logout reaches the API. Offline local clearing is immediate, but server revocation cannot occur before communication; implement/test reconnect handling and do not falsely claim remote revocation while offline. |
