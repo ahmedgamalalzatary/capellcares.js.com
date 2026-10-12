@@ -5,7 +5,7 @@ import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
-import { tableSortSelect } from "@/components/admin/list-table";
+import { tableSortSelect } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -10,7 +10,7 @@ import {
   subscribeAdminAuthHydration,
   subscribeAdminAuthUser,
   type AdminAuthUser
-} from "../api/client";
+} from "@/lib/api/client";
 import { normalizeCategory, normalizeProduct } from "./normalizers";
 import { getErrorMessage } from "@/lib/errors";
 import { hasErpPermission } from "@/lib/erp-permissions";

@@ -1,52 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { TableEmptyRow, TableSkeletonRows, tableSortSelect } from "@/components/admin/list-table";
+import { afterEach, describe, expect, it } from "vitest";
+import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
 
 afterEach(() => {
   cleanup();
-});
-
-const COLUMNS = [
-  { key: "name", label: "المنتج" },
-  { key: "price", label: "السعر" }
-] as const;
-
-describe("tableSortSelect", () => {
-  it("offers 'store order' plus an ascending and a descending option per column", () => {
-    const { options } = tableSortSelect(COLUMNS, null, () => {});
-
-    expect(options).toEqual([
-      { value: "", label: "ترتيب المتجر" },
-      { value: "name:asc", label: "المنتج — تصاعدي" },
-      { value: "name:desc", label: "المنتج — تنازلي" },
-      { value: "price:asc", label: "السعر — تصاعدي" },
-      { value: "price:desc", label: "السعر — تنازلي" }
-    ]);
-  });
-
-  it("encodes the active sort as 'key:direction'", () => {
-    const { value } = tableSortSelect(COLUMNS, { key: "price", direction: "desc" }, () => {});
-
-    expect(value).toBe("price:desc");
-  });
-
-  it("parses a chosen option back into a sort state", () => {
-    const setSort = vi.fn();
-    const { onChange } = tableSortSelect(COLUMNS, null, setSort);
-
-    onChange("price:desc");
-
-    expect(setSort).toHaveBeenCalledWith({ key: "price", direction: "desc" });
-  });
-
-  it("maps the empty option back to the store order (null)", () => {
-    const setSort = vi.fn();
-    const { onChange } = tableSortSelect(COLUMNS, null, setSort);
-
-    onChange("");
-
-    expect(setSort).toHaveBeenCalledWith(null);
-  });
 });
 
 describe("TableEmptyRow", () => {

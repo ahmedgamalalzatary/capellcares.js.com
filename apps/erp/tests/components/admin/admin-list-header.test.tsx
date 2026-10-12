@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AdminListHeader } from "@/components/admin/admin-list-header";
+import { AdminListHeader, tableSortSelect } from "@/components/admin/admin-list-header";
 
 // The filter panel (plain labelled selects) is the phone layout; force it so the tests can drive the filters directly.
 beforeEach(() => {
@@ -148,5 +148,48 @@ describe("AdminListHeader", () => {
 
     fireEvent.click(screen.getByLabelText("إزالة فلتر حالة العنصر"));
     expect(onChange).toHaveBeenCalledWith("all");
+  });
+});
+
+const COLUMNS = [
+  { key: "name", label: "المنتج" },
+  { key: "price", label: "السعر" }
+] as const;
+
+describe("tableSortSelect", () => {
+  it("offers 'store order' plus an ascending and a descending option per column", () => {
+    const { options } = tableSortSelect(COLUMNS, null, () => {});
+
+    expect(options).toEqual([
+      { value: "", label: "ترتيب المتجر" },
+      { value: "name:asc", label: "المنتج — تصاعدي" },
+      { value: "name:desc", label: "المنتج — تنازلي" },
+      { value: "price:asc", label: "السعر — تصاعدي" },
+      { value: "price:desc", label: "السعر — تنازلي" }
+    ]);
+  });
+
+  it("encodes the active sort as 'key:direction'", () => {
+    const { value } = tableSortSelect(COLUMNS, { key: "price", direction: "desc" }, () => {});
+
+    expect(value).toBe("price:desc");
+  });
+
+  it("parses a chosen option back into a sort state", () => {
+    const setSort = vi.fn();
+    const { onChange } = tableSortSelect(COLUMNS, null, setSort);
+
+    onChange("price:desc");
+
+    expect(setSort).toHaveBeenCalledWith({ key: "price", direction: "desc" });
+  });
+
+  it("maps the empty option back to the store order (null)", () => {
+    const setSort = vi.fn();
+    const { onChange } = tableSortSelect(COLUMNS, null, setSort);
+
+    onChange("");
+
+    expect(setSort).toHaveBeenCalledWith(null);
   });
 });

@@ -180,6 +180,20 @@ describe("ShopMediaPage", () => {
     });
   });
 
+  it("removes only the selected image row after deleting and adding images", () => {
+    render(createElement(ShopMediaPage));
+
+    fireEvent.click(screen.getByRole("button", { name: "إضافة صورة" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "إزالة الصورة" })[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "إضافة صورة" }));
+
+    expect(screen.getAllByRole("button", { name: "إزالة الصورة" })).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole("button", { name: "إزالة الصورة" })[0]!);
+
+    expect(screen.getAllByRole("button", { name: "إزالة الصورة" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "سطح المكتب — الإنجليزية" })).toBeInTheDocument();
+  });
+
   it("adds and saves announcement messages on the shop-media page", () => {
     render(createElement(ShopMediaPage));
     openAnnouncementsTab();

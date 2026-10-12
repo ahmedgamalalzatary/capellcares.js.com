@@ -5,6 +5,7 @@ import { DropdownMenu, Popover } from "radix-ui";
 import { Check, ChevronLeft, Filter, RotateCcw, Search, SlidersHorizontal, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputWithIcon, Select } from "@/components/ui/input";
+import type { SortState } from "@/hooks/use-table-sort";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -351,4 +352,26 @@ export function AdminListHeader({
       ) : null}
     </div>
   );
+}
+
+/** The phone-only sort control every list page passes to `AdminListHeader`'s `sort` prop. */
+export function tableSortSelect<K extends string>(
+  columns: ReadonlyArray<{ key: K; label: string }>,
+  sort: SortState<K> | null,
+  setSort: (sort: SortState<K> | null) => void
+): ListSort {
+  return {
+    value: sort ? `${sort.key}:${sort.direction}` : "",
+    onChange: (value) => {
+      const [key, direction] = value.split(":");
+      setSort(key ? { key: key as K, direction: direction as SortState<K>["direction"] } : null);
+    },
+    options: [
+      { value: "", label: "ترتيب المتجر" },
+      ...columns.flatMap((column) => [
+        { value: `${column.key}:asc`, label: `${column.label} — تصاعدي` },
+        { value: `${column.key}:desc`, label: `${column.label} — تنازلي` }
+      ])
+    ]
+  };
 }

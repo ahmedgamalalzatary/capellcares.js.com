@@ -2,7 +2,8 @@
 
 Scope: `apps/erp` only. Audited against the working tree on 2026-10-09 (branch `main`, after `2375efe`).
 Audience: the engineer/AI executing the migration. Read this whole file first, then `AGENTS.md` (repo root),
-`apps/erp/DESIGN.md`, and `apps/erp/REDESIGN.md` (user rules: pages always full width, Arabic copy, tokens only).
+`apps/erp/DESIGN.md` (user rules: pages always full width, Arabic copy, tokens only).
+`REDESIGN.md` was intentionally removed in `7332baa`; `DESIGN.md` is the current design reference.
 
 > **Revision (2026-10-09, later):** route pages stay in `src/app/**`. Only each feature's `components/`, `hooks/`,
 > `lib/` and `types.ts` move into `src/features/<feature>/`. Pages are not moved and are not turned into re-exports;
@@ -28,7 +29,7 @@ Audience: the engineer/AI executing the migration. Read this whole file first, t
 
 **Non-goals (do NOT do)**
 
-- No visual or redesign changes. The redesign is finished (see `REDESIGN.md`).
+- No visual or redesign changes. The redesign is finished (see `apps/erp/DESIGN.md`).
 - No splitting of the global store (`lib/store/*`). It is one shared `ErpStore` instance used everywhere and stays in `lib/`.
 - No barrel `index.ts` files per feature, no path aliases per feature, and no new libraries. Import files directly by path.
 - No moving of route pages out of `src/app/**`. Pages stay where Next.js needs them.
@@ -60,9 +61,8 @@ Audience: the engineer/AI executing the migration. Read this whole file first, t
 
 ```
 src/
-  app/                      routes only (Next App Router). Each page.tsx re-exports a feature page.
+  app/                      route pages (Next App Router), importing feature building blocks.
   features/<feature>/
-    <feature>-page.tsx      route-level view(s) (list page, new page, edit page…)
     components/             components used only by this feature
     hooks/                  hooks used only by this feature
     lib/                    pure helpers / constants used only by this feature
@@ -332,7 +332,7 @@ Vitest's default `include` already picks up nested folders, so no config change 
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `admin-list-header.test.tsx`                              | `tests/components/admin/admin-list-header.test.tsx`                                                                                                                               | —                                                                                                                                                                                                                                         |
 | `admin-shell.test.tsx`                                    | `tests/components/shell/admin-shell.test.tsx`                                                                                                                                     | —                                                                                                                                                                                                                                         |
-| `advices-page.test.tsx`                                   | `tests/features/advices/advices-page.test.tsx`                                                                                                                                    | import `@/features/advices/advices-page`                                                                                                                                                                                                  |
+| `advices-page.test.tsx`                                   | `tests/features/advices/advices-page.test.tsx`                                                                                                                                    | import `@/app/advices/page`                                                                                                                                                                                                  |
 | `api-client-auth.test.ts`                                 | `tests/lib/api/client.test.ts`                                                                                                                                                    | —                                                                                                                                                                                                                                         |
 | `bundle-form-hover-image.test.tsx`                        | `tests/features/bundles/bundle-form-hover-image.test.tsx` (before Phase 4: `tests/features/offers/`)                                                                              | form/hook import paths; remove stale mock `@/components/ui/icons`                                                                                                                                                                         |
 | `bundle-form-item-reorder.test.tsx`                       | same folder as above                                                                                                                                                              | form import paths                                                                                                                                                                                                                         |
@@ -341,7 +341,7 @@ Vitest's default `include` already picks up nested folders, so no config change 
 | `category-form-toast.test.tsx` + `category-form.test.tsx` | merge → `tests/features/categories/components/category-form.test.tsx` (two `describe` blocks)                                                                                     | form import                                                                                                                                                                                                                               |
 | `collection-edit-page.test.tsx`                           | `tests/features/collections/edit-collection-page.test.tsx`                                                                                                                        | page + form import                                                                                                                                                                                                                        |
 | `collection-form.test.tsx`                                | `tests/features/collections/components/collection-form.test.tsx`                                                                                                                  | form/hook/media imports; remove stale `@/components/ui/icons` mock                                                                                                                                                                        |
-| `collections-page.test.tsx`                               | `tests/features/collections/collections-page.test.tsx`                                                                                                                            | imports `app/collections/new/page` too → `@/features/collections/new-collection-page`                                                                                                                                                     |
+| `collections-page.test.tsx`                               | `tests/features/collections/collections-page.test.tsx`                                                                                                                            | imports `app/collections/new/page` too → `@/app/collections/new/page`                                                                                                                                                     |
 | `dashboard-metrics.test.ts`                               | `tests/features/dashboard/lib/metrics.test.ts`                                                                                                                                    | `@/features/dashboard/lib/metrics`                                                                                                                                                                                                        |
 | `dashboard-page.test.tsx`                                 | `tests/features/dashboard/dashboard-page.test.tsx`                                                                                                                                | page import                                                                                                                                                                                                                               |
 | `discounts-page.test.tsx`                                 | `tests/features/discounts/bulk-discounts-page.test.tsx`                                                                                                                           | page import                                                                                                                                                                                                                               |
@@ -434,8 +434,8 @@ export function TableEmptyRow({ colSpan, icon, title, description }: …)
 export function tableSortSelect<K extends string>(columns: {key:K;label:string}[], sort: SortState<K>|null, setSort): ListSort
 ```
 
-`tableSortSelect` returns the object passed to `AdminListHeader`'s `sort` prop. It belongs in
-`hooks/use-table-sort.ts` or next to `ListSort` in `admin-list-header.tsx`. Pick one and say which in the PR.
+`tableSortSelect` returns the object passed to `AdminListHeader`'s `sort` prop. It lives next to `ListSort`
+in `admin-list-header.tsx`; consumers import it directly from there.
 Keep the existing `aria-label`, `title` and `data-testid` values exactly. Tests query them.
 
 ### 5.2 Date and category helpers → `lib/`
@@ -514,7 +514,7 @@ features/bundles/
   types.ts
 features/offers/offer-config.ts         → BundleConfig for offers (all Arabic strings)
 features/collections/collection-config.ts
-features/offers/*-page.tsx              → thin: <BundleForm config={offerConfig} …/>
+app/{offers,collections}/**/page.tsx    → route pages import the feature wrappers
 ```
 
 Keep `OfferForm` and `CollectionForm` as thin named wrappers (`(props) => <BundleForm config={offerConfig} {...props} />`)
@@ -694,9 +694,9 @@ copy, test ids, or the user-facing behaviour beyond what A1/A2/B2 state.
   `admin-list-toolbar.tsx`, `admin-status-badge.tsx`, `ui/icons.tsx`, `image-upload.tsx` and
    `product-hover-image-upload.tsx`, none of which exist. Line ~896 also says ERP `components/ui` "only holds icons/modal",
    which is no longer true. Rewrite the ERP subtree to the new layout and state the import rules from §2.
-2. Update `apps/erp/DESIGN.md` §4/§7 (component locations) and `apps/erp/REDESIGN.md` references
-  (`src/lib/dashboard.ts`, `src/components/dashboard/`, `editor-layout (+ ReadinessStatus, scrollToSection)`, the
-   `src/styles/legacy.css` mention).
+2. Update `apps/erp/DESIGN.md` component locations and remove stale references
+   (`src/lib/dashboard.ts`, `src/components/dashboard/`, `ReadinessStatus`, `scrollToSection`,
+   `src/styles/legacy.css`). `REDESIGN.md` was intentionally removed; do not recreate it.
 3. Full green, sequential: `pnpm typecheck`, `pnpm test`, `pnpm build` in `apps/erp`; `pnpm exec eslint apps/erp` at the
   root. This touches many areas, so per `AGENTS.md` also run the root `pnpm typecheck:web` and `pnpm lint:web`.
 4. Manual smoke run (`pnpm dev` in `apps/erp`, port 3001; check first whether a dev server is already running): open
@@ -738,17 +738,42 @@ Everything not listed here must keep its current behaviour.
 
 
 
+Additional user decision (2026-10-12): image rows must retain independent identities after rows are deleted and added.
+New image rows use `crypto.randomUUID()` instead of a length-based ID. The delete/add regression is covered by
+`tests/features/shop-media/shop-media-page.test.tsx`.
+
 ## 10. Done checklist
 
-- [ ] `src/app/**/page.tsx` stay in place (only `orders/[id]` is a server wrapper; `page.tsx` redirect, `layout.tsx`, `api/health/route.ts` untouched) and import their feature's building blocks from `@/features/<feature>/…`.
-- [ ] No files left in `src/types/`, `src/hooks/forms/`, `src/components/{dashboard,orders,trash}/`, or `src/components/*.tsx` at root.
-- [ ] `grep -rn "@/features/" src/components src/hooks src/lib` → only `components/shell/admin-shell.tsx` (order-review-flag-alerts).
-- [ ] `grep -rnE "@/features/(\w+)" src/features` → each file imports only its own feature (or `bundles` from offers/collections).
-- [ ] No relative `../` imports that leave a feature folder.
-- [ ] Feature component/hook/lib tests sit at the mirror path under `tests/features/<feature>/`; page tests stay with their feature there too. `tests/` root holds only `setup.ts` and `shared-ui.test.tsx`.
-- [ ] Every `vi.mock("@/…")` path exists.
-- [ ] Test count ≥ baseline, and new tests from §4 are added.
-- [ ] typecheck, test, build, eslint green, plus root `typecheck:web` / `lint:web`.
-- [ ] `docs/folder-structure.md`, `apps/erp/DESIGN.md`, `apps/erp/REDESIGN.md` updated.
-- [ ] §9 decisions D1–D7 applied, each with a test.
-- [ ] §5.7 A1–A2, B1–B11, B13, C1–C5 done, each with its test; no remaining copies (re-run the greps in §5.7 B5/B6/B8).
+- [x] `src/app/**/page.tsx` stay in place (only `orders/[id]` is a server wrapper; `page.tsx` redirect, `layout.tsx`, `api/health/route.ts` untouched) and import their feature's building blocks from `@/features/<feature>/…`.
+- [x] No files left in `src/types/`, `src/hooks/forms/`, `src/components/{dashboard,orders,trash}/`, or `src/components/*.tsx` at root.
+- [x] `grep -rn "@/features/" src/components src/hooks src/lib` → only `components/shell/admin-shell.tsx` (order-review-flag-alerts).
+- [x] `grep -rnE "@/features/(\w+)" src/features` → each file imports only its own feature (or `bundles` from offers/collections).
+- [x] No relative `../` imports that leave a feature folder.
+- [x] Feature component/hook/lib tests sit at the mirror path under `tests/features/<feature>/`; page tests stay with their feature there too. `tests/` root holds only `setup.ts` and `shared-ui.test.tsx`.
+- [x] Every `vi.mock("@/…")` path exists.
+- [ ] Original pre-migration passing-test baseline recovered and compared (not recorded in this plan). The §4 new tests are present; the follow-up baseline is recorded below.
+- [x] typecheck, test, build, eslint green, plus root `typecheck:web` / `lint:web`.
+- [x] `docs/folder-structure.md` and `apps/erp/DESIGN.md` updated; stale `REDESIGN.md` references resolved.
+- [x] §9 decisions D1–D7 applied. Behavioral fixes have regression tests; D6 is verified by typecheck/build and D7 by the corrected collection copy.
+- [x] §5.7 A1–A2, B1–B11, B13, C1–C5 implemented, with regression tests for behavior and static verification of removed APIs/import boundaries; no remaining copies of the shared implementations.
+- [ ] Manual smoke of every §8 route in light and dark themes.
+
+### Verification follow-up — 2026-10-12
+
+The remaining code gaps are resolved: shared `components/admin/fold-button.tsx` is used by categories and
+shop-media; `section-editor.tsx` and `announcements-editor.tsx` are extracted; unused `CardFooter` is removed;
+`tableSortSelect` sits beside `ListSort`; the store API import uses an absolute path. Route pages, copy, styling,
+permissions and save payloads are preserved. The additional user-approved image-row identity bug is fixed.
+
+- Follow-up baseline: **68 test files / 405 passing tests**. Final: **68 test files / 407 passing tests**.
+  The two added regressions were observed failing before implementation. Existing page interaction tests guard
+  the editor extractions. The original 2026-10-09 pre-migration passing-test count was not recorded, so the
+  historical comparison remains unverified.
+- ERP `typecheck`, `test`, `build`, root `eslint apps/erp`, `typecheck:web` and `lint:web` all pass.
+  Root web checks ran with `--concurrency=1`.
+- Static checks pass: route-page paths unchanged, old folders removed, feature/shared import boundaries obeyed,
+  no cross-folder relative imports, all `vi.mock("@/…")` targets exist, and removed exports have no remaining users.
+- `docs/folder-structure.md` and `apps/erp/DESIGN.md` reflect the final layout. Stale route-page examples and
+  `REDESIGN.md` instructions are corrected.
+- **Browser smoke remains pending.** This session's browser inventory is empty, and no local ERP/API servers
+  were listening on ports 3001/4000. No browser rendering, theme or viewport result is claimed.

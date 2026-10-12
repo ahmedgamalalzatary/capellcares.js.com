@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Check, CircleDot, Plus } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
-import { tableSortSelect } from "@/components/admin/list-table";
+import { tableSortSelect } from "@/components/admin/admin-list-header";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";

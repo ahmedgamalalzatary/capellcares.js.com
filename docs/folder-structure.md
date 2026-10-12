@@ -256,6 +256,7 @@ capella/
 │  │  │  │  │  ├─ admin-list-header.tsx
 │  │  │  │  │  ├─ editor-layout.tsx
 │  │  │  │  │  ├─ erp-forbidden-state.tsx
+│  │  │  │  │  ├─ fold-button.tsx
 │  │  │  │  │  ├─ form-save-bar.tsx
 │  │  │  │  │  ├─ list-table.tsx
 │  │  │  │  │  ├─ permission-gate.tsx
@@ -328,7 +329,7 @@ capella/
 │  │  │  │  ├─ reviews/components/reviews-table.tsx
 │  │  │  │  ├─ shipping/{components/shipments-table.tsx,lib/labels.ts}
 │  │  │  │  ├─ shop-media/
-│  │  │  │  │  ├─ components/fold-button.tsx
+│  │  │  │  │  ├─ components/{section-editor,announcements-editor}.tsx
 │  │  │  │  │  ├─ hooks/{use-collapsed-shop-media,use-collapsed-shop-media-items}.ts
 │  │  │  │  │  ├─ lib/editable-section.ts
 │  │  │  │  │  └─ types.ts

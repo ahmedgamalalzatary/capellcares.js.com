@@ -64,12 +64,12 @@ The base layer also sets selection, focus, scrollbars, `option { Canvas/CanvasTe
 `src/components/ui/`: `button` (primary/secondary/ghost/danger/danger-ghost; sm/md/lg/icon/icon-sm; `asChild`) ·
 `input` (`Input`, `Textarea`, native `Select`, `InputWithIcon`, `InputWithAddon`, `controlClass`) · `field` (label + hint +
 error) · `switch` (`Switch`, `SwitchField`) · `alert` · `badge` (`Badge`, `Swatch`) · `card` (`Card`, `CardHeader`,
-`CardBody`, `CardFooter`) · `table` (`Table`, `THead`, `TBody`, `TR`, `TH`, `SortableTH`, `TD`) · `thumb` (the tray's
+`CardBody`) · `table` (`Table`, `THead`, `TBody`, `TR`, `TH`, `SortableTH`, `TD`) · `thumb` (the tray's
 signature, with first-letter fallback) · `empty-state` · `skeleton` (`Skeleton`, `FormSkeleton`) · `row-menu` · `modal`
 (Radix Dialog; bottom sheet on phones) · `file-button`. Icons: lucide-react only.
 
 `src/components/admin/`: `admin-list-header` (+ `tableSortSelect`, `ACTIVE_STATUS_FILTER_OPTIONS`), `list-table`,
-`permission-gate` (+ `ForbiddenPage`), `status-badge`, `reorder-buttons`, `stepper`, `editor-layout`,
+`permission-gate` (+ `ForbiddenPage`), `status-badge`, `reorder-buttons`, `fold-button`, `stepper`, `editor-layout`,
 `form-save-bar`, `admin-confirm-modal`, `erp-forbidden-state`, `shipping-actions`.
 
 `src/components/shell/`: `admin-shell.tsx` (rail + mobile drawer + page header: breadcrumb, title, description,
@@ -79,6 +79,9 @@ Shared form parts (`src/components/forms/`, used by product/offer/collection/cat
 `editor-form-parts.tsx` (`BilingualNameFields`, `BilingualEditorField`), `lang-tag.tsx` (the ع/EN chip),
 `status-choice.tsx`, `category-picker.tsx`, `media-frame.tsx`, `image-actions.tsx`, `entity-media-upload.tsx`,
 `hover-image-upload.tsx`, `single-image-field.tsx`, `related-items-field.tsx`.
+
+Shop media: `features/shop-media/components/{section-editor,announcements-editor}.tsx` holds the editors;
+`app/shop-media/page.tsx` owns their draft/save state and uses the shared `admin/fold-button`.
 
 Dashboard: cards in `src/features/dashboard/components/`; calculations in `src/features/dashboard/lib/metrics.ts`
 (tests: `tests/features/dashboard/lib/metrics.test.ts`). It is a daily overview — attention strip (reconciliation, flagged orders, pending

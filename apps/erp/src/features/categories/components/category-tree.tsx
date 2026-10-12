@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { Category } from "@capella/shared";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { FoldButton } from "@/components/admin/fold-button";
 import { RowMenu, RowMenuItem, RowMenuLink, RowMenuSeparator } from "@/components/ui/row-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Thumb } from "@/components/ui/thumb";
@@ -95,16 +96,13 @@ function Tree({
               style={{ "--depth": depth, paddingInlineStart: `calc(${depth} * 1.5rem + 0.75rem)` } as CSSProperties}
             >
               {hasKids ? (
-                <button
-                  type="button"
-                  className="grid size-8 shrink-0 place-items-center rounded-md text-text-muted transition-colors hover:bg-hover hover:text-text-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus pointer-coarse:size-11"
+                <FoldButton
+                  appearance="tree"
+                  collapsed={isCollapsed}
                   onClick={() => onToggleCollapsed(category.id)}
-                  aria-label={isCollapsed ? "توسيع" : "طي"}
-                  aria-expanded={!isCollapsed}
+                  label={isCollapsed ? "توسيع" : "طي"}
                   data-testid={`category-toggle-${category.id}`}
-                >
-                  <ChevronDown className={cn("size-4 transition-transform duration-200", isCollapsed && "rotate-180")} />
-                </button>
+                />
               ) : (
                 <span aria-hidden className="size-8 shrink-0 pointer-coarse:size-11" />
               )}

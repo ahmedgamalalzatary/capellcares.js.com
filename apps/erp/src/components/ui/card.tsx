@@ -31,7 +31,3 @@ export function CardHeader({
 export function CardBody({ className, ...props }: ComponentProps<"div">) {
   return <div className={cn("px-5 pb-5 sm:px-6 sm:pb-6", className)} {...props} />;
 }
-
-export function CardFooter({ className, ...props }: ComponentProps<"footer">) {
-  return <footer className={cn("flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-4 sm:px-6", className)} {...props} />;
-}
