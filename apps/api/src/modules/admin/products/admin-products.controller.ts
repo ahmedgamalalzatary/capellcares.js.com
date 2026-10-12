@@ -202,7 +202,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
       .select({ slug: products.slug, sku: products.sku })
       .from(products)
       .where(and(
-        or(eq(products.slug, resolvedSlug), eq(products.sku, productSku)),
+        or(eq(products.slug, resolvedSlug), productSku ? eq(products.sku, productSku) : undefined),
         productId ? ne(products.id, productId) : undefined
       ))
       .limit(1);

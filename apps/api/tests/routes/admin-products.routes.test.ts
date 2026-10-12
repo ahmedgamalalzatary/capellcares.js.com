@@ -1432,6 +1432,28 @@ serialTest("admin product create rejects an SKU already used by another product 
   });
 });
 
+serialTest("admin product create ignores a blank SKU instead of reporting a conflict against another blank one", async () => {
+  const ids = await getBaselineIds();
+  // A row left behind with a blank SKU must not make every later blank-SKU save look like a clash.
+  await db.update(products).set({ sku: "" }).where(eq(products.id, ids.productTwoId));
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/products", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        ...makeCompleteProduct(ids.leafCategoryId),
+        sku: "",
+        slug: "route-blank-sku-save",
+        status: "inactive"
+      })
+    });
+
+    assert.notEqual(response.status, 409);
+  });
+});
+
 serialTest("admin product upsert gives each Arabic-only draft its own temporary slug and switches to the English slug once named", async () => {
   const ids = await getBaselineIds();
 
