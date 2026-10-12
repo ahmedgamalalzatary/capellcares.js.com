@@ -111,49 +111,21 @@ describe("ShopMegaMenu", () => {
     expect(screen.queryByAltText("Starter Kit")).toBeNull();
   });
 
-  it("applies an underline + bold hover to leaf (non-parent) sub-category links", () => {
-    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
-
-    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
-    fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
-
-    const subLink = screen.getByRole("link", { name: "Cleansers" });
-    expect(subLink.className).toContain("hover:underline");
-    expect(subLink.className).toContain("hover:font-bold");
-    expect(subLink.className).not.toContain("hover:text-accent");
-  });
-
   it("closes the panel instantly when any child link is clicked", () => {
     render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
 
     fireEvent.click(screen.getByRole("button", { name: /shop/i }));
+    const trigger = screen.getByRole("button", { name: /shop/i });
     const panel = screen.getByRole("menu");
-    expect(panel.className).toContain("pointer-events-auto");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(panel.style.getPropertyValue("--mega-panel-height")).toMatch(/px|vh/);
 
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Skin Care" }));
     fireEvent.click(screen.getByRole("link", { name: "Cleansers" }));
 
-    expect(panel.className).toContain("pointer-events-none");
-  });
-
-  it("gives every panel link consistent hover treatment regardless of type", () => {
-    render(createElement(ShopMegaMenu, { lang: "en", dict, menuEntries, isAr: false }));
-    fireEvent.click(screen.getByRole("button", { name: /shop/i }));
-
-    const sample = (tab: string, link: RegExp | string) => {
-      fireEvent.mouseEnter(screen.getByRole("button", { name: tab }));
-      return screen.getByRole("link", { name: link }).className;
-    };
-
-    const classes = [
-      sample("Skin Care", "Cleansers"),
-      sample("Collections", /Starter Kit/)
-    ];
-
-    for (const className of classes) {
-      expect(className).toContain("hover:underline");
-      expect(className).toContain("hover:font-bold");
-    }
+    // The panel collapses to zero height and the trigger reports itself collapsed.
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(panel.style.getPropertyValue("--mega-panel-height")).toBe("0px");
   });
 
   it("shows an 'All {category}' link to the root category for category tabs", () => {

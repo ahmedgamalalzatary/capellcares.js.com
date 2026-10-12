@@ -144,6 +144,46 @@ describe("SearchOverlay", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
+  it("closes on Escape and stops listening once closed", () => {
+    const dict = getDict("en");
+    const onClose = vi.fn();
+    const { rerender } = render(
+      createElement(SearchOverlay, { lang: "en", dict, open: true, onClose })
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    onClose.mockClear();
+    rerender(createElement(SearchOverlay, { lang: "en", dict, open: false, onClose }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes when the backdrop behind the overlay is clicked but not the panel itself", () => {
+    const dict = getDict("en");
+    const onClose = vi.fn();
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose }));
+
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(dialog);
+    expect(onClose).not.toHaveBeenCalled();
+
+    // The backdrop sits outside the dialog panel.
+    fireEvent.click(dialog.parentElement!.querySelector("div.absolute") as HTMLElement);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes from its own back control", () => {
+    const dict = getDict("en");
+    const onClose = vi.fn();
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose }));
+
+    fireEvent.click(screen.getByRole("button", { name: dict.common.back }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the effective discounted price in search results, not the original price", async () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));

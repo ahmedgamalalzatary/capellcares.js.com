@@ -31,7 +31,9 @@ vi.mock("@/lib/storefront-page-context", () => ({
 const { fetchProducts, fetchCategories } = vi.hoisted(() => ({
   fetchProducts: vi.fn(async () => ([
     { id: 1, status: "active", deletedAt: null, isBestseller: true, isNew: false },
-    { id: 2, status: "active", deletedAt: null, isBestseller: false, isNew: true }
+    { id: 2, status: "active", deletedAt: null, isBestseller: false, isNew: true },
+    { id: 3, status: "active", deletedAt: "2026-09-01T00:00:00.000Z", isBestseller: false, isNew: true },
+    { id: 4, status: "archived", deletedAt: null, isBestseller: false, isNew: true }
   ])),
   fetchCategories: vi.fn(async () => ([
     { id: 1, deletedAt: null }
@@ -52,21 +54,22 @@ describe("listing pages", () => {
     fetchCategories.mockClear();
   });
 
-  it("renders bestsellers even if categories loading fails", async () => {
+  it("shows only active, undeleted bestsellers even if categories loading fails", async () => {
     fetchCategories.mockRejectedValueOnce(new Error("offline"));
 
     render(await BestsellersPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("products:1");
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:0");
+    // Product 1 is the only active, undeleted bestseller; 2 is a plain product and 3/4 are excluded.
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("products:1;categories:0");
   });
 
-  it("renders new products even if categories loading fails", async () => {
+  it("shows only active, undeleted new products even if categories loading fails", async () => {
     fetchCategories.mockRejectedValueOnce(new Error("offline"));
 
     render(await NewProductsPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("products:2");
-    expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:0");
+    // Product 2 is the only new one that is active and not deleted: 1 is not new,
+    // 3 is soft-deleted and 4 is archived.
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("products:2;categories:0");
   });
 });

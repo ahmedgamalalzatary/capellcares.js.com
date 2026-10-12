@@ -137,6 +137,7 @@ function HookProbe({
     null,
     createElement("button", { onClick: () => grid.setQ("rose") }, "search"),
     createElement("button", { onClick: () => grid.setSort("price-desc") }, "sort-desc"),
+    createElement("button", { onClick: () => grid.setSort("price-asc") }, "sort-asc"),
     createElement("button", { onClick: () => grid.setSort("newest") }, "sort-newest"),
     createElement("button", { onClick: () => grid.setCategory(2) }, "category-serums"),
     createElement("button", { onClick: () => grid.setCategory(4) }, "category-vitamin-c"),
@@ -222,6 +223,21 @@ describe("useProductGridFilters", () => {
 
     expect(screen.getByText("tree:101:2:0")).toBeInTheDocument();
     expect(screen.getByText("tree-order:101>102>103")).toBeInTheDocument();
+  });
+
+  it("orders the grid by price in the direction the shopper picked", async () => {
+    render(createElement(HookProbe));
+    // Product 1 costs 220 and product 2 costs 140.
+    expect(await screen.findByText("ids:1,2")).toBeInTheDocument();
+
+    screen.getByText("sort-desc").click();
+    expect(await screen.findByText("ids:1,2")).toBeInTheDocument();
+
+    screen.getByText("sort-asc").click();
+    expect(await screen.findByText("ids:2,1")).toBeInTheDocument();
+
+    screen.getByText("sort-desc").click();
+    expect(await screen.findByText("ids:1,2")).toBeInTheDocument();
   });
 
   it("updates search, sort, and price filters through the returned state actions", async () => {

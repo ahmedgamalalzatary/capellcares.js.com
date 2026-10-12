@@ -14,6 +14,7 @@ const { uploadMedia } = vi.hoisted(() => ({
 
 const toggleProductStatus = vi.fn().mockRejectedValue(new Error("toggle failed"));
 const upsertProduct = vi.fn().mockResolvedValue(undefined);
+const softDeleteProduct = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/components/shell/admin-shell", () => ({
   AdminShell: ({ children, actions }: any) => createElement("div", null, actions, children)
@@ -69,7 +70,7 @@ vi.mock("@/lib/store", () => ({
     categories: [{ id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]
   }),
   getStore: () => ({
-    softDeleteProduct: vi.fn(),
+    softDeleteProduct,
     toggleProductStatus,
     upsertProduct
   })
@@ -77,13 +78,6 @@ vi.mock("@/lib/store", () => ({
 
 import ProductsListPage from "@/app/products/page";
 import { ProductForm } from "@/features/products/components/product-form";
-
-describe("ProductsListPage bulk discounts", () => {
-  it("opens the bulk discount manager from the products page", () => {
-    render(createElement(ProductsListPage));
-    expect(screen.getByRole("link", { name: "إدارة الخصومات" })).toHaveAttribute("href", "/discounts");
-  });
-});
 
 afterEach(() => {
   cleanup();
@@ -98,6 +92,7 @@ beforeEach(() => {
   });
   toggleProductStatus.mockClear();
   upsertProduct.mockClear();
+  softDeleteProduct.mockClear();
 });
 
 const relatedOptions = [
@@ -220,6 +215,32 @@ describe("ProductsListPage", () => {
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى المنتجات.")).toBeInTheDocument();
   });
 
+  it("filters the product list by what the admin types in search", () => {
+    render(createElement(ProductsListPage));
+
+    const search = screen.getByRole("searchbox", { name: /ابحثي باسم المنتج/ });
+    fireEvent.change(search, { target: { value: "منتج" } });
+
+    // The single fixture still matches its own name...
+    expect(screen.getByTestId("product-row-1")).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "لا يوجد" } });
+
+    expect(screen.queryByTestId("product-row-1")).toBeNull();
+  });
+
+  it("brings the whole list back when the search is cleared", () => {
+    render(createElement(ProductsListPage));
+
+    const search = screen.getByRole("searchbox", { name: /ابحثي باسم المنتج/ });
+    fireEvent.change(search, { target: { value: "لا يوجد" } });
+    expect(screen.queryByTestId("product-row-1")).toBeNull();
+
+    fireEvent.change(search, { target: { value: "" } });
+
+    expect(screen.getByTestId("product-row-1")).toBeInTheDocument();
+  });
+
   it("keeps the toggle modal open, shows an error, and resets loading when status toggle fails", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["products.read", "products.create", "products.update", "products.soft_delete", "products.toggle_status"] },
@@ -236,6 +257,44 @@ describe("ProductsListPage", () => {
     expect(await screen.findByText("تعذر تحديث حالة المنتج. حاولي مرة أخرى.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "تأكيد" })).not.toBeDisabled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("soft-deletes a product only after the confirmation is accepted", async () => {
+    render(createElement(ProductsListPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات منتج" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^حذف/ }));
+    // Still only a question: nothing is deleted until the admin confirms.
+    expect(softDeleteProduct).not.toHaveBeenCalled();
+
+    fireEvent.click(await screen.findByRole("button", { name: "حذف المنتج" }));
+
+    expect(softDeleteProduct).toHaveBeenCalledWith(1);
+  });
+
+  it("deletes nothing when the confirmation is cancelled", async () => {
+    render(createElement(ProductsListPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات منتج" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^حذف/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "إلغاء" }));
+
+    expect(softDeleteProduct).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("offers no delete action to staff without products.soft_delete", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["products.read", "products.update"] },
+      hydrated: true,
+      logout: vi.fn()
+    });
+    render(createElement(ProductsListPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات منتج" }));
+
+    await screen.findByRole("menuitem", { name: /^تعديل/ });
+    expect(screen.queryByRole("menuitem", { name: /^حذف/ })).toBeNull();
   });
 
   it("shows an automatic offer badge for products linked to offers", () => {

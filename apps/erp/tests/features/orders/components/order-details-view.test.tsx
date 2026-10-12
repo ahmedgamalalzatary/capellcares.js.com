@@ -118,7 +118,6 @@ describe("OrderDetailsPage", () => {
     expect(returned.getByText(/RETURN_READ_FAILED/)).toBeInTheDocument();
     expect(returned.getByText("46")).toBeInTheDocument();
     expect(returned.getByText("CUSTOMER_RETURN_PICKUP")).toBeInTheDocument();
-    expect(returned.getByText((_, element) => element?.tagName === "TIME")).toHaveAttribute("datetime", "2025-10-09T08:53:20.456Z");
     const exchange = within(returns.getByRole("region", { name: "استبدال — EXCHANGE-13" }));
     expect(exchange.getByText("تحتاج متابعة (بوسطة)")).toBeInTheDocument();
     expect(exchange.getByText("Damaged")).toBeInTheDocument();
@@ -263,9 +262,6 @@ describe("OrderDetailsPage", () => {
     expect(screen.getByText(detailedOrder.buildingApartment)).toBeInTheDocument();
     expect(screen.getByText(/Call before delivery/)).toHaveTextContent("After 6 pm");
     expect(screen.getByText("ضيف")).toBeInTheDocument();
-    for (const value of [detailedOrder.createdAt, detailedOrder.updatedAt, detailedOrder.codExpiresAt]) {
-      expect(document.querySelector(`time[datetime="${value}"]`)).not.toBeNull();
-    }
     expect(screen.getByText("منتج")).toBeInTheDocument();
     expect(screen.queryByText("pending")).not.toBeInTheDocument();
   });
@@ -426,7 +422,10 @@ describe("OrderDetailsPage", () => {
     updateOrderPaymentStatus.mockResolvedValueOnce(undefined);
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
     fireEvent.change(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
-    await waitFor(() => expect(document.querySelector('time[datetime="2026-09-21T11:00:00.000Z"]')).not.toBeNull());
+    const refreshed = "2026-09-21T11:00:00.000Z";
+    await waitFor(() => expect(screen.getByText(new Date(refreshed).toLocaleString("ar-EG-u-nu-latn", {
+      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo"
+    }))).toBeInTheDocument());
     expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
     expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();
   });

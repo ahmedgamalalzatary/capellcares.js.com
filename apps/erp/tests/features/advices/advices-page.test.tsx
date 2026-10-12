@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toggleAdviceStatus = vi.fn().mockResolvedValue(undefined);
 const reorderAdvices = vi.fn().mockResolvedValue(undefined);
+const upsertAdvice = vi.fn().mockResolvedValue(undefined);
+const deleteAdvice = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
@@ -40,8 +42,8 @@ let mockState: any = makeMockState();
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector(mockState),
   getStore: () => ({
-    upsertAdvice: vi.fn(),
-    deleteAdvice: vi.fn(),
+    upsertAdvice,
+    deleteAdvice,
     toggleAdviceStatus,
     reorderAdvices
   })
@@ -69,6 +71,8 @@ describe("AdvicesPage", () => {
     vi.unstubAllGlobals();
     reorderAdvices.mockClear();
     toggleAdviceStatus.mockClear();
+    upsertAdvice.mockClear();
+    deleteAdvice.mockClear();
     mockState = makeMockState();
   });
 
@@ -105,11 +109,6 @@ describe("AdvicesPage", () => {
     expect(toggleAdviceStatus).toHaveBeenCalledWith(1);
   });
 
-  it("renders the advice video URL in the list", () => {
-    render(createElement(AdvicesPage));
-    expect(screen.getAllByText("https://instagram.com/capella").length).toBeGreaterThan(0);
-  });
-
   it("filters the list by advice status", () => {
     mockState = {
       loaded: true,
@@ -134,5 +133,27 @@ describe("AdvicesPage", () => {
     fireEvent.change(screen.getByLabelText("الحالة"), { target: { value: "active" } });
 
     expect(screen.queryByLabelText("تحريك لأسفل")).not.toBeInTheDocument();
+  });
+
+  it("deletes an advice only after the confirmation is accepted", async () => {
+    render(createElement(AdvicesPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات نصيحة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف/ }));
+    expect(deleteAdvice).not.toHaveBeenCalled();
+
+    fireEvent.click(await screen.findByRole("button", { name: "حذف النصيحة" }));
+
+    expect(deleteAdvice).toHaveBeenCalledWith(1);
+  });
+
+  it("keeps an advice when the delete confirmation is cancelled", async () => {
+    render(createElement(AdvicesPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات نصيحة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "إلغاء" }));
+
+    expect(deleteAdvice).not.toHaveBeenCalled();
   });
 });

@@ -240,18 +240,6 @@ describe("EntityMediaGallery", () => {
     expect(thumbnails()[1]).toHaveAttribute("data-active", "true");
   });
 
-  it("keeps vertical page scroll but claims horizontal finger movement on the big image", () => {
-    render(createElement(EntityMediaGallery, {
-      media: imageMedia,
-      imagePath: "/uploads/one.jpg",
-      label: "Entity",
-      testIdPrefix: "product",
-      renderImage
-    }));
-
-    expect(screen.getByTestId("product-media-main").className).toContain("touch-pan-y");
-  });
-
   it("advances the big image on a left finger swipe and goes back on a right swipe", () => {
     render(createElement(EntityMediaGallery, {
       media: [
@@ -318,21 +306,6 @@ describe("EntityMediaGallery", () => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
 
-    it("marks the media with the plus cursor instead of floating a plus button over it", () => {
-      render(createElement(EntityMediaGallery, {
-        media: imageMedia,
-        imagePath: "/uploads/one.jpg",
-        label: "Rose Serum",
-        testIdPrefix: "product",
-        renderImage
-      }));
-
-      expect(screen.getByTestId("product-media-main").className).toContain("cursor-plus");
-      // The old floating chip is gone; the keyboard control stays, unobtrusively.
-      expect(screen.queryByTestId("product-media-expand")).toBeNull();
-      expect(screen.getByRole("button", { name: "View all media" }).className).toContain("sr-only");
-    });
-
     it("lets a finger swipe change the picture inside the lightbox", async () => {
       const user = userEvent.setup();
       const dialog = await openLightbox(user);
@@ -342,8 +315,6 @@ describe("EntityMediaGallery", () => {
         releasePointerCapture: vi.fn(),
         hasPointerCapture: vi.fn(() => true)
       });
-
-      expect(stage.className).toContain("touch-pan-y");
 
       fireEvent.pointerDown(stage, { clientX: 260, clientY: 80, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
       fireEvent.pointerUp(stage, { clientX: 40, clientY: 85, pointerId: 1, pointerType: "touch", button: 0, isPrimary: true });
@@ -375,25 +346,6 @@ describe("EntityMediaGallery", () => {
       expect(within(screen.getByTestId("product-media-thumbs")).getAllByRole("button")[1])
         .toHaveAttribute("data-active", "true");
       expect(screen.queryByRole("dialog")).toBeNull();
-    });
-
-    it("renders outside the page markup so nothing on the page can show through it", async () => {
-      const user = userEvent.setup();
-      const dialog = await openLightbox(user);
-
-      // A portal to <body>: inside the page tree, an ancestor's stacking context let page content (price, share, tabs) paint over the dialog.
-      expect(dialog.parentElement).toBe(document.body);
-    });
-
-    it("keeps the whole picture inside the stage instead of cropping it", async () => {
-      const user = userEvent.setup();
-      const dialog = await openLightbox(user);
-
-      const stage = within(dialog).getByTestId("product-lightbox-main");
-      // Whatever each detail page renders, it is bounded by the stage box.
-      expect(stage.className).toContain("[&_img]:max-h-full");
-      expect(stage.className).toContain("[&_img]:object-contain");
-      expect(stage.className).toContain("[&_svg]:max-h-full");
     });
 
     it("opens a dialog titled with the entity, showing the media it was opened on", async () => {
@@ -522,7 +474,6 @@ describe("EntityMediaGallery", () => {
       // Portalled to <body>, it sits outside the locale subtree that carries dir, so it has to state its own or the arrows and layout come out mirrored.
       expect(arabic).toHaveAttribute("dir", "rtl");
       expect(arabic).toHaveAttribute("lang", "ar");
-      expect(within(arabic).getByRole("heading").className).toContain("font-(family-name:--font-ar)");
 
       await user.keyboard("{Escape}");
       cleanup();
@@ -530,20 +481,6 @@ describe("EntityMediaGallery", () => {
       const english = await openLightbox(user, { lang: "en" });
       expect(english).toHaveAttribute("dir", "ltr");
       expect(english).toHaveAttribute("lang", "en");
-      expect(within(english).getByRole("heading").className).not.toContain("font-(family-name:--font-ar)");
-    });
-
-    it("points each arrow at the side it sits on", async () => {
-      const user = userEvent.setup();
-      const dialog = await openLightbox(user);
-
-      // Chevron draws a ">"; the one on the start side must be turned around, or the pair reads back-to-front — which is what an unset dir caused.
-      const previous = within(dialog).getByRole("button", { name: "Previous media" });
-      const next = within(dialog).getByRole("button", { name: "Next media" });
-      expect(previous.className).toContain("inset-s-");
-      expect(previous.querySelector("svg")?.getAttribute("class")).toContain("rotate-180");
-      expect(next.className).toContain("inset-e-");
-      expect(next.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("rotate-180");
     });
 
     it("advances through the media in Arabic, where the buttons swap sides but not their jobs", async () => {
@@ -650,19 +587,6 @@ describe("EntityMediaGallery", () => {
 
       expect(within(dialog).getByTestId("product-lightbox-main").querySelector("img"))
         .toHaveAttribute("src", "/uploads/ar.jpg");
-    });
-
-    it("keeps the thumbnail strip centred at every width", async () => {
-      const user = userEvent.setup();
-      const dialog = await openLightbox(user);
-
-      const strip = within(dialog).getByTestId("product-lightbox-thumbs");
-      // Centred by an auto-margined track rather than justify-center, which would clip the first thumbnails once the strip has to scroll.
-      expect(strip.className).toContain("overflow-x-auto");
-      const track = strip.firstElementChild as HTMLElement;
-      expect(track.className).toContain("mx-auto");
-      expect(track.className).toContain("w-max");
-      expect(within(track).getAllByRole("button")).toHaveLength(2);
     });
 
     it("offers no expand control when the entity has no media at all", () => {

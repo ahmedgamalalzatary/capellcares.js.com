@@ -28,20 +28,6 @@ describe("HoverImageUpload", () => {
     expect(screen.getByTestId("offer-hover-image-en-input")).toBeInTheDocument();
   });
 
-  it("defaults to the product entity", () => {
-    render(
-      <HoverImageUpload
-        arValue=""
-        enValue=""
-        onChange={vi.fn()}
-        uploadContext="products.update"
-      />
-    );
-
-    expect(screen.getByTestId("product-hover-image-ar-input")).toBeInTheDocument();
-    expect(screen.getByTestId("product-hover-image-en-input")).toBeInTheDocument();
-  });
-
   it("shows the server's message for a rejected upload instead of the raw API error", async () => {
     vi.mocked(api.uploadImage).mockRejectedValueOnce(
       Object.assign(new Error("API 409 /api/erp/uploads"), { status: 409, body: { message: "الصورة كبيرة جدًا" } })

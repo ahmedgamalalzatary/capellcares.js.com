@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
@@ -13,13 +13,15 @@ vi.mock("@/components/providers/wishlist-provider", () => ({
   useWishlist: () => ({ has, toggle })
 }));
 
+const authState: { user: { id: number } | null } = { user: { id: 1 } };
 vi.mock("@/components/providers/auth-provider", () => ({
-  useAuth: () => ({ user: { id: 1 } })
+  useAuth: () => authState
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   has.mockReturnValue(false);
+  authState.user = { id: 1 };
 });
 
 import { WishlistButton } from "@/components/ui/wishlist-button";
@@ -27,28 +29,57 @@ import { WishlistButton } from "@/components/ui/wishlist-button";
 const props = { entityType: "product" as const, entityId: 1, lang: "en" as const, label: "Wishlist" };
 
 describe("WishlistButton", () => {
-  it("keeps the same background when saved — only the heart fills", () => {
-    const { rerender } = render(createElement(WishlistButton, props));
-    const idleClass = screen.getByRole("button", { name: "Wishlist" }).className;
-    expect(screen.getByRole("button", { name: "Wishlist" }).querySelector("svg"))
-      .toHaveAttribute("fill", "none");
-
-    has.mockReturnValue(true);
-    rerender(createElement(WishlistButton, props));
-
-    const savedButton = screen.getByRole("button", { name: "Wishlist" });
-    // Saved state is carried by the glyph alone: the plate never changes tone.
-    expect(savedButton.className).toBe(idleClass);
-    expect(savedButton.className).toContain("bg-surface/85");
-    expect(savedButton.className).not.toContain("bg-accent");
-    expect(savedButton.querySelector("svg")).toHaveAttribute("fill", "currentColor");
-  });
-
-  it("floats at the top-end corner of the media frame", () => {
+  it("adds the entity when the heart is pressed on an unsaved item", () => {
     render(createElement(WishlistButton, props));
 
-    const button = screen.getByRole("button", { name: "Wishlist" });
-    expect(button.className).toContain("inset-e-2");
-    expect(button.className).not.toContain("inset-s-2");
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("product", 1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("removes the entity when the heart is pressed on a saved item", () => {
+    has.mockReturnValue(true);
+    render(createElement(WishlistButton, props));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("product", 1);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("toggles the requested entity type and id, not a fixed one", () => {
+    render(createElement(WishlistButton, { ...props, entityType: "offer", entityId: 7, lang: "ar" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(toggle).toHaveBeenCalledWith("offer", 7);
+    expect(has).toHaveBeenCalledWith("offer", 7);
+  });
+
+  it("sends a signed-out shopper to the wishlist page instead of toggling", () => {
+    authState.user = null;
+    render(createElement(WishlistButton, props));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(push).toHaveBeenCalledWith("/en/wishlist");
+    expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it("localizes the signed-out destination for an Arabic page", () => {
+    authState.user = null;
+    render(createElement(WishlistButton, { ...props, lang: "ar" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wishlist" }));
+
+    expect(push).toHaveBeenCalledWith("/ar/wishlist");
+  });
+
+  it("uses the accessible label it is given rather than the icon", () => {
+    render(createElement(WishlistButton, { ...props, label: "أضف إلى المفضلة" }));
+
+    expect(screen.getByRole("button", { name: "أضف إلى المفضلة" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Wishlist" })).toBeNull();
   });
 });

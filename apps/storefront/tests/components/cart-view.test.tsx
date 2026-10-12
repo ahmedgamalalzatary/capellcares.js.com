@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getDict } from "@capella/shared";
 
@@ -70,7 +70,7 @@ vi.mock("@/lib/api/client", () => {
   };
 });
 
-import { saveCartLines, clearCartLines } from "@/lib/cart";
+import { saveCartLines, clearCartLines, loadCartLines } from "@/lib/cart";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { CartView } from "@/components/cart/cart-view";
 
@@ -134,5 +134,71 @@ describe("CartView", () => {
     // "EGP 100 each" under the name, "EGP 200" as the line total.
     expect(await screen.findByText(dict.cart.each)).toBeInTheDocument();
     expect(screen.getByText(/EGP\s*100/)).toBeInTheDocument();
+  });
+
+  it("raises a line's quantity and re-prices the line total", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    await screen.findByText("Rose Serum");
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+
+    // Unit price is the discounted 100, so two units cost 200.
+    await waitFor(() => expect(screen.getAllByText(/EGP\s*200/).length).toBeGreaterThan(0));
+    expect(loadCartLines(window.localStorage)).toEqual([
+      { type: "product", productId: 1, variantId: 11, qty: 2 }
+    ]);
+  });
+
+  it("lowers a line's quantity by one on the minus control", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 2 }]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    await screen.findByText("Rose Serum");
+    fireEvent.click(screen.getByRole("button", { name: "−" }));
+
+    await waitFor(() => expect(loadCartLines(window.localStorage)).toEqual([
+      { type: "product", productId: 1, variantId: 11, qty: 1 }
+    ]));
+  });
+
+  it("never takes a line below one unit", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    await screen.findByText("Rose Serum");
+    fireEvent.click(screen.getByRole("button", { name: "−" }));
+
+    await waitFor(() => expect(loadCartLines(window.localStorage)).toEqual([
+      { type: "product", productId: 1, variantId: 11, qty: 1 }
+    ]));
+    expect(screen.getByText("Rose Serum")).toBeInTheDocument();
+  });
+
+  it("removes a line from the cart and drops it from storage", async () => {
+    saveCartLines(window.localStorage, [
+      { type: "product", productId: 1, variantId: 11, qty: 1 },
+      { type: "offer", offerId: 2, qty: 1 }
+    ]);
+
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+
+    await screen.findByText("Rose Serum");
+    // Each line carries its own remove control; take the one on the product line.
+    const productRow = screen.getByText("Rose Serum").closest("li") as HTMLElement;
+    fireEvent.click(within(productRow).getByRole("button", { name: dict.cart.remove }));
+
+    await waitFor(() => expect(loadCartLines(window.localStorage)).toEqual([
+      { type: "offer", offerId: 2, qty: 1 }
+    ]));
+    expect(screen.queryByText("Rose Serum")).not.toBeInTheDocument();
+    expect(screen.getByText("Body Care Offer")).toBeInTheDocument();
   });
 });

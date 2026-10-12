@@ -1,20 +1,23 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const { cartAdd } = vi.hoisted(() => ({ cartAdd: vi.fn() }));
+const { routerPush } = vi.hoisted(() => ({ routerPush: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: routerPush })
 }));
 
 vi.mock("@/components/providers/cart-provider", async () => {
   const { cartKeyOf } = await import("../helpers/cart");
   return {
     useCart: () => ({
-      add: vi.fn(),
+      add: cartAdd,
       lines: [],
       count: 0,
       setQty: vi.fn(),
@@ -117,6 +120,63 @@ describe("CollectionDetail", () => {
     );
   });
 
+  it("adds the collection to the cart from the detail page", () => {
+    render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add collection" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "collection", collectionId: 2, qty: 1 });
+  });
+
+  it("buys now by adding the collection and going straight to checkout", () => {
+    render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Buy now" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "collection", collectionId: 2, qty: 1 });
+    expect(routerPush).toHaveBeenCalledWith("/en/checkout");
+  });
+
+  it("disables both purchase actions when a collection line is short on stock", () => {
+    render(createElement(CollectionDetail, {
+      collection,
+      items: [{
+        product: {
+          id: 1,
+          sku: "SKU-1",
+          slug: "rose-serum",
+          name: { ar: "سيروم", en: "Serum" },
+          description: { ar: "", en: "" },
+          ingredients: { ar: "", en: "" },
+          howToUse: { ar: "", en: "" },
+          warnings: { ar: "", en: "" },
+          keywords: [],
+          buyingPrice: 0,
+          imagePath: "",
+          media: [],
+          status: "active" as const,
+          isNew: false,
+          isBestseller: false,
+          categoryId: 1,
+          variants: [],
+          createdAt: "",
+          updatedAt: ""
+        },
+        variantId: 11,
+        qty: 3,
+        available: 1,
+        unitPrice: 30,
+        size: "30ml"
+      }],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByRole("button", { name: "Add collection" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
+  });
+
   it("adds the collection to wishlist", () => {
     render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
 
@@ -124,22 +184,13 @@ describe("CollectionDetail", () => {
     expect(toggle).toHaveBeenCalledWith("collection", 2);
   });
 
-  it("floats the collection tag top-start and the wishlist heart top-end, styled like the card tags", () => {
+  it("overlays the collection tag on the media and offers a wishlist control", () => {
     render(createElement(CollectionDetail, { collection, items: [], lang: "en", dict, relatedItems: [] }));
 
     const frame = screen.getByTestId("collection-media-main").parentElement as HTMLElement;
 
-    const tag = frame.querySelector("span.absolute") as HTMLElement;
-    expect(tag).toHaveTextContent("Collection");
-    expect(tag.className).toContain("top-0");
-    expect(tag.className).toContain("inset-s-0");
-    expect(tag.className).toContain("rounded-ss-md");
-    expect(tag.className).not.toContain("inset-e-0");
-
-    const heart = frame.querySelector("button") as HTMLElement;
-    expect(heart).toHaveAttribute("aria-label", "Save collection");
-    expect(heart.className).toContain("inset-e-2");
-    expect(heart.className).not.toContain("inset-s-2");
+    expect(frame.querySelector("span.absolute")).toHaveTextContent("Collection");
+    expect(within(frame).getByRole("button", { name: "Save collection" })).toBeInTheDocument();
   });
 
   it("shows the collection rating summary on the detail page", () => {

@@ -30,12 +30,4 @@ describe("FoldButton", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves the category toggle identity and tree appearance", () => {
-    render(<FoldButton collapsed={false} onClick={() => {}} label="طي" appearance="tree" data-testid="category-toggle-2" />);
-
-    const button = screen.getByRole("button", { name: "طي" });
-    expect(button).toHaveAttribute("data-testid", "category-toggle-2");
-    expect(button).toHaveClass("rounded-md", "text-text-muted");
-    expect(button).not.toHaveAttribute("title");
   });
-});

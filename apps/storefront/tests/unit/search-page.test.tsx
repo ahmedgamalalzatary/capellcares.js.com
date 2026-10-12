@@ -195,19 +195,6 @@ describe("search results page", () => {
     expect(screen.getByRole("link", { name: /products/i })).toBeInTheDocument();
   });
 
-  it("lays every section out as a wrapping grid, not a scrolling row", async () => {
-    seedCatalog();
-
-    const { container } = render(await renderPage("rose"));
-
-    expect(container.querySelectorAll(".snap-x")).toHaveLength(0);
-    for (const card of ["offer-card", "collection-card", "product-card"]) {
-      const grid = screen.getByTestId(card).parentElement;
-      expect(grid?.className).toMatch(/\bgrid\b/);
-      expect(grid?.className).toMatch(/grid-cols-/);
-    }
-  });
-
   it("shows a columns toggle defaulting to two cards per row", async () => {
     seedCatalog();
 

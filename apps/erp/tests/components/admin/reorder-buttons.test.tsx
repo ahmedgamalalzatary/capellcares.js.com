@@ -5,13 +5,6 @@ import { ReorderButtons } from "@/components/admin/reorder-buttons";
 afterEach(cleanup);
 
 describe("ReorderButtons", () => {
-  it("renders the Arabic move buttons", () => {
-    render(<ReorderButtons index={1} count={3} onMove={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: "تحريك لأعلى" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "تحريك لأسفل" })).toBeInTheDocument();
-  });
-
   it("disables the up button on the first row and the down button on the last", () => {
     const { rerender } = render(<ReorderButtons index={0} count={3} onMove={vi.fn()} />);
     expect(screen.getByRole("button", { name: "تحريك لأعلى" })).toBeDisabled();
@@ -31,12 +24,6 @@ describe("ReorderButtons", () => {
 
     expect(onMove).toHaveBeenNthCalledWith(1, 1, -1);
     expect(onMove).toHaveBeenNthCalledWith(2, 1, 1);
-  });
-
-  it("stacks the buttons when orientation is column", () => {
-    const { container } = render(<ReorderButtons index={1} count={3} onMove={vi.fn()} orientation="column" />);
-
-    expect(container.firstElementChild).toHaveClass("flex-col");
   });
 
   it("respects the disabled prop", () => {

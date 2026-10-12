@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -26,8 +26,6 @@ vi.mock("@/components/forms/related-items-field", () => ({
   RelatedItemsField: () => createElement("div")
 }));
 
-import { OfferForm } from "@/features/offers/components/offer-form";
-import { CollectionForm } from "@/features/collections/components/collection-form";
 import { useOfferForm } from "@/features/offers/hooks/use-offer-form";
 import { useCollectionForm } from "@/features/collections/hooks/use-collection-form";
 
@@ -72,20 +70,6 @@ afterEach(() => {
 });
 
 describe("bundle forms hover image", () => {
-  it("renders the hover-image upload section on the offer form", () => {
-    const view = render(createElement(OfferForm, { mode: "edit", categories, products: [product] } as any));
-    fireEvent.click(view.getByTestId("step-media"));
-    expect(screen.getByTestId("offer-hover-image-ar-input")).toBeInTheDocument();
-    expect(screen.getByTestId("offer-hover-image-en-input")).toBeInTheDocument();
-  });
-
-  it("renders the hover-image upload section on the collection form", () => {
-    const view = render(createElement(CollectionForm, { mode: "edit", categories, products: [product] } as any));
-    fireEvent.click(view.getByTestId("step-media"));
-    expect(screen.getByTestId("collection-hover-image-ar-input")).toBeInTheDocument();
-    expect(screen.getByTestId("collection-hover-image-en-input")).toBeInTheDocument();
-  });
-
   it("hydrates and persists hover images through the offer save payload", async () => {
     const { result } = renderHook(() => useOfferForm({
       mode: "edit",

@@ -1,25 +1,46 @@
 import { createElement } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-let shellProps: { title?: string; crumbs?: unknown; actions?: React.ReactNode } = {};
+const mockedUseAdminAuth = vi.fn();
 
-vi.mock("@/components/shell/admin-shell", () => ({
-  AdminShell: ({ title, crumbs, actions, children }: { title?: string; crumbs?: unknown; actions?: React.ReactNode; children?: React.ReactNode }) => {
-    shellProps = { title, crumbs, actions };
-    return createElement("div", { "data-testid": "shell" }, actions as never, children);
-  }
+vi.mock("@/components/providers/admin-auth", () => ({
+  useAdminAuth: () => mockedUseAdminAuth()
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => "/categories"
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
+}));
+
+vi.mock("@/lib/store", () => ({
+  getStore: () => ({
+    fetchOpenOrderReviewFlags: vi.fn().mockResolvedValue([]),
+    resolveOrderReviewFlag: vi.fn()
+  })
 }));
 
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 
-afterEach(() => {
-  cleanup();
-  shellProps = {};
-});
-
 describe("ForbiddenPage", () => {
-  it("shows the forbidden message inside the shell with the page title and crumbs", () => {
+  beforeEach(() => {
+    mockedUseAdminAuth.mockReset();
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the forbidden message inside the real shell under the page title and crumbs", () => {
     render(
       <ForbiddenPage
         title="الأقسام"
@@ -28,9 +49,12 @@ describe("ForbiddenPage", () => {
       />
     );
 
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الأقسام.")).toBeTruthy();
-    expect(shellProps.title).toBe("الأقسام");
-    expect(shellProps.crumbs).toEqual([{ label: "الأقسام", href: "/categories" }, { label: "غير مصرح" }]);
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الأقسام.")).toBeInTheDocument();
+    // The real shell renders the title as the document heading and the crumbs as a trail.
+    expect(screen.getByRole("heading", { name: "الأقسام" })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "مسار الصفحة" });
+    expect(within(nav).getByRole("link", { name: "الأقسام" })).toHaveAttribute("href", "/categories");
+    expect(within(nav).getByText("غير مصرح")).toBeInTheDocument();
   });
 
   it("passes extra shell actions through and still shows the message", () => {
@@ -43,8 +67,22 @@ describe("ForbiddenPage", () => {
       />
     );
 
-    expect(shellProps.actions).toBeTruthy();
-    expect(screen.getByText("رجوع للطلبات")).toBeTruthy();
-    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الطلبات.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "رجوع للطلبات" })).toHaveAttribute("href", "/orders");
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الطلبات.")).toBeInTheDocument();
+  });
+
+  it("keeps the shell navigation limited to the permissions the signed-in staff actually has", () => {
+    render(
+      <ForbiddenPage title="الأقسام" crumbs={undefined} message="لا تملكين صلاحية الوصول إلى الأقسام." />
+    );
+
+    // Navigation entries are links; scoped to the shell's nav links so the page title never matches.
+    const navLinks = screen.getAllByRole("link").filter((link) => !link.getAttribute("href")?.includes("/login"));
+    const hrefs = navLinks.map((link) => link.getAttribute("href"));
+    // Staff without categories.read gets no categories entry.
+    expect(hrefs.filter((href) => href === "/categories")).toHaveLength(0);
+    // But the modules they do hold are present.
+    expect(hrefs).toContain("/dashboard");
+    expect(hrefs).toContain("/orders");
   });
 });

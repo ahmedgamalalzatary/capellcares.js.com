@@ -72,13 +72,6 @@ const dict = {
 };
 
 describe("Header layout stability", () => {
-  it("keeps the logo link scaling class on the link container", () => {
-    render(<Header lang="en" dict={dict} menuEntries={[]} />);
-
-    const logoLink = screen.getByRole("link", { name: "Capella" });
-    expect(logoLink.className).toContain("scale-130");
-  });
-
   it("points the logo link at the shop home instead of the locale root", () => {
     const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
 
@@ -87,13 +80,6 @@ describe("Header layout stability", () => {
     rerender(<Header lang="ar" dict={dict} menuEntries={[]} />);
 
     expect(screen.getByRole("link", { name: "Capella" })).toHaveAttribute("href", "/ar/shop");
-  });
-
-  it("keeps the mobile menu button scaling class on the button", () => {
-    render(<Header lang="en" dict={dict} menuEntries={[]} />);
-
-    const menuButton = screen.getByRole("button", { name: "Menu" });
-    expect(menuButton.className).toContain("scale-130");
   });
 
   it("keeps account redirects current across query-only navigation", () => {

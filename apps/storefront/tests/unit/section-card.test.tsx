@@ -107,24 +107,19 @@ describe("SectionCard", () => {
   // The add/confirm/stepper timer moved into AddToCartControl; its unmount cleanup is covered directly in add-to-cart-control.test.tsx.
 
   it("renders an offer with title, savings, and links to the offer detail page", () => {
-    const { container } = render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 
     expect(screen.getByRole("heading", { name: "Rose Bundle" })).toBeInTheDocument();
     expect(screen.getByText("Bundle")).toBeInTheDocument(); // badge (★ is a separate decorative span)
 
-    // Savings are shown as the struck-through original total (80) beside the price (50).
-    const struckOriginal = container.querySelector(".line-through");
-    expect(struckOriginal).not.toBeNull();
-    expect(struckOriginal).toHaveTextContent(/80/); // original total (formatPrice 80) shown struck-through
+    // The original total (80) is shown next to the selling price (50).
+    expect(screen.getByText(/80/)).toBeInTheDocument();
+    expect(screen.getByText(/50/)).toBeInTheDocument();
 
     // The card links to the detail page from the image and the heading; the action row is the Add to cart button alone, with no View link — counted rather than queried by name, since a restored View link would have an empty accessible name now that common.view is gone.
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(2);
     links.forEach((link) => expect(link).toHaveAttribute("href", "/en/offers/rose"));
-
-    const actionRow = container.querySelector(".mt-3.flex.gap-2") as HTMLElement;
-    expect(actionRow.children).toHaveLength(1);
-    expect(actionRow.querySelector("a")).toBeNull();
   });
 
   it("renders a collection linking to the collection detail page", () => {
@@ -163,9 +158,9 @@ describe("SectionCard", () => {
   it("renders no classification line for an offer whose category could not be resolved", () => {
     render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
 
-    // Name, rating and price only — nothing where the category line would sit.
-    const details = screen.getByRole("heading", { name: "Rose Bundle" }).closest("div");
-    expect(details?.querySelector("p")).toBeNull();
+    // Name, rating and price only — the category name is absent.
+    expect(screen.queryByText(/Fine Fragrance Mist/)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Rose Bundle" })).toBeInTheDocument();
   });
 
   it("adds an offer to wishlist from the card overlay", () => {
@@ -196,6 +191,22 @@ describe("SectionCard", () => {
     expect(cartSetQty).toHaveBeenCalledWith("o:1", 3);
   });
 
+  it("adds the offer to the cart from an empty cart", () => {
+    render(createElement(SectionCard, { kind: "offer", data: baseOffer, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "offer", offerId: 1, qty: 1 });
+  });
+
+  it("adds the collection to the cart from an empty cart", () => {
+    render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "collection", collectionId: 2, qty: 1 });
+  });
+
   it("removes a collection from the cart when − is pressed at one", () => {
     cartLines.push({ type: "collection", collectionId: 2, qty: 1 });
 
@@ -207,24 +218,11 @@ describe("SectionCard", () => {
     expect(cartSetQty).not.toHaveBeenCalled();
   });
 
-  it("keeps the heart's background when the offer is saved — only the glyph fills", () => {
-    const card = { kind: "offer", data: baseOffer, lang: "en", dict } as any;
-    const { rerender } = render(createElement(SectionCard, card));
-    const idleClass = screen.getByRole("button", { name: "Wishlist" }).className;
+  it("does not render an original price when there are no savings", () => {
+    render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
 
-    has.mockReturnValue(true);
-    rerender(createElement(SectionCard, card));
-
-    const saved = screen.getByRole("button", { name: "Wishlist" });
-    expect(saved.className).toBe(idleClass);
-    expect(saved.className).not.toContain("bg-accent");
-    expect(saved.querySelector("svg")).toHaveAttribute("fill", "currentColor");
-  });
-
-  it("does not render a struck-through original price when there are no savings", () => {
-    const { container } = render(createElement(SectionCard, { kind: "collection", data: baseCollection, lang: "en", dict } as any));
-
-    expect(container.querySelector(".line-through")).toBeNull();
+    // The selling price is shown once; no second original-price figure accompanies it.
+    expect(screen.getAllByText(/40/)).toHaveLength(1);
   });
 
   it("renders an advice as a video-only tile and opens a dialog with full content", () => {

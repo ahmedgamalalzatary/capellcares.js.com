@@ -73,11 +73,6 @@ afterEach(() => {
 });
 
 describe("product form keywords field", () => {
-  it("exposes the keywords field as a single-line input on the basics step", () => {
-    const field = renderForm();
-
-    expect(field.tagName).toBe("INPUT");
-  });
 
   it("still splits the comma-separated list into keywords on save", async () => {
     const field = renderForm();

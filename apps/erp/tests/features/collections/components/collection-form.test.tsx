@@ -21,11 +21,9 @@ vi.mock("@/components/forms/editor-form-parts", () => ({
   BilingualNameFields: () => createElement("div"),
 }));
 
-vi.mock("@/components/forms/entity-media-upload", () => ({
-  EntityMediaUpload: ({ value }: any) => createElement("div", {
-    "data-testid": "collection-media-upload",
-    "data-count": String(value.length)
-  })
+vi.mock("@/lib/api/client", () => ({
+  API_BASE: "http://localhost:4000",
+  api: { uploadMedia: vi.fn().mockResolvedValue({ url: "/uploads/new.png", type: "image" }) }
 }));
 
 vi.mock("@/components/forms/related-items-field", () => ({
@@ -98,7 +96,11 @@ describe("CollectionForm", () => {
 
     fireEvent.click(screen.getByTestId("step-media"));
 
-    expect(screen.getByTestId("collection-media-upload")).toHaveAttribute("data-count", "3");
+    // The real shared uploader lists one row per saved gallery entry, video last.
+    expect(screen.getAllByTestId("collection-media-item")).toHaveLength(3);
+    expect(screen.getByTestId("collection-media-video-2")).toHaveAttribute("src", "/uploads/collection-demo.mp4");
+    expect(screen.getAllByTestId("collection-media-item")[0].querySelector("img"))
+      .toHaveAttribute("src", "/uploads/collection.png");
   });
 
   it("only offers root categories first, then drills into their children", () => {

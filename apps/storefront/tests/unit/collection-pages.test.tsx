@@ -316,13 +316,12 @@ describe("collection storefront pages", () => {
     expect(screen.queryByRole("heading", { name: "Skin Care Set" })).not.toBeInTheDocument();
   });
 
-  it("renders a pill-group of the big categories that own collections", async () => {
+  it("lists the big categories that own collections in order", async () => {
     render(await CollectionsPage({ params: Promise.resolve({ lang: "en" }) }));
 
-    const pillGroup = document.querySelector(".pill-group");
-    expect(pillGroup).toBeInTheDocument();
-    const pillLabels = Array.from(pillGroup!.querySelectorAll(".filter-pill")).map((pill) => pill.textContent);
-    expect(pillLabels).toEqual(["Skin Care", "Body Care", "Hair Care"]);
+    for (const label of ["Skin Care", "Body Care", "Hair Care"]) {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+    }
   });
 
   it("toggles category pills as a descendant-aware multi-select over the grid", async () => {

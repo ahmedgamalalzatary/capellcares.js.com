@@ -28,6 +28,8 @@ const adminUser = { name: "Admin", email: "a@capella.test", role: "admin" as con
 const shippingStaff = { name: "Staff", email: "s@capella.test", role: "staff" as const, permissionKeys: ["shipping.read"] };
 const plainStaff = { name: "Staff", email: "s@capella.test", role: "staff" as const, permissionKeys: ["orders.read"] };
 
+import { carrierStateLabels, manualStateLabels } from "@/features/shipping/lib/labels";
+
 const rowBase = {
   orderId: 7, orderCode: "CAP-007", customerName: "عميل تجريبي", customerPhone: "01000000007",
   paymentMethod: "cod" as const, paymentStatus: "pending" as const, providerPaymentStatus: null,
@@ -59,12 +61,25 @@ describe("shipping ERP surface", () => {
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
   it("renders shipment rows with carrier and manual states for authorized staff", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [rowBase], nextCursor: null });
+    fetchShippingOverview.mockResolvedValue({ items: [
+      rowBase,
+      // A manual-only shipment: the carrier has not created it yet, so the staff-set manual state is the only status.
+      { ...rowBase, orderId: 8, orderCode: "CAP-008", carrierState: null, manualState: "ready_for_pickup" as const }
+    ], nextCursor: null });
     mockedUseAdminAuth.mockReturnValue({ user: shippingStaff, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
-    expect(await screen.findByText("CAP-007")).toBeInTheDocument();
-    expect(screen.getByText("5108002")).toBeInTheDocument();
+
+    const firstRow = (await screen.findByText("CAP-007")).closest("tr") as HTMLElement;
+    expect(firstRow).toHaveTextContent("5108002");
+    // Carrier state "created" resolves to its label, and a null manual state shows the empty dash.
+    expect(firstRow).toHaveTextContent(carrierStateLabels.created);
+    expect(firstRow.querySelector('[data-label="الحالة اليدوية"]')).toHaveTextContent("—");
+
+    const secondRow = screen.getByText("CAP-008").closest("tr") as HTMLElement;
+    expect(secondRow).toHaveTextContent(manualStateLabels.ready_for_pickup);
+    // A shipment the carrier has not picked up yet says so instead of showing a carrier badge.
+    expect(secondRow.querySelector('[data-label="حالة بوسطة"]')).toHaveTextContent("بانتظار الإنشاء");
   });
 
   it("bulk selection includes outgoing orders only and keeps individual failure results visible", async () => {
@@ -101,6 +116,34 @@ describe("shipping ERP surface", () => {
     render(createElement(Page));
     expect(await screen.findByText("غير مصرح")).toBeInTheDocument();
     expect(fetchShippingOverview).not.toHaveBeenCalled();
+  });
+
+  it("searches shipments by order code and by customer name", async () => {
+    fetchShippingOverview.mockResolvedValue({ items: [
+      rowBase,
+      { ...rowBase, orderId: 8, orderCode: "CAP-008", customerName: "عميل آخر", customerPhone: "01000000008", trackingNumber: "5108999" }
+    ], nextCursor: null });
+    mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
+    const { default: Page } = await import("@/app/shipping/page");
+    render(createElement(Page));
+    await screen.findByText("CAP-007");
+    const search = screen.getByRole("searchbox", { name: "بحث في الشحنات" });
+
+    fireEvent.change(search, { target: { value: "CAP-008" } });
+    expect(screen.queryByText("CAP-007")).toBeNull();
+    expect(screen.getByText("CAP-008")).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "عميل" } });
+    expect(screen.getByText("CAP-007")).toBeInTheDocument();
+    expect(screen.getByText("CAP-008")).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "5108002" } });
+    expect(screen.getByText("CAP-007")).toBeInTheDocument();
+    expect(screen.queryByText("CAP-008")).toBeNull();
+
+    fireEvent.change(search, { target: { value: "لا يوجد" } });
+    expect(screen.queryAllByText("CAP-007")).toHaveLength(0);
+    expect(screen.queryAllByText("CAP-008")).toHaveLength(0);
   });
 
   it("filters rows into the needs-attention section only when flagged or failing", async () => {

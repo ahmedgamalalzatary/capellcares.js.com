@@ -58,4 +58,50 @@ describe("AdminAuthProvider session refresh", () => {
     expect(refreshCalls()).toHaveLength(1);
     expect(client.getAdminAuthUser()).toEqual(user);
   });
+
+  it("signs the user out when the session refresh itself fails", async () => {
+    const fetchMock = vi.fn((input: unknown) => {
+      const url = String(input);
+      if (url.includes("/api/erp/auth/refresh")) {
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({ message: "Session expired" }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+    const { AdminAuthProvider } = await import("@/components/providers/admin-auth");
+
+    render(<AdminAuthProvider><div /></AdminAuthProvider>);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).includes("/api/erp/auth/refresh"))).toHaveLength(1);
+    });
+
+    // A refresh that fails leaves nobody signed in.
+    await waitFor(() => expect(client.getAdminAuthUser()).toBeNull());
+  });
+
+  it("does not retry a failed refresh on every render", async () => {
+    const fetchMock = vi.fn((input: unknown) => {
+      const url = String(input);
+      if (url.includes("/api/erp/auth/refresh")) {
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+    const { AdminAuthProvider } = await import("@/components/providers/admin-auth");
+
+    const view = render(<AdminAuthProvider><div /></AdminAuthProvider>);
+    await waitFor(() => expect(client.getAdminAuthUser()).toBeNull());
+
+    view.rerender(<AdminAuthProvider><div /></AdminAuthProvider>);
+    view.rerender(<AdminAuthProvider><div /></AdminAuthProvider>);
+
+    const refreshCalls = () => fetchMock.mock.calls.filter(([candidate]) => String(candidate).includes("/api/erp/auth/refresh"));
+    expect(refreshCalls()).toHaveLength(1);
+  });
 });

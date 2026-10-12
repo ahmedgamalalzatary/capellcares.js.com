@@ -42,3 +42,59 @@ describe("AuthForm signup rules", () => {
     await vi.waitFor(() => expect(auth.signup).toHaveBeenCalledWith("Mona", "mona@example.com", "long-enough"));
   });
 });
+
+describe("AuthForm login submit", () => {
+  function fillLogin(container: HTMLElement, email: string, password: string) {
+    fireEvent.change(container.querySelector('input[autocomplete="email"]')!, { target: { value: email } });
+    fireEvent.change(container.querySelector('input[autocomplete="current-password"]')!, { target: { value: password } });
+  }
+
+  beforeEach(() => {
+    auth.login.mockReset().mockResolvedValue(undefined);
+    auth.signup.mockReset();
+  });
+
+  it("sends the typed email and password, trimmed, without a name", async () => {
+    const dict = getDict("en");
+    const { container } = render(<AuthForm mode="login" lang="en" dict={dict} />);
+    fillLogin(container, "  mona@example.com ", "secret123");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.auth.loginCta }));
+
+    await vi.waitFor(() => expect(auth.login).toHaveBeenCalledWith("mona@example.com", "secret123"));
+    expect(auth.signup).not.toHaveBeenCalled();
+  });
+
+  it("asks for nothing on an empty login form", () => {
+    const dict = getDict("en");
+    render(<AuthForm mode="login" lang="en" dict={dict} />);
+
+    fireEvent.click(screen.getByRole("button", { name: dict.auth.loginCta }));
+
+    expect(auth.login).not.toHaveBeenCalled();
+  });
+
+  it("shows the generic error and stays on the form when the API refuses the credentials", async () => {
+    const dict = getDict("en");
+    auth.login.mockRejectedValue(new Error("401"));
+    const { container } = render(<AuthForm mode="login" lang="en" dict={dict} />);
+    fillLogin(container, "mona@example.com", "wrong-password");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.auth.loginCta }));
+
+    expect(await screen.findByText(dict.auth.genericError)).toBeInTheDocument();
+    // The typed credentials stay put so the shopper can try again.
+    expect(container.querySelector('input[autocomplete="email"]')).toHaveValue("mona@example.com");
+  });
+
+  it("sends no password length rule on login, only on signup", () => {
+    const dict = getDict("en");
+    const { container } = render(<AuthForm mode="login" lang="en" dict={dict} />);
+    fillLogin(container, "mona@example.com", "short");
+
+    fireEvent.click(screen.getByRole("button", { name: dict.auth.loginCta }));
+
+    expect(screen.queryByText(dict.auth.passwordTooShort)).toBeNull();
+    expect(auth.login).toHaveBeenCalledWith("mona@example.com", "short");
+  });
+});

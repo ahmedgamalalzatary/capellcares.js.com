@@ -1,20 +1,23 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const { cartAdd } = vi.hoisted(() => ({ cartAdd: vi.fn() }));
+const { routerPush } = vi.hoisted(() => ({ routerPush: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: routerPush })
 }));
 
 vi.mock("@/components/providers/cart-provider", async () => {
   const { cartKeyOf } = await import("../helpers/cart");
   return {
     useCart: () => ({
-      add: vi.fn(),
+      add: cartAdd,
       lines: [],
       count: 0,
       setQty: vi.fn(),
@@ -39,6 +42,8 @@ vi.mock("@/components/providers/auth-provider", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   has.mockReturnValue(false);
+  cartAdd.mockReset();
+  routerPush.mockReset();
 });
 import { OfferDetail } from "@/components/offers/offer-detail";
 
@@ -173,6 +178,79 @@ describe("OfferDetail", () => {
     expect(screen.queryByTestId("related-items")).toBeNull();
   });
 
+  it("adds the offer to the cart from the detail page", () => {
+    render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add bundle" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "offer", offerId: 1, qty: 1 });
+  });
+
+  it("buys now by adding the offer and going straight to checkout", () => {
+    render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Buy now" }));
+
+    expect(cartAdd).toHaveBeenCalledWith({ type: "offer", offerId: 1, qty: 1 });
+    expect(routerPush).toHaveBeenCalledWith("/en/checkout");
+  });
+
+  const line = (available: number) => ({
+  product: {
+    id: 1,
+    sku: "SKU-1",
+    slug: "rose-serum",
+    name: { ar: "سيروم", en: "Serum" },
+    description: { ar: "", en: "" },
+    ingredients: { ar: "", en: "" },
+    howToUse: { ar: "", en: "" },
+    warnings: { ar: "", en: "" },
+    keywords: [],
+    buyingPrice: 0,
+    imagePath: "",
+    media: [],
+    status: "active" as const,
+    isNew: false,
+    isBestseller: false,
+    categoryId: 1,
+    variants: [],
+    createdAt: "",
+    updatedAt: ""
+  },
+  variantId: 11,
+  qty: 2,
+  available,
+  unitPrice: 40,
+  size: "30ml"
+});
+
+it("disables both purchase actions when a line is short on stock", () => {
+    render(createElement(OfferDetail, {
+      offer,
+      // The offer needs 2 of the variant but only 1 is on hand.
+      items: [line(1)],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByRole("button", { name: "Add bundle" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
+  });
+
+  it("keeps both purchase actions enabled when every line is in stock", () => {
+    render(createElement(OfferDetail, {
+      offer,
+      items: [line(5)],
+      lang: "en",
+      dict,
+      relatedItems: []
+    }));
+
+    expect(screen.getByRole("button", { name: "Add bundle" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Buy now" })).toBeEnabled();
+  });
+
   it("adds the offer to wishlist", () => {
     render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
 
@@ -195,22 +273,13 @@ describe("OfferDetail", () => {
 });
 
 describe("OfferDetail media overlay", () => {
-  it("floats the offer tag top-start and the wishlist heart top-end, styled like the card tags", () => {
+  it("overlays the offer tag on the media and offers a wishlist control", () => {
     render(createElement(OfferDetail, { offer, items: [], lang: "en", dict, relatedItems: [] }));
 
     const frame = screen.getByTestId("offer-media-main").parentElement as HTMLElement;
 
-    const tag = frame.querySelector("span.absolute") as HTMLElement;
-    expect(tag).toHaveTextContent("Offer");
-    expect(tag.className).toContain("top-0");
-    expect(tag.className).toContain("inset-s-0");
-    expect(tag.className).toContain("rounded-ss-md");
-    expect(tag.className).not.toContain("inset-e-0");
-
-    const heart = frame.querySelector("button") as HTMLElement;
-    expect(heart).toHaveAttribute("aria-label", "Save offer");
-    expect(heart.className).toContain("inset-e-2");
-    expect(heart.className).not.toContain("inset-s-2");
+    expect(frame.querySelector("span.absolute")).toHaveTextContent("Offer");
+    expect(within(frame).getByRole("button", { name: "Save offer" })).toBeInTheDocument();
   });
 });
 

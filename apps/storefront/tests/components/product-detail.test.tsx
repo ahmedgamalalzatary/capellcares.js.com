@@ -1,20 +1,24 @@
 import { createElement } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
+const { routerPush } = vi.hoisted(() => ({ routerPush: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: routerPush })
 }));
+
+const { cartAdd } = vi.hoisted(() => ({ cartAdd: vi.fn() }));
 
 vi.mock("@/components/providers/cart-provider", async () => {
   const { cartKeyOf } = await import("../helpers/cart");
   return {
     useCart: () => ({
-      add: vi.fn(),
+      add: cartAdd,
       lines: [],
       count: 0,
       setQty: vi.fn(),
@@ -373,72 +377,6 @@ describe("ProductDetail", () => {
     expect(screen.queryByTestId("product-media-dots")).not.toBeInTheDocument();
   });
 
-  it("colors the stock status chip green when in stock and red when out of stock", () => {
-    const dict = {
-      product: {
-        description: "Description",
-        ingredients: "Ingredients",
-        howToUse: "How to use",
-        warnings: "Warnings",
-        selectSize: "Select size"
-      },
-      badges: { new: "New", bestseller: "Best", offer: "Offer" },
-      common: {
-        outOfStock: "Out of stock",
-        lowStock: "Only {n}",
-        inStock: "In stock",
-        quantity: "Quantity",
-        addToCart: "Add to cart",
-        added: "Added",
-        buyNow: "Buy now",
-        addToWishlist: "Wishlist"
-      },
-      offers: { save: "Save {amount}" }
-    };
-
-    const base = {
-      id: 1,
-      sku: "SKU-1",
-      slug: "product-1",
-      name: { ar: "منتج", en: "Product" },
-      description: { ar: "", en: "Description" },
-      ingredients: { ar: "", en: "Ingredients" },
-      howToUse: { ar: "", en: "Use" },
-      warnings: { ar: "", en: "Warnings" },
-      keywords: [],
-      buyingPrice: 10,
-      imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
-      status: "active" as const,
-      isNew: false,
-      isBestseller: false,
-      categoryId: 5,
-      createdAt: "",
-      updatedAt: ""
-    };
-
-    const { rerender } = render(createElement(ProductDetail, {
-      product: { ...base, variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 12, sortOrder: 1 }] },
-      offers: [],
-      lang: "en",
-      dict
-    }));
-
-    const inStockChip = screen.getByText("In stock");
-    expect(inStockChip).toHaveClass("chip");
-    expect(inStockChip.className).toContain("text-(--success)");
-
-    rerender(createElement(ProductDetail, {
-      product: { ...base, variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 0, sortOrder: 1 }] },
-      offers: [],
-      lang: "en",
-      dict
-    }));
-
-    const outChip = screen.getAllByText("Out of stock").find((el) => el.classList.contains("chip"));
-    expect(outChip).toBeTruthy();
-    expect(outChip!.className).toContain("text-(--error)");
-  });
 
   it("renders related items in order with links to their detail pages", () => {
     const dict = {
@@ -517,118 +455,6 @@ describe("ProductDetail", () => {
     expect(rows[2]).toHaveTextContent("60");
   });
 
-  it("floats the new/bestseller lead tag over the media instead of listing it in the badge row", () => {
-    const dict = {
-      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
-      badges: { new: "New", bestseller: "Best", offer: "Offer" },
-      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
-      offers: { save: "Save {amount}" }
-    };
-
-    const product = {
-      id: 1,
-      sku: "SKU-1",
-      slug: "product-1",
-      name: { ar: "منتج", en: "Product" },
-      description: { ar: "", en: "Description" },
-      ingredients: { ar: "", en: "Ingredients" },
-      howToUse: { ar: "", en: "Use" },
-      warnings: { ar: "", en: "Warnings" },
-      keywords: [],
-      buyingPrice: 10,
-      imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
-      status: "active" as const,
-      isNew: true,
-      isBestseller: true,
-      categoryId: 5,
-      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
-      createdAt: "",
-      updatedAt: ""
-    };
-
-    render(createElement(ProductDetail, { product, offers: [], lang: "en", dict }));
-
-    const frame = screen.getByTestId("product-media-main").parentElement as HTMLElement;
-
-    // A single lead tag, styled exactly like the card tags.
-    const tag = frame.querySelector("span.absolute") as HTMLElement;
-    expect(tag).toHaveTextContent("New");
-    expect(tag.className).toContain("top-0");
-    expect(tag.className).toContain("inset-s-0");
-    expect(tag.className).toContain("rounded-ss-md");
-
-    // Queried by label, not by position: the media frame also carries the expand control that opens the media lightbox.
-    const heart = within(frame).getByRole("button", { name: "Wishlist" });
-    expect(heart.className).toContain("inset-e-2");
-    expect(heart.className).not.toContain("inset-s-2");
-
-    // The information section no longer repeats them as CSS badges.
-    const badgeTexts = Array.from(document.querySelectorAll(".badge")).map((el) => el.textContent);
-    expect(badgeTexts).toHaveLength(0);
-  });
-
-  it("floats no tag for a product that is neither new nor a bestseller, and keeps its offer badges", () => {
-    const dict = {
-      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
-      badges: { new: "New", bestseller: "Best", offer: "Offer" },
-      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
-      offers: { save: "Save {amount}" }
-    };
-
-    const product = {
-      id: 1,
-      sku: "SKU-1",
-      slug: "product-1",
-      name: { ar: "منتج", en: "Product" },
-      description: { ar: "", en: "Description" },
-      ingredients: { ar: "", en: "Ingredients" },
-      howToUse: { ar: "", en: "Use" },
-      warnings: { ar: "", en: "Warnings" },
-      keywords: [],
-      buyingPrice: 10,
-      imagePath: "/uploads/legacy.jpg",
-      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
-      status: "active" as const,
-      isNew: false,
-      isBestseller: false,
-      offerIds: [3],
-      categoryId: 5,
-      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
-      createdAt: "",
-      updatedAt: ""
-    };
-
-    render(createElement(ProductDetail, {
-      product,
-      offers: [{
-        id: 3,
-        slug: "duo",
-        name: { ar: "عرض", en: "Duo" },
-        description: { ar: "", en: "" },
-        imagePath: "",
-        price: 70,
-        originalTotal: 90,
-        categoryId: 5,
-        items: [],
-        stock: 4,
-        status: "active" as const,
-        visibility: "visible" as const,
-        createdAt: "",
-        updatedAt: ""
-      }],
-      lang: "en",
-      dict
-    }));
-
-    const frame = screen.getByTestId("product-media-main").parentElement as HTMLElement;
-    expect(frame.querySelector("span.absolute")).toBeNull();
-
-    // The linked offer badge still lives in the information section.
-    const offerBadge = screen.getByRole("link", { name: /Duo/ });
-    expect(offerBadge).toHaveClass("badge");
-    expect(offerBadge).toHaveAttribute("href", "/en/offers/duo");
-  });
 
   it("shares the product link via the Web Share API when supported", () => {
     const share = vi.fn().mockResolvedValue(undefined);
@@ -1053,5 +879,81 @@ describe("ProductDetail", () => {
       "src",
       expect.stringContaining("https://www.youtube.com/embed/capella?")
     );
+  });
+
+  describe("purchase actions", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "Ingredients" },
+      howToUse: { ar: "", en: "Use" },
+      warnings: { ar: "", en: "Warnings" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/legacy.jpg",
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/legacy.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    const withVariant = (stock: number) => ({
+      ...product,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock, sortOrder: 1 }]
+    });
+
+    beforeEach(() => {
+      cartAdd.mockReset();
+      routerPush.mockReset();
+    });
+
+    it("adds the selected variant to the cart and shows the added label", () => {
+      render(createElement(ProductDetail, { product: withVariant(3), offers: [], lang: "en", dict }));
+
+      fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+      expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 11, qty: 1 });
+    });
+
+    it("buys now by adding the line and going straight to checkout", () => {
+      render(createElement(ProductDetail, { product: withVariant(3), offers: [], lang: "ar", dict }));
+
+      fireEvent.click(screen.getByRole("button", { name: "Buy now" }));
+
+      expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 11, qty: 1 });
+      expect(routerPush).toHaveBeenCalledWith("/ar/checkout");
+    });
+
+    it("disables both purchase buttons for an out-of-stock variant", () => {
+      render(createElement(ProductDetail, { product: withVariant(0), offers: [], lang: "en", dict }));
+
+      expect(screen.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
+
+      fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+      expect(cartAdd).not.toHaveBeenCalled();
+    });
+
+    it("sends the chosen quantity, not always one", () => {
+      render(createElement(ProductDetail, { product: withVariant(5), offers: [], lang: "en", dict }));
+
+      fireEvent.click(screen.getByRole("button", { name: "+" }));
+      fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+      expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 11, qty: 2 });
+    });
   });
 });

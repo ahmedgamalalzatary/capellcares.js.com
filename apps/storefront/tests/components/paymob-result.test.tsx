@@ -1,6 +1,8 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
+import { PaymobResult } from "@/components/checkout/paymob-result";
+import PaymobReturnPage from "@/app/checkout/payment-result/page";
 
 const clear = vi.fn();
 const fetchCheckoutStatus = vi.fn();
@@ -24,7 +26,6 @@ beforeEach(() => {
 
 describe("PaymobResult", () => {
   it("routes the locale-neutral Paymob return using the saved checkout language", async () => {
-    const { default: PaymobReturnPage } = await import("@/app/checkout/payment-result/page");
     sessionStorage.setItem("capella:paymob-checkout-lang", "en");
 
     render(<PaymobReturnPage />);
@@ -33,7 +34,6 @@ describe("PaymobResult", () => {
   });
 
   it("preserves the checkout reference while localizing the Paymob return", async () => {
-    const { default: PaymobReturnPage } = await import("@/app/checkout/payment-result/page");
     sessionStorage.setItem("capella:paymob-checkout-lang", "en");
     window.history.replaceState({}, "", "/checkout/payment-result?checkoutId=checkout_abc");
 
@@ -45,7 +45,6 @@ describe("PaymobResult", () => {
   });
 
   it("does not claim to confirm payment when this browser has no checkout reference", async () => {
-    const { PaymobResult } = await import("@/components/checkout/paymob-result");
     render(<PaymobResult lang="en" dict={getDict("en")} />);
     expect(await screen.findByText("No payment to check")).toBeInTheDocument();
     expect(screen.queryByText("Confirming your payment")).toBeNull();
@@ -53,7 +52,6 @@ describe("PaymobResult", () => {
   });
 
   it("checks the payment returned by Paymob when browser session storage is unavailable", async () => {
-    const { PaymobResult } = await import("@/components/checkout/paymob-result");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "completed",
       expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
       latestAttemptStatus: "succeeded", canRetry: false,
@@ -66,10 +64,7 @@ describe("PaymobResult", () => {
   });
 
   it("preserves the cart while payment confirmation is pending", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_abc");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "payment_pending",
       expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
@@ -80,10 +75,7 @@ describe("PaymobResult", () => {
   });
 
   it("clears the cart only after the local API confirms an order", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_abc");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "completed",
       expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
@@ -96,10 +88,7 @@ describe("PaymobResult", () => {
   });
 
   it("returns an English shopper to the English result page after the locale-neutral Paymob redirect", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_abc");
     sessionStorage.setItem("capella:paymob-checkout-lang", "en");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "payment_pending",
@@ -110,10 +99,7 @@ describe("PaymobResult", () => {
   });
 
   it("releases the browser checkout key after expiry without clearing the cart", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_abc");
     sessionStorage.setItem("capella:paymob-checkout-request", "old-key");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "expired",
@@ -126,10 +112,7 @@ describe("PaymobResult", () => {
   });
 
   it("does not invite a second payment when a late charge needs reconciliation", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_abc");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "expired",
       expiresAt: new Date(Date.now() - 300000).toISOString(), attemptsUsed: 1,
@@ -142,10 +125,7 @@ describe("PaymobResult", () => {
   });
 
   it("preserves the checkout reference when redirecting to the saved locale", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     sessionStorage.setItem("capella:paymob-checkout-lang", "ar");
     fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "payment_pending",
       expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1,
@@ -157,10 +137,7 @@ describe("PaymobResult", () => {
   });
 
   it("restarts polling and displayed results when the callback identifier changes", async () => {
-    const modulePath = "@/components/checkout/paymob-result";
-    const { PaymobResult } = await import(/* @vite-ignore */ modulePath).catch(() => ({
-      PaymobResult: () => null
-    }));
+    
     fetchCheckoutStatus.mockImplementation((checkoutId: string) => {
       if (checkoutId === "checkout_first") {
         return Promise.resolve({ checkoutId, status: "payment_pending",
@@ -193,7 +170,6 @@ describe("PaymobResult", () => {
   it("stops polling and offers a return path when the checkout session has failed", async () => {
     vi.useFakeTimers();
     try {
-      const { PaymobResult } = await import("@/components/checkout/paymob-result");
       sessionStorage.setItem("capella:pending-paymob-checkout", "checkout_failed");
       fetchCheckoutStatus.mockResolvedValue({
         checkoutId: "checkout_failed", status: "failed",

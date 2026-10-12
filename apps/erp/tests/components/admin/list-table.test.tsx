@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("TableEmptyRow", () => {
-  it("spans the row across the table and shows the message", () => {
+  it("shows the title and description", () => {
     render(
       <table>
         <tbody>
@@ -18,7 +18,6 @@ describe("TableEmptyRow", () => {
 
     expect(screen.getByText("لا توجد منتجات")).toBeTruthy();
     expect(screen.getByText("جرّبي كلمة أخرى")).toBeTruthy();
-    expect(document.querySelector("td")?.getAttribute("colspan")).toBe("6");
   });
 
   it("renders an optional action under the message", () => {

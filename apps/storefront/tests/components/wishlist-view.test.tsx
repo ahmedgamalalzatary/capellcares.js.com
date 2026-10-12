@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
@@ -186,7 +186,18 @@ describe("WishlistView", () => {
     expect(remove).toHaveBeenCalledWith("collection", 3);
   });
 
-  it("names a saved offer's category on its card", async () => {
+it("removes a saved entry from the list", async () => {
+    render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
+
+    // Each entry row carries its own clear control.
+    await screen.findByText("Hidden Collection");
+    const row = screen.getByText("Hidden Collection").closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button", { name: "Remove" }));
+
+    expect(remove).toHaveBeenCalledWith("collection", 3);
+  });
+
+it("names a saved offer's category on its card", async () => {
     render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
 
     expect(await screen.findByText("Skin Care")).toBeInTheDocument();
@@ -215,7 +226,16 @@ describe("WishlistView", () => {
     render(createElement(CartProvider, null, createElement(WishlistView, { lang: "en", dict })));
 
     expect(await screen.findByTestId("columns-toggle")).toBeInTheDocument();
+    // The grid opens at two columns per row, so the switch has to start from the other one.
+    expect(screen.getByRole("button", { name: "2 per row" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "1 per row" })).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "1 per row" }));
+    expect(screen.getByRole("button", { name: "1 per row" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "2 per row" })).toHaveAttribute("aria-pressed", "false");
+
     fireEvent.click(screen.getByRole("button", { name: "2 per row" }));
     expect(screen.getByRole("button", { name: "2 per row" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "1 per row" })).toHaveAttribute("aria-pressed", "false");
   });
 });

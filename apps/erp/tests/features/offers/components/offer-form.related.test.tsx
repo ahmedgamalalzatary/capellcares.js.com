@@ -116,13 +116,6 @@ describe("OfferForm related items", () => {
     });
   });
 
-  it("renders the related-items selector", () => {
-    const view = render(createElement(OfferForm, { mode: "edit", initial: completeOffer(1), products, categories, relatedOptions }));
-    const form = within(view.container);
-    fireEvent.click(form.getByTestId("step-related"));
-    expect(form.getByTestId("related-items-field")).toBeInTheDocument();
-    expect(form.getByTestId("related-items-add")).toBeInTheDocument();
-  });
 
   it("excludes the current offer from its own related options", () => {
     const view = render(

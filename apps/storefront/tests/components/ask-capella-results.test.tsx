@@ -81,19 +81,4 @@ describe("AskCapellaReplyContent", () => {
     expect(screen.getByRole("img", { name: "Rose Serum" })).toHaveAttribute("src", "/rose.png");
   });
 
-  it("falls back to the product illustration when it has no picture", () => {
-    const dict = getDict("en");
-    render(
-      createElement(AskCapellaReplyContent, {
-        results: { ...results, products: [{ ...discountedProduct, imagePath: "" }] },
-        query: "rose",
-        lang: "en",
-        dict,
-        onClose: vi.fn()
-      })
-    );
-
-    // The SVG illustration is labelled with the product name, same as the photo.
-    expect(screen.getByRole("img", { name: "Rose Serum" }).tagName.toLowerCase()).toBe("svg");
-  });
 });

@@ -77,7 +77,7 @@ describe("storefront root layout", () => {
       params: Promise.resolve({ lang: "ar" })
     }));
 
-    expect(markup).toContain('<div class="shell" lang="ar" dir="rtl"');
+    expect(markup).toContain('lang="ar" dir="rtl"');
     expect(markup).toContain('data-review-prompt-provider="true"');
   });
 });

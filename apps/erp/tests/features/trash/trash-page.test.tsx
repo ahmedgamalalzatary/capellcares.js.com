@@ -214,6 +214,38 @@ describe("TrashPage hard delete", () => {
     expect(hardDeleteOffer).toHaveBeenCalledWith(5);
   });
 
+  it("restores a deleted product from the products tab", async () => {
+    restoreProduct.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    openMenu("إجراءات منتج محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
+
+    expect(restoreProduct).toHaveBeenCalledWith(7);
+  });
+
+  it("restores a deleted category from the categories tab", async () => {
+    restoreCategory.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    openTab(/الأقسام/);
+    openMenu("إجراءات قسم محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
+
+    expect(restoreCategory).toHaveBeenCalledWith(3);
+  });
+
+  it("restores a deleted offer from the offers tab", async () => {
+    restoreOffer.mockResolvedValue(undefined);
+    render(createElement(TrashPage));
+
+    openTab(/العروض/);
+    openMenu("إجراءات عرض محذوف");
+    fireEvent.click(await screen.findByRole("menuitem", { name: /استعادة/ }));
+
+    expect(restoreOffer).toHaveBeenCalledWith(5);
+  });
+
   it("restores collections from a dedicated trash tab", async () => {
     restoreCollection.mockResolvedValue(undefined);
     render(createElement(TrashPage));

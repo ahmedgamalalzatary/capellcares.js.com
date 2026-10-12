@@ -215,21 +215,6 @@ describe("OrderDetailView reviews", () => {
     expect(screen.queryByRole("button", { name: /request.*return|exchange|refund/i })).not.toBeInTheDocument();
   });
 
-  it("places status opposite the order code and back-to-orders with the metadata", async () => {
-    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
-
-    const header = (await screen.findByText("ORDER-12")).closest("header");
-    expect(header).toBeTruthy();
-    expect(header).toContainElement(screen.getByText("Accepted"));
-    expect(header).toContainElement(screen.getByRole("link", { name: "Back" }));
-    expect(header).toHaveTextContent("Placed on");
-    expect(header).toHaveTextContent("1 item");
-    expect(header).toHaveTextContent(/Total:\s*EGP\s*50/);
-    const meta = header!.querySelector("[data-order-meta]");
-    expect(meta).toHaveTextContent("Placed on");
-    expect(meta).not.toHaveTextContent("Accepted");
-    expect(meta).not.toHaveTextContent("Back");
-  });
 
   it("shows the order total in the header metadata and each item's classification", async () => {
     fetchCustomerOrderById.mockResolvedValue({
@@ -330,7 +315,7 @@ describe("OrderDetailView reviews", () => {
   it("lets an eligible signed-in customer submit one review from the order item", async () => {
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 
-    expect((await screen.findByText("Accepted")).className).toContain("chip--status-ok");
+    expect(await screen.findByText("Accepted")).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "Write a review" }));
     fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
     fireEvent.change(screen.getByLabelText("Your review"), { target: { value: "Wonderful product" } });

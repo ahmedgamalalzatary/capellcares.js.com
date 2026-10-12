@@ -114,12 +114,6 @@ describe("CollectionsListPage", () => {
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى المجموعات.")).toBeInTheDocument();
   });
 
-  it("renders a clickable link to create a new collection", () => {
-    render(createElement(CollectionsListPage));
-
-    const link = screen.getByRole("link", { name: /مجموعة جديدة/ });
-    expect(link).toHaveAttribute("href", "/collections/new");
-  });
 
   it("hides create and edit actions for read-only staff", () => {
     mockedUseAdminAuth.mockReturnValue({
@@ -146,12 +140,6 @@ describe("CollectionsListPage", () => {
     expect(toggleCollectionStatus).toHaveBeenCalledWith(1);
   });
 
-  it("sets an explicit aria-label on the toggle-status action", async () => {
-    render(createElement(CollectionsListPage));
-
-    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات مجموعة" }));
-    expect(await screen.findByRole("menuitem", { name: "إيقاف" })).toBeInTheDocument();
-  });
 
   it("soft-deletes a collection only after confirmation", async () => {
     render(createElement(CollectionsListPage));

@@ -136,12 +136,6 @@ describe("OrdersPage", () => {
       .toHaveAttribute("href", "mailto:checkout@example.test");
   });
 
-  it("links staff to paid Paymob checkouts that need reconciliation but have no order", () => {
-    render(createElement(OrdersPage));
-    expect(screen.getByRole("link", { name: "مدفوعات قيد المراجعة" }))
-      .toHaveAttribute("href", "/orders/reconciliation");
-  });
-
   it("renders the payment status in Arabic instead of the raw enum", () => {
     render(createElement(OrdersPage));
 

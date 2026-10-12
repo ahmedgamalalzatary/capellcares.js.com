@@ -45,7 +45,7 @@ vi.mock("@/components/providers/auth-provider", () => ({
   useAuth: () => authState
 }));
 
-import { clearCartLines, clearLastSyncedCartLines, saveCartLines } from "@/lib/cart";
+import { clearCartLines, clearLastSyncedCartLines, loadCartLines, saveCartLines } from "@/lib/cart";
 import { CartProvider, useCart } from "@/components/providers/cart-provider";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -247,7 +247,39 @@ describe("CartProvider server sync", () => {
         { type: "offer", offerId: 2, qty: 1 }
       ]);
     });
-    expect(saveCartLines !== undefined).toBe(true);
+    expect(loadCartLines(window.localStorage)).toEqual([{ type: "offer", offerId: 2, qty: 1 }]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("changes and removes a signed-out shopper's line without calling the API", async () => {
+    saveCartLines(window.localStorage, [{ type: "offer", offerId: 2, qty: 2 }]);
+    const fetchMock = vi.fn(async (input: string | URL) => {
+      throw new Error(`cart API must not be called for guests: ${input}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    function SignedOutProbe() {
+      const cart = useCart();
+      return createElement(
+        "div",
+        null,
+        createElement("button", { onClick: () => cart.add({ type: "offer", offerId: 2, qty: 1 }) }, "add-more"),
+        createElement("button", { onClick: () => cart.remove(cart.keyOf({ type: "offer", offerId: 2, qty: 2 })) }, "remove-line"),
+        createElement("div", { "data-testid": "lines" }, JSON.stringify(cart.lines))
+      );
+    }
+
+    render(createElement(CartProvider, null, createElement(SignedOutProbe)));
+    await waitFor(() => expect(JSON.parse(screen.getByTestId("lines").textContent ?? "[]"))
+      .toEqual([{ type: "offer", offerId: 2, qty: 2 }]));
+
+    fireEvent.click(screen.getByRole("button", { name: "add-more" }));
+    // The same line tops up instead of duplicating.
+    await waitFor(() => expect(JSON.parse(screen.getByTestId("lines").textContent ?? "[]"))
+      .toEqual([{ type: "offer", offerId: 2, qty: 3 }]));
+
+    fireEvent.click(screen.getByRole("button", { name: "remove-line" }));
+    await waitFor(() => expect(loadCartLines(window.localStorage)).toEqual([]));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

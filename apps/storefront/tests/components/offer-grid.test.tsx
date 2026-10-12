@@ -73,6 +73,24 @@ describe("OfferGrid", () => {
     expect(screen.getByTestId("columns-toggle")).toHaveAttribute("data-cols", "2");
   });
 
+  it("sorts offers by price in the direction the shopper picked", () => {
+    const cheap = { ...makeOffer(1, "Cheap Offer", 2), price: 40 };
+    const dear = { ...makeOffer(2, "Dear Offer", 2), price: 120 };
+    render(createElement(OfferGrid, {
+      offers: [dear, cheap], categories, lang: "en" as const, dict
+    }));
+
+    const names = () => screen.getAllByTestId("offer-card")
+      .map((card) => (card.textContent ?? "").split(" — ")[0]);
+    expect(names()).toEqual(["Dear Offer", "Cheap Offer"]);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort by" }), { target: { value: "price-asc" } });
+    expect(names()).toEqual(["Cheap Offer", "Dear Offer"]);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort by" }), { target: { value: "price-desc" } });
+    expect(names()).toEqual(["Dear Offer", "Cheap Offer"]);
+  });
+
   it("offers only root categories that own at least one offer as filter pills", () => {
     render(createElement(OfferGrid, {
       offers: [makeOffer(1, "Skin Offer", 2)],
