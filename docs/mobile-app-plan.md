@@ -1,9 +1,43 @@
 # Capella Mobile App (Expo / React Native) — Customer Storefront (ERP stays web)
 
-> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport is implemented; scaffold, theme/language/storage, and part of the API client exist. Customer providers and production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
+> Status: **implementation active; V1 launch contract audited against repository code on 2026-10-04; audit findings B1–B9 fixed and regression-covered the same day.** Phase 0 auth transport and Phases 1–4 scaffold/foundation/data-layer/state-provider implementations exist, including the shared/API compatibility layer and the U1–U4 auth hardening. Production storefront screens remain planned. Existing code is not proof of device acceptance or launch readiness; see the evidence ledger and launch gates below.
 > Decisions: React Native via **Expo** (App Store / Google Play distribution), **storefront-only app** — the ERP stays on the web; its planned redesign will make it fully mobile-responsive and installable as a **PWA** for staff, and a native admin slice remains a possible later additive phase. **Full functional and visual parity** with the working customer storefront, adapted to native navigation and phone interaction. Parity preserves supported product behavior, not implementation defects or simulated success. Exceptions and additional launch requirements must be explicit in this contract.
 >
-> Build order: the phases below are strictly sequential slices — each one is small, verifiable, and leaves the repo green. A phase is "done" only when its **Exit criteria** pass.
+> Build order: implement and verify the phases sequentially. Track **code verification** separately from **native acceptance**. The user approved Chrome at phone-sized viewports for continuing implementation on 2026-10-05; browser evidence does not satisfy Android/iOS acceptance. Pending device checks do not block subsequent code slices, but remain mandatory before release. A phase is fully accepted only when every applicable exit criterion passes.
+
+## Phase verification ledger — 2026-10-05
+
+Phase 0 evidence was collected against base revision `8d8c893c3480b9de26f83e330446d820a0de5b2e` and committed as `73f20b4`. Phase 1 was committed separately as `d175872`, excluding the saved Phase 2 startup changes. Phase 2 was committed as `d886c59`. Phase 3 starts from `d886c59`; on 2026-10-05 the user approved its complete shared/API prerequisites. Commands run sequentially where they could conflict. Phase 3 changes are confined to `apps/mobile`, its shared/API contracts and integration, this plan, and the approved lockfile; no storefront/ERP source changes.
+
+| Phase | Verified implementation | Status / remaining evidence |
+|---|---|---|
+| 0 | Customer/admin mobile auth transport; fresh DB-backed HTTP tests and API build/lint/typecheck pass | Transport verification committed as `73f20b4`; repository-wide suite and separate U1–U4 auth hardening are not established by this check |
+| 1 | Expo scaffold/shared resolution; web preview; dependency check, lint/typecheck, 13 suites / 107 tests, 1 Chrome Playwright test, web/Android/iOS exports pass | Code and automated Chrome verification complete; manual computer use blocked by URL-policy check; native launch pending |
+| 2 | Theme/fonts, bilingual startup recovery, guarded language changes, validated storage/migration/cache-clear primitives; 14 suites / 127 tests, lint/typecheck, Chrome test and all exports pass | Foundation code verified; domain consumers in 4/6/7 and native/release acceptance remain pending |
+| 3 | Remaining transports, validated response boundaries, native identity/auth/retries, public policy and feature-only enforcement | Code verified: 2219 repository tests, 2 Chrome checks, fresh lint/typecheck and all builds/exports pass; native/store/OTA acceptance pending |
+| 4 | Auth token store + `AuthProvider` (SecureStore refresh token, single-flight refresh, durable-before-publish rotation, rejection-vs-transient handling), `PolicyProvider` (validated cache, freshness, single-flight refresh, dismissal), durable `CartProvider` (guest persistence, pull/merge, serialized uploads, account isolation, clear-vs-pull); U1–U4 API hardening | Committed as `826e1e7`; prior author recorded API 1094 tests and mobile 220 tests. Fresh next-phase baseline: mobile lint/typecheck and 22 suites / 225 tests pass. Native acceptance remains pending; logout timing and cart storage-await races identified for integration safeguards |
+| 5 | Reusable bilingual components, media and feature-update presentation | **In progress** from `826e1e7`: reading integrations, establishing baseline and implementing focused TDD slices; no completion/native acceptance claim yet |
+| 6–7 | Not verified in this pass | Production customer screens remain to be implemented |
+| 8 | Existing EAS configuration only | Release/distribution/OTA acceptance pending |
+
+### Mandatory additions mapped to implementation slices
+
+Reviewed the plan changes in `8d8c893` (2026-10-05) and `620dc6c` (2026-10-04). The latest five-item version/update requirements were present in the contract, but needed explicit per-phase checklists. Mark implementation and external/native acceptance separately; configuration scaffolding is not proof of compatibility/OTA acceptance. Finish and commit each phase before starting the next. The user approved complete Phase 3 shared/API changes on 2026-10-05. Storefront/ERP edits and later upstream work still require their own scope authorization.
+
+| Mandatory work | Implementation phase/slice | Acceptance evidence required |
+|---|---|---|
+| Five native identity headers on every request, auth, config and retry; no device/user tracking | 3B transport; 4A auth integration | Real runtime/build/update metadata fixtures; header and retry preservation; existing web behavior preserved |
+| Public `GET /app-config`, versioned response/error contract and feature-only server enforcement | 3B shared/API prerequisites; 3C native client | Pre-login HTTP contract, malformed/missing metadata, stable `APP_UPDATE_REQUIRED` + feature, compatible operations still available; API/shared edits require approval |
+| Current/previous/review-candidate support; staggered-store promotion | 3B policy fixtures; 8A release procedure | Fixtures for occupied states; unavailable review candidate never advertised; both-store promotion/retirement evidence |
+| Cold-launch/foreground policy checks, cache/freshness/deduplication, offline/no-cache recovery | 4C policy state | Defined freshness/dismissal contract; invalid config and outage tests; startup always settles; no payment interruption |
+| Dismissible recommended update and accessible feature-specific update action | 5B components; 7D feature wiring | Both languages; dismissal, safe store destinations, accessibility, compatible features remain usable |
+| Preview/production OTA delivery and runtime compatibility | 8A | Channels/environments, build/version rules, embedded/offline support, safe apply timing, rollout/rollback evidence |
+| Durable guest cart/Ask cache; transient browsing/forms; migrations and safe cache clear | 2B storage; 4B cart; 6B Ask; 7A recovery | Restart/upgrade/rollback/account isolation; unresolved payment reference survives cache clear |
+| Immediate session revocation and safe refresh failure/rotation handling | 4A with U1–U4 prerequisites | Real API tests and native persistence/reconnect checks; upstream edits require approval |
+| In-app video, full browse/search/banner/legal parity and accessible interaction | 5A components; 6A–6C screens | Browser journeys plus both-platform playback/lifecycle/accessibility evidence |
+| Authoritative checkout/shipping/recovery, purchased-cart reconciliation, eligible cancellation | 3A transports; 7A–7B journeys | Real COD/Paymob/provider tests, uncertain response/restart/duplicate confirmation/concurrent-cart scenarios |
+| Minimum account deletion and customer review safety | 7C with U7/U8 prerequisites | API/web/native completion, retention decision, session invalidation/report/block/filter controls; upstream edits require approval |
+| Production failure notifications with redacted diagnostic identity | 8B operations (D12) | User-provided destination/service access, redaction and actionable delivery evidence |
 
 ## Current-code correction checkpoint — audit closed
 
@@ -12,8 +46,9 @@ The mobile workspace audit is closed: findings **B1–B9** were fixed and covere
 The standalone audit record has been removed. Its **open/undone items — which must still be completed** — are recorded here:
 
 - [ ] **Device foundation acceptance (Phase 2):** real development build on device/emulator with build/device/OS/revision evidence — Arabic/English cold start and live RTL/LTR switching, tracked per platform. Exports and unit tests are not device acceptance.
-- [ ] **Next-slice integration (Phase 3):** authenticated PUT for cart sync before Phase 4, plus the phase's remaining transports.
-- [ ] **L1:** localize/recover the root font-failure screen and handle splash rejections; replace the diagnostic placeholder in Phase 6.
+- [x] **Phase 3 transport prerequisite:** authenticated GET/PUT cart and remaining announcements/shipping/payment-recovery/cancellation operations; Phase 4 owns synchronization state and serialization.
+- [x] **L1 startup:** Arabic/English font-failure recovery, visible language startup retry and handled splash rejections implemented and regression-covered in Phase 2.
+- [ ] **L1 placeholder:** replace the diagnostic product/language screen in Phase 6.
 - [ ] **L2:** replace the 1×1 icon/splash placeholders with real verified platform assets in Phase 8.
 - [ ] **L3:** add `eas.json` update channels, an explicit preview API environment, and a build-number/publish/rollback procedure before OTA/release.
 - [ ] **L4:** strengthen the mock-heavy tests and the scaffold fetch-call test with real contract fixtures as screens land.
@@ -75,6 +110,8 @@ The initial V1 scope audit read code/configuration and existing coverage without
 
 ## Phase 0 — API: token-based auth for mobile (backend prerequisite)
 
+**Fresh verification (2026-10-05): transport exists and passes its scoped checks.** Inspected `mobile-client.ts`, both auth controllers, and both auth route test files. `pnpm --filter @capella/api test tests/unit/mobile-client.test.ts tests/routes/auth.routes.test.ts tests/routes/admin-auth.routes.test.ts` completed with **27 passed, 0 failed/skipped** after disposable test-DB migrations. These tests run real Express HTTP endpoints and database sessions: mobile login returns JSON refresh tokens without cookies; header/body refresh rotates tokens and rejects replay; mobile logout revokes refresh; browser-origin spoofing never exposes refresh tokens; mixed web/mobile sessions remain isolated. Ordinary web login/refresh keeps cookie transport without JSON refresh-token disclosure. This provides the login HTTP-response evidence without printing live credentials or tokens. `pnpm --filter @capella/api typecheck`, `lint`, and `build` all exited **0**. No missing Phase 0 transport implementation was found. The full-repository `pnpm test` criterion was not run in this scoped pass; U1–U4 remain separate prerequisites and this is not a claim that all auth correctness work is complete.
+
 This implemented transport addition preserves ordinary web auth responses. The separate auth correctness fixes in the upstream register must preserve supported successful flows, while deliberately correcting invalid-input/failure behavior; the transport requirement does not prohibit those fixes.
 
 **Files**
@@ -95,6 +132,21 @@ This implemented transport addition preserves ordinary web auth responses. The s
 ---
 
 ## Phase 1 — Workspace scaffold & build infra
+
+**Fresh verification (2026-10-05): scaffold and Chrome preview code verified.** Existing scaffold is retained. Added Expo-selected `react-dom`, `react-native-web` and `@expo/metro-runtime`, direct Playwright test tooling, browser scripts and ignored output directories. Browser language changes set document language/direction without calling native layout/reload functions; native behavior retains its previous path. Two new language tests were observed failing before the browser handling was implemented, then passed.
+
+| Command / observation | Evidence |
+|---|---|
+| `pnpm --filter @capella/mobile exec expo install --check` | Exit 0, **Dependencies are up to date**, after adding web dependencies |
+| `pnpm --filter @capella/mobile add -D @playwright/test@1.60.0 --offline` | Exit 0; direct test dependency installed from cache; selected web dependencies are installed and exercised by exports/browser test |
+| `pnpm --filter @capella/mobile lint` / `typecheck` | Both exit 0 |
+| `pnpm --filter @capella/mobile test -- --runInBand` | **13 suites / 107 tests pass**, Phase 2 startup changes excluded |
+| `pnpm --filter @capella/mobile test:e2e` | Exit 0, **1 passed** in installed Google Chrome at **390×844**, touch enabled; Arabic bootstrap, English switch/reload persistence, return to Arabic; no uncaught page errors |
+| `pnpm --filter @capella/mobile build:web` | Exit 0; 880 modules; `dist-web/index.html`, metadata and web bundle `entry-08b15379ed3f97674dc9a9df42ff9850.js` |
+| `pnpm --filter @capella/mobile build` after dependency changes | Exit 0; iOS `entry-46fd187357c0e331091918ad68e31f1d.hbc`, Android `entry-a2053b7efd12324931cae1104bff1c3b.hbc`, `dist/metadata.json` |
+| Manual Chrome computer use | Chrome launched; control stopped because the tool could not identify the current browser URL confidently enough to enforce policy. No manual UI acceptance claimed; Playwright supplies automated browser evidence |
+
+Inspected workspace/Turbo participation, optional shared DOM peers, Metro shim, Babel/TypeScript config, routing, generated Expo type references, and environment documentation. Playwright stubs only the products endpoint with `{ items: [] }` to isolate foundation checks; it does **not** prove real API/catalog or native behavior. Initial cold web bundling exceeded the original test startup limit; the test now permits 60 seconds while assertions retain their normal timeout. Exports/tests emit the Node `NO_COLOR`/`FORCE_COLOR` warning; dependency installation reported existing deprecated/peer warnings, without failing the Expo compatibility check. Installed native launch and real-device font/RTL behavior remain pending. Preview: `pnpm --filter @capella/mobile web`; repeat browser checks with `test:e2e`.
 
 The app boots to a placeholder screen; Metro proves it can bundle `@capella/shared` through pnpm symlinks. **Riskiest phase — do first, verify hard.**
 
@@ -132,11 +184,32 @@ Previously recorded implementation verification: Expo Doctor, dependency compati
 - **API testing on a phone:** before phases that call the API, set `EXPO_PUBLIC_API_URL` to the PC's LAN-reachable API address; a physical phone cannot use the PC's `localhost`.
 - **iOS:** EAS can cloud-build iOS, but installing on a physical iPhone requires Apple signing/device registration, and an iOS Simulator still requires macOS. Android remains the practical acceptance device for this Windows workspace.
 
-**Deferred acceptance decision:** Do not wait for an EAS build merely to verify the temporary Phase 1 placeholder. Treat Phase 1 as code-complete, but not 100% accepted, until the device-launch criterion passes. Complete the Android build/install workflow above no later than Phase 2 acceptance, where Arabic fonts and live RTL/LTR switching require a development build; do not defer it until the full storefront is finished.
+**Deferred acceptance decision (updated with user approval 2026-10-05):** continue code slices using TDD and Chrome at phone-sized viewports. Treat native launch and Arabic/English native RTL switching as explicitly pending; Chrome cannot close those checks. Arrange an installed Android/iOS development build for native integration checks and require both-platform release acceptance before launch. Do not label a browser preview or bundle export as native acceptance.
 
 ---
 
 ## Phase 2 — Core foundation: theme, language/RTL, storage
+
+**Tracked slices:** 2A theme/language/startup recovery; 2B validated versioned storage/migrations/cache boundaries. Native direction, large-text, restart and upgrade evidence remain separate from browser checks.
+
+- [x] **2A foundation code:** existing palette/font/radius/spacing primitives retained; recoverable font/language startup; bounded language switching after unmount; critical-operation holds with queued selection/resume.
+- [x] **2B foundation primitives:** validated read/write and forward-copy migration; current-key precedence/recheck; canonicalized values before hydration/write; browsing-cache clear excludes credentials, identity, pending account writes and payment references. Language now consumes this boundary.
+- [ ] **Consumer acceptance:** actual auth/guest/account-cart codecs and serialization in Phase 4, conversation codec/migration/cache-clear UI in Phases 6/7, and payment recovery codec/lifecycle in Phase 7. These are not implemented by a storage primitive test.
+- [ ] **Native/release acceptance:** real Android/iOS font/RTL/reload, large text, lifecycle and upgrade/rollback tests.
+
+**Fresh verification (2026-10-05):** restored the separately saved startup tests first; **5 of 10 failed** against Phase 1's root, then all passed after startup recovery was restored. New storage tests exercised actual boundary code against an in-memory backend: invalid writes, migration storage failure, rollback-source preservation, current-value precedence/recheck, validated recovery-field filtering and canonical migration hydration. Language tests first reproduced unwanted reload during a critical operation, work continuing after provider unmount, and a queued selection getting stuck when a hold ended during storage reconciliation. The fixes pass their regression tests. Native module adapters are mocked in Jest because the native bridge is unavailable there; this is not device evidence.
+
+| Command | Final result |
+|---|---|
+| `pnpm --filter @capella/mobile lint` / `typecheck` | Both exit 0 |
+| `pnpm --filter @capella/mobile test -- --runInBand` | **14 suites / 127 tests passed**, no failures/skips |
+| `pnpm --filter @capella/mobile test:e2e` | **1 passed**, installed Chrome at 390×844; persisted language, Arabic/English document direction and actual language-control positions verified |
+| `pnpm --filter @capella/mobile build:web` | Exit 0; `entry-ff79c557a8109fca538fa7d4de08c9f2.js` and `dist-web/index.html` |
+| `pnpm --filter @capella/mobile build` | Exit 0; iOS `entry-08c5a25bb9ad98f9a969ffd90c26e16a.hbc`, Android `entry-3e5c0d53106ded5f64c12f5efc3de27c.hbc` and `dist/metadata.json` |
+
+**Storage/consumer contract:** `src/lib/persistent-storage.ts` owns `PersistentValue<T>` codecs and forward-copy migrations. Key versions identify formats; a breaking format requires a new key, with an explicit validator/converter, while previous serialized values are retained for supported rollback clients. No historical language migration is enabled because no earlier language format is established; migration tests use controlled fixtures. Existing `capella.lang.v1` remains the raw `ar`/`en` format. Reads preserve malformed data instead of deleting it; actual storage failures propagate. Writes persist the current decoder's canonical value, allowing recovery codecs to strip form fields. Cache clearing removes only `capella.cart.v1`, `capella.ask.v1` and legacy `capella:ask:v1`. No expiry is introduced. Auth profile, SecureStore refresh tokens, `capella.cart.pending.v1` and `capella.checkout.recovery.v1` are preserved.
+
+Consumers must validate their actual domain payloads and serialize competing domain writes; AsyncStorage is not a transactional/CAS store. Phase 4 must isolate pending cart data by account and persist SecureStore rotation before publishing access. Phases 4/7 must acquire `holdLanguageChanges()` before critical auth/storage/checkout/payment work, release it after reconciliation, and honor pending language changes when entering another critical task. The foundation tests prove the hold behavior, not a completed payment journey. Phase 7 must persist only minimal technical attempt/idempotency/reference state, never checkout name/address/form drafts; this is the D6 recovery exception. Phase 6 owns the conversation's real message/result validator; cache clearing UI follows in the customer slices. Native acceptance remains pending; exports do not prove installed startup, SDK 57 Expo Go cannot establish dynamic RTL acceptance, and manual Chrome control remains blocked by the tool's URL-policy check. Builds still emit the previously recorded Node color-environment warning.
 
 No screens yet — the primitives everything else imports.
 
@@ -146,6 +219,7 @@ No screens yet — the primitives everything else imports.
 |---|---|
 | `apps/mobile/src/theme.ts` | Convert the actual Parchment CSS OKLCH values to canonical sRGB/hex; the previous draft hex list is incorrect for nine tokens (the B8 closure lists the measured conversions). Preserve matching canvas `#f1f0ed`/white surface, radii {6,10,16,24}, spacing and language fonts (Roboto / Tajawal / Lobster); complete existing storefront tokens when components need them. |
 | `apps/mobile/src/constants/storage.ts` | AsyncStorage/SecureStore keys — reuse web names: `capella.cart.v1`, `capella.auth.v1`, plus `capella.lang.v1`, secure keys for refresh tokens |
+| `apps/mobile/src/lib/persistent-storage.ts` | validated codecs, canonical writes, forward-copy migration and selective browsing-cache clear; language integration implemented; domain consumer codecs in their owning phases |
 | `apps/mobile/src/lib/lang.tsx` | `LangProvider` + `useLang()`: language (`ar` default) + `getDict`/`dir` from `@capella/shared/i18n`, persisted; switching updates `I18nManager.allowRTL/forceRTL` and reloads the installed app with the SDK-supported app reload API so layout flips natively. Dynamic RTL is verified in a development build, not Expo Go |
 | `apps/mobile/app/_layout.tsx` (edit) | load fonts (expo-font + google-font packages), keep splash until ready, wrap in `LangProvider` + SafeArea |
 
@@ -156,6 +230,26 @@ No screens yet — the primitives everything else imports.
 ---
 
 ## Phase 3 — Data layer: API client
+
+**Tracked slices / mandatory completion checks**
+- [x] **3A implementation:** remaining catalog/cart/announcements/shipping/payment/cancellation transports and boundary fixtures; real database-backed catalog rendering in Chrome.
+- [x] **3B implementation:** five native identity headers plus ordered capability revision; shared versioned config/update-error contracts; current/previous/review registry and promotion tests; public configuration and feature-only server enforcement. Shared/API changes explicitly approved.
+- [x] **3C implementation:** validated native config fetch and feature-update errors; initial/retry/auth/idempotency/language headers preserved; stale-session successful responses rejected.
+- [ ] **Native/distribution acceptance:** installed production metadata and actual supported store/OTA artifacts; first public bundle retention and device/provider acceptance remain required in Phase 8.
+
+**Phase 3 implementation/evidence — 2026-10-05:** mobile/API/shared baselines passed before implementation (mobile 14 suites / 127 tests, shared 49 tests, API 27 real auth HTTP tests; applicable lint/typecheck/build). New tests first exposed missing transports, malformed required reads being accepted, missing native identity/error detail, stale-account successful reads, unavailable/disconnected update actions, an impossible advertised upgrade, case-sensitive feature matching against Express's case-insensitive routes, and U5's unhandled DB rejection. The implementations then passed targeted checks. Native modules are replaced only at the Jest native bridge boundary; these fixtures are not installed-binary evidence.
+
+**Policy/bootstrap contract:** `GET /app-config` is public on the API origin; native identity supplies the platform, with `?platform=android|ios` available for development/bootstrap. Schema version is `1`, and `policyRevision` identifies policy/dismissal changes. The response carries `current` (public/latest), `previous`, per-platform release/build/runtime/API/update identity, recommended update and feature requirements. The candidate stays only in the private support registry. `Cache-Control: no-store` prevents an intermediary caching the response; `cache.maxAgeSeconds` is the explicit native cache freshness contract. Prelaunch defaults to **0** (refresh at startup/foreground, without a timer or invented reminder interval), empty release slots and no gates/recommendation. Configured policies specify their own freshness. Phase 4 will use last-known cache on failures and deduplicate lifecycle refreshes; recommended dismissal is keyed to policy revision/release, with no time-based expiry. Phase 5 supplies the prompt/store UI.
+
+Set **`APP_RELEASE_POLICY_JSON`** in the API environment to a JSON value validated by `releaseRegistrySchema` in `packages/shared/src/schemas/app-policy.schema.ts`. It is policy configuration, never a credential or an `EXPO_PUBLIC_*` secret. Current and previous must be available in both stores; candidate may be staggered. `promoteReleaseCandidate(registry, newPolicyRevision)` refuses promotion until both stores are available, returns new current/previous slots and the retired release, and does not mutate the live registry. Publishing that returned configuration, changing feature minimums and recording real store availability is Phase 8 release work. A feature gate must point to an available public upgrade that can satisfy its version/build/runtime/capability requirement. Invalid configuration produces `APP_POLICY_UNAVAILABLE` for configuration/native gated operations while recovery and unrelated features stay reachable.
+
+**Identity and enforcement:** production native requests use `expo-application`'s installed app version/build and `expo-updates`' executing runtime/update ID; `embedded` is used only for an embedded launch without an ID. Missing production identity fails before sending. Chrome sends no fabricated native metadata; Metro/Expo Go development calls deliberately do not claim a production runtime, while native auth still selects `x-client: mobile`. `X-Client-Revision: 1` adds an explicit ordered JavaScript capability revision to the five identity headers; increase it when required OTA capabilities change. Legacy metadata without that optional header starts at revision 1. Opaque OTA UUIDs are never ordered. Version/build comparisons are numeric per platform, including dotted iOS builds. Metadata is untrusted and cannot replace any auth, pricing, shipping or payment validation.
+
+The API maps only cart replacement, checkout submission, shipping quotes, payment retry, cancellation, wishlist writes and review submission to their respective feature gates. `APP_UPDATE_REQUIRED` preserves the affected feature, localized explanation, policy/release and validated store URL. Browsing, authentication, support/deletion routes and payment-status recovery have no whole-app wall. Existing web requests retain their behavior. The native client preserves the validated error on `ApiError.updateRequired`/`feature`; an invalid error cannot supply a store action. Network failures never automatically repeat a mutation, and an authenticated retry preserves its body, language and idempotency key.
+
+**Real Chrome evidence:** `pnpm --filter @capella/mobile test:e2e` passed **2 tests** in installed Chrome at **390×844**, including a final run after U5's API fixes. The foundation test still isolates its products request. The new integration test launches the actual Express app on a random local port, resets/seeds only the guarded disposable test database, forwards the preview's fixed API URL to that server without replacing response bodies, and renders **منتج تجريبي 1 / Baseline Product 1** through the real mobile normalizer. The harness supplies localhost:8081 CORS explicitly and shuts down its own server/pool. Arabic/English screenshots were captured under the ignored `apps/mobile/test-results/api.integration-Chrome-ren-3441e-a-through-the-mobile-client/phase3-catalog-{ar,en}.png` and visually inspected. This is API/browser integration evidence, not native or payment-provider acceptance. Computer-use inventory was checked again: only the in-app browser/MCP Apps connector surfaces were available, with no Chrome connector; the previous native control URL-policy block remains unresolved. No manual Chrome input/acceptance is claimed for this phase.
+
+**Final validation:** `pnpm exec turbo run lint typecheck build --concurrency=1` passed **17 tasks** (7 cached), including both web builds and native exports. `pnpm exec turbo run test --concurrency=1 --force` passed **7 tasks, 0 cached**, across all six workspaces: API **1083**, mobile **171 / 17 suites**, shared **53**, database **63**, storefront **576 / 86 files**, ERP **273 / 49 files** — **2219 tests total**. No API/database runners competed for the same disposable schema. `pnpm exec turbo run lint typecheck --concurrency=1 --force` then passed **12 tasks, 0 cached**. Final `pnpm --filter @capella/api build`, mobile `expo install --check` and `build:web` exited **0**. Final native export identities: Android `entry-3a3775b2ca3687f03c6a608a69b22d73.hbc`, iOS `entry-f23ad9c5d754968a981ce8b8989480fe.hbc`; web `entry-0b0cb380a6751905ce32d79a41472560.js`. Builds/tests still emit the recorded Node color-environment warning; passing ERP negative-case tests print their expected API-409 diagnostics. Native builds must be regenerated to include the added `expo-application` module before installed-device metadata acceptance. Actual store IDs/builds, current/previous/candidate binaries and OTA artifacts remain Phase 8 evidence, not synthetic test fixtures.
 
 Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minus Next-isms (`next: { revalidate }`, `NEXT_PUBLIC_API_URL`).
 
@@ -174,6 +268,12 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 ## Phase 4 — State providers: customer auth & cart
 
+**Tracked slices / mandatory completion checks**
+- [x] **4A:** secure token/auth state and safe revocation/rotation/recovery; prerequisite U1–U4 disposition backed by real API tests. Implemented: U1 boundary validation + signup rate limit, U2 rejection-vs-transient refresh (customer and admin), U3 transactional rotation, U4 `sid`-based immediate access revocation; mobile `token-store` + `AuthProvider` (SecureStore, single-flight, durable-before-publish). Real API tests cover U1–U4; provider behavior covered by TDD suites.
+- [x] **4B:** durable guest and account-isolated synchronized carts, serialized pending writes and purchased-cart reconciliation integration. Implemented in `src/lib/cart.tsx` + `src/lib/cart-lines.ts` (guest persistence, pull/merge without doubling, serialized latest-snapshot uploads, persisted pending writes, account isolation, clear-vs-pull).
+- [x] **4C:** policy provider at cold startup/foreground: validated cache, freshness/deduplication, reminder dismissal, offline/no-cache/invalid response behavior. Refresh never reloads the app or interrupts payment; startup settles even without config. Implemented in `src/lib/policy.tsx`.
+- [ ] **Native/device acceptance:** installed-device checks for SecureStore persistence, RTL switching, cold start and foreground behavior remain pending (Phase 8 materially).
+
 **Files**
 
 | File | Purpose |
@@ -189,6 +289,14 @@ Pure TS, no UI. Ported from the storefront (`apps/storefront/src/lib/api/`) minu
 
 ## Phase 5 — Design-system components
 
+**Library decision (2026-10-05, user requested a library and delegated selection):** use **React Native Paper 5.15.3** for standard native controls, fields, selection and dialogs. Its React/React Native/safe-area peer requirements fit the existing workspace; actual Expo export/browser checks verify integration. React Native Reusables is the closest shadcn-style alternative, but its current manual installation adds NativeWind, CSS/Metro configuration and copied component maintenance. Paper fits this app's existing StyleSheet/theme foundation with less infrastructure churn. Adapt Paper's theme to the established Parchment colors and Roboto/Tajawal fonts; do not replace Capella's identity with a generic Material screen. Keep app-specific catalog/media/update behavior in categorized mobile modules. `packages/shared/src/ui` renders HTML/Radix/Tailwind and remains web-only; reuse shared types, pricing, translations and schemas. No shared/web source edits are required for this choice.
+
+**Component organization:** `src/components/{ui,layout,catalog,media,feedback,updates}`. Standard library adapters live in `ui`; screen/section framing in `layout`; cards/prices in `catalog`; playback/gallery/image handling in `media`; loading/error/empty/confirmation in `feedback`; optional/feature-required update presentation in `updates`. The root index only exports these groups. Source references: [Paper](https://github.com/callstack/react-native-paper), [Reusables manual installation](https://reactnativereusables.com/docs/installation/manual).
+
+**Tracked slices / mandatory completion checks**
+- [ ] **5A:** bilingual accessible components, loading/error/retry, gallery/in-app playback and lifecycle behavior.
+- [ ] **5B:** dismissible recommended-update prompt and feature-specific blocked state with safe store action; compatible features remain available. Both-language, accessibility and dismissal evidence required.
+
 Native equivalents of the web look, all styled from `theme.ts`. Icons via `@expo/vector-icons` (lucide is DOM-only).
 
 **Files** — `apps/mobile/src/components/`: `screen.tsx` (safe-area + canvas bg), `button.tsx` (primary/outline/ghost, pressed = accent-deep), `input.tsx`, `price-text.tsx` (EGP + strikethrough original), `rating-stars.tsx`, `badge.tsx` (new/bestseller/offer from `dict.badges`), `qty-stepper.tsx`, `media-image.tsx` (bilingual `EntityMedia` → url by lang, expo-image), `product-card.tsx`, `section-header.tsx` (eyebrow style), `empty-state.tsx`.
@@ -200,6 +308,8 @@ Also provide reusable loading/error/retry states, accessible modal/confirmation 
 ---
 
 ## Phase 6 — Customer slice A: browse & catalog (first real screens)
+
+**Tracked slices:** 6A home/catalog/detail/cart controls; 6B global search/Ask and approved conversation cache; 6C banners/media/static links/support and complete navigation reachability. Acceptance uses the existing parity matrix, not only the named routes.
 
 Merged slice (former Phases 6 + 9): all read-only customer surfaces land together — browse, offers, collections, and static pages — so the whole catalog navigation graph is verified in one pass.
 
@@ -223,6 +333,12 @@ Merged slice (former Phases 6 + 9): all read-only customer surfaces land togethe
 ---
 
 ## Phase 7 — Customer slice B: cart, checkout, accounts, orders, wishlist, reviews
+
+**Tracked slices / mandatory completion checks**
+- [ ] **7A:** cart/shipping/checkout/payment recovery and durable attempt/reference; purchased-cart reconciliation and transient form state.
+- [ ] **7B:** login/signup/intended return, account, orders/cancellation, wishlist and purchase-eligible reviews.
+- [ ] **7C:** account deletion and minimum review safety with approved upstream API/web work and retention policy.
+- [ ] **7D:** wire feature-specific update errors/recovery into every affected journey; preserve other tasks and unresolved payment state.
 
 Merged slice (former Phases 7 + 8): everything that mutates state or needs a customer session.
 
@@ -251,6 +367,11 @@ The former native ERP slices (admin foundation/dashboard/orders; catalog managem
 ---
 
 ## Phase 8 — Store readiness (needs user accounts)
+
+**Tracked slices / mandatory completion checks**
+- [ ] **8A:** native identity/build/runtime and preview/production environments/channels; supported-release promotion, safe OTA timing and tested rollout/rollback. Never advertise a store candidate unavailable to the user.
+- [ ] **8B:** real assets, signing/store/privacy/reviewer readiness and D12 redacted failure notifications with the user's actual destination/service access.
+- [ ] **8C:** close every remaining Android/iOS device/lifecycle/upgrade/provider acceptance item with dated build/device/OS/revision evidence.
 
 EAS build profiles/project link already exist. Finish preview/production environments and OTA channels, version/build-number procedure, real icon/splash assets, Android adaptive icon, privacy declarations, signing/account ownership and recovery, store listings and reviewer instructions. Production API URL is configured in `eas.json`; verify the same intended environment when publishing OTA updates. Requires Apple Developer + Google Play accounts and external acceptance evidence.
 
@@ -369,7 +490,7 @@ EAS Update groundwork exists (`expo-updates`, updates URL, appVersion runtime po
 
 ### Required client-policy integration
 
-Implement **`GET /app-config`**, a public policy/bootstrap endpoint available before login on the API origin, and version-policy handling at the API boundary for affected operations. Keep the route stable; version its response schema so future clients can evolve safely. Initial identity header names are fixed above. Define the shared response/error schemas, including the stable machine code `APP_UPDATE_REQUIRED` and affected feature, before implementation acceptance; these do not exist in current code.
+**Implemented in Phase 3:** `GET /app-config`, a public policy/bootstrap endpoint available before login on the API origin, and version-policy handling at the API boundary for affected operations. Keep the route stable; its response schema is versioned so future clients can evolve safely. Initial identity header names are fixed above. Shared response/error schemas now live in `packages/shared/src/schemas/app-policy.schema.ts`, including the stable machine code `APP_UPDATE_REQUIRED` and affected feature; retain their first-release contract across future updates.
 
 The configuration contract includes response schema/policy revision, platform, current/latest and previous supported release identifiers, store URL, recommended-update information, and minimum supported release/capability for each feature requiring a gate. Keep the under-review candidate in the support registry without advertising an unavailable store upgrade to ordinary users. This endpoint is for version compatibility and delivery policy, not a general business-feature/analytics configuration engine.
 
@@ -394,7 +515,7 @@ The first public binary must understand policy responses and a stable structured
 
 ## Upstream and current-client issue register
 
-These are audit findings, not fixes made by this documentation update. Assign resolution/evidence before accepting the relevant phase; do not mark the register complete from this file change.
+This register records audit findings and dated implementation evidence. Assign resolution/evidence before accepting the relevant phase; a documentation checkbox alone never establishes a fix.
 
 | ID | Verified finding / source | Required disposition |
 |---|---|---|
@@ -402,11 +523,11 @@ These are audit findings, not fixes made by this documentation update. Assign re
 | U2 | `auth.controller.ts` refresh catch maps every failure to 401, including operational failures. | Distinguish true rejection from transient/server failure so the mobile provider does not erase a valid session on outage. |
 | U3 | `auth-session.service.ts` revokes the old refresh token before replacement delivery; the native app may never receive/persist the new token. Separate DB revoke/create operations also leave a failure window. | Make rotation atomic where needed and test interruption. The approved safe fallback is re-login; do not weaken replay protection to avoid it. |
 | U4 | Customer middleware verifies JWT signature/expiry/role but does not consult its `sid` or revoked session. Logout revokes refresh, not already-issued access JWTs. | Implement immediate access/refresh invalidation for the logged-out session when the API receives logout; deletion must invalidate the affected account sessions. Test both, and expose offline limitations honestly. |
-| U5 | Cart, wishlist, storefront advice and shop-media routes pass rejecting async handlers directly to Express 4; the repository already has `wrapAsync`. | Forward failures consistently to error middleware; test provider/DB failure returns a response instead of an unhandled rejection. |
+| U5 | **Resolved in Phase 3:** cart, wishlist, storefront advice and shop-media handlers now use `wrapAsync`. | A real HTTP regression injects DB driver failure across all seven affected GET/PUT/POST/DELETE paths and verifies safe 500 responses; full-suite evidence is recorded with Phase 3. |
 | U6 | Web wishlist provider can apply an old-account response after logout/account switch and turns failed reads into empty state. | Guard sessions/requests and distinguish failures; native behavior must not reproduce the race/false empty presentation. |
 | U7 | No account-deletion API/web entry point exists. | Implement the approved deletion/retention/verification contract upstream and native UI before store submission. |
 | U8 | Reviews are published active after purchase/schema validation; staff can hide/delete them, but no customer report/block flow exists in the reviewed storefront routes. | Resolve public-content filtering/reporting/abuse-handling requirements, support process and matching web/mobile/API integration (D11). |
-| U9 | Native `submitCheckout` declares an order-only response; `http.ts` drops HTTP/API error identity; cart PUT and announcements/shipping/payment recovery/cancellation client operations are absent. | Complete Phase 3 against actual shared checkout union and upstream API; do not make screens depend on the incomplete types. |
+| U9 | **Resolved in Phase 3:** the shared COD/Paymob union, structured errors, cart GET/PUT, announcements/shipping/payment recovery/cancellation operations and validated required reads are implemented. | Boundary/Chrome/API evidence accompanies Phase 3; UI/provider/payment-device acceptance remains in Phases 4–8. |
 | U10 | Web contact form waits then shows successful delivery without sending a request. | Keep deferred mobile presentation truthful (D10); track upstream fix if contact is included. |
 | U11 | Mobile plan status/context and upstream storefront specification contradict current auth/cart/shipping/orders code. | This update corrects mobile scope; reconcile upstream docs separately. Historical device/build/testing claims require fresh evidence. |
 
