@@ -387,10 +387,10 @@ describe("TrashPage hard delete", () => {
 
     openTab(/التقييمات/);
     expect(await screen.findByText("غسول — Sara Ali")).toBeInTheDocument();
-    expect(apiGet).toHaveBeenCalledWith("/api/erp/reviews?deleted=true&page=1&pageSize=20&pages=1");
+    expect(apiGet).toHaveBeenCalledWith("/api/erp/reviews?deleted=true&page=1");
     fireEvent.click(screen.getByRole("button", { name: "الصفحة 2" }));
     expect(await screen.findByText("عرض قديم — Mona Said")).toBeInTheDocument();
-    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/reviews?deleted=true&page=2&pageSize=20&pages=1");
+    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/reviews?deleted=true&page=2");
   });
 
   it("shows loading and request errors on the reviews trash tab", async () => {

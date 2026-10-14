@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Paged, PageSize } from "@capella/shared";
+import type { Paged } from "@capella/shared";
 import { api } from "@/lib/api/client";
 import type { SmartPaginationProps } from "@/components/admin/smart-pagination";
-import { defaultListState, parseListState, serializeListState, type ListSchema, type ListState } from "@/lib/pagination";
+import { defaultListState, pageSlice, parseListState, serializeListState, type ListSchema, type ListState } from "@/lib/pagination";
 import { nextSort, sortRows, type SortAccessors, type SortState } from "@/lib/table-sort";
 
-const BASE_KEYS = ["page", "size", "more", "q", "sort", "dir"];
+const BASE_KEYS = ["page", "q", "sort", "dir"];
 const sessionKey = (listId: string) => `capella-erp-list:${listId}`;
 
 function readSession(listId: string) {
@@ -40,7 +40,7 @@ interface Options<F extends string, S extends string> {
 }
 
 /**
- * The one owner of a list's search, filters, sort, page, rows per page and loaded-more pages.
+ * The one owner of a list's search, filters, sort and page.
  * Restores from the address, else the browser-session copy, and keeps both in step. Any change other
  * than moving between pages goes back to page 1.
  */
@@ -93,13 +93,13 @@ export function usePaginatedList<F extends string, S extends string>({
 
   /** Applies a change that shows a different set of rows, so the view starts again from page 1. */
   const restart = useCallback((change: (current: ListState<F, S>) => Partial<ListState<F, S>>) => {
-    setState((current) => ({ ...current, ...change(current), page: 1, more: 0 }));
+    setState((current) => ({ ...current, ...change(current), page: 1 }));
   }, []);
 
   const setSearch = useCallback((value: string) => {
     setSearchInput(value);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    const apply = () => setState((current) => current.q === value.trim() ? current : { ...current, q: value.trim(), page: 1, more: 0 });
+    const apply = () => setState((current) => current.q === value.trim() ? current : { ...current, q: value.trim(), page: 1 });
     if (searchDelay > 0) searchTimer.current = setTimeout(apply, searchDelay);
     else apply();
   }, [searchDelay]);
@@ -110,18 +110,13 @@ export function usePaginatedList<F extends string, S extends string>({
 
   const setSort = useCallback((sort: SortState<S> | null) => restart(() => ({ sort })), [restart]);
   const toggleSort = useCallback((key: S) => restart((current) => ({ sort: nextSort(current.sort, key) })), [restart]);
-  const setSize = useCallback((size: PageSize) => restart(() => ({ size })), [restart]);
-  const setPage = useCallback((page: number) => setState((current) => ({ ...current, page, more: 0 })), []);
-  const loadMore = useCallback(() => setState((current) => ({ ...current, more: current.more + 1 })), []);
+  const setPage = useCallback((page: number) => setState((current) => ({ ...current, page })), []);
 
-  const { page, size, more } = state;
-  const pageOf = useCallback(<T,>(rows: T[]) => rows.slice((page - 1) * size, (page + more) * size), [page, size, more]);
+  const { page } = state;
+  const pageOf = useCallback(<T,>(rows: T[]) => pageSlice(rows, page), [page]);
 
-  /** Paging part of a server request: the page, its size and how many pages it spans. */
-  const pageQuery = useMemo(
-    () => new URLSearchParams({ page: String(page), pageSize: String(size), pages: String(more + 1) }).toString(),
-    [more, page, size]
-  );
+  /** Paging part of a server request. */
+  const pageQuery = useMemo(() => new URLSearchParams({ page: String(page) }).toString(), [page]);
 
   /** Query string for a server-paged list: the paging part, then search, sort and non-default filters. */
   const requestQuery = useMemo(() => {
@@ -142,11 +137,11 @@ export function usePaginatedList<F extends string, S extends string>({
 
   /** Props for `<SmartPagination>` once the list knows how many rows match. */
   const paginationProps = useCallback((total: number, loading = false): SmartPaginationProps => ({
-    page, more, pageSize: size, total, loading, onPageChange: setPage, onPageSizeChange: setSize, onLoadMore: loadMore
-  }), [loadMore, more, page, setPage, setSize, size]);
+    page, total, loading, onPageChange: setPage
+  }), [page, setPage]);
 
   return {
-    ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, pageQuery, requestQuery, paginationProps
+    ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setPage, pageOf, pageQuery, requestQuery, paginationProps
   };
 }
 

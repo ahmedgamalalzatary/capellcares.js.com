@@ -54,7 +54,7 @@ export async function listAdminOrdersPageRepo(query: AdminOrdersQuery) {
   const orderBy = query.sort
     ? [direction(SORT_COLUMNS[query.sort]), desc(orders.createdAt), desc(orders.id)]
     : [desc(orders.createdAt), desc(orders.id)];
-  const span = pageWindow(query);
+  const span = pageWindow(query.page);
 
   const [[{ total }], rows] = await Promise.all([
     db.select({ total: count() }).from(orders).where(where),
@@ -63,7 +63,7 @@ export async function listAdminOrdersPageRepo(query: AdminOrdersQuery) {
 
   return {
     items: rows.map((row) => ({ ...row, totalAmount: toNumber(row.totalAmount) })),
-    pagination: pageMeta(Number(total), query.page, query.pageSize)
+    pagination: pageMeta(Number(total), query.page)
   };
 }
 

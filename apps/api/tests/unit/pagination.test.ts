@@ -7,13 +7,13 @@ import { likeContains, pagedQuerySchema, pageWindow } from "../../src/lib/pagina
 const schema = pagedQuerySchema(["date", "total"], { status: z.enum(["active", "inactive"]).optional() });
 
 test("pagedQuerySchema fills defaults", () => {
-  assert.deepEqual(schema.parse({}), { page: 1, pageSize: 20, pages: 1, dir: "asc" });
+  assert.deepEqual(schema.parse({}), { page: 1, dir: "asc" });
 });
 
 test("pagedQuerySchema reads every param from the query string", () => {
   assert.deepEqual(
-    schema.parse({ page: "3", pageSize: "50", pages: "2", q: "  rose ", sort: "date", dir: "desc", status: "active" }),
-    { page: 3, pageSize: 50, pages: 2, q: "rose", sort: "date", dir: "desc", status: "active" }
+    schema.parse({ page: "3", q: "  rose ", sort: "date", dir: "desc", status: "active" }),
+    { page: 3, q: "rose", sort: "date", dir: "desc", status: "active" }
   );
 });
 
@@ -21,12 +21,12 @@ test("pagedQuerySchema treats a blank search as no search", () => {
   assert.equal(schema.parse({ q: "   " }).q, undefined);
 });
 
-test("pagedQuerySchema rejects invalid params", () => {
+test("pagedQuerySchema rejects invalid params, including page size and load-more spans", () => {
   for (const query of [
     { page: "0" },
     { page: "1.5" },
-    { pageSize: "30" },
-    { pages: "0" },
+    { pageSize: "20" },
+    { pages: "2" },
     { sort: "price" },
     { dir: "up" },
     { status: "gone" },
@@ -38,15 +38,9 @@ test("pagedQuerySchema rejects invalid params", () => {
   }
 });
 
-test("pagedQuerySchema keeps one request within 100 rows", () => {
-  assert.equal(schema.safeParse({ pageSize: "20", pages: "5" }).success, true);
-  assert.equal(schema.safeParse({ pageSize: "20", pages: "6" }).success, false);
-  assert.equal(schema.safeParse({ pageSize: "50", pages: "3" }).success, false);
-  assert.equal(schema.safeParse({ pageSize: "100", pages: "2" }).success, false);
-});
-
-test("pageWindow turns a page and its loaded-more pages into limit and offset", () => {
-  assert.deepEqual(pageWindow({ page: 3, pageSize: 20, pages: 2 }), { limit: 40, offset: 40 });
+test("pageWindow turns a page into limit and offset (20 rows by default)", () => {
+  assert.deepEqual(pageWindow(3), { limit: 20, offset: 40 });
+  assert.deepEqual(pageWindow(3, 1), { limit: 1, offset: 2 });
 });
 
 test("likeContains escapes LIKE wildcards", () => {

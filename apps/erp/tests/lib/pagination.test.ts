@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  canLoadMore,
   clampPage,
   defaultListState,
   pageNumbers,
   parseListState,
   serializeListState,
-  visibleRange,
+  pageSlice,
   type ListSchema,
   type ListState
 } from "@/lib/pagination";
@@ -55,36 +54,12 @@ describe("clampPage", () => {
   });
 });
 
-describe("visibleRange", () => {
-  it("covers one page without load-more", () => {
-    expect(visibleRange({ page: 2, more: 0, pageSize: 20, total: 134 }))
-      .toEqual({ firstPage: 2, lastPage: 2, totalPages: 7, fromRow: 21, toRow: 40 });
-  });
-
-  it("spans the loaded-more pages and stops at the last row", () => {
-    expect(visibleRange({ page: 6, more: 1, pageSize: 20, total: 134 }))
-      .toEqual({ firstPage: 6, lastPage: 7, totalPages: 7, fromRow: 101, toRow: 134 });
-  });
-
-  it("is empty for an empty list", () => {
-    expect(visibleRange({ page: 1, more: 0, pageSize: 20, total: 0 }))
-      .toEqual({ firstPage: 1, lastPage: 1, totalPages: 0, fromRow: 0, toRow: 0 });
-  });
-});
-
-describe("canLoadMore", () => {
-  it("allows one more page until 100 rows are on screen", () => {
-    expect(canLoadMore({ page: 1, more: 0, pageSize: 20, total: 500 })).toBe(true);
-    expect(canLoadMore({ page: 1, more: 3, pageSize: 20, total: 500 })).toBe(true);
-    expect(canLoadMore({ page: 1, more: 4, pageSize: 20, total: 500 })).toBe(false);
-    expect(canLoadMore({ page: 1, more: 0, pageSize: 50, total: 500 })).toBe(true);
-    expect(canLoadMore({ page: 1, more: 1, pageSize: 50, total: 500 })).toBe(false);
-    expect(canLoadMore({ page: 1, more: 0, pageSize: 100, total: 500 })).toBe(false);
-  });
-
-  it("stops at the last page", () => {
-    expect(canLoadMore({ page: 6, more: 0, pageSize: 20, total: 134 })).toBe(true);
-    expect(canLoadMore({ page: 6, more: 1, pageSize: 20, total: 134 })).toBe(false);
+describe("pageSlice", () => {
+  it("returns the 20 rows of a page", () => {
+    const rows = Array.from({ length: 45 }, (_, index) => index + 1);
+    expect(pageSlice(rows, 1)).toEqual(rows.slice(0, 20));
+    expect(pageSlice(rows, 3)).toEqual([41, 42, 43, 44, 45]);
+    expect(pageSlice(rows, 4)).toEqual([]);
   });
 });
 
@@ -100,25 +75,21 @@ describe("parseListState", () => {
   it("uses defaults for an empty address", () => {
     expect(parseListState(new URLSearchParams(), schema)).toEqual(defaultListState(schema));
     expect(defaultListState(schema)).toEqual({
-      page: 1, size: 20, more: 0, q: "", sort: null, filters: { status: "all", from: "" }
+      page: 1, q: "", sort: null, filters: { status: "all", from: "" }
     });
   });
 
   it("reads every key", () => {
-    const params = new URLSearchParams("page=3&size=50&more=1&q=rose&sort=date&dir=desc&status=active&from=2026-10-01");
+    const params = new URLSearchParams("page=3&q=rose&sort=date&dir=desc&status=active&from=2026-10-01");
     expect(parseListState(params, schema)).toEqual({
-      page: 3, size: 50, more: 1, q: "rose", sort: { key: "date", direction: "desc" },
+      page: 3, q: "rose", sort: { key: "date", direction: "desc" },
       filters: { status: "active", from: "2026-10-01" }
     });
   });
 
   it("ignores junk values", () => {
-    const params = new URLSearchParams("page=-2&size=30&more=x&sort=price&dir=up&status=gone&from=yesterday");
+    const params = new URLSearchParams("page=-2&sort=price&dir=up&status=gone&from=yesterday");
     expect(parseListState(params, schema)).toEqual(defaultListState(schema));
-  });
-
-  it("drops load-more that would pass 100 rows", () => {
-    expect(parseListState(new URLSearchParams("size=50&more=3"), schema).more).toBe(1);
   });
 
   it("reads a sort without a direction as ascending", () => {
@@ -133,11 +104,11 @@ describe("serializeListState", () => {
 
   it("writes only what differs from the defaults and round-trips", () => {
     const state: ListState<"status" | "from", "name" | "date"> = {
-      page: 2, size: 50, more: 1, q: " rose ", sort: { key: "name", direction: "asc" },
+      page: 2, q: " rose ", sort: { key: "name", direction: "asc" },
       filters: { status: "inactive", from: "" }
     };
     const params = serializeListState(state, schema);
-    expect(params.toString()).toBe("page=2&size=50&more=1&q=rose&sort=name&dir=asc&status=inactive");
+    expect(params.toString()).toBe("page=2&q=rose&sort=name&dir=asc&status=inactive");
     expect(parseListState(params, schema)).toEqual({ ...state, q: "rose" });
   });
 });

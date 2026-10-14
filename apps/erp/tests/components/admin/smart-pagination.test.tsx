@@ -5,12 +5,8 @@ import { SmartPagination } from "@/components/admin/smart-pagination";
 function setup(overrides: Partial<Parameters<typeof SmartPagination>[0]> = {}) {
   const props = {
     page: 1,
-    more: 0,
-    pageSize: 20 as const,
     total: 2500,
     onPageChange: vi.fn(),
-    onPageSizeChange: vi.fn(),
-    onLoadMore: vi.fn(),
     ...overrides
   };
   const view = render(<SmartPagination {...props} />);
@@ -24,11 +20,6 @@ describe("SmartPagination", () => {
   it("says where the viewer is", () => {
     setup({ page: 5 });
     expect(screen.getByRole("status")).toHaveTextContent("صفحة 5 من 125");
-  });
-
-  it("names the span of pages after load-more", () => {
-    setup({ page: 5, more: 2 });
-    expect(screen.getByRole("status")).toHaveTextContent("الصفحات 5–7 من 125");
   });
 
   it("lists first, last and nearby pages and marks the current one", () => {
@@ -49,10 +40,10 @@ describe("SmartPagination", () => {
     expect(screen.getByRole("button", { name: "التالي" })).toBeEnabled();
   });
 
-  it("moves forward past the loaded-more pages and back one page", () => {
-    const { props } = setup({ page: 5, more: 2 });
+  it("moves forward and back one page", () => {
+    const { props } = setup({ page: 5 });
     fireEvent.click(screen.getByRole("button", { name: "التالي" }));
-    expect(props.onPageChange).toHaveBeenCalledWith(8);
+    expect(props.onPageChange).toHaveBeenCalledWith(6);
     fireEvent.click(screen.getByRole("button", { name: "السابق" }));
     expect(props.onPageChange).toHaveBeenCalledWith(4);
   });
@@ -78,27 +69,17 @@ describe("SmartPagination", () => {
     expect(props.onPageChange).not.toHaveBeenCalled();
   });
 
-  it("changes the rows per page", () => {
-    const { props } = setup();
-    fireEvent.change(screen.getByRole("combobox", { name: "عدد الصفوف في الصفحة" }), { target: { value: "50" } });
-    expect(props.onPageSizeChange).toHaveBeenCalledWith(50);
-  });
-
-  it("loads one more page until 100 rows are on screen", () => {
-    const { props, rerender } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "تحميل المزيد" }));
-    expect(props.onLoadMore).toHaveBeenCalledTimes(1);
-    rerender(<SmartPagination {...props} more={4} />);
-    expect(screen.queryByRole("button", { name: "تحميل المزيد" })).not.toBeInTheDocument();
-    rerender(<SmartPagination {...props} pageSize={100} />);
-    expect(screen.queryByRole("button", { name: "تحميل المزيد" })).not.toBeInTheDocument();
-  });
-
   it("disables everything while loading", () => {
     setup({ page: 2, loading: true });
     expect(screen.getByRole("button", { name: "التالي" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "تحميل المزيد" })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: "عدد الصفوف في الصفحة" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "الصفحة 3" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "الانتقال إلى صفحة" })).toBeDisabled();
+  });
+
+  it("has no load-more button and no rows-per-page choice", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "تحميل المزيد" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("hides itself when the list fits on one page", () => {

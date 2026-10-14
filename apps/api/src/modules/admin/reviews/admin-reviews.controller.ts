@@ -40,8 +40,8 @@ function positiveInteger(value: unknown, fallback: number) {
 export async function listAdminReviewsController(req: Request, res: Response) {
   const query = listQuerySchema.safeParse(req.query);
   if (!query.success) return res.status(400).json({ message: "Invalid review list query" });
-  const { page, pageSize, pages, q, deleted, status, entityType } = query.data;
-  return res.json(await listAdminReviews({ page, pageSize, pages, deleted: deleted === "true", status, entityType, q }));
+  const { page, q, deleted, status, entityType } = query.data;
+  return res.json(await listAdminReviews({ page, deleted: deleted === "true", status, entityType, q }));
 }
 
 export async function toggleAdminReviewStatusController(req: Request, res: Response) {

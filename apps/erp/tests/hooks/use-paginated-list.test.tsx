@@ -29,13 +29,13 @@ describe("usePaginatedList", () => {
   it("starts from defaults", () => {
     const { result } = render();
     expect(result.current.ready).toBe(true);
-    expect(result.current.state).toMatchObject({ page: 1, size: 20, more: 0, q: "", sort: null, filters: { status: "all" } });
+    expect(result.current.state).toEqual({ page: 1, q: "", sort: null, filters: { status: "all" } });
   });
 
   it("restores its state from the address", () => {
-    visit("/things?page=3&size=50&q=rose&sort=date&dir=desc&status=active");
+    visit("/things?page=3&q=rose&sort=date&dir=desc&status=active");
     const { result } = render();
-    expect(result.current.state).toMatchObject({ page: 3, size: 50, q: "rose", sort: { key: "date", direction: "desc" }, filters: { status: "active" } });
+    expect(result.current.state).toMatchObject({ page: 3, q: "rose", sort: { key: "date", direction: "desc" }, filters: { status: "active" } });
     expect(result.current.searchInput).toBe("rose");
   });
 
@@ -54,7 +54,7 @@ describe("usePaginatedList", () => {
     expect(sessionStorage.getItem("capella-erp-list:things")).toBe("page=2");
   });
 
-  it("goes back to page 1 when a filter, the sort or the rows per page change", () => {
+  it("goes back to page 1 when a filter or the sort changes", () => {
     const { result } = render();
     act(() => result.current.setPage(3));
     act(() => result.current.setFilter("status", "active"));
@@ -64,18 +64,6 @@ describe("usePaginatedList", () => {
     act(() => result.current.toggleSort("name"));
     expect(result.current.state).toMatchObject({ page: 1, sort: { key: "name", direction: "asc" } });
 
-    act(() => result.current.setPage(3));
-    act(() => result.current.setSize(50));
-    expect(result.current.state).toMatchObject({ page: 1, size: 50 });
-  });
-
-  it("loads more pages and clears them on any page jump", () => {
-    const { result } = render();
-    act(() => result.current.loadMore());
-    act(() => result.current.loadMore());
-    expect(result.current.state.more).toBe(2);
-    act(() => result.current.setPage(5));
-    expect(result.current.state).toMatchObject({ page: 5, more: 0 });
   });
 
   it("applies search at once by default and resets to page 1", () => {
@@ -100,21 +88,20 @@ describe("usePaginatedList", () => {
     const rows = Array.from({ length: 45 }, (_, index) => index + 1);
     const { result } = render();
     expect(result.current.pageOf(rows)).toEqual(rows.slice(0, 20));
-    act(() => result.current.setPage(2));
-    act(() => result.current.loadMore());
-    expect(result.current.pageOf(rows)).toEqual(rows.slice(20, 45));
+    act(() => result.current.setPage(3));
+    expect(result.current.pageOf(rows)).toEqual(rows.slice(40, 45));
   });
 
   it("builds the server query for remote lists", () => {
-    visit("/things?page=2&more=1&q=rose&sort=date&dir=desc&status=active");
+    visit("/things?page=2&q=rose&sort=date&dir=desc&status=active");
     const { result } = render();
-    expect(result.current.requestQuery).toBe("page=2&pageSize=20&pages=2&q=rose&sort=date&dir=desc&status=active");
+    expect(result.current.requestQuery).toBe("page=2&q=rose&sort=date&dir=desc&status=active");
   });
 
   it("hands the pagination bar its state and actions", () => {
     const { result } = render();
     const props = result.current.paginationProps(134, true);
-    expect(props).toMatchObject({ page: 1, more: 0, pageSize: 20, total: 134, loading: true });
+    expect(props).toEqual({ page: 1, total: 134, loading: true, onPageChange: expect.any(Function) });
     act(() => props.onPageChange(3));
     expect(result.current.state.page).toBe(3);
   });
@@ -126,7 +113,7 @@ describe("usePaginatedList", () => {
       schema,
       toRequest: (filters) => ({ state: filters.status === "all" ? undefined : filters.status.toUpperCase() })
     }));
-    expect(result.current.requestQuery).toBe("page=1&pageSize=20&pages=1&q=rose&state=ACTIVE");
+    expect(result.current.requestQuery).toBe("page=1&q=rose&state=ACTIVE");
   });
 
   it("keeps two lists on one page apart with a key prefix", () => {

@@ -128,7 +128,7 @@ describe("shipping ERP surface", () => {
     const { default: Page } = await import("@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/shipping?page=1&pageSize=20&pages=1");
+    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/shipping?page=1");
     fireEvent.change(screen.getByRole("searchbox", { name: "بحث في الشحنات" }), { target: { value: "5108002" } });
     await waitFor(() => expect(requestParams().get("q")).toBe("5108002"));
   });
@@ -213,17 +213,6 @@ describe("shipping ERP surface", () => {
     expect(await screen.findByText("45 شحنة")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "الصفحة 2" }));
     await waitFor(() => expect(requestParams().get("page")).toBe("2"));
-  });
-
-  it("loads the next page under the current one", async () => {
-    apiGet.mockResolvedValue(respond([rowBase], 45));
-    mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
-    const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
-    render(createElement(Page));
-    await screen.findByText("CAP-007");
-    fireEvent.click(screen.getByRole("button", { name: "تحميل المزيد" }));
-    await waitFor(() => expect(requestParams().get("pages")).toBe("2"));
-    expect(requestParams().get("page")).toBe("1");
   });
 
   it("displays the verified provider payment status for refunded paymob orders", async () => {

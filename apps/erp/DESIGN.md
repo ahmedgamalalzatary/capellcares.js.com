@@ -104,6 +104,20 @@ permission-aware "+ جديد" menu. The API sales report tags each order item wi
 - Loading = skeleton rows (never a false "0 items"/empty state; use the store's `loaded` flag). Empty = `EmptyState`.
 - Row actions = `RowMenu` (+ `RowMenuItem` / `RowMenuLink` / `RowMenuSeparator`). Destructive confirm =
   `AdminConfirmModal tone="danger"`.
+- **Every list is paginated** with the one `SmartPagination` bar (`components/admin/smart-pagination.tsx`) under the
+  table card, always 20 rows per page (no load-more, no rows-per-page choice — user decision): "صفحة n من N" ·
+  السابق, page numbers with "…", التالي · "صفحة [n/N]" go-to box. Hidden when the list fits in one page; phones show only
+  first/current/last chips and icon-only السابق/التالي. Categories (a tree) and form pickers are not paginated.
+- List state (search, filters, sort, page) lives in `usePaginatedList` (`hooks/use-paginated-list.ts`,
+  pure logic in `lib/pagination.ts`), never in page `useState`s. It is remembered per list in the address (`page`,
+  `q`, `sort`, `dir`, filter keys; defaults omitted) and the browser session, so back, refresh, links and
+  returning via the rail restore the view. Any change but a page move goes back to page 1. Two lists on one page use
+  `paramPrefix`.
+  - Lists whose full data the ERP already holds (catalog, staff, trash, sales, reconciliation) slice in the browser:
+    filter → `sortRows` → `list.pageOf(rows)` (or `useLocalList` for plain sortable tables).
+  - Orders, shipping and reviews are paged by the server: `useServerPage("/api/erp/x?" + list.requestQuery)` with
+    `searchDelay: 300`; the API side uses `pagedQuerySchema` (`apps/api/src/lib/pagination.ts`). Dates go to the server
+    as the viewer's local day bounds (`localDayStart`/`localDayEnd`).
 
 ### New / edit page = wizard (reference: `features/products/components/product-form.tsx`)
 The user designed this from their own mockup after rejecting: 2-column form, sticky side guide, capped width, tabs,
@@ -138,7 +152,8 @@ Shopify ⅔/⅓.
 
 ## 8. Other files
 
-- Formatting: `lib/format.ts`. Sorting: `hooks/use-table-sort.ts`. Reorder: `hooks/use-list-reorder.ts` + `lib/array.ts`.
+- Formatting: `lib/format.ts`. Sorting: `lib/table-sort.ts` (+ `hooks/use-table-sort.ts` for non-paginated tables).
+  Pagination: `lib/pagination.ts`, `hooks/use-paginated-list.ts`, `components/admin/smart-pagination.tsx`. Reorder: `hooks/use-list-reorder.ts` + `lib/array.ts`.
   Wizard steps: `hooks/use-wizard-steps.ts`. Image upload: `hooks/use-image-upload.ts` + `lib/media.ts`.
   Media queries: `hooks/use-media-query.ts`. `lib/utils.ts` — `cn` with custom tailwind-merge groups.
 - Offers and collections are the same editor/list (`features/bundles/*`); `features/offers` and `features/collections`

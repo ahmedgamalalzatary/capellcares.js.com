@@ -1,7 +1,7 @@
 import { db } from "@capella/database/src/db";
 import { orderReviewFlags, orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
-import { pageMeta, type AdminShipmentListItemDto } from "@capella/shared";
+import { PAGE_SIZE, pageMeta, type AdminShipmentListItemDto } from "@capella/shared";
 import { z } from "zod";
 import { likeContains, pagedQuerySchema, pageWindow } from "../../lib/pagination.js";
 import { toNumber } from "../orders/order/shared.js";
@@ -143,8 +143,7 @@ export const shippingListQuerySchema = pagedQuerySchema(SORT_KEYS, {
 });
 
 type ShippingListParams = z.output<typeof shippingListQuerySchema>;
-export type ShippingListQuery = Pick<ShippingListParams, "page" | "pageSize" | "pages" | "dir"> &
-  Partial<Omit<ShippingListParams, "page" | "pageSize" | "pages" | "dir">>;
+export type ShippingListQuery = Pick<ShippingListParams, "page" | "dir"> & Partial<Omit<ShippingListParams, "page" | "dir">>;
 
 // "A job needs a person" for a row's work items: a failed or review-required job, except a create job stopped on
 // purpose by a cancellation/refund block. This is exactly when `pickWorkItem` + `rowFor` report needsAttention: an
@@ -205,7 +204,7 @@ function sortClause(sort: ShippingSortKey, dir: "asc" | "desc") {
 type KeyRow = { order_id: number; shipment_id: number | null; kind: string };
 
 /** One page of the ERP shipping list, with search, filters and sort applied in the database. */
-export async function listShippingPageRepo(query: ShippingListQuery) {
+export async function listShippingPageRepo(query: ShippingListQuery, pageSize = PAGE_SIZE) {
   const conditions: SQL[] = [];
   if (query.section === "needs_attention") conditions.push(sql`r.needs_attention`);
   if (query.section === "returns") conditions.push(sql`r.kind <> 'outgoing'`);
@@ -226,7 +225,7 @@ export async function listShippingPageRepo(query: ShippingListQuery) {
   const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
   const newestFirst = sql`r.order_created_at DESC, r.order_id DESC, r.kind = 'outgoing' DESC, r.shipment_id DESC`;
   const orderBy = query.sort ? sql`${sortClause(query.sort, query.dir)}, ${newestFirst}` : newestFirst;
-  const span = pageWindow(query);
+  const span = pageWindow(query.page, pageSize);
 
   const [countResult, keyResult] = await Promise.all([
     db.execute(sql`SELECT COUNT(*) AS total FROM ${shippingRows} ${where}`),
@@ -244,6 +243,6 @@ export async function listShippingPageRepo(query: ShippingListQuery) {
     items: keys
       .map((key) => built.get(rowKey(key.order_id, key.kind, key.shipment_id)))
       .filter((row): row is AdminShipmentListItemDto => row != null),
-    pagination: pageMeta(total, query.page, query.pageSize)
+    pagination: pageMeta(total, query.page, pageSize)
   };
 }

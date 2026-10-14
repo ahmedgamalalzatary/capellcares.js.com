@@ -64,13 +64,6 @@ describe("products list pagination", () => {
     expect(secondPage.some((href) => firstPage.includes(href))).toBe(false);
   });
 
-  it("adds the next page under the current one", () => {
-    render(<ProductsListPage />);
-    fireEvent.click(screen.getByRole("button", { name: "تحميل المزيد" }));
-    expect(shownIds()).toHaveLength(40);
-    expect(screen.getByRole("status")).toHaveTextContent("الصفحات 1–2 من 3");
-  });
-
   it("counts all matching products, not just the visible page", () => {
     render(<ProductsListPage />);
     expect(screen.getByText("45 منتج")).toBeInTheDocument();

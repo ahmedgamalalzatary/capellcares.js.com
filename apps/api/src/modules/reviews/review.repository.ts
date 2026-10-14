@@ -460,16 +460,13 @@ export async function attachReviewEligibilityToOrder<
 
 export async function listAdminReviews(input: {
   page: number;
-  pageSize: number;
-  /** Consecutive pages to return from `page` (load more). */
-  pages: number;
   deleted: boolean;
   status?: "active" | "inactive";
   entityType?: ReviewEntityType;
   q?: string;
 }) {
   const search = input.q?.trim();
-  const span = pageWindow(input);
+  const span = pageWindow(input.page);
   const conditions = [input.deleted ? isNotNull(reviews.deletedAt) : isNull(reviews.deletedAt)];
   if (input.status) conditions.push(eq(reviews.status, input.status));
   if (input.entityType) conditions.push(eq(reviews.entityType, input.entityType));
@@ -547,7 +544,7 @@ export async function listAdminReviews(input: {
       deletedAt: row.deletedAt,
       createdAt: row.createdAt
     })),
-    pagination: pageMeta(total, input.page, input.pageSize)
+    pagination: pageMeta(total, input.page)
   };
 }
 

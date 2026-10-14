@@ -54,7 +54,7 @@ test("shipping overview rejects malformed queries with 400", async () => {
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
     for (const query of [
-      "cursor=2026-09-29T12%3A00%3A00.000Z%7C1", "unexpected=value", "q[]=x", "pageSize=30", "pageSize=20&pages=6",
+      "cursor=2026-09-29T12%3A00%3A00.000Z%7C1", "unexpected=value", "q[]=x", "pageSize=20", "pages=2",
       "sort=orderCode", "section=late", "status=lost", "payment=card", "from=2026-02-30", "to=tomorrow"
     ]) {
       const response = await request(`/api/erp/shipping?${query}`, { headers: auth });
@@ -206,12 +206,11 @@ test("shipping overview pages rows newest first and reports the matching total",
   const older = await shippingSyncFixture();
   const newer = await shippingSyncFixture();
   const { listShippingPageRepo } = await import("../../src/modules/shipping/shipping-overview.repository.js");
-  const first = await listShippingPageRepo({ page: 1, pageSize: 1, pages: 1, dir: "asc" });
-  const second = await listShippingPageRepo({ page: 2, pageSize: 1, pages: 1, dir: "asc" });
-  const both = await listShippingPageRepo({ page: 1, pageSize: 1, pages: 2, dir: "asc" });
+  // One row per page so two orders make two pages without seeding 21.
+  const first = await listShippingPageRepo({ page: 1, dir: "asc" }, 1);
+  const second = await listShippingPageRepo({ page: 2, dir: "asc" }, 1);
   assert.deepEqual(first.items.map((row) => row.orderId), [newer.order.id]);
   assert.deepEqual(second.items.map((row) => row.orderId), [older.order.id]);
-  assert.deepEqual(both.items.map((row) => row.orderId), [newer.order.id, older.order.id]);
   assert.deepEqual(first.pagination, { page: 1, pageSize: 1, total: 2, totalPages: 2 });
 });
 
@@ -234,8 +233,8 @@ test("the needs-attention section matches each row's own attention flag", async 
 
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
-    const all = await request("/api/erp/shipping?pageSize=100", { headers: auth });
-    const attention = await request("/api/erp/shipping?section=needs_attention&pageSize=100", { headers: auth });
+    const all = await request("/api/erp/shipping", { headers: auth });
+    const attention = await request("/api/erp/shipping?section=needs_attention", { headers: auth });
     const key = (row: { orderId: number; kind: string; shipmentId: number | null }) => `${row.orderId}:${row.kind}:${row.shipmentId}`;
     const expected = all.json.items.filter((row: { needsAttention: boolean }) => row.needsAttention).map(key).sort();
     assert.deepEqual(attention.json.items.map(key).sort(), expected);

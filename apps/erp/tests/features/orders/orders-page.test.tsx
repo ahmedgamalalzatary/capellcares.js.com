@@ -117,7 +117,7 @@ describe("OrdersPage", () => {
 
   it("asks the server for the first page, newest first", async () => {
     await renderWith([makeOrder(5, "Capella User", "pending")]);
-    expect(lastRequest()).toBe("/api/erp/orders?page=1&pageSize=20&pages=1");
+    expect(lastRequest()).toBe("/api/erp/orders?page=1");
   });
 
   it("renders an explicit details action linking to the ERP order detail page", async () => {

@@ -63,9 +63,6 @@ test("erp orders list returns one page, newest first, with the matching total", 
 
     const second = await request("/api/erp/orders?q=LIST-&page=2", { headers });
     assert.deepEqual(codes(second.json), ["LIST-05", "LIST-04", "LIST-03", "LIST-02", "LIST-01"]);
-
-    const both = await request("/api/erp/orders?q=LIST-&pages=2", { headers });
-    assert.equal(both.json.items.length, 25);
   });
 });
 
@@ -98,7 +95,7 @@ test("erp orders payment filter matches the shared rule for every payment state"
   await withTestServer(app, async (request) => {
     const headers = await getAdminAuthHeaders(request);
     for (const filter of ["pending", "accepted", "denied"] as const) {
-      const response = await request(`/api/erp/orders?q=PAY-&payment=${filter}&pageSize=100`, { headers });
+      const response = await request(`/api/erp/orders?q=PAY-&payment=${filter}`, { headers });
       const expected = seeds
         .filter((seed) => orderMatchesPaymentStatusFilter({
           paymentMethod: seed.method ?? "cod",
@@ -146,7 +143,7 @@ test("erp orders list filters by a date range", async () => {
 test("erp orders list rejects invalid params", async () => {
   await withTestServer(app, async (request) => {
     const headers = await getAdminAuthHeaders(request);
-    for (const query of ["sort=fullName", "dir=sideways", "payment=refunded", "from=yesterday", "pageSize=25", "extra=1"]) {
+    for (const query of ["sort=fullName", "dir=sideways", "payment=refunded", "from=yesterday", "pageSize=20", "pages=2", "extra=1"]) {
       assert.equal((await request(`/api/erp/orders?${query}`, { headers })).status, 400, query);
     }
   });
