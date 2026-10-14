@@ -50,13 +50,12 @@ test("carrier sync failures needing attention stay visible in lists and order de
   });
 });
 
-test("shipping overview rejects malformed queries, impossible dates and invalid cursor IDs with 400", async () => {
+test("shipping overview rejects malformed queries with 400", async () => {
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
     for (const query of [
-      "cursor=garbage", "unexpected=value", "cursor[]=2026-09-29T12%3A00%3A00.000Z%7C1",
-      ...["2026-99-99T12:00:00.000Z|1", "2026-02-30T12:00:00.000Z|1", "2026-09-29T24:00:00.000Z|1",
-        "2026-09-29T12:00:00.000Z|0", "2026-09-29T12:00:00.000Z|01", "2026-09-29T12:00:00.000Z|2147483648"].map(cursor => `cursor=${encodeURIComponent(cursor)}`)
+      "cursor=2026-09-29T12%3A00%3A00.000Z%7C1", "unexpected=value", "q[]=x", "pageSize=20", "pages=2",
+      "sort=orderCode", "section=late", "status=lost", "payment=card", "from=2026-02-30", "to=tomorrow"
     ]) {
       const response = await request(`/api/erp/shipping?${query}`, { headers: auth });
       assert.equal(response.status, 400, query);
@@ -203,33 +202,77 @@ test("linked return rows do not inherit the order cancellation", async () => {
   });
 });
 
-test("shipping overview paginates by cursor", async () => {
-  const f1 = await shippingSyncFixture();
-  await shippingSyncFixture();
-  const { listShippingOverviewRepo } = await import("../../src/modules/shipping/shipping-overview.repository.js");
-  const page1 = await listShippingOverviewRepo(null, 1);
-  assert.equal(page1.items.length, 1);
-  assert.ok(page1.nextCursor, "page 1 must expose a cursor when more rows exist");
-  const page2 = await listShippingOverviewRepo(
-    { createdAt: new Date(page1.nextCursor!.split("|")[0]), id: Number(page1.nextCursor!.split("|")[1]) }, 1);
-  assert.equal(page2.items.length, 1);
-  assert.equal(page2.nextCursor, null);
-  assert.notEqual(page1.items[0].orderId, page2.items[0].orderId);
+test("shipping overview pages rows newest first and reports the matching total", async () => {
+  const older = await shippingSyncFixture();
+  const newer = await shippingSyncFixture();
+  const { listShippingPageRepo } = await import("../../src/modules/shipping/shipping-overview.repository.js");
+  // One row per page so two orders make two pages without seeding 21.
+  const first = await listShippingPageRepo({ page: 1, dir: "asc" }, 1);
+  const second = await listShippingPageRepo({ page: 2, dir: "asc" }, 1);
+  assert.deepEqual(first.items.map((row) => row.orderId), [newer.order.id]);
+  assert.deepEqual(second.items.map((row) => row.orderId), [older.order.id]);
+  assert.deepEqual(first.pagination, { page: 1, pageSize: 1, total: 2, totalPages: 2 });
 });
 
-test("route accepts the cursor query param and stops past the newest order", async () => {
-  const f = await shippingSyncFixture();
+test("the needs-attention section matches each row's own attention flag", async () => {
+  // Only the first fixture is sent to the carrier: the fake carrier reuses one tracking number, so a second sent order
+  // would (rightly) need attention for a tracking conflict.
+  const calm = await shippingSyncFixture();
+  const flagged = await shippingSyncFixture(false);
+  await db.insert(orderReviewFlags).values({ orderId: flagged.order.id, flagType: "address_review", reason: "Unclear" });
+  const failing = await shippingSyncFixture(false);
+  await db.update(shippingWorkItems).set({ status: "failed", lastError: "Carrier outage" }).where(eq(shippingWorkItems.orderId, failing.order.id));
+  const stopped = await shippingSyncFixture(false);
+  await db.update(shippingWorkItems).set({ status: "failed", lastError: "ORDER_NOT_DISPATCHABLE" }).where(eq(shippingWorkItems.orderId, stopped.order.id));
+  const reviewing = await shippingSyncFixture(false);
+  await db.insert(shipments).values({ orderId: reviewing.order.id, kind: "return", provider: "bosta", trackingNumber: "R-7001",
+    rawProviderState: "Return requested", normalizedState: "created", size: "small", idempotencyKey: "return-7001" });
+  const [returnShipment] = await db.select().from(shipments).where(eq(shipments.trackingNumber, "R-7001"));
+  await db.insert(shippingWorkItems).values({ orderId: reviewing.order.id, shipmentId: returnShipment.id, operation: "sync_delivery",
+    status: "review_required", idempotencyKey: "return-sync-7001", nextAttemptAt: new Date() });
+
   await withTestServer(app, async request => {
     const auth = await getAdminAuthHeaders(request);
-    const first = await request("/api/erp/shipping", { headers: auth });
-    assert.equal(first.status, 200);
-    assert.equal(first.json.items.length, 1);
-    assert.equal(first.json.nextCursor, null);
-    const cursor = encodeURIComponent(`${f.order.createdAt.toISOString()}|${f.order.id}`);
-    const after = await request(`/api/erp/shipping?cursor=${cursor}`, { headers: auth });
-    assert.equal(after.status, 200);
-    assert.deepEqual(after.json.items, []);
-    assert.equal(after.json.nextCursor, null);
+    const all = await request("/api/erp/shipping", { headers: auth });
+    const attention = await request("/api/erp/shipping?section=needs_attention", { headers: auth });
+    const key = (row: { orderId: number; kind: string; shipmentId: number | null }) => `${row.orderId}:${row.kind}:${row.shipmentId}`;
+    const expected = all.json.items.filter((row: { needsAttention: boolean }) => row.needsAttention).map(key).sort();
+    assert.deepEqual(attention.json.items.map(key).sort(), expected);
+    assert.equal(attention.json.pagination.total, expected.length);
+    const attentionOrders = new Set(attention.json.items.map((row: { orderId: number }) => row.orderId));
+    assert.equal(attentionOrders.has(flagged.order.id), true);
+    assert.equal(attentionOrders.has(failing.order.id), true);
+    assert.equal(attentionOrders.has(reviewing.order.id), true);
+    assert.equal(attentionOrders.has(calm.order.id), false);
+    assert.equal(attentionOrders.has(stopped.order.id), false);
+    const reviewingRows = attention.json.items.filter((row: { orderId: number }) => row.orderId === reviewing.order.id);
+    assert.deepEqual(reviewingRows.map((row: { kind: string }) => row.kind), ["return"]);
+  });
+});
+
+test("shipping overview searches, filters and sorts on the server", async () => {
+  const sent = await shippingSyncFixture();
+  const unsent = await shippingSyncFixture(false);
+  const { orders } = await import("@capella/database/drizzle/schema");
+  await db.update(orders).set({ cancellationStatus: "cancelled", paymentMethod: "paymob" }).where(eq(orders.id, unsent.order.id));
+  await db.insert(shipments).values({ orderId: sent.order.id, kind: "return", provider: "bosta", trackingNumber: "R-8001",
+    rawProviderState: "Delivered", normalizedState: "delivered", size: "large", idempotencyKey: "return-8001" });
+
+  await withTestServer(app, async request => {
+    const auth = await getAdminAuthHeaders(request);
+    const rows = async (query: string) => (await request(`/api/erp/shipping?${query}`, { headers: auth })).json.items
+      .map((row: { orderId: number; kind: string }) => `${row.orderId}:${row.kind}`);
+
+    assert.deepEqual(await rows("section=returns"), [`${sent.order.id}:return`]);
+    assert.deepEqual(await rows("status=delivered"), [`${sent.order.id}:return`]);
+    assert.deepEqual(await rows("status=cancelled"), [`${unsent.order.id}:outgoing`]);
+    assert.deepEqual(await rows("payment=paymob"), [`${unsent.order.id}:outgoing`]);
+    assert.deepEqual(await rows("q=R-8001"), [`${sent.order.id}:return`]);
+    assert.deepEqual(await rows(`q=${encodeURIComponent(unsent.order.orderCode)}`), [`${unsent.order.id}:outgoing`]);
+    assert.deepEqual(await rows(`from=${encodeURIComponent(new Date(Date.now() + 86_400_000).toISOString())}`), []);
+    // Carrier states sort in their natural order (created before delivered); rows without a carrier state go last.
+    assert.deepEqual(await rows("sort=carrier"), [`${sent.order.id}:outgoing`, `${sent.order.id}:return`, `${unsent.order.id}:outgoing`]);
+    assert.deepEqual(await rows("sort=carrier&dir=desc"), [`${sent.order.id}:return`, `${sent.order.id}:outgoing`, `${unsent.order.id}:outgoing`]);
   });
 });
 

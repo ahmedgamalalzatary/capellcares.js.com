@@ -6,6 +6,9 @@ import { afterEach } from "vitest";
 // Unmount after every case.
 afterEach(() => {
   cleanup();
+  // Paginated lists remember their view in the address and the session; start every case from a clean one.
+  sessionStorage.clear();
+  window.history.replaceState(null, "", "/");
 });
 
 // jsdom ships no matchMedia; components that read a media query (AdminListHeader, the theme hook) would throw without it.

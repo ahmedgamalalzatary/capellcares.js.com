@@ -19,7 +19,7 @@ export type ShippingSortKey =
 
 export function ShipmentsTable({
   items,
-  totalItems,
+  narrowed,
   canModify,
   selected,
   selectableIds,
@@ -28,10 +28,10 @@ export function ShipmentsTable({
   sort,
   onSort
 }: {
-  /** Rows already filtered and sorted by the page. */
+  /** One page, already searched, filtered and sorted by the server. */
   items: AdminShipmentListItemDto[];
-  /** Unfiltered row count, used for the empty-state wording. */
-  totalItems: number;
+  /** A search or filter is active (picks the empty-state wording). */
+  narrowed: boolean;
   canModify: boolean;
   selected: number[];
   selectableIds: number[];
@@ -141,8 +141,8 @@ export function ShipmentsTable({
             <TableEmptyRow
               colSpan={canModify ? 14 : 13}
               icon={<Truck />}
-              title={totalItems === 0 ? "لا توجد شحنات بعد" : "لا توجد شحنات تطابق البحث"}
-              description={totalItems === 0 ? "ستظهر الشحنات هنا بمجرد إنشائها." : "جرّبي كلمة أخرى أو غيّري عوامل التصفية."}
+              title={narrowed ? "لا توجد شحنات تطابق البحث" : "لا توجد شحنات بعد"}
+              description={narrowed ? "جرّبي كلمة أخرى أو غيّري عوامل التصفية." : "ستظهر الشحنات هنا بمجرد إنشائها."}
             />
           ) : null}
         </TBody>

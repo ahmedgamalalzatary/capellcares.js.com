@@ -160,26 +160,6 @@ describe("ERP store", () => {
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({ items: [] })
       .mockResolvedValueOnce({
-        items: [{
-          id: 7,
-          orderCode: "ABCD-007",
-          customerType: "registered",
-          customerId: 1,
-          fullName: "Seed Customer",
-          phone: "01012345678",
-          email: "seed-customer@capella.test",
-          governorate: "Cairo",
-          cityArea: "Nasr City",
-          addressLine: "Street 10",
-          buildingApartment: "Building 4",
-          notes: null,
-          paymentMethod: "cod",
-          paymentStatus: "pending",
-          totalAmount: 150,
-          createdAt: new Date().toISOString()
-        }]
-      })
-      .mockResolvedValueOnce({
         summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 },
         productTotals: [],
         variantTotals: [],
@@ -192,7 +172,6 @@ describe("ERP store", () => {
     await store.refetch();
 
     expect(store.advices).toHaveLength(1);
-    expect(store.orders).toHaveLength(1);
   });
 
   it("hydrates shop media sections during refetch", async () => {
@@ -450,7 +429,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(9);
+    expect(apiGet).toHaveBeenCalledTimes(8);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {
@@ -458,11 +437,11 @@ describe("ERP store", () => {
       name: "Staff User",
       email: "staff@capella.test",
       role: "staff",
-      permissionKeys: ["dashboard.read", "orders.read", "sales.read"]
+      permissionKeys: ["dashboard.read", "advices.read", "sales.read"]
     };
 
     apiGet.mockImplementation(async (path: string) => {
-      if (path === "/api/erp/orders") return { items: [] };
+      if (path === "/api/erp/advices") return { items: [] };
       if (path === "/api/erp/sales") return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
       throw new Error(`Unexpected path ${path}`);
     });
@@ -474,7 +453,7 @@ describe("ERP store", () => {
     await flush();
 
     expect(apiGet.mock.calls.map(([path]) => path)).toEqual([
-      "/api/erp/orders",
+      "/api/erp/advices",
       "/api/erp/sales"
     ]);
     expect(store.loaded).toBe(true);
@@ -486,7 +465,7 @@ describe("ERP store", () => {
       name: "Staff User",
       email: "staff@capella.test",
       role: "staff",
-      permissionKeys: ["orders.read"]
+      permissionKeys: ["advices.read"]
     };
 
     apiGet
@@ -500,20 +479,20 @@ describe("ERP store", () => {
     store.ensureLoaded();
     await flush();
 
-    expect(apiGet.mock.calls.map(([path]) => path)).toEqual(["/api/erp/orders"]);
+    expect(apiGet.mock.calls.map(([path]) => path)).toEqual(["/api/erp/advices"]);
 
     adminAuthUser = {
       name: "Staff User",
       email: "staff@capella.test",
       role: "staff",
-      permissionKeys: ["orders.read", "sales.read"]
+      permissionKeys: ["advices.read", "sales.read"]
     };
     authUserListeners.forEach((listener) => listener(adminAuthUser));
     await flush();
 
     expect(apiGet.mock.calls.map(([path]) => path)).toEqual([
-      "/api/erp/orders",
-      "/api/erp/orders",
+      "/api/erp/advices",
+      "/api/erp/advices",
       "/api/erp/sales"
     ]);
     expect(store.error).toBeNull();
@@ -524,29 +503,21 @@ describe("ERP store", () => {
       name: "Staff User",
       email: "staff@capella.test",
       role: "staff",
-      permissionKeys: ["orders.read", "sales.read"]
+      permissionKeys: ["advices.read", "sales.read"]
     };
 
     apiGet.mockImplementation(async (path: string) => {
-      if (path === "/api/erp/orders") {
+      if (path === "/api/erp/advices") {
         return {
           items: [{
-            id: 7,
-            orderCode: "ABCD-007",
-            customerType: "registered",
-            customerId: 1,
-            fullName: "Seed Customer",
-            phone: "01012345678",
-            email: "seed-customer@capella.test",
-            governorate: "Cairo",
-            cityArea: "Nasr City",
-            addressLine: "Street 10",
-            buildingApartment: "Building 4",
-            notes: null,
-            paymentMethod: "cod",
-            paymentStatus: "pending",
-            totalAmount: 150,
-            createdAt: new Date().toISOString()
+            id: 1,
+            title: { ar: "نصيحة", en: "Advice" },
+            description: { ar: "وصف", en: "Description" },
+            videoUrl: "https://instagram.com/capella",
+            status: "active",
+            sortOrder: 1,
+            createdAt: "",
+            updatedAt: ""
           }]
         };
       }
@@ -561,7 +532,7 @@ describe("ERP store", () => {
 
     await store.refetch();
 
-    expect(store.orders).toHaveLength(1);
+    expect(store.advices).toHaveLength(1);
     expect(store.loaded).toBe(true);
     expect(store.error).toBe("API 403 /api/erp/sales");
   });

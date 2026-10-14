@@ -10,7 +10,7 @@ import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";
 import { recordOrderManualState } from "../../src/modules/shipping/shipping-state.repository.js";
 import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
-import { findOrderByIdRepo, listOrdersRepo } from "../../src/modules/orders/order.repository.js";
+import { findOrderByIdRepo, listCustomerOrdersRepo } from "../../src/modules/orders/order.repository.js";
 
 beforeEach(resetApiTestDatabase);
 test("ERP details show only this order's linked return/exchange evidence without changing money or stock", async () => {
@@ -212,7 +212,7 @@ test("customer reads preserve ownership and do not expose internal staff process
   const f = await shippingSyncFixture();
   await db.update(orders).set({ customerType: "registered", customerId: f.ids.customerId, manualShippingState: "preparing", shippingProcessingAtMs: Date.now() });
   const detail = await findOrderByIdRepo(f.order.id, { customerId: f.ids.customerId });
-  const list = await listOrdersRepo({ customerId: f.ids.customerId, withItems: true });
+  const list = await listCustomerOrdersRepo(f.ids.customerId);
   for (const order of [detail, list[0]]) {
     for (const key of ["manualShippingState", "shippingProcessingAtMs", "shippingPickupAtMs", "shippingAddressBlockedAtMs", "shipping"]) assert.equal(Object.hasOwn(order!, key), false, key);
   }

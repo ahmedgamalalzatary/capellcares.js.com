@@ -15,7 +15,13 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import { getStore } from "@/lib/store";
+import { SmartPagination } from "@/components/admin/smart-pagination";
+import { useLocalList } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
 import type { PaymobCallbackProblem as CallbackProblem, PaymobReconciliationItem as ReconciliationItem } from "@/lib/store/types";
+
+const QUEUE_LIST = { filters: {}, sortKeys: [] } satisfies ListSchema<never, never>;
+const NO_SORT = {};
 
 const ageLabel = (ageMs: number) => `${formatNumber(Math.max(1, Math.floor(ageMs / 60000)))} د`;
 
@@ -28,6 +34,8 @@ export default function PaymobReconciliationPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const allowed = hasErpPermission(user, "orders.read");
   const canRequeue = hasErpPermission(user, "orders.update_payment_status");
+  const payments = useLocalList(items, NO_SORT, { listId: "reconciliation-payments", schema: QUEUE_LIST, paramPrefix: "payments_" });
+  const notices = useLocalList(problems, NO_SORT, { listId: "reconciliation-notices", schema: QUEUE_LIST, paramPrefix: "notices_" });
 
   useEffect(() => {
     if (!allowed) return;
@@ -92,7 +100,7 @@ export default function PaymobReconciliationPage() {
                     </tr>
                   </THead>
                   <TBody>
-                    {items.map((item) => (
+                    {payments.sortedRows.map((item) => (
                       <TR key={item.checkoutId}>
                         <TD data-cell="lead" className="text-text-strong"><code className="mono text-sm">{item.checkoutId}</code></TD>
                         <TD data-label="العميل">
@@ -109,8 +117,10 @@ export default function PaymobReconciliationPage() {
               )}
             </CardBody>
           </Card>
+          <SmartPagination className="mt-0" {...payments.paginationProps(payments.total, loading)} />
 
           {problems.length > 0 ? (
+            <>
             <Card>
               <CardHeader
                 title="إشعارات دفع معلّقة"
@@ -128,7 +138,7 @@ export default function PaymobReconciliationPage() {
                   </tr>
                 </THead>
                 <TBody>
-                  {problems.map((problem) => (
+                  {notices.sortedRows.map((problem) => (
                     <TR key={problem.callbackId}>
                       <TD data-cell="lead" className="text-text-strong">
                         <code className="mono text-sm">{problem.checkoutId ?? problem.paymobOrderId ?? `#${problem.callbackId}`}</code>
@@ -152,6 +162,8 @@ export default function PaymobReconciliationPage() {
                 </TBody>
               </Table>
             </Card>
+            <SmartPagination className="mt-0" {...notices.paginationProps(notices.total, loading)} />
+            </>
           ) : null}
         </div>
       )}

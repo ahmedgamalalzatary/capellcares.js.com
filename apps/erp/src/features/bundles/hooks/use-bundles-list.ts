@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import type { Category } from "@capella/shared";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
-import { useTableSort } from "@/hooks/use-table-sort";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
+import { sortRows } from "@/lib/table-sort";
 import { buildCategoryTreeOptions, isInCategoryTree } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { canUpdateErpModule } from "@/lib/erp-permissions";
@@ -14,9 +16,17 @@ type AdminUser = Parameters<typeof canUpdateErpModule>[0];
 
 /** Filter / search / reorder / toggle / delete state shared by the offer and collection list pages. */
 export function useBundlesList<TBundle extends BundleEntity>(config: BundleConfig, user: AdminUser, rows: TBundle[], categories: Category[]) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [categoryFilter, setCategoryFilter] = useState<number | "">("");
+  const schema = useMemo(() => ({
+    filters: {
+      status: { default: "all", values: ["all", "active", "inactive"] },
+      category: { default: "", accepts: (value: string) => /^\d+$/.test(value) }
+    },
+    sortKeys: config.list.columns.map((column) => column.key)
+  }) satisfies ListSchema<"status" | "category", string>, [config]);
+  const paged = usePaginatedList({ listId: `${config.kind}s`, schema });
+  const search = paged.state.q;
+  const statusFilter = paged.state.filters.status as "all" | "active" | "inactive";
+  const categoryFilter: number | "" = paged.state.filters.category === "" ? "" : Number(paged.state.filters.category);
   const [pendingDelete, setPendingDelete] = useState<TBundle | null>(null);
   const [pendingToggle, setPendingToggle] = useState<TBundle | null>(null);
   const [isToggling, setIsToggling] = useState(false);
@@ -44,7 +54,10 @@ export function useBundlesList<TBundle extends BundleEntity>(config: BundleConfi
     );
   }, [visible, search, statusFilter, categories, categoryFilter, reorder.orderedIds]);
 
-  const { sort, setSort, toggleSort, sortedRows } = useTableSort(filtered, config.list.sortAccessors(categories));
+  const sortedRows = useMemo(
+    () => sortRows(filtered, config.list.sortAccessors(categories), paged.state.sort),
+    [categories, config, filtered, paged.state.sort]
+  );
   const reorderEnabled = canUpdateErpModule(user, `${config.kind}s`) && !search.trim() && statusFilter === "all" && categoryFilter === "";
 
   const closeToggleModal = () => {
@@ -79,19 +92,20 @@ export function useBundlesList<TBundle extends BundleEntity>(config: BundleConfi
   };
 
   return {
-    search,
-    setSearch,
+    search: paged.searchInput,
+    setSearch: paged.setSearch,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: (value: string) => paged.setFilter("status", value),
     categoryFilter,
-    setCategoryFilter,
+    setCategoryFilter: (value: string) => paged.setFilter("category", value),
     categoryOptions,
     reorder,
-    filtered,
-    sort,
-    setSort,
-    toggleSort,
-    sortedRows,
+    total: sortedRows.length,
+    sort: paged.state.sort,
+    setSort: paged.setSort,
+    toggleSort: paged.toggleSort,
+    pageRows: paged.pageOf(sortedRows),
+    paginationProps: paged.paginationProps,
     reorderEnabled,
     visible,
     pendingDelete,

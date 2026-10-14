@@ -146,7 +146,6 @@ export type ErpStoreSnapshot = {
   shopMediaSections: ShopMediaSection[];
   announcements: Announcement[];
   announcementBarStatus: "active" | "inactive";
-  orders: OrderSummary[];
   sales: SalesAnalytics;
   loaded: boolean;
   loading: boolean;

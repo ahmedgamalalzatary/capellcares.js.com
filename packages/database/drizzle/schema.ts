@@ -524,7 +524,9 @@ export const orders = mysqlTable("orders", {
     table.paymentMethod,
     table.paymentStatus,
     table.codExpiresAt
-  )
+  ),
+  // The ERP orders and shipping lists page newest-first.
+  createdAtIndex: index("orders_created_at_idx").on(table.createdAt, table.id)
 }));
 
 export const shippingCheckoutQuotes = mysqlTable("shipping_checkout_quotes", {

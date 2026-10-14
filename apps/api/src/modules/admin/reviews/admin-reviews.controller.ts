@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { z } from "zod";
 
 import {
   listAdminReviews,
@@ -6,10 +7,16 @@ import {
   permanentlyDeleteReview,
   restoreReview,
   softDeleteReview,
-  toggleReviewStatus,
-  type ReviewEntityType
+  toggleReviewStatus
 } from "../../reviews/review.repository.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
+import { pagedQuerySchema } from "../../../lib/pagination.js";
+
+const listQuerySchema = pagedQuerySchema([], {
+  deleted: z.literal("true").optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+  entityType: z.enum(["product", "offer", "collection"]).optional()
+});
 
 async function captureReviewTarget(id: number) {
   return findReviewTargetByReviewId(id);
@@ -31,22 +38,10 @@ function positiveInteger(value: unknown, fallback: number) {
 }
 
 export async function listAdminReviewsController(req: Request, res: Response) {
-  const page = positiveInteger(req.query.page, 1);
-  const requestedPageSize = positiveInteger(req.query.pageSize, 20);
-  if (!page || !requestedPageSize) return res.status(400).json({ message: "Invalid pagination" });
-  const status = req.query.status === "active" || req.query.status === "inactive" ? req.query.status : undefined;
-  const entityType: ReviewEntityType | undefined = req.query.entityType === "product" || req.query.entityType === "offer" || req.query.entityType === "collection"
-    ? req.query.entityType
-    : undefined;
-  const q = typeof req.query.q === "string" ? req.query.q : undefined;
-  return res.json(await listAdminReviews({
-    page,
-    pageSize: Math.min(requestedPageSize, 100),
-    deleted: req.query.deleted === "true",
-    status,
-    entityType,
-    q
-  }));
+  const query = listQuerySchema.safeParse(req.query);
+  if (!query.success) return res.status(400).json({ message: "Invalid review list query" });
+  const { page, q, deleted, status, entityType } = query.data;
+  return res.json(await listAdminReviews({ page, deleted: deleted === "true", status, entityType, q }));
 }
 
 export async function toggleAdminReviewStatusController(req: Request, res: Response) {

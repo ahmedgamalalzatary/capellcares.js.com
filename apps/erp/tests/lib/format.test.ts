@@ -5,7 +5,10 @@ import {
   formatMoney,
   formatMoneyRange,
   formatNumber,
-  localDateKey
+  localDateKey,
+  localDayEnd,
+  localDayStart,
+  isDateKey
 } from "@/lib/format";
 
 describe("number formatting", () => {
@@ -38,5 +41,18 @@ describe("date formatting", () => {
   it("builds a local YYYY-MM-DD key with zero padding", () => {
     expect(localDateKey("2026-01-05T12:00:00")).toBe("2026-01-05");
     expect(localDateKey("2026-11-09T12:00:00")).toBe("2026-11-09");
+  });
+});
+
+describe("local day bounds", () => {
+  it("turns a YYYY-MM-DD day into the first and last instant of that day in the viewer's time zone", () => {
+    expect(localDayStart("2026-01-05")).toBe(new Date(2026, 0, 5, 0, 0, 0, 0).toISOString());
+    expect(localDayEnd("2026-01-05")).toBe(new Date(2026, 0, 5, 23, 59, 59, 999).toISOString());
+  });
+
+  it("recognises a YYYY-MM-DD day", () => {
+    expect(isDateKey("2026-01-05")).toBe(true);
+    expect(isDateKey("2026-1-5")).toBe(false);
+    expect(isDateKey("2026-02-31")).toBe(false);
   });
 });

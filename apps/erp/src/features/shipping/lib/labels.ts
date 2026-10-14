@@ -1,4 +1,6 @@
-export const carrierStateLabels: Record<string, string> = {
+import type { AdminShipmentListItemDto } from "@capella/shared";
+
+export const carrierStateLabels: Record<NonNullable<AdminShipmentListItemDto["carrierState"]>, string> = {
   created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق",
   delivered: "تم التسليم", returned: "تم الإرجاع", cancelled: "تم الإلغاء", exception: "تحتاج متابعة"
 };
@@ -8,7 +10,7 @@ export const manualStateLabels: Record<string, string> = {
   delivered: "تم التسليم", returned: "تم الإرجاع"
 };
 
-export const custodyLabels: Record<string, string> = {
+export const custodyLabels: Record<AdminShipmentListItemDto["custodyState"], string> = {
   unknown: "الحيازة غير مؤكدة", carrier: "مع شركة الشحن",
   recipient: "تم التسليم للمستلم", warehouse_uninspected: "راجع للمخزن؛ بانتظار الفحص"
 };

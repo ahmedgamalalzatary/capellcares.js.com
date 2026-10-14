@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
     "./ordering": "./src/ordering.ts",
+    "./pagination": "./src/pagination.ts",
     "./constants": "./src/constants/index.ts",
     "./i18n": "./src/i18n/index.ts",
     "./dto": "./src/dto/index.ts",

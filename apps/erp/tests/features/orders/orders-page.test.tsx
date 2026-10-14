@@ -1,7 +1,9 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, localDayEnd, localDayStart } from "@/lib/format";
+
+const { apiGet } = vi.hoisted(() => ({ apiGet: vi.fn() }));
 
 const mockedUseAdminAuth = vi.fn(() => ({
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
@@ -9,12 +11,7 @@ const mockedUseAdminAuth = vi.fn(() => ({
   logout: vi.fn()
 }));
 
-function makeOrder(
-  id: number,
-  fullName: string,
-  paymentStatus: "pending" | "accepted" | "denied",
-  createdAt = "2026-05-19T00:00:00.000Z"
-) {
+function makeOrder(id: number, fullName: string, paymentStatus: "pending" | "accepted" | "denied", overrides: Record<string, unknown> = {}) {
   return {
     id,
     orderCode: `YMFI-00${id}`,
@@ -30,15 +27,18 @@ function makeOrder(
     notes: null,
     paymentMethod: "cod",
     paymentStatus,
+    providerPaymentStatus: null,
     totalAmount: 213,
-    createdAt
+    createdAt: "2026-05-19T00:00:00.000Z",
+    ...overrides
   };
 }
 
-const makeMockState = () => ({ loaded: true, orders: [makeOrder(5, "Capella User", "pending")] });
-let mockState: any = makeMockState();
+function serverPage(items: unknown[], total = items.length) {
+  return { items, pagination: { page: 1, pageSize: 20, total, totalPages: Math.ceil(total / 20) } };
+}
 
-const mockedUseStore = vi.fn((selector: any) => selector(mockState));
+vi.mock("@/lib/api/client", () => ({ api: { get: apiGet } }));
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => mockedUseAdminAuth()
@@ -55,10 +55,6 @@ vi.mock("next/link", () => ({
   }
 }));
 
-vi.mock("@/lib/store", () => ({
-  useStore: (selector: any) => mockedUseStore(selector)
-}));
-
 import OrdersPage from "@/app/orders/page";
 
 // formatMoney may emit a non-breaking space that testing-library normalizes away on the DOM side only, so compare with all whitespace stripped from both sides.
@@ -70,18 +66,24 @@ function money(value: number) {
 
 const SEARCH = "ابحثي بكود الطلب، الاسم، البريد، أو الهاتف…";
 const openPanel = () => fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
+const lastRequest = () => String(apiGet.mock.calls.at(-1)?.[0] ?? "");
+const requestParams = () => new URLSearchParams(lastRequest().split("?")[1]);
+
+async function renderWith(items: unknown[], total?: number) {
+  apiGet.mockResolvedValue(serverPage(items, total));
+  render(createElement(OrdersPage));
+  await waitFor(() => expect(apiGet).toHaveBeenCalled());
+}
 
 describe("OrdersPage", () => {
   beforeEach(() => {
-    cleanup();
-    mockState = makeMockState();
+    apiGet.mockReset();
     mockedUseAdminAuth.mockReset();
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
       hydrated: true,
       logout: vi.fn()
     });
-    mockedUseStore.mockClear();
     // The filter panel (plain labelled selects + date fields) is the phone layout; force it so the tests can drive the filters.
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: true,
@@ -99,7 +101,7 @@ describe("OrdersPage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows a 403 state for unauthorized staff", () => {
+  it("shows a 403 state for unauthorized staff and never asks for orders", () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: [] },
       hydrated: true,
@@ -110,253 +112,110 @@ describe("OrdersPage", () => {
 
     expect(screen.getByText("غير مصرح")).toBeInTheDocument();
     expect(screen.getByText("لا تملكين صلاحية الوصول إلى الطلبات.")).toBeInTheDocument();
+    expect(apiGet).not.toHaveBeenCalled();
   });
 
-  it("renders an explicit details action linking to the ERP order detail page", () => {
-    render(createElement(OrdersPage));
-
-    const detailsLink = screen.getByRole("link", { name: "التفاصيل" });
-    expect(detailsLink).toBeInTheDocument();
-    expect(detailsLink).toHaveAttribute("href", "/orders/5");
+  it("asks the server for the first page, newest first", async () => {
+    await renderWith([makeOrder(5, "Capella User", "pending")]);
+    expect(lastRequest()).toBe("/api/erp/orders?page=1");
   });
 
-  it("finds an order by its checkout email, ignoring case and surrounding spaces", () => {
-    mockState = { loaded: true, orders: [
-      { ...makeOrder(1, "Matching Customer", "pending"), email: "checkout@example.test" },
-      makeOrder(2, "Other Customer", "pending")
-    ] };
-    render(createElement(OrdersPage));
-
-    expect(screen.getByRole("columnheader", { name: "البريد الإلكتروني" })).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "  CHECKOUT@EXAMPLE.TEST  " } });
-
-    expect(screen.getByText("Matching Customer")).toBeInTheDocument();
-    expect(screen.queryByText("Other Customer")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "checkout@example.test" }))
-      .toHaveAttribute("href", "mailto:checkout@example.test");
+  it("renders an explicit details action linking to the ERP order detail page", async () => {
+    await renderWith([makeOrder(5, "Capella User", "pending")]);
+    expect(await screen.findByRole("link", { name: "التفاصيل" })).toHaveAttribute("href", "/orders/5");
   });
 
-  it("renders the payment status in Arabic instead of the raw enum", () => {
-    render(createElement(OrdersPage));
+  it("links the customer email", async () => {
+    await renderWith([makeOrder(1, "Matching Customer", "pending", { email: "checkout@example.test" })]);
+    expect(await screen.findByRole("link", { name: "checkout@example.test" })).toHaveAttribute("href", "mailto:checkout@example.test");
+  });
 
-    expect(screen.getByText("قيد المراجعة")).toBeInTheDocument();
+  it("labels each payment state in Arabic, Paymob orders by the provider's status", async () => {
+    await renderWith([
+      makeOrder(1, "Pending Customer", "pending"),
+      makeOrder(2, "Accepted Customer", "accepted"),
+      makeOrder(3, "Denied Customer", "denied"),
+      makeOrder(4, "Online Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "succeeded" }),
+      makeOrder(6, "Failed Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "failed" }),
+      makeOrder(7, "Voided Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "voided" })
+    ]);
+    expect(await screen.findByText("قيد المراجعة")).toBeInTheDocument();
+    expect(screen.getByText("مقبول")).toBeInTheDocument();
+    expect(screen.getByText("مرفوض")).toBeInTheDocument();
+    expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
+    expect(screen.getByText("فشل الدفع عبر باي موب")).toBeInTheDocument();
+    expect(screen.getByText("أُلغي الدفع عبر باي موب")).toBeInTheDocument();
     expect(screen.queryByText("pending")).not.toBeInTheDocument();
   });
 
-  it("shows a Paymob-confirmed order as paid rather than pending", () => {
-    mockState = { loaded: true, orders: [{ ...makeOrder(5, "Online Customer", "pending"),
-      paymentMethod: "paymob", providerPaymentStatus: "succeeded" }] };
-    render(createElement(OrdersPage));
-    expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
-    expect(screen.queryByText("قيد المراجعة")).toBeNull();
+  it("formats order totals with the shared price formatter, keeping piastres", async () => {
+    await renderWith([makeOrder(5, "Customer", "pending", { totalAmount: 213.75 })]);
+    expect((await screen.findAllByText(money(213.75))).length).toBeGreaterThan(0);
   });
 
-  it("formats the order total with the shared price formatter", () => {
-    render(createElement(OrdersPage));
-
-    expect(screen.getAllByText(money(213)).length).toBeGreaterThan(0);
-    expect(screen.queryByText("213")).not.toBeInTheDocument();
+  it("counts every matching order, not just the page", async () => {
+    await renderWith([makeOrder(5, "Customer", "pending")], 45);
+    expect(await screen.findByText("45 طلب")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "التنقل بين الصفحات" })).toBeInTheDocument();
   });
 
-  it("preserves piastres in order totals", () => {
-    mockState = { loaded: true, orders: [{ ...makeOrder(5, "Customer", "pending"), totalAmount: 213.75 }] };
-    render(createElement(OrdersPage));
-    expect(screen.getAllByText(money(213.75)).length).toBeGreaterThan(0);
+  it("searches on the server once typing pauses, starting from page 1", async () => {
+    window.history.replaceState(null, "", "/orders?page=2");
+    await renderWith([makeOrder(5, "Customer", "pending")], 45);
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "  CHECKOUT@EXAMPLE.TEST  " } });
+    await waitFor(() => expect(requestParams().get("q")).toBe("CHECKOUT@EXAMPLE.TEST"));
+    expect(requestParams().get("page")).toBe("1");
   });
 
-  it("labels each payment status in Arabic", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Pending Customer", "pending"),
-        makeOrder(2, "Accepted Customer", "accepted"),
-        makeOrder(3, "Denied Customer", "denied")
-      ]
-    };
-    render(createElement(OrdersPage));
-    expect(screen.getAllByText("قيد المراجعة").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("مقبول").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("مرفوض").length).toBeGreaterThan(0);
-  });
-
-  it("filters by an inclusive local calendar-day range", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Before Range", "pending", "2026-05-18T12:00:00.000Z"),
-        makeOrder(2, "First Boundary", "pending", "2026-05-19T00:00:00.000Z"),
-        makeOrder(3, "Last Boundary", "pending", "2026-05-20T20:59:59.000Z"),
-        makeOrder(4, "After Range", "pending", "2026-05-20T21:00:00.000Z")
-      ]
-    };
-    render(createElement(OrdersPage));
+  it("sends the payment filter to the server", async () => {
+    await renderWith([makeOrder(5, "Customer", "pending")]);
     openPanel();
+    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "accepted" } });
+    await waitFor(() => expect(requestParams().get("payment")).toBe("accepted"));
+  });
 
+  it("sends the date range as the viewer's own day bounds", async () => {
+    await renderWith([makeOrder(5, "Customer", "pending")]);
+    openPanel();
     fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-19" } });
     fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-20" } });
+    await waitFor(() => expect(requestParams().get("to")).toBe(localDayEnd("2026-05-20")));
+    expect(requestParams().get("from")).toBe(localDayStart("2026-05-19"));
 
-    expect(screen.queryByText("Before Range")).not.toBeInTheDocument();
-    expect(screen.getByText("First Boundary")).toBeInTheDocument();
-    expect(screen.getByText("Last Boundary")).toBeInTheDocument();
-    expect(screen.queryByText("After Range")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "" } });
+    await waitFor(() => expect(requestParams().has("from")).toBe(false));
   });
 
-  it("supports either date bound independently and clearing it", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Earlier Order", "pending", "2026-05-18T12:00:00.000Z"),
-        makeOrder(2, "Later Order", "pending", "2026-05-21T12:00:00.000Z")
-      ]
-    };
-    render(createElement(OrdersPage));
-    openPanel();
-
-    const fromDate = screen.getByLabelText("من تاريخ");
-    const toDate = screen.getByLabelText("إلى تاريخ");
-
-    fireEvent.change(fromDate, { target: { value: "2026-05-20" } });
-    expect(screen.queryByText("Earlier Order")).not.toBeInTheDocument();
-    expect(screen.getByText("Later Order")).toBeInTheDocument();
-
-    fireEvent.change(fromDate, { target: { value: "" } });
-    fireEvent.change(toDate, { target: { value: "2026-05-20" } });
-    expect(screen.getByText("Earlier Order")).toBeInTheDocument();
-    expect(screen.queryByText("Later Order")).not.toBeInTheDocument();
-
-    fireEvent.change(toDate, { target: { value: "" } });
-    expect(screen.getByText("Earlier Order")).toBeInTheDocument();
-    expect(screen.getByText("Later Order")).toBeInTheDocument();
+  it("sends the sort column and direction", async () => {
+    await renderWith([makeOrder(5, "Customer", "pending")]);
+    fireEvent.click(screen.getByRole("button", { name: /الإجمالي/ }));
+    await waitFor(() => expect(requestParams().get("sort")).toBe("total"));
+    expect(requestParams().get("dir")).toBe("asc");
   });
 
-  it("shows the filter-aware empty state for an invalid date range", () => {
-    render(createElement(OrdersPage));
-    openPanel();
-
-    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-20" } });
-    fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-19" } });
-
-    expect(screen.queryByText("Capella User")).not.toBeInTheDocument();
-    expect(screen.getByText("لا توجد طلبات تطابق البحث")).toBeInTheDocument();
-  });
-
-  it("combines the date range with the existing payment-status filter", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Pending In Range", "pending", "2026-05-19T12:00:00.000Z"),
-        makeOrder(2, "Accepted In Range", "accepted", "2026-05-19T12:00:00.000Z"),
-        makeOrder(3, "Accepted Out Of Range", "accepted", "2026-05-21T12:00:00.000Z")
-      ]
-    };
-    render(createElement(OrdersPage));
-    openPanel();
-
-    fireEvent.change(screen.getByLabelText("من تاريخ"), { target: { value: "2026-05-19" } });
-    fireEvent.change(screen.getByLabelText("إلى تاريخ"), { target: { value: "2026-05-19" } });
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "accepted" } });
-
-    expect(screen.queryByText("Pending In Range")).not.toBeInTheDocument();
-    expect(screen.getByText("Accepted In Range")).toBeInTheDocument();
-    expect(screen.queryByText("Accepted Out Of Range")).not.toBeInTheDocument();
-  });
-
-  it("opens already filtered by the payment status in the link", () => {
-    mockState = {
-      loaded: true,
-      orders: [makeOrder(1, "Pending Customer", "pending"), makeOrder(2, "Accepted Customer", "accepted")]
-    };
+  it("opens already filtered by the payment status in the link", async () => {
     window.history.replaceState(null, "", "/orders?payment=pending");
-    try {
-      render(createElement(OrdersPage));
-    } finally {
-      window.history.replaceState(null, "", "/");
-    }
-
-    expect(screen.getByText("Pending Customer")).toBeInTheDocument();
-    expect(screen.queryByText("Accepted Customer")).not.toBeInTheDocument();
+    await renderWith([makeOrder(1, "Pending Customer", "pending")]);
+    expect(requestParams().get("payment")).toBe("pending");
   });
 
-  it("ignores an unknown payment status in the link", () => {
-    mockState = {
-      loaded: true,
-      orders: [makeOrder(1, "Pending Customer", "pending"), makeOrder(2, "Accepted Customer", "accepted")]
-    };
+  it("ignores an unknown payment status in the link", async () => {
     window.history.replaceState(null, "", "/orders?payment=bogus");
-    try {
-      render(createElement(OrdersPage));
-    } finally {
-      window.history.replaceState(null, "", "/");
-    }
-
-    expect(screen.getByText("Accepted Customer")).toBeInTheDocument();
+    await renderWith([makeOrder(1, "Pending Customer", "pending")]);
+    expect(requestParams().has("payment")).toBe(false);
   });
 
-  it("keeps a Paymob-confirmed order out of the pending payment filter", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Awaiting Customer", "pending"),
-        { ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus: "succeeded" }
-      ]
-    };
-    render(createElement(OrdersPage));
-    openPanel();
-
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "pending" } });
-
-    expect(screen.getByText("Awaiting Customer")).toBeInTheDocument();
-    expect(screen.queryByText("Online Customer")).not.toBeInTheDocument();
+  it("tells an empty store apart from an empty search", async () => {
+    await renderWith([]);
+    expect(await screen.findByText("لا توجد طلبات بعد")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "nobody" } });
+    expect(await screen.findByText("لا توجد طلبات تطابق البحث")).toBeInTheDocument();
   });
 
-  it("groups a Paymob-confirmed order under the accepted payment filter", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Awaiting Customer", "pending"),
-        { ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus: "succeeded" }
-      ]
-    };
+  it("offers a retry when the page fails to load", async () => {
+    apiGet.mockRejectedValueOnce(new Error("down")).mockResolvedValue(serverPage([makeOrder(5, "Back Again", "pending")]));
     render(createElement(OrdersPage));
-    openPanel();
-
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "accepted" } });
-
-    expect(screen.getByText("Online Customer")).toBeInTheDocument();
-    expect(screen.queryByText("Awaiting Customer")).not.toBeInTheDocument();
-  });
-
-  it("filters orders by payment status", () => {
-    mockState = {
-      loaded: true,
-      orders: [
-        makeOrder(1, "Pending Customer", "pending"),
-        makeOrder(2, "Accepted Customer", "accepted")
-      ]
-    };
-    render(createElement(OrdersPage));
-
-    expect(screen.getByText("2 طلب")).toBeInTheDocument();
-    openPanel();
-
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "accepted" } });
-
-    expect(screen.queryByText("Pending Customer")).not.toBeInTheDocument();
-    expect(screen.getByText("Accepted Customer")).toBeInTheDocument();
-    expect(screen.getByText("1 طلب")).toBeInTheDocument();
-  });
-
-  it.each([
-    ["failed", "فشل الدفع عبر باي موب"],
-    ["voided", "أُلغي الدفع عبر باي موب"]
-  ])("shows a %s Paymob payment as terminal and excludes it from pending", (providerPaymentStatus, label) => {
-    mockState = { loaded: true, orders: [{ ...makeOrder(5, "Online Customer", "pending"), paymentMethod: "paymob", providerPaymentStatus }] };
-    render(createElement(OrdersPage));
-    expect(screen.getByText(label)).toBeInTheDocument();
-    openPanel();
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "pending" } });
-    expect(screen.queryByText("Online Customer")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("حالة الدفع"), { target: { value: "denied" } });
-    expect(screen.getByText("Online Customer")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "إعادة المحاولة" }));
+    expect(await screen.findByText("Back Again")).toBeInTheDocument();
   });
 });

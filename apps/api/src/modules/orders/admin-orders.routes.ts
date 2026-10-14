@@ -7,6 +7,7 @@ import { requireErpPermission } from "../../middlewares/erp-permissions.middlewa
 import { requeuePaymobCallback } from "../payments/paymob/paymob-callback.repository.js";
 import {
   getAdminOrderController,
+  getAdminOrderPaymentSummaryController,
   listAdminOrderReviewFlagsController,
   listAdminOrdersController,
   resolveAdminOrderReviewFlagController,
@@ -16,6 +17,7 @@ import {
 export const adminOrdersRoutes = Router();
 adminOrdersRoutes.get("/", requireErpPermission("orders.read"), wrapAsync(listAdminOrdersController));
 adminOrdersRoutes.get("/review-flags", requireErpPermission("orders.read"), wrapAsync(listAdminOrderReviewFlagsController));
+adminOrdersRoutes.get("/payment-summary", requireErpPermission("orders.read"), wrapAsync(getAdminOrderPaymentSummaryController));
 // Registered before "/:id" so the literal review-flags path is never read as an order id.
 adminOrdersRoutes.post("/review-flags/:flagId/resolve", requireErpPermission("orders.read"), wrapAsync(resolveAdminOrderReviewFlagController));
 adminOrdersRoutes.get("/reconciliation", requireErpPermission("orders.read"), wrapAsync(async (_req, res) => {

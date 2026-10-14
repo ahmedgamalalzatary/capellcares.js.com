@@ -14,7 +14,8 @@ import {
   type reviewEntityTypes
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import type { RatingSummary } from "@capella/shared";
+import { pageMeta, type RatingSummary } from "@capella/shared";
+import { likeContains, pageWindow } from "../../lib/pagination.js";
 
 export type ReviewEntityType = (typeof reviewEntityTypes)[number];
 
@@ -459,18 +460,18 @@ export async function attachReviewEligibilityToOrder<
 
 export async function listAdminReviews(input: {
   page: number;
-  pageSize: number;
   deleted: boolean;
   status?: "active" | "inactive";
   entityType?: ReviewEntityType;
   q?: string;
 }) {
   const search = input.q?.trim();
+  const span = pageWindow(input.page);
   const conditions = [input.deleted ? isNotNull(reviews.deletedAt) : isNull(reviews.deletedAt)];
   if (input.status) conditions.push(eq(reviews.status, input.status));
   if (input.entityType) conditions.push(eq(reviews.entityType, input.entityType));
   if (search) {
-    const pattern = `%${search}%`;
+    const pattern = likeContains(search);
     conditions.push(or(
       like(customers.name, pattern),
       like(customers.email, pattern),
@@ -520,8 +521,8 @@ export async function listAdminReviews(input: {
       .leftJoin(collections, and(eq(reviews.entityType, "collection"), eq(collections.id, reviews.entityId)))
       .where(where)
       .orderBy(desc(reviews.createdAt), desc(reviews.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize)
+      .limit(span.limit)
+      .offset(span.offset)
   ]);
   const total = Number(countRows[0]?.total ?? 0);
   return {
@@ -543,12 +544,7 @@ export async function listAdminReviews(input: {
       deletedAt: row.deletedAt,
       createdAt: row.createdAt
     })),
-    pagination: {
-      page: input.page,
-      pageSize: input.pageSize,
-      total,
-      totalPages: total === 0 ? 0 : Math.ceil(total / input.pageSize)
-    }
+    pagination: pageMeta(total, input.page)
   };
 }
 

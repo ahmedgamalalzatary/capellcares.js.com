@@ -50,6 +50,18 @@ beforeEach(() => {
 });
 
 describe("ERP ReviewsPage", () => {
+  it("asks the server for the remembered page and filters, and pages through the results", async () => {
+    window.history.replaceState(null, "", "/reviews?page=2&status=active");
+    get.mockResolvedValue({ ...page, pagination: { page: 2, pageSize: 20, total: 45, totalPages: 3 } });
+    render(createElement(ReviewsPage));
+
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/api/erp/reviews?page=2&status=active"));
+    expect(await screen.findByText("صفحة", { exact: false, selector: "[role=status]" })).toHaveTextContent("صفحة 2 من 3");
+
+    fireEvent.click(screen.getByRole("button", { name: "الصفحة 3" }));
+    await waitFor(() => expect(get).toHaveBeenLastCalledWith("/api/erp/reviews?page=3&status=active"));
+  });
+
   it("shows verified review context and lets an admin deactivate or soft-delete it", async () => {
     render(createElement(ReviewsPage));
 

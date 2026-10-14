@@ -84,6 +84,25 @@ test("ERP review listing includes moderation and verified-purchase context", asy
   });
 });
 
+test("ERP review listing validates paging params and treats LIKE wildcards literally", async () => {
+  await seedReview();
+
+  await withTestServer(app, async (request) => {
+    const headers = await getAdminAuthHeaders(request);
+    for (const query of ["pageSize=20", "pages=2", "page=0", "status=gone", "entityType=x", "unknown=1"]) {
+      assert.equal((await request(`/api/erp/reviews?${query}`, { headers })).status, 400, query);
+    }
+
+    const beyond = await request("/api/erp/reviews?page=2", { headers });
+    assert.equal(beyond.status, 200);
+    assert.equal(beyond.json.items.length, 0);
+    assert.deepEqual(beyond.json.pagination, { page: 2, pageSize: 20, total: 1, totalPages: 1 });
+
+    const wildcard = await request("/api/erp/reviews?q=%25", { headers });
+    assert.equal(wildcard.json.items.length, 0);
+  });
+});
+
 test("ERP review listing falls back when the reviewed entity no longer exists", async () => {
   const seeded = await seedReview();
   await db.update(reviews).set({ entityId: 999_999 }).where(eq(reviews.id, seeded.reviewId));

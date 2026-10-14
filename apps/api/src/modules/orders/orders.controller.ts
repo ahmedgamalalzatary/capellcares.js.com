@@ -6,7 +6,11 @@ import {
   findAdminOrderByIdRepo,
   findOrderByIdRepo,
   getSalesAnalyticsRepo,
-  listOrdersRepo,
+  adminOrderPaymentSummaryRepo,
+  adminOrdersQuerySchema,
+  listAdminOrdersPageRepo,
+  paymentSummaryQuerySchema,
+  listCustomerOrdersRepo,
   OrderNotFoundError,
   PaymobPaymentStatusManagedError,
   ShippingCustodyRequiredError,
@@ -27,8 +31,16 @@ function parsePositiveId(value: string) {
   return Number.isSafeInteger(id) && id <= 2_147_483_647 ? id : null;
 }
 
-export async function listAdminOrdersController(_req: AuthenticatedRequest, res: Response) {
-  res.json({ items: await listOrdersRepo() });
+export async function listAdminOrdersController(req: AuthenticatedRequest, res: Response) {
+  const query = adminOrdersQuerySchema.safeParse(req.query);
+  if (!query.success) return res.status(400).json({ message: "Invalid order list query" });
+  return res.json(await listAdminOrdersPageRepo(query.data));
+}
+
+export async function getAdminOrderPaymentSummaryController(req: AuthenticatedRequest, res: Response) {
+  const query = paymentSummaryQuerySchema.safeParse(req.query);
+  if (!query.success) return res.status(400).json({ message: "Invalid payment summary query" });
+  return res.json(await adminOrderPaymentSummaryRepo(query.data.since));
 }
 
 export async function listAdminOrderReviewFlagsController(_req: AuthenticatedRequest, res: Response) {
@@ -98,7 +110,7 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
 }
 
 export async function listCustomerOrdersController(req: AuthenticatedRequest, res: Response) {
-  res.json({ items: await listOrdersRepo({ customerId: req.user!.id, withItems: true }) });
+  res.json({ items: await listCustomerOrdersRepo(req.user!.id) });
 }
 
 export async function getCustomerOrderController(req: AuthenticatedRequest, res: Response) {

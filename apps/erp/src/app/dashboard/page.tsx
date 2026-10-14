@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button";
 import {
   catalogHealth,
   endingDiscounts,
-  paymentSplit,
   rangeWindow,
   slowMovers,
   stockAlerts,
   topSellers,
   type DashboardRange,
 } from "@/features/dashboard/lib/metrics";
+import { usePaymentSummary } from "@/features/dashboard/hooks/use-payment-summary";
 import { canReadErpModule } from "@/lib/erp-permissions";
 import { useStore } from "@/lib/store";
 
@@ -31,7 +31,6 @@ export default function DashboardPage() {
   const products = useStore((s) => s.products);
   const offers = useStore((s) => s.offers);
   const collections = useStore((s) => s.collections);
-  const orders = useStore((s) => s.orders);
   const sales = useStore((s) => s.sales);
   const loaded = useStore((s) => s.loaded);
   const [range, setRange] = useState<DashboardRange>("7d");
@@ -43,8 +42,12 @@ export default function DashboardPage() {
   const canReadOrders = canReadErpModule(user, "orders");
   const canReadSales = canReadErpModule(user, "sales");
   const clock = now ?? new Date(0);
-  const ready = loaded && now !== null;
   const period = rangeWindow(range, clock);
+  const allTimePayments = usePaymentSummary(null, canReadOrders);
+  const periodPayments = usePaymentSummary(now ? period.start : null, canReadOrders && canReadSales && now !== null);
+  const ready = loaded && now !== null;
+  // The pending-payments count comes from its own request, so the attention strip waits for it too.
+  const attentionReady = ready && (!canReadOrders || allTimePayments !== null);
   const alerts = stockAlerts(products, sales.orders, clock, 30);
   const periodLabel = range === "today" ? "اليوم" : `آخر ${rangeLabels[range]}`;
 
@@ -84,8 +87,8 @@ export default function DashboardPage() {
         <AttentionStrip
           canReadOrders={canReadOrders}
           canReadProducts={canReadProducts}
-          loaded={ready}
-          pendingPayments={paymentSplit(orders, null).pending}
+          loaded={attentionReady}
+          pendingPayments={allTimePayments?.pending ?? 0}
           soldOutSizes={alerts.filter((alert) => alert.level === "out").length}
         />
 
@@ -96,7 +99,7 @@ export default function DashboardPage() {
               range={range}
               now={clock}
               loaded={ready}
-              payments={canReadOrders ? paymentSplit(orders, period.start) : null}
+              payments={canReadOrders ? periodPayments : null}
             />
             <TopSellers
               rows={topSellers(sales.orders, period.start, products, 5)}

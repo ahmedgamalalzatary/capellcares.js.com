@@ -10,8 +10,8 @@ import { AdminShell } from "@/components/shell/admin-shell";
 import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
-import { PRODUCT_SORT_COLUMNS, productSortAccessors, ProductsTable } from "@/features/products/components/products-table";
-import { useTableSort } from "@/hooks/use-table-sort";
+import { PRODUCT_SORT_COLUMNS, ProductsTable } from "@/features/products/components/products-table";
+import { SmartPagination } from "@/components/admin/smart-pagination";
 import { useProductsPage } from "@/features/products/hooks/use-products-page";
 
 export default function ProductsListPage() {
@@ -19,14 +19,12 @@ export default function ProductsListPage() {
   const {
     loaded,
     categories,
-    search,
-    setSearch,
+    list,
     statusFilter,
-    setStatusFilter,
     categoryFilter,
-    setCategoryFilter,
     categoryOptions,
-    filteredProducts,
+    totalProducts,
+    pageProducts,
     reorderEnabled,
     isOrderDirty,
     savingOrder,
@@ -42,7 +40,6 @@ export default function ProductsListPage() {
     confirmToggle,
     confirmDelete
   } = useProductsPage();
-  const { sort, setSort, toggleSort, sortedRows } = useTableSort(filteredProducts, productSortAccessors(categories));
 
   if (!canReadErpModule(user, "products")) {
     return (
@@ -77,17 +74,17 @@ export default function ProductsListPage() {
     >
       <AdminListHeader
         searchPlaceholder="ابحثي باسم المنتج…"
-        searchValue={search}
-        onSearchChange={setSearch}
-        countLabel={loaded ? `${filteredProducts.length} منتج` : "جارٍ التحميل…"}
-        sort={tableSortSelect(PRODUCT_SORT_COLUMNS, sort, setSort)}
+        searchValue={list.searchInput}
+        onSearchChange={list.setSearch}
+        countLabel={loaded ? `${totalProducts} منتج` : "جارٍ التحميل…"}
+        sort={tableSortSelect(PRODUCT_SORT_COLUMNS, list.state.sort, list.setSort)}
         filters={[
           {
             key: "status",
             label: "الحالة",
             icon: CircleDot,
             value: statusFilter,
-            onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
+            onChange: (value) => list.setFilter("status", value),
             options: ACTIVE_STATUS_FILTER_OPTIONS
           },
           {
@@ -96,7 +93,7 @@ export default function ProductsListPage() {
             icon: FolderTree,
             testId: "products-category-filter",
             value: String(categoryFilter),
-            onChange: (value) => setCategoryFilter(value ? Number(value) : ""),
+            onChange: (value) => list.setFilter("category", value),
             options: [
               { value: "", label: "كل الأقسام" },
               ...categoryOptions.map((option) => ({
@@ -110,9 +107,9 @@ export default function ProductsListPage() {
 
       <ProductsTable
         loading={!loaded}
-        products={sortedRows}
-        sort={sort}
-        onSort={toggleSort}
+        products={pageProducts}
+        sort={list.state.sort}
+        onSort={list.toggleSort}
         categories={categories}
         user={user}
         canToggle={canToggleErpModule(user, "products")}
@@ -125,6 +122,8 @@ export default function ProductsListPage() {
         }}
         onDelete={setPendingDelete}
       />
+
+      <SmartPagination {...list.paginationProps(totalProducts, !loaded)} />
 
       <AdminConfirmModal
         open={pendingToggle != null}

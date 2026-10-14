@@ -1,5 +1,4 @@
-import type { Offer, OrderSummary, Product, VariantDiscount } from "@capella/shared";
-import { orderMatchesPaymentStatusFilter } from "@/lib/payment-status";
+import type { Offer, Product, VariantDiscount } from "@capella/shared";
 import { LOW_STOCK_LIMIT } from "@/lib/stock";
 import type { SalesAnalytics } from "@/lib/store/types";
 
@@ -57,18 +56,6 @@ export function salesPulse(orders: SaleOrder[], range: DashboardRange, now: Date
     averageOrder: orderCount > 0 ? revenue / orderCount : 0,
     series
   };
-}
-
-/** Orders by payment outcome, read the same way as the orders list filter (Paymob by the provider's status, cash on delivery by the staff-set status). */
-export function paymentSplit(orders: OrderSummary[], since: Date | null) {
-  const split = { accepted: 0, pending: 0, denied: 0 };
-  for (const order of orders) {
-    if (since && new Date(order.createdAt) < since) continue;
-    for (const status of ["accepted", "pending", "denied"] as const) {
-      if (orderMatchesPaymentStatusFilter(order, status)) split[status] += 1;
-    }
-  }
-  return split;
 }
 
 /** Units sold per product since `since`, most first, named in Arabic from the catalog (or by the sold label once the product is gone). */

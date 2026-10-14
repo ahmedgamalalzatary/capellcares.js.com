@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { AdminReview, AdminReviewPage } from "@capella/shared";
+import type { AdminReview } from "@capella/shared";
 import { getStore, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
 import { showErrorToast } from "@/lib/errors";
 import { formatDateShort } from "@/lib/format";
+import { usePaginatedList, useServerPage } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
 import type { HardDeleteTarget, TrashListRow, TrashTab, TrashTabConfig } from "@/features/trash/types";
+
+// The open tab is part of the remembered view, so switching tabs starts that tab from its first page.
+const TRASH_LIST = {
+  filters: { tab: { default: "products", values: ["products", "categories", "offers", "collections", "reviews"] } },
+  sortKeys: []
+} satisfies ListSchema<"tab", never>;
 
 export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   const products = useStore((state) => state.products);
@@ -14,46 +22,19 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   const offers = useStore((state) => state.offers);
   const collections = useStore((state) => state.collections);
 
-  const [tab, setTab] = useState<TrashTab>("products");
+  const list = usePaginatedList({ listId: "trash", schema: TRASH_LIST });
+  const requestedTab = list.state.filters.tab as TrashTab;
+  const tab: TrashTab = requestedTab === "reviews" && !options.reviewsReadable ? "products" : requestedTab;
+  const setTab = (next: TrashTab) => list.setFilter("tab", next);
   const [pendingHardDelete, setPendingHardDelete] = useState<HardDeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<AdminReview[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewsError, setReviewsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!options.reviewsReadable || tab !== "reviews") return;
-    let cancelled = false;
-    const loadDeletedReviews = async () => {
-      setReviewsLoading(true);
-      setReviewsError(null);
-      try {
-        const allReviews: AdminReview[] = [];
-        let page = 1;
-        let totalPages = 1;
-        while (!cancelled && page <= totalPages) {
-          const response = await api.get<AdminReviewPage>(`/api/erp/reviews?deleted=true&page=${page}&pageSize=100`);
-          allReviews.push(...response.items);
-          totalPages = response.pagination.totalPages;
-          page += 1;
-        }
-        if (!cancelled) setReviews(allReviews);
-      } catch (error) {
-        if (!cancelled) {
-          const message = "تعذر تحميل التقييمات المحذوفة. حاولي مرة أخرى.";
-          setReviewsError(message);
-          showErrorToast(error, message);
-        }
-      } finally {
-        if (!cancelled) setReviewsLoading(false);
-      }
-    };
-    void loadDeletedReviews();
-    return () => {
-      cancelled = true;
-    };
-  }, [options.reviewsReadable, tab]);
+  const reviewsLoadError = "تعذر تحميل التقييمات المحذوفة. حاولي مرة أخرى.";
+  const reviewsServer = useServerPage<AdminReview>(
+    options.reviewsReadable && tab === "reviews" && list.ready ? `/api/erp/reviews?deleted=true&${list.pageQuery}` : null,
+    { onError: (error) => showErrorToast(error, reviewsLoadError) }
+  );
+  const reviewsError = reviewsServer.error ? reviewsLoadError : null;
 
   const deletedProducts = useMemo(
     () =>
@@ -108,13 +89,13 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   );
 
   const deletedReviews = useMemo(
-    () => reviews.map<TrashListRow>((review) => ({
+    () => reviewsServer.items.map<TrashListRow>((review) => ({
       id: review.id,
       title: `${review.entityName.ar || review.entityName.en} — ${review.customerName}`,
       subtitle: `${"★".repeat(review.rating)} · ${review.comment}`,
       meta: formatDateShort(review.deletedAt!)
     })),
-    [reviews]
+    [reviewsServer.items]
   );
 
   const tabs: TrashTabConfig[] = [
@@ -122,8 +103,19 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     { id: "categories", label: "الأقسام", count: deletedCategories.length },
     { id: "offers", label: "العروض", count: deletedOffers.length },
     { id: "collections", label: "المجموعات", count: deletedCollections.length },
-    ...(options.reviewsReadable ? [{ id: "reviews" as const, label: "التقييمات", count: deletedReviews.length }] : [])
+    ...(options.reviewsReadable ? [{ id: "reviews" as const, label: "التقييمات", count: reviewsServer.total }] : [])
   ];
+
+  const tabRows: Record<TrashTab, TrashListRow[]> = {
+    products: deletedProducts,
+    categories: deletedCategories,
+    offers: deletedOffers,
+    collections: deletedCollections,
+    reviews: deletedReviews
+  };
+  const activeRows = tabRows[tab];
+  // Deleted reviews arrive one server page at a time; every other tab is sliced from the full list here.
+  const onServer = tab === "reviews";
 
   const closeHardDeleteModal = () => {
     if (isDeleting) {
@@ -150,7 +142,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
         await getStore().hardDeleteCollection(pendingHardDelete.id);
       } else {
         await api.del(`/api/erp/reviews/${pendingHardDelete.id}/permanent`);
-        setReviews((current) => current.filter((review) => review.id !== pendingHardDelete.id));
+        await reviewsServer.reload();
       }
       setPendingHardDelete(null);
     } catch (error) {
@@ -166,12 +158,9 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     tab,
     setTab,
     tabs,
-    deletedProducts,
-    deletedCategories,
-    deletedOffers,
-    deletedCollections,
-    deletedReviews,
-    reviewsLoading,
+    pageRows: onServer ? activeRows : list.pageOf(activeRows),
+    paginationProps: list.paginationProps(onServer ? reviewsServer.total : activeRows.length, onServer && reviewsServer.loading),
+    reviewsLoading: reviewsServer.loading,
     reviewsError,
     pendingHardDelete,
     setPendingHardDelete: (target: HardDeleteTarget | null) => {
@@ -190,7 +179,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
       try {
         setDeleteError(null);
         await api.post(`/api/erp/reviews/${id}/restore`);
-        setReviews((current) => current.filter((review) => review.id !== id));
+        await reviewsServer.reload();
       } catch (error) {
         const message = "تعذر استعادة التقييم. حاولي مرة أخرى.";
         setDeleteError(message);
