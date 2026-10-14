@@ -24,8 +24,12 @@ export const ORDER_SORT_COLUMNS: Array<{ key: OrderSortKey; label: string }> = [
   { key: "date", label: "تاريخ الطلب" }
 ];
 
+export const ORDER_SORT_KEYS = ORDER_SORT_COLUMNS.map((column) => column.key);
+
 export function OrdersTable({
   loading,
+  error = false,
+  onRetry,
   orders,
   sort,
   onSort,
@@ -33,7 +37,10 @@ export function OrdersTable({
   emptyDescription
 }: {
   loading: boolean;
-  /** Rows already filtered and sorted by the page. */
+  /** The page failed to load; shows a retry row instead of the empty state. */
+  error?: boolean;
+  onRetry?: () => void;
+  /** One page, already searched, filtered and sorted by the server. */
   orders: OrderSummary[];
   sort: SortState<OrderSortKey> | null;
   onSort: (key: OrderSortKey) => void;
@@ -67,7 +74,7 @@ export function OrdersTable({
               ]}
             />
           ) : null}
-          {!loading && orders.map((order) => {
+          {!loading && !error && orders.map((order) => {
             const payment = orderPaymentBadge(order);
             return (
               <TR key={order.id}>
@@ -96,7 +103,17 @@ export function OrdersTable({
               </TR>
             );
           })}
-          {!loading && orders.length === 0 ? (
+          {!loading && error ? (
+            <TableEmptyRow
+              colSpan={7}
+              tone="danger"
+              icon={<ReceiptText />}
+              title="تعذر تحميل الطلبات"
+              description="حدث خطأ أثناء جلب الطلبات."
+              action={onRetry ? <Button variant="secondary" onClick={onRetry}>إعادة المحاولة</Button> : undefined}
+            />
+          ) : null}
+          {!loading && !error && orders.length === 0 ? (
             <TableEmptyRow colSpan={7} icon={<ReceiptText />} title={emptyTitle} description={emptyDescription} />
           ) : null}
         </TBody>

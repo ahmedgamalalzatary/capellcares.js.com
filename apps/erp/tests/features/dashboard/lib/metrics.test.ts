@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { OrderSummary, Product } from "@capella/shared";
-import { catalogHealth, daysPhrase, endingDiscounts, paymentSplit, salesPulse, slowMovers, stockAlerts, topSellers } from "@/features/dashboard/lib/metrics";
+import type { Product } from "@capella/shared";
+import { catalogHealth, daysPhrase, endingDiscounts, salesPulse, slowMovers, stockAlerts, topSellers } from "@/features/dashboard/lib/metrics";
 
 // Local-time dates keep the day/hour boundaries independent of the machine's time zone.
 const at = (day: number, hour: number, minute = 0) => new Date(2026, 9, day, hour, minute).toISOString();
@@ -52,33 +52,6 @@ describe("salesPulse", () => {
 
   it("reports zero average when nothing sold", () => {
     expect(salesPulse([], "7d", now)).toMatchObject({ revenue: 0, orderCount: 0, averageOrder: 0, change: null });
-  });
-});
-
-const order = (id: number, createdAt: string, payment: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): OrderSummary => ({
-  id, orderCode: `O-${id}`, customerType: "guest", customerId: null, fullName: "Customer", phone: "01000000000", email: "c@example.com",
-  governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street", buildingApartment: "1", notes: null,
-  refundedAmountCents: 0, totalAmount: 100, createdAt, ...payment
-});
-
-describe("paymentSplit", () => {
-  const orders = [
-    order(1, at(9, 9), { paymentMethod: "cod", paymentStatus: "pending", providerPaymentStatus: null }),
-    order(2, at(9, 9), { paymentMethod: "cod", paymentStatus: "accepted", providerPaymentStatus: null }),
-    order(3, at(8, 9), { paymentMethod: "cod", paymentStatus: "denied", providerPaymentStatus: null }),
-    // Paymob orders are judged by the provider's status, not the stored payment status.
-    order(4, at(7, 9), { paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "succeeded" }),
-    order(5, at(7, 9), { paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "failed" }),
-    order(6, at(6, 9), { paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: null }),
-    order(7, at(1, 9), { paymentMethod: "cod", paymentStatus: "accepted", providerPaymentStatus: null })
-  ];
-
-  it("counts orders by payment outcome since the given time", () => {
-    expect(paymentSplit(orders, new Date(2026, 9, 3))).toEqual({ accepted: 2, pending: 2, denied: 2 });
-  });
-
-  it("counts every order when no start is given", () => {
-    expect(paymentSplit(orders, null)).toEqual({ accepted: 3, pending: 2, denied: 2 });
   });
 });
 

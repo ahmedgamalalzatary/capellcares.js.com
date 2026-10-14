@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatMoney } from "@/lib/format";
 
+const { apiGet } = vi.hoisted(() => ({ apiGet: vi.fn() }));
 const fetchPaymobReconciliation = vi.fn();
 const fetchOpenOrderReviewFlags = vi.fn();
 const mockedUseAdminAuth = vi.fn();
@@ -15,6 +16,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
+vi.mock("@/lib/api/client", () => ({ api: { get: apiGet } }));
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector(mockState),
   getStore: () => ({ fetchPaymobReconciliation, fetchOpenOrderReviewFlags })
@@ -31,15 +33,6 @@ function product(id: number, ar: string, en: string, variants: any[]) {
     ingredients: { ar: "", en: "" }, howToUse: { ar: "", en: "" }, warnings: { ar: "", en: "" }, keywords: ["k"],
     buyingPrice: 10, imagePath: "/p.jpg", status: "active", isNew: false, isBestseller: false, categoryId: 1,
     variants: variants.map((variant) => ({ productId: id, price: 100, ...variant })), createdAt: old, updatedAt: old, deletedAt: null
-  };
-}
-
-function order(id: number, paymentStatus: "pending" | "accepted") {
-  return {
-    id, orderCode: `O-${id}`, customerType: "guest", customerId: null, fullName: "Customer", phone: "01000000000",
-    email: "c@example.com", governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street", buildingApartment: "1",
-    notes: null, paymentMethod: "cod", paymentStatus, providerPaymentStatus: null, refundedAmountCents: 0,
-    totalAmount: 100, createdAt: at(9, 9)
   };
 }
 
@@ -60,7 +53,6 @@ function makeState() {
     ],
     offers: [],
     collections: [],
-    orders: [order(1, "pending"), order(2, "accepted")],
     sales: {
       summary: { totalOrders: 3, totalUnitsSold: 6, totalRevenue: 600 },
       productTotals: [],
@@ -90,6 +82,7 @@ describe("DashboardPage", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 9, 14, 0));
     mockState = makeState();
+    apiGet.mockReset().mockResolvedValue({ accepted: 1, pending: 1, denied: 0 });
     mockedUseAdminAuth.mockReturnValue({ user: admin, hydrated: true });
     fetchPaymobReconciliation.mockReset().mockResolvedValue({ items: [{}, {}], callbackProblems: [{}] });
     fetchOpenOrderReviewFlags.mockReset().mockResolvedValue([{
@@ -141,7 +134,7 @@ describe("DashboardPage", () => {
   it("says nothing is waiting when every count is zero", async () => {
     fetchPaymobReconciliation.mockResolvedValue({ items: [], callbackProblems: [] });
     fetchOpenOrderReviewFlags.mockResolvedValue([]);
-    mockState.orders = [order(2, "accepted")];
+    apiGet.mockResolvedValue({ accepted: 1, pending: 0, denied: 0 });
     mockState.products[0].variants[0].stock = 4;
     render(createElement(DashboardPage));
 
@@ -153,7 +146,7 @@ describe("DashboardPage", () => {
   it("never claims all is well when a check could not load", async () => {
     fetchPaymobReconciliation.mockRejectedValue(new Error("offline"));
     fetchOpenOrderReviewFlags.mockResolvedValue([]);
-    mockState.orders = [order(2, "accepted")];
+    apiGet.mockResolvedValue({ accepted: 1, pending: 0, denied: 0 });
     mockState.products[0].variants[0].stock = 4;
     render(createElement(DashboardPage));
     const attention = region("يحتاج انتباهك");

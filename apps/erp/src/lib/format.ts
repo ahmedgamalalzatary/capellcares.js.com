@@ -23,6 +23,24 @@ export function formatDateShort(value: string) {
 }
 
 /** Local-time `YYYY-MM-DD` key, used to bucket records by calendar day. */
+/** A real calendar day written YYYY-MM-DD (what a date input produces). */
+export function isDateKey(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return date.getMonth() === Number(match[2]) - 1 && date.getDate() === Number(match[3]);
+}
+
+function localDay(key: string, hours: [number, number, number, number]) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day, ...hours).toISOString();
+}
+
+/** First instant of a YYYY-MM-DD day in the viewer's time zone, for server date filters. */
+export const localDayStart = (key: string) => localDay(key, [0, 0, 0, 0]);
+/** Last instant of a YYYY-MM-DD day in the viewer's time zone, for server date filters. */
+export const localDayEnd = (key: string) => localDay(key, [23, 59, 59, 999]);
+
 export function localDateKey(value: string) {
   const date = new Date(value);
   const year = date.getFullYear();

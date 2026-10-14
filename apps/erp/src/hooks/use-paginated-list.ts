@@ -35,6 +35,8 @@ interface Options<F extends string, S extends string> {
   searchDelay?: number;
   /** Prefix for this list's address keys when a page shows more than one list (e.g. "best_" → best_page). */
   paramPrefix?: string;
+  /** Server params for the filters when they differ from the address (default: every non-default filter as is). */
+  toRequest?: (filters: Record<F, string>) => Record<string, string | undefined>;
 }
 
 /**
@@ -42,7 +44,13 @@ interface Options<F extends string, S extends string> {
  * Restores from the address, else the browser-session copy, and keeps both in step. Any change other
  * than moving between pages goes back to page 1.
  */
-export function usePaginatedList<F extends string, S extends string>({ listId, schema, searchDelay = 0, paramPrefix = "" }: Options<F, S>) {
+export function usePaginatedList<F extends string, S extends string>({
+  listId,
+  schema,
+  searchDelay = 0,
+  paramPrefix = "",
+  toRequest
+}: Options<F, S>) {
   const [state, setState] = useState<ListState<F, S>>(() => defaultListState(schema));
   const [searchInput, setSearchInput] = useState("");
   const [ready, setReady] = useState(false);
@@ -119,12 +127,18 @@ export function usePaginatedList<F extends string, S extends string>({ listId, s
   const requestQuery = useMemo(() => {
     const params = new URLSearchParams(pageQuery);
     const own = serializeListState(state, schema);
-    for (const key of ["q", "sort", "dir", ...Object.keys(schema.filters)]) {
+    for (const key of ["q", "sort", "dir"]) {
       const value = own.get(key);
       if (value != null) params.set(key, value);
     }
+    const filters = toRequest
+      ? toRequest(state.filters)
+      : Object.fromEntries(Object.keys(schema.filters).map((key) => [key, own.get(key) ?? undefined]));
+    for (const [key, value] of Object.entries(filters)) {
+      if (value != null && value !== "") params.set(key, value);
+    }
     return params.toString();
-  }, [pageQuery, schema, state]);
+  }, [pageQuery, schema, state, toRequest]);
 
   /** Props for `<SmartPagination>` once the list knows how many rows match. */
   const paginationProps = useCallback((total: number, loading = false): SmartPaginationProps => ({

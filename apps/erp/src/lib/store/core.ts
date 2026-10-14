@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, AdminShipmentListItemDto, Advice, Announcement, Category, Collection, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, AdminShipmentListItemDto, Advice, Announcement, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
 import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import {
   api,
@@ -41,7 +41,6 @@ export class ErpStore {
   shopMediaSections: ShopMediaSection[] = [];
   announcements: Announcement[] = [];
   announcementBarStatus: "active" | "inactive" = "active";
-  orders: OrderSummary[] = [];
   sales: SalesAnalytics = this.createEmptySales();
   loaded = false;
   loading = false;
@@ -70,7 +69,6 @@ export class ErpStore {
       shopMediaSections: this.shopMediaSections,
       announcements: this.announcements,
       announcementBarStatus: this.announcementBarStatus,
-      orders: this.orders,
       sales: this.sales,
       loaded: this.loaded,
       loading: this.loading,
@@ -100,7 +98,6 @@ export class ErpStore {
     this.shopMediaSections = [];
     this.announcements = [];
     this.announcementBarStatus = "active";
-    this.orders = [];
     this.sales = this.createEmptySales();
   }
 
@@ -281,12 +278,6 @@ export class ErpStore {
         assign: (result: { barStatus?: "active" | "inactive"; items: Announcement[] }, store: ErpStore) => {
           store.announcements = result.items;
           store.announcementBarStatus = result.barStatus ?? "active";
-        }
-      },
-      canRead("orders.read") && {
-        load: () => api.get<{ items: OrderSummary[] }>("/api/erp/orders"),
-        assign: (result: { items: OrderSummary[] }, store: ErpStore) => {
-          store.orders = result.items;
         }
       },
       canRead("sales.read") && {

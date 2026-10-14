@@ -22,25 +22,7 @@ export const paymentStatusFilterOptions = [
   }))
 ];
 
-/** Paymob orders display the provider's state while COD orders display the operational status, so the list filter has to read the same source as the label it sits next to instead of comparing raw enums across both payment methods. */
-export function orderMatchesPaymentStatusFilter(
-  order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">,
-  filter: PaymentStatus
-) {
-  if (order.paymentMethod !== "paymob") {
-    return order.paymentStatus === filter;
-  }
-  const providerStatus = order.providerPaymentStatus;
-  const reversedOrFailed = providerStatus === "partially_refunded" || providerStatus === "refunded" ||
-    providerStatus === "failed" || providerStatus === "voided";
-  if (filter === "accepted") {
-    return providerStatus === "succeeded";
-  }
-  if (filter === "denied") {
-    return reversedOrFailed;
-  }
-  return providerStatus !== "succeeded" && !reversedOrFailed;
-}
+export { orderMatchesPaymentStatusFilter } from "@capella/shared";
 
 /** Badge label and tone for an order's payment state, shared by the order list, details and sales tables. */
 export function orderPaymentBadge(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): {

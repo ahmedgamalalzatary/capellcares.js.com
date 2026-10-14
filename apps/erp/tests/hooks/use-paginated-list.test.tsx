@@ -119,6 +119,16 @@ describe("usePaginatedList", () => {
     expect(result.current.state.page).toBe(3);
   });
 
+  it("lets a list translate its filters for the server", () => {
+    visit("/things?status=active&q=rose");
+    const { result } = renderHook(() => usePaginatedList({
+      listId: "things",
+      schema,
+      toRequest: (filters) => ({ state: filters.status === "all" ? undefined : filters.status.toUpperCase() })
+    }));
+    expect(result.current.requestQuery).toBe("page=1&pageSize=20&pages=1&q=rose&state=ACTIVE");
+  });
+
   it("keeps two lists on one page apart with a key prefix", () => {
     visit("/things?page=2&best_page=3&best_sort=name");
     const { result } = render({ paramPrefix: "best_" });
