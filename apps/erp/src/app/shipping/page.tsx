@@ -42,7 +42,7 @@ export default function ShippingPage() {
 
   if (!hasErpPermission(user, "shipping.read")) {
     return (
-      <ForbiddenPage title="الشحن" crumbs={[{ label: "الشحن" }]} message="لا تملك صلاحية الوصول إلى الشحن." />
+      <ForbiddenPage title="الشحن" crumbs={[{ label: "الشحن" }]} message="لا تملكين صلاحية الوصول إلى الشحن." />
     );
   }
 

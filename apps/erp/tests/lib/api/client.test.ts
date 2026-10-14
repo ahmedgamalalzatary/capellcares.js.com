@@ -164,11 +164,67 @@ describe("ERP API client auth invalidation", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const client = await import("@/lib/api/client");
+    client.setAdminAuthHydrated(true);
 
     await expect(client.api.get("/api/erp/orders")).resolves.toEqual({ items: [] });
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/erp/auth/refresh"),
       expect.objectContaining({ method: "POST", credentials: "include" })
     );
+  });
+
+  it("waits for the session to be restored on a fresh load instead of sending a request without a token", async () => {
+    const fetchMock = vi.fn(async (input: string, init?: RequestInit) => {
+      if (input.endsWith("/api/erp/auth/refresh")) {
+        return {
+          ok: true,
+          json: async () => ({
+            accessToken: "fresh-admin-token",
+            user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: [] }
+          })
+        };
+      }
+      const authorized = new Headers(init?.headers).get("authorization") === "Bearer fresh-admin-token";
+      return authorized
+        ? { ok: true, json: async () => ({ items: [] }) }
+        : { ok: false, status: 401, json: async () => ({ message: "Admin auth required" }) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+
+    // The page asks for data before the auth provider starts restoring the session (children's effects run first).
+    const orders = client.api.get("/api/erp/orders");
+    const products = client.api.get("/api/erp/products");
+    const restored = client.refreshAdminSession();
+
+    await expect(Promise.all([orders, products, restored])).resolves.toEqual([{ items: [] }, { items: [] }, "fresh-admin-token"]);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls.filter((url) => url.endsWith("/api/erp/auth/refresh"))).toHaveLength(1);
+    expect(urls.filter((url) => url.endsWith("/api/erp/orders"))).toHaveLength(1);
+    expect(urls.filter((url) => url.endsWith("/api/erp/products"))).toHaveLength(1);
+  });
+
+  it("does not refresh a second time when the session could not be restored on a fresh load", async () => {
+    const fetchMock = vi.fn(async (input: string) => input.endsWith("/api/erp/auth/refresh")
+      ? { ok: false, status: 401, json: async () => ({ message: "Session expired" }) }
+      : { ok: false, status: 401, json: async () => ({ message: "Admin auth required" }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+
+    await expect(client.api.get("/api/erp/orders")).rejects.toThrow("API 401 /api/erp/orders");
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/api/erp/auth/refresh"))).toHaveLength(1);
+  });
+
+  it("does not refresh first once the session is known, signed in or not", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ items: [] }) }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = await import("@/lib/api/client");
+    client.setAdminAuthHydrated(true);
+
+    await client.api.get("/api/erp/orders");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

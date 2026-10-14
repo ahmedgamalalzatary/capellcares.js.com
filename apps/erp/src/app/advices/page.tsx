@@ -14,6 +14,7 @@ import { ADVICE_SORT_COLUMNS, AdvicesTable } from "@/features/advices/components
 import type { Advice } from "@capella/shared";
 import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { formatNumber } from "@/lib/format";
+import { showErrorToast } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
 import { usePaginatedList } from "@/hooks/use-paginated-list";
@@ -25,6 +26,8 @@ const ADVICES_LIST = {
   filters: { status: { default: "all", values: ["all", "active", "inactive"] } },
   sortKeys: ADVICE_SORT_COLUMNS.map((column) => column.key)
 } satisfies ListSchema<"status", (typeof ADVICE_SORT_COLUMNS)[number]["key"]>;
+
+const ADVICE_TOGGLE_ERROR = "تعذر تحديث حالة النصيحة. حاولي مرة أخرى.";
 
 const adviceSortAccessors = {
   title: (advice: Advice) => advice.title.ar,
@@ -42,6 +45,8 @@ export default function AdvicesPage() {
   const sort = list.state.sort;
   const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Advice | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const reorder = useListReorder({
     persistedIds: useMemo(() => advices.map((advice) => advice.id), [advices]),
     save: (ids) => getStore().reorderAdvices({ ids }),
@@ -70,6 +75,37 @@ export default function AdvicesPage() {
   const canToggle = canToggleErpModule(user, "advices");
   const canEdit = canUpdateErpModule(user, "advices");
   const canDelete = hasErpPermission(user, "advices.delete");
+
+  const closeToggleModal = () => {
+    if (isToggling) return;
+    setPendingToggle(null);
+    setToggleError(null);
+  };
+
+  const confirmToggle = async () => {
+    if (!pendingToggle) return;
+    try {
+      setIsToggling(true);
+      setToggleError(null);
+      await getStore().toggleAdviceStatus(pendingToggle.id);
+      setPendingToggle(null);
+    } catch (error) {
+      showErrorToast(error, ADVICE_TOGGLE_ERROR);
+      setToggleError(ADVICE_TOGGLE_ERROR);
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await getStore().deleteAdvice(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (error) {
+      showErrorToast(error, "تعذر حذف النصيحة. حاولي مرة أخرى.");
+    }
+  };
 
   return (
     <AdminShell
@@ -130,19 +166,18 @@ export default function AdvicesPage() {
       <AdminConfirmModal
         open={pendingToggle != null}
         title={pendingToggle?.status === "active" ? "تأكيد الإيقاف" : "تأكيد التفعيل"}
-        onClose={() => setPendingToggle(null)}
-        confirmLabel="تأكيد"
-        onConfirm={async () => {
-          if (!pendingToggle) return;
-          await getStore().toggleAdviceStatus(pendingToggle.id);
-          setPendingToggle(null);
-        }}
+        onClose={closeToggleModal}
+        confirmLabel={isToggling ? "جارٍ التحديث…" : "تأكيد"}
+        disableCancel={isToggling}
+        disableConfirm={isToggling}
+        onConfirm={confirmToggle}
       >
         <p>
           {pendingToggle?.status === "active"
             ? "سيتم إيقاف هذه النصيحة ولن تظهر في المتجر. هل تريدين المتابعة؟"
             : "سيتم تفعيل هذه النصيحة لتظهر في المتجر. هل تريدين المتابعة؟"}
         </p>
+        {toggleError ? <p role="alert" className="mt-3 text-sm font-medium text-danger">{toggleError}</p> : null}
       </AdminConfirmModal>
 
       <AdminConfirmModal
@@ -151,11 +186,7 @@ export default function AdvicesPage() {
         onClose={() => setPendingDelete(null)}
         confirmLabel="حذف النصيحة"
         tone="danger"
-        onConfirm={() => {
-          if (!pendingDelete) return;
-          void getStore().deleteAdvice(pendingDelete.id);
-          setPendingDelete(null);
-        }}
+        onConfirm={confirmDelete}
       >
         <p>سيتم حذف هذه النصيحة نهائيًا. هل تريدين المتابعة؟</p>
       </AdminConfirmModal>

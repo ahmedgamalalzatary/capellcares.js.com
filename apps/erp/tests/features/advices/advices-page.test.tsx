@@ -1,11 +1,14 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toggleAdviceStatus = vi.fn().mockResolvedValue(undefined);
 const reorderAdvices = vi.fn().mockResolvedValue(undefined);
 const upsertAdvice = vi.fn().mockResolvedValue(undefined);
 const deleteAdvice = vi.fn().mockResolvedValue(undefined);
+const { showErrorToast } = vi.hoisted(() => ({ showErrorToast: vi.fn() }));
+
+vi.mock("@/lib/errors", () => ({ showErrorToast }));
 
 vi.mock("@/components/providers/admin-auth", () => ({
   useAdminAuth: () => ({
@@ -73,6 +76,7 @@ describe("AdvicesPage", () => {
     toggleAdviceStatus.mockClear();
     upsertAdvice.mockClear();
     deleteAdvice.mockClear();
+    showErrorToast.mockClear();
     mockState = makeMockState();
   });
 
@@ -155,5 +159,29 @@ describe("AdvicesPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "إلغاء" }));
 
     expect(deleteAdvice).not.toHaveBeenCalled();
+  });
+  it("keeps the toggle dialog open and explains the failure when the server refuses", async () => {
+    toggleAdviceStatus.mockRejectedValueOnce(new Error("down"));
+    render(createElement(AdvicesPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات نصيحة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "إيقاف" }));
+    fireEvent.click(screen.getByRole("button", { name: "تأكيد" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("تعذر تحديث حالة النصيحة. حاولي مرة أخرى.");
+    expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "تعذر تحديث حالة النصيحة. حاولي مرة أخرى.");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("keeps the delete dialog open and shows an error when the server refuses", async () => {
+    deleteAdvice.mockRejectedValueOnce(new Error("down"));
+    render(createElement(AdvicesPage));
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات نصيحة" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /حذف/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "حذف النصيحة" }));
+
+    await waitFor(() => expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "تعذر حذف النصيحة. حاولي مرة أخرى."));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

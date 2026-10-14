@@ -33,7 +33,7 @@ export default function ReviewsPage() {
 
   if (!canReadReviews) {
     return (
-      <ForbiddenPage title="التقييمات" crumbs={[{ label: "التقييمات" }]} message="لا تملك صلاحية الوصول إلى التقييمات." />
+      <ForbiddenPage title="التقييمات" crumbs={[{ label: "التقييمات" }]} message="لا تملكين صلاحية الوصول إلى التقييمات." />
     );
   }
 
@@ -115,7 +115,7 @@ export default function ReviewsPage() {
           await mutate("delete", id);
         }}
       >
-        <p>سيتم حذف هذا التقييم نهائيًا. هل تريدين المتابعة؟</p>
+        <p>سيُنقل التقييم إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.</p>
       </AdminConfirmModal>
     </AdminShell>
   );

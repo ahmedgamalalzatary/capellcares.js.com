@@ -165,6 +165,9 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function request<T>(path: string, init?: RequestInit, allowRefresh = true): Promise<T> {
+  // On a fresh load pages ask for data before the session is restored; join that single refresh instead of
+  // sending a token-less request that is refused and retried. If no session could be restored, don't refresh again.
+  if (!adminAccessToken && !adminAuthHydrated && !(await refreshAdminSession())) allowRefresh = false;
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (adminAccessToken) headers.set("authorization", `Bearer ${adminAccessToken}`);

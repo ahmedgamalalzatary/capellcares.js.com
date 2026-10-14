@@ -159,6 +159,12 @@ describe("TrashPage hard delete", () => {
     expect(screen.getByRole("tab", { name: /العروض/ })).toHaveAttribute("aria-selected", "true");
   });
 
+  it("shows a deleted product's English name, never its SKU", () => {
+    render(createElement(TrashPage));
+    expect(screen.getByText("Deleted Product")).toBeInTheDocument();
+    expect(screen.queryByText("SKU-7")).not.toBeInTheDocument();
+  });
+
   it("offers permanent delete on the products tab", async () => {
     render(createElement(TrashPage));
     openMenu("إجراءات منتج محذوف");

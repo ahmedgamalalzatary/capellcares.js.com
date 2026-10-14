@@ -119,6 +119,7 @@ describe("shipping ERP surface", () => {
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     expect(await screen.findByText("غير مصرح")).toBeInTheDocument();
+    expect(screen.getByText("لا تملكين صلاحية الوصول إلى الشحن.")).toBeInTheDocument();
     expect(apiGet).not.toHaveBeenCalled();
   });
 

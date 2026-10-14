@@ -23,15 +23,14 @@ describe("AdminAuthProvider session refresh", () => {
     });
     const user = { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read"] };
 
-    const fetchMock = vi.fn((input: unknown) => {
+    const fetchMock = vi.fn((input: unknown, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/erp/auth/refresh")) {
         return refreshResponse;
       }
       if (url.endsWith("/api/erp/orders")) {
-        const attempt = fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/erp/orders")).length;
-        if (attempt === 1) {
-          return Promise.resolve({ ok: false, status: 401, json: async () => ({ message: "Invalid admin token" }) });
+        if (new Headers(init?.headers).get("authorization") !== "Bearer fresh-admin-token") {
+          return Promise.resolve({ ok: false, status: 401, json: async () => ({ message: "Admin auth required" }) });
         }
         return Promise.resolve({ ok: true, json: async () => ({ items: [] }) });
       }
@@ -49,13 +48,14 @@ describe("AdminAuthProvider session refresh", () => {
       expect(refreshCalls()).toHaveLength(1);
     });
 
-    // A protected request hits a 401 while the provider's refresh is still in flight.
+    // A protected request made while the provider's refresh is still in flight waits for it instead of being refused.
     const pending = client.api.get("/api/erp/orders");
     resolveRefresh({ ok: true, json: async () => ({ accessToken: "fresh-admin-token", user }) });
 
     await expect(pending).resolves.toEqual({ items: [] });
 
     expect(refreshCalls()).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter(([candidate]) => String(candidate).endsWith("/api/erp/orders"))).toHaveLength(1);
     expect(client.getAdminAuthUser()).toEqual(user);
   });
 

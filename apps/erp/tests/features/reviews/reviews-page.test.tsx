@@ -77,6 +77,7 @@ describe("ERP ReviewsPage", () => {
 
     fireEvent.pointerDown(screen.getByRole("button", { name: "إجراءات تقييم Sara Ali" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "حذف" }));
+    expect(screen.getByText("سيُنقل التقييم إلى المحذوفات. يمكنك استعادته لاحقًا من قسم المحذوفات.")).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "حذف التقييم" }));
     await waitFor(() => expect(del).toHaveBeenCalledWith("/api/erp/reviews/4"));
   });
@@ -86,7 +87,7 @@ describe("ERP ReviewsPage", () => {
 
     render(createElement(ReviewsPage));
 
-    expect(screen.getByText(/لا تملك صلاحية الوصول/)).toBeInTheDocument();
+    expect(screen.getByText(/لا تملكين صلاحية الوصول إلى التقييمات/)).toBeInTheDocument();
     await waitFor(() => expect(get).not.toHaveBeenCalled());
   });
 

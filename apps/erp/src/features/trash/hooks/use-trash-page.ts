@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { AdminReview } from "@capella/shared";
 import { getStore, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
@@ -43,7 +43,7 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
         .map<TrashListRow>((product) => ({
           id: product.id,
           title: product.name.ar,
-          subtitle: product.sku,
+          subtitle: product.name.en,
           meta: formatDateShort(product.deletedAt!)
         })),
     [products]
