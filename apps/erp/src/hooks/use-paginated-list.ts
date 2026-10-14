@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PageSize } from "@capella/shared";
+import type { SmartPaginationProps } from "@/components/admin/smart-pagination";
 import { defaultListState, parseListState, serializeListState, type ListSchema, type ListState } from "@/lib/pagination";
 import { nextSort, type SortState } from "@/lib/table-sort";
 
@@ -110,5 +111,12 @@ export function usePaginatedList<F extends string, S extends string>({ listId, s
     return params.toString();
   }, [more, page, schema, size, state]);
 
-  return { ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, requestQuery };
+  /** Props for `<SmartPagination>` once the list knows how many rows match. */
+  const paginationProps = useCallback((total: number, loading = false): SmartPaginationProps => ({
+    page, more, pageSize: size, total, loading, onPageChange: setPage, onPageSizeChange: setSize, onLoadMore: loadMore
+  }), [loadMore, more, page, setPage, setSize, size]);
+
+  return {
+    ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, requestQuery, paginationProps
+  };
 }

@@ -111,6 +111,14 @@ describe("usePaginatedList", () => {
     expect(result.current.requestQuery).toBe("page=2&pageSize=20&pages=2&q=rose&sort=date&dir=desc&status=active");
   });
 
+  it("hands the pagination bar its state and actions", () => {
+    const { result } = render();
+    const props = result.current.paginationProps(134, true);
+    expect(props).toMatchObject({ page: 1, more: 0, pageSize: 20, total: 134, loading: true });
+    act(() => props.onPageChange(3));
+    expect(result.current.state.page).toBe(3);
+  });
+
   it("ignores a broken session store", () => {
     const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
