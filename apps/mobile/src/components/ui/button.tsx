@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useRef, useState, type ReactNode } from "react";
 import { View, type AccessibilityRole, type StyleProp, type ViewStyle } from "react-native";
-import { Button as PaperButton, IconButton } from "react-native-paper";
+import { IconButton, TouchableRipple } from "react-native-paper";
 import { useLang } from "@/lib/lang";
 import { colors, radii, fonts } from "@/theme";
 import { paperTheme } from "./paper-theme";
@@ -33,10 +33,21 @@ export function Button({ label, onPress, disabled = false, loading = false, vari
   return <View>{iconOnly ? <IconButton {...shared} icon={() => tintedIcon} size={20} iconColor={foreground}
     containerColor={disabled ? colors.warmSoft : undefined}
     accessibilityState={{ disabled: blocked, busy, selected }} style={[{ margin: 0, width: 48, height: 48 }, frame]} />
-    : <PaperButton {...shared} accessibilityRole={role} mode={variant === "primary" ? "contained" : variant === "outline" ? "outlined" : "text"}
-      icon={icon ? () => tintedIcon : undefined} textColor={foreground}
-      buttonColor={disabled || selected ? colors.warmSoft : variant === "primary" ? colors.accent : undefined}
+    // Paper's Button hardcodes accessibilityState to { disabled }, so the label branch uses TouchableRipple
+    // directly to keep busy and selected announced.
+    : <TouchableRipple theme={paperTheme(lang)} borderless disabled={blocked} onPress={() => void invoke()}
+      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      accessibilityRole={role} accessibilityLabel={label}
+      accessibilityHint={busy ? dict.common.loading : undefined}
+      accessibilityState={{ disabled: blocked, busy, selected }}
+      background={disabled || selected ? colors.warmSoft : variant === "primary" ? colors.accent : "transparent"}
       rippleColor={variant === "primary" ? colors.accentDeep : colors.warmSoft}
-      style={frame} contentStyle={{ minHeight: 48 }} labelStyle={{ fontFamily: fonts[lang].medium, fontSize: 16 }}>{label}</PaperButton>}
+      style={frame}>
+      <View style={{ minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center",
+        gap: 8, paddingHorizontal: 16 }}>
+        {icon ? tintedIcon : null}
+        <UiText style={{ color: foreground, fontFamily: fonts[lang].medium, fontSize: 16 }}>{label}</UiText>
+      </View>
+    </TouchableRipple>}
     {failed && <UiText accessibilityRole="alert" style={{ color: colors.error }}>{uiCopy[lang].actionFailed}</UiText>}</View>;
 }

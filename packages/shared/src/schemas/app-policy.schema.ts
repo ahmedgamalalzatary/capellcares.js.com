@@ -16,9 +16,14 @@ const revision = z.number().int().positive().safe();
 const label = z.string().min(1).max(128);
 const explanation = z.object({ ar: z.string().min(1).max(1000), en: z.string().min(1).max(1000) });
 const storeUrl = z.string().url().refine(value => {
-  const url = new URL(value);
-  return url.protocol === "https:" && !url.username && !url.password &&
-    ["play.google.com", "apps.apple.com"].includes(url.hostname);
+  // A failed .url() check does not abort parsing, so the refinement still runs on a non-URL string.
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password &&
+      ["play.google.com", "apps.apple.com"].includes(url.hostname);
+  } catch {
+    return false;
+  }
 }, "A store HTTPS URL is required");
 export const nativeClientIdentitySchema = z.object({
   platform: nativePlatformSchema, appVersion: appVersionSchema, appBuild: appBuildSchema,

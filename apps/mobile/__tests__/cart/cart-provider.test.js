@@ -111,6 +111,48 @@ describe("CartProvider", () => {
     expect(mockReplaceCustomerCart.mock.calls[0][1]).toEqual([productLine(2)]);
   });
 
+  test("stops retrying a permanent upload rejection but keeps the pending snapshot", async () => {
+    const { ApiError } = require("../../src/lib/api/http");
+    await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify([productLine(2)]));
+    await AsyncStorage.setItem(CART_SYNCED_STORAGE_KEY, JSON.stringify([productLine(2)]));
+    mockAuthState.user = { id: 1, name: "A", email: "a@capella.test" };
+    mockAuthState.accessToken = "token-1";
+    mockFetchCustomerCart.mockResolvedValue([productLine(2)]);
+    mockReplaceCustomerCart.mockRejectedValue(
+      new ApiError(409, "Update required", "APP_UPDATE_REQUIRED")
+    );
+
+    const view = renderCart();
+    await waitFor(() => expect(mockReplaceCustomerCart).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    });
+
+    expect(mockReplaceCustomerCart).toHaveBeenCalledTimes(1);
+    expect(view.getByTestId("count").props.children).toBe("2");
+    const pending = JSON.parse(await AsyncStorage.getItem(CART_PENDING_STORAGE_KEY));
+    expect(pending.lines).toEqual([productLine(2)]);
+  });
+
+  test("backs off exponentially between upload retries", async () => {
+    mockAuthState.user = { id: 1, name: "A", email: "a@capella.test" };
+    mockAuthState.accessToken = "token-1";
+    mockFetchCustomerCart.mockResolvedValue([]);
+    mockReplaceCustomerCart.mockRejectedValue(new Error("offline"));
+
+    renderCart();
+    await waitFor(() => expect(mockReplaceCustomerCart).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    });
+    expect(mockReplaceCustomerCart).toHaveBeenCalledTimes(1);
+    // Second attempt waits longer than the first 750 ms delay.
+    await waitFor(() => expect(mockReplaceCustomerCart.mock.calls.length).toBeGreaterThan(1), {
+      timeout: 4000
+    });
+    expect(mockReplaceCustomerCart.mock.calls.length).toBeLessThan(6);
+  });
+
   test("keeps the local cart and never PUTs when the pull fails", async () => {
     await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify([productLine(2)]));
     mockAuthState.user = { id: 1, name: "A", email: "a@capella.test" };

@@ -183,8 +183,14 @@ function normalizeBundle<T extends OfferApiShape | CollectionApiShape>(bundle: T
     ...bundle,
     id: requiredPositiveId(bundle.id, "bundle id"),
     slug: requiredSlug(bundle.slug),
-    price: requiredAmount(bundle.price, "bundle price"),
-    stock: requiredStock(bundle.stock),
+    // mysql2 returns DECIMAL columns as strings, so bundle amounts arrive as numeric strings.
+price: requiredAmount(
+      typeof bundle.price === "string" ? Number(bundle.price) : bundle.price,
+      "bundle price"
+    ),
+    stock: requiredStock(
+      typeof bundle.stock === "string" ? Number(bundle.stock) : bundle.stock
+    ),
     categoryId:
       bundle.categoryId == null
         ? null

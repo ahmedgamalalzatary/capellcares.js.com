@@ -34,6 +34,7 @@ test("update errors require a feature and an available HTTPS store destination",
   assert.equal(schema.safeParse(error).success, true);
   assert.equal(schema.safeParse({ ...error, feature: undefined }).success, false);
   assert.equal(schema.safeParse({ ...error, storeUrl: "javascript:alert(1)" }).success, false);
+  assert.equal(schema.safeParse({ ...error, storeUrl: "not a url" }).success, false);
 });
 
 test("a release rule cannot demand an upgrade that its advertised release cannot satisfy", () => {

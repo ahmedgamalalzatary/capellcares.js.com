@@ -125,6 +125,28 @@ describe("mobile API normalization", () => {
     }
   );
 
+  test.each(["normalizeOffer", "normalizeCollection"])(
+    "%s accepts numeric strings for price and stock",
+    (normalizerName) => {
+      const normalizer = require("../../src/lib/api/normalizers")[normalizerName];
+
+      const value = normalizer({
+        id: 1,
+        categoryId: 2,
+        slug: "bundle",
+        price: "100.50",
+        stock: "3",
+        name: { ar: "حزمة", en: "Bundle" },
+        items: [],
+        media: [],
+        relatedItems: []
+      });
+
+      expect(value.price).toBe(100.5);
+      expect(value.stock).toBe(3);
+    }
+  );
+
   test("resolves shop-section and wishlist media", () => {
     const {
       normalizeShopMediaSection,

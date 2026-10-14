@@ -21,6 +21,14 @@ function components() {
 beforeEach(() => { mockLanguage = "en"; });
 afterEach(async () => { await act(async () => {}); });
 
+test("every button variant announces its selected state", () => {
+  const { Button } = components(); expect(typeof Button).toBe("function");
+  const view = render(<><Button label="Grid" onPress={() => {}} variant="ghost" selected />
+    <Button label="Zoom" onPress={() => {}} iconOnly selected /></>);
+  expect(view.getByRole("button", { name: "Grid" }).props.accessibilityState.selected).toBe(true);
+  expect(view.getByRole("button", { name: "Zoom" }).props.accessibilityState.selected).toBe(true);
+});
+
 test("button disables repeated async actions and recovers from failure without exposing raw errors", async () => {
   const { Button } = components(); expect(typeof Button).toBe("function");
   let reject; let attempts = 0;

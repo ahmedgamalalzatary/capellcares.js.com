@@ -45,6 +45,15 @@ describe("auth token store", () => {
     expect(tokens).toEqual(["access-1"]);
   });
 
+  test("drops the previous account's refresh token when the new session supplies none", async () => {
+    await tokenStore.setAuthenticatedSession({ accessToken: "access-a", refreshToken: "refresh-a" });
+
+    await tokenStore.setAuthenticatedSession({ accessToken: "access-b", refreshToken: null });
+
+    expect(tokenStore.getRefreshToken()).toBeNull();
+    expect(mockSecureStoreData.has(CUSTOMER_REFRESH_TOKEN_KEY)).toBe(false);
+  });
+
   test("does not publish a rotated access token when persisting the rotated refresh token fails", async () => {
     await tokenStore.setAuthenticatedSession({ accessToken: "access-1", refreshToken: "refresh-1" });
     SecureStore.setItemAsync.mockRejectedValueOnce(new Error("keychain unavailable"));

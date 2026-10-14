@@ -3,6 +3,7 @@ import { AppState } from "react-native";
 import type { CartLine } from "@capella/shared";
 import { useAuth } from "@/lib/auth/auth-context";
 import { fetchCollections, fetchOffers, fetchProducts, fetchCustomerCart, replaceCustomerCart } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/http";
 import {
   cartLineAdditions,
   cartLineKey,
@@ -35,6 +36,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 const UPLOAD_RETRY_DELAY_MS = 750;
+const UPLOAD_RETRY_MAX_ATTEMPTS = 6;
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
@@ -55,10 +57,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const pendingClearCustomerIdRef = useRef<number | null>(null);
   // Last signed-in customer, used to detect logout (as opposed to a guest who was never signed in).
   const previousUserIdRef = useRef<number | null>(null);
-  const uploadRef = useRef<{ pending: CartLine[] | null; inFlight: boolean; retryTimer: ReturnType<typeof setTimeout> | null }>({
+  const uploadRef = useRef<{
+    pending: CartLine[] | null;
+    inFlight: boolean;
+    retryTimer: ReturnType<typeof setTimeout> | null;
+    attempts: number;
+  }>({
     pending: null,
     inFlight: false,
-    retryTimer: null
+    retryTimer: null,
+    attempts: 0
   });
   // Stable indirection so the upload retry timer can re-enter drainUpload without referring to the callback before its declaration.
   const drainUploadRef = useRef<() => void>(() => {});
@@ -127,14 +135,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     upload.inFlight = true;
     const epoch = accountEpochRef.current;
 
-    const failUpload = (failed: CartLine[]) => {
+    const failUpload = (failed: CartLine[], error: unknown) => {
       if (upload.pending == null) upload.pending = failed;
       void savePendingCart(customerId, upload.pending);
+      // A rejected request the server will keep rejecting (4xx) must not be resent forever: the
+      // snapshot stays pending and resumes on the next local change, foreground, or re-authentication.
+      if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+        upload.attempts = 0;
+        return;
+      }
+      if (upload.attempts >= UPLOAD_RETRY_MAX_ATTEMPTS) return;
+      upload.attempts += 1;
       if (upload.retryTimer == null) {
         upload.retryTimer = setTimeout(() => {
           upload.retryTimer = null;
           drainUploadRef.current();
-        }, UPLOAD_RETRY_DELAY_MS);
+        }, UPLOAD_RETRY_DELAY_MS * 2 ** upload.attempts);
       }
     };
 
@@ -143,14 +159,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (!mountedRef.current || epoch !== accountEpochRef.current || userRef.current?.id !== customerId) return;
         upload.inFlight = false;
         syncedLinesRef.current = storedLines;
+        upload.attempts = 0;
         void saveLastSyncedCartLines(storedLines);
         void clearPendingCart();
         if (upload.pending != null) drainUploadRef.current();
       })
-      .catch(() => {
+      .catch((error) => {
         if (!mountedRef.current || epoch !== accountEpochRef.current || userRef.current?.id !== customerId) return;
         upload.inFlight = false;
-        failUpload(snapshot);
+        failUpload(snapshot, error);
       });
   }, []);
 
@@ -188,6 +205,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     upload.retryTimer = null;
     upload.inFlight = false;
     upload.pending = null;
+    upload.attempts = 0;
     if (previousId == null) return;
 
     syncedCustomerIdRef.current = null;

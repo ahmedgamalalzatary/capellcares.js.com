@@ -75,6 +75,15 @@ export async function setAuthenticatedSession(input: { accessToken: string; refr
     // Durable first, and before the identity changes: a failed keychain write leaves the previous session intact.
     await storeRefreshToken(input.refreshToken);
     refreshToken = input.refreshToken;
+  } else {
+    // A session without a refresh token must not keep the previous account's durable credential,
+    // or the next refresh would authenticate as that account.
+    refreshToken = null;
+    try {
+      await SecureStore.deleteItemAsync(CUSTOMER_REFRESH_TOKEN_KEY);
+    } catch {
+      // The in-memory session is updated regardless of whether the keychain agrees.
+    }
   }
   // Advance the identity and publish the token together, with no await between, so no request can observe the
   // new revision paired with the old token (the HTTP layer treats a revision change as an account swap).
