@@ -178,19 +178,23 @@ export function useServerPage<T>(path: string | null, options: { onError?: (erro
     onError.current = options.onError;
   });
 
+  /** Loads the page; resolves `true` once it arrived, `false` if it failed (or a newer request replaced it). */
   const load = useCallback(async () => {
-    if (path == null) return;
+    if (path == null) return false;
     const request = ++latest.current;
     setLoading(true);
     setError(false);
     try {
       const page = await api.get<Paged<T>>(path);
-      if (request === latest.current) setData({ items: page.items, total: page.pagination.total });
+      if (request !== latest.current) return false;
+      setData({ items: page.items, total: page.pagination.total });
+      return true;
     } catch (failure) {
       if (request === latest.current) {
         setError(true);
         onError.current?.(failure);
       }
+      return false;
     } finally {
       if (request === latest.current) setLoading(false);
     }

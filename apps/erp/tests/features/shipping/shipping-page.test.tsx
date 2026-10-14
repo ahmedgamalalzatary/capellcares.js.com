@@ -4,7 +4,10 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 const mockedUseAdminAuth = vi.fn();
-const fetchShippingOverview = vi.hoisted(() => vi.fn());
+const apiGet = vi.hoisted(() => vi.fn());
+// Answers like the server: one page of rows plus its total.
+const respond = (items: unknown[], total = items.length) => ({ items, pagination: { page: 1, pageSize: 20, total, totalPages: Math.ceil(total / 20) } });
+const requestParams = () => new URLSearchParams(String(apiGet.mock.calls.at(-1)?.[0] ?? "").split("?")[1]);
 const runBulkShippingAction = vi.hoisted(() => vi.fn());
 
 vi.mock("@/components/providers/admin-auth", () => ({
@@ -16,9 +19,10 @@ vi.mock("@/components/shell/admin-shell", () => ({
     createElement("div", { "data-title": title }, children)
 }));
 
+vi.mock("@/lib/api/client", () => ({ api: { get: apiGet } }));
+
 vi.mock("@/lib/store", () => ({
   getStore: () => ({
-    fetchShippingOverview,
     runBulkShippingAction,
     fetchOpenOrderReviewFlags: vi.fn().mockResolvedValue([])
   })
@@ -55,17 +59,17 @@ describe("shipping ERP surface", () => {
       dispatchEvent: () => false
     }));
     mockedUseAdminAuth.mockReset();
-    fetchShippingOverview.mockReset();
+    apiGet.mockReset();
     runBulkShippingAction.mockReset();
   });
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
   it("renders shipment rows with carrier and manual states for authorized staff", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
+    apiGet.mockResolvedValue(respond([
       rowBase,
       // A manual-only shipment: the carrier has not created it yet, so the staff-set manual state is the only status.
       { ...rowBase, orderId: 8, orderCode: "CAP-008", carrierState: null, manualState: "ready_for_pickup" as const }
-    ], nextCursor: null });
+    ]));
     mockedUseAdminAuth.mockReturnValue({ user: shippingStaff, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
@@ -83,8 +87,8 @@ describe("shipping ERP surface", () => {
   });
 
   it("bulk selection includes outgoing orders only and keeps individual failure results visible", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [rowBase, { ...rowBase, orderId: 8, orderCode: "CAP-008" },
-      { ...rowBase, orderId: 9, orderCode: "CAP-009", kind: "return", shipmentId: 8 }], nextCursor: null });
+    apiGet.mockResolvedValue(respond([rowBase, { ...rowBase, orderId: 8, orderCode: "CAP-008" },
+      { ...rowBase, orderId: 9, orderCode: "CAP-009", kind: "return", shipmentId: 8 }]));
     runBulkShippingAction.mockResolvedValue({ results: [{ orderId: 7, status: "ok" }, { orderId: 8, status: "error", message: "Carrier restriction" }] });
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import("@/app/shipping/page");
@@ -100,7 +104,7 @@ describe("shipping ERP surface", () => {
   });
 
   it("read-only shipping staff have no bulk mutation controls", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [rowBase], nextCursor: null });
+    apiGet.mockResolvedValue(respond([rowBase]));
     mockedUseAdminAuth.mockReturnValue({ user: shippingStaff, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import("@/app/shipping/page");
     render(createElement(Page));
@@ -110,85 +114,61 @@ describe("shipping ERP surface", () => {
   });
 
   it("denies the shipping page for staff without shipping.read", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [], nextCursor: null });
+    apiGet.mockResolvedValue(respond([]));
     mockedUseAdminAuth.mockReturnValue({ user: plainStaff, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     expect(await screen.findByText("غير مصرح")).toBeInTheDocument();
-    expect(fetchShippingOverview).not.toHaveBeenCalled();
+    expect(apiGet).not.toHaveBeenCalled();
   });
 
-  it("searches shipments by order code and by customer name", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
-      rowBase,
-      { ...rowBase, orderId: 8, orderCode: "CAP-008", customerName: "عميل آخر", customerPhone: "01000000008", trackingNumber: "5108999" }
-    ], nextCursor: null });
+  it("asks the server for the first page and sends the search once typing pauses", async () => {
+    apiGet.mockResolvedValue(respond([rowBase]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import("@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    const search = screen.getByRole("searchbox", { name: "بحث في الشحنات" });
-
-    fireEvent.change(search, { target: { value: "CAP-008" } });
-    expect(screen.queryByText("CAP-007")).toBeNull();
-    expect(screen.getByText("CAP-008")).toBeInTheDocument();
-
-    fireEvent.change(search, { target: { value: "عميل" } });
-    expect(screen.getByText("CAP-007")).toBeInTheDocument();
-    expect(screen.getByText("CAP-008")).toBeInTheDocument();
-
-    fireEvent.change(search, { target: { value: "5108002" } });
-    expect(screen.getByText("CAP-007")).toBeInTheDocument();
-    expect(screen.queryByText("CAP-008")).toBeNull();
-
-    fireEvent.change(search, { target: { value: "لا يوجد" } });
-    expect(screen.queryAllByText("CAP-007")).toHaveLength(0);
-    expect(screen.queryAllByText("CAP-008")).toHaveLength(0);
+    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/shipping?page=1&pageSize=20&pages=1");
+    fireEvent.change(screen.getByRole("searchbox", { name: "بحث في الشحنات" }), { target: { value: "5108002" } });
+    await waitFor(() => expect(requestParams().get("q")).toBe("5108002"));
   });
 
-  it("filters rows into the needs-attention section only when flagged or failing", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
-      rowBase,
-      { ...rowBase, orderId: 8, orderCode: "CAP-008", needsAttention: true, openFlagTypes: ["address_review"] }
-    ], nextCursor: null });
+  it("asks the server for the needs-attention section", async () => {
+    apiGet.mockResolvedValue(respond([rowBase]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
     fireEvent.click(screen.getByRole("tab", { name: "تحتاج انتباه" }));
-    expect(screen.getByText("CAP-008")).toBeInTheDocument();
-    expect(screen.queryByText("CAP-007")).not.toBeInTheDocument();
+    await waitFor(() => expect(requestParams().get("section")).toBe("needs_attention"));
+    expect(screen.getByRole("tab", { name: "تحتاج انتباه" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("shows the returns and exchanges section rows", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
-      rowBase,
-      { ...rowBase, orderId: 9, orderCode: "CAP-009", kind: "return" as const, shipmentId: 4, trackingNumber: "R-9001" }
-    ], nextCursor: null });
+  it("remembers the section and filters in the address", async () => {
+    window.history.replaceState(null, "", "/shipping?section=returns&status=cancelled&payment=paymob");
+    apiGet.mockResolvedValue(respond([{ ...rowBase, orderId: 9, orderCode: "CAP-009", kind: "return" as const, shipmentId: 4 }]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
-    fireEvent.click(await screen.findByRole("tab", { name: "المرتجعات والاستبدالات" }));
-    expect(screen.getByText("CAP-009")).toBeInTheDocument();
-    expect(screen.queryByText("CAP-007")).not.toBeInTheDocument();
+    expect(await screen.findByText("CAP-009")).toBeInTheDocument();
+    expect(requestParams().get("section")).toBe("returns");
+    expect(requestParams().get("status")).toBe("cancelled");
+    expect(requestParams().get("payment")).toBe("paymob");
   });
 
-  it("searches by order code, customer and tracking number", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
-      rowBase,
-      { ...rowBase, orderId: 9, orderCode: "CAP-009", customerName: "شخص آخر", trackingNumber: null, shipmentId: null }
-    ], nextCursor: null });
+  it("sends the carrier-state filter and the sort to the server", async () => {
+    apiGet.mockResolvedValue(respond([rowBase]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    fireEvent.change(screen.getByLabelText("بحث في الشحنات"), { target: { value: "5108002" } });
-    expect(screen.getByText("CAP-007")).toBeInTheDocument();
-    expect(screen.queryByText("CAP-009")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
+    fireEvent.change(screen.getByLabelText("حالة الناقل"), { target: { value: "cancelled" } });
+    await waitFor(() => expect(requestParams().get("status")).toBe("cancelled"));
   });
 
   it("shows a load error state when the API call fails", async () => {
-    fetchShippingOverview.mockRejectedValue(new Error("network"));
+    apiGet.mockRejectedValue(new Error("network"));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
@@ -196,19 +176,19 @@ describe("shipping ERP surface", () => {
   });
 
   it("waits for authentication hydration before fetching", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [rowBase], nextCursor: null });
+    apiGet.mockResolvedValue(respond([rowBase]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: false, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     const view = render(createElement(Page));
-    expect(fetchShippingOverview).not.toHaveBeenCalled();
+    expect(apiGet).not.toHaveBeenCalled();
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     view.rerender(createElement(Page));
     expect(await screen.findByText("CAP-007")).toBeInTheDocument();
-    expect(fetchShippingOverview).toHaveBeenCalledTimes(1);
+    expect(apiGet).toHaveBeenCalledTimes(1);
   });
 
   it("shows local cancellation for cancelled unsent orders instead of awaiting creation", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [{ ...rowBase, trackingNumber: null, shipmentId: null, carrierState: null, cancellationStatus: "cancelled" as const }], nextCursor: null });
+    apiGet.mockResolvedValue(respond([{ ...rowBase, trackingNumber: null, shipmentId: null, carrierState: null, cancellationStatus: "cancelled" as const }]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
@@ -217,7 +197,7 @@ describe("shipping ERP surface", () => {
   });
 
   it("shows the carrier state and the local cancellation independently", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [{ ...rowBase, carrierState: "in_transit" as const, cancellationStatus: "pending" as const }], nextCursor: null });
+    apiGet.mockResolvedValue(respond([{ ...rowBase, carrierState: "in_transit" as const, cancellationStatus: "pending" as const }]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
@@ -225,41 +205,32 @@ describe("shipping ERP surface", () => {
     expect(screen.getByText("الإلغاء قيد التأكيد")).toBeInTheDocument();
   });
 
-  it("matches the cancelled filter only for unsent orders with a local cancellation", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [
-      { ...rowBase, orderCode: "CAP-007", carrierState: "in_transit" as const, cancellationStatus: "cancelled" as const },
-      { ...rowBase, orderId: 8, shipmentId: null, orderCode: "CAP-008", carrierState: null, cancellationStatus: "cancelled" as const }
-    ], nextCursor: null });
+  it("counts every matching shipment and shows the pagination bar", async () => {
+    apiGet.mockResolvedValue(respond([rowBase], 45));
+    mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
+    const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
+    render(createElement(Page));
+    expect(await screen.findByText("45 شحنة")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "الصفحة 2" }));
+    await waitFor(() => expect(requestParams().get("page")).toBe("2"));
+  });
+
+  it("loads the next page under the current one", async () => {
+    apiGet.mockResolvedValue(respond([rowBase], 45));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
     await screen.findByText("CAP-007");
-    fireEvent.click(screen.getByRole("button", { name: /تصفية/ }));
-    fireEvent.change(screen.getByLabelText("حالة الناقل"), { target: { value: "cancelled" } });
-    expect(screen.queryByText("CAP-007")).not.toBeInTheDocument();
-    expect(screen.getByText("CAP-008")).toBeInTheDocument();
-  });
-
-  it("loads more pages through the load-more button", async () => {
-    const rowB = { ...rowBase, orderId: 8, orderCode: "CAP-008" };
-    fetchShippingOverview.mockImplementation((cursor?: string) => Promise.resolve(cursor
-      ? { items: [rowB], nextCursor: null }
-      : { items: [rowBase], nextCursor: "2026-09-20T10:00:00.000Z|7" }));
-    mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
-    const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
-    render(createElement(Page));
-    expect(await screen.findByText("CAP-007")).toBeInTheDocument();
-    expect(screen.queryByText("CAP-008")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تحميل المزيد" }));
-    expect(await screen.findByText("CAP-008")).toBeInTheDocument();
-    expect(fetchShippingOverview).toHaveBeenLastCalledWith("2026-09-20T10:00:00.000Z|7");
+    await waitFor(() => expect(requestParams().get("pages")).toBe("2"));
+    expect(requestParams().get("page")).toBe("1");
   });
 
   it("displays the verified provider payment status for refunded paymob orders", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [{
+    apiGet.mockResolvedValue(respond([{
       ...rowBase, paymentMethod: "paymob" as const, paymentStatus: "accepted" as const,
       providerPaymentStatus: "partially_refunded" as const
-    }], nextCursor: null });
+    }]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));
@@ -267,7 +238,7 @@ describe("shipping ERP surface", () => {
   });
 
   it("shows the carrier-reported size next to the Capella size", async () => {
-    fetchShippingOverview.mockResolvedValue({ items: [{ ...rowBase, size: "small" as const, carrierSize: "MEDIUM" }], nextCursor: null });
+    apiGet.mockResolvedValue(respond([{ ...rowBase, size: "small" as const, carrierSize: "MEDIUM" }]));
     mockedUseAdminAuth.mockReturnValue({ user: adminUser, hydrated: true, logout: vi.fn() });
     const { default: Page } = await import(/* @vite-ignore */ "@/app/shipping/page");
     render(createElement(Page));

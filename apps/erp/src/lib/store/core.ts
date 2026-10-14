@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, AdminShipmentListItemDto, Advice, Announcement, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
 import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import {
   api,
@@ -467,11 +467,6 @@ export class ErpStore {
   /** Offer a parked callback receipt to the idempotent processor again. Never a blind resend. */
   async requeuePaymobCallback(callbackId: number) {
     await api.post(`/api/erp/orders/reconciliation/callbacks/${callbackId}/requeue`);
-  }
-
-  async fetchShippingOverview(cursor?: string): Promise<{ items: AdminShipmentListItemDto[]; nextCursor: string | null }> {
-    const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
-    return api.get<{ items: AdminShipmentListItemDto[]; nextCursor: string | null }>(`/api/erp/shipping${query}`);
   }
 
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {

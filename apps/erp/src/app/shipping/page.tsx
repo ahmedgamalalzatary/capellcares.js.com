@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AdminShipmentListItemDto } from "@capella/shared";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
@@ -11,12 +11,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShippingActions } from "@/components/admin/shipping-actions";
-import { ShipmentsTable } from "@/features/shipping/components/shipments-table";
-import { carrierStateLabels, custodyLabels, kindLabels, manualStateLabels, sizeLabels } from "@/features/shipping/lib/labels";
+import { SmartPagination } from "@/components/admin/smart-pagination";
+import { ShipmentsTable, type ShippingSortKey } from "@/features/shipping/components/shipments-table";
+import { carrierStateLabels } from "@/features/shipping/lib/labels";
+import { usePaginatedList, useServerPage } from "@/hooks/use-paginated-list";
 import { hasErpPermission } from "@/lib/erp-permissions";
-import { localDateKey } from "@/lib/format";
-import { getStore } from "@/lib/store";
-import { useTableSort } from "@/hooks/use-table-sort";
+import { formatNumber, isDateKey, localDayEnd, localDayStart } from "@/lib/format";
+import type { ListSchema } from "@/lib/pagination";
 
 const SECTIONS = [
   { key: "all", label: "كل الشحنات" },
@@ -48,101 +49,48 @@ export default function ShippingPage() {
   return <ShippingPageContent canModify={hasErpPermission(user, "shipping.update_state")} />;
 }
 
+const SHIPPING_SORT_KEYS: ShippingSortKey[] = ["code", "kind", "tracking", "customer", "carrier", "manual", "custody", "size", "shipping", "payment", "date"];
+
+const SHIPPING_LIST = {
+  filters: {
+    section: { default: "all", values: SECTIONS.map((item) => item.key) },
+    status: { default: "all", values: ["all", ...Object.keys(carrierStateLabels)] },
+    payment: { default: "all", values: ["all", "cod", "paymob"] },
+    from: { default: "", accepts: isDateKey },
+    to: { default: "", accepts: isDateKey }
+  },
+  sortKeys: SHIPPING_SORT_KEYS
+} satisfies ListSchema<"section" | "status" | "payment" | "from" | "to", ShippingSortKey>;
+
+// "all" means no filter; calendar days go to the server as the viewer's own day bounds.
+const shippingRequest = (filters: Record<"section" | "status" | "payment" | "from" | "to", string>) => ({
+  section: filters.section === "all" ? undefined : filters.section,
+  status: filters.status === "all" ? undefined : filters.status,
+  payment: filters.payment === "all" ? undefined : filters.payment,
+  from: filters.from ? localDayStart(filters.from) : undefined,
+  to: filters.to ? localDayEnd(filters.to) : undefined
+});
+
 function ShippingPageContent({ canModify }: { canModify: boolean }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [refreshError, setRefreshError] = useState(false);
-  const [items, setItems] = useState<AdminShipmentListItemDto[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(false);
-  const [section, setSection] = useState<(typeof SECTIONS)[number]["key"]>("all");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const list = usePaginatedList({ listId: "shipping", schema: SHIPPING_LIST, searchDelay: 300, toRequest: shippingRequest });
+  const server = useServerPage<AdminShipmentListItemDto>(list.ready ? `/api/erp/shipping?${list.requestQuery}` : null);
+  const { section, status, payment, from, to } = list.state.filters;
+  const narrowed = Boolean(list.state.q) || section !== "all" || status !== "all" || payment !== "all" || Boolean(from) || Boolean(to);
+  const firstLoad = server.loading && server.items.length === 0;
 
+  // A selection only makes sense for rows on screen; a different page or filter starts a fresh one.
   useEffect(() => {
-    let cancelled = false;
-    void getStore().fetchShippingOverview()
-      .then((page) => { if (!cancelled) { setItems(page.items); setNextCursor(page.nextCursor); setError(false); } })
-      .catch(() => { if (!cancelled) setError(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+    setSelected([]);
+  }, [list.requestQuery]);
 
-  const loadMore = () => {
-    if (!nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    void getStore().fetchShippingOverview(nextCursor)
-      .then((page) => {
-        setItems((prev) => [...prev, ...page.items]);
-        setNextCursor(page.nextCursor);
-      })
-      .catch(() => { /* keep loaded rows; the button stays for retry */ })
-      .finally(() => setLoadingMore(false));
-  };
-
-  const filtered = useMemo(() => {
-    let rows = section === "needs_attention"
-      ? items.filter((item) => item.needsAttention)
-      : section === "returns"
-        ? items.filter((item) => item.kind !== "outgoing")
-        : items;
-    rows = rows.filter((item) => statusFilter === "all" ||
-      item.carrierState === statusFilter ||
-      (statusFilter === "cancelled" && item.carrierState === null && item.cancellationStatus === "cancelled"));
-    rows = rows.filter((item) => paymentFilter === "all" || item.paymentMethod === paymentFilter);
-    rows = rows.filter((item) => {
-      const dateKey = localDateKey(item.orderCreatedAt);
-      return (!fromDate || dateKey >= fromDate) && (!toDate || dateKey <= toDate);
-    });
-    if (!search.trim()) return rows;
-    const term = search.trim().toLowerCase();
-    return rows.filter((item) =>
-      item.orderCode.toLowerCase().includes(term) ||
-      item.customerName.toLowerCase().includes(term) ||
-      item.customerPhone.includes(term) ||
-      (item.trackingNumber ?? "").toLowerCase().includes(term)
-    );
-  }, [fromDate, items, paymentFilter, search, section, statusFilter, toDate]);
-
-  const { sort, toggleSort, sortedRows } = useTableSort(filtered, {
-    code: (item) => item.orderCode,
-    kind: (item) => kindLabels[item.kind],
-    tracking: (item) => item.trackingNumber ?? "",
-    customer: (item) => item.customerName,
-    carrier: (item) => (item.carrierState ? carrierStateLabels[item.carrierState] : ""),
-    manual: (item) => (item.manualState ? manualStateLabels[item.manualState] : ""),
-    custody: (item) => custodyLabels[item.custodyState],
-    size: (item) => (item.size ? sizeLabels[item.size] : ""),
-    shipping: (item) => item.shippingAmountCents ?? 0,
-    payment: (item) => item.paymentMethod,
-    date: (item) => item.orderCreatedAt
-  });
-
-  const selectable = filtered.filter((item) => item.kind === "outgoing").map((item) => item.orderId);
+  const selectable = server.items.filter((item) => item.kind === "outgoing").map((item) => item.orderId);
   function toggle(orderId: number) {
     setSelected((prev) => prev.includes(orderId) ? prev.filter((id) => id !== orderId) : prev.length < 50 ? [...prev, orderId] : prev);
   }
   async function refresh() {
-    try {
-      const updated: AdminShipmentListItemDto[] = [];
-      let cursor: string | undefined;
-      let next: string | null;
-      do {
-        const page = await getStore().fetchShippingOverview(cursor);
-        updated.push(...page.items);
-        next = page.nextCursor;
-        cursor = next ?? undefined;
-      } while (next && updated.length < items.length);
-      setItems(updated);
-      setNextCursor(next);
-      setRefreshError(false);
-    } catch {
-      setRefreshError(true);
-    }
+    setRefreshError(!(await server.reload()));
   }
 
   return (
@@ -159,16 +107,16 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
             size="sm"
             role="tab"
             aria-selected={section === item.key}
-            onClick={() => setSection(item.key)}
+            onClick={() => list.setFilter("section", item.key)}
           >
             {item.label}
           </Button>
         ))}
       </div>
 
-      {error ? (
+      {server.error && server.items.length === 0 ? (
         <Card><div className="p-5 sm:p-6"><p role="alert" className="text-sm text-danger">تعذر تحميل الشحنات. حدّثي الصفحة للمحاولة مرة أخرى.</p></div></Card>
-      ) : loading ? (
+      ) : firstLoad ? (
         <Card className="overflow-hidden">
           <div className="grid gap-2 p-4" aria-hidden>
             {Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="h-11 rounded-control" />)}
@@ -179,15 +127,15 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
           <AdminListHeader
             searchPlaceholder="ابحثي بكود الطلب، العميل، أو رقم التتبع…"
             searchLabel="بحث في الشحنات"
-            searchValue={search}
-            onSearchChange={setSearch}
-            countLabel={`${filtered.length} شحنة`}
+            searchValue={list.searchInput}
+            onSearchChange={list.setSearch}
+            countLabel={`${formatNumber(server.total)} شحنة`}
             filters={[
               {
                 key: "status",
                 label: "حالة الناقل",
-                value: statusFilter,
-                onChange: setStatusFilter,
+                value: status,
+                onChange: (value) => list.setFilter("status", value),
                 options: [
                   { value: "all", label: "كل حالات الناقل" },
                   ...Object.entries(carrierStateLabels).map(([value, label]) => ({ value, label }))
@@ -196,8 +144,8 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
               {
                 key: "payment",
                 label: "طريقة الدفع",
-                value: paymentFilter,
-                onChange: setPaymentFilter,
+                value: payment,
+                onChange: (value) => list.setFilter("payment", value),
                 options: [
                   { value: "all", label: "كل الطرق" },
                   { value: "cod", label: "دفع عند الاستلام" },
@@ -209,11 +157,11 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
               <>
                 <label className="grid gap-1.5">
                   <span className="text-sm font-medium text-text-2">من تاريخ</span>
-                  <Input aria-label="من تاريخ" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+                  <Input aria-label="من تاريخ" type="date" value={from} onChange={(event) => list.setFilter("from", event.target.value)} />
                 </label>
                 <label className="grid gap-1.5">
                   <span className="text-sm font-medium text-text-2">إلى تاريخ</span>
-                  <Input aria-label="إلى تاريخ" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+                  <Input aria-label="إلى تاريخ" type="date" value={to} onChange={(event) => list.setFilter("to", event.target.value)} />
                 </label>
               </>
             }
@@ -222,31 +170,25 @@ function ShippingPageContent({ canModify }: { canModify: boolean }) {
           {canModify && selected.length > 0 ? (
             <ShippingActions
               orderIds={selected}
-              orderCodes={Object.fromEntries(items.map((item) => [item.orderId, item.orderCode]))}
+              orderCodes={Object.fromEntries(server.items.map((item) => [item.orderId, item.orderCode]))}
               onComplete={() => { void refresh(); }}
             />
           ) : null}
           {refreshError ? <AlertLine>تم إرسال الإجراء؛ تعذر تحديث القائمة. حدّثي الصفحة للتحقق من النتائج.</AlertLine> : null}
 
           <ShipmentsTable
-            items={sortedRows}
-            totalItems={items.length}
+            items={server.items}
+            narrowed={narrowed}
             canModify={canModify}
             selected={selected}
             selectableIds={selectable}
             onToggleRow={toggle}
             onSelectAll={(checked) => setSelected(checked ? selectable.slice(0, 50) : [])}
-            sort={sort}
-            onSort={toggleSort}
+            sort={list.state.sort}
+            onSort={list.toggleSort}
           />
 
-          {nextCursor && !loading && !error ? (
-            <div className="mt-4">
-              <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? "جارٍ التحميل…" : "تحميل المزيد"}
-              </Button>
-            </div>
-          ) : null}
+          <SmartPagination {...list.paginationProps(server.total, server.loading)} />
         </>
       )}
     </AdminShell>
