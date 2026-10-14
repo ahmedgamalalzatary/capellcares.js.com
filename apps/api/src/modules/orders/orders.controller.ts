@@ -10,7 +10,7 @@ import {
   adminOrdersQuerySchema,
   listAdminOrdersPageRepo,
   paymentSummaryQuerySchema,
-  listOrdersRepo,
+  listCustomerOrdersRepo,
   OrderNotFoundError,
   PaymobPaymentStatusManagedError,
   ShippingCustodyRequiredError,
@@ -110,7 +110,7 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
 }
 
 export async function listCustomerOrdersController(req: AuthenticatedRequest, res: Response) {
-  res.json({ items: await listOrdersRepo({ customerId: req.user!.id, withItems: true }) });
+  res.json({ items: await listCustomerOrdersRepo(req.user!.id) });
 }
 
 export async function getCustomerOrderController(req: AuthenticatedRequest, res: Response) {

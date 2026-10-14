@@ -17,24 +17,22 @@ function customerOrderFields(row: typeof orders.$inferSelect) {
   return customer;
 }
 
-export async function listOrdersRepo(filters?: { customerId?: number; withItems?: boolean }) {
+/** A customer's own orders, newest first. The storefront renders a card per order with item thumbnails and a unit count, so line items come in one extra query rather than N per-order detail requests. (The ERP list is paged in `admin-list.ts`.) */
+export async function listCustomerOrdersRepo(customerId: number) {
   const rows = await db
     .select()
     .from(orders)
-    .where(filters?.customerId != null ? eq(orders.customerId, filters.customerId) : undefined)
+    .where(eq(orders.customerId, customerId))
     .orderBy(desc(orders.createdAt));
 
-  const fulfillment = filters?.customerId != null ? await customerShippingStates(rows) : null;
+  const fulfillment = await customerShippingStates(rows);
   const summaries = rows.map((row) => ({
-    ...(filters?.customerId != null ? customerOrderFields(row) : row),
-    ...(fulfillment ? { fulfillment: fulfillment.get(row.id) ?? null } : {}),
+    ...customerOrderFields(row),
+    fulfillment: fulfillment.get(row.id) ?? null,
     totalAmount: toNumber(row.totalAmount)
   }));
 
-  // The admin list only needs order-level columns; the storefront list renders a card per order with item thumbnails and a unit count, so it opts into the line items via one extra query rather than N per-order detail requests.
-  if (!filters?.withItems || summaries.length === 0) {
-    return summaries;
-  }
+  if (summaries.length === 0) return [];
 
   const rawItems = await db
     .select()
