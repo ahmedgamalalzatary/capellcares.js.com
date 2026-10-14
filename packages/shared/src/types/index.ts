@@ -1,6 +1,7 @@
 import type { Language } from "../constants/languages.js";
 import type { ProductStatus } from "../constants/product-status.js";
 import type { PaymentMethod } from "../constants/payment-methods.js";
+import type { PageMeta } from "../pagination.js";
 
 export type { Assert, IsEqual } from "./assert-type-equal.js";
 
@@ -133,12 +134,7 @@ export interface PublicReview {
 export interface ReviewPage {
   summary: ReviewSummary;
   items: PublicReview[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: PageMeta;
 }
 
 export interface ReviewCreateInput {
@@ -180,7 +176,7 @@ export interface AdminReview {
 
 export interface AdminReviewPage {
   items: AdminReview[];
-  pagination: ReviewPage["pagination"];
+  pagination: PageMeta;
 }
 
 export interface WishlistEntry {
