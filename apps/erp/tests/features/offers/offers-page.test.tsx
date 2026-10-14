@@ -75,6 +75,15 @@ describe("OffersListPage", () => {
     mockState = makeMockState();
   });
 
+  it("pages the offers 20 at a time and remembers the page", () => {
+    mockState = { ...makeMockState(), offers: Array.from({ length: 25 }, (_, index) => makeOffer(index + 1, `عرض ${index + 1}`, "active")) };
+    render(createElement(OffersListPage));
+    expect(screen.getByRole("status")).toHaveTextContent("صفحة 1 من 2");
+    fireEvent.click(screen.getByRole("button", { name: "الصفحة 2" }));
+    expect(window.location.search).toBe("?page=2");
+    expect(sessionStorage.getItem("capella-erp-list:offers")).toBe("page=2");
+  });
+
   it("keeps the toggle modal open and shows an error when status toggle fails", async () => {
     render(createElement(OffersListPage));
 

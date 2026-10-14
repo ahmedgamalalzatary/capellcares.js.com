@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { PageSize } from "@capella/shared";
 import type { SmartPaginationProps } from "@/components/admin/smart-pagination";
 import { defaultListState, parseListState, serializeListState, type ListSchema, type ListState } from "@/lib/pagination";
-import { nextSort, type SortState } from "@/lib/table-sort";
+import { nextSort, sortRows, type SortAccessors, type SortState } from "@/lib/table-sort";
 
 const BASE_KEYS = ["page", "size", "more", "q", "sort", "dir"];
 const sessionKey = (listId: string) => `capella-erp-list:${listId}`;
@@ -32,6 +32,8 @@ interface Options<F extends string, S extends string> {
   schema: ListSchema<F, S>;
   /** Milliseconds to wait after typing before searching (use it for server-side search). */
   searchDelay?: number;
+  /** Prefix for this list's address keys when a page shows more than one list (e.g. "best_" → best_page). */
+  paramPrefix?: string;
 }
 
 /**
@@ -39,36 +41,42 @@ interface Options<F extends string, S extends string> {
  * Restores from the address, else the browser-session copy, and keeps both in step. Any change other
  * than moving between pages goes back to page 1.
  */
-export function usePaginatedList<F extends string, S extends string>({ listId, schema, searchDelay = 0 }: Options<F, S>) {
+export function usePaginatedList<F extends string, S extends string>({ listId, schema, searchDelay = 0, paramPrefix = "" }: Options<F, S>) {
   const [state, setState] = useState<ListState<F, S>>(() => defaultListState(schema));
   const [searchInput, setSearchInput] = useState("");
   const [ready, setReady] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listKeys = useMemo(() => [...BASE_KEYS, ...Object.keys(schema.filters)], [schema]);
 
-  // Restore before the first paint, after hydration (the server render has no address or session).
+  // Restore once per list, before the first paint and after hydration (the server render has no address or session).
+  // Keyed on the list's identity only, so a schema declared inline can't re-restore and wipe the viewer's changes.
   useLayoutEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const fromAddress = listKeys.some((key) => params.has(key));
+    const address = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams();
+    for (const key of listKeys) {
+      const value = address.get(`${paramPrefix}${key}`);
+      if (value != null) params.set(key, value);
+    }
+    const fromAddress = params.size > 0;
     const restored = parseListState(fromAddress ? params : new URLSearchParams(readSession(listId) ?? ""), schema);
     setState(restored);
     setSearchInput(restored.q);
     setReady(true);
-  }, [listId, listKeys, schema]);
+  }, [listId, paramPrefix]);
 
   useEffect(() => {
     if (!ready) return;
     const own = serializeListState(state, schema);
     const params = new URLSearchParams(window.location.search);
-    listKeys.forEach((key) => params.delete(key));
-    own.forEach((value, key) => params.append(key, value));
+    listKeys.forEach((key) => params.delete(`${paramPrefix}${key}`));
+    own.forEach((value, key) => params.append(`${paramPrefix}${key}`, value));
     const search = params.toString();
     const url = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
     if (url !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
       window.history.replaceState(null, "", url);
     }
     writeSession(listId, own.toString());
-  }, [listId, listKeys, ready, schema, state]);
+  }, [listId, listKeys, paramPrefix, ready, schema, state]);
 
   useEffect(() => () => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -118,5 +126,18 @@ export function usePaginatedList<F extends string, S extends string>({ listId, s
 
   return {
     ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, requestQuery, paginationProps
+  };
+}
+
+/** A sortable, paginated table whose rows are all on the page already (no search or filters). */
+export function useLocalList<T, K extends string>(rows: T[], accessors: SortAccessors<T, K>, options: Options<never, K>) {
+  const list = usePaginatedList(options);
+  const sorted = useMemo(() => sortRows(rows, accessors, list.state.sort), [accessors, list.state.sort, rows]);
+  return {
+    sort: list.state.sort,
+    toggleSort: list.toggleSort,
+    sortedRows: list.pageOf(sorted),
+    total: sorted.length,
+    paginationProps: list.paginationProps
   };
 }

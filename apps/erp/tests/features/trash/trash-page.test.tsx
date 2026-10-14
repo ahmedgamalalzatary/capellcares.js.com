@@ -149,6 +149,16 @@ describe("TrashPage hard delete", () => {
     vi.restoreAllMocks();
   });
 
+  it("remembers the open tab in the address", () => {
+    render(<TrashPage />);
+    openTab(/العروض/);
+    expect(window.location.search).toBe("?tab=offers");
+    cleanup();
+    window.history.replaceState(null, "", "/trash");
+    render(<TrashPage />);
+    expect(screen.getByRole("tab", { name: /العروض/ })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("offers permanent delete on the products tab", async () => {
     render(createElement(TrashPage));
     openMenu("إجراءات منتج محذوف");

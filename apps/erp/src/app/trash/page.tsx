@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { SmartPagination } from "@/components/admin/smart-pagination";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -21,11 +22,8 @@ export default function TrashPage() {
     tab,
     setTab,
     tabs,
-    deletedProducts,
-    deletedCategories,
-    deletedOffers,
-    deletedCollections,
-    deletedReviews,
+    pageRows,
+    paginationProps,
     reviewsLoading,
     reviewsError,
     pendingHardDelete,
@@ -70,7 +68,7 @@ export default function TrashPage() {
           {tab === "products" ? (
             <DeletedList
               empty="لا توجد منتجات محذوفة."
-              rows={deletedProducts}
+              rows={pageRows}
               onRestore={canRestoreErpModule(user, "products") ? restoreProduct : undefined}
               onHardDelete={hasErpPermission(user, "products.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "products", id, title }) : undefined}
             />
@@ -78,7 +76,7 @@ export default function TrashPage() {
           {tab === "categories" ? (
             <DeletedList
               empty="لا توجد أقسام محذوفة."
-              rows={deletedCategories}
+              rows={pageRows}
               onRestore={canRestoreErpModule(user, "categories") ? restoreCategory : undefined}
               onHardDelete={hasErpPermission(user, "categories.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "categories", id, title }) : undefined}
             />
@@ -86,7 +84,7 @@ export default function TrashPage() {
           {tab === "offers" ? (
             <DeletedList
               empty="لا توجد عروض محذوفة."
-              rows={deletedOffers}
+              rows={pageRows}
               onRestore={canRestoreErpModule(user, "offers") ? restoreOffer : undefined}
               onHardDelete={hasErpPermission(user, "offers.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "offers", id, title }) : undefined}
             />
@@ -94,7 +92,7 @@ export default function TrashPage() {
           {tab === "collections" ? (
             <DeletedList
               empty="لا توجد مجموعات محذوفة."
-              rows={deletedCollections}
+              rows={pageRows}
               onRestore={canRestoreErpModule(user, "collections") ? restoreCollection : undefined}
               onHardDelete={hasErpPermission(user, "collections.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "collections", id, title }) : undefined}
             />
@@ -109,7 +107,7 @@ export default function TrashPage() {
             ) : (
               <DeletedList
                 empty="لا توجد تقييمات محذوفة."
-                rows={deletedReviews}
+                rows={pageRows}
                 onRestore={hasErpPermission(user, "reviews.restore") ? restoreReview : undefined}
                 onHardDelete={hasErpPermission(user, "reviews.permanent_delete") ? (id, title) => setPendingHardDelete({ kind: "reviews", id, title }) : undefined}
               />
@@ -117,6 +115,8 @@ export default function TrashPage() {
           ) : null}
         </Card>
       </div>
+
+      <SmartPagination {...paginationProps} />
 
       <AdminConfirmModal
         open={pendingHardDelete != null}

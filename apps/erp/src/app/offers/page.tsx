@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, CircleDot, FolderTree, Plus } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
+import { SmartPagination } from "@/components/admin/smart-pagination";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { tableSortSelect } from "@/components/admin/admin-list-header";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
@@ -52,7 +53,7 @@ export default function OffersListPage() {
         searchPlaceholder={copy.searchPlaceholder}
         searchValue={list.search}
         onSearchChange={list.setSearch}
-        countLabel={loaded ? `${formatNumber(list.filtered.length)} ${copy.countNoun}` : "جارٍ التحميل…"}
+        countLabel={loaded ? `${formatNumber(list.total)} ${copy.countNoun}` : "جارٍ التحميل…"}
         sort={tableSortSelect(offerConfig.list.columns, list.sort, list.setSort)}
         filters={[
           {
@@ -60,7 +61,7 @@ export default function OffersListPage() {
             label: "الحالة",
             icon: CircleDot,
             value: list.statusFilter,
-            onChange: (value) => list.setStatusFilter(value as "all" | "active" | "inactive"),
+            onChange: list.setStatusFilter,
             options: ACTIVE_STATUS_FILTER_OPTIONS
           },
           {
@@ -69,7 +70,7 @@ export default function OffersListPage() {
             icon: FolderTree,
             testId: "offers-category-filter",
             value: String(list.categoryFilter),
-            onChange: (value) => list.setCategoryFilter(value ? Number(value) : ""),
+            onChange: list.setCategoryFilter,
             options: [
               { value: "", label: "كل الأقسام" },
               ...list.categoryOptions.map((option) => ({
@@ -84,7 +85,7 @@ export default function OffersListPage() {
       <BundlesTable
         config={offerConfig}
         loading={!loaded}
-        rows={list.sortedRows}
+        rows={list.pageRows}
         sort={list.sort}
         onSort={list.toggleSort}
         categories={categories}
@@ -96,6 +97,8 @@ export default function OffersListPage() {
         onToggle={list.setPendingToggle}
         onDelete={(id) => list.setPendingDelete(list.visible.find((row) => row.id === id) ?? null)}
       />
+
+      <SmartPagination {...list.paginationProps(list.total, !loaded)} />
 
       <AdminConfirmModal
         open={list.pendingToggle != null}

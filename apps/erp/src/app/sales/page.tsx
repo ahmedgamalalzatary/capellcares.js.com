@@ -13,7 +13,32 @@ import { canReadErpModule } from "@/lib/erp-permissions";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { paymentStatusLabel, paymentStatusTone } from "@/lib/payment-status";
 import { useStore } from "@/lib/store";
-import { useTableSort } from "@/hooks/use-table-sort";
+import { SmartPagination } from "@/components/admin/smart-pagination";
+import { useLocalList } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
+import type { SalesAnalytics } from "@/lib/store/types";
+
+const productAccessors = {
+  name: (item: SalesAnalytics["productTotals"][number]) => item.productName,
+  units: (item: SalesAnalytics["productTotals"][number]) => item.unitsSold,
+  revenue: (item: SalesAnalytics["productTotals"][number]) => item.revenue
+};
+const variantAccessors = {
+  name: (item: SalesAnalytics["variantTotals"][number]) => `${item.productName} ${item.variantLabel}`,
+  units: (item: SalesAnalytics["variantTotals"][number]) => item.unitsSold,
+  revenue: (item: SalesAnalytics["variantTotals"][number]) => item.revenue
+};
+const orderAccessors = {
+  code: (item: SalesAnalytics["orders"][number]) => item.orderCode,
+  status: (item: SalesAnalytics["orders"][number]) => item.paymentStatus,
+  total: (item: SalesAnalytics["orders"][number]) => item.totalAmount,
+  units: (item: SalesAnalytics["orders"][number]) => item.unitsSold,
+  date: (item: SalesAnalytics["orders"][number]) => item.createdAt
+};
+
+const TOTALS_LIST = { filters: {}, sortKeys: ["name", "units", "revenue"] } satisfies ListSchema<never, keyof typeof productAccessors>;
+const ORDERS_LIST = { filters: {}, sortKeys: ["code", "status", "total", "units", "date"] } satisfies ListSchema<never, keyof typeof orderAccessors>;
+
 
 export default function SalesPage() {
   const { user } = useAdminAuth();
@@ -31,23 +56,9 @@ function SalesPageContent() {
   const sales = useStore((s) => s.sales);
   const loaded = useStore((s) => s.loaded);
 
-  const products = useTableSort(sales.productTotals, {
-    name: (item) => item.productName,
-    units: (item) => item.unitsSold,
-    revenue: (item) => item.revenue
-  });
-  const variants = useTableSort(sales.variantTotals, {
-    name: (item) => `${item.productName} ${item.variantLabel}`,
-    units: (item) => item.unitsSold,
-    revenue: (item) => item.revenue
-  });
-  const orders = useTableSort(sales.orders, {
-    code: (item) => item.orderCode,
-    status: (item) => item.paymentStatus,
-    total: (item) => item.totalAmount,
-    units: (item) => item.unitsSold,
-    date: (item) => item.createdAt
-  });
+  const products = useLocalList(sales.productTotals, productAccessors, { listId: "sales-products", schema: TOTALS_LIST, paramPrefix: "products_" });
+  const variants = useLocalList(sales.variantTotals, variantAccessors, { listId: "sales-variants", schema: TOTALS_LIST, paramPrefix: "variants_" });
+  const orders = useLocalList(sales.orders, orderAccessors, { listId: "sales-orders", schema: ORDERS_LIST });
 
   return (
     <AdminShell
@@ -68,6 +79,7 @@ function SalesPageContent() {
       </div>
 
       <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+        <div className="min-w-0">
         <Card className="overflow-hidden">
           <CardHeader title="أفضل المنتجات" />
           <Table>
@@ -90,7 +102,10 @@ function SalesPageContent() {
             </TBody>
           </Table>
         </Card>
+        <SmartPagination {...products.paginationProps(products.total, !loaded)} />
+        </div>
 
+        <div className="min-w-0">
         <Card className="overflow-hidden">
           <CardHeader title="أفضل المقاسات" />
           <Table>
@@ -113,6 +128,8 @@ function SalesPageContent() {
             </TBody>
           </Table>
         </Card>
+        <SmartPagination {...variants.paginationProps(variants.total, !loaded)} />
+        </div>
       </div>
 
       <Card className="mt-5 overflow-hidden">
@@ -149,6 +166,7 @@ function SalesPageContent() {
           </TBody>
         </Table>
       </Card>
+      <SmartPagination {...orders.paginationProps(orders.total, !loaded)} />
     </AdminShell>
   );
 }

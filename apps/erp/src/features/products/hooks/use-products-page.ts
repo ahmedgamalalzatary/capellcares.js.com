@@ -7,6 +7,18 @@ import { getStore, useStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import { moveItem } from "@/lib/array";
+import { sortRows } from "@/lib/table-sort";
+import type { ListSchema } from "@/lib/pagination";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import { PRODUCT_SORT_COLUMNS, productSortAccessors, type ProductSortKey } from "@/features/products/components/products-table";
+
+const PRODUCTS_LIST = {
+  filters: {
+    status: { default: "all", values: ["all", "active", "inactive"] },
+    category: { default: "", accepts: (value: string) => /^\d+$/.test(value) }
+  },
+  sortKeys: PRODUCT_SORT_COLUMNS.map((column) => column.key)
+} satisfies ListSchema<"status" | "category", ProductSortKey>;
 
 function scopeRank(product: Product, scopeCategoryId: number | null) {
   return product.orderings?.find((entry) =>
@@ -38,9 +50,10 @@ export function useProductsPage() {
   const products = useStore((state) => state.products);
   const categories = useStore((state) => state.categories);
   const loaded = useStore((state) => state.loaded);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [categoryFilter, setCategoryFilter] = useState<number | "">("");
+  const list = usePaginatedList({ listId: "products", schema: PRODUCTS_LIST });
+  const search = list.state.q;
+  const statusFilter = list.state.filters.status as "all" | "active" | "inactive";
+  const categoryFilter: number | "" = list.state.filters.category === "" ? "" : Number(list.state.filters.category);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
@@ -106,6 +119,11 @@ export function useProductsPage() {
     const draftedIds = new Set(draftOrder);
     return [...drafted, ...orderedProducts.filter((product) => !draftedIds.has(product.id))];
   }, [draftOrder, orderedProducts]);
+
+  const sortedProducts = useMemo(
+    () => sortRows(displayProducts, productSortAccessors(categories), list.state.sort),
+    [categories, displayProducts, list.state.sort]
+  );
 
   const isOrderDirty = useMemo(() => {
     if (!draftOrder) return false;
@@ -180,14 +198,12 @@ export function useProductsPage() {
   return {
     loaded,
     categories,
-    search,
-    setSearch,
+    list,
     statusFilter,
-    setStatusFilter,
     categoryFilter,
-    setCategoryFilter,
     categoryOptions,
-    filteredProducts: displayProducts,
+    totalProducts: sortedProducts.length,
+    pageProducts: list.pageOf(sortedProducts),
     reorderEnabled,
     isOrderDirty,
     savingOrder,

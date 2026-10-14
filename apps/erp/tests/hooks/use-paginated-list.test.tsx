@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { usePaginatedList } from "@/hooks/use-paginated-list";
+import { useLocalList, usePaginatedList } from "@/hooks/use-paginated-list";
 import type { ListSchema } from "@/lib/pagination";
 
 const schema = {
@@ -12,7 +12,7 @@ function visit(url: string) {
   window.history.replaceState(null, "", url);
 }
 
-function render(options: { searchDelay?: number } = {}) {
+function render(options: { searchDelay?: number; paramPrefix?: string } = {}) {
   return renderHook(() => usePaginatedList({ listId: "things", schema, ...options }));
 }
 
@@ -119,6 +119,14 @@ describe("usePaginatedList", () => {
     expect(result.current.state.page).toBe(3);
   });
 
+  it("keeps two lists on one page apart with a key prefix", () => {
+    visit("/things?page=2&best_page=3&best_sort=name");
+    const { result } = render({ paramPrefix: "best_" });
+    expect(result.current.state).toMatchObject({ page: 3, sort: { key: "name", direction: "asc" } });
+    act(() => result.current.setPage(4));
+    expect(window.location.search).toBe("?page=2&best_page=4&best_sort=name&best_dir=asc");
+  });
+
   it("ignores a broken session store", () => {
     const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
@@ -127,5 +135,19 @@ describe("usePaginatedList", () => {
     expect(result.current.state.page).toBe(2);
     getItem.mockRestore();
     setItem.mockRestore();
+  });
+});
+
+describe("useLocalList", () => {
+  it("sorts the whole list, then shows one page of it", () => {
+    const rows = Array.from({ length: 25 }, (_, index) => ({ id: index + 1 }));
+    const accessors = { id: (row: { id: number }) => row.id };
+    const { result } = renderHook(() => useLocalList(rows, accessors, { listId: "local", schema: { filters: {}, sortKeys: ["id"] } }));
+    expect(result.current.total).toBe(25);
+    expect(result.current.sortedRows.map((row) => row.id)).toEqual(rows.slice(0, 20).map((row) => row.id));
+    act(() => result.current.toggleSort("id"));
+    act(() => result.current.toggleSort("id"));
+    expect(result.current.sortedRows[0].id).toBe(25);
+    expect(result.current.paginationProps(25).page).toBe(1);
   });
 });

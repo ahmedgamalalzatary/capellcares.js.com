@@ -6,7 +6,15 @@ import { getStore, useStore } from "@/lib/store";
 import { api } from "@/lib/api/client";
 import { showErrorToast } from "@/lib/errors";
 import { formatDateShort } from "@/lib/format";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
 import type { HardDeleteTarget, TrashListRow, TrashTab, TrashTabConfig } from "@/features/trash/types";
+
+// The open tab is part of the remembered view, so switching tabs starts that tab from its first page.
+const TRASH_LIST = {
+  filters: { tab: { default: "products", values: ["products", "categories", "offers", "collections", "reviews"] } },
+  sortKeys: []
+} satisfies ListSchema<"tab", never>;
 
 export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   const products = useStore((state) => state.products);
@@ -14,7 +22,10 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
   const offers = useStore((state) => state.offers);
   const collections = useStore((state) => state.collections);
 
-  const [tab, setTab] = useState<TrashTab>("products");
+  const list = usePaginatedList({ listId: "trash", schema: TRASH_LIST });
+  const requestedTab = list.state.filters.tab as TrashTab;
+  const tab: TrashTab = requestedTab === "reviews" && !options.reviewsReadable ? "products" : requestedTab;
+  const setTab = (next: TrashTab) => list.setFilter("tab", next);
   const [pendingHardDelete, setPendingHardDelete] = useState<HardDeleteTarget | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -125,6 +136,15 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     ...(options.reviewsReadable ? [{ id: "reviews" as const, label: "التقييمات", count: deletedReviews.length }] : [])
   ];
 
+  const tabRows: Record<TrashTab, TrashListRow[]> = {
+    products: deletedProducts,
+    categories: deletedCategories,
+    offers: deletedOffers,
+    collections: deletedCollections,
+    reviews: deletedReviews
+  };
+  const activeRows = tabRows[tab];
+
   const closeHardDeleteModal = () => {
     if (isDeleting) {
       return;
@@ -166,11 +186,8 @@ export function useTrashPage(options: { reviewsReadable?: boolean } = {}) {
     tab,
     setTab,
     tabs,
-    deletedProducts,
-    deletedCategories,
-    deletedOffers,
-    deletedCollections,
-    deletedReviews,
+    pageRows: list.pageOf(activeRows),
+    paginationProps: list.paginationProps(activeRows.length, tab === "reviews" && reviewsLoading),
     reviewsLoading,
     reviewsError,
     pendingHardDelete,

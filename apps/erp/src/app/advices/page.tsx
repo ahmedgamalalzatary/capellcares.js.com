@@ -16,14 +16,30 @@ import { canCreateErpModule, canReadErpModule, canToggleErpModule, canUpdateErpM
 import { formatNumber } from "@/lib/format";
 import { getStore, useStore } from "@/lib/store";
 import { sortByIdOrder, useListReorder } from "@/hooks/use-list-reorder";
-import { useTableSort } from "@/hooks/use-table-sort";
+import { usePaginatedList } from "@/hooks/use-paginated-list";
+import { SmartPagination } from "@/components/admin/smart-pagination";
+import type { ListSchema } from "@/lib/pagination";
+import { sortRows } from "@/lib/table-sort";
+
+const ADVICES_LIST = {
+  filters: { status: { default: "all", values: ["all", "active", "inactive"] } },
+  sortKeys: ADVICE_SORT_COLUMNS.map((column) => column.key)
+} satisfies ListSchema<"status", (typeof ADVICE_SORT_COLUMNS)[number]["key"]>;
+
+const adviceSortAccessors = {
+  title: (advice: Advice) => advice.title.ar,
+  video: (advice: Advice) => advice.videoUrl,
+  status: (advice: Advice) => (advice.status === "active" ? 0 : 1)
+};
 
 export default function AdvicesPage() {
   const { user } = useAdminAuth();
   const advices = useStore((s) => s.advices);
   const loaded = useStore((s) => s.loaded);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const list = usePaginatedList({ listId: "advices", schema: ADVICES_LIST });
+  const search = list.state.q;
+  const statusFilter = list.state.filters.status;
+  const sort = list.state.sort;
   const [pendingToggle, setPendingToggle] = useState<Advice | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Advice | null>(null);
   const reorder = useListReorder({
@@ -42,11 +58,7 @@ export default function AdvicesPage() {
     return ordered.filter((advice) => advice.title.ar.toLowerCase().includes(term) || advice.title.en.toLowerCase().includes(term));
   }, [advices, reorder.orderedIds, search, statusFilter]);
 
-  const { sort, setSort, toggleSort, sortedRows } = useTableSort(filtered, {
-    title: (advice) => advice.title.ar,
-    video: (advice) => advice.videoUrl,
-    status: (advice) => (advice.status === "active" ? 0 : 1)
-  });
+  const sortedRows = useMemo(() => sortRows(filtered, adviceSortAccessors, sort), [filtered, sort]);
   const showReorder = canReorder && filtered.length > 1 && !sort;
 
   if (!canReadErpModule(user, "advices")) {
@@ -81,17 +93,17 @@ export default function AdvicesPage() {
     >
       <AdminListHeader
         searchPlaceholder="ابحثي باسم النصيحة…"
-        searchValue={search}
-        onSearchChange={setSearch}
+        searchValue={list.searchInput}
+        onSearchChange={list.setSearch}
         countLabel={loaded ? `${formatNumber(filtered.length)} نصيحة` : "جارٍ التحميل…"}
-        sort={tableSortSelect(ADVICE_SORT_COLUMNS, sort, setSort)}
+        sort={tableSortSelect(ADVICE_SORT_COLUMNS, sort, list.setSort)}
         filters={[
           {
             key: "status",
             label: "الحالة",
             icon: CircleDot,
             value: statusFilter,
-            onChange: (value) => setStatusFilter(value as "all" | "active" | "inactive"),
+            onChange: (value) => list.setFilter("status", value),
             options: ACTIVE_STATUS_FILTER_OPTIONS
           }
         ]}
@@ -99,9 +111,9 @@ export default function AdvicesPage() {
 
       <AdvicesTable
         loading={!loaded}
-        advices={sortedRows}
+        advices={list.pageOf(sortedRows)}
         sort={sort}
-        onSort={toggleSort}
+        onSort={list.toggleSort}
         showReorder={showReorder}
         canToggle={canToggle}
         canEdit={canEdit}
@@ -112,6 +124,8 @@ export default function AdvicesPage() {
         emptyTitle={advices.length === 0 ? "لا توجد نصائح بعد" : "لا توجد نصائح تطابق البحث"}
         emptyDescription={advices.length === 0 ? "ابدئي بإضافة أول نصيحة للعملاء." : "جرّبي كلمة أخرى أو غيّري فلتر الحالة."}
       />
+
+      <SmartPagination {...list.paginationProps(sortedRows.length, !loaded)} />
 
       <AdminConfirmModal
         open={pendingToggle != null}

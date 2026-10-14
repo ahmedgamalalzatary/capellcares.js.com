@@ -22,10 +22,9 @@ import { orderPaymentBadge, paymentStatusLabel } from "@/lib/payment-status";
 import { getStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ShippingActions } from "@/components/admin/shipping-actions";
+import { carrierStateLabels, custodyLabels } from "@/features/shipping/lib/labels";
 
 const manualStateLabels = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم", returned: "تم الإرجاع" };
-const carrierStateLabels = { created: "تم الإنشاء", picked_up: "تم الاستلام", in_transit: "في الطريق", delivered: "تم التسليم", returned: "تم الإرجاع", cancelled: "تم الإلغاء", exception: "تحتاج متابعة" };
-const custodyLabels = { unknown: "الحيازة غير مؤكدة", carrier: "مع شركة الشحن", recipient: "تم التسليم للمستلم", warehouse_uninspected: "راجع للمخزن؛ بانتظار الفحص" };
 const itemTypeLabels = { product_variant: "منتج", offer: "عرض", collection: "مجموعة" } as const;
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
