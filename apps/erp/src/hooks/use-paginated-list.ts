@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { PageSize } from "@capella/shared";
+import type { Paged, PageSize } from "@capella/shared";
+import { api } from "@/lib/api/client";
 import type { SmartPaginationProps } from "@/components/admin/smart-pagination";
 import { defaultListState, parseListState, serializeListState, type ListSchema, type ListState } from "@/lib/pagination";
 import { nextSort, sortRows, type SortAccessors, type SortState } from "@/lib/table-sort";
@@ -108,16 +109,22 @@ export function usePaginatedList<F extends string, S extends string>({ listId, s
   const { page, size, more } = state;
   const pageOf = useCallback(<T,>(rows: T[]) => rows.slice((page - 1) * size, (page + more) * size), [page, size, more]);
 
-  /** Query string for a server-paged list: the page, its size, how many pages it spans, then search, sort and non-default filters. */
+  /** Paging part of a server request: the page, its size and how many pages it spans. */
+  const pageQuery = useMemo(
+    () => new URLSearchParams({ page: String(page), pageSize: String(size), pages: String(more + 1) }).toString(),
+    [more, page, size]
+  );
+
+  /** Query string for a server-paged list: the paging part, then search, sort and non-default filters. */
   const requestQuery = useMemo(() => {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(size), pages: String(more + 1) });
+    const params = new URLSearchParams(pageQuery);
     const own = serializeListState(state, schema);
     for (const key of ["q", "sort", "dir", ...Object.keys(schema.filters)]) {
       const value = own.get(key);
       if (value != null) params.set(key, value);
     }
     return params.toString();
-  }, [more, page, schema, size, state]);
+  }, [pageQuery, schema, state]);
 
   /** Props for `<SmartPagination>` once the list knows how many rows match. */
   const paginationProps = useCallback((total: number, loading = false): SmartPaginationProps => ({
@@ -125,7 +132,7 @@ export function usePaginatedList<F extends string, S extends string>({ listId, s
   }), [loadMore, more, page, setPage, setSize, size]);
 
   return {
-    ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, requestQuery, paginationProps
+    ready, state, searchInput, setSearch, setFilter, setSort, toggleSort, setSize, setPage, loadMore, pageOf, pageQuery, requestQuery, paginationProps
   };
 }
 
@@ -140,4 +147,44 @@ export function useLocalList<T, K extends string>(rows: T[], accessors: SortAcce
     total: sorted.length,
     paginationProps: list.paginationProps
   };
+}
+
+/**
+ * One page of a server-paged list. `path` is the endpoint plus its query (`null` waits, e.g. until the list has
+ * restored its state). The previous rows and total stay while the next page loads, so the table and the
+ * pagination bar don't jump; a slower, older answer never overwrites a newer one.
+ */
+export function useServerPage<T>(path: string | null, options: { onError?: (error: unknown) => void } = {}) {
+  const [data, setData] = useState<{ items: T[]; total: number }>({ items: [], total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const latest = useRef(0);
+  const onError = useRef(options.onError);
+  useEffect(() => {
+    onError.current = options.onError;
+  });
+
+  const load = useCallback(async () => {
+    if (path == null) return;
+    const request = ++latest.current;
+    setLoading(true);
+    setError(false);
+    try {
+      const page = await api.get<Paged<T>>(path);
+      if (request === latest.current) setData({ items: page.items, total: page.pagination.total });
+    } catch (failure) {
+      if (request === latest.current) {
+        setError(true);
+        onError.current?.(failure);
+      }
+    } finally {
+      if (request === latest.current) setLoading(false);
+    }
+  }, [path]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { ...data, loading, error, reload: load };
 }

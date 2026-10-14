@@ -1,60 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { AdminReviewPage, ReviewEntityType, ReviewStatus } from "@capella/shared";
+import { useState } from "react";
+import type { AdminReview } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { Button } from "@/components/ui/button";
+import { SmartPagination } from "@/components/admin/smart-pagination";
+import { usePaginatedList, useServerPage } from "@/hooks/use-paginated-list";
+import type { ListSchema } from "@/lib/pagination";
 import { ReviewsTable } from "@/features/reviews/components/reviews-table";
 import { api } from "@/lib/api/client";
 import { showErrorToast } from "@/lib/errors";
 import { formatNumber } from "@/lib/format";
 import { hasErpPermission } from "@/lib/erp-permissions";
 
-const emptyPage: AdminReviewPage = {
-  items: [],
-  pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 }
-};
+const REVIEWS_LIST = {
+  filters: {
+    status: { default: "", values: ["", "active", "inactive"] },
+    entityType: { default: "", values: ["", "product", "offer", "collection"] }
+  },
+  sortKeys: []
+} satisfies ListSchema<"status" | "entityType", never>;
 
 export default function ReviewsPage() {
   const { user } = useAdminAuth();
   const canReadReviews = hasErpPermission(user, "reviews.read");
-  const [data, setData] = useState<AdminReviewPage>(emptyPage);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<ReviewStatus | "">("");
-  const [entityType, setEntityType] = useState<ReviewEntityType | "">("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
-  const requestIdRef = useRef(0);
-
-  const load = useCallback(async () => {
-    const requestId = ++requestIdRef.current;
-    if (!canReadReviews) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(false);
-    const query = new URLSearchParams({ page: String(page), pageSize: "20" });
-    if (search.trim()) query.set("q", search.trim());
-    if (status) query.set("status", status);
-    if (entityType) query.set("entityType", entityType);
-    try {
-      const response = await api.get<AdminReviewPage>(`/api/erp/reviews?${query}`);
-      if (requestId === requestIdRef.current) setData(response);
-    } catch {
-      if (requestId === requestIdRef.current) setError(true);
-    } finally {
-      if (requestId === requestIdRef.current) setLoading(false);
-    }
-  }, [canReadReviews, entityType, page, search, status]);
-
-  useEffect(() => { void load(); }, [load]);
+  const list = usePaginatedList({ listId: "reviews", schema: REVIEWS_LIST, searchDelay: 300 });
+  const server = useServerPage<AdminReview>(canReadReviews && list.ready ? `/api/erp/reviews?${list.requestQuery}` : null);
 
   if (!canReadReviews) {
     return (
@@ -66,7 +41,7 @@ export default function ReviewsPage() {
     try {
       if (action === "toggle") await api.post(`/api/erp/reviews/${id}/toggle-status`);
       else await api.del(`/api/erp/reviews/${id}`);
-      await load();
+      await server.reload();
     } catch (mutationError) {
       showErrorToast(mutationError, "تعذر تحديث التقييم. حاولي مرة أخرى.");
     }
@@ -74,7 +49,6 @@ export default function ReviewsPage() {
 
   const canToggle = hasErpPermission(user, "reviews.toggle_status");
   const canDelete = hasErpPermission(user, "reviews.soft_delete");
-  const totalPages = data.pagination.totalPages;
 
   return (
     <AdminShell
@@ -85,15 +59,15 @@ export default function ReviewsPage() {
       <AdminListHeader
         searchLabel="البحث في التقييمات"
         searchPlaceholder="ابحثي بالعميل، الطلب، العنصر، أو التعليق…"
-        searchValue={search}
-        onSearchChange={(value) => { setSearch(value); setPage(1); }}
-        countLabel={loading ? "جارٍ التحميل…" : `${formatNumber(data.pagination.total)} تقييم`}
+        searchValue={list.searchInput}
+        onSearchChange={list.setSearch}
+        countLabel={server.loading ? "جارٍ التحميل…" : `${formatNumber(server.total)} تقييم`}
         filters={[
           {
             key: "status",
             label: "الحالة",
-            value: status,
-            onChange: (value) => { setStatus(value as ReviewStatus | ""); setPage(1); },
+            value: list.state.filters.status,
+            onChange: (value) => list.setFilter("status", value),
             options: [
               { value: "", label: "كل الحالات" },
               { value: "active", label: "نشط" },
@@ -103,8 +77,8 @@ export default function ReviewsPage() {
           {
             key: "entityType",
             label: "النوع",
-            value: entityType,
-            onChange: (value) => { setEntityType(value as ReviewEntityType | ""); setPage(1); },
+            value: list.state.filters.entityType,
+            onChange: (value) => list.setFilter("entityType", value),
             options: [
               { value: "", label: "كل الأنواع" },
               { value: "product", label: "المنتجات" },
@@ -116,25 +90,17 @@ export default function ReviewsPage() {
       />
 
       <ReviewsTable
-        loading={loading}
-        error={error}
-        reviews={data.items}
+        loading={server.loading}
+        error={server.error}
+        reviews={server.items}
         canToggle={canToggle}
         canDelete={canDelete}
         onToggle={(id) => { void mutate("toggle", id); }}
         onDelete={setPendingDelete}
-        onRetry={() => { void load(); }}
+        onRetry={() => { void server.reload(); }}
       />
 
-      {totalPages > 1 ? (
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>السابق</Button>
-          <span className="text-sm text-text-muted">
-            <span className="num">{formatNumber(page)}</span> / <span className="num">{formatNumber(totalPages)}</span>
-          </span>
-          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>التالي</Button>
-        </div>
-      ) : null}
+      <SmartPagination {...list.paginationProps(server.total, server.loading)} />
 
       <AdminConfirmModal
         open={pendingDelete != null}

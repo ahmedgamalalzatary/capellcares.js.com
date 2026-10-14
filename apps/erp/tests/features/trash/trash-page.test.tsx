@@ -372,22 +372,25 @@ describe("TrashPage hard delete", () => {
     expect(apiDel).toHaveBeenCalledWith("/api/erp/reviews/11/permanent");
   });
 
-  it("loads every deleted-review page so older reviews remain recoverable", async () => {
+  it("pages through deleted reviews on the server", async () => {
     apiGet
       .mockResolvedValueOnce({
         items: [{ id: 11, customerName: "Sara Ali", customerEmail: "sara@test", entityType: "product", entityId: 7, entityName: { ar: "غسول", en: "Cleanser" }, orderId: 3, orderCode: "CAP-3", rating: 5, comment: "ممتاز", status: "active", deletedAt: "2026-08-01T00:00:00Z", createdAt: "2026-07-30T00:00:00Z" }],
-        pagination: { page: 1, pageSize: 100, total: 101, totalPages: 2 }
+        pagination: { page: 1, pageSize: 20, total: 21, totalPages: 2 }
       })
       .mockResolvedValueOnce({
         items: [{ id: 12, customerName: "Mona Said", customerEmail: "mona@test", entityType: "offer", entityId: 9, entityName: { ar: "عرض قديم", en: "Older offer" }, orderId: 4, orderCode: "CAP-4", rating: 4, comment: "جيد", status: "inactive", deletedAt: "2026-07-01T00:00:00Z", createdAt: "2026-06-30T00:00:00Z" }],
-        pagination: { page: 2, pageSize: 100, total: 101, totalPages: 2 }
+        pagination: { page: 2, pageSize: 20, total: 21, totalPages: 2 }
       });
 
     render(createElement(TrashPage));
 
     openTab(/التقييمات/);
+    expect(await screen.findByText("غسول — Sara Ali")).toBeInTheDocument();
+    expect(apiGet).toHaveBeenCalledWith("/api/erp/reviews?deleted=true&page=1&pageSize=20&pages=1");
+    fireEvent.click(screen.getByRole("button", { name: "الصفحة 2" }));
     expect(await screen.findByText("عرض قديم — Mona Said")).toBeInTheDocument();
-    expect(apiGet).toHaveBeenNthCalledWith(2, "/api/erp/reviews?deleted=true&page=2&pageSize=100");
+    expect(apiGet).toHaveBeenLastCalledWith("/api/erp/reviews?deleted=true&page=2&pageSize=20&pages=1");
   });
 
   it("shows loading and request errors on the reviews trash tab", async () => {
