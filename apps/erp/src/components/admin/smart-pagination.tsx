@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { canLoadMore, clampPage, pageNumbers, visibleRange } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,8 @@ export function SmartPagination({
   className
 }: SmartPaginationProps) {
   const [typed, setTyped] = useState("");
+  // Phones keep only first, current and last so the row fits beside السابق/التالي with touch-sized targets.
+  const narrow = useMediaQuery("(max-width: 639px)");
   const view = { page, more, pageSize, total };
   const { lastPage, totalPages } = visibleRange(view);
 
@@ -75,7 +78,7 @@ export function SmartPagination({
           <div className="flex items-center gap-3 max-md:w-full max-md:justify-between">
             <p role="status" className="text-sm text-text-muted">
               {more > 0
-                ? <>الصفحات <Num value={page} />–<Num value={lastPage} /> من <Num value={totalPages} /></>
+                ? <>الصفحات <span dir="ltr"><Num value={page} />–<Num value={lastPage} /></span> من <Num value={totalPages} /></>
                 : <>صفحة <Num value={page} /> من <Num value={totalPages} /></>}
             </p>
             <Select
@@ -91,11 +94,11 @@ export function SmartPagination({
             </Select>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-1">
-            <Button variant="ghost" size="sm" disabled={loading || page <= 1} onClick={() => goTo(page - 1)}>
-              <ChevronRight aria-hidden /> السابق
+          <div className="flex items-center justify-center gap-1">
+            <Button variant="ghost" size="sm" className="max-sm:px-2" disabled={loading || page <= 1} onClick={() => goTo(page - 1)}>
+              <ChevronRight aria-hidden /> <span className="max-sm:sr-only">السابق</span>
             </Button>
-            {pageNumbers(page, totalPages).map((item, index) => item === "gap" ? (
+            {pageNumbers(page, totalPages, narrow ? 0 : 1).map((item, index) => item === "gap" ? (
               <span key={`gap-${index}`} aria-hidden className="px-1 text-text-muted">…</span>
             ) : (
               <button
@@ -116,8 +119,8 @@ export function SmartPagination({
                 {item}
               </button>
             ))}
-            <Button variant="secondary" size="sm" disabled={loading || lastPage >= totalPages} onClick={() => goTo(lastPage + 1)}>
-              التالي <ChevronLeft aria-hidden />
+            <Button variant="secondary" size="sm" className="max-sm:px-2" disabled={loading || lastPage >= totalPages} onClick={() => goTo(lastPage + 1)}>
+              <span className="max-sm:sr-only">التالي</span> <ChevronLeft aria-hidden />
             </Button>
           </div>
 

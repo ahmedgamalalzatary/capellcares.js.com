@@ -3,10 +3,11 @@ import type { SortState } from "@/lib/table-sort";
 
 export type PageItem = number | "gap";
 
-/** First, last and the pages beside the current one; a gap stands for two or more hidden pages, never just one. */
-export function pageNumbers(current: number, totalPages: number): PageItem[] {
+/** First, last, the current page and `siblings` pages on each side of it; a gap stands for two or more hidden pages, never just one. */
+export function pageNumbers(current: number, totalPages: number, siblings = 1): PageItem[] {
   if (totalPages < 1) return [];
-  const shown = [...new Set([1, current - 1, current, current + 1, totalPages])]
+  const around = Array.from({ length: siblings * 2 + 1 }, (_, index) => current - siblings + index);
+  const shown = [...new Set([1, ...around, totalPages])]
     .filter((page) => page >= 1 && page <= totalPages)
     .sort((a, b) => a - b);
   const items: PageItem[] = [];

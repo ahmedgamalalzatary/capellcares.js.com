@@ -31,6 +31,11 @@ describe("pageNumbers", () => {
     expect(pageNumbers(122, 125)).toEqual([1, "gap", 121, 122, 123, 124, 125]);
   });
 
+  it("can drop the neighbours for narrow screens", () => {
+    expect(pageNumbers(5, 125, 0)).toEqual([1, "gap", 5, "gap", 125]);
+    expect(pageNumbers(3, 125, 0)).toEqual([1, 2, 3, "gap", 125]);
+  });
+
   it("is empty when there are no pages", () => {
     expect(pageNumbers(1, 0)).toEqual([]);
   });
