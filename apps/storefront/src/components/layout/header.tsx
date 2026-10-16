@@ -117,7 +117,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
           aria-label={dict.brand}
         >
           <Image
-            src="/logoblack.jpg"
+            src="/logoblack.png"
             alt={dict.brand}
             width={400}
             height={100}
