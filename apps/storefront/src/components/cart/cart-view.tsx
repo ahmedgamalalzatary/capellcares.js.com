@@ -79,7 +79,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             qty: l.qty,
             slug: `/${lang}/products/${p.slug}`,
             entityId: p.id,
-            illustration: <ProductIllustration product={p} className="h-full w-full object-cover" />
+            illustration: <ProductIllustration product={p} lang={lang} className="h-full w-full object-cover" />
           };
         }
 
@@ -98,7 +98,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             qty: l.qty,
             slug: `/${lang}/offers/${o.slug}`,
             entityId: o.id,
-            illustration: <OfferIllustration offer={o} className="h-full w-full object-cover" />
+            illustration: <OfferIllustration offer={o} lang={lang} className="h-full w-full object-cover" />
           };
         }
 

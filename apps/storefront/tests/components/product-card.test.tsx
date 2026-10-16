@@ -67,86 +67,56 @@ const dict = {
 };
 
 describe("ProductCard", () => {
-  it("switches to the dedicated hover image on hover when one exists", () => {
-    render(createElement(ProductCard, {
-      lang: "en",
-      dict,
-      product: {
-        id: 1,
-        sku: "SKU-1",
-        slug: "product-1",
-        name: { ar: "منتج", en: "Product" },
-        description: { ar: "", en: "" },
-        ingredients: { ar: "", en: "" },
-        howToUse: { ar: "", en: "" },
-        warnings: { ar: "", en: "" },
-        keywords: [],
-        buyingPrice: 10,
-        imagePath: "/uploads/primary.jpg",
-        hoverImagePath: "/uploads/hover.jpg",
-        media: [
-          { type: "image", arUrl: null, enUrl: "/uploads/primary.jpg" },
-          { type: "image", arUrl: null, enUrl: "/uploads/gallery-secondary.jpg" }
-        ],
-        status: "active",
-        isNew: false,
-        isBestseller: false,
-        categoryId: 5,
-        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
-        createdAt: "",
-        updatedAt: ""
-      }
-    }));
+  const galleryProduct = (hoverImagePath: string) => ({
+    id: 1,
+    sku: "SKU-1",
+    slug: "product-1",
+    name: { ar: "منتج", en: "Product" },
+    description: { ar: "", en: "" },
+    ingredients: { ar: "", en: "" },
+    howToUse: { ar: "", en: "" },
+    warnings: { ar: "", en: "" },
+    keywords: [],
+    buyingPrice: 10,
+    imagePath: "/uploads/primary.jpg",
+    hoverImagePath,
+    media: [
+      { type: "image" as const, arUrl: null, enUrl: "/uploads/primary.jpg" },
+      { type: "image" as const, arUrl: null, enUrl: "/uploads/gallery-secondary.jpg" }
+    ],
+    status: "active" as const,
+    isNew: false,
+    isBestseller: false,
+    categoryId: 5,
+    variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+    createdAt: "",
+    updatedAt: ""
+  });
+  const slideSources = () => Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"));
 
-    const card = screen.getByLabelText("Product");
-    const image = screen.getByRole("img", { name: "Product" });
+  it("shows the main image, then the hover image, then the rest of the gallery", () => {
+    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("/uploads/hover.jpg") }));
 
-    expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
-    fireEvent.mouseEnter(card);
-    expect(image).toHaveAttribute("src", "/uploads/hover.jpg");
-    fireEvent.mouseLeave(card);
-    expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
+    expect(slideSources()).toEqual(["/uploads/primary.jpg", "/uploads/hover.jpg", "/uploads/gallery-secondary.jpg"]);
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
   });
 
-  it("does not fall back to the second gallery image when no dedicated hover image exists", () => {
-    render(createElement(ProductCard, {
-      lang: "en",
-      dict,
-      product: {
-        id: 1,
-        sku: "SKU-1",
-        slug: "product-1",
-        name: { ar: "منتج", en: "Product" },
-        description: { ar: "", en: "" },
-        ingredients: { ar: "", en: "" },
-        howToUse: { ar: "", en: "" },
-        warnings: { ar: "", en: "" },
-        keywords: [],
-        buyingPrice: 10,
-        imagePath: "/uploads/primary.jpg",
-        hoverImagePath: "",
-        media: [
-          { type: "image", arUrl: null, enUrl: "/uploads/primary.jpg" },
-          { type: "image", arUrl: null, enUrl: "/uploads/gallery-secondary.jpg" }
-        ],
-        status: "active",
-        isNew: false,
-        isBestseller: false,
-        categoryId: 5,
-        variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
-        createdAt: "",
-        updatedAt: ""
-      }
-    }));
+  it("steps through every picture with the arrows instead of swapping on hover", () => {
+    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("/uploads/hover.jpg") }));
 
-    const card = screen.getByLabelText("Product");
-    const image = screen.getByRole("img", { name: "Product" });
+    fireEvent.mouseEnter(screen.getByLabelText("Product"));
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
 
-    expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
-    fireEvent.mouseEnter(card);
-    expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
-    fireEvent.mouseLeave(card);
-    expect(image).toHaveAttribute("src", "/uploads/primary.jpg");
+    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/hover.jpg");
+    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/gallery-secondary.jpg");
+  });
+
+  it("skips the hover slot when no dedicated hover image exists", () => {
+    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("") }));
+
+    expect(slideSources()).toEqual(["/uploads/primary.jpg", "/uploads/gallery-secondary.jpg"]);
   });
 
   it("synchronizes the preview when the localized primary image changes", () => {
@@ -178,7 +148,7 @@ describe("ProductCard", () => {
 
     view.rerender(createElement(ProductCard, { lang: "ar", dict, product }));
 
-    expect(screen.getByRole("img")).toHaveAttribute("src", "/uploads/ar-primary.jpg");
+    expect(screen.getByRole("img", { name: "منتج" })).toHaveAttribute("src", "/uploads/ar-primary.jpg");
   });
 
 

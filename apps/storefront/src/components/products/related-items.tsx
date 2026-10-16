@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice, pickLang, type CartLine, type Language, type RelatedItemCard } from "@capella/shared";
@@ -12,6 +12,8 @@ import { CardRating } from "@/components/reviews/card-rating";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
+import { CardImageCarousel } from "@/components/ui/card-image-carousel";
+import { buildCardImages } from "@/lib/card-images";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 
@@ -71,7 +73,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
   const isAr = lang === "ar";
   const href = hrefFor(item, lang);
   const label = pickLang(item.name, lang);
-  const media = { slug: item.slug, name: item.name, imagePath: item.imagePath ?? "" };
+  const images = useMemo(() => buildCardImages(item, lang), [item, lang]);
   const isWishlisted = has(item.type, item.id);
 
   // Products carry no new/bestseller flags in this payload, so only bundles badge — and only when the dictionary actually supplies a label.
@@ -99,29 +101,37 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
 
   return (
     <article className="group" data-testid="related-item">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
-        <Link href={href} aria-label={label} className="absolute inset-0 grid place-items-center">
-          {/* Bundle artwork is sized the way SectionCard sizes it, product
-              artwork the way ProductCard does — each matches its own card. */}
-          {item.type === "offer" ? (
-            <OfferIllustration
-              offer={media}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
-            />
-          ) : item.type === "collection" ? (
-            <CollectionIllustration
-              collection={media}
-              lang={lang}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
-            />
-          ) : (
-            <ProductIllustration
-              product={media}
-              className="object-contain transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
-            />
-          )}
-        </Link>
+        <CardImageCarousel
+          images={images}
+          href={href}
+          label={label}
+          lang={lang}
+          renderImage={(url) => {
+            const media = { slug: item.slug, name: item.name, imagePath: url };
+            // Bundle artwork is sized the way SectionCard sizes it, product artwork the way ProductCard does — each matches its own card.
+            return item.type === "offer" ? (
+              <OfferIllustration
+                offer={media}
+                lang={lang}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : item.type === "collection" ? (
+              <CollectionIllustration
+                collection={media}
+                lang={lang}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <ProductIllustration
+                product={media}
+                lang={lang}
+                className="object-contain"
+              />
+            );
+          }}
+        />
 
         {badge ? <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" /> : null}
 

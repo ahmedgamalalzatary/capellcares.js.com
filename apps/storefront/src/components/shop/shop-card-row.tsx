@@ -1,6 +1,7 @@
 "use client";
 
 import { Children, useCallback, useEffect, useRef, useState } from "react";
+import { getDict, type Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 
 /** Shop-page card layout: one row of cards (3 desktop, 2 tablet, ~1 with a peek mobile) with the rest reachable via horizontal scroll; cards keep a fixed 1/3 width and snap, scrollbar hidden.
@@ -12,13 +13,14 @@ export function ShopCardRow({
   arrowTone = "ink"
 }: {
   children: React.ReactNode;
-  lang: string;
+  lang: Language;
   /** Arrow colour. "ink" reads on the light shop rows; "canvas" (white) is for rows whose cards are dark artwork, such as Capella Tips. */
   arrowTone?: "ink" | "canvas";
   /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint; only item width changes — the row still scrolls and snaps either way. */
   cols?: 1 | 2;
 }) {
   const isRtl = lang === "ar";
+  const dict = getDict(lang);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -90,7 +92,7 @@ export function ShopCardRow({
 
       <button
         type="button"
-        aria-label="Previous"
+        aria-label={dict.common.previous}
         onClick={() => scrollByPage("prev")}
         disabled={!canPrev}
         className={`${buttonClass} inset-s-1`}
@@ -99,7 +101,7 @@ export function ShopCardRow({
       </button>
       <button
         type="button"
-        aria-label="Next"
+        aria-label={dict.common.next}
         onClick={() => scrollByPage("next")}
         disabled={!canNext}
         className={`${buttonClass} inset-e-1`}

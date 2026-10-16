@@ -9,6 +9,7 @@ import {
   normalizeEntityMedia,
   resolvePrimaryEntityImagePath
 } from "../../entity-media/entity-media.repository.js";
+import { resolveLocalizedHoverImagePath } from "../../hover-image/hover-image.js";
 import type { RelatedEntityType, RelatedRef, StorefrontRelatedCard } from "./shared.js";
 
 /** A card as the per-type queries build it; the rating lands at assembly. */
@@ -100,13 +101,18 @@ export async function getStorefrontRelatedCardsRepo(
     loadEntityMediaRows("collection", collectionIds)
   ]);
   const [productMedia, offerMedia, collectionMedia] = await mediaPromise;
-  const imageFor = (
+  // The pictures a related card carries: the same main image, hover image and gallery the catalog card for that item gets.
+  const imagesFor = (
     type: "product" | "offer" | "collection",
-    id: number,
-    imagePath: string | null
+    row: { id: number; imagePath: string | null; hoverImagePath: string | null; arHoverImagePath: string | null }
   ) => {
-    const mediaRows = (type === "product" ? productMedia : type === "offer" ? offerMedia : collectionMedia).get(id);
-    return resolvePrimaryEntityImagePath(normalizeEntityMedia(mediaRows, imagePath), imagePath, lang);
+    const mediaRows = (type === "product" ? productMedia : type === "offer" ? offerMedia : collectionMedia).get(row.id);
+    const media = normalizeEntityMedia(mediaRows, row.imagePath);
+    return {
+      imagePath: resolvePrimaryEntityImagePath(media, row.imagePath, lang),
+      hoverImagePath: resolveLocalizedHoverImagePath(row.arHoverImagePath, row.hoverImagePath, lang),
+      media
+    };
   };
 
   const productCards = new Map<number, UnratedRelatedCard>();
@@ -118,6 +124,8 @@ export async function getStorefrontRelatedCardsRepo(
         arName: products.arName,
         enName: products.enName,
         imagePath: products.imagePath,
+        hoverImagePath: products.hoverImagePath,
+        arHoverImagePath: products.arHoverImagePath,
         categoryArName: categories.arName,
         categoryEnName: categories.enName
       })
@@ -171,7 +179,7 @@ export async function getStorefrontRelatedCardsRepo(
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: imageFor("product", row.id, row.imagePath),
+        ...imagesFor("product", row),
         price,
         variantId: cheapest.id,
         originalTotal: savingOrNull(Number(cheapest.sellingPrice), price),
@@ -191,6 +199,8 @@ export async function getStorefrontRelatedCardsRepo(
         arName: offers.arName,
         enName: offers.enName,
         imagePath: offers.imagePath,
+        hoverImagePath: offers.hoverImagePath,
+        arHoverImagePath: offers.arHoverImagePath,
         fixedPrice: offers.fixedPrice
       })
       .from(offers)
@@ -230,7 +240,7 @@ export async function getStorefrontRelatedCardsRepo(
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: imageFor("offer", row.id, row.imagePath),
+        ...imagesFor("offer", row),
         price,
         variantId: null,
         originalTotal: savingOrNull(parts, price),
@@ -248,6 +258,8 @@ export async function getStorefrontRelatedCardsRepo(
         arName: collections.arName,
         enName: collections.enName,
         imagePath: collections.imagePath,
+        hoverImagePath: collections.hoverImagePath,
+        arHoverImagePath: collections.arHoverImagePath,
         fixedPrice: collections.fixedPrice
       })
       .from(collections)
@@ -286,7 +298,7 @@ export async function getStorefrontRelatedCardsRepo(
         id: row.id,
         slug: row.slug,
         name: { ar: row.arName, en: row.enName },
-        imagePath: imageFor("collection", row.id, row.imagePath),
+        ...imagesFor("collection", row),
         price,
         variantId: null,
         originalTotal: savingOrNull(sumBundleParts(items), price),

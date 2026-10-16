@@ -80,7 +80,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             testIdPrefix="product"
             dotLabelTemplate={dict.product?.mediaDotLabel ?? (lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}")}
             thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
-            renderImage={(url) => <ProductIllustration product={{ ...product, imagePath: url }} />}
+            renderImage={(url) => <ProductIllustration product={{ ...product, imagePath: url }} lang={lang} />}
             overlay={(
               <>
                 {leadTag ? (

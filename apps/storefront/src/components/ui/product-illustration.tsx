@@ -1,6 +1,6 @@
 // Lightweight SVG illustrations keyed by product slug so the storefront feels finished without needing real photography uploaded yet.
 import Image from "next/image";
-import type { Product } from "@capella/shared";
+import { pickLang, type Language, type Product } from "@capella/shared";
 
 const palettes: Record<string, { bg: string; bottle: string; accent: string; cap: string }> = {
   "rose-petal-body-lotion": { bg: "#f6e3e5", bottle: "#fff0f1", accent: "#a13b4b", cap: "#5a4f47" },
@@ -23,16 +23,19 @@ function pickPalette(slug: string) {
 
 interface Props {
   product: Pick<Product, "slug" | "name" | "imagePath">;
+  /** Language of the page, so the picture is described in it. */
+  lang?: Language;
   className?: string;
 }
 
-export function ProductIllustration({ product, className }: Props) {
+export function ProductIllustration({ product, lang = "en", className }: Props) {
+  const label = pickLang(product.name, lang);
   if (product.imagePath) {
     return (
       <Image
         className={className ?? "h-full w-full object-contain rounded-md"}
         src={product.imagePath}
-        alt={product.name.en}
+        alt={label}
         width={800}
         height={1000}
         sizes="(min-width: 1024px) 22vw, (min-width: 640px) 34vw, 78vw"
@@ -47,7 +50,7 @@ export function ProductIllustration({ product, className }: Props) {
       className={className}
       viewBox="0 0 200 240"
       role="img"
-      aria-label={product.name.en}
+      aria-label={label}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>

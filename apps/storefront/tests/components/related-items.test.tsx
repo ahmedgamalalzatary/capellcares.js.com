@@ -73,6 +73,27 @@ describe("RelatedItems", () => {
     cartRemove.mockClear();
   });
 
+  it("slides through the related item's main, hover and gallery pictures like the catalog cards", () => {
+    render(createElement(RelatedItems, {
+      items: [{
+        ...items[0]!,
+        hoverImagePath: "/uploads/serum-hover.jpg",
+        media: [
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/serum.jpg" },
+          { type: "image" as const, arUrl: null, enUrl: "/uploads/serum-side.jpg" }
+        ]
+      }],
+      lang: "en",
+      dict,
+      title: "Related"
+    }));
+
+    expect(Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src")))
+      .toEqual(["/uploads/serum.jpg", "/uploads/serum-hover.jpg", "/uploads/serum-side.jpg"]);
+    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+    expect(screen.getByRole("img", { name: "Serum" })).toHaveAttribute("src", "/uploads/serum-hover.jpg");
+  });
+
   it("shows the quantity stepper for a related product already in the cart", () => {
     cartLines.push({ type: "product", productId: 1, variantId: 11, qty: 2 });
 

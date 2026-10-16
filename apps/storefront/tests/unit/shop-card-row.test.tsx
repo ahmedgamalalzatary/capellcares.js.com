@@ -12,9 +12,16 @@ function getScroller(container: HTMLElement): HTMLElement {
 describe("ShopCardRow", () => {
   it("skips null children without rendering empty wrappers", () => {
     const { container } = render(
-      createElement(ShopCardRow, null, createElement("span", { key: "a" }, "A"), null, false)
+      createElement(ShopCardRow, { lang: "en", children: [createElement("span", { key: "a" }, "A"), null, false] })
     );
 
     expect(getScroller(container).children).toHaveLength(1);
+  });
+
+  it("labels its arrows in the page language", () => {
+    render(createElement(ShopCardRow, { lang: "ar", children: createElement("span", { key: "a" }, "A") }));
+
+    expect(screen.getByRole("button", { name: "السابق" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "التالي" })).toBeInTheDocument();
   });
 });

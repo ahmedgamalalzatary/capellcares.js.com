@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 
 import { eq } from "drizzle-orm";
-import { bundleDiscounts, categories, collectionItems, productVariants, variantDiscounts } from "@capella/database/drizzle/schema";
+import { bundleDiscounts, categories, collectionItems, entityMedia, offers, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   getStorefrontRelatedCardsRepo,
@@ -296,4 +296,34 @@ test("getStorefrontRelatedCardsRepo totals a bundle's parts as originalTotal and
   assert.equal(collectionCard?.price, 65);
   assert.equal(collectionCard?.originalTotal, 90);
   assert.equal(collectionCard?.variantId, null);
+});
+
+test("getStorefrontRelatedCardsRepo carries each card's gallery and language-specific hover image", async () => {
+  const ids = await getBaselineIds();
+  await db.update(products)
+    .set({ hoverImagePath: "/uploads/product-hover-en.jpg", arHoverImagePath: "/uploads/product-hover-ar.jpg" })
+    .where(eq(products.id, ids.productOneId));
+  await db.update(offers).set({ hoverImagePath: null, arHoverImagePath: null }).where(eq(offers.id, ids.offerId));
+  await db.delete(entityMedia).where(eq(entityMedia.productId, ids.productOneId));
+  await db.insert(entityMedia).values([
+    { productId: ids.productOneId, mediaType: "image", url: "https://cdn.test/one.jpg", arUrl: null, sortOrder: 0 },
+    { productId: ids.productOneId, mediaType: "image", url: "https://cdn.test/two.jpg", arUrl: null, sortOrder: 1 }
+  ]);
+
+  await setRelatedLinksForSourceRepo({ type: "product", id: ids.productTwoId }, [
+    { type: "product", id: ids.productOneId },
+    { type: "offer", id: ids.offerId }
+  ]);
+
+  const arCards = await getStorefrontRelatedCardsRepo({ type: "product", id: ids.productTwoId }, "ar");
+  const productCard = arCards.find((card) => card.type === "product");
+  assert.deepEqual(productCard?.media, [
+    { type: "image", arUrl: null, enUrl: "https://cdn.test/one.jpg" },
+    { type: "image", arUrl: null, enUrl: "https://cdn.test/two.jpg" }
+  ]);
+  assert.match(productCard?.hoverImagePath ?? "", /product-hover-ar\.jpg$/);
+  assert.equal(arCards.find((card) => card.type === "offer")?.hoverImagePath, null);
+
+  const enCards = await getStorefrontRelatedCardsRepo({ type: "product", id: ids.productTwoId }, "en");
+  assert.match(enCards.find((card) => card.type === "product")?.hoverImagePath ?? "", /product-hover-en\.jpg$/);
 });

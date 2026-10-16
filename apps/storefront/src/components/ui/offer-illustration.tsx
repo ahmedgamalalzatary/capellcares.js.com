@@ -1,8 +1,10 @@
 import Image from "next/image";
-import type { Offer } from "@capella/shared";
+import { pickLang, type Language, type Offer } from "@capella/shared";
 
 interface Props {
   offer: Pick<Offer, "slug" | "name" | "imagePath">;
+  /** Language of the page, so the picture is described in it. */
+  lang?: Language;
   className?: string;
 }
 
@@ -12,13 +14,14 @@ const palettes: Record<string, { a: string; b: string; ink: string }> = {
   "weekend-pamper": { a: "#e8d3b3", b: "#d6e8d4", ink: "#3e7a4d" }
 };
 
-export function OfferIllustration({ offer, className }: Props) {
+export function OfferIllustration({ offer, lang = "en", className }: Props) {
+  const label = pickLang(offer.name, lang);
   if (offer.imagePath) {
     return (
       <Image
         className={className}
         src={offer.imagePath}
-        alt={offer.name.en}
+        alt={label}
         width={800}
         height={1000}
         sizes="(min-width: 1024px) 22vw, (min-width: 640px) 34vw, 78vw"
@@ -28,7 +31,7 @@ export function OfferIllustration({ offer, className }: Props) {
 
   const p = palettes[offer.slug] ?? { a: "#f1ece2", b: "#e6ddd0", ink: "#2a221c" };
   return (
-    <svg className={className} viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={offer.name.en}>
+    <svg className={className} viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={label}>
       <defs>
         <linearGradient id={`og-${offer.slug}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor={p.a} />

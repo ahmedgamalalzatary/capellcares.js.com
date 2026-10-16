@@ -131,7 +131,7 @@ export function CollectionDetail({
                   className="grid grid-cols-[68px_1fr_auto] items-center gap-4 rounded-(--radius) border border-(--hairline) bg-surface p-3 transition-colors hover:border-warm hover:bg-(--warm-soft)"
                 >
                   <div className="h-17 w-17 overflow-hidden rounded-md bg-(--warm-soft)">
-                    <ProductIllustration product={item.product} className="h-full w-full" />
+                    <ProductIllustration product={item.product} lang={lang} className="h-full w-full" />
                   </div>
                   <div className="min-w-0">
                     <div className="truncate font-medium text-ink">{pickLang(item.product.name, lang)}</div>

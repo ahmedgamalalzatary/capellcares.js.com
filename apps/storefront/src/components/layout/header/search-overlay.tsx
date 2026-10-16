@@ -176,7 +176,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
                                 className="flex items-center gap-4 rounded-(--radius) py-2 transition-colors hover:bg-(--warm-soft)"
                               >
                                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-(--hairline) bg-surface">
-                                  <ProductIllustration product={product} className="h-full w-full object-contain" />
+                                  <ProductIllustration product={product} lang={lang} className="h-full w-full object-contain" />
                                 </div>
                                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
                                   {pickLang(product.name, lang)}

@@ -40,6 +40,8 @@ export const en = {
     addToWishlist: "Add to wishlist",
     removeFromWishlist: "Remove",
     share: "Share",
+    previous: "Previous",
+    next: "Next",
     linkCopied: "Link copied",
     buyNow: "Buy now",
     outOfStock: "Out of stock",

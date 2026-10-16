@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, resolveLocalizedEntityMediaUrl, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { CardRating } from "@/components/reviews/card-rating";
-import { useHoverPreviewImage } from "@/hooks/use-hover-preview-image";
+import { CardImageCarousel } from "@/components/ui/card-image-carousel";
+import { buildCardImages } from "@/lib/card-images";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -34,11 +35,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const { isOutOfStock } = getProductBadgeState(product);
   const leadTag = getProductTags(product, dict, { lead: true })[0];
   const isAr = lang === "ar";
-  const imageMedia = useMemo(() => (product.media ?? []).filter((item) => item.type === "image"), [product.media]);
-  const primaryImage = imageMedia[0]
-    ? resolveLocalizedEntityMediaUrl(imageMedia[0], lang)
-    : product.imagePath;
-  const { previewImage, hoverProps } = useHoverPreviewImage(primaryImage, product.hoverImagePath);
+  const images = useMemo(() => buildCardImages(product, lang), [product, lang]);
 
   // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
   const buyVariant = useMemo(() => {
@@ -60,19 +57,21 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
-      <Link
-        href={href}
-        aria-label={pickLang(product.name, lang)}
-        className="absolute inset-0 grid place-items-center"
-        {...hoverProps}
-      >
-        <ProductIllustration
-          product={{ ...product, imagePath: previewImage }}
-          className="object-contain transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]"
+        <CardImageCarousel
+          images={images}
+          href={href}
+          label={pickLang(product.name, lang)}
+          lang={lang}
+          renderImage={(url) => (
+            <ProductIllustration
+              product={{ ...product, imagePath: url }}
+              lang={lang}
+              className="object-contain"
+            />
+          )}
         />
-      </Link>
 
         {/* inset-s-0 so the badge mirrors in RTL, matching SectionCard. */}
         {leadTag ? (

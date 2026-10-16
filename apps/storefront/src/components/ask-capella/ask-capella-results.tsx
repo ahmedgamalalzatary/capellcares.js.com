@@ -73,7 +73,7 @@ export function AskCapellaReplyContent({
               {/* The real picture, with the illustration standing in when a
                   product has none — same treatment as the search overlay. */}
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-(--radius) border border-(--hairline) bg-surface">
-                <ProductIllustration product={product} className="h-full w-full object-contain" />
+                <ProductIllustration product={product} lang={lang} className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-ink">{pickLang(product.name, lang)}</p>

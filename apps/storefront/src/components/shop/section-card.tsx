@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { pickLang, formatPrice, type CartLine, type Language, type Offer, type Collection, type Advice, type RatingSummary } from "@capella/shared";
 import { SOCIAL_LINKS } from "@/constants/socials";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
@@ -10,7 +10,8 @@ import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { CardRating } from "@/components/reviews/card-rating";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
-import { useHoverPreviewImage } from "@/hooks/use-hover-preview-image";
+import { CardImageCarousel } from "@/components/ui/card-image-carousel";
+import { buildCardImages } from "@/lib/card-images";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -32,11 +33,10 @@ export function SectionCard(props: SectionCardProps) {
   const router = useRouter();
   const wishlist = useWishlist();
   const { user } = useAuth();
-  // Advice cards have no hover image; the purchasable kinds share the card hover pipeline with ProductCard.
-  const primaryImage = props.kind === "advice" ? "" : props.data.imagePath;
-  const { previewImage, hoverProps } = useHoverPreviewImage(
-    primaryImage,
-    props.kind === "advice" ? undefined : props.data.hoverImagePath
+  // Advice cards show a video cover; the purchasable kinds slide through their pictures the way ProductCard does.
+  const images = useMemo(
+    () => (props.kind === "advice" ? [] : buildCardImages(props.data, lang)),
+    [props.kind, props.data, lang]
   );
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [advicePreviewActive, setAdvicePreviewActive] = useState(false);
@@ -73,12 +73,16 @@ export function SectionCard(props: SectionCardProps) {
   const addClass =
     "inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 
+  const slideImageClass = "absolute inset-0 h-full w-full object-cover";
+
   // Per-kind derivations — the card knows which one it is rendering.
   let href: string | null = null;
   let title = "";
   let description = "";
   let badge: ItemTag | null = null;
   let image: React.ReactNode = null;
+  /** Draws one slide of an offer or collection card. */
+  let renderSlide: ((url: string) => React.ReactNode) | null = null;
   let price: number | null = null;
   let originalTotal: number | null = null;
   // Advice carries no rating; only the two purchasable kinds set one.
@@ -97,7 +101,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(offer.name, lang);
     description = pickLang(offer.description, lang);
     badge = { kind: "offer", label: dict.offers.badge, star: true };
-    image = <OfferIllustration offer={{ ...offer, imagePath: previewImage }} className="absolute inset-0 h-full w-full object-cover" />;
+    renderSlide = (url) => <OfferIllustration offer={{ ...offer, imagePath: url }} lang={lang} className={slideImageClass} />;
     price = offer.price;
     originalTotal = offer.originalTotal;
     rating = offer.rating ?? null;
@@ -118,7 +122,7 @@ export function SectionCard(props: SectionCardProps) {
     title = pickLang(collection.name, lang);
     description = pickLang(collection.description, lang);
     badge = { kind: "collection", label: dict.collections.badge, star: true };
-    image = <CollectionIllustration collection={{ ...collection, imagePath: previewImage }} lang={lang} className="absolute inset-0 h-full w-full object-cover" />;
+    renderSlide = (url) => <CollectionIllustration collection={{ ...collection, imagePath: url }} lang={lang} className={slideImageClass} />;
     price = collection.price;
     originalTotal = collection.originalTotal;
     rating = collection.rating ?? null;
@@ -256,20 +260,16 @@ export function SectionCard(props: SectionCardProps) {
 
   return (
     <article className="group">
-      <div className={`relative aspect-8/9 overflow-hidden ${mediaRoundedClass} bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-warm hover:shadow-(--shadow-2)`}>
+      <div className={`relative aspect-8/9 overflow-hidden ${mediaRoundedClass} bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (
           <>
             {image}
             {adviceTrigger}
           </>
-        ) : href ? (
-          <Link href={href} aria-label={title} className="absolute inset-0 grid place-items-center" {...hoverProps}>
-            {image}
-          </Link>
-        ) : (
-          <div className="absolute inset-0 grid place-items-center">{image}</div>
-        )}
+        ) : href && renderSlide ? (
+          <CardImageCarousel images={images} href={href} label={title} lang={lang} renderImage={renderSlide} />
+        ) : null}
 
         {badge ? (
           <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />

@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { relatedItems } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
-import type { RatingSummary } from "@capella/shared";
+import type { EntityMedia, RatingSummary } from "@capella/shared";
 
 export type RelatedEntityType = "product" | "offer" | "collection";
 
@@ -18,6 +18,10 @@ export interface StorefrontRelatedCard {
   slug: string;
   name: { ar: string; en: string };
   imagePath: string | null;
+  /** The ERP hover image in the requested language; null when none is set. */
+  hoverImagePath: string | null;
+  /** The item's gallery, so the related card slides through the same pictures as the catalog card. */
+  media: EntityMedia[];
   price: number;
   /** The variant the card transacts on — the cheapest in-stock one. Null for offers and collections, which the cart addresses by their own id. */
   variantId: number | null;

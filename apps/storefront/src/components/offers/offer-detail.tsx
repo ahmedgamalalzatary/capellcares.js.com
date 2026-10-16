@@ -64,7 +64,7 @@ export function OfferDetail({ offer, category, categories = [], items, lang, dic
             testIdPrefix="offer"
             dotLabelTemplate={lang === "ar" ? "انتقل إلى الوسائط {index}" : "go to media {index}"}
             thumbnailLabelTemplate={lang === "ar" ? "اختر الوسائط {index}" : "select media {index}"}
-            renderImage={(url) => <OfferIllustration offer={{ ...offer, imagePath: url }} className="h-full w-full object-contain rounded-lg" />}
+            renderImage={(url) => <OfferIllustration offer={{ ...offer, imagePath: url }} lang={lang} className="h-full w-full object-contain rounded-lg" />}
             overlay={(
               <>
                 <ItemTagPill
@@ -125,7 +125,7 @@ export function OfferDetail({ offer, category, categories = [], items, lang, dic
                   className="grid grid-cols-[68px_1fr_auto] items-center gap-4 rounded-(--radius) border border-(--hairline) bg-surface p-3 transition-colors hover:border-warm hover:bg-(--warm-soft)"
                 >
                   <div className="h-17 w-17 overflow-hidden rounded-md bg-(--warm-soft)">
-                    <ProductIllustration product={item.product} className="h-full w-full" />
+                    <ProductIllustration product={item.product} lang={lang} className="h-full w-full" />
                   </div>
                   <div className="min-w-0">
                     <div className="truncate font-medium text-ink">{pickLang(item.product.name, lang)}</div>

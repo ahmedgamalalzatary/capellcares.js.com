@@ -85,48 +85,41 @@ const collection = {
   updatedAt: ""
 };
 
-describe("SectionCard hover image", () => {
-  it("switches an offer card to the dedicated hover image on hover when one exists", () => {
+const slideSources = () => Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"));
+
+describe("SectionCard images", () => {
+  it("shows an offer's main image first and its hover image as the second slide", () => {
     render(createElement(SectionCard, { kind: "offer", data: offer, lang: "en", dict }));
 
-    const card = screen.getByLabelText("Offer");
-    const image = screen.getByRole("img", { name: "Offer" });
+    expect(slideSources()).toEqual(["/uploads/offer-primary.jpg", "/uploads/offer-hover.jpg"]);
+    expect(screen.getByRole("img", { name: "Offer" })).toHaveAttribute("src", "/uploads/offer-primary.jpg");
 
-    expect(image).toHaveAttribute("src", "/uploads/offer-primary.jpg");
-    fireEvent.mouseEnter(card);
-    expect(image).toHaveAttribute("src", "/uploads/offer-hover.jpg");
-    fireEvent.mouseLeave(card);
-    expect(image).toHaveAttribute("src", "/uploads/offer-primary.jpg");
+    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+    expect(screen.getByRole("img", { name: "Offer" })).toHaveAttribute("src", "/uploads/offer-hover.jpg");
   });
 
-  it("switches a collection card to the dedicated hover image on hover when one exists", () => {
-    render(createElement(SectionCard, { kind: "collection", data: collection, lang: "en", dict }));
-
-    const card = screen.getByLabelText("Collection");
-    const image = screen.getByRole("img", { name: "Collection" });
-
-    expect(image).toHaveAttribute("src", "/uploads/collection-primary.jpg");
-    fireEvent.mouseEnter(card);
-    expect(image).toHaveAttribute("src", "/uploads/collection-hover.jpg");
-    fireEvent.mouseLeave(card);
-    expect(image).toHaveAttribute("src", "/uploads/collection-primary.jpg");
-  });
-
-  it("keeps the primary image on hover when no dedicated hover image exists", () => {
+  it("slides a collection through its hover image and the rest of its gallery", () => {
     render(createElement(SectionCard, {
-      kind: "offer",
-      data: { ...offer, hoverImagePath: "" },
+      kind: "collection",
+      data: {
+        ...collection,
+        media: [...collection.media, { type: "image" as const, arUrl: null, enUrl: "/uploads/collection-third.jpg" }]
+      },
       lang: "en",
       dict
     }));
 
-    const card = screen.getByLabelText("Offer");
-    const image = screen.getByRole("img", { name: "Offer" });
+    expect(slideSources()).toEqual([
+      "/uploads/collection-primary.jpg",
+      "/uploads/collection-hover.jpg",
+      "/uploads/collection-third.jpg"
+    ]);
+  });
 
-    expect(image).toHaveAttribute("src", "/uploads/offer-primary.jpg");
-    fireEvent.mouseEnter(card);
-    expect(image).toHaveAttribute("src", "/uploads/offer-primary.jpg");
-    fireEvent.mouseLeave(card);
-    expect(image).toHaveAttribute("src", "/uploads/offer-primary.jpg");
+  it("shows a single picture with no arrows when there is only the main image", () => {
+    render(createElement(SectionCard, { kind: "offer", data: { ...offer, hoverImagePath: "" }, lang: "en", dict }));
+
+    expect(slideSources()).toEqual(["/uploads/offer-primary.jpg"]);
+    expect(screen.queryByRole("button", { name: "Next media" })).toBeNull();
   });
 });

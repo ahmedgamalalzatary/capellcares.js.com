@@ -40,6 +40,8 @@ export const ar = {
     addToWishlist: "أضف إلى المفضلة",
     removeFromWishlist: "إزالة",
     share: "مشاركة",
+    previous: "السابق",
+    next: "التالي",
     linkCopied: "تم نسخ الرابط",
     buyNow: "اشتري الآن",
     outOfStock: "غير متوفر",

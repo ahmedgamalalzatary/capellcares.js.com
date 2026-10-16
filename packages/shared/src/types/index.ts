@@ -199,6 +199,10 @@ export interface RelatedItemCard {
   slug: string;
   name: Bilingual;
   imagePath: string | null;
+  /** The ERP hover image in the requested language; the card shows it as its second picture. */
+  hoverImagePath?: string | null;
+  /** The item's gallery, so the card can slide through every picture like the catalog cards do. */
+  media?: EntityMedia[];
   price: number;
   /** The variant the card adds to the cart — the cheapest in-stock one. Null for offers and collections, which the cart addresses by their own id. */
   variantId: number | null;

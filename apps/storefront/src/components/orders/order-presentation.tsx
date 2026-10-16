@@ -99,10 +99,10 @@ export function OrderItemMedia({
 }) {
   if (item.itemType === "product_variant") {
     const product = catalog.products.find((p) => p.variants.some((v) => v.id === item.variantId));
-    if (product) return <ProductIllustration product={product} className={className} />;
+    if (product) return <ProductIllustration product={product} lang={lang} className={className} />;
   } else if (item.itemType === "offer") {
     const offer = catalog.offers.find((o) => o.id === item.offerId);
-    if (offer) return <OfferIllustration offer={offer} className={className} />;
+    if (offer) return <OfferIllustration offer={offer} lang={lang} className={className} />;
   } else {
     const collection = catalog.collections.find((c) => c.id === item.collectionId);
     if (collection) return <CollectionIllustration collection={collection} lang={lang} className={className} />;
