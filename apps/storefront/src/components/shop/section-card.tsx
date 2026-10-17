@@ -268,7 +268,7 @@ export function SectionCard(props: SectionCardProps) {
             {adviceTrigger}
           </>
         ) : href && renderSlide ? (
-          <CardImageCarousel images={images} href={href} label={title} lang={lang} renderImage={renderSlide} />
+          <CardImageCarousel images={images} hoverImage={props.data.hoverImagePath} href={href} label={title} lang={lang} renderImage={renderSlide} />
         ) : null}
 
         {badge ? (

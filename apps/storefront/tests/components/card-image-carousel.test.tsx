@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -8,17 +8,19 @@ vi.mock("next/link", () => ({
 
 import { CardImageCarousel } from "@/components/ui/card-image-carousel";
 import { buildCardImages } from "@/lib/card-images";
+import { useCardSliderScreen } from "../helpers/media-query";
 
 afterEach(cleanup);
 
-const renderImage = (url: string) => createElement("img", { src: url, alt: "" });
-const images = ["/one.jpg", "/two.jpg", "/three.jpg"];
+const renderImage = (url: string) => createElement("img", { src: url, alt: "Product" });
+const images = ["/one.jpg", "/two.jpg", "/three.jpg", "/four.jpg"];
 
-function renderCarousel(lang: "en" | "ar" = "en", list = images) {
-  render(createElement(CardImageCarousel, { images: list, href: "/en/products/p", label: "Product", lang, renderImage }));
+function renderCarousel({ lang = "en", list = images, hoverImage = "/hover.jpg" }: { lang?: "en" | "ar"; list?: string[]; hoverImage?: string | null } = {}) {
+  render(createElement(CardImageCarousel, { images: list, hoverImage, href: "/en/products/p", label: "Product", lang, renderImage }));
   return {
     link: screen.getByRole("link", { name: "Product" }),
-    slide: () => screen.getByTestId("card-image-carousel").getAttribute("data-active-index")
+    slide: () => screen.getByTestId("card-image-carousel").getAttribute("data-active-index"),
+    shown: () => screen.getByRole("img", { name: "Product" }).getAttribute("src")
   };
 }
 
@@ -30,18 +32,23 @@ function swipe(target: HTMLElement, fromX: number, toX: number, pointerType = "t
   fireEvent.pointerUp(target, { clientX: toX, clientY: 103, pointerId: 1, pointerType, isPrimary: true });
 }
 
+const swipeForward = (target: HTMLElement) => swipe(target, 300, 150);
+const swipeBack = (target: HTMLElement) => swipe(target, 150, 300);
+
 describe("buildCardImages", () => {
-  it("leads with the main image, then the hover image, then the rest of the gallery, without repeats", () => {
-    expect(buildCardImages({
+  it("leads with the main image, then the rest of the gallery, leaving out the hover image, videos and repeats", () => {
+    // A whole catalog item goes in, hover image included.
+    const item = {
       imagePath: "/main.jpg",
       hoverImagePath: "/hover.jpg",
       media: [
         { type: "image", arUrl: null, enUrl: "/main.jpg" },
         { type: "video", url: "/clip.mp4" },
-        { type: "image", arUrl: null, enUrl: "/hover.jpg" },
+        { type: "image", arUrl: null, enUrl: "/third.jpg" },
         { type: "image", arUrl: null, enUrl: "/third.jpg" }
       ]
-    }, "en")).toEqual(["/main.jpg", "/hover.jpg", "/third.jpg"]);
+    } satisfies Parameters<typeof buildCardImages>[0] & { hoverImagePath: string };
+    expect(buildCardImages(item, "en")).toEqual(["/main.jpg", "/third.jpg"]);
   });
 
   it("uses the localized gallery image for the language being shown", () => {
@@ -57,65 +64,114 @@ describe("buildCardImages", () => {
   });
 
   it("falls back to the main image path when there is no gallery", () => {
-    expect(buildCardImages({ imagePath: "/main.jpg", hoverImagePath: "" }, "en")).toEqual(["/main.jpg"]);
+    expect(buildCardImages({ imagePath: "/main.jpg" }, "en")).toEqual(["/main.jpg"]);
     expect(buildCardImages({ imagePath: null }, "en")).toEqual([]);
   });
 });
 
-describe("CardImageCarousel", () => {
-  it("renders every image as a slide and starts on the first", () => {
-    const { slide } = renderCarousel();
-    expect(Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"))).toEqual(images);
-    expect(slide()).toBe("0");
+describe("CardImageCarousel on desktop", () => {
+  it("shows only the main image and swaps to the hover image while the pointer is over it", () => {
+    const { link, shown } = renderCarousel();
+    expect(document.querySelectorAll("img")).toHaveLength(1);
+    expect(shown()).toBe("/one.jpg");
+
+    fireEvent.mouseEnter(link);
+    expect(shown()).toBe("/hover.jpg");
+    fireEvent.mouseLeave(link);
+    expect(shown()).toBe("/one.jpg");
   });
 
-  it("steps with the arrows and disables them at the ends", () => {
-    const { slide } = renderCarousel();
-    const prev = screen.getByRole("button", { name: "Previous media" });
-    const next = screen.getByRole("button", { name: "Next media" });
+  it("keeps the main image on hover when there is no hover image", () => {
+    const { link, shown } = renderCarousel({ hoverImage: "" });
+    fireEvent.mouseEnter(link);
+    expect(shown()).toBe("/one.jpg");
+  });
 
-    expect(prev).toBeDisabled();
-    fireEvent.click(next);
-    fireEvent.click(next);
-    expect(slide()).toBe("2");
-    expect(next).toBeDisabled();
-    fireEvent.click(prev);
-    expect(slide()).toBe("1");
+  it("zooms the picture on hover", () => {
+    const { link } = renderCarousel();
+    expect(link.firstElementChild?.className).toContain("group-hover:scale-[1.05]");
+  });
+
+  it("has no arrows and does not slide", () => {
+    const { link, shown } = renderCarousel();
+    expect(screen.queryByRole("button")).toBeNull();
+    swipeForward(link);
+    expect(shown()).toBe("/one.jpg");
+  });
+
+  it("still renders the artwork fallback when there are no images", () => {
+    renderCarousel({ list: [] });
+    expect(document.querySelectorAll("img")).toHaveLength(1);
+  });
+});
+
+describe("CardImageCarousel on touch and small screens", () => {
+  beforeEach(useCardSliderScreen);
+
+  it("starts on the main image with no arrows", () => {
+    const { slide, shown } = renderCarousel();
+    expect(slide()).toBe("0");
+    expect(shown()).toBe("/one.jpg");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("never shows the hover image, even on hover", () => {
+    const { link, shown } = renderCarousel();
+    fireEvent.mouseEnter(link);
+    expect(shown()).toBe("/one.jpg");
+    expect(Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"))).not.toContain("/hover.jpg");
   });
 
   it("changes the picture on a finger swipe and does not follow the link", () => {
-    const { link, slide } = renderCarousel();
-    swipe(link, 300, 150);
+    const { link, slide, shown } = renderCarousel();
+    swipeForward(link);
     expect(slide()).toBe("1");
+    expect(shown()).toBe("/two.jpg");
 
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
     link.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
+  });
 
-    swipe(link, 150, 300);
+  it("goes round from the last picture back to the first", () => {
+    const { link, slide, shown } = renderCarousel();
+    for (let i = 0; i < 4; i++) swipeForward(link);
     expect(slide()).toBe("0");
+    expect(shown()).toBe("/one.jpg");
+    swipeForward(link);
+    expect(slide()).toBe("1");
+  });
+
+  it("goes round from the first picture back to the last", () => {
+    const { link, slide, shown } = renderCarousel();
+    swipeBack(link);
+    expect(slide()).toBe("3");
+    expect(shown()).toBe("/four.jpg");
+    swipeBack(link);
+    expect(slide()).toBe("2");
   });
 
   it("mirrors the swipe direction on Arabic pages", () => {
-    const { link, slide } = renderCarousel("ar");
+    const { link, slide } = renderCarousel({ lang: "ar" });
     swipe(link, 150, 300);
     expect(slide()).toBe("1");
   });
 
-  it("ignores mouse drags, which belong to the arrows on desktop", () => {
+  it("ignores mouse drags", () => {
     const { link, slide } = renderCarousel();
     swipe(link, 300, 150, "mouse");
     expect(slide()).toBe("0");
   });
 
-  it("shows no arrows or swipe for a single image, so the row around it can still scroll", () => {
-    const { link } = renderCarousel("en", ["/only.jpg"]);
-    expect(screen.queryByRole("button")).toBeNull();
+  it("does not swipe a single image, so the row around it can still scroll", () => {
+    const { link, slide } = renderCarousel({ list: ["/only.jpg"] });
     expect(link.className).not.toContain("touch-pan-y");
+    swipeForward(link);
+    expect(slide()).toBe("0");
   });
 
   it("still renders the artwork fallback when there are no images", () => {
-    renderCarousel("en", []);
+    renderCarousel({ list: [] });
     expect(document.querySelectorAll("img")).toHaveLength(1);
   });
 });

@@ -61,6 +61,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
+          hoverImage={product.hoverImagePath}
           href={href}
           label={pickLang(product.name, lang)}
           lang={lang}

@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { getDict, type Language } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
+import { flushSync } from "react-dom";
+import type { Language } from "@capella/shared";
+import { CARD_SLIDER_MEDIA_QUERY } from "@/constants/ui";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface Props {
+  /** The main image, then the rest of the gallery. */
   images: string[];
+  /** The ERP hover image; only desktop shows it. */
+  hoverImage?: string | null;
   href: string;
   label: string;
   lang: Language;
-  /** Draws one slide. Called with "" when there are no images so the card's artwork fallback still shows. */
+  /** Draws one picture. Called with "" when there are no images so the card's artwork fallback still shows. */
   renderImage: (url: string) => ReactNode;
 }
 
@@ -20,28 +25,88 @@ const AXIS_LOCK_DISTANCE = 8;
 const SWIPE_DISTANCE = 36;
 
 /**
- * The image area every storefront card shares: all of the card's pictures in one strip, stepped
- * with arrows on hover-capable screens and with a finger swipe on touch screens. A tap anywhere
- * on the picture still opens the item; the click that ends a swipe does not.
+ * The image area every storefront card shares. On touch and small screens it is a strip the
+ * finger swipes through, going round endlessly; elsewhere it shows the main image, swaps to the
+ * hover image while the pointer is over it and zooms in. A tap or click anywhere on it opens the item.
  */
-export function CardImageCarousel({ images, href, label, lang, renderImage }: Props) {
+export function CardImageCarousel({ hoverImage, ...props }: Props) {
+  const slides = useMediaQuery(CARD_SLIDER_MEDIA_QUERY);
+  return slides ? <SwipeSlides {...props} /> : <HoverImage {...props} hoverImage={hoverImage} />;
+}
+
+function HoverImage({ images, hoverImage, href, label, renderImage }: Omit<Props, "lang">) {
+  const primary = images[0] ?? "";
+  const [shown, setShown] = useState(primary);
+
+  // Another language or a refreshed item brings a new main image.
+  useEffect(() => {
+    setShown(primary);
+  }, [primary]);
+
+  return (
+    <div className="absolute inset-0" data-testid="card-image-carousel" data-active-index={0}>
+      <Link
+        href={href}
+        aria-label={label}
+        className="absolute inset-0 grid place-items-center overflow-hidden"
+        onMouseEnter={() => setShown(hoverImage || primary)}
+        onMouseLeave={() => setShown(primary)}
+      >
+        <div className="relative grid h-full w-full place-items-center transition-transform duration-500 ease-(--ease-out-expo) group-hover:scale-[1.05]">
+          {renderImage(shown)}
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function SwipeSlides({ images, href, label, lang, renderImage }: Omit<Props, "hoverImage">) {
   const slides = images.length ? images : [""];
   const count = slides.length;
+  const loops = count > 1;
+  // A copy of the last picture sits before the first and a copy of the first after the last: a
+  // swipe past either end slides into the copy, then jumps unseen to the real picture, so the
+  // pictures go round forever.
+  const track = loops ? [slides[count - 1]!, ...slides, slides[0]!] : slides;
+  const firstSlot = loops ? 1 : 0;
   const isRtl = lang === "ar";
-  const dict = getDict(lang);
-  const [index, setIndex] = useState(0);
+  const [slot, setSlot] = useState(firstSlot);
+  const [animate, setAnimate] = useState(true);
   const [dragOffset, setDragOffset] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; x: number; y: number; axis: "x" | "y" | null } | null>(null);
   const swipeConsumedClickRef = useRef(false);
   const slidesKey = slides.join("|");
 
   // A new set of pictures (another language, a refreshed item) starts again from the main one.
   useEffect(() => {
-    setIndex(0);
-  }, [slidesKey]);
+    setAnimate(false);
+    setSlot(firstSlot);
+  }, [slidesKey, firstSlot]);
 
-  const activeIndex = Math.min(index, count - 1);
-  const step = (direction: 1 | -1) => setIndex(Math.max(0, Math.min(count - 1, activeIndex + direction)));
+  const activeIndex = loops ? (slot - 1 + count) % count : 0;
+  // The real picture a copy stands for.
+  const realSlot = (at: number) => (at === 0 ? count : at === count + 1 ? 1 : at);
+
+  // Moves without the slide animation, and lets the browser settle there before anything animates from it.
+  const jumpTo = (at: number) => {
+    flushSync(() => {
+      setAnimate(false);
+      setSlot(at);
+    });
+    void trackRef.current?.offsetWidth;
+  };
+
+  const settleOnRealSlot = () => {
+    if (realSlot(slot) !== slot) jumpTo(realSlot(slot));
+  };
+
+  const step = (direction: 1 | -1) => {
+    const from = realSlot(slot);
+    if (from !== slot) jumpTo(from);
+    setAnimate(true);
+    setSlot(from + direction);
+  };
 
   const endDrag = () => {
     dragRef.current = null;
@@ -51,8 +116,10 @@ export function CardImageCarousel({ images, href, label, lang, renderImage }: Pr
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     // A new gesture clears the last one's mark; a touch swipe that ends off the card fires no click to clear it.
     swipeConsumedClickRef.current = false;
-    // Desktop steps with the arrows; a mouse drag on a link would start the browser's own link drag.
-    if (count <= 1 || event.pointerType === "mouse" || !event.isPrimary) return;
+    // A mouse drag on a link would start the browser's own link drag.
+    if (!loops || event.pointerType === "mouse" || !event.isPrimary) return;
+    // A swipe started before the last one finished going round begins from the real picture, not its copy.
+    settleOnRealSlot();
     dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, axis: null };
   };
 
@@ -66,11 +133,7 @@ export function CardImageCarousel({ images, href, label, lang, renderImage }: Pr
       drag.axis = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
       if (drag.axis === "x") event.currentTarget.setPointerCapture?.(event.pointerId);
     }
-    if (drag.axis !== "x") return;
-    // Past the first or last picture the strip only gives a little, so the end is felt rather than hit.
-    const forward = isRtl ? deltaX > 0 : deltaX < 0;
-    const atEdge = forward ? activeIndex === count - 1 : activeIndex === 0;
-    setDragOffset(atEdge ? deltaX / 3 : deltaX);
+    if (drag.axis === "x") setDragOffset(deltaX);
   };
 
   const onPointerUp = (event: PointerEvent<HTMLElement>) => {
@@ -99,23 +162,21 @@ export function CardImageCarousel({ images, href, label, lang, renderImage }: Pr
     event.stopPropagation();
   };
 
+  const onTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) settleOnRealSlot();
+  };
+
   // The strip runs in the page's writing direction, so in Arabic later slides sit to the left and it slides the other way.
-  const offsetPercent = (isRtl ? 1 : -1) * activeIndex * 100;
-  const arrowClass =
-    "absolute top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-full bg-surface/85 text-ink opacity-0 backdrop-blur-sm transition-[opacity,background] duration-200 hover:bg-(--warm-soft) focus-visible:opacity-100 group-hover/card-media:opacity-100 disabled:invisible pointer-fine:grid";
+  const offsetPercent = (isRtl ? 1 : -1) * slot * 100;
 
   return (
-    <div
-      className="group/card-media absolute inset-0"
-      data-testid="card-image-carousel"
-      data-active-index={activeIndex}
-    >
+    <div className="absolute inset-0" data-testid="card-image-carousel" data-active-index={activeIndex}>
       <Link
         href={href}
         aria-label={label}
         draggable={false}
         // pan-y: the page still scrolls up and down, while a sideways finger drag stays with the picture instead of the row it sits in.
-        className={`absolute inset-0 overflow-hidden ${count > 1 ? "touch-pan-y" : ""}`.trim()}
+        className={`absolute inset-0 overflow-hidden ${loops ? "touch-pan-y" : ""}`.trim()}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -123,14 +184,16 @@ export function CardImageCarousel({ images, href, label, lang, renderImage }: Pr
         onClickCapture={onClickCapture}
       >
         <div
-          className={`flex h-full ${dragOffset ? "" : "transition-transform duration-500 ease-(--ease-out-expo)"}`.trim()}
+          ref={trackRef}
+          className={`flex h-full ${animate && !dragOffset ? "transition-transform duration-500 ease-(--ease-out-expo)" : ""}`.trim()}
           style={{ transform: `translateX(calc(${offsetPercent}% + ${dragOffset}px))` }}
+          onTransitionEnd={onTransitionEnd}
         >
-          {slides.map((url, slideIndex) => (
+          {track.map((url, trackIndex) => (
             <div
-              key={`${url}-${slideIndex}`}
+              key={`${url}-${trackIndex}`}
               className="relative grid h-full w-full shrink-0 place-items-center"
-              aria-hidden={slideIndex === activeIndex ? undefined : true}
+              aria-hidden={trackIndex === slot ? undefined : true}
             >
               {renderImage(url)}
             </div>
@@ -138,35 +201,15 @@ export function CardImageCarousel({ images, href, label, lang, renderImage }: Pr
         </div>
       </Link>
 
-      {count > 1 ? (
-        <>
-          <button
-            type="button"
-            onClick={() => step(-1)}
-            disabled={activeIndex === 0}
-            aria-label={dict.media.previous}
-            className={`${arrowClass} inset-s-2`}
-          >
-            <Icon.Chevron size={18} className={isRtl ? "" : "rotate-180"} />
-          </button>
-          <button
-            type="button"
-            onClick={() => step(1)}
-            disabled={activeIndex >= count - 1}
-            aria-label={dict.media.next}
-            className={`${arrowClass} inset-e-2`}
-          >
-            <Icon.Chevron size={18} className={isRtl ? "rotate-180" : ""} />
-          </button>
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1.5" aria-hidden="true">
-            {slides.map((url, slideIndex) => (
-              <span
-                key={`dot-${url}-${slideIndex}`}
-                className={`size-1.5 rounded-full transition-colors duration-300 ${slideIndex === activeIndex ? "bg-ink" : "bg-ink/25"}`}
-              />
-            ))}
-          </div>
-        </>
+      {loops ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1.5" aria-hidden="true">
+          {slides.map((url, slideIndex) => (
+            <span
+              key={`dot-${url}-${slideIndex}`}
+              className={`size-1.5 rounded-full transition-colors duration-300 ${slideIndex === activeIndex ? "bg-ink" : "bg-ink/25"}`}
+            />
+          ))}
+        </div>
       ) : null}
     </div>
   );

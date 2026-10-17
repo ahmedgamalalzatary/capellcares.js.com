@@ -16,3 +16,6 @@ export const CONTACT_MAX_TOTAL_MB = 50;
 export const ANNOUNCEMENT_CROSS_S = 6;
 // Pause between sentences when reduced-motion is on (no slide animation).
 export const ANNOUNCEMENT_REDUCED_HOLD_MS = 3500;
+
+// Storefront cards swipe through their pictures on touch screens and small screens; elsewhere they swap to the hover image.
+export const CARD_SLIDER_MEDIA_QUERY = "(pointer: coarse), (max-width: 639px)";

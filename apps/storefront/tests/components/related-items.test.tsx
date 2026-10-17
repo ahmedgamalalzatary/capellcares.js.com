@@ -41,6 +41,7 @@ vi.mock("@/components/providers/auth-provider", () => ({
 }));
 
 import { RelatedItems } from "@/components/products/related-items";
+import { useCardSliderScreen } from "../helpers/media-query";
 
 const dict = {
   common: { addToCart: "Add to cart", added: "Added", addToWishlist: "Wishlist", quantity: "Quantity" },
@@ -73,25 +74,30 @@ describe("RelatedItems", () => {
     cartRemove.mockClear();
   });
 
-  it("slides through the related item's main, hover and gallery pictures like the catalog cards", () => {
-    render(createElement(RelatedItems, {
-      items: [{
-        ...items[0]!,
-        hoverImagePath: "/uploads/serum-hover.jpg",
-        media: [
-          { type: "image" as const, arUrl: null, enUrl: "/uploads/serum.jpg" },
-          { type: "image" as const, arUrl: null, enUrl: "/uploads/serum-side.jpg" }
-        ]
-      }],
-      lang: "en",
-      dict,
-      title: "Related"
-    }));
+  const itemWithGallery = () => ({
+    ...items[0]!,
+    hoverImagePath: "/uploads/serum-hover.jpg",
+    media: [
+      { type: "image" as const, arUrl: null, enUrl: "/uploads/serum.jpg" },
+      { type: "image" as const, arUrl: null, enUrl: "/uploads/serum-side.jpg" }
+    ]
+  });
+  const sources = () => Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"));
 
-    expect(Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src")))
-      .toEqual(["/uploads/serum.jpg", "/uploads/serum-hover.jpg", "/uploads/serum-side.jpg"]);
-    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+  it("swaps a related item to its hover image while hovered on desktop", () => {
+    render(createElement(RelatedItems, { items: [itemWithGallery()], lang: "en", dict, title: "Related" }));
+
+    expect(sources()).toEqual(["/uploads/serum.jpg"]);
+    fireEvent.mouseEnter(screen.getAllByRole("link", { name: "Serum" })[0]!);
     expect(screen.getByRole("img", { name: "Serum" })).toHaveAttribute("src", "/uploads/serum-hover.jpg");
+  });
+
+  it("swipes a related item through its gallery on touch screens, without the hover image", () => {
+    useCardSliderScreen();
+    render(createElement(RelatedItems, { items: [itemWithGallery()], lang: "en", dict, title: "Related" }));
+
+    expect(sources()).not.toContain("/uploads/serum-hover.jpg");
+    expect(new Set(sources())).toEqual(new Set(["/uploads/serum.jpg", "/uploads/serum-side.jpg"]));
   });
 
   it("shows the quantity stepper for a related product already in the cart", () => {

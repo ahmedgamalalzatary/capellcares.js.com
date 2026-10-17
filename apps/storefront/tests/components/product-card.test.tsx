@@ -52,6 +52,7 @@ vi.mock("@/components/providers/cart-provider", async () => {
 });
 
 import { ProductCard } from "@/components/products/product-card";
+import { useCardSliderScreen } from "../helpers/media-query";
 
 const dict = {
   badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
@@ -94,29 +95,23 @@ describe("ProductCard", () => {
   });
   const slideSources = () => Array.from(document.querySelectorAll("img"), (img) => img.getAttribute("src"));
 
-  it("shows the main image, then the hover image, then the rest of the gallery", () => {
+  it("shows the main image on desktop and swaps to the hover image while hovered", () => {
     render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("/uploads/hover.jpg") }));
 
-    expect(slideSources()).toEqual(["/uploads/primary.jpg", "/uploads/hover.jpg", "/uploads/gallery-secondary.jpg"]);
-    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
-  });
-
-  it("steps through every picture with the arrows instead of swapping on hover", () => {
-    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("/uploads/hover.jpg") }));
-
+    expect(slideSources()).toEqual(["/uploads/primary.jpg"]);
     fireEvent.mouseEnter(screen.getByLabelText("Product"));
-    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
-
-    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
     expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/hover.jpg");
-    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
-    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/gallery-secondary.jpg");
+    fireEvent.mouseLeave(screen.getByLabelText("Product"));
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
   });
 
-  it("skips the hover slot when no dedicated hover image exists", () => {
-    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("") }));
+  it("swipes through the main image and the gallery on touch screens, without the hover image", () => {
+    useCardSliderScreen();
+    render(createElement(ProductCard, { lang: "en", dict, product: galleryProduct("/uploads/hover.jpg") }));
 
-    expect(slideSources()).toEqual(["/uploads/primary.jpg", "/uploads/gallery-secondary.jpg"]);
+    expect(slideSources()).not.toContain("/uploads/hover.jpg");
+    expect(new Set(slideSources())).toEqual(new Set(["/uploads/primary.jpg", "/uploads/gallery-secondary.jpg"]));
+    expect(screen.getByRole("img", { name: "Product" })).toHaveAttribute("src", "/uploads/primary.jpg");
   });
 
   it("synchronizes the preview when the localized primary image changes", () => {

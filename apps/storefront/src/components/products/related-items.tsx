@@ -105,6 +105,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
+          hoverImage={item.hoverImagePath}
           href={href}
           label={label}
           lang={lang}
