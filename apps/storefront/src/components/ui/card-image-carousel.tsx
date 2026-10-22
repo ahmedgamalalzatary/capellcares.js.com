@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Language } from "@capella/shared";
 import { CARD_SLIDER_MEDIA_QUERY } from "@/constants/ui";
@@ -24,14 +24,27 @@ const AXIS_LOCK_DISTANCE = 8;
 /** Sideways distance (px) a swipe must travel to change the picture. */
 const SWIPE_DISTANCE = 36;
 
+const CardImageSwipeContext = createContext(true);
+
+/** Turns the card image swipe off for every card inside, so a sideways swipe scrolls the row the cards sit in (the shop page). */
+export function NoCardImageSwipe({ children }: { children: ReactNode }) {
+  return <CardImageSwipeContext.Provider value={false}>{children}</CardImageSwipeContext.Provider>;
+}
+
+/** Whether cards here may swipe through their pictures; false inside NoCardImageSwipe. */
+export function useCardImageSwipe() {
+  return useContext(CardImageSwipeContext);
+}
+
 /**
  * The image area every storefront card shares. On touch and small screens it is a strip the
  * finger swipes through, going round endlessly; elsewhere it shows the main image, swaps to the
  * hover image while the pointer is over it and zooms in. A tap or click anywhere on it opens the item.
  */
 export function CardImageCarousel({ hoverImage, ...props }: Props) {
-  const slides = useMediaQuery(CARD_SLIDER_MEDIA_QUERY);
-  return slides ? <SwipeSlides {...props} /> : <HoverImage {...props} hoverImage={hoverImage} />;
+  const swipeAllowed = useCardImageSwipe();
+  const sliderScreen = useMediaQuery(CARD_SLIDER_MEDIA_QUERY);
+  return swipeAllowed && sliderScreen ? <SwipeSlides {...props} /> : <HoverImage {...props} hoverImage={hoverImage} />;
 }
 
 function HoverImage({ images, hoverImage, href, label, renderImage }: Omit<Props, "lang">) {

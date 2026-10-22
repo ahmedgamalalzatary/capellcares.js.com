@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
+import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -40,6 +41,8 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
   return (
+    // The rows scroll sideways, so a card's pictures don't swipe here; the cards stay as they were before the swipe.
+    <NoCardImageSwipe>
     <main className="container">
 
       <ShopMediaStrip
@@ -199,5 +202,6 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} />
     </main>
+    </NoCardImageSwipe>
   );
 }

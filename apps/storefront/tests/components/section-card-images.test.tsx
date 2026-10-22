@@ -39,6 +39,7 @@ vi.mock("@/components/providers/cart-provider", () => ({
 }));
 
 import { SectionCard } from "@/components/shop/section-card";
+import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 import { useCardSliderScreen } from "../helpers/media-query";
 
 const dict = {
@@ -120,5 +121,25 @@ describe("SectionCard images", () => {
 
     fireEvent.mouseEnter(screen.getByLabelText("Offer"));
     expect(screen.getByRole("img", { name: "Offer" })).toHaveAttribute("src", "/uploads/offer-primary.jpg");
+  });
+
+  it("shows the card as before the image swipe where swipe is turned off: main image, hover swap, no zoom", () => {
+    useCardSliderScreen();
+    render(createElement(NoCardImageSwipe, null, createElement(SectionCard, {
+      kind: "offer",
+      // The gallery leads with another picture; the card still shows the offer's own main image.
+      data: { ...offer, media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/offer-gallery.jpg" }, ...offer.media] },
+      lang: "en",
+      dict
+    })));
+
+    const link = screen.getByLabelText("Offer");
+    expect(screen.queryByTestId("card-image-carousel")).toBeNull();
+    expect(link.innerHTML).not.toContain("group-hover:scale");
+    expect(slideSources()).toEqual(["/uploads/offer-primary.jpg"]);
+    fireEvent.mouseEnter(link);
+    expect(slideSources()).toEqual(["/uploads/offer-hover.jpg"]);
+    fireEvent.mouseLeave(link);
+    expect(slideSources()).toEqual(["/uploads/offer-primary.jpg"]);
   });
 });

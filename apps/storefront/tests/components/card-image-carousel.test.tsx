@@ -6,7 +6,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
 }));
 
-import { CardImageCarousel } from "@/components/ui/card-image-carousel";
+import { CardImageCarousel, NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 import { buildCardImages } from "@/lib/card-images";
 import { useCardSliderScreen } from "../helpers/media-query";
 
@@ -15,8 +15,9 @@ afterEach(cleanup);
 const renderImage = (url: string) => createElement("img", { src: url, alt: "Product" });
 const images = ["/one.jpg", "/two.jpg", "/three.jpg", "/four.jpg"];
 
-function renderCarousel({ lang = "en", list = images, hoverImage = "/hover.jpg" }: { lang?: "en" | "ar"; list?: string[]; hoverImage?: string | null } = {}) {
-  render(createElement(CardImageCarousel, { images: list, hoverImage, href: "/en/products/p", label: "Product", lang, renderImage }));
+function renderCarousel({ lang = "en", list = images, hoverImage = "/hover.jpg", swipe = true }: { lang?: "en" | "ar"; list?: string[]; hoverImage?: string | null; swipe?: boolean } = {}) {
+  const carousel = createElement(CardImageCarousel, { images: list, hoverImage, href: "/en/products/p", label: "Product", lang, renderImage });
+  render(swipe ? carousel : createElement(NoCardImageSwipe, null, carousel));
   return {
     link: screen.getByRole("link", { name: "Product" }),
     slide: () => screen.getByTestId("card-image-carousel").getAttribute("data-active-index"),
@@ -173,5 +174,22 @@ describe("CardImageCarousel on touch and small screens", () => {
   it("still renders the artwork fallback when there are no images", () => {
     renderCarousel({ list: [] });
     expect(document.querySelectorAll("img")).toHaveLength(1);
+  });
+});
+
+describe("CardImageCarousel where image swipe is turned off", () => {
+  beforeEach(useCardSliderScreen);
+
+  it("keeps the desktop hover behavior on touch and small screens and does not swipe", () => {
+    const { link, slide, shown } = renderCarousel({ swipe: false });
+    expect(document.querySelectorAll("img")).toHaveLength(1);
+    expect(link.className).not.toContain("touch-pan-y");
+
+    swipeForward(link);
+    expect(slide()).toBe("0");
+    expect(shown()).toBe("/one.jpg");
+
+    fireEvent.mouseEnter(link);
+    expect(shown()).toBe("/hover.jpg");
   });
 });

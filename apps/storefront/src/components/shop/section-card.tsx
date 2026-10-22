@@ -10,7 +10,8 @@ import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
 import { CardRating } from "@/components/reviews/card-rating";
 import { Icon } from "@/components/ui/icons";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
-import { CardImageCarousel } from "@/components/ui/card-image-carousel";
+import { CardImageCarousel, useCardImageSwipe } from "@/components/ui/card-image-carousel";
+import { useHoverPreviewImage } from "@/hooks/use-hover-preview-image";
 import { buildCardImages } from "@/lib/card-images";
 import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -37,6 +38,12 @@ export function SectionCard(props: SectionCardProps) {
   const images = useMemo(
     () => (props.kind === "advice" ? [] : buildCardImages(props.data, lang)),
     [props.kind, props.data, lang]
+  );
+  // Where the swipe is off (the shop page) the card is as it was before it: its own main image, swapped to the hover image while hovered, no zoom.
+  const swipeAllowed = useCardImageSwipe();
+  const { previewImage, hoverProps } = useHoverPreviewImage(
+    props.kind === "advice" ? "" : props.data.imagePath,
+    props.kind === "advice" ? undefined : props.data.hoverImagePath
   );
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [advicePreviewActive, setAdvicePreviewActive] = useState(false);
@@ -267,6 +274,10 @@ export function SectionCard(props: SectionCardProps) {
             {image}
             {adviceTrigger}
           </>
+        ) : href && renderSlide && !swipeAllowed ? (
+          <Link href={href} aria-label={title} className="absolute inset-0 grid place-items-center" {...hoverProps}>
+            {renderSlide(previewImage)}
+          </Link>
         ) : href && renderSlide ? (
           <CardImageCarousel images={images} hoverImage={props.data.hoverImagePath} href={href} label={title} lang={lang} renderImage={renderSlide} />
         ) : null}

@@ -257,8 +257,17 @@ vi.mock("@/lib/storefront-static-data", () => ({
 }));
 
 import ShopPage from "@/app/[lang]/shop/page";
+import { useCardSliderScreen } from "../helpers/media-query";
 
 describe("shop page", () => {
+  it("keeps its cards free of the image swipe, so a sideways swipe scrolls the row", async () => {
+    useCardSliderScreen();
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(screen.getAllByRole("link", { name: "Summer Offer" }).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("card-image-carousel")).toBeNull();
+  });
+
   it("renders the collections section on the shop landing page", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
