@@ -2,7 +2,7 @@
   "name": "capella",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@11.5.2",
+  "packageManager": "pnpm@12.4.1",
   "scripts": {
     "build": "turbo run build",
     "build:mobile": "turbo run build --filter=@capella/mobile --filter=@capella/api",

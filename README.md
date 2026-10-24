@@ -25,7 +25,7 @@ The product and architecture source of truth is [docs/storefront-erp-spec.md](do
 - **Database:** MySQL 8, Drizzle ORM
 - **Payments:** Paymob hosted card/wallet checkout with HMAC-verified callbacks
 - **Shipping:** Bosta carrier integration (quotes, dispatch, sync, cancellation, edits)
-- **Tooling:** pnpm 11, Turborepo, TypeScript 5, ESLint
+- **Tooling:** pnpm 12, Turborepo, TypeScript 5, ESLint
 - **Testing:** Node test runner (API + database), Vitest (storefront + ERP), Jest (mobile), Playwright (mobile e2e)
 
 ## What Is Implemented
