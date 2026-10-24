@@ -3,6 +3,7 @@
 import { Children, useCallback, useEffect, useRef, useState } from "react";
 import { getDict, type Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
+import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 
 /** Shop-page card layout: one row of cards (3 desktop, 2 tablet, ~1 with a peek mobile) with the rest reachable via horizontal scroll; cards keep a fixed 1/3 width and snap, scrollbar hidden.
  * On desktop prev/next buttons scroll a page and disable at the ends (hidden on touch/tablet); used by the shop page's sections and Capella Tips, leaving ProductCard/SectionCard untouched. */
@@ -71,6 +72,8 @@ export function ShopCardRow({
     `absolute top-[42%] z-10 hidden size-12 -translate-y-1/2 place-items-center ${toneClass} transition hover:scale-120 disabled:pointer-events-none disabled:opacity-0 lg:grid`;
 
   return (
+    // The row scrolls sideways, so its cards' pictures don't swipe; a sideways swipe scrolls the row instead.
+    <NoCardImageSwipe>
     <div className="relative min-w-0">
       <div
         ref={scrollerRef}
@@ -109,5 +112,6 @@ export function ShopCardRow({
         <Icon.Chevron size={40} className={isRtl ? "rotate-180" : ""} />
       </button>
     </div>
+    </NoCardImageSwipe>
   );
 }

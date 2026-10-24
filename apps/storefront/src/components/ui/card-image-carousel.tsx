@@ -26,7 +26,7 @@ const SWIPE_DISTANCE = 36;
 
 const CardImageSwipeContext = createContext(true);
 
-/** Turns the card image swipe off for every card inside, so a sideways swipe scrolls the row the cards sit in (the shop page). */
+/** Turns the card image swipe off for every card inside, so a sideways swipe scrolls the row the cards sit in (every ShopCardRow). */
 export function NoCardImageSwipe({ children }: { children: ReactNode }) {
   return <CardImageSwipeContext.Provider value={false}>{children}</CardImageSwipeContext.Provider>;
 }
