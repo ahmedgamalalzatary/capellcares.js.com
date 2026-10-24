@@ -108,4 +108,21 @@ describe("product form keywords field", () => {
       "ترطيب"
     ]);
   });
+
+  it("is a multi-line box, so a long list stays readable on a phone", () => {
+    const field = renderForm();
+
+    expect(field.tagName).toBe("TEXTAREA");
+  });
+
+  it("splits on new lines and on the Arabic comma too", async () => {
+    const field = renderForm();
+
+    fireEvent.change(field, { target: { value: "ترطيب، جسم\nلوشن، lotion" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "حفظ التعديلات" }));
+    });
+
+    expect(upsertProduct.mock.calls[0]![0].keywords).toEqual(["ترطيب", "جسم", "لوشن", "lotion"]);
+  });
 });

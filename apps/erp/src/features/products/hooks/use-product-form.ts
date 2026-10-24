@@ -133,7 +133,7 @@ export function useProductForm({
       howToUse: { ar: useAr, en: useEn },
       warnings: { ar: warnAr, en: warnEn },
       // The field is a textarea, so Enter is as natural a separator as a comma.
-      keywords: keywords.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
+      keywords: keywords.split(/[,،\n]/).map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
       imagePath: primaryImage,
       ...hoverImagePayload,

@@ -12,7 +12,7 @@ import { StatusChoice } from "@/components/forms/status-choice";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
-import { Input, InputWithAddon } from "@/components/ui/input";
+import { Input, InputWithAddon, Textarea } from "@/components/ui/input";
 import { SwitchField } from "@/components/ui/switch";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -127,9 +127,11 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
         <Field label="القسم" htmlFor="product-category" error={errors.categoryId}>
           <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
         </Field>
-        <Field label="كلمات مفتاحية" htmlFor="product-keywords" hint="افصلي بينها بفاصلة. تساعد العملاء في البحث." error={errors.keywords}>
-          <Input
+        {/* Multi-line, not one line: a long keyword list was unreadable on a phone. */}
+        <Field label="كلمات مفتاحية" htmlFor="product-keywords" hint="افصلي بينها بفاصلة أو سطر جديد. تساعد العملاء في البحث." error={errors.keywords}>
+          <Textarea
             id="product-keywords"
+            rows={3}
             aria-invalid={Boolean(errors.keywords) || undefined}
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
