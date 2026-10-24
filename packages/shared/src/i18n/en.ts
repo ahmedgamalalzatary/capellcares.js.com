@@ -364,6 +364,11 @@ export const en = {
     comingSoonTitle: "Coming soon",
     comingSoonDesc: "Products for this category are on the way."
   },
+  appComingSoon: {
+    title: "Coming soon",
+    desc: "The Capella Care app for iPhone and Android is on the way.",
+    backToShop: "Back to shop"
+  },
   shop: {
     eyebrow: "The Capella Shop",
     heading: "Everything you need, in one place.",

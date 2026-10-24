@@ -158,20 +158,34 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
               {dict.footer.paymentMethods}
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Only what checkout takes: Paymob's card (Visa, Mastercard, Meeza) and mobile-wallet integrations, plus cash on delivery. */}
+            {/* Two rows of four: cards and cash on delivery, then the wallets. Paymob itself isn't shown, it only processes the cards and wallets. `[display:grid]`, not `grid`: the global `.grid` class carries its own 24px gap. */}
+            <ul aria-label={dict.footer.paymentMethods} className="m-0 w-max list-none [display:grid] grid-cols-4 gap-3 p-0">
               <PayChip label="Visa">
                 <Icon.Visa className="h-3.5 w-auto" />
               </PayChip>
               <PayChip label="Mastercard">
                 <Icon.Mastercard className="h-5 w-auto" />
               </PayChip>
-              <PayChip label="Paymob">
-                <Icon.Paymob className="h-3 w-auto" />
+              <PayChip label="Meeza">
+                <PayLogo src="/payments/meeza.svg" className="h-5" />
               </PayChip>
               <PayChip label="Cash on Delivery">
                 <Icon.CashOnDelivery className="h-16 w-auto" />
               </PayChip>
-            </div>
+              <PayChip label="Vodafone Cash">
+                <PayLogo src="/payments/vodafone-cash.svg" className="h-3.5" />
+              </PayChip>
+              <PayChip label="Orange Cash">
+                <PayLogo src="/payments/orange-cash.svg" className="h-6" />
+              </PayChip>
+              <PayChip label="e& money">
+                <PayLogo src="/payments/e-and-money.svg" className="h-6" />
+              </PayChip>
+              <PayChip label="WE Pay">
+                <PayLogo src="/payments/we-pay.svg" className="h-6" />
+              </PayChip>
+            </ul>
           </div>
 
           {/* App download */}
@@ -181,13 +195,13 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <StoreBadge
-                href=""
+                href={`/${lang}/get-app`}
                 top={dict.footer.downloadOn}
                 bottom={dict.footer.appStore}
                 icon={<Icon.Apple className="h-6 w-6" />}
               />
               <StoreBadge
-                href=""
+                href={`/${lang}/get-app`}
                 top={dict.footer.getItOn}
                 bottom={dict.footer.googlePlay}
                 icon={<Icon.GooglePlay className="h-5 w-5" />}
@@ -287,17 +301,22 @@ function FooterLink({
 /* A neutral white card that lets each payment brand keep its own colors. */
 function PayChip({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <span
+    <li
       aria-label={label}
       title={label}
       className="flex h-9 w-[3.4rem] items-center justify-center rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
     >
       {children}
-    </span>
+    </li>
   );
 }
 
-/* App-store style dark pill with a two-line label. href is empty until the apps ship. */
+/* A brand's own logo file from public/payments; the chip carries the name, so the image itself is decorative. */
+function PayLogo({ src, className }: { src: string; className?: string }) {
+  return <img src={src} alt="" aria-hidden className={cn("w-auto max-w-[2.8rem] object-contain", className)} />;
+}
+
+/* App-store style dark pill with a two-line label. Leads to the "coming soon" page until the apps ship. */
 function StoreBadge({
   href,
   top,
@@ -310,9 +329,8 @@ function StoreBadge({
   icon: React.ReactNode;
 }) {
   return (
-    <a
+    <Link
       href={href}
-      onClick={href ? undefined : (e) => e.preventDefault()}
       className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 text-white transition-opacity duration-200 hover:opacity-85 cursor-pointer"
     >
       <span className="shrink-0">{icon}</span>
@@ -320,7 +338,7 @@ function StoreBadge({
         <span className="text-[0.6rem] tracking-wide opacity-80">{top}</span>
         <span className="text-sm font-semibold leading-tight">{bottom}</span>
       </span>
-    </a>
+    </Link>
   );
 }
 

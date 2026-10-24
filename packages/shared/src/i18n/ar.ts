@@ -366,6 +366,11 @@ export const ar = {
     comingSoonTitle: "قريبًا",
     comingSoonDesc: "منتجات هذا القسم في الطريق إليكِ."
   },
+  appComingSoon: {
+    title: "قريبًا",
+    desc: "تطبيق كابيلا كير لأجهزة آيفون وأندرويد في الطريق إليكِ.",
+    backToShop: "العودة إلى المتجر"
+  },
   shop: {
     eyebrow: "متجر كابيلا",
     heading: "كل ما تحتاجينه، في مكان واحد.",

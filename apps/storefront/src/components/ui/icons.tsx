@@ -131,16 +131,6 @@ export const Icon = {
       </text>
     </svg>
   ),
-  Paymob: ({ className, style }: IconProps) => (
-    <svg viewBox="0 0 56 16" className={className} style={style} role="img" aria-label="Paymob">
-      <text x="0" y="13" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="14" fill="#0A2540">
-        pay
-      </text>
-      <text x="24" y="13" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="14" fill="#16B364">
-        mob
-      </text>
-    </svg>
-  ),
   Mastercard: ({ className, style }: IconProps) => (
     <svg viewBox="0 0 40 24" className={className} style={style} role="img" aria-label="Mastercard">
       <circle cx="15" cy="12" r="10" fill="#EB001B" />
