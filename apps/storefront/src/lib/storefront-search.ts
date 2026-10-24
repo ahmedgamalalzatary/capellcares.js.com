@@ -1,5 +1,6 @@
 import type { Category, Collection, Language, Offer, Product } from "@capella/shared";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "./api/client";
+import { isListedCategory } from "./category-links";
 
 export type StorefrontSearchResults = {
   products: Product[];
@@ -46,7 +47,7 @@ export async function searchStorefront(query: string, lang: Language): Promise<S
   return {
     products: products.slice(0, 5),
     categories: allCategories
-      .filter((category) => !category.deletedAt && matchesBilingualName(category.name, normalizedQuery))
+      .filter((category) => isListedCategory(category) && matchesBilingualName(category.name, normalizedQuery))
       .slice(0, 4),
     offers: allOffers
       .filter((offer) => isSearchableBundle(offer) && matchesBilingualName(offer.name, normalizedQuery))

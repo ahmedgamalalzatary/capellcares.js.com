@@ -362,6 +362,10 @@ export const ar = {
     empty: "لا توجد نتائج لـ \"{q}\"",
     browseAll: "تصفحي كل المنتجات"
   },
+  category: {
+    comingSoonTitle: "قريبًا",
+    comingSoonDesc: "منتجات هذا القسم في الطريق إليكِ."
+  },
   shop: {
     eyebrow: "متجر كابيلا",
     heading: "كل ما تحتاجينه، في مكان واحد.",

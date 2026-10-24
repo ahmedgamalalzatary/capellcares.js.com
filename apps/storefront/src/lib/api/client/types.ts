@@ -39,5 +39,6 @@ export type CategoryApiShape = {
   arName?: string;
   enName?: string;
   isLeaf?: boolean;
+  hasProducts?: boolean;
   deletedAt?: string | null;
 };

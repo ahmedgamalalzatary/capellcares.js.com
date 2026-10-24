@@ -44,3 +44,16 @@ describe("buildNav", () => {
     expect(nav.map((group) => group.root.id)).toEqual([6, 1, 8, 7]);
   });
 });
+
+describe("buildNav with empty categories", () => {
+  it("leaves out categories with no products, and a whole group whose root is empty", () => {
+    const nav = buildNav([
+      ...categories.map((category) => ({ ...category, hasProducts: category.id !== 5 })),
+      { id: 9, parentId: null, slug: "soon", name: { ar: "قريبا", en: "Soon" }, isLeaf: false, hasProducts: false },
+      { id: 10, parentId: 9, slug: "soon-child", name: { ar: "قريبا", en: "Soon child" }, isLeaf: true, hasProducts: false }
+    ], "en");
+
+    expect(nav.map((group) => group.root.id)).toEqual([6, 1]);
+    expect(nav[1].children.map((child) => child.id)).toEqual([2]);
+  });
+});

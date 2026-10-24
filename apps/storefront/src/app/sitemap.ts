@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { languages, type Language } from "@capella/shared";
+import { isListedCategory } from "@/lib/category-links";
 import { absoluteUrl, localizePath } from "@/lib/seo";
 import { loadSitemapData } from "@/lib/storefront-static-data";
 
@@ -15,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
 
   const categoryEntries = categories
-    .filter((category) => !category.deletedAt)
+    .filter(isListedCategory)
     .flatMap((category) =>
       languages.map((lang) => ({
         url: absoluteUrl(localizePath(lang as Language, `/category/${category.slug}`))

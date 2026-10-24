@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildLineage, collectBranchIds, collectDescendantIds } from "../../../../src/modules/catalog/categories/category-tree.js";
+import { buildLineage, collectBranchIds, collectCategoryIdsWithProducts, collectDescendantIds } from "../../../../src/modules/catalog/categories/category-tree.js";
 
 // Tree used across the cases: 1 (root) ├─ 2 │ └─ 4 └─ 3 5 (separate root)
 const rows = [
@@ -60,4 +60,21 @@ test("buildLineage stops on a broken parent chain instead of looping", () => {
     buildLineage(9, orphaned).map((node) => node.id),
     [9]
   );
+});
+
+test("collectCategoryIdsWithProducts marks a product's category and every ancestor, leaving empty branches out", () => {
+  // Product sits in 4 only: 4, 2 and 1 have products; 3 and 5 are empty.
+  assert.deepEqual([...collectCategoryIdsWithProducts([4], rows)].sort((a, b) => a - b), [1, 2, 4]);
+});
+
+test("collectCategoryIdsWithProducts is empty when no product is placed", () => {
+  assert.deepEqual([...collectCategoryIdsWithProducts([], rows)], []);
+});
+
+test("collectCategoryIdsWithProducts ignores products without a category and is safe against parent cycles", () => {
+  const cyclic = [
+    { id: 1, parentId: 2 },
+    { id: 2, parentId: 1 }
+  ];
+  assert.deepEqual([...collectCategoryIdsWithProducts([null, 1], cyclic)].sort((a, b) => a - b), [1, 2]);
 });

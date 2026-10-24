@@ -1,4 +1,5 @@
 import { compareByScopedOrdering, type Category, type Language, pickLang } from "@capella/shared";
+import { isListedCategory } from "@/lib/category-links";
 
 export interface NavNode {
   id: number;
@@ -14,7 +15,7 @@ export interface NavGroup {
 }
 
 export function buildNav(categories: Category[], lang: Language): NavGroup[] {
-  const active = categories.filter((c) => !c.deletedAt);
+  const active = categories.filter(isListedCategory);
   // Categories display the same as the ERP tree (oldest unranked first), unlike other storefront entities — so order them with the "erp" surface.
   const roots = active
     .filter((c) => c.parentId === null)

@@ -13,6 +13,7 @@ export const storefrontCategoryContract = z.object({
     en: z.string()
   }),
   isLeaf: z.boolean(),
+  hasProducts: z.boolean(),
   deletedAt: z.string().nullable().optional()
 });
 

@@ -17,6 +17,8 @@ export interface Category {
   imagePath?: string | null;
   sortOrder?: number;
   isLeaf: boolean;
+  /** Storefront list only: false when no visible product sits in the category or beneath it, so it stays out of menus and its page shows "coming soon". */
+  hasProducts?: boolean;
   createdAt?: string;
   deletedAt?: string | null;
 }

@@ -182,3 +182,26 @@ test("storefront category endpoints conform to the shared category contract", as
     assert.equal(updatedLeaf?.imagePath, "/uploads/storefront-category.jpg");
   });
 });
+
+test("storefront categories say whether they hold a visible product, counting everything beneath them", async () => {
+  const ids = await getBaselineIds();
+  const [emptyRoot] = await db
+    .insert(categories)
+    .values({ slug: `empty-root-${Date.now()}`, arName: "قسم فارغ", enName: "Empty root", isLeaf: false })
+    .$returningId();
+  const [hiddenOnlyLeaf] = await db
+    .insert(categories)
+    .values({ parentId: emptyRoot.id, slug: `hidden-only-${Date.now()}`, arName: "منتج مخفي فقط", enName: "Hidden only", isLeaf: true })
+    .$returningId();
+  // A turned-off product does not count: shoppers cannot see it, so its category is still empty.
+  await db.update(products).set({ categoryId: hiddenOnlyLeaf.id, status: "inactive" }).where(eq(products.id, ids.productTwoId));
+
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/v1/categories");
+    const byId = new Map(response.json.items.map((item: any) => [item.id, item]));
+    assert.equal((byId.get(ids.leafCategoryId) as any)?.hasProducts, true);
+    assert.equal((byId.get(ids.rootCategoryId) as any)?.hasProducts, true);
+    assert.equal((byId.get(emptyRoot.id) as any)?.hasProducts, false);
+    assert.equal((byId.get(hiddenOnlyLeaf.id) as any)?.hasProducts, false);
+  });
+});

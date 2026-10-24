@@ -29,7 +29,9 @@ vi.mock("@/lib/storefront-detail-page", () => ({
     slug: "curly-hair",
     dict: {
       common: { breadcrumbHome: "Home" },
-      nav: { products: "Products", viewAllCategory: "All {name}" }
+      nav: { products: "Products", viewAllCategory: "All {name}" },
+      cart: { keepShopping: "Continue shopping" },
+      category: { comingSoonTitle: "Coming soon", comingSoonDesc: "Products for this category are on the way." }
     }
   }),
   requireStorefrontValue: (value: any) => {
@@ -77,7 +79,15 @@ vi.mock("@/lib/api/client", () => ({
 }));
 
 import CategoryPage from "@/app/[lang]/category/[slug]/page";
-import { fetchProducts } from "@/lib/api/client";
+import { fetchCategories, fetchProducts } from "@/lib/api/client";
+
+const hairCategories = [
+  { id: 8, parentId: null, slug: "hair-care", name: { ar: "الشعر", en: "Hair Care" }, isLeaf: false, hasProducts: true },
+  { id: 59, parentId: 8, slug: "hair-tonic", name: { ar: "تونك الشعر", en: "Hair Tonic" }, isLeaf: false, hasProducts: true },
+  { id: 62, parentId: 59, slug: "curly-hair", name: { ar: "الشعر المجعد", en: "Curly Hair" }, isLeaf: true, hasProducts: true },
+  { id: 69, parentId: 8, slug: "conditioner", name: { ar: "بلسم", en: "Conditioner" }, isLeaf: false, hasProducts: false },
+  { id: 72, parentId: 69, slug: "curly-hair", name: { ar: "الشعر المجعد", en: "Curly Hair" }, isLeaf: true, hasProducts: false }
+];
 
 describe("category page", () => {
   it("resolves duplicate slugs by categoryId and keeps links scoped to that branch", async () => {
@@ -160,5 +170,31 @@ describe("category page", () => {
 
     fireEvent.click(hairTonicPill);
     expect(grid).toHaveTextContent("header:69");
+  });
+
+  it("shows coming soon instead of an empty grid when the category has no products", async () => {
+    vi.mocked(fetchCategories).mockResolvedValueOnce(hairCategories as any);
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "conditioner" }),
+      searchParams: Promise.resolve({ categoryId: "69" })
+    }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "All Conditioner" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Coming soon" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue shopping" })).toHaveAttribute("href", "/en/products");
+    expect(screen.queryByTestId("product-grid")).not.toBeInTheDocument();
+  });
+
+  it("leaves empty sub-categories out of the pills and filters but keeps them for name lookup", async () => {
+    vi.mocked(fetchCategories).mockResolvedValueOnce(hairCategories as any);
+    render(await CategoryPage({
+      params: Promise.resolve({ lang: "en", slug: "hair-care" }),
+      searchParams: Promise.resolve({ categoryId: "8" })
+    }));
+
+    expect(screen.getByRole("button", { name: "Hair Tonic" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Conditioner" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("categories:8,59,62;");
+    expect(screen.getByTestId("product-grid")).toHaveTextContent("lookup:8,59,62,69,72");
   });
 });

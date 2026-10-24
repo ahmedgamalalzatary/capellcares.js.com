@@ -194,6 +194,14 @@ describe("useProductGridFilters", () => {
     expect(screen.getByText("ids:")).toBeInTheDocument();
   });
 
+  it("leaves categories with no products out of the filter tree", () => {
+    render(createElement(HookProbe, {
+      categoryInput: categories.map((category) => ({ ...category, hasProducts: category.id !== 3 }))
+    }));
+
+    expect(screen.getByText("tree-order:1>2")).toBeInTheDocument();
+  });
+
   it("builds the category tree and filters descendants from the initial category", () => {
     render(createElement(HookProbe));
 

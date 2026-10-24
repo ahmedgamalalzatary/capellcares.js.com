@@ -35,6 +35,7 @@ export function normalizeCategory(input: CategoryApiShape): Category {
       en: input.name?.en ?? input.enName ?? ""
     },
     isLeaf: Boolean(input.isLeaf ?? true),
+    hasProducts: input.hasProducts !== false,
     createdAt: input.createdAt ?? "",
     deletedAt: input.deletedAt ?? null
   };

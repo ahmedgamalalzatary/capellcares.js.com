@@ -7,6 +7,7 @@ import type { Category, Language, Product } from "@capella/shared";
 import type { CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
 import { isInCategoryBranch, minVariantPrice, safeName } from "../utils/product-grid.utils";
 import { matchesProductQuery } from "../lib/product-search";
+import { isListedCategory } from "../lib/category-links";
 
 interface UseProductGridFiltersOptions {
   products: Product[];
@@ -81,7 +82,7 @@ export function useProductGridFilters({
   }, [category, pathname, router, searchParams]);
 
   const categoryTree = useMemo<CategoryTreeNode[]>(() => {
-    const active = categories.filter((item) => !item.deletedAt);
+    const active = categories.filter(isListedCategory);
     const activeIds = new Set(active.map((item) => item.id));
     const byParent = new Map<number | null, Category[]>();
     const compareCategories = (a: Category, b: Category) =>

@@ -360,6 +360,10 @@ export const en = {
     empty: "Nothing matched \"{q}\"",
     browseAll: "Browse all products"
   },
+  category: {
+    comingSoonTitle: "Coming soon",
+    comingSoonDesc: "Products for this category are on the way."
+  },
   shop: {
     eyebrow: "The Capella Shop",
     heading: "Everything you need, in one place.",

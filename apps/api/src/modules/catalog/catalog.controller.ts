@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import { listCategoriesRepo } from "./categories/category.repository.js";
+import { listCategoriesRepo, listVisibleProductCategoryIdsRepo } from "./categories/category.repository.js";
+import { collectCategoryIdsWithProducts } from "./categories/category-tree.js";
 import { findOfferBySlugRepo, listVisibleOffersRepo } from "./offers/offer.repository.js";
 import { getStorefrontRelatedCardsRepo } from "../shared/related-items/related-item.repository.js";
 import {
@@ -13,7 +14,9 @@ import type { LocalizedRequest } from "../../middlewares/locale.middleware.js";
 
 export async function listCategories(_req: Request, res: Response) {
   // Categories mirror the ERP tree (oldest unranked first); the storefront client re-sorts, but keep the API response consistent with that ordering.
-  const rows = await listCategoriesRepo(false, "erp");
+  const [rows, productCategoryIds] = await Promise.all([listCategoriesRepo(false, "erp"), listVisibleProductCategoryIdsRepo()]);
+  // An empty category (no visible product in it or beneath it) stays in the list so names still resolve; the storefront keeps it out of menus and shows "coming soon" on its page.
+  const withProducts = collectCategoryIdsWithProducts(productCategoryIds, rows);
   const items = rows.map((category) => ({
     id: category.id,
     parentId: category.parentId,
@@ -25,6 +28,7 @@ export async function listCategories(_req: Request, res: Response) {
       en: category.enName
     },
     isLeaf: category.isLeaf,
+    hasProducts: withProducts.has(category.id),
     createdAt: category.createdAt,
     deletedAt: category.deletedAt
   }));

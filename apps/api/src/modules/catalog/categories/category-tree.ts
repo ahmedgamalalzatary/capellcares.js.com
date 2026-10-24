@@ -49,3 +49,14 @@ export function buildLineage<T extends CategoryNode>(startId: number | null, row
 
   return lineage;
 }
+
+/** Ids of every category that holds a product itself or somewhere beneath it, given the categories the products sit in. A category outside this set is empty. */
+export function collectCategoryIdsWithProducts(productCategoryIds: Array<number | null>, rows: CategoryNode[]): Set<number> {
+  const withProducts = new Set<number>();
+  for (const categoryId of new Set(productCategoryIds)) {
+    for (const category of buildLineage(categoryId, rows)) {
+      withProducts.add(category.id);
+    }
+  }
+  return withProducts;
+}

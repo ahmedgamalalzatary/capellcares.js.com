@@ -238,6 +238,15 @@ export async function listCategoryBranchIdsRepo(categoryId: number) {
   return collectBranchIds(categoryId, allCategories);
 }
 
+/** The categories that turned-on, not-deleted products sit in (one entry per product); these are the products shoppers can see. */
+export async function listVisibleProductCategoryIdsRepo() {
+  const rows = await db
+    .select({ categoryId: products.categoryId })
+    .from(products)
+    .where(and(eq(products.status, "active"), isNull(products.deletedAt)));
+  return rows.map((row) => row.categoryId);
+}
+
 export async function hasLinkedProductsInCategoryRepo(id: number) {
   const descendantIds = await descendantCategoryIds(id);
   const rows = await db

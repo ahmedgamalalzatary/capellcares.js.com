@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { pickLang } from "@capella/shared";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { CategoryPageContent } from "@/components/products/category-page-content";
-import { buildCategoryHref } from "@/lib/category-links";
+import { CategoryComingSoon } from "@/components/products/category-coming-soon";
+import { buildCategoryHref, isListedCategory } from "@/lib/category-links";
 import {
   fetchCategories,
   fetchProducts,
@@ -68,7 +69,7 @@ export default async function CategoryPage({
   const heading = category.isLeaf
     ? categoryName
     : dict.nav.viewAllCategory.replace("{name}", categoryName);
-  const subCats = categories.filter((c) => c.parentId === category.id && !c.deletedAt);
+  const subCats = categories.filter((c) => c.parentId === category.id && isListedCategory(c));
   const subtreeCategoryIds = new Set<number>([category.id]);
   let changed = true;
   while (changed) {
@@ -80,7 +81,7 @@ export default async function CategoryPage({
       }
     }
   }
-  const subtreeCategories = categories.filter((candidate) => !candidate.deletedAt && subtreeCategoryIds.has(candidate.id));
+  const subtreeCategories = categories.filter((candidate) => isListedCategory(candidate) && subtreeCategoryIds.has(candidate.id));
 
   return (
     <main className="container">
@@ -107,15 +108,20 @@ export default async function CategoryPage({
       <header className="page-head uppercase">
         <h1>{heading}</h1>
       </header>
-      <CategoryPageContent
-        category={category}
-        subCats={subCats}
-        products={products}
-        lang={lang}
-        dict={dict}
-        categories={subtreeCategories}
-        categoryLookupCategories={categories}
-      />
+      {/* An empty category is left out of every menu; reached by an old link or a search engine, it says "coming soon" rather than showing an empty grid. */}
+      {category.hasProducts === false ? (
+        <CategoryComingSoon lang={lang} dict={dict} />
+      ) : (
+        <CategoryPageContent
+          category={category}
+          subCats={subCats}
+          products={products}
+          lang={lang}
+          dict={dict}
+          categories={subtreeCategories}
+          categoryLookupCategories={categories}
+        />
+      )}
     </main>
   );
 }
