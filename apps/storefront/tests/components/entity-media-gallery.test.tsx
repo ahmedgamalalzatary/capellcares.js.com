@@ -273,6 +273,51 @@ describe("EntityMediaGallery", () => {
     expect(thumbs()[0]).toHaveAttribute("data-active", "true");
   });
 
+  const threeImages = [
+    { type: "image" as const, arUrl: null, enUrl: "/uploads/one.jpg" },
+    { type: "image" as const, arUrl: null, enUrl: "/uploads/two.jpg" },
+    { type: "image" as const, arUrl: null, enUrl: "/uploads/three.jpg" }
+  ];
+
+  it("swipes around endlessly: past the last image comes the first, before the first comes the last", () => {
+    render(createElement(EntityMediaGallery, { media: threeImages, label: "Entity", testIdPrefix: "product", renderImage }));
+    const main = screen.getByTestId("product-media-main");
+    Object.assign(main, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true) });
+    const shown = () => main.querySelector("img");
+    const swipe = (fromX: number, toX: number, pointerId: number) => {
+      fireEvent.pointerDown(main, { clientX: fromX, clientY: 80, pointerId, pointerType: "touch", button: 0, isPrimary: true });
+      fireEvent.pointerUp(main, { clientX: toX, clientY: 85, pointerId, pointerType: "touch", button: 0, isPrimary: true });
+    };
+
+    swipe(40, 260, 1);
+    expect(shown()).toHaveAttribute("src", "/uploads/three.jpg");
+    swipe(260, 40, 2);
+    expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+  });
+
+  it("puts previous and next buttons on the page image that step around endlessly without opening the preview", async () => {
+    const user = userEvent.setup();
+    render(createElement(EntityMediaGallery, { media: threeImages, label: "Entity", testIdPrefix: "product", renderImage }));
+    const shown = () => screen.getByTestId("product-media-main").querySelector("img");
+
+    await user.click(screen.getByRole("button", { name: "Next media" }));
+    expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
+    await user.click(screen.getByRole("button", { name: "Next media" }));
+    await user.click(screen.getByRole("button", { name: "Next media" }));
+    expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
+    await user.click(screen.getByRole("button", { name: "Previous media" }));
+    expect(shown()).toHaveAttribute("src", "/uploads/three.jpg");
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows no previous or next buttons when there is only one image", () => {
+    render(createElement(EntityMediaGallery, { media: threeImages.slice(0, 1), label: "Entity", testIdPrefix: "product", renderImage }));
+
+    expect(screen.queryByRole("button", { name: "Next media" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Previous media" })).toBeNull();
+  });
+
   describe("media lightbox", () => {
     const openLightbox = async (user: ReturnType<typeof userEvent.setup>, props: Record<string, unknown> = {}) => {
       render(createElement(EntityMediaGallery, {
@@ -384,13 +429,15 @@ describe("EntityMediaGallery", () => {
       expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
     });
 
-    it("stops at the ends instead of wrapping around", async () => {
+    it("wraps around at both ends, so the controls never run out", async () => {
       const user = userEvent.setup();
       const dialog = await openLightbox(user);
+      const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
 
-      expect(within(dialog).getByRole("button", { name: "Previous media" })).toBeDisabled();
+      await user.click(within(dialog).getByRole("button", { name: "Previous media" }));
+      expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
       await user.click(within(dialog).getByRole("button", { name: "Next media" }));
-      expect(within(dialog).getByRole("button", { name: "Next media" })).toBeDisabled();
+      expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");
     });
 
     it("jumps to any item from the dialog's thumbnail strip", async () => {
@@ -489,11 +536,8 @@ describe("EntityMediaGallery", () => {
       const shown = () => within(dialog).getByTestId("product-lightbox-main").querySelector("img");
 
       // The strip reads right-to-left, so "next" sits on the left — but it still means the next picture, never the previous one.
-      expect(within(dialog).getByRole("button", { name: "السابق" })).toBeDisabled();
-
       await user.click(within(dialog).getByRole("button", { name: "التالي" }));
       expect(shown()).toHaveAttribute("src", "/uploads/two.jpg");
-      expect(within(dialog).getByRole("button", { name: "التالي" })).toBeDisabled();
 
       await user.click(within(dialog).getByRole("button", { name: "السابق" }));
       expect(shown()).toHaveAttribute("src", "/uploads/one.jpg");

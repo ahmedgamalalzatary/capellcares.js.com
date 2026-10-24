@@ -31,6 +31,15 @@ type GalleryItem =
   | { kind: "file"; type: "image" | "video"; url: string }
   | { kind: "embed"; video: AdviceVideoPresentation };
 
+/** The page image's previous/next buttons: desktop only (`lg` and up), always visible, centred on its side. Phones and tablets swipe instead, so the buttons stay out of the way there. Just a bare black chevron: no backing, border or glow. */
+const pageArrowClass =
+  "absolute top-1/2 z-10 hidden size-12 -translate-y-1/2 place-items-center text-black transition-transform hover:scale-110 lg:grid";
+/** The full preview's previous/next buttons: the same bare black chevron as the page image, shown on every screen size. */
+const lightboxArrowClass =
+  "absolute z-10 grid size-12 place-items-center text-black transition-transform hover:scale-110";
+/** Bolder than the icon set's default stroke. */
+const pageArrowStroke = { strokeWidth: 2.6 };
+
 function itemKey(item: GalleryItem, index: number) {
   return item.kind === "embed"
     ? `embed-${item.video.permalinkUrl}-${index}`
@@ -92,6 +101,9 @@ export function EntityMediaGallery({
   const isPlayerTarget = (target: EventTarget | null) =>
     target instanceof Element && Boolean(target.closest("video, iframe, blockquote"));
 
+  // The gallery is a loop: one past the last item is the first, one before the first is the last.
+  const wrapIndex = (index: number) => (items.length === 0 ? 0 : (index + items.length) % items.length);
+
   useEffect(() => {
     setActiveIndex(0);
   }, [incomingMedia, imagePath, lang, videoUrl]);
@@ -129,8 +141,7 @@ export function EntityMediaGallery({
     if (Math.abs(deltaX) < 36 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
     swipeConsumedClickRef.current = true;
     const direction = deltaX < 0 ? 1 : -1;
-    const nextIndex = Math.max(0, Math.min(items.length - 1, activeIndexRef.current + direction));
-    if (nextIndex !== activeIndexRef.current) setActiveIndex(nextIndex);
+    setActiveIndex(wrapIndex(activeIndexRef.current + direction));
   };
 
   useEffect(() => {
@@ -203,7 +214,7 @@ export function EntityMediaGallery({
     );
 
   const step = (direction: 1 | -1) => {
-    setActiveIndex((current) => Math.max(0, Math.min(items.length - 1, current + direction)));
+    setActiveIndex((current) => wrapIndex(current + direction));
   };
 
   /** A tap or click on the picture opens the lightbox — but a player owns its own clicks, and the click that ends a swipe must not count as one. */
@@ -329,6 +340,27 @@ export function EntityMediaGallery({
             <Icon.Plus size={18} />
           </button>
         ) : null}
+        {items.length > 1 ? (
+          // Siblings of the picture, not inside it, so a press here steps the gallery without opening the preview or starting a swipe. Desktop only; smaller screens swipe.
+          <>
+            <button
+              type="button"
+              onClick={() => step(-1)}
+              aria-label={dict.media.previous}
+              className={`${pageArrowClass} inset-s-1`}
+            >
+              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "" : "rotate-180"} />
+            </button>
+            <button
+              type="button"
+              onClick={() => step(1)}
+              aria-label={dict.media.next}
+              className={`${pageArrowClass} inset-e-1`}
+            >
+              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "rotate-180" : ""} />
+            </button>
+          </>
+        ) : null}
         {overlay}
       </div>
 
@@ -408,11 +440,10 @@ export function EntityMediaGallery({
               type="button"
               // Index steps are direction-agnostic: "previous" is always the previous picture. Only the button's side and its chevron mirror.
               onClick={() => step(-1)}
-              disabled={activeIndex === 0}
               aria-label={dict.media.previous}
-              className="absolute inset-s-1 z-10 grid size-10 place-items-center rounded-full border border-(--hairline) bg-canvas text-ink transition hover:bg-(--warm-soft) disabled:pointer-events-none disabled:opacity-30 sm:size-12"
+              className={`${lightboxArrowClass} inset-s-1`}
             >
-              <Icon.Chevron size={22} className={isRtl ? "" : "rotate-180"} />
+              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "" : "rotate-180"} />
             </button>
 
             <div
@@ -436,11 +467,10 @@ export function EntityMediaGallery({
             <button
               type="button"
               onClick={() => step(1)}
-              disabled={activeIndex >= items.length - 1}
               aria-label={dict.media.next}
-              className="absolute inset-e-1 z-10 grid size-10 place-items-center rounded-full border border-(--hairline) bg-canvas text-ink transition hover:bg-(--warm-soft) disabled:pointer-events-none disabled:opacity-30 sm:size-12"
+              className={`${lightboxArrowClass} inset-e-1`}
             >
-              <Icon.Chevron size={22} className={isRtl ? "rotate-180" : ""} />
+              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "rotate-180" : ""} />
             </button>
           </div>
 
