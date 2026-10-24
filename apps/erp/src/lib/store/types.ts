@@ -1,4 +1,4 @@
-import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, OrderSummary, Product, ShopMediaSection } from "@capella/shared";
+import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ShopMediaSection } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };

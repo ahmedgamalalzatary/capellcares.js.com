@@ -16,8 +16,6 @@ import {
   orderItemName,
   orderPaymentChip,
   orderPaymentLabel,
-  paymentStatusChip,
-  paymentStatusLabel,
   useCatalog
 } from "./order-presentation";
 

@@ -6,7 +6,7 @@ import { orders, orderItems, shippingWorkItems, shipments, productVariants, orde
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { updateOrderPaymentStatusRepo, expirePendingCodOrders } from "../../src/modules/orders/order.repository.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
-import { fixtureShippingService, selectedDestination, shippingBuyer, destination } from "../helpers/checkout-shipping.js";
+import { fixtureShippingService, selectedDestination, shippingBuyer } from "../helpers/checkout-shipping.js";
 import { deliveryEnvironment, deliveryRateIdentity } from "../helpers/bosta-delivery.js";
 import { bostaDeliveryProviderFromEnvironment } from "../../src/modules/shipping/bosta/bosta-delivery.service.js";
 import { blockRefundedDelivery } from "../../src/modules/shipping/shipping-dispatch.repository.js";

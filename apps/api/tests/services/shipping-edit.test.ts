@@ -55,7 +55,6 @@ test("linked shipments require a verified edit runtime and fresh matching carrie
   const f = await shippingSyncFixture(true);
   await assert.rejects(applyShippingNoMoneyEdit(f.order.id, { size: "medium" }, await admin(), null),
     (error: unknown) => error instanceof ShippingEditError && /verified/i.test(error.message));
-  const frozen = JSON.parse((await shippingWorkItemsMeta(f.order.id))[0]?.requestSnapshot ?? "null");
   let putCalls = 0;
   const edit = {
     sync: f.runtime,
@@ -92,7 +91,6 @@ async function shippingWorkItemsMeta(orderId: number) {
 test("stale or unverified carrier evidence blocks the linked edit before any provider write", async () => {
   const f = await shippingSyncFixture(true);
   await db.update(shipments).set({ providerEventAtMs: 5_000 }).where(eq(shipments.orderId, f.order.id));
-  const frozen = JSON.parse((await shippingWorkItemsMeta(f.order.id))[0]?.requestSnapshot ?? "null");
   const base = {
     sync: f.runtime,
     editableFields: new Set(["notes"]),

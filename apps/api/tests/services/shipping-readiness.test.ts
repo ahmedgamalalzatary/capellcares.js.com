@@ -94,7 +94,7 @@ test("read-only recovery keeps reconciling an already-created shipment with sync
   // A shipment created *before* sync was turned off must still be readable, otherwise turning sync off would permanently strand orders in an unknown carrier state.
   let searched = 0;
   const provider = module.bostaDeliveryProviderFromEnvironment({ ...deliveryEnvironment, BOSTA_SYNC_ENABLED: "false" },
-    async (input: any, init: any) => {
+    async (input: any) => {
       if (!String(input).includes("/deliveries/search")) throw new Error(`unexpected provider call: ${input}`);
       searched++;
       return new Response(JSON.stringify({ success: true, data: { deliveries: [], total: 0 } }), { status: 200 });

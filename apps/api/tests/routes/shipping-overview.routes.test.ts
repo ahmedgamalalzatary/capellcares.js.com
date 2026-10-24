@@ -4,7 +4,7 @@ import { db } from "@capella/database/src/db";
 import { orderReviewFlags, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { app } from "../../src/app.js";
-import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
+import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders, getStaffAuthHeaders } from "../helpers/admin-auth.js";

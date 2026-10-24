@@ -60,10 +60,6 @@ export function paymobAuditFingerprint(transaction: Record<string, unknown>, ver
 
 export async function processPaymobTransaction(transaction: PaymobTransaction, options: ProcessPaymobOptions = {}) {
   const verified = options.verified;
-  // The refund amount is authoritative only from the authenticated read.
-  const refundedAmountCents = verified?.is_refunded === true
-    ? Number(verified.refunded_amount_cents ?? 0)
-    : 0;
   const [bound] = await db.select({ sessionId: paymentAttempts.checkoutSessionId }).from(paymentAttempts)
     .where(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? ""))).limit(1);
   return db.transaction(async (tx) => {

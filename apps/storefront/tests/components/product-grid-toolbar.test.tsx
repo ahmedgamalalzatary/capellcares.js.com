@@ -26,7 +26,6 @@ describe("ProductGridToolbar", () => {
           sortName: "Name"
         }
       },
-      filteredCount: 7,
       hasActiveFilters: true,
       sort: "default",
       cols: 1,

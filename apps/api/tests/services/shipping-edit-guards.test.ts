@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
+import { orders, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";

@@ -7,7 +7,6 @@ import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 interface ProductGridToolbarProps {
   lang: Language;
   dict: any;
-  filteredCount: number;
   hasActiveFilters: boolean;
   sort: Sort;
   cols: Cols;
@@ -19,7 +18,6 @@ interface ProductGridToolbarProps {
 export function ProductGridToolbar({
   lang,
   dict,
-  filteredCount,
   hasActiveFilters,
   sort,
   cols,
@@ -81,7 +79,7 @@ export function ProductGridToolbar({
         </div>
       </div>
 
-      {/* Right: POV column toggle + muted item count */}
+      {/* Right: POV column toggle */}
       <div className="flex items-center gap-2">
         <ColumnsToggle cols={cols} onChange={onColsChange} lang={lang} />
       </div>

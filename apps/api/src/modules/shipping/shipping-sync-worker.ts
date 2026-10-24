@@ -71,7 +71,7 @@ async function finish(job: Job, now: Date, successful: boolean, observation?: Bo
     if (!current || current.status !== "processing" || current.claimedBy !== job.claimedBy) return;
 
     // W07 B05: persist the scheduling decision, not an in-memory skip — a terminal parcel gets exactly one follow-up read a day later then parks, provided nothing is still unresolved; unresolved work keeps the normal cadence so a correction is still seen.
-    const phase = successful && observation ? await nextSyncPhase(tx, job, observation, now) : null;
+    const phase = successful && observation ? await nextSyncPhase(tx, job, observation) : null;
     // MySQL DATETIME(0) rounds fractional seconds on insert, so floor to whole seconds before persisting — otherwise the stored value drifts a second ahead of what the schedule means and a follow-up could be considered due early.
     const at = (offsetMs: number) => new Date(Math.floor((now.getTime() + offsetMs) / 1000) * 1000);
 
@@ -96,8 +96,7 @@ async function finish(job: Job, now: Date, successful: boolean, observation?: Bo
 async function nextSyncPhase(
   tx: ShippingSyncTransaction,
   job: Job,
-  observation: BostaObservation,
-  now: Date
+  observation: BostaObservation
 ): Promise<"active" | "terminal_followup" | "parked"> {
   const [ship] = await tx.select().from(shipments).where(eq(shipments.id, job.shipmentId ?? -1)).limit(1).for("update");
   // A processed event can still be stale/rejected, or a newer webhook can have won since the read. Only the accepted current observation may establish completion.

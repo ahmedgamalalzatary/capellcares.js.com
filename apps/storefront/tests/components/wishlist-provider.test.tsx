@@ -27,7 +27,6 @@ function Probe() {
 function stubFetch() {
   let items: unknown[] = [savedItem];
   return vi.fn(async (input: string | URL, init?: RequestInit) => {
-    const url = String(input);
     if (init?.method === "DELETE") {
       items = [];
       return { ok: true } as Response;

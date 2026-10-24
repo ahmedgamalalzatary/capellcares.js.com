@@ -5,7 +5,7 @@ import { db } from "@capella/database/src/db";
 import { orders, shipments, shippingWorkItems, shipmentEvents, shipmentProviderBindings, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
-import { readFixture, syncEnvironment, webhookFixture } from "../helpers/bosta-sync.js";
+import { readFixture, syncEnvironment } from "../helpers/bosta-sync.js";
 import { resolveBostaSyncRuntime } from "../../src/modules/shipping/bosta/bosta-sync.service.js";
 import { recordShippingObservation } from "../../src/modules/shipping/shipping-sync.repository.js";
 import { bindingEnvironment } from "../../src/modules/shipping/shipment-binding.repository.js";

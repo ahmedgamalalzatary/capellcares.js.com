@@ -84,7 +84,6 @@ export function ProductGrid({
         <ProductGridToolbar
           lang={lang}
           dict={dict}
-          filteredCount={filtered.length}
           hasActiveFilters={hasActiveFilters}
           sort={sort}
           cols={cols}

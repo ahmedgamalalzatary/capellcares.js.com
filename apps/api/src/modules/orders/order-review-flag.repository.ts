@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { AdminOrderReviewFlagDto } from "@capella/shared";
 import { db } from "@capella/database/src/db";
 import { orderReviewFlags, orders } from "@capella/database/drizzle/schema";

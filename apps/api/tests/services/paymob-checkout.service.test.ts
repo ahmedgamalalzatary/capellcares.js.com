@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db } from "@capella/database/src/db";
-import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
+import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, productVariants } from "@capella/database/drizzle/schema";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { createReservedCheckout, releaseExpiredCheckoutReservations } from "../../src/modules/checkout/checkout-reservation.repository.js";
 
@@ -362,7 +362,7 @@ test("a callback cannot be re-pointed at another checkout by rewriting an unsign
       clientSecret: "victim_secret", checkoutUrl: "https://checkout/victim",
       specialReference: request.specialReference })
   });
-  const attacker = await initiatePaymobCheckout({
+  await initiatePaymobCheckout({
     payload: { fullName: "Attacker", phone: "01012345679", email: "attacker@example.com",
       governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 2", buildingApartment: "2",
       paymentMethod: "paymob", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] },
@@ -1044,10 +1044,6 @@ test("a third decline does not release reserved stock while evidence is unresolv
   const { releaseExpiredCheckoutReservations } = await import("../../src/modules/checkout/checkout-reservation.repository.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
-  const config = { mode: "test" as const, baseUrl: "https://accept.paymob.com" as const,
-    secretKey: "secret", publicKey: "public", hmacSecret: "hmac", apiKey: null,
-    enabledMethods: [{ method: "card" as const, integrationId: 123 }],
-    canInitiatePayments: true, intentionExpirationSeconds: 1800 as const };
   const session = await createReservedCheckout({
     publicId: `checkout_${crypto.randomUUID()}`, idempotencyKey: crypto.randomUUID(), customerType: "guest",
     customerId: null, fullName: "Third Decline", phone: "+201012345678", email: "thirddecline@example.com",
