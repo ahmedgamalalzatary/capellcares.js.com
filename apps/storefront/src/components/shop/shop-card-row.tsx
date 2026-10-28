@@ -2,7 +2,7 @@
 
 import { Children, useCallback, useEffect, useRef, useState } from "react";
 import { getDict, type Language } from "@capella/shared";
-import { Icon } from "@/components/ui/icons";
+import { NavArrow } from "@/components/ui/nav-arrow";
 import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 
 /** Shop-page card layout: one row of cards (3 desktop, 2 tablet, ~1 with a peek mobile) with the rest reachable via horizontal scroll; cards keep a fixed 1/3 width and snap, scrollbar hidden.
@@ -10,13 +10,10 @@ import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 export function ShopCardRow({
   children,
   lang,
-  cols = 1,
-  arrowTone = "ink"
+  cols = 1
 }: {
   children: React.ReactNode;
   lang: Language;
-  /** Arrow colour. "ink" reads on the light shop rows; "canvas" (white) is for rows whose cards are dark artwork, such as Capella Tips. */
-  arrowTone?: "ink" | "canvas";
   /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint; only item width changes — the row still scrolls and snaps either way. */
   cols?: 1 | 2;
 }) {
@@ -63,13 +60,7 @@ export function ShopCardRow({
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
     : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
 
-  // The halo flips with the tone: a light glow lifts the ink arrows off pale cards, a dark one keeps the white arrows readable over bright artwork.
-  const toneClass = arrowTone === "canvas"
-    ? "text-canvas drop-shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
-    : "text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]";
-
-  const buttonClass =
-    `absolute top-[42%] z-10 hidden size-12 -translate-y-1/2 place-items-center ${toneClass} transition hover:scale-120 disabled:pointer-events-none disabled:opacity-0 lg:grid`;
+  const arrowClass = "absolute top-[42%] z-10 -translate-y-1/2";
 
   return (
     // The row scrolls sideways, so its cards' pictures don't swipe; a sideways swipe scrolls the row instead.
@@ -93,24 +84,22 @@ export function ShopCardRow({
         )}
       </div>
 
-      <button
-        type="button"
+      <NavArrow
+        direction="prev"
+        isRtl={isRtl}
         aria-label={dict.common.previous}
         onClick={() => scrollByPage("prev")}
         disabled={!canPrev}
-        className={`${buttonClass} inset-s-1`}
-      >
-        <Icon.Chevron size={40} className={isRtl ? "" : "rotate-180"} />
-      </button>
-      <button
-        type="button"
+        className={`${arrowClass} inset-s-1`}
+      />
+      <NavArrow
+        direction="next"
+        isRtl={isRtl}
         aria-label={dict.common.next}
         onClick={() => scrollByPage("next")}
         disabled={!canNext}
-        className={`${buttonClass} inset-e-1`}
-      >
-        <Icon.Chevron size={40} className={isRtl ? "rotate-180" : ""} />
-      </button>
+        className={`${arrowClass} inset-e-1`}
+      />
     </div>
     </NoCardImageSwipe>
   );

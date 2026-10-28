@@ -9,6 +9,7 @@ import {
   type Language
 } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
+import { NavArrow } from "@/components/ui/nav-arrow";
 
 import { loadInstagramEmbedScript, resolveAdviceVideo, type AdviceVideoPresentation } from "@/lib/advice-video";
 
@@ -31,14 +32,10 @@ type GalleryItem =
   | { kind: "file"; type: "image" | "video"; url: string }
   | { kind: "embed"; video: AdviceVideoPresentation };
 
-/** The page image's previous/next buttons: desktop only (`lg` and up), always visible, centred on its side. Phones and tablets swipe instead, so the buttons stay out of the way there. Just a bare black chevron: no backing, border or glow. */
-const pageArrowClass =
-  "absolute top-1/2 z-10 hidden size-12 -translate-y-1/2 place-items-center text-black transition-transform hover:scale-110 lg:grid";
-/** The full preview's previous/next buttons: the same bare black chevron as the page image, shown on every screen size. */
-const lightboxArrowClass =
-  "absolute z-10 grid size-12 place-items-center text-black transition-transform hover:scale-110";
-/** Bolder than the icon set's default stroke. */
-const pageArrowStroke = { strokeWidth: 2.6 };
+/** The page image's previous/next arrows: desktop only, centred on its side. Phones and tablets swipe instead. */
+const pageArrowClass = "absolute top-1/2 z-10 -translate-y-1/2";
+/** The full preview's previous/next arrows: shown on every screen size. */
+const lightboxArrowClass = "absolute z-10";
 
 function itemKey(item: GalleryItem, index: number) {
   return item.kind === "embed"
@@ -343,22 +340,8 @@ export function EntityMediaGallery({
         {items.length > 1 ? (
           // Siblings of the picture, not inside it, so a press here steps the gallery without opening the preview or starting a swipe. Desktop only; smaller screens swipe.
           <>
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              aria-label={dict.media.previous}
-              className={`${pageArrowClass} inset-s-1`}
-            >
-              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "" : "rotate-180"} />
-            </button>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              aria-label={dict.media.next}
-              className={`${pageArrowClass} inset-e-1`}
-            >
-              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "rotate-180" : ""} />
-            </button>
+            <NavArrow direction="prev" isRtl={isRtl} onClick={() => step(-1)} aria-label={dict.media.previous} className={`${pageArrowClass} inset-s-1`} />
+            <NavArrow direction="next" isRtl={isRtl} onClick={() => step(1)} aria-label={dict.media.next} className={`${pageArrowClass} inset-e-1`} />
           </>
         ) : null}
         {overlay}
@@ -436,15 +419,15 @@ export function EntityMediaGallery({
           </header>
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 sm:px-16">
-            <button
-              type="button"
+            <NavArrow
+              direction="prev"
+              isRtl={isRtl}
+              show="always"
               // Index steps are direction-agnostic: "previous" is always the previous picture. Only the button's side and its chevron mirror.
               onClick={() => step(-1)}
               aria-label={dict.media.previous}
               className={`${lightboxArrowClass} inset-s-1`}
-            >
-              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "" : "rotate-180"} />
-            </button>
+            />
 
             <div
               data-testid={`${testIdPrefix}-lightbox-main`}
@@ -464,14 +447,14 @@ export function EntityMediaGallery({
               {renderItem(activeItem, imagePath ?? "")}
             </div>
 
-            <button
-              type="button"
+            <NavArrow
+              direction="next"
+              isRtl={isRtl}
+              show="always"
               onClick={() => step(1)}
               aria-label={dict.media.next}
               className={`${lightboxArrowClass} inset-e-1`}
-            >
-              <Icon.Chevron size={36} style={pageArrowStroke} className={isRtl ? "rotate-180" : ""} />
-            </button>
+            />
           </div>
 
           {/* The strip scrolls on its own so a long gallery never pushes the

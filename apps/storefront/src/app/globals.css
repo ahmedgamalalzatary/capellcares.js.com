@@ -27,6 +27,7 @@
   --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
   --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
   --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
+  --brand:        #6e390b;                   /* Capella brown — footer wordmark, prev/next arrows */
   --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
 
   /* Aliases kept for code that still references the old names. */
@@ -144,7 +145,7 @@ body {
   font-weight: 400;
   letter-spacing: 0;
   line-height: 0.9;
-  color: #6e390b;
+  color: var(--brand);
   font-size: clamp(3.5rem, 17vw, 15rem);
 }
 .sr-only {
@@ -495,23 +496,6 @@ body {
 }
 .pill-group-wrap .pill-group { flex: 1 1 auto; min-width: 0; }
 
-/* Prev/next arrows — desktop only; mobile relies on touch/trackpad scroll. */
-.pill-nav {
-  display: none;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  font-size: 20px;
-  line-height: 1;
-  margin-bottom: 1rem; /* align with .pill-group's own bottom spacing */
-  transition: border-color 0.15s ease, opacity 0.15s ease;
-}
-.pill-nav:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-@media (min-width: 768px) {
-  .pill-nav { display: inline-flex; }
-}
 
 .skel {
   background: linear-gradient(90deg, var(--warm-soft) 0%, oklch(0.94 0.05 80) 50%, var(--warm-soft) 100%);
@@ -674,6 +658,7 @@ html, body { overflow-x: clip; }
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-ink: var(--ink);
+  --color-brand: var(--brand);
   --color-accent-deep: var(--accent-deep);
   --color-canvas: var(--canvas);
   --color-warm: var(--warm);

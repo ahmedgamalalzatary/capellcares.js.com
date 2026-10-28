@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { pickLang, type Category, type Language, type Product } from "@capella/shared";
 
 import { ProductGrid } from "./grid/product-grid";
-import { Icon } from "@/components/ui/icons";
+import { NavArrow } from "@/components/ui/nav-arrow";
 
 export function CategoryPageContent({
   category,
@@ -72,15 +72,15 @@ export function CategoryPageContent({
     <>
       {subCats.length > 0 && (
         <div className="pill-group-wrap mt-3">
-          <button
-            type="button"
-            className="pill-nav pill-nav--prev"
+          {/* mb-4 lines the arrows up with .pill-group's own bottom spacing. */}
+          <NavArrow
+            direction="prev"
+            isRtl={lang === "ar"}
+            className="mb-4"
             aria-label={dict.common?.previous ?? "Previous"}
             onClick={() => scrollPills("prev")}
             disabled={!canScrollPrev}
-          >
-            <Icon.Chevron size={26} className="rotate-180" />
-          </button>
+          />
           <div className="pill-group" ref={pillGroupRef}>
             {subCats.map((item) => {
               const active = headerCategoryIds.includes(item.id);
@@ -102,15 +102,14 @@ export function CategoryPageContent({
               );
             })}
           </div>
-          <button
-            type="button"
-            className="pill-nav pill-nav--next"
+          <NavArrow
+            direction="next"
+            isRtl={lang === "ar"}
+            className="mb-4"
             aria-label={dict.common?.next ?? "Next"}
             onClick={() => scrollPills("next")}
             disabled={!canScrollNext}
-          >
-            <Icon.Chevron size={26} />
-          </button>
+          />
         </div>
       )}
       <ProductGrid

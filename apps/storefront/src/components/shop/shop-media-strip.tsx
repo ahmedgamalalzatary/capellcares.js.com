@@ -13,7 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Language, ShopMediaSection } from "@capella/shared";
 import { resolveMediaUrl } from "@/lib/api/client/normalizers";
-import { Icon } from "@/components/ui/icons";
+import { NavArrow } from "@/components/ui/nav-arrow";
 import {
   SHOP_MEDIA_AUTOPLAY_MS as AUTOPLAY_MS,
   SHOP_MEDIA_SWIPE_THRESHOLD_PX as SWIPE_THRESHOLD_PX,
@@ -305,22 +305,8 @@ function ShopMediaViewportStrip({
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={prev}
-          aria-label="Previous slide"
-          className="absolute top-1/2 inset-s-2 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 lg:grid"
-        >
-          <Icon.Chevron size={40} className={isRtl ? "" : "rotate-180"} />
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          aria-label="Next slide"
-          className="absolute top-1/2 inset-e-2 hidden size-12 -translate-y-1/2 place-items-center text-ink drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-120 lg:grid"
-        >
-          <Icon.Chevron size={40} className={isRtl ? "rotate-180" : ""} />
-        </button>
+        <NavArrow direction="prev" isRtl={isRtl} onClick={prev} aria-label="Previous slide" className="absolute top-1/2 inset-s-2 -translate-y-1/2" />
+        <NavArrow direction="next" isRtl={isRtl} onClick={next} aria-label="Next slide" className="absolute top-1/2 inset-e-2 -translate-y-1/2" />
 
         <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
           {items.map((item, index) => (
