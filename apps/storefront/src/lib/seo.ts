@@ -44,6 +44,13 @@ export function buildRootMetadata(): Metadata {
   return {
     metadataBase: getMetadataBase(),
     applicationName: BRAND_NAME,
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "48x48" },
+        { url: "/icon.png", type: "image/png", sizes: "192x192" }
+      ],
+      apple: { url: "/apple-icon.png", sizes: "180x180" }
+    },
     title: {
       default: `${BRAND_NAME} | Egyptian beauty and self-care`,
       template: `%s | ${BRAND_NAME}`
@@ -173,23 +180,26 @@ export function buildProductMetadata(lang: Language, product: Product, category?
 
 export function buildShopMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "متجر كابيلا | العروض والمنتجات المميزة" : "Capella Shop | Offers & featured products";
+  // Home page: absolute so the layout template doesn't append the brand a second time.
+  const title = isAr
+    ? "كابيلا كير | مستحضرات تجميل وعناية بالبشرة والجسم والشعر"
+    : `${BRAND_NAME} | Cosmetics, Skincare, Body & Hair Care`;
   const description = isAr
     ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
     : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Care.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: buildLocalizedAlternates(lang, "/shop"),
     openGraph: {
-      title: joinTitle([title, BRAND_NAME]),
+      title,
       description,
       url: absoluteUrl(localizePath(lang, "/shop"))
     },
     twitter: {
       card: "summary_large_image",
-      title: joinTitle([title, BRAND_NAME]),
+      title,
       description
     }
   };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Metadata } from "next";
 
-import { buildProductMetadata, productJsonLd } from "@/lib/seo";
+import { buildProductMetadata, buildShopMetadata, productJsonLd } from "@/lib/seo";
 
 describe("SEO metadata", () => {
   it("uses a Next.js-supported OpenGraph type for product pages", () => {
@@ -74,5 +74,10 @@ describe("SEO metadata", () => {
 
     expect(jsonLd.offers?.price).toBe(100);
     expect(jsonLd.aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: 4.5, reviewCount: 12 });
+  });
+
+  it("titles the home (shop) page with the brand name and what it sells, without the brand suffix repeated", () => {
+    expect(buildShopMetadata("en").title).toEqual({ absolute: "Capella Care | Cosmetics, Skincare, Body & Hair Care" });
+    expect(buildShopMetadata("ar").title).toEqual({ absolute: "كابيلا كير | مستحضرات تجميل وعناية بالبشرة والجسم والشعر" });
   });
 });
