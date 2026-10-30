@@ -92,7 +92,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
       {/* Full-width panel — anchored to the header so it reads as one piece. */}
       <div
         className={[
-          "mr-6 ml-6 absolute inset-x-0 top-full z-40 overflow-hidden rounded-b-2xl bg-canvas shadow-(--shadow-2)",
+          "absolute inset-x-0 top-full z-40 overflow-hidden bg-canvas shadow-(--shadow-2)",
           "max-h-(--mega-panel-height) [transition:max-height_1000ms_cubic-bezier(0.76,0,0.24,1),opacity_220ms_ease]",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         ].join(" ")}

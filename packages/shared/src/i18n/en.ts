@@ -32,6 +32,7 @@ export const en = {
     exploreCollection: "Explore the full collection →",
     viewAllCategory: "All {name}",
     followUs: "Follow us",
+    whatsapp: "Chat with us on WhatsApp",
     language: "Language"
   },
   common: {
@@ -315,21 +316,13 @@ export const en = {
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
   badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },
   ask: {
-    button: "Ask Falta",
-    placeholder: "What are you looking for?",
     sections: {
       products: "Products",
       categories: "Categories",
       offers: "Offers",
       collections: "Sets"
     },
-    empty: "No results for \"{q}\"",
-    browseAll: "Browse all products →",
-    welcome: "Hi, I'm Falta. What toy are you looking for? For example, write: \"building blocks\".",
-    assistant: "Your smart assistant",
-    typeMessage: "Type a message…",
-    noResults: "I couldn't find anything for \"{query}\" 😔",
-    found: "Here's what I found for you 🎈"
+    empty: "No results for \"{q}\""
   },
   search: {
     title: "Search results",
@@ -368,7 +361,6 @@ export const en = {
   footer: {
     shopTitle: "Shop",
     offers: "Offers",
-    collections: "Sets",
     about: "About us",
     contact: "Contact",
     connectWhatsapp: "Customer Service",
@@ -394,11 +386,7 @@ export const en = {
     privacy: "Privacy Policy",
     returnsRefunds: "Returns & Refunds",
     shippingHandling: "Shipping and Handling",
-    paymentMethods: "Cash on delivery, free delivery",
-    downloadOn: "Download on the",
-    appStore: "App Store",
-    getItOn: "Get it on",
-    googlePlay: "Google Play"
+    paymentMethods: "Cash on delivery, free delivery"
   },
   contact: {
     eyebrow: "Help Center",

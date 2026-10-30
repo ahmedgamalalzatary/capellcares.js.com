@@ -180,6 +180,11 @@ describe("shop page", () => {
     ]);
   });
 
+  it("has no star mark beside the section headings", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    expect(container.querySelector("h2 svg")).toBeNull();
+  });
+
   it("links each main category that has products, and leaves out the rest", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
     expect(screen.getByRole("link", { name: "Building" })).toHaveAttribute("href", "/en/category/building?categoryId=1");

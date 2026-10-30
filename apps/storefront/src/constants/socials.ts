@@ -8,3 +8,5 @@ export interface SocialLink {
 
 /** Falta Toy's accounts. The footer and menu hide these sections while the list is empty. */
 export const SOCIAL_LINKS: SocialLink[] = [];
+
+export const WHATSAPP_URL = "https://wa.me/201034668590";

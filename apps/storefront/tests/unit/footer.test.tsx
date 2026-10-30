@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
@@ -36,15 +36,19 @@ describe("footer", () => {
   it("links to the toy shop's pages, not the old beauty categories", () => {
     const { container } = render(<Footer lang="en" dict={getDict("en")} />);
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual(expect.arrayContaining(["/en/shop", "/en/products", "/en/new", "/en/bestsellers", "/en/offers", "/en/collections"]));
+    expect(hrefs).toEqual(expect.arrayContaining(["/en/shop", "/en/products", "/en/new", "/en/bestsellers", "/en/offers"]));
     expect(hrefs.some((href) => href?.includes("/category/"))).toBe(false);
   });
 
-  it("sends both app store badges to the app coming soon page", () => {
-    render(<Footer lang="ar" dict={getDict("ar")} />);
-    const dict = getDict("ar");
+  it("has no Sets link and no app store badges", () => {
+    const { container } = render(<Footer lang="en" dict={getDict("en")} />);
+    const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).not.toContain("/en/collections");
+    expect(hrefs).not.toContain("/en/get-app");
+  });
 
-    expect(screen.getByRole("link", { name: new RegExp(dict.footer.appStore) })).toHaveAttribute("href", "/ar/get-app");
-    expect(screen.getByRole("link", { name: new RegExp(dict.footer.googlePlay) })).toHaveAttribute("href", "/ar/get-app");
+  it("shows the white logo", () => {
+    render(<Footer lang="en" dict={getDict("en")} />);
+    expect(screen.getByRole("img", { name: getDict("en").brand }).getAttribute("src")).toContain("logo-footer.png");
   });
 });

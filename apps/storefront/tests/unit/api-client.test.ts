@@ -39,7 +39,7 @@ describe("storefront api client", () => {
     await expect(fetchOfferBySlug("bundle-1", { lang: "ar" })).resolves.toBeNull();
   });
 
-  it("rethrows connection failures when throwOnError is set (so Ask Capella shows an error, not 'no results')", async () => {
+  it("rethrows connection failures when throwOnError is set (so search shows an error, not 'no results')", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
 
     const { fetchProducts } = await import("@/lib/api/client");

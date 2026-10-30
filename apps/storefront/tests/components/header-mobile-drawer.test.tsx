@@ -24,7 +24,7 @@ const menuEntries: HeaderMenuEntry[] = [
       { id: 300, slug: "starter", label: "Starter Set", name: { en: "Starter Set", ar: "مجموعة" }, imagePath: "" }
     ]
   },
-  // New/Bestsellers still exist in the header menu data; the drawer must not surface them.
+  // New/Bestsellers still exist in the header menu data; the drawer links to their pages instead of expanding them.
   {
     type: "products",
     key: "new",
@@ -35,24 +35,15 @@ const menuEntries: HeaderMenuEntry[] = [
     ]
   },
   {
-    type: "products",
-    key: "bestsellers",
-    slug: "bestsellers",
-    label: "Bestsellers",
-    products: [
-      { id: 101, slug: "hero-cream", label: "Hero Cream", name: { en: "Hero Cream", ar: "كريم" }, imagePath: "" }
-    ]
-  },
-  {
     type: "category",
     key: "category-1",
     id: 1,
     slug: "care",
-    label: "العناية",
+    label: "Care",
     sortOrder: 2,
     children: [
-      { id: 5, slug: "cleansers", label: "منظفات", imagePath: "/uploads/cleansers.jpg", children: [] },
-      { id: 2, slug: "serums", label: "سيروم", imagePath: null, children: [{ id: 3, slug: "vitamin-c", label: "فيتامين سي", imagePath: null, children: [] }] }
+      { id: 5, slug: "cleansers", label: "Cleansers", imagePath: "/uploads/cleansers.jpg", children: [] },
+      { id: 2, slug: "serums", label: "Serums", imagePath: null, children: [{ id: 3, slug: "vitamin-c", label: "Vitamin C", imagePath: null, children: [] }] }
     ]
   },
   {
@@ -60,336 +51,135 @@ const menuEntries: HeaderMenuEntry[] = [
     key: "category-2",
     id: 2,
     slug: "body",
-    label: "الجسم",
+    label: "Body",
     sortOrder: 1,
-    children: [
-      { id: 4, slug: "lotions", label: "لوشن", imagePath: null, children: [] }
-    ]
+    children: []
   }
 ];
 
+const dict = {
+  brand: "Falta Toy",
+  nav: {
+    viewAllCategory: "All {name} →",
+    products: "Shop",
+    new: "New",
+    bestsellers: "Bestseller",
+    orders: "Orders",
+    account: "Account",
+    followUs: "Follow us"
+  },
+  media: { close: "Close" },
+  langSwitch: { ar: "العربية", en: "English" }
+};
+
+function renderDrawer(overrides: Record<string, unknown> = {}) {
+  const props = {
+    lang: "en" as const,
+    dict,
+    menuEntries,
+    isAr: false,
+    mobileOpen: true,
+    user: null,
+    accountHref: "/en/login",
+    onClose: vi.fn(),
+    onSwitchLang: vi.fn(),
+    ...overrides
+  };
+  render(createElement(HeaderMobileDrawer, props));
+  return props;
+}
+
 beforeAll(() => {
-  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
-    configurable: true,
-    value: vi.fn()
-  });
+  // A phone-width screen: at desktop width the drawer closes itself.
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
 });
 
 describe("HeaderMobileDrawer", () => {
-  it("shows Offers and Sets tabs before categories, and no New/Bestsellers tab", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "en",
-      dict: {
-        nav: {
-          search: "Search",
-          viewAll: "View all",
-          viewAllCategory: "All {name} →",
-          products: "Products",
-          offers: "Offers",
-          orders: "Orders",
-          followUs: "Follow us"
-        },
-        langSwitch: { ar: "Arabic", en: "English" }
-      },
-      menuEntries,
-      isAr: false,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
+  it("is a named dialog that closes from its button and with Escape", () => {
+    const { onClose } = renderDrawer();
+    expect(screen.getByRole("dialog", { name: "Falta Toy" })).toBeInTheDocument();
 
-    expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
-      "Offers",
-      "Sets",
-      "الجسم",
-      "العناية"
-    ]);
-    expect(screen.queryByRole("button", { name: "New" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Bestsellers" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it("lists each offer under the Offers tab behind an 'All Offers' card", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "en",
-      dict: {
-        nav: {
-          search: "Search",
-          viewAll: "View all",
-          viewAllCategory: "All {name} →",
-          products: "Products",
-          offers: "Offers",
-          orders: "Orders",
-          followUs: "Follow us"
-        },
-        langSwitch: { ar: "Arabic", en: "English" }
-      },
-      menuEntries,
-      isAr: false,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
+  it("has no search box, because search now sits in the header", () => {
+    renderDrawer();
+    expect(screen.queryByRole("button", { name: /search/i })).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
 
+  it("lists Offers, Sets, then categories by sort order, all closed", () => {
+    renderDrawer();
+    const sections = screen.getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded"));
+    expect(sections.map((button) => button.textContent?.trim())).toEqual(["Offers", "Sets", "Care"]);
+    expect(sections.every((button) => button.getAttribute("aria-expanded") === "false")).toBe(true);
+    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
+  });
+
+  it("opens one section at a time", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
     expect(screen.getByRole("link", { name: "All Offers →" })).toHaveAttribute("href", "/en/offers");
     expect(screen.getByRole("link", { name: "Duo Kit" })).toHaveAttribute("href", "/en/offers/duo-kit");
-    expect(screen.getByAltText("Duo Kit")).toHaveAttribute("src", "/uploads/duo-kit.jpg");
-  });
-
-  it("lists each set under the Sets tab behind an 'All Sets' card", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
+    expect(screen.getByAltText("")).toHaveAttribute("src", "/uploads/duo-kit.jpg");
 
     fireEvent.click(screen.getByRole("button", { name: "Sets" }));
-
-    expect(screen.getByRole("link", { name: "كل Sets ←" })).toHaveAttribute("href", "/ar/collections");
-    expect(screen.getByRole("link", { name: "Starter Set" })).toHaveAttribute("href", "/ar/collections/starter");
-    // No image path on this set, so no <img> is rendered at all.
-    expect(screen.queryByAltText("Starter Set")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
+    expect(screen.getByRole("link", { name: "All Sets →" })).toHaveAttribute("href", "/en/collections");
+    expect(screen.getByRole("link", { name: "Starter Set" })).toHaveAttribute("href", "/en/collections/starter");
   });
 
-  it("offers New and Bestseller as quick links, since Offers and Sets are now tabs", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "en",
-      dict: {
-        nav: {
-          search: "Search",
-          viewAll: "View all",
-          viewAllCategory: "All {name} →",
-          products: "Products",
-          offers: "Offers",
-          collections: "Collections",
-          new: "New",
-          bestsellers: "Bestseller",
-          orders: "Orders",
-          followUs: "Follow us"
-        },
-        langSwitch: { ar: "Arabic", en: "English" }
-      },
-      menuEntries,
-      isAr: false,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
+  it("closes an open section when it is tapped again", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
+    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
+    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
+  });
 
-    expect(screen.getByRole("link", { name: "Products" })).toHaveAttribute("href", "/en/shop");
+  it("shows second-level categories in their given order, without deeper levels", () => {
+    renderDrawer({ lang: "ar", isAr: true });
+    fireEvent.click(screen.getByRole("button", { name: "Care" }));
+    expect(screen.getByRole("link", { name: "All Care →" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
+    const names = screen.getAllByRole("link").map((link) => link.textContent?.trim());
+    expect(names.indexOf("Cleansers")).toBeLessThan(names.indexOf("Serums"));
+    expect(screen.getByRole("link", { name: "Serums" })).toHaveAttribute("href", "/ar/category/serums?categoryId=2");
+    expect(screen.queryByRole("link", { name: "Vitamin C" })).toBeNull();
+  });
+
+  it("makes a category with no children a plain link", () => {
+    renderDrawer();
+    expect(screen.getByRole("link", { name: "Body" })).toHaveAttribute("href", "/en/category/body?categoryId=2");
+  });
+
+  it("links the main pages, and the account or orders page", () => {
+    renderDrawer();
+    expect(screen.getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/en/shop");
     expect(screen.getByRole("link", { name: "New" })).toHaveAttribute("href", "/en/new");
     expect(screen.getByRole("link", { name: "Bestseller" })).toHaveAttribute("href", "/en/bestsellers");
-    // Offers/Sets live in the tab strip now, so they are not repeated down here.
-    expect(screen.queryByRole("link", { name: "Collections" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Offers" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/en/login");
   });
 
-  it("uses the provided lang for nested category links", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(screen.getByRole("link", { name: "سيروم" })).toHaveAttribute("href", "/ar/category/serums?categoryId=2");
-    // The drawer renders only the second-level category cards; deeper grandchild levels are no longer surfaced as their own links.
-    expect(screen.queryByRole("link", { name: "فيتامين سي" })).toBeNull();
+  it("shows Orders instead of Account once signed in", () => {
+    renderDrawer({ user: { id: 1, name: "A", email: "a@b.c" }, accountHref: "/en/orders" });
+    expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/en/orders");
+    expect(screen.queryByRole("link", { name: "Account" })).toBeNull();
   });
 
-  it("prepends an 'All {category}' card linking to the root category", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(screen.getByRole("link", { name: "كل العناية ←" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
+  it("closes after a link is followed", () => {
+    const { onClose } = renderDrawer();
+    fireEvent.click(screen.getByRole("link", { name: "Shop" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("omits categoryId from slug-only root category links when the group id is missing", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "en",
-      dict: {
-        nav: {
-          search: "Search",
-          viewAll: "View all",
-          viewAllCategory: "All {name} →",
-          products: "Products",
-          offers: "Offers",
-          orders: "Orders",
-          followUs: "Follow us"
-        },
-        langSwitch: { ar: "Arabic", en: "English" }
-      },
-      menuEntries: [
-        {
-          type: "category",
-          key: "category-missing-id",
-          slug: "care",
-          label: "Care",
-          sortOrder: 1,
-          children: []
-        } as HeaderMenuEntry
-      ],
-      isAr: false,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    expect(screen.getByRole("link", { name: "Care" })).toHaveAttribute("href", "/en/category/care");
-  });
-
-  it("sorts category tabs by sortOrder even when menuEntries arrive unsorted", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    expect(screen.getAllByRole("button").slice(1, 5).map((item) => item.textContent?.trim())).toEqual([
-      "Offers",
-      "Sets",
-      "الجسم",
-      "العناية"
-    ]);
-  });
-
-  it("renders child category cards in the provided sibling order", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(
-      screen.getAllByRole("link")
-        .map((item) => item.textContent?.trim())
-        .filter((item) => item === "منظفات" || item === "سيروم")
-    ).toEqual(["منظفات", "سيروم"]);
-  });
-
-  it("renders category images beside child category names when available", () => {
-    render(createElement(HeaderMobileDrawer, {
-      lang: "ar",
-      dict: {
-        nav: {
-          search: "بحث",
-          viewAll: "عرض الكل",
-          viewAllCategory: "كل {name} ←",
-          products: "المنتجات",
-          offers: "العروض",
-          orders: "الطلبات",
-          followUs: "تابعنا"
-        },
-        langSwitch: { ar: "العربية", en: "English" }
-      },
-      menuEntries,
-      isAr: true,
-      mobileOpen: true,
-      user: null,
-      onClose: vi.fn(),
-      onSwitchLang: vi.fn(),
-      onOpenSearch: vi.fn()
-    }));
-
-    fireEvent.click(screen.getByRole("button", { name: "العناية" }));
-    expect(screen.getByAltText("منظفات")).toHaveAttribute("src", "/uploads/cleansers.jpg");
-    expect(screen.queryByAltText("سيروم")).toBeNull();
+  it("switches language only from the other language's button", () => {
+    const { onSwitchLang } = renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "English" }));
+    expect(onSwitchLang).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "العربية" }));
+    expect(onSwitchLang).toHaveBeenCalledTimes(1);
   });
 });

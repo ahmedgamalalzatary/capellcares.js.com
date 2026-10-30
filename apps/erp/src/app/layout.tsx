@@ -23,7 +23,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: { default: "Falta ERP", template: "%s · Falta ERP" },
-  description: "Falta Toy admin panel",
+  description: "faltatoy admin panel",
 };
 
 export const viewport: Viewport = {

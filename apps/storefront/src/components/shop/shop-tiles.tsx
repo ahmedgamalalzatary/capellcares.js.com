@@ -9,19 +9,9 @@ import { ShopCardRow } from "@/components/shop/shop-card-row";
 const TILE_COLORS = ["violet", "magenta", "blue", "cyan", "sunny"] as const;
 const tileColor = (index: number) => TILE_COLORS[index % TILE_COLORS.length];
 
-/** The logo's burst, small, marking the start of each section. */
-function Burst() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[0.8em] shrink-0 fill-current">
-      <path d="M12 0l2.2 7 5.3-5-2 7 7-1.5L19 12l5.5 4.5-7-1.5 2 7-5.3-5L12 24l-2.2-7-5.3 5 2-7-7 1.5L5 12 .5 7.500l7 1.5-2-7 5.3 5z" />
-    </svg>
-  );
-}
-
 export function ShopHeading({ children, color = "violet" }: { children: ReactNode; color?: (typeof TILE_COLORS)[number] }) {
   return (
     <h2 className={`shop-title shop-title--${color}`}>
-      <Burst />
       <span>{children}</span>
     </h2>
   );

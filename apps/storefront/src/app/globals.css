@@ -490,32 +490,6 @@ body {
 
 [dir="rtl"] .arrow-flip { transform: scaleX(-1); }
 
-/* ============================================================
-   Ask Falta — floating assistant (referenced from the
-   `animate-[…]` utilities on the button, panel and bubbles).
-   ============================================================ */
-@keyframes ask-fab-in {
-  from { opacity: 0; transform: translateY(16px) scale(0.88); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes ask-slide-up {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes ask-dot {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
-@keyframes ask-bubble-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ============================================================
-   Product card — caption ⇄ actions cross-fade on hover.
-   The name/price and the buy/add bar share one cell; hovering the
-   card lifts the caption away and rises the actions up from below.
-   ============================================================ */
 @keyframes pcard-caption-out {
   from { transform: translateY(0);     opacity: 1; }
   to   { transform: translateY(-8px);  opacity: 0; }
@@ -647,12 +621,15 @@ body {
 
 .toy-tile:focus-visible, .toy-plate:focus-visible, .toy-round:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: var(--radius-xl); }
 
-/* Footer: the burst from the logo, faint. */
-.footer-burst {
-  background:
-    radial-gradient(circle at 50% 96px, var(--footer-bg) 70px, transparent 340px),
-    repeating-conic-gradient(from 0deg at 50% 96px, rgb(107 43 234 / 0.09) 0deg 5deg, transparent 5deg 13deg, rgb(227 18 184 / 0.08) 13deg 16deg, transparent 16deg 24deg),
-    var(--footer-bg);
+/* Footer: a scalloped edge, echoing the round dots on the logo's T and Y. */
+.footer-scallop { position: relative; background: var(--ink); }
+.footer-scallop::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -15px;
+  height: 16px;
+  background: radial-gradient(circle at 16px 16px, var(--ink) 15.5px, transparent 16px) center bottom / 32px 16px repeat-x;
 }
 
 @media (prefers-reduced-motion: reduce) {

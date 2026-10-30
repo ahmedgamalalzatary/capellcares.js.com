@@ -70,9 +70,6 @@ describe("storefront root layout", () => {
     vi.doMock("@/components/layout/footer", () => ({
       Footer: () => createElement("footer", null, "footer")
     }));
-    vi.doMock("@/components/ask-capella/ask-capella-button", () => ({
-      AskCapellaButton: () => createElement("button", null, "ask")
-    }));
 
     const { default: LocaleLayout } = await import("@/app/[lang]/layout");
     const markup = renderToStaticMarkup(await LocaleLayout({
@@ -82,5 +79,6 @@ describe("storefront root layout", () => {
 
     expect(markup).toContain('lang="ar" dir="rtl"');
     expect(markup).toContain('data-review-prompt-provider="true"');
+    expect(markup).toContain('href="https://wa.me/201034668590"');
   });
 });

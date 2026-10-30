@@ -32,6 +32,7 @@ export const ar = {
     exploreCollection: "← استعرض المجموعة الكاملة",
     viewAllCategory: "كل {name}",
     followUs: "تابعنا",
+    whatsapp: "تواصل معنا على واتساب",
     language: "اللغة"
   },
   common: {
@@ -317,21 +318,13 @@ export const ar = {
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
   badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
   ask: {
-    button: "اسأل فلتة",
-    placeholder: "عن ماذا تبحث؟",
     sections: {
       products: "المنتجات",
       categories: "الأقسام",
       offers: "العروض",
       collections: "المجموعات"
     },
-    empty: "لا نتائج لـ \"{q}\"",
-    browseAll: "تصفح كل المنتجات ←",
-    welcome: "أهلًا، أنا فلتة. عن أي لعبة تبحث؟ مثلًا اكتب: مكعبات تركيب.",
-    assistant: "مساعدك الذكي",
-    typeMessage: "اكتب رسالتك…",
-    noResults: "لم أجد نتائج لـ \"{query}\" 😔",
-    found: "وجدت هذا لك 🎈"
+    empty: "لا نتائج لـ \"{q}\""
   },
   search: {
     title: "نتائج البحث",
@@ -370,7 +363,6 @@ export const ar = {
   footer: {
     shopTitle: "تسوّق",
     offers: "العروض",
-    collections: "المجموعات",
     about: "من نحن",
     contact: "تواصل معنا",
     connectWhatsapp: "خدمة العملاء",
@@ -395,11 +387,7 @@ export const ar = {
     privacy: "سياسة الخصوصية",
     returnsRefunds: "الإرجاع والاسترداد",
     shippingHandling: "الشحن والتوصيل",
-    paymentMethods: "الدفع عند الاستلام، والتوصيل مجاني",
-    downloadOn: "حمّله من",
-    appStore: "آب ستور",
-    getItOn: "احصل عليه من",
-    googlePlay: "جوجل بلاي"
+    paymentMethods: "الدفع عند الاستلام، والتوصيل مجاني"
   },
   contact: {
     eyebrow: "مركز المساعدة",

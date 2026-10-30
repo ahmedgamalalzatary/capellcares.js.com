@@ -8,7 +8,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { ReviewPromptProvider } from "@/components/providers/review-prompt-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
+import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { BackToTop } from "@/components/shop/back-to-top";
 import { fetchAgeGroups, fetchAnnouncements, fetchBrands, fetchCategories, fetchCharacters, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
@@ -71,7 +71,7 @@ export default async function LocaleLayout({
             <div className="flex-1"><ProductAttributesProvider value={{ brands, characters, ageGroups }}>{children}</ProductAttributesProvider></div>
             <Footer lang={lang} dict={dict} />
             <BackToTop label={dict.common.backToTop} />
-            <AskCapellaButton lang={lang} />
+            <WhatsAppButton label={dict.nav.whatsapp} />
           </div>
           </CartProvider>
         </WishlistProvider>

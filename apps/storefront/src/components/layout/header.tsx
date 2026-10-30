@@ -67,7 +67,8 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
       <header
         className={[
           // bg-surface matches the white page body: it fills the notches outside the nav row's rounded top corners so scrolling content can't peek through them while the header is stuck.
-          "sticky top-0 z-30 bg-surface shadow-[0_3px_0_var(--accent-soft)]"
+          // While the menu or search is open the header must also rise above the floating WhatsApp button (z-50).
+          `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface shadow-[0_3px_0_var(--accent-soft)]`
         ].join(" ")}
       >
       <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr]">
@@ -80,7 +81,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
               aria-label="Menu"
               aria-expanded={mobileOpen}
             >
-              <MenuToggle open={mobileOpen} />
+              <Icon.Menu size={24} />
             </button>
             <Link
               href={accountHref}
@@ -121,10 +122,10 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
           aria-label={dict.brand}
         >
           <Image
-            src="/falta-logo.png"
+            src="/logo-header.png"
             alt={dict.brand}
-            width={371}
-            height={479}
+            width={429}
+            height={604}
             priority
             className="h-14 w-auto object-contain sm:h-[68px]"
           />
@@ -164,6 +165,18 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         </div>
       </div>
 
+      {/* Phones and tablets: search is always on show. It opens the same overlay as desktop, which holds the live results. */}
+      <div className="container pb-2 min-[880px]:hidden">
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="flex h-11 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-(--surface-2) px-4 text-start text-(--ink-3) transition-colors hover:border-warm"
+        >
+          <Icon.Search />
+          <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
+        </button>
+      </div>
+
       <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <HeaderMobileDrawer
@@ -174,36 +187,10 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         mobileOpen={mobileOpen}
         user={user}
         onClose={() => setMobileOpen(false)}
+        accountHref={accountHref}
         onSwitchLang={switchLang}
-        onOpenSearch={() => {
-          setMobileOpen(false);
-          setSearchOpen(true);
-        }}
       />
       </header>
     </>
-  );
-}
-
-// Hamburger ⇄ minus morph, mirroring Rhode: the icon spins 180° while the top/bottom bars fade out, leaving the middle bar as a single "-", with the same cubic-bezier(0.76, 0, 0.24, 1) as the drawer reveal so they feel like one gesture; reverses on close.
-function MenuToggle({ open }: { open: boolean }) {
-  const bar = "transition-opacity duration-500 ease-[cubic-bezier(0.76,0,0.24,1)]";
-  const barOpacity = open ? "opacity-0" : "opacity-100";
-  return (
-    <svg
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      aria-hidden="true"
-      className={`transition-transform duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] ${open ? "rotate-180" : "rotate-0"}`}
-    >
-      <line x1="4" y1="7" x2="20" y2="7" className={`${bar} ${barOpacity}`} />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="17" x2="20" y2="17" className={`${bar} ${barOpacity}`} />
-    </svg>
   );
 }
