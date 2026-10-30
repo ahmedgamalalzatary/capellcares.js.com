@@ -1,9 +1,9 @@
 import { build } from "esbuild";
 
-// Bundle the API and read-only shipping-config CLI into self-contained files: everything (our source, @capella/*, pure-JS npm deps) is inlined, Node builtins external under platform:node.
+// Bundle the API into a self-contained file: everything (our source, @capella/*, pure-JS npm deps) is inlined, Node builtins external under platform:node.
 // `mysql2` stays external because it lazily `require()`s charset/auth-plugin files at runtime that a static bundle cannot resolve, so the runner installs just mysql2 instead of the whole workspace closure.
 await build({
-  entryPoints: ["src/server.ts", "src/scripts/check-shipping.ts"],
+  entryPoints: ["src/server.ts"],
   bundle: true,
   platform: "node",
   target: "node24",
