@@ -1,10 +1,16 @@
 import { and, eq, isNull, or, ne } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collections, entityMedia, offers, products, productVariants } from "@capella/database/drizzle/schema";
+import { collections, entityMedia, offers, productAgeGroups, products, productVariants } from "@capella/database/drizzle/schema";
 
 /** What the storefront needs before an item may go live; mirrors the ERP form requirements. */
 type BaseFacts = { arName: string; enName: string; categoryId: number | null; hasImage: boolean };
-export type ProductActivationFacts = BaseFacts & { keywordCount: number; variantCount: number };
+export type ProductActivationFacts = BaseFacts & {
+  keywordCount: number;
+  variantCount: number;
+  brandId: number | null;
+  supplierId: number | null;
+  ageGroupCount: number;
+};
 export type BundleActivationFacts = BaseFacts & { price: number };
 type MediaOwner = "product" | "offer" | "collection";
 
@@ -13,7 +19,11 @@ function hasBasics(facts: BaseFacts) {
 }
 
 export function canActivateProduct(facts: ProductActivationFacts) {
-  return hasBasics(facts) && facts.keywordCount > 0 && facts.variantCount > 0;
+  return hasBasics(facts)
+    && facts.keywordCount > 0
+    && facts.variantCount > 0
+    && Boolean(facts.brandId && facts.supplierId)
+    && facts.ageGroupCount > 0;
 }
 
 export function canActivateBundle(facts: BundleActivationFacts) {
@@ -49,7 +59,9 @@ export async function findProductActivationRepo(id: number) {
       enName: products.enName,
       keywords: products.keywords,
       categoryId: products.categoryId,
-      imagePath: products.imagePath
+      imagePath: products.imagePath,
+      brandId: products.brandId,
+      supplierId: products.supplierId
     })
     .from(products)
     .where(eq(products.id, id))
@@ -59,6 +71,10 @@ export async function findProductActivationRepo(id: number) {
     .select({ id: productVariants.id })
     .from(productVariants)
     .where(and(eq(productVariants.productId, id), isNull(productVariants.deletedAt)));
+  const ageGroupLinks = await db
+    .select({ ageGroupId: productAgeGroups.ageGroupId })
+    .from(productAgeGroups)
+    .where(eq(productAgeGroups.productId, id));
   return {
     status: row.status,
     facts: {
@@ -67,7 +83,10 @@ export async function findProductActivationRepo(id: number) {
       categoryId: row.categoryId,
       hasImage: await storedHasImage("product", id, row.imagePath),
       keywordCount: row.keywords.split(",").filter((keyword) => keyword.trim()).length,
-      variantCount: variants.length
+      variantCount: variants.length,
+      brandId: row.brandId,
+      supplierId: row.supplierId,
+      ageGroupCount: ageGroupLinks.length
     } satisfies ProductActivationFacts
   };
 }

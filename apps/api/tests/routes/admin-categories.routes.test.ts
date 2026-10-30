@@ -651,3 +651,25 @@ test("admin category create rejects images for categories deeper than one level 
     assert.equal(response.json.reason, "invalid-image-depth");
   });
 });
+
+test("main categories and their direct children can have images", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    for (const parentId of [null, ids.rootCategoryId]) {
+      const response = await request("/api/erp/categories", {
+        method: "POST",
+        headers: { ...authHeaders, "content-type": "application/json" },
+        body: JSON.stringify({
+          slug: `with-image-${parentId ?? "root"}`,
+          name: { ar: `صورة ${parentId ?? "رئيسي"}`, en: `With Image ${parentId ?? "root"}` },
+          parentId,
+          isLeaf: true,
+          imagePath: "/uploads/category.jpg"
+        })
+      });
+      assert.equal(response.status, 200);
+    }
+  });
+});

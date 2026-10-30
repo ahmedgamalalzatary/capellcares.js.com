@@ -23,6 +23,22 @@ export interface Category {
   deletedAt?: string | null;
 }
 
+/** A brand, character or age group chosen on a product. Age groups have no image. */
+export interface ProductAttribute {
+  id: number;
+  slug: string;
+  name: Bilingual;
+  imagePath?: string | null;
+  sortOrder?: number;
+  /** Storefront lists only: false when no visible product uses it, so it stays out of the shop. */
+  hasProducts?: boolean;
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+}
+
 /** One rank of an entity inside one ordering scope (see entity_orderings). */
 export interface EntityOrderingRef {
   scopeType: "root" | "category" | "offer" | "collection";
@@ -95,6 +111,11 @@ export interface Product extends HoverImagePaths {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
+  brandId?: number | null;
+  /** ERP payloads only: suppliers never reach the storefront or mobile app. */
+  supplierId?: number | null;
+  ageGroupIds?: number[];
+  characterIds?: number[];
   variants: ProductVariant[];
   /** Present on storefront payloads only; the ERP never reads reviews here. */
   rating?: RatingSummary;

@@ -48,10 +48,10 @@ export async function upsertCategory(input: CategoryWriteInput) {
     throwCoded("CATEGORY_SLUG_CONFLICT", "Category slug already exists under this parent");
   }
 
-  if (input.imagePath && nextDepth !== 1) {
+  if (input.imagePath && nextDepth > 1) {
     throwCoded(
       "CATEGORY_INVALID_IMAGE_DEPTH",
-      "Category image is only allowed for direct children of root categories"
+      "Category image is only allowed for root categories and their direct children"
     );
   }
 

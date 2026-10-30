@@ -36,6 +36,7 @@ import {
   adminToggleCollectionStatus
 } from "./admin.controller.js";
 import { adminAdvicesRoutes } from "./advices/admin-advices.routes.js";
+import { adminProductAttributeRoutes } from "./product-attributes/admin-product-attributes.routes.js";
 import { adminShopMediaRoutes } from "./shop-media/admin-shop-media.routes.js";
 import { adminAnnouncementsRoutes } from "./announcements/admin-announcements.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
@@ -86,6 +87,7 @@ adminRoutes.delete("/collections/:id", requireErpPermission("collections.soft_de
 adminRoutes.post("/collections/:id/restore", requireErpPermission("collections.restore"), wrapAsync(adminRestoreCollection));
 adminRoutes.delete("/collections/:id/permanent", requireErpPermission("collections.permanent_delete"), wrapAsync(adminHardDeleteCollection));
 adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collections.toggle_status"), wrapAsync(adminToggleCollectionStatus));
+adminRoutes.use(adminProductAttributeRoutes);
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
 adminRoutes.use("/shop-media-sections", adminShopMediaRoutes);

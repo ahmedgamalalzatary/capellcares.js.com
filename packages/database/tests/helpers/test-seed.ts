@@ -1,7 +1,13 @@
 import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import {
+  ageGroups,
+  brands,
   categories,
   categoryPaths,
+  characters,
+  productAgeGroups,
+  productCharacters,
+  suppliers,
   bundleDiscounts,
   collectionItems,
   collections,
@@ -67,7 +73,13 @@ export async function clearTestSeed() {
     await db.delete(entityMedia);
     await db.delete(productVariants);
     await db.delete(offers);
+    await db.delete(productAgeGroups);
+    await db.delete(productCharacters);
     await db.delete(products);
+    await db.delete(brands);
+    await db.delete(characters);
+    await db.delete(ageGroups);
+    await db.delete(suppliers);
     await db.delete(customers);
 
     for (;;) {
@@ -115,7 +127,13 @@ export async function seedTestData() {
   });
   await rebuildCategoryPaths();
 
+  const [brand] = await db.insert(brands).values({ slug: "test-brand", arName: "ماركة", enName: "Test Brand" }).$returningId();
+  const [supplier] = await db.insert(suppliers).values({ name: "Test Supplier" }).$returningId();
+  const [ageGroup] = await db.insert(ageGroups).values({ slug: "test-age", arName: "٠-٢", enName: "0-2" }).$returningId();
+  const attributes = { brandId: brand.id, supplierId: supplier.id };
+
   const firstProductId = await ensureProduct({
+    ...attributes,
     sku: seedSkus[0],
     slug: "test-product-baseline-1",
     arName: "منتج تجريبي 1",
@@ -124,6 +142,7 @@ export async function seedTestData() {
     buyingPrice: "20.00"
   });
   const secondProductId = await ensureProduct({
+    ...attributes,
     sku: seedSkus[1],
     slug: "test-product-baseline-2",
     arName: "منتج تجريبي 2",
@@ -131,6 +150,11 @@ export async function seedTestData() {
     categoryId: leafCategory.id,
     buyingPrice: "15.00"
   });
+
+  await db.insert(productAgeGroups).values([
+    { productId: firstProductId, ageGroupId: ageGroup.id },
+    { productId: secondProductId, ageGroupId: ageGroup.id }
+  ]);
 
   await ensureProductImageMedia(firstProductId, "/uploads/test-baseline.png");
   await ensureProductImageMedia(secondProductId, "/uploads/test-baseline.png");
@@ -260,6 +284,8 @@ async function ensureProduct(input: {
   enName: string;
   categoryId: number;
   buyingPrice: string;
+  brandId: number;
+  supplierId: number;
 }) {
   const [existing] = await db.select().from(products).where(eq(products.sku, input.sku)).limit(1);
   if (existing) {

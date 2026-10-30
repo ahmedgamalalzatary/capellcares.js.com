@@ -32,8 +32,11 @@ beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-function makeCompleteProduct(categoryId: number) {
+function makeCompleteProduct(categoryId: number, ids: { brandId: number; supplierId: number; ageGroupId: number }) {
   return {
+    brandId: ids.brandId,
+    supplierId: ids.supplierId,
+    ageGroupIds: [ids.ageGroupId],
     sku: "ROUTE-ACTIVE-COMPLETE",
     name: { ar: "كامل", en: "Complete Product" },
     description: { ar: "وصف", en: "Description" },
@@ -127,7 +130,7 @@ serialTest("admin product upsert rejects activating a product with no image", as
 
 serialTest("admin product upsert derives an active product image from normalized media", async () => {
   const ids = await getBaselineIds();
-  const payload = makeCompleteProduct(ids.leafCategoryId);
+  const payload = makeCompleteProduct(ids.leafCategoryId, ids);
   delete (payload as { imagePath?: string }).imagePath;
 
   await withTestServer(app, async (request) => {
@@ -153,7 +156,7 @@ serialTest("admin product upsert derives an active product image from normalized
 
 serialTest("admin product upsert keeps Arabic-only media active without storing it as English", async () => {
   const ids = await getBaselineIds();
-  const payload = makeCompleteProduct(ids.leafCategoryId);
+  const payload = makeCompleteProduct(ids.leafCategoryId, ids);
   delete (payload as { imagePath?: string }).imagePath;
 
   await withTestServer(app, async (request) => {
@@ -193,7 +196,7 @@ serialTest("admin product upsert keeps Arabic-only media active without storing 
 serialTest("admin product upsert preserves an active product image when image fields are omitted", async () => {
   const ids = await getBaselineIds();
   const payload = {
-    ...makeCompleteProduct(ids.leafCategoryId),
+    ...makeCompleteProduct(ids.leafCategoryId, ids),
     media: [
       { type: "image" as const, url: "/uploads/primary.jpg" },
       { type: "image" as const, url: "/uploads/secondary.jpg" },
@@ -328,7 +331,7 @@ serialTest("admin product upsert activates a complete product successfully", asy
         ...authHeaders,
         "content-type": "application/json"
       },
-      body: JSON.stringify(makeCompleteProduct(ids.leafCategoryId))
+      body: JSON.stringify(makeCompleteProduct(ids.leafCategoryId, ids))
     });
 
     assert.equal(response.status, 200);
@@ -533,7 +536,7 @@ serialTest("admin product upsert persists ordered media and a dedicated hover im
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: "ROUTE-MEDIA-COMPLETE",
         arHoverImagePath: "/uploads/route-hover-ar.jpg",
         enHoverImagePath: "/uploads/route-hover-en.jpg",
@@ -595,7 +598,7 @@ serialTest("admin product upsert preserves an explicitly missing English hover i
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: "ROUTE-HOVER-AR-ONLY",
         hoverImagePath: "/uploads/route-hover-ar-only.jpg",
         arHoverImagePath: "/uploads/route-hover-ar-only.jpg",
@@ -633,7 +636,7 @@ serialTest("admin product upsert persists mirrored related product links", async
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: "ROUTE-RELATED-PRODUCT",
         relatedItems: [{ type: "product", id: ids.productTwoId }]
       })
@@ -1398,7 +1401,7 @@ serialTest("admin product create rejects a slug still held by a trashed product 
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: "ROUTE-SLUG-CONFLICT",
         slug: "test-product-baseline-1",
         status: "inactive"
@@ -1420,7 +1423,7 @@ serialTest("admin product create rejects an SKU already used by another product 
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: baseline!.sku,
         slug: "route-sku-conflict",
         status: "inactive"
@@ -1443,7 +1446,7 @@ serialTest("admin product create ignores a blank SKU instead of reporting a conf
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        ...makeCompleteProduct(ids.leafCategoryId),
+        ...makeCompleteProduct(ids.leafCategoryId, ids),
         sku: "",
         slug: "route-blank-sku-save",
         status: "inactive"

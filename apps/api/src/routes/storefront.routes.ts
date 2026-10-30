@@ -7,6 +7,7 @@ import { catalogCollectionsRoutes } from "../modules/catalog/collections/collect
 import { catalogProductsRoutes } from "../modules/catalog/products/products.routes.js";
 import { getOfferBySlug, listCategories, listOffers } from "../modules/catalog/catalog.controller.js";
 import { storefrontAdvicesRoutes } from "../modules/admin/advices/storefront-advices.routes.js";
+import { storefrontProductAttributeRoutes } from "../modules/admin/product-attributes/admin-product-attributes.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { cartRoutes } from "../modules/cart/cart.routes.js";
 import { storefrontOrdersRoutes } from "../modules/orders/orders.routes.js";
@@ -20,6 +21,7 @@ export const storefrontRoutes = Router();
 storefrontRoutes.use(localeMiddleware);
 storefrontRoutes.use(featureCompatibilityMiddleware);
 
+storefrontRoutes.use(storefrontProductAttributeRoutes);
 storefrontRoutes.use("/products", catalogProductsRoutes);
 storefrontRoutes.use("/collections", catalogCollectionsRoutes);
 storefrontRoutes.use("/checkout", checkoutRoutes);

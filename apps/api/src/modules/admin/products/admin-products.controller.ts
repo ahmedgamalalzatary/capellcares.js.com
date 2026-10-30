@@ -21,6 +21,11 @@ import { parseEntityMediaInput } from "../../shared/entity-media/entity-media.re
 import { parseHoverImageInput } from "../../shared/hover-image/hover-image.js";
 import { parseRelatedItems } from "../shared/related-items.js";
 import { canActivateProduct, findProductActivationRepo } from "../shared/activation.js";
+import {
+  parseProductAttributeInput,
+  productAttributesExist,
+  replaceProductAttributeLinks
+} from "../../catalog/products/product/attributes.js";
 
 type NormalizedVariantDiscount = {
   type: "percentage" | "fixed";
@@ -175,6 +180,11 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
           ? [{ type: "image" as const, arUrl: null, enUrl: productImagePath }]
           : []
         : undefined;
+    const attributes = parseProductAttributeInput(incoming);
+    if (!attributes || !(await productAttributesExist(attributes))) {
+      return res.status(400).json({ ok: false, reason: "invalid-product-attributes" });
+    }
+    const storedFacts = incoming.id ? (await findProductActivationRepo(Number(incoming.id)))?.facts : undefined;
     if (
       productStatus === "active" &&
       !canActivateProduct({
@@ -183,7 +193,10 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         categoryId: incoming.categoryId ? Number(incoming.categoryId) : null,
         hasImage: hasLocalizedProductImage,
         keywordCount: productKeywords.length,
-        variantCount: productVariants.length
+        variantCount: productVariants.length,
+        brandId: attributes.brandId !== undefined ? attributes.brandId : storedFacts?.brandId ?? null,
+        supplierId: attributes.supplierId !== undefined ? attributes.supplierId : storedFacts?.supplierId ?? null,
+        ageGroupCount: attributes.ageGroupIds ? attributes.ageGroupIds.length : storedFacts?.ageGroupCount ?? 0
       })
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
@@ -232,10 +245,13 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         ...parseHoverImageInput(incoming),
         media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
+        brandId: attributes.brandId,
+        supplierId: attributes.supplierId,
         status: productStatus,
         isNew: incoming.isNew ?? false,
         isBestseller: incoming.isBestseller ?? false
       }, tx);
+      await replaceProductAttributeLinks(product.id, attributes, tx);
       await replaceVariantsRepo(
         product.id,
         productVariants.map((v: any) => {

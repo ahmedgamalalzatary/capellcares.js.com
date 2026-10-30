@@ -1,6 +1,9 @@
 import { eq, inArray } from "drizzle-orm";
 import {
+  ageGroups,
+  brands,
   categories,
+  suppliers,
   adminUserPermissions,
   adminUsers,
   authSessions,
@@ -97,6 +100,9 @@ export async function deleteCustomerByEmail(email: string) {
 }
 
 export async function getBaselineIds() {
+  const [brand] = await db.select({ id: brands.id }).from(brands).where(eq(brands.slug, "test-brand"));
+  const [supplier] = await db.select({ id: suppliers.id }).from(suppliers).where(eq(suppliers.name, "Test Supplier"));
+  const [ageGroup] = await db.select({ id: ageGroups.id }).from(ageGroups).where(eq(ageGroups.slug, "test-age"));
   const [productOne, productTwo, offer, collection, customer] = await Promise.all([
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-001")).then((rows) => rows[0]),
     db.select({ id: products.id, categoryId: products.categoryId }).from(products).where(eq(products.sku, "TEST-SKU-002")).then((rows) => rows[0]),
@@ -105,7 +111,7 @@ export async function getBaselineIds() {
     db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
   ]);
 
-  if (!productOne || !productTwo || !offer || !collection || !customer) {
+  if (!brand || !supplier || !ageGroup || !productOne || !productTwo || !offer || !collection || !customer) {
     throw new Error("Baseline test seed is incomplete");
   }
 
@@ -146,6 +152,9 @@ export async function getBaselineIds() {
   }
 
   return {
+    brandId: brand.id,
+    supplierId: supplier.id,
+    ageGroupId: ageGroup.id,
     productOneId: productOne.id,
     productTwoId: productTwo.id,
     offerId: offer.id,

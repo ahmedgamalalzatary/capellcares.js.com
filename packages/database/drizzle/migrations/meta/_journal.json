@@ -470,6 +470,13 @@
       "when": 1791968143384,
       "tag": "0066_orders_created_at_index",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "5",
+      "when": 1793362975165,
+      "tag": "0067_product_attributes",
+      "breakpoints": true
     }
   ]
 }
