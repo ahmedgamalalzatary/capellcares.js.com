@@ -79,15 +79,6 @@ describe("OrdersView", () => {
     expect(fetchCustomerOrders).not.toHaveBeenCalled();
   });
 
-  it("shows shipping progress separately from payment in the customer order list", async () => {
-    fetchCustomerOrders.mockResolvedValue([{ id: 1, orderCode: "SHIPPED-1", paymentMethod: "cod", paymentStatus: "pending", totalAmount: 50, createdAt: "2026-09-29T10:00:00Z", items: [],
-      fulfillment: { stage: "shipped", status: "delayed", issue: "address", canCancel: false, refundStatus: null, relatedShipments: [] } }]);
-    render(createElement(OrdersView, { lang: "en", dict: getDict("en") }));
-    expect(await screen.findByText("Shipped")).toBeInTheDocument();
-    expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.getByText("Delivery is delayed while the address is checked.")).toBeInTheDocument();
-  });
-
   it("renders customer orders returned by the storefront API client", async () => {
     fetchCustomerOrders.mockResolvedValue([
       {

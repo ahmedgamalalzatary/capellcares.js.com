@@ -1,21 +1,11 @@
 import { db } from "@capella/database/src/db";
-import { collectionItems, offerItems, orderItems, orders, paymentAttempts, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { getOrderShippingState } from "../../shipping/shipping-state.repository.js";
-import { customerShippingStates } from "../../shipping/customer-shipping.repository.js";
 import {
   mergeProductTotal,
   mergeVariantTotal,
   toNumber
 } from "./shared.js";
-
-function customerOrderFields(row: typeof orders.$inferSelect) {
-  const { manualShippingState: _manual, shippingProcessingAtMs: _processing,
-    shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, cancellationStatus: _cancellation,
-    cancellationRequestedAtMs: _requested, cancellationCompletedAtMs: _completed, stockRestoredAtMs: _restocked,
-    shippingSnapshot: _shippingSnapshot, ...customer } = row;
-  return customer;
-}
 
 /** A customer's own orders, newest first. The storefront renders a card per order with item thumbnails and a unit count, so line items come in one extra query rather than N per-order detail requests. (The ERP list is paged in `admin-list.ts`.) */
 export async function listCustomerOrdersRepo(customerId: number) {
@@ -25,10 +15,8 @@ export async function listCustomerOrdersRepo(customerId: number) {
     .where(eq(orders.customerId, customerId))
     .orderBy(desc(orders.createdAt));
 
-  const fulfillment = await customerShippingStates(rows);
   const summaries = rows.map((row) => ({
-    ...customerOrderFields(row),
-    fulfillment: fulfillment.get(row.id) ?? null,
+    ...row,
     totalAmount: toNumber(row.totalAmount)
   }));
 
@@ -77,8 +65,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
     .where(eq(orderItems.orderId, order.id));
 
   return {
-    ...(filters?.customerId != null ? customerOrderFields(order) : order),
-    ...(filters?.customerId != null ? { fulfillment: (await customerShippingStates([order])).get(order.id) ?? null } : {}),
+    ...order,
     totalAmount: toNumber(order.totalAmount),
     items: items.map((item) => ({
       ...item,
@@ -93,39 +80,14 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
 }
 
 export async function findAdminOrderByIdRepo(id: number) {
-  const order = await findOrderByIdRepo(id);
-  if (!order) return null;
-  const [payment] = order.paymentMethod === "paymob" && order.paymentAttemptId != null
-    ? await db.select({
-      attemptNumber: paymentAttempts.attemptNumber,
-      merchantReference: paymentAttempts.merchantReference,
-      environment: paymentAttempts.environment,
-      paymentMethod: paymentAttempts.paymentMethod,
-      integrationId: paymentAttempts.integrationId,
-      paymobOrderId: paymentAttempts.paymobOrderId,
-      paymobTransactionId: paymentAttempts.paymobTransactionId,
-      createdAt: paymentAttempts.createdAt
-    }).from(paymentAttempts).where(eq(paymentAttempts.id, order.paymentAttemptId)).limit(1)
-    : [];
-  return { ...order, payment: payment ?? null, shipping: await getOrderShippingState({ id: order.id,
-    shippingSnapshot: "shippingSnapshot" in order && typeof order.shippingSnapshot === "string" ? order.shippingSnapshot : null }) };
+  return findOrderByIdRepo(id);
 }
 
 export async function getSalesAnalyticsRepo() {
   const allOrderRows = await db.select().from(orders).orderBy(desc(orders.createdAt));
-  const orderRows = allOrderRows.filter((order) =>
-    order.paymentMethod === "cod"
-      ? order.paymentStatus === "accepted"
-      : order.paymentStatus !== "denied" &&
-        (order.providerPaymentStatus === "succeeded" || order.providerPaymentStatus === "partially_refunded")
-  );
+  const orderRows = allOrderRows.filter((order) => order.paymentStatus === "accepted");
   const itemRows = await db.select().from(orderItems).orderBy(desc(orderItems.orderId));
-  const recognizedCentsByOrder = new Map(orderRows.map((order) => {
-    const grossCents = Math.round(toNumber(order.totalAmount) * 100);
-    const productsCents = Math.max(0, grossCents - order.shippingAmountCents);
-    const paidCents = Math.max(0, grossCents - (order.paymentMethod === "paymob" ? order.refundedAmountCents : 0));
-    return [order.id, grossCents > 0 ? Math.round(productsCents * paidCents / grossCents) : 0];
-  }));
+  const recognizedCentsByOrder = new Map(orderRows.map((order) => [order.id, Math.round(toNumber(order.totalAmount) * 100)]));
   // Bucket the lines once so the allocation loop below is a single pass over itemRows instead of scanning every item for every recognized order.
   const linesByOrderId = new Map<number, typeof itemRows>();
   for (const item of itemRows) {
@@ -136,8 +98,8 @@ export async function getSalesAnalyticsRepo() {
   const lineRevenueCents = new Map<number, number>();
   for (const order of orderRows) {
     const lines = linesByOrderId.get(order.id) ?? [];
-    const grossCents = Math.max(0, Math.round(toNumber(order.totalAmount) * 100) - order.shippingAmountCents);
-    const netCents = recognizedCentsByOrder.get(order.id) ?? 0;
+    const grossCents = recognizedCentsByOrder.get(order.id) ?? 0;
+    const netCents = grossCents;
     let allocated = 0;
     lines.forEach((line, index) => {
       const amount = index === lines.length - 1 ? netCents - allocated :

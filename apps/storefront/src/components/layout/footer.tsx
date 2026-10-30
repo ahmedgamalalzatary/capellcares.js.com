@@ -158,32 +158,10 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
               {dict.footer.paymentMethods}
             </div>
-            {/* Only what checkout takes: Paymob's card (Visa, Mastercard, Meeza) and mobile-wallet integrations, plus cash on delivery. */}
-            {/* Two rows of four: cards and cash on delivery, then the wallets. Paymob itself isn't shown, it only processes the cards and wallets. `[display:grid]`, not `grid`: the global `.grid` class carries its own 24px gap. */}
-            <ul aria-label={dict.footer.paymentMethods} className="m-0 w-max list-none [display:grid] grid-cols-4 gap-3 p-0">
-              <PayChip label="Visa">
-                <Icon.Visa className="h-3.5 w-auto" />
-              </PayChip>
-              <PayChip label="Mastercard">
-                <Icon.Mastercard className="h-5 w-auto" />
-              </PayChip>
-              <PayChip label="Meeza">
-                <PayLogo src="/payments/meeza.svg" className="h-5" />
-              </PayChip>
+            {/* Only what checkout takes: cash on delivery. */}
+            <ul aria-label={dict.footer.paymentMethods} className="m-0 w-max list-none [display:grid] grid-cols-1 gap-3 p-0">
               <PayChip label="Cash on Delivery">
                 <Icon.CashOnDelivery className="h-16 w-auto" />
-              </PayChip>
-              <PayChip label="Vodafone Cash">
-                <PayLogo src="/payments/vodafone-cash.svg" className="h-3.5" />
-              </PayChip>
-              <PayChip label="Orange Cash">
-                <PayLogo src="/payments/orange-cash.svg" className="h-6" />
-              </PayChip>
-              <PayChip label="e& money">
-                <PayLogo src="/payments/e-and-money.svg" className="h-6" />
-              </PayChip>
-              <PayChip label="WE Pay">
-                <PayLogo src="/payments/we-pay.svg" className="h-6" />
               </PayChip>
             </ul>
           </div>
@@ -309,11 +287,6 @@ function PayChip({ label, children }: { label: string; children: React.ReactNode
       {children}
     </li>
   );
-}
-
-/* A brand's own logo file from public/payments; the chip carries the name, so the image itself is decorative. */
-function PayLogo({ src, className }: { src: string; className?: string }) {
-  return <img src={src} alt="" aria-hidden className={cn("w-auto max-w-[2.8rem] object-contain", className)} />;
 }
 
 /* App-store style dark pill with a two-line label. Leads to the "coming soon" page until the apps ship. */

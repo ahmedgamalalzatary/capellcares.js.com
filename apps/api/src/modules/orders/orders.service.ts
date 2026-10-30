@@ -7,12 +7,10 @@ import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repos
 import { UNTOUCHED_EXPIRY_MS } from "./order/shared.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
-import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
-import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 
 export class CheckoutAmountChangedError extends Error {
   constructor() {
-    super("Checkout total changed; refresh and review the cart before paying");
+    super("Checkout total changed; refresh and review the cart before ordering");
   }
 }
 
@@ -250,9 +248,8 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
 
 export async function createOrderFromCheckout(
   payload: CheckoutPayload,
-  options: { idempotencyKey: string; now?: Date; shippingService?: CheckoutShippingService; allowFreePrepaid?: boolean } = { idempotencyKey: randomUUID() }
+  options: { idempotencyKey: string; now?: Date } = { idempotencyKey: randomUUID() }
 ): Promise<Pick<Order, "id" | "orderCode" | "paymentStatus"> & { replayed: boolean }> {
-  if (payload.paymentMethod !== "cod" && !options.allowFreePrepaid) throw new Error("Online checkout cannot create an order before payment succeeds");
   const checkoutFingerprint = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
   const findExisting = () => db.select({ id: orders.id, orderCode: orders.orderCode,
     paymentStatus: orders.paymentStatus, checkoutFingerprint: orders.checkoutFingerprint })
@@ -265,10 +262,8 @@ export async function createOrderFromCheckout(
     return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
   }
   const priced = await priceCheckout(payload);
-  const shipping = await resolveShippingForCheckout(payload, priced, options.shippingService);
   const pricedItems = priced.items;
-  const totalAmount = addMoney(priced.totalAmount, (shipping?.shippingAmountCents ?? 0) / 100);
-  if (payload.paymentMethod === "paymob" && totalAmount !== 0) throw new Error("Online checkout cannot create an order before payment succeeds");
+  const totalAmount = priced.totalAmount;
   if (payload.expectedAmountCents != null && Math.round(totalAmount * 100) !== payload.expectedAmountCents) {
     throw new CheckoutAmountChangedError();
   }
@@ -282,8 +277,8 @@ export async function createOrderFromCheckout(
       fullName: payload.fullName,
       phone: payload.phone,
       email: payload.email,
-      governorate: shipping?.address.cityName.en ?? payload.governorate,
-      cityArea: shipping ? `${shipping.address.zoneName.en} / ${shipping.address.districtName.en}`.slice(0, 120) : payload.cityArea,
+      governorate: payload.governorate,
+      cityArea: payload.cityArea,
       addressLine: payload.addressLine,
       buildingApartment: payload.buildingApartment,
       notes: payload.notes ?? "",
@@ -292,11 +287,7 @@ export async function createOrderFromCheckout(
       idempotencyKey: options.idempotencyKey,
       checkoutFingerprint,
       codExpiresAt: totalAmount === 0 ? null : new Date((options.now ?? new Date()).getTime() + UNTOUCHED_EXPIRY_MS),
-      totalAmount,
-      shippingAmountCents: shipping?.shippingAmountCents ?? 0,
-      shippingQuoteId: shipping?.quoteId ?? null,
-      shippingSize: shipping?.size ?? null,
-      shippingSnapshot: shipping ? JSON.stringify(shipping) : null
+      totalAmount
       },
       items: pricedItems
     });

@@ -7,7 +7,6 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { fetchCustomerOrders } from "@/lib/api/client";
 import { Icon } from "@/components/ui/icons";
 import { authHref } from "@/lib/auth-redirect";
-import { OrderFulfillment } from "./order-fulfillment";
 import {
   formatOrderDate,
   itemsCountLabel,
@@ -195,7 +194,6 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
             </div>
 
             {/* Foot: the single action this card offers */}
-            {order.fulfillment && <OrderFulfillment fulfillment={order.fulfillment} dict={dict} compact />}
             <div className="border-t border-(--hairline) bg-[color-mix(in_oklch,var(--warm-soft)_45%,transparent)] px-4 py-2.5 text-end sm:px-5">
               <Link
                 href={`/${lang}/orders/${order.id}`}

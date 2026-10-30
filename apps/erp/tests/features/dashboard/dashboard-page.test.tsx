@@ -102,35 +102,6 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/مساء الخير، أحمد/)).toBeInTheDocument();
   });
 
-  it("links every waiting task with its count", async () => {
-    render(createElement(DashboardPage));
-    const attention = region("يحتاج انتباهك");
-
-    const reconciliation = await within(attention).findByRole("link", { name: /مدفوعات تحتاج مطابقة/ });
-    expect(reconciliation).toHaveAttribute("href", "/orders/reconciliation");
-    expect(reconciliation).toHaveTextContent("3");
-    const flagged = await within(attention).findByRole("button", { name: /طلبات معلَّمة للمراجعة/ });
-    expect(flagged).toHaveTextContent("1");
-    const pending = within(attention).getByRole("link", { name: /طلبات بانتظار تأكيد الدفع/ });
-    expect(pending).toHaveAttribute("href", "/orders?payment=pending");
-    expect(pending).toHaveTextContent("1");
-    const soldOut = within(attention).getByRole("link", { name: /مقاسات نفدت/ });
-    expect(soldOut).toHaveAttribute("href", "#stock");
-    expect(soldOut).toHaveTextContent("1");
-  });
-
-  it("lists the flagged orders, each linking to its order", async () => {
-    render(createElement(DashboardPage));
-    const attention = region("يحتاج انتباهك");
-
-    fireEvent.click(await within(attention).findByRole("button", { name: /طلبات معلَّمة للمراجعة/ }));
-
-    const link = within(attention).getByRole("link", { name: /CAP-0007/ });
-    expect(link).toHaveAttribute("href", "/orders/7");
-    expect(link).toHaveTextContent("مشكلة في عنوان الطلب");
-    expect(link).toHaveTextContent("منى");
-  });
-
   it("says nothing is waiting when every count is zero", async () => {
     fetchPaymobReconciliation.mockResolvedValue({ items: [], callbackProblems: [] });
     fetchOpenOrderReviewFlags.mockResolvedValue([]);
@@ -141,18 +112,6 @@ describe("DashboardPage", () => {
     expect(await within(region("يحتاج انتباهك")).findByText("لا شيء يحتاج انتباهك الآن")).toBeInTheDocument();
     expect(within(region("يحتاج انتباهك")).queryAllByRole("link")).toHaveLength(0);
     expect(within(region("يحتاج انتباهك")).queryAllByRole("button")).toHaveLength(0);
-  });
-
-  it("never claims all is well when a check could not load", async () => {
-    fetchPaymobReconciliation.mockRejectedValue(new Error("offline"));
-    fetchOpenOrderReviewFlags.mockResolvedValue([]);
-    apiGet.mockResolvedValue({ accepted: 1, pending: 0, denied: 0 });
-    mockState.products[0].variants[0].stock = 4;
-    render(createElement(DashboardPage));
-    const attention = region("يحتاج انتباهك");
-
-    expect(await within(attention).findByText("تعذّر تحميل بعض التنبيهات، حدّثي الصفحة.")).toBeInTheDocument();
-    expect(within(attention).queryByText("لا شيء يحتاج انتباهك الآن")).not.toBeInTheDocument();
   });
 
   it("keeps the strip loading while checks start after the person's permissions arrive", () => {

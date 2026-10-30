@@ -31,7 +31,6 @@ test("priceCheckout returns authoritative snapshots without creating an order or
 
   const priced = await module.priceCheckout?.({
     ...baseCheckoutPayload(),
-    paymentMethod: "paymob",
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
   });
 

@@ -1,7 +1,4 @@
 import type {
-  CheckoutShippingAvailability,
-  CheckoutShippingQuote,
-  ShippingAddress,
   Advice,
   Category,
   CheckoutRequestDto,
@@ -20,7 +17,6 @@ import type {
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
-import { checkoutShippingQuoteSchema, shippingDestinationSchema } from "@capella/shared";
 import { API_BASE, authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
 import { getAuthSessionRevision, refreshAccessTokenOrNull } from "../auth-provider.api";
 import { normalizeCategory, normalizeProduct } from "./client/normalizers";
@@ -183,54 +179,6 @@ async function checkoutRequestToken(accessToken: string | null, required = false
     }
   }
   return requestToken;
-}
-
-export async function fetchCheckoutShipping(): Promise<CheckoutShippingAvailability> {
-  const response = await fetch(`${API_BASE}/api/v1/checkout/shipping`, { cache: "no-store" });
-  if (!response.ok) throw Object.assign(new Error("Shipping is unavailable"), { code: "SHIPPING_UNAVAILABLE" });
-  const data = await response.json();
-  if (typeof data.enabled !== "boolean" || !Array.isArray(data.addresses)) throw new Error("Invalid shipping availability");
-  return { enabled: data.enabled, addresses: data.addresses.map((row: unknown) => shippingDestinationSchema.parse(row)) };
-}
-
-export async function fetchCheckoutShippingQuote(input: {
-  items: CheckoutRequestDto["items"]; paymentMethod: "cod" | "paymob"; shippingAddress: ShippingAddress
-}, accessToken: string | null, requireAuthentication = false): Promise<CheckoutShippingQuote> {
-  const token = accessToken || !requireAuthentication ? accessToken : await checkoutRequestToken(accessToken, true);
-  const data = await authedMutationJSON("/api/v1/checkout/shipping/quote", token,
-    { method: "POST", body: input, retryOn401: false });
-  return checkoutShippingQuoteSchema.parse(data);
-}
-
-export type PaymobMethodAvailability = { available: boolean; methods: Array<"card" | "wallet"> };
-
-export type CheckoutStatus = {
-  checkoutId: string;
-  status: "payment_pending" | "completed" | "failed" | "open" | "expired";
-  expiresAt: string;
-  attemptsUsed: number;
-  latestAttemptStatus: string | null;
-  canRetry: boolean;
-  order: { id: number; orderCode: string } | null;
-};
-
-export async function fetchPaymobMethods(): Promise<PaymobMethodAvailability> {
-  const response = await fetch(`${API_BASE}/api/v1/payments/paymob/methods`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Payment methods are unavailable");
-  return response.json() as Promise<PaymobMethodAvailability>;
-}
-
-export async function fetchCheckoutStatus(checkoutId: string): Promise<CheckoutStatus> {
-  const response = await fetch(`${API_BASE}/api/v1/checkout/${encodeURIComponent(checkoutId)}/status`,
-    { cache: "no-store" });
-  if (!response.ok) throw new Error("Checkout status is unavailable");
-  return response.json() as Promise<CheckoutStatus>;
-}
-
-export async function retryPaymobCheckout(checkoutId: string): Promise<Extract<CheckoutResponseDto,
-  { kind: "paymob_redirect" }> | null> {
-  return authedMutationJSON(`/api/v1/checkout/${encodeURIComponent(checkoutId)}/retry`, null,
-    { method: "POST", retryOn401: false });
 }
 
 export {

@@ -1,36 +1,12 @@
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
-import { and, eq, gt, gte, isNotNull, isNull, lte, notExists, or, sql } from "drizzle-orm";
+import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
+import { and, eq, gt, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
-import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../../shipping/shipping-dispatch.repository.js";
-import { untouchedShippingExpiryApplies } from "../../shipping/shipping-state.repository.js";
-import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../../shipping/shipping-cancellation.repository.js";
-
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-export class ShippingCustodyRequiredError extends Error {
-  constructor() { super("Check shipping cancellation and warehouse custody before rejecting this order"); }
-}
-
-export class ShippingCodPaymentManagedError extends Error {
-  constructor() { super("Shipping COD payment is managed by verified Bosta collection"); }
-}
 
 export class DeniedOrderLockedError extends Error {
   constructor() {
     super("Denied orders are locked");
-  }
-}
-
-export class PaidPaymobRefundRequiredError extends Error {
-  constructor() {
-    super("Refund the Paymob payment in Paymob first");
-  }
-}
-
-export class PaymobPaymentStatusManagedError extends Error {
-  constructor() {
-    super("Payment status is managed by Paymob");
   }
 }
 
@@ -181,10 +157,6 @@ export async function createOrderWithItems(input: {
     checkoutFingerprint?: string | null;
     codExpiresAt?: Date | null;
     totalAmount: number;
-    shippingAmountCents?: number;
-    shippingQuoteId?: string | null;
-    shippingSize?: "small" | "medium" | "large" | null;
-    shippingSnapshot?: string | null;
   };
   items: OrderItem[];
 }) {
@@ -267,7 +239,6 @@ export async function createOrderWithItems(input: {
       }))
     );
 
-    await enqueueOrderDelivery(tx, order.id);
     return { id: order.id, orderCode };
   });
 }
@@ -295,48 +266,31 @@ export async function updateOrderPaymentStatusRepo(
       throw new DeniedOrderLockedError();
     }
 
-    if (existing.paymentMethod === "paymob" && paymentStatus !== "denied") {
-      throw new PaymobPaymentStatusManagedError();
-    }
-
-    if (existing.paymentMethod === "cod" && paymentStatus !== "denied" &&
-      (existing.shippingSnapshot || existing.shippingQuoteId || existing.shippingAmountCents > 0)) throw new ShippingCodPaymentManagedError();
-
-    if (paymentStatus === "denied" && existing.paymentMethod === "paymob" &&
-      existing.providerPaymentStatus !== "refunded") {
-      throw new PaidPaymobRefundRequiredError();
-    }
-
     if (paymentStatus === "denied") {
-      if (existing.shippingSnapshot) {
-        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true }); }
-        catch (error) { if (error instanceof ShippingCancellationError) throw new ShippingCustodyRequiredError(); throw error; }
-        return;
-      }
-      if (!await stopUnsentDelivery(tx, id)) throw new ShippingCustodyRequiredError();
-      if (existing.paymentMethod === "paymob") {
-        const [attempt] = await tx.select({ checkoutSessionId: paymentAttempts.checkoutSessionId })
-          .from(paymentAttempts).where(eq(paymentAttempts.id, existing.paymentAttemptId ?? -1)).limit(1);
-        const reservations = attempt ? await tx.select().from(checkoutReservations)
-          .where(and(eq(checkoutReservations.checkoutSessionId, attempt.checkoutSessionId),
-            eq(checkoutReservations.state, "finalized"))).for("update") : [];
-        if (reservations.length === 0) throw new Error("Paymob reservation snapshot is missing");
-        for (const reservation of reservations) {
-          await incrementVariantStock(tx, reservation.variantId, reservation.qty);
-        }
-      } else {
-        await restockOrderItems(tx, id);
-      }
+      await restockOrderItems(tx, id);
     }
 
     await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
   });
 }
 
+/** A customer may cancel their own order until staff accept it; the stock goes back. */
+export async function cancelCustomerOrderRepo(id: number, customerId: number): Promise<"cancelled" | "not_found" | "not_cancellable"> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(orders)
+      .where(and(eq(orders.id, id), eq(orders.customerId, customerId))).limit(1).for("update");
+    if (!existing) return "not_found";
+    if (existing.paymentStatus !== "pending") return "not_cancellable";
+    await restockOrderItems(tx, id);
+    await tx.update(orders).set({ paymentStatus: "denied" }).where(eq(orders.id, id));
+    return "cancelled";
+  });
+}
+
 /** How many expired orders one sweep may examine. Bounds lock hold time and drain time. */
 export const ORDER_EXPIRY_BATCH_SIZE = 50;
 
-/** The order id discovery resumes after, so orders that cannot be handled (whether they throw or only raise a flag while staying eligible) cannot monopolise every batch. */
+/** The order id discovery resumes after, so an order that keeps failing cannot monopolise every batch. */
 let expiryDiscoveryCursor = 0;
 
 /** D24/D39: the untouched deadline is order creation + 96 hours, fixed and never extended. */
@@ -345,17 +299,8 @@ export async function expirePendingCodOrders(now: Date, options: { isStopped?: (
   const afterId = expiryDiscoveryCursor;
   const candidates = await db.select({ id: orders.id }).from(orders).where(and(
     gt(orders.id, afterId),
-    isNull(orders.cancellationStatus),
     lte(orders.codExpiresAt, now),
-    isNull(orders.shippingPickupAtMs),
-    or(isNull(orders.shippingProcessingAtMs), isNotNull(orders.shippingAddressBlockedAtMs)),
-    or(
-      and(eq(orders.paymentMethod, "cod"), eq(orders.paymentStatus, "pending")),
-      and(eq(orders.paymentMethod, "paymob"), eq(orders.paymentStatus, "accepted"),
-        eq(orders.refundedAmountCents, 0),
-        notExists(db.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
-          eq(orderReviewFlags.orderId, orders.id), eq(orderReviewFlags.flagType, "untouched_paid")))))
-    )
+    eq(orders.paymentStatus, "pending")
   )).orderBy(orders.id).limit(ORDER_EXPIRY_BATCH_SIZE);
 
   // Pass 2: one short transaction per order, so no lock is held across the batch.
@@ -371,38 +316,15 @@ export async function expirePendingCodOrders(now: Date, options: { isStopped?: (
     : candidates[candidates.length - 1].id;
 }
 
-/** Expires one order in its own transaction. A failure is logged and swallowed so the rest of the batch can continue; discovery advances by batch segment, not by this outcome. */
+/** Expires one order in its own transaction. A failure is logged and swallowed so the rest of the batch can continue. */
 async function expirePendingCodOrder(orderId: number, now: Date): Promise<void> {
   try {
     await db.transaction(async (tx) => {
       // Recheck under the order lock: the row may have changed since discovery.
       const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
-      if (!order || order.cancellationStatus !== null || order.codExpiresAt === null || order.codExpiresAt > now ||
-        !untouchedShippingExpiryApplies(order)) return;
-      if (order.paymentMethod === "paymob") {
-        if (order.paymentStatus !== "accepted" || order.refundedAmountCents > 0) return;
-        // The deadline is a single fixed event (D39), so a staff-acknowledged alert must not return on the next sweep; unlike carrier state it never becomes relevant again.
-        const [alreadyRaised] = await tx.select({ id: orderReviewFlags.id }).from(orderReviewFlags).where(and(
-          eq(orderReviewFlags.orderId, order.id), eq(orderReviewFlags.flagType, "untouched_paid"))).limit(1).for("update");
-        if (alreadyRaised) return;
-        await flagShippingOrder(tx, order.id, "untouched_paid",
-          "Paid order passed the 96-hour deadline with no processing; no automatic refund or restocking applies");
-        return;
-      }
-      if (order.paymentStatus !== "pending") return;
-      if (order.shippingSnapshot) {
-        await requestShippingCancellationInTransaction(tx, order, "expiry", { now });
-        return;
-      }
-      if (!await stopUnsentDelivery(tx, order.id)) {
-        await flagShippingOrder(tx, order.id, "expiry_review", "COD deadline reached; carrier outcome/custody is unverified, stock retained");
-        return;
-      }
+      if (!order || order.codExpiresAt === null || order.codExpiresAt > now || order.paymentStatus !== "pending") return;
       await restockOrderItems(tx, order.id);
-      await tx.update(orders).set({ paymentStatus: "denied" }).where(and(
-        eq(orders.id, order.id),
-        eq(orders.paymentStatus, "pending")
-      ));
+      await tx.update(orders).set({ paymentStatus: "denied" }).where(eq(orders.id, order.id));
     });
   } catch (error) {
     // One order failing must not abort the rest of the batch; it is logged and the sweep moves on to the next record.

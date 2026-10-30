@@ -20,7 +20,7 @@ The Capella ERP is the admin back office for the Capella Care storefront and mob
 ## Capabilities and Constraints
 - Stack: Next.js 16 (app router), Tailwind CSS v4, shadcn/Radix primitives, sonner toasts, lucide icons.
 - UI language: Arabic-only, right-to-left. Copy addresses staff in the feminine form (e.g. "ابحثي").
-- Orders: list/detail and read-only payment reconciliation; only Cash on Delivery payment status is editable (with permission). Paymob status is provider-managed.
+- Orders: list/detail; Cash on Delivery payment status is editable (with permission). Paymob status is provider-managed.
 - Currency: EGP.
 
 ## Brand Commitments

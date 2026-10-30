@@ -7,7 +7,7 @@ import { withTestServer } from "../helpers/request.js";
 import { getAdminAuthHeaders } from "../helpers/admin-auth.js";
 import { db } from "@capella/database/src/db";
 import { orders } from "@capella/database/drizzle/schema";
-import { orderMatchesPaymentStatusFilter, type PaymentStatus, type ProviderPaymentStatus } from "@capella/shared";
+import type { PaymentStatus } from "@capella/shared";
 
 beforeEach(async () => {
   await resetApiTestDatabase();
@@ -20,9 +20,7 @@ type Seed = {
   email?: string;
   phone?: string;
   total?: string;
-  method?: "cod" | "paymob";
   status?: PaymentStatus;
-  provider?: ProviderPaymentStatus | null;
 };
 
 async function seedOrders(seeds: Seed[]) {
@@ -39,9 +37,8 @@ async function seedOrders(seeds: Seed[]) {
     addressLine: "Street 10",
     buildingApartment: "Building 4",
     notes: "",
-    paymentMethod: seed.method ?? "cod",
+    paymentMethod: "cod",
     paymentStatus: seed.status ?? "pending",
-    providerPaymentStatus: seed.provider ?? null,
     totalAmount: seed.total ?? "100.00",
     createdAt: new Date(Date.UTC(2026, 0, seed.day ?? 1, 12))
   })));
@@ -83,12 +80,9 @@ test("erp orders list sorts by a whitelisted column with a stable tie-break", as
 
 test("erp orders payment filter matches the shared rule for every payment state", async () => {
   const seeds: Seed[] = [
-    { code: "PAY-COD-P", method: "cod", status: "pending" },
-    { code: "PAY-COD-A", method: "cod", status: "accepted" },
-    { code: "PAY-COD-D", method: "cod", status: "denied" },
-    { code: "PAY-PM-NULL", method: "paymob", status: "pending", provider: null },
-    ...(["pending", "succeeded", "failed", "partially_refunded", "refunded", "voided"] as const)
-      .map((provider) => ({ code: `PAY-PM-${provider}`, method: "paymob" as const, status: "accepted" as const, provider }))
+    { code: "PAY-COD-P", status: "pending" },
+    { code: "PAY-COD-A", status: "accepted" },
+    { code: "PAY-COD-D", status: "denied" },
   ];
   await seedOrders(seeds);
 
@@ -97,11 +91,7 @@ test("erp orders payment filter matches the shared rule for every payment state"
     for (const filter of ["pending", "accepted", "denied"] as const) {
       const response = await request(`/api/erp/orders?q=PAY-&payment=${filter}`, { headers });
       const expected = seeds
-        .filter((seed) => orderMatchesPaymentStatusFilter({
-          paymentMethod: seed.method ?? "cod",
-          paymentStatus: seed.status ?? "pending",
-          providerPaymentStatus: seed.provider ?? null
-        }, filter))
+        .filter((seed) => (seed.status ?? "pending") === filter)
         .map((seed) => seed.code)
         .sort();
       assert.deepEqual(codes(response.json).sort(), expected, filter);
@@ -151,11 +141,11 @@ test("erp orders list rejects invalid params", async () => {
 
 test("erp order payment summary counts orders by payment outcome, optionally since a date", async () => {
   const seeds: Seed[] = [
-    { code: "SUM-1", method: "cod", status: "pending", day: 1 },
-    { code: "SUM-2", method: "cod", status: "accepted", day: 5 },
-    { code: "SUM-3", method: "paymob", status: "accepted", provider: "succeeded", day: 6 },
-    { code: "SUM-4", method: "paymob", status: "accepted", provider: "refunded", day: 7 },
-    { code: "SUM-5", method: "paymob", status: "pending", provider: null, day: 8 }
+    { code: "SUM-1", status: "pending", day: 1 },
+    { code: "SUM-2", status: "accepted", day: 5 },
+    { code: "SUM-3", status: "accepted", day: 6 },
+    { code: "SUM-4", status: "denied", day: 7 },
+    { code: "SUM-5", status: "pending", day: 8 }
   ];
   await seedOrders(seeds);
 

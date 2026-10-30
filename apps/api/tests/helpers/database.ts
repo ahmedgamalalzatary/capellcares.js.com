@@ -8,21 +8,9 @@ import {
   adminUsers,
   authSessions,
   carts,
-  checkoutReservations,
-  checkoutSessions,
-  shippingCheckoutQuotes,
-  shipments,
-  shipmentEvents,
-  shipmentProviderBindings,
-  shippingWorkItems,
-  orderReviewFlags,
-  orderStateHistory,
   collections,
   customers,
   permissions,
-  paymentAttempts,
-  paymentWebhookEvents,
-  paymobCallbackInbox,
   advices,
   offers,
   productVariants,
@@ -43,18 +31,6 @@ export async function resetApiTestDatabase() {
   // Every delete below is destructive, and most run before clearTestSeed's own guard, so refuse up front unless the target is an explicitly disposable schema.
   assertDisposableTestDatabaseUrl(resolveDatabaseUrl());
 
-  await db.delete(shipmentEvents);
-  await db.delete(shipmentProviderBindings);
-  await db.delete(shipments);
-  await db.delete(shippingWorkItems);
-  await db.delete(orderReviewFlags);
-  await db.delete(orderStateHistory);
-  await db.delete(shippingCheckoutQuotes);
-  await db.delete(paymobCallbackInbox);
-  await db.delete(paymentWebhookEvents);
-  await db.delete(paymentAttempts);
-  await db.delete(checkoutReservations);
-  await db.delete(checkoutSessions);
   await db.delete(reviewPromptStates);
   await db.delete(reviewSubmissionHistory);
   await db.delete(reviews);

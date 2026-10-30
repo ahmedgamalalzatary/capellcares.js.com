@@ -283,7 +283,6 @@ describe("mobile API client", () => {
       .mockResolvedValueOnce(response(401, { message: "Authentication expired" }))
       .mockResolvedValueOnce(
         response(201, {
-          kind: "cod_order",
           id: 9,
           orderCode: "ORD-9",
           paymentStatus: "pending"
@@ -292,27 +291,12 @@ describe("mobile API client", () => {
 
     await expect(
       client.submitCheckout({ items: [] }, "old-token", { lang: "ar", idempotencyKey: "checkout-key" })
-    ).resolves.toMatchObject({ kind: "cod_order", orderCode: "ORD-9" });
+    ).resolves.toMatchObject({ orderCode: "ORD-9" });
 
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(global.fetch.mock.calls[0][1].headers["idempotency-key"]).toBe("checkout-key");
     expect(global.fetch.mock.calls[1][1].headers["idempotency-key"]).toBe("checkout-key");
-  });
-
-  test("returns a validated paymob redirect checkout response", async () => {
-    global.fetch.mockResolvedValueOnce(
-      response(201, {
-        kind: "paymob_redirect",
-        checkoutId: "chk_1",
-        checkoutUrl: "https://accept.paymob.com/unifiedcheckout/?publicKey=x",
-        expiresAt: "2026-01-01T00:00:00.000Z"
-      })
-    );
-
-    await expect(
-      client.submitCheckout({ items: [] }, null, { lang: "ar", idempotencyKey: "k" })
-    ).resolves.toMatchObject({ kind: "paymob_redirect", checkoutId: "chk_1" });
   });
 
   test("rejects a malformed checkout success response", async () => {

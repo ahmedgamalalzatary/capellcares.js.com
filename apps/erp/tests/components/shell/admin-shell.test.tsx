@@ -149,83 +149,6 @@ describe("AdminShell", () => {
     expect(screen.queryAllByText("فريق العمل")).toHaveLength(0);
   });
 
-  it("shows the shipping navigation item only for staff with shipping.read", () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["shipping.read"] },
-      hydrated: true,
-      logout: vi.fn().mockResolvedValue(undefined)
-    });
-
-    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-
-    expect(screen.getAllByText("الشحن").length).toBeGreaterThan(0);
-  });
-
-  it("hides the shipping navigation item for staff without shipping.read", () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
-      hydrated: true,
-      logout: vi.fn().mockResolvedValue(undefined)
-    });
-
-    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-
-    expect(screen.queryAllByText("الشحن")).toHaveLength(0);
-  });
-
-  it("raises a sonner alert for each open order review flag and resolves it when dismissed", async () => {
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read"] },
-      hydrated: true,
-      logout: vi.fn().mockResolvedValue(undefined)
-    });
-    fetchOpenOrderReviewFlags.mockResolvedValue([
-      { id: 31, orderId: 5, orderCode: "YMFI-005", flagType: "untouched_paid",
-        reason: "Paid order passed the 96-hour deadline with no processing", status: "open",
-        customerName: "Checkout Customer", totalAmount: 200,
-        orderCreatedAt: "2026-09-21T09:00:00.000Z", flaggedAt: "2026-09-25T09:00:00.000Z" }
-    ]);
-
-    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-
-    await waitFor(() => expect(toastWarning).toHaveBeenCalled());
-    const [title, options] = toastWarning.mock.calls[0];
-    expect(title).toBe("طلب مدفوع تجاوز 96 ساعة دون تجهيز");
-    expect(options.description).toContain("YMFI-005");
-    expect(options.closeButton).toBe(true);
-    expect(options.duration).toBe(Infinity);
-
-    options.onDismiss();
-    expect(resolveOrderReviewFlag).toHaveBeenCalledWith(31);
-  });
-
-  it("does not raise the same still-open alert again on the next poll", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    try {
-      mockedUseAdminAuth.mockReturnValue({
-        user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["orders.read"] },
-        hydrated: true,
-        logout: vi.fn().mockResolvedValue(undefined)
-      });
-      fetchOpenOrderReviewFlags.mockResolvedValue([
-        { id: 61, orderId: 5, orderCode: "YMFI-006", flagType: "untouched_paid",
-          reason: "Paid order passed the 96-hour deadline with no processing", status: "open",
-          customerName: "Checkout Customer", totalAmount: 200,
-          orderCreatedAt: "2026-09-21T09:00:00.000Z", flaggedAt: "2026-09-25T09:00:00.000Z" }
-      ]);
-
-      render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-      await waitFor(() => expect(toastWarning).toHaveBeenCalledTimes(1));
-
-      // The flag is still open on the server, so the next poll must not raise it a second time.
-      await act(async () => { vi.advanceTimersByTime(POLL_MS); });
-      await waitFor(() => expect(fetchOpenOrderReviewFlags).toHaveBeenCalledTimes(2));
-      expect(toastWarning).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
   it("shows no order review alerts for staff without the orders permission", async () => {
     mockedUseAdminAuth.mockReturnValue({
       user: { name: "Staff User", email: "staff@capella.test", role: "staff", permissionKeys: ["sales.read"] },
@@ -240,29 +163,4 @@ describe("AdminShell", () => {
     expect(toastWarning).not.toHaveBeenCalled();
   });
 
-  it("re-raises a still-open alert after a failed dismissal", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    mockedUseAdminAuth.mockReturnValue({
-      user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read"] },
-      hydrated: true,
-      logout: vi.fn().mockResolvedValue(undefined)
-    });
-    const openFlag = { id: 44, orderId: 5, orderCode: "YMFI-005", flagType: "untouched_paid",
-      reason: "Passed the deadline", status: "open", customerName: "Checkout Customer", totalAmount: 200,
-      orderCreatedAt: "2026-09-21T09:00:00.000Z", flaggedAt: "2026-09-25T09:00:00.000Z" };
-    fetchOpenOrderReviewFlags.mockResolvedValue([openFlag]);
-    resolveOrderReviewFlag.mockRejectedValue(new Error("API 500"));
-
-    render(createElement(AdminShell, { title: "اختبار", children: createElement("div", null, "content") }));
-    await waitFor(() => expect(toastWarning).toHaveBeenCalledTimes(1));
-
-    toastWarning.mock.calls[0][1].onDismiss();
-    await waitFor(() => expect(resolveOrderReviewFlag).toHaveBeenCalledWith(44));
-
-    // The dismissal failed, so the still-open alert must come back on the next poll.
-    fetchOpenOrderReviewFlags.mockResolvedValue([openFlag]);
-    await act(async () => { vi.advanceTimersByTime(POLL_MS); });
-    await waitFor(() => expect(toastWarning).toHaveBeenCalledTimes(2));
-    vi.useRealTimers();
-  });
 });

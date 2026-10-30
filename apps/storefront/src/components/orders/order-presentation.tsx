@@ -140,19 +140,12 @@ export function paymentStatusChip(status: PaymentStatus): string {
   return "chip--status-bad";
 }
 
-export function orderPaymentLabel(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">, dict: any): string {
-  if (order.paymentMethod === "cod") return paymentStatusLabel(order.paymentStatus, dict);
-  if (order.providerPaymentStatus === "succeeded") return dict.orders.statusPaidOnline;
-  if (order.providerPaymentStatus === "partially_refunded") return dict.orders.statusPartiallyRefunded;
-  if (order.providerPaymentStatus === "refunded") return dict.orders.statusRefunded;
-  if (order.providerPaymentStatus === "voided") return dict.orders.statusVoided;
-  return dict.orders.statusPending;
+export function orderPaymentLabel(order: Pick<OrderSummary, "paymentStatus">, dict: any): string {
+  return paymentStatusLabel(order.paymentStatus, dict);
 }
 
-export function orderPaymentChip(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): string {
-  if (order.paymentMethod === "cod") return paymentStatusChip(order.paymentStatus);
-  return order.providerPaymentStatus === "succeeded" || order.providerPaymentStatus === "partially_refunded"
-    ? "chip--status-ok" : "chip--status-bad";
+export function orderPaymentChip(order: Pick<OrderSummary, "paymentStatus">): string {
+  return paymentStatusChip(order.paymentStatus);
 }
 
 export function formatOrderDate(value: string, lang: Language): string {

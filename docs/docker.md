@@ -67,34 +67,6 @@ pins the same `mysql2` version currently used by the workspace lockfile. When
 updating `mysql2`, update this runtime manifest and lockfile together. Rebuilds
 install locked versions rather than resolving dependencies with `npm install`.
 
-## Paymob (API container only)
-
-The API container receives the `PAYMOB_*` values from the Compose env file. Store real keys only in the VPS `.env.production` (or the local untracked `.env.docker`), never in Git or `NEXT_PUBLIC_*` variables. The storefront and ERP containers do not receive these secrets.
-
-```env
-PAYMOB_MODE=test
-PAYMOB_SECRET_KEY=your-test-secret-key
-PAYMOB_PUBLIC_KEY=your-test-public-key
-PAYMOB_API_KEY=your-test-api-key
-PAYMOB_HMAC_SECRET=your-test-hmac-secret
-PAYMOB_CARD_INTEGRATION_ID=5885253
-PAYMOB_CARD_INTEGRATION_CONFIRMED=true
-PAYMOB_WALLET_INTEGRATION_ID=5915379
-PAYMOB_WALLET_INTEGRATION_CONFIRMED=true
-PAYMOB_NOTIFICATION_URL=https://api.faltatoy.com/api/v1/payments/paymob/webhook
-PAYMOB_REDIRECTION_URL=https://faltatoy.com/checkout/payment-result
-```
-
-Paymob confirmed card integration `5885253` for card/3DS and wallet integration `5915379` for Egyptian mobile wallets. Test and live credentials/IDs must never be mixed. `PAYMOB_REDIRECTION_URL` is a locale-neutral base URL; the API adds the opaque checkout reference to each intention, then the storefront redirects to the shopper's saved language. Every Intention request includes the processed callback URL, and the same URL must also be configured on both integrations in the Paymob dashboard.
-
-After deploying the confirmed test configuration, verify `/api/v1/payments/paymob/methods` reports `{ "available": true, "methods": ["card", "wallet"] }`. Complete the remaining sandbox and release checks in `docs/paymob-integration-status.md` before enabling live payments.
-
-## Bosta shipping
-
-Compose injects the server-only `BOSTA_*` settings into the API, including the separate sending, synchronization, cancellation and edit gates. All gates default to false. Keep account evidence and credentials in the chosen untracked environment file; the storefront and ERP receive none of them.
-
-Before enabling shipping, follow [the shipping release guide](bosta-shipping-release.md) for merchant verification, migrations 0050–0058, the exact webhook header, the redacted configuration check, workers and disable/recovery. The API bundle includes `dist/scripts/check-shipping.mjs`, which can validate the injected configuration without starting workers or calling the provider/database.
-
 ## Required Auth Env
 
 Production and Docker auth require server-only ERP admin bootstrap values:

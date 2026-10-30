@@ -6,16 +6,14 @@ import {
   PAYMENT_METHODS,
   type CheckoutRequestDto,
   type Collection,
-  type CheckoutShippingAvailability,
-  type CheckoutShippingQuote,
   getEffectiveVariantPrice,
   pickLang
 } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
-import { fetchCollections, fetchOffers, fetchPaymobMethods, fetchProducts, submitCheckout, fetchCheckoutShipping, fetchCheckoutShippingQuote } from "@/lib/api/client";
+import { fetchCollections, fetchOffers, fetchProducts, submitCheckout } from "@/lib/api/client";
 import { cartLineSizeLabel } from "@/lib/cart-line-size";
-import { clearPendingCheckout, getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
+import { clearCheckoutRequest, getCheckoutIdempotencyKey } from "@/lib/checkout-request";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -37,20 +35,12 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     cityArea: "",
     addressLine: "",
     buildingApartment: "",
-    notes: "",
-    paymentMethod: PAYMENT_METHODS.cod,
-    shippingCityId: "", shippingZoneId: "", shippingDistrictId: ""
+    notes: ""
   });
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [placing, setPlacing] = useState(false);
   const placingRef = useRef(false);
-  const [paymobMethods, setPaymobMethods] = useState<Array<"card" | "wallet">>([]);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [availability, setAvailability] = useState<CheckoutShippingAvailability | null>(null);
-  const [shippingLoading, setShippingLoading] = useState(true);
-  const [shippingError, setShippingError] = useState<string | null>(null);
-  const [shippingRetry, setShippingRetry] = useState(0);
-  const [quoted, setQuoted] = useState<{ key: string; value: CheckoutShippingQuote } | null>(null);
   const [{ products, offers, collections }, setCatalog] = useState<CheckoutCatalogState & { collections: Collection[] }>({
     products: [],
     offers: [],
@@ -72,25 +62,6 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       })
       .catch(() => { });
   }, [lang]);
-
-  useEffect(() => {
-    fetchPaymobMethods()
-      .then(({ available, methods }) => setPaymobMethods(available ? methods : []))
-      .catch(() => setPaymobMethods([]));
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setShippingLoading(true);
-    fetchCheckoutShipping().then(next => {
-      if (cancelled) return;
-      setAvailability(next); setShippingError(null); setShippingLoading(false);
-    }).catch(() => {
-      if (cancelled) return;
-      setAvailability(null); setShippingError(dict.checkout.shippingUnavailable); setShippingLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [shippingRetry, dict.checkout.shippingUnavailable]);
 
   const resolved = useMemo<CheckoutResolvedItem[]>(() => {
     return lines
@@ -138,52 +109,9 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     ? { type: "product" as const, variantId: line.variantId, qty: line.qty }
     : line.type === "offer" ? { type: "offer" as const, offerId: line.offerId, qty: line.qty }
       : { type: "collection" as const, collectionId: line.collectionId, qty: line.qty });
-  const quoteKey = JSON.stringify([items, form.paymentMethod, form.shippingCityId, form.shippingZoneId,
-    form.shippingDistrictId, user?.id ?? null, accessToken, Math.round(subtotal * 100)]);
-  const shippingQuote = quoted?.key === quoteKey && availability?.enabled ? quoted.value : null;
-  const totalAmount = subtotal + (shippingQuote?.shippingAmountCents ?? 0) / 100;
-
-  useEffect(() => {
-    let cancelled = false;
-    setQuoted(null);
-    if (!availability?.enabled || !form.shippingCityId || !form.shippingZoneId || !form.shippingDistrictId ||
-      resolved.length !== lines.length || lines.length === 0) {
-      if (availability) setShippingLoading(false);
-      return;
-    }
-    setShippingLoading(true); setShippingError(null);
-    fetchCheckoutShippingQuote({ items, paymentMethod: form.paymentMethod, shippingAddress: {
-      cityId: form.shippingCityId, zoneId: form.shippingZoneId, districtId: form.shippingDistrictId
-    } }, accessToken, user != null).then(value => {
-      if (cancelled) return;
-      if (value.productsTotalCents !== Math.round(subtotal * 100)) {
-        setShippingError(dict.checkout.amountChanged);
-      } else setQuoted({ key: quoteKey, value });
-      setShippingLoading(false);
-    }).catch(error => {
-      if (cancelled) return;
-      const code = (error as { code?: string })?.code;
-      setShippingError(code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
-        : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
-          : dict.checkout.shippingUnavailable);
-      setShippingLoading(false);
-    });
-    return () => { cancelled = true; };
-  // quoteKey binds the request to cart, selected destination, payment and customer.
-  }, [quoteKey, availability, shippingRetry, dict.checkout.amountChanged, dict.checkout.shippingUnavailable,
-      dict.checkout.shippingCodLimit, dict.checkout.shippingUnsupported]);
 
   const setField = <K extends keyof CheckoutFormState>(key: K, value: CheckoutFormState[K]) => {
-    setForm((state) => {
-      if (key === "shippingCityId") return { ...state, shippingCityId: String(value), shippingZoneId: "", shippingDistrictId: "",
-        governorate: availability?.addresses.find(row => row.cityId === value)?.cityName.en ?? "", cityArea: "" };
-      if (key === "shippingZoneId") return { ...state, shippingZoneId: String(value), shippingDistrictId: "", cityArea: "" };
-      if (key === "shippingDistrictId") {
-        const district = availability?.addresses.find(row => row.cityId === state.shippingCityId && row.zoneId === state.shippingZoneId && row.districtId === value);
-        return { ...state, shippingDistrictId: String(value), cityArea: district ? `${district.zoneName.en} / ${district.districtName.en}` : "" };
-      }
-      return { ...state, [key]: value };
-    });
+    setForm((state) => ({ ...state, [key]: value }));
   };
 
   const validate = () => {
@@ -195,8 +123,6 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     if (!form.cityArea.trim()) next.city = dict.checkout.required;
     if (!form.addressLine.trim()) next.addressLine = dict.checkout.required;
     if (!form.buildingApartment.trim()) next.building = dict.checkout.required;
-    if (availability?.enabled && !shippingQuote) next.shipping = shippingError ?? dict.checkout.shippingPending;
-    if (availability == null || shippingLoading) next.shipping = shippingError ?? dict.common.loading;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -221,11 +147,8 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         addressLine: form.addressLine,
         buildingApartment: form.buildingApartment,
         notes: form.notes || undefined,
-        paymentMethod: totalAmount === 0 && !availability?.enabled ? PAYMENT_METHODS.cod : form.paymentMethod,
-        expectedAmountCents: Math.round(totalAmount * 100),
-        ...(shippingQuote ? { shippingQuoteId: shippingQuote.quoteId, shippingAddress: {
-          cityId: shippingQuote.address.cityId, zoneId: shippingQuote.address.zoneId, districtId: shippingQuote.address.districtId
-        } } : {}),
+        paymentMethod: PAYMENT_METHODS.cod,
+        expectedAmountCents: Math.round(subtotal * 100),
         items
       };
 
@@ -234,31 +157,14 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         idempotencyKey: await getCheckoutIdempotencyKey(payload)
       });
       if (!data) throw new Error("Checkout failed");
-      if (data.kind === "paymob_redirect") {
-        rememberPendingCheckout(data.checkoutId, lang);
-        redirectToPaymob(data.checkoutUrl);
-      } else {
-        setOrderId(data.orderCode);
-        clear();
-        clearPendingCheckout();
-      }
+      setOrderId(data.orderCode);
+      clear();
+      clearCheckoutRequest();
     } catch (error) {
       const code = (error as { code?: string })?.code;
-      const message = code === "SHIPPING_QUOTE_CHANGED" ? dict.checkout.shippingChanged
-        : code === "CHECKOUT_AMOUNT_CHANGED" ? dict.checkout.amountChanged
-          : code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
-            : code === "SHIPPING_UNAVAILABLE" ? dict.checkout.shippingUnavailable
-              : code === "SHIPPING_ADDRESS_INVALID" ? dict.checkout.shippingAddressInvalid
-                : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
-                  : code === "PAYMENT_UNAVAILABLE" ? dict.checkout.paymentUnavailable
-                  : error instanceof Error && error.message ? error.message : dict.checkout.checkoutFailed;
-      setErrors((state) => ({
-        ...state,
-        submit: message
-      }));
-      if (code === "SHIPPING_QUOTE_CHANGED" || code === "CHECKOUT_AMOUNT_CHANGED") {
-        setQuoted(null); setShippingRetry(value => value + 1);
-      }
+      const message = code === "CHECKOUT_AMOUNT_CHANGED" ? dict.checkout.amountChanged
+        : error instanceof Error && error.message ? error.message : dict.checkout.checkoutFailed;
+      setErrors((state) => ({ ...state, submit: message }));
     } finally {
       placingRef.current = false;
       setPlacing(false);
@@ -266,17 +172,9 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   };
 
   return {
-    shipping: { enabled: availability?.enabled ?? null, addresses: availability?.addresses ?? [], quote: shippingQuote,
-      loading: shippingLoading, error: shippingError, retry: () => {
-        setQuoted(null); setShippingRetry(value => value + 1);
-        Promise.all([fetchProducts({ lang }), fetchOffers({ lang }), fetchCollections({ lang })])
-          .then(([products, offers, collections]) => setCatalog({ products, offers, collections })).catch(() => {});
-      } },
-    totalAmount,
     form,
     errors,
     placing,
-    paymobMethods,
     orderId,
     resolved,
     subtotal,

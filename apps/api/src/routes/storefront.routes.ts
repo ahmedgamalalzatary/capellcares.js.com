@@ -15,7 +15,6 @@ import { storefrontShopMediaRoutes } from "../modules/shop-media/storefront-shop
 import { storefrontAnnouncementsRoutes } from "../modules/announcements/storefront-announcements.routes.js";
 import { wishlistRoutes } from "../modules/wishlist/wishlist.routes.js";
 import { storefrontReviewsRoutes } from "../modules/reviews/reviews.routes.js";
-import { paymobWebhookRoutes } from "../modules/payments/paymob/paymob-webhook.routes.js";
 
 export const storefrontRoutes = Router();
 storefrontRoutes.use(localeMiddleware);
@@ -25,7 +24,6 @@ storefrontRoutes.use(storefrontProductAttributeRoutes);
 storefrontRoutes.use("/products", catalogProductsRoutes);
 storefrontRoutes.use("/collections", catalogCollectionsRoutes);
 storefrontRoutes.use("/checkout", checkoutRoutes);
-storefrontRoutes.use("/payments/paymob", paymobWebhookRoutes);
 storefrontRoutes.use("/advices", storefrontAdvicesRoutes);
 storefrontRoutes.use("/auth", authRoutes);
 storefrontRoutes.use("/cart", cartRoutes);

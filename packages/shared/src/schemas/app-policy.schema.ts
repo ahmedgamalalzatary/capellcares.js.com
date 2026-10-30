@@ -30,7 +30,7 @@ export const nativeClientIdentitySchema = z.object({
   runtimeVersion: label, updateId: z.union([z.literal("embedded"), z.string().uuid()]),
   clientRevision: revision
 });
-export const appFeatureSchema = z.enum(["cart-sync", "checkout", "shipping-quote", "payment-retry",
+export const appFeatureSchema = z.enum(["cart-sync", "checkout",
   "order-cancel", "wishlist-write", "review-submit"]);
 export const platformReleaseSchema = z.object({
   appVersion: appVersionSchema, appBuild: appBuildSchema, runtimeVersion: label,

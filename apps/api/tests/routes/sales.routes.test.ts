@@ -36,26 +36,6 @@ test("erp sales uses the sold bundle composition after the catalog changes", asy
   });
 });
 
-test("erp sales recognizes only the remaining paid amount after a partial Paymob refund", async () => {
-  const ids = await getBaselineIds();
-  const [order] = await db.insert(orders).values({
-    orderCode: "PART-001", customerType: "registered", customerId: ids.customerId,
-    fullName: "Partially Refunded", phone: "01011111111", email: "partial-sales@capella.test",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1", buildingApartment: "1",
-    paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "partially_refunded",
-    refundedAmountCents: 1200, totalAmount: "35.00"
-  }).$returningId();
-  await db.insert(orderItems).values({ orderId: order.id, itemType: "product_variant",
-    variantId: ids.firstVariantId, qty: 1, unitPrice: "35.00", lineTotal: "35.00",
-    snapshotNameEn: "Baseline Product 1", snapshotNameAr: "منتج تجريبي", snapshotSizeLabel: "100ml" });
-  await withTestServer(app, async (request) => {
-    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
-    assert.equal(response.status, 200);
-    assert.equal(response.json.summary.totalRevenue, 23);
-    assert.equal(response.json.variantTotals[0]?.revenue, 23);
-  });
-});
-
 test("erp sales expands collection lines into the variants actually sold", async () => {
   const ids = await getBaselineIds();
   const [collection] = await db.insert(collections).values({ slug: `sales-${crypto.randomUUID()}`,

@@ -7,30 +7,11 @@ const { app } = await import("./app.js");
 const { syncPermissionCatalog } = await import("./services/erp-permissions.service.js");
 const { ensureBootstrapAdmin } = await import("./modules/admin/auth/admin-auth.service.js");
 const { startCheckoutExpiryWorker } = await import("./modules/checkout/checkout-expiry-worker.js");
-const { startShippingDispatchWorker } = await import("./modules/shipping/shipping-dispatch-worker.js");
-const { startShippingSyncWorker } = await import("./modules/shipping/shipping-sync-worker.js");
-const { startShippingCancellationWorker } = await import("./modules/shipping/shipping-cancellation-worker.js");
-const { startPaymobCallbackWorker } = await import("./modules/payments/paymob/paymob-callback-worker.js");
-const { startPaymobReconciliationWorker } = await import("./modules/payments/paymob/paymob-reconciliation-worker.js");
-const { resolvePaymobConfig } = await import("./modules/payments/paymob/paymob-config.js");
-const { assertShippingStartup } = await import("./modules/shipping/shipping-startup.js");
 const { mysqlPool } = await import("@capella/database/src/db");
-
-// Refuse to boot on an invalid active shipping setup, before any worker can act on it. Shipping validation is self-contained, so it never requires admin/JWT/intention secrets.
-assertShippingStartup(process.env);
 
 await ensureBootstrapAdmin();
 await syncPermissionCatalog();
-// Missing-callback reconciliation needs the inquiry API key; without it there is no authenticated read, so expiry keeps its existing behaviour rather than holding stock nothing can resolve.
-const reconciliationEnabled = resolvePaymobConfig().apiKey !== null;
-const stopWorkers = [
-  startPaymobCallbackWorker(),
-  startPaymobReconciliationWorker(),
-  startCheckoutExpiryWorker({ reconciliationEnabled }),
-  startShippingDispatchWorker(),
-  startShippingSyncWorker(),
-  startShippingCancellationWorker()
-];
+const stopWorkers = [startCheckoutExpiryWorker()];
 
 const port = Number(process.env.PORT ?? 4000);
 const server = app.listen(port, () => {

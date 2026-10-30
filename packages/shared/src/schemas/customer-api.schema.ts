@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { cartLinesSchema } from "./cart.schema.js";
-import { checkoutResponseSchema } from "./checkout.schema.js";
-import { shippingDestinationSchema } from "./shipping.schema.js";
 import { adviceSchema } from "./advice.schema.js";
 import { reviewEntityTypeSchema } from "./review.schema.js";
 
@@ -9,16 +7,6 @@ const id = z.number().int().positive().safe();
 const money = z.number().finite().nonnegative();
 export const cartResponseSchema = z.object({ lines: cartLinesSchema });
 export const announcementResponseSchema = z.object({ items: z.array(z.string()) });
-export const checkoutShippingAvailabilitySchema = z.object({ enabled: z.boolean(), addresses: z.array(shippingDestinationSchema) });
-export const paymobMethodsSchema = z.object({ available: z.boolean(), methods: z.array(z.enum(["card", "wallet"])) });
-export const checkoutStatusSchema = z.object({
-  checkoutId: z.string().min(1),
-  status: z.enum(["payment_pending", "completed", "failed", "open", "expired"]),
-  expiresAt: z.string().datetime(), attemptsUsed: z.number().int().nonnegative(),
-  latestAttemptStatus: z.string().nullable(), canRetry: z.boolean(),
-  order: z.object({ id, orderCode: z.string().min(1) }).nullable()
-});
-export const paymobRedirectSchema = checkoutResponseSchema.options[1];
 const orderItemSchema = z.object({
   id, orderId: id, itemType: z.enum(["product_variant", "offer", "collection"]),
   variantId: id.nullable(), offerId: id.nullable(), collectionId: id.nullable(),
@@ -29,9 +17,8 @@ export const customerOrderSummarySchema = z.object({
   id, orderCode: z.string().min(1), customerType: z.enum(["guest", "registered"]), customerId: id.nullable(),
   fullName: z.string(), phone: z.string(), email: z.string(), governorate: z.string(), cityArea: z.string(),
   addressLine: z.string(), buildingApartment: z.string(), notes: z.string().nullable(),
-  paymentMethod: z.enum(["cod", "paymob"]), paymentStatus: z.enum(["pending", "accepted", "denied"]),
-  providerPaymentStatus: z.enum(["pending", "succeeded", "failed", "partially_refunded", "refunded", "voided"]).nullable(),
-  refundedAmountCents: z.number().int().nonnegative(), totalAmount: money, createdAt: z.string().datetime(),
+  paymentMethod: z.literal("cod"), paymentStatus: z.enum(["pending", "accepted", "denied"]),
+  totalAmount: money, createdAt: z.string().datetime(),
   items: z.array(orderItemSchema).optional()
 }).passthrough();
 export const customerOrderSchema = customerOrderSummarySchema.extend({ items: z.array(orderItemSchema) });

@@ -55,6 +55,7 @@ export const ar = {
     subtotal: "المجموع الفرعي",
     shipping: "الشحن",
     calculatedAtCheckout: "يُحتسب عند الدفع",
+    freeDelivery: "توصيل مجاني",
     continue: "متابعة",
     back: "رجوع",
     breadcrumbHome: "الرئيسية",
@@ -194,7 +195,7 @@ export const ar = {
       return: "مرتجع", exchange: "استبدال",
       carrier: { created: "بانتظار الاستلام", picked_up: "تم الاستلام", in_transit: "في الطريق", delivered: "تم التسليم", returned: "تمت الإعادة", cancelled: "تم الإلغاء", exception: "مشكلة في التوصيل" },
       cancel: "إلغاء الطلب", confirm: "تأكيد الإلغاء", keep: "الاحتفاظ بالطلب", cancelling: "جارٍ الإلغاء…",
-      confirmMessage: "هل تريد إلغاء هذا الطلب؟ الإلغاء متاح قبل الطباعة أو الاستلام فقط. نتابع استرداد المبلغ المدفوع بشكل منفصل.",
+      confirmMessage: "إلغاء هذا الطلب؟ لا يمكن التراجع بعد الإلغاء.",
       cancelError: "تعذر تأكيد الإلغاء. حدّث حالة الطلب قبل المحاولة مرة أخرى.",
       cancelUnavailable: "لم يعد إلغاء هذا الطلب متاحًا هنا. حدّث حالته أو تواصل مع فريقنا.",
       refresh: "تحديث الحالة", refreshing: "جارٍ التحديث…", refreshError: "تعذر تحديث حالة التوصيل. حاول مرة أخرى."

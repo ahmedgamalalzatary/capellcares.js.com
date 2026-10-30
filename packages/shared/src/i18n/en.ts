@@ -55,6 +55,7 @@ export const en = {
     subtotal: "Subtotal",
     shipping: "Shipping",
     calculatedAtCheckout: "Calculated at checkout",
+    freeDelivery: "Free delivery",
     continue: "Continue",
     back: "Back",
     breadcrumbHome: "Home",
@@ -192,7 +193,7 @@ export const en = {
       return: "Return", exchange: "Exchange",
       carrier: { created: "Awaiting pickup", picked_up: "Picked up", in_transit: "In transit", delivered: "Delivered", returned: "Returned", cancelled: "Cancelled", exception: "Delivery problem" },
       cancel: "Cancel order", confirm: "Confirm cancellation", keep: "Keep order", cancelling: "Cancelling…",
-      confirmMessage: "Cancel this order? Cancellation is available only before printing or pickup. Any paid refund is tracked separately.",
+      confirmMessage: "Cancel this order? This cannot be undone.",
       cancelError: "Could not confirm cancellation. Refresh the order status before trying again.",
       cancelUnavailable: "This order can no longer be cancelled here. Refresh its status or contact our team.",
       refresh: "Refresh status", refreshing: "Refreshing…", refreshError: "Could not refresh delivery status. Please try again."

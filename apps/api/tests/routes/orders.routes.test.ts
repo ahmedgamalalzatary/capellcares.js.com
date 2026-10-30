@@ -89,50 +89,6 @@ test("erp order detail returns line items for admins", async () => {
   });
 });
 
-test("erp order detail includes only safe details from its linked payment attempt", async () => {
-  const ids = await getBaselineIds();
-  const contact = { customerType: "registered" as const, customerId: ids.customerId,
-    fullName: "Payment Customer", phone: "01012345678", email: "checkout-email@capella.test",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10",
-    buildingApartment: "Floor 3, apartment 12", notes: "Call first" };
-  const [session] = await db.insert(checkoutSessions).values({ ...contact,
-    publicId: "checkout_admin_detail", idempotencyKey: "admin-detail", cartSnapshot: "[]",
-    amountCents: 15000, state: "completed", attemptCount: 2,
-    reservationExpiresAt: new Date("2026-09-21T10:00:00.000Z") }).$returningId();
-  const [attempt] = await db.insert(paymentAttempts).values({ checkoutSessionId: session.id,
-    attemptNumber: 1, merchantReference: "capella_admin_detail", amountCents: 15000,
-    environment: "test", status: "succeeded", paymentMethod: "card", integrationId: 5885253,
-    paymobOrderId: "987654", paymobTransactionId: "123456789", clientSecret: "must-never-reach-erp",
-    createdAt: new Date("2026-09-21T09:00:00.000Z") }).$returningId();
-  await db.insert(paymentAttempts).values({ checkoutSessionId: session.id, attemptNumber: 2,
-    merchantReference: "capella_other_attempt", amountCents: 15000, environment: "test", status: "failed" });
-  const [created] = await db.insert(orders).values({ ...contact, orderCode: "PAYM-001",
-    paymentMethod: "paymob", paymentStatus: "pending", providerPaymentStatus: "partially_refunded",
-    refundedAmountCents: 5025, paymentAttemptId: attempt.id, totalAmount: "150.00" }).$returningId();
-
-  await withTestServer(app, async (request) => {
-    const headers = await getAdminAuthHeaders(request);
-    const response = await request(`/api/erp/orders/${created.id}`, { headers });
-    assert.equal(response.status, 200);
-    assert.equal(response.json.email, contact.email);
-    assert.equal(response.json.buildingApartment, contact.buildingApartment);
-    assert.equal(response.json.notes, "Call first");
-    assert.equal(response.json.refundedAmountCents, 5025);
-    assert.deepEqual(response.json.payment, {
-      attemptNumber: 1, merchantReference: "capella_admin_detail", environment: "test",
-      paymentMethod: "card", integrationId: 5885253, paymobOrderId: "987654",
-      paymobTransactionId: "123456789", createdAt: "2026-09-21T09:00:00.000Z"
-    });
-    assert.ok(!JSON.stringify(response.json).includes("must-never-reach-erp"));
-
-    const customerResponse = await request(`/api/v1/orders/${created.id}`, {
-      headers: { authorization: `Bearer ${issueCustomerToken(ids.customerId)}` }
-    });
-    assert.equal(customerResponse.status, 200);
-    assert.equal(customerResponse.json.payment, undefined);
-  });
-});
-
 test("erp orders can update payment status", async () => {
   const ids = await getBaselineIds();
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatPrice, type Language, type Order } from "@capella/shared";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cancelCustomerOrder, fetchCustomerOrderById } from "@/lib/api/client";
-import { OrderFulfillment } from "./order-fulfillment";
+import { OrderCancel } from "./order-cancel";
 import { ReviewFormModal } from "@/components/reviews/review-form-modal";
 import { Icon } from "@/components/ui/icons";
 import {
@@ -123,18 +123,17 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
           </div>
         </header>
 
-        {order.fulfillment && <OrderFulfillment key={requestKey} fulfillment={order.fulfillment} dict={dict}
-          onCancel={async () => {
-            if (!accessToken) throw new Error("Authentication required");
-            const updated = await cancelCustomerOrder(order.id, accessToken);
-            if (currentRequest.current === requestKey) { setOrder(updated); setReviewingItemId(null); }
-          }}
-          onRefresh={async () => {
-            if (!accessToken) throw new Error("Authentication required");
-            const updated = await fetchCustomerOrderById(order.id, accessToken);
-            if (!updated) throw new Error("Order unavailable");
-            if (currentRequest.current === requestKey) setOrder(updated);
-          }} />}
+        {order.paymentStatus === "pending" ? (
+          <OrderCancel
+            key={requestKey}
+            dict={dict}
+            onCancel={async () => {
+              if (!accessToken) throw new Error("Authentication required");
+              const updated = await cancelCustomerOrder(order.id, accessToken);
+              if (currentRequest.current === requestKey) { setOrder(updated); setReviewingItemId(null); }
+            }}
+          />
+        ) : null}
 
         {/* Items: thumbnail, snapshot name/size, quantity, money, review action */}
         <Panel title={dict.orders.itemsInOrder}>

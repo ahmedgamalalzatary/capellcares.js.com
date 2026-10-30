@@ -22,21 +22,10 @@ export const paymentStatusFilterOptions = [
   }))
 ];
 
-export { orderMatchesPaymentStatusFilter } from "@capella/shared";
-
 /** Badge label and tone for an order's payment state, shared by the order list, details and sales tables. */
-export function orderPaymentBadge(order: Pick<OrderSummary, "paymentMethod" | "paymentStatus" | "providerPaymentStatus">): {
+export function orderPaymentBadge(order: Pick<OrderSummary, "paymentStatus">): {
   label: string;
   tone: BadgeTone;
 } {
-  if (order.paymentMethod === "cod") {
-    return { label: paymentStatusLabel[order.paymentStatus], tone: paymentStatusTone[order.paymentStatus] };
-  }
-  const status = order.providerPaymentStatus;
-  if (status === "succeeded") return { label: "مدفوع عبر باي موب", tone: "success" };
-  if (status === "partially_refunded") return { label: "مسترد جزئيًا عبر باي موب", tone: "warning" };
-  if (status === "refunded") return { label: "مسترد عبر باي موب", tone: "danger" };
-  if (status === "failed") return { label: "فشل الدفع عبر باي موب", tone: "danger" };
-  if (status === "voided") return { label: "أُلغي الدفع عبر باي موب", tone: "danger" };
-  return { label: "قيد تأكيد باي موب", tone: "warning" };
+  return { label: paymentStatusLabel[order.paymentStatus], tone: paymentStatusTone[order.paymentStatus] };
 }

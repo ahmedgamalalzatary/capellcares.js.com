@@ -5,8 +5,6 @@ import type {
   Category,
   CheckoutRequestDto,
   CheckoutResponseDto,
-  CheckoutShippingAvailability,
-  CheckoutShippingQuote,
   Collection,
   Offer,
   NativePlatform,
@@ -18,7 +16,6 @@ import type {
   ReviewPage,
   ReviewPrompt,
   ShopMediaSection,
-  ShippingAddress,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
   StorefrontProductDetail,
@@ -27,9 +24,8 @@ import type {
 } from "@capella/shared";
 import {
   adviceResponseSchema, appConfigSchema, checkoutResponseSchema,
-  announcementResponseSchema, cartResponseSchema, checkoutShippingAvailabilitySchema,
-  checkoutShippingQuoteSchema, checkoutStatusSchema, customerOrderSchema,
-  customerOrdersSchema, mutationOkSchema, paymobMethodsSchema, paymobRedirectSchema,
+  announcementResponseSchema, cartResponseSchema, customerOrderSchema,
+  customerOrdersSchema, mutationOkSchema,
   reviewCreatedResponseSchema, reviewPageResponseSchema, reviewPromptResponseSchema, wishlistEntryResponseSchema
 } from "@capella/shared";
 import { ApiError, authedGetJSON, authedMutationJSON, getJSON } from "./http";
@@ -98,33 +94,6 @@ export async function fetchAnnouncements(options?: PublicOptions): Promise<strin
   const data = await getJSON("/api/v1/announcements", options);
   if (data == null && !options?.throwOnError) return null;
   return validated(announcementResponseSchema, data, "announcements").items;
-}
-
-export async function fetchCheckoutShipping(options?: LanguageOptions): Promise<CheckoutShippingAvailability> {
-  return validated(checkoutShippingAvailabilitySchema,
-    await getJSON("/api/v1/checkout/shipping", { ...options, throwOnError: true }), "shipping");
-}
-
-export async function fetchCheckoutShippingQuote(input: {
-  items: CheckoutRequestDto["items"]; paymentMethod: "cod" | "paymob"; shippingAddress: ShippingAddress
-}, accessToken: string | null, options?: LanguageOptions): Promise<CheckoutShippingQuote> {
-  return validated(checkoutShippingQuoteSchema, await authedMutationJSON("/api/v1/checkout/shipping/quote",
-    accessToken, { method: "POST", body: input }, options), "shipping quote");
-}
-
-export async function fetchPaymobMethods(options?: LanguageOptions) {
-  return validated(paymobMethodsSchema,
-    await getJSON("/api/v1/payments/paymob/methods", { ...options, throwOnError: true }), "payment methods");
-}
-
-export async function fetchCheckoutStatus(checkoutId: string, options?: LanguageOptions) {
-  return validated(checkoutStatusSchema, await getJSON(`/api/v1/checkout/${encodeURIComponent(checkoutId)}/status`,
-    { ...options, throwOnError: true }), "checkout status");
-}
-
-export async function retryPaymobCheckout(checkoutId: string, options?: LanguageOptions) {
-  return validated(paymobRedirectSchema, await authedMutationJSON(`/api/v1/checkout/${encodeURIComponent(checkoutId)}/retry`,
-    null, { method: "POST" }, options), "payment retry");
 }
 
 export async function cancelCustomerOrder(id: number, accessToken: string, options?: LanguageOptions): Promise<Order> {

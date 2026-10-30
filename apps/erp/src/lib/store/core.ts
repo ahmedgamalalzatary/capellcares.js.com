@@ -1,7 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection, Supplier } from "@capella/shared";
-import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
+import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection, Supplier } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -20,7 +19,6 @@ import type {
   CategoryUpsertInput,
   ErpStoreSnapshot,
   Listener,
-  PaymobReconciliationPayload,
   ProductApiShape,
   SalesAnalytics
 } from "./types";
@@ -506,43 +504,8 @@ export class ErpStore {
     return api.get(`/api/erp/orders/${id}`);
   }
 
-  async fetchOpenOrderReviewFlags(): Promise<AdminOrderReviewFlagDto[]> {
-    const result = await api.get<{ items: AdminOrderReviewFlagDto[] }>("/api/erp/orders/review-flags");
-    return result.items;
-  }
-
-  /** Acknowledging an alert is pure staff visibility; it never denies, refunds or restocks the order. */
-  async resolveOrderReviewFlag(flagId: number) {
-    await api.post(`/api/erp/orders/review-flags/${flagId}/resolve`);
-  }
-
-  async fetchPaymobReconciliation(): Promise<PaymobReconciliationPayload> {
-    return api.get<PaymobReconciliationPayload>("/api/erp/orders/reconciliation");
-  }
-
-  /** Offer a parked callback receipt to the idempotent processor again. Never a blind resend. */
-  async requeuePaymobCallback(callbackId: number) {
-    await api.post(`/api/erp/orders/reconciliation/callbacks/${callbackId}/requeue`);
-  }
-
   async updateOrderPaymentStatus(id: number, paymentStatus: "pending" | "accepted" | "denied") {
     await api.post(`/api/erp/orders/${id}/payment-status`, { paymentStatus });
     await this.refetch();
-  }
-
-  async performShippingAction(orderId: number, input: Omit<ShippingBulkRequest, "orderIds"> & { flagId?: number }) {
-    const base = `/api/erp/shipping/orders/${orderId}`;
-    switch (input.action) {
-      case "retry": return api.post(`${base}/retry`);
-      case "reconcile": return api.post(`${base}/reconcile`);
-      case "cancel": return api.post(`${base}/cancel`, input.reason ? { reason: input.reason } : {});
-      case "manual_state": return api.post(`${base}/manual-state`, { state: input.state, ...(input.reason ? { reason: input.reason } : {}) });
-      case "shipment_edit": return api.post(`${base}/shipment-edit`, input.patch);
-      case "resolve_flags": return api.post(`${base}/flags/${input.flagId}/resolve`, { note: input.note });
-    }
-  }
-
-  async runBulkShippingAction(input: ShippingBulkRequest): Promise<{ results: ShippingBulkResult[] }> {
-    return api.post("/api/erp/shipping/bulk", input);
   }
 }

@@ -2,25 +2,20 @@ import type { Response } from "express";
 import { z } from "zod";
 import {
   DeniedOrderLockedError,
-  PaidPaymobRefundRequiredError,
   findAdminOrderByIdRepo,
   findOrderByIdRepo,
   getSalesAnalyticsRepo,
   adminOrderPaymentSummaryRepo,
   adminOrdersQuerySchema,
+  cancelCustomerOrderRepo,
   listAdminOrdersPageRepo,
   paymentSummaryQuerySchema,
   listCustomerOrdersRepo,
   OrderNotFoundError,
-  PaymobPaymentStatusManagedError,
-  ShippingCustodyRequiredError,
-  ShippingCodPaymentManagedError,
   updateOrderPaymentStatusRepo
 } from "./order.repository.js";
-import { listOpenOrderReviewFlagsRepo, resolveOrderReviewFlagRepo, SafetyReviewFlagError } from "./order-review-flag.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { attachReviewEligibilityToOrder } from "../reviews/review.repository.js";
-import { requestShippingCancellation, ShippingCancellationError } from "../shipping/shipping-cancellation.repository.js";
 
 const allowedPaymentStatuses = ["pending", "accepted", "denied"] as const;
 const paymentChangeSchema = z.object({ paymentStatus: z.enum(allowedPaymentStatuses) }).strict();
@@ -41,29 +36,6 @@ export async function getAdminOrderPaymentSummaryController(req: AuthenticatedRe
   const query = paymentSummaryQuerySchema.safeParse(req.query);
   if (!query.success) return res.status(400).json({ message: "Invalid payment summary query" });
   return res.json(await adminOrderPaymentSummaryRepo(query.data.since));
-}
-
-export async function listAdminOrderReviewFlagsController(_req: AuthenticatedRequest, res: Response) {
-  res.json({ items: await listOpenOrderReviewFlagsRepo() });
-}
-
-export async function resolveAdminOrderReviewFlagController(req: AuthenticatedRequest, res: Response) {
-  const id = parsePositiveId(req.params.flagId);
-  if (id == null) {
-    return res.status(400).json({ message: "Invalid flag id" });
-  }
-  try {
-    if (!await resolveOrderReviewFlagRepo(id)) {
-      return res.status(404).json({ message: "Review flag not found" });
-    }
-  } catch (error) {
-    // A safety flag is a dispatch hold owned by the S13 staff action, not the alert feed.
-    if (error instanceof SafetyReviewFlagError) {
-      return res.status(409).json({ message: error.message });
-    }
-    throw error;
-  }
-  return res.json({ ok: true });
 }
 
 export async function getAdminSalesController(_req: AuthenticatedRequest, res: Response) {
@@ -97,8 +69,7 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
   try {
     await updateOrderPaymentStatusRepo(Number(id), paymentStatus);
   } catch (error) {
-    if (error instanceof DeniedOrderLockedError || error instanceof PaidPaymobRefundRequiredError ||
-      error instanceof PaymobPaymentStatusManagedError || error instanceof ShippingCustodyRequiredError || error instanceof ShippingCodPaymentManagedError) {
+    if (error instanceof DeniedOrderLockedError) {
       return res.status(409).json({ message: error.message });
     }
     if (error instanceof OrderNotFoundError) {
@@ -134,16 +105,9 @@ export async function cancelCustomerOrderController(req: AuthenticatedRequest, r
   const id = parsePositiveId(req.params.id);
   if (id == null) return res.status(400).json({ message: "Invalid order id" });
   if (!z.object({}).strict().safeParse(req.body ?? {}).success) return res.status(400).json({ message: "Invalid cancellation request" });
-  try {
-    const result = await requestShippingCancellation(id, { source: "customer", actorId: req.user!.id });
-    const order = await findOrderByIdRepo(id, { customerId: req.user!.id });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    return res.status(result.status === "pending" ? 202 : 200).json(await attachReviewEligibilityToOrder(order, req.user!.id));
-  } catch (error) {
-    if (error instanceof ShippingCancellationError) {
-      if (/not found/i.test(error.message)) return res.status(404).json({ message: "Order not found" });
-      return res.status(409).json({ message: "Order cancellation is unavailable", code: "ORDER_CANCELLATION_UNAVAILABLE" });
-    }
-    throw error;
-  }
+  const outcome = await cancelCustomerOrderRepo(id, req.user!.id);
+  if (outcome === "not_found") return res.status(404).json({ message: "Order not found" });
+  if (outcome === "not_cancellable") return res.status(409).json({ message: "Order cancellation is unavailable", code: "ORDER_CANCELLATION_UNAVAILABLE" });
+  const order = await findOrderByIdRepo(id, { customerId: req.user!.id });
+  return res.json(await attachReviewEligibilityToOrder(order!, req.user!.id));
 }

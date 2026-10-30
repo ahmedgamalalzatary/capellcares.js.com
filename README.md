@@ -23,8 +23,8 @@ The product and architecture source of truth is [docs/storefront-erp-spec.md](do
 - **Mobile:** Expo 57, React Native, Expo Router
 - **Backend:** Express 4, Zod validation, JWT access tokens + rotating refresh sessions
 - **Database:** MySQL 8, Drizzle ORM
-- **Payments:** Paymob hosted card/wallet checkout with HMAC-verified callbacks
-- **Shipping:** Bosta carrier integration (quotes, dispatch, sync, cancellation, edits)
+- **Payments:** Cash on delivery only
+- **Delivery:** Free; orders are handled by staff outside the system
 - **Tooling:** pnpm 12, Turborepo, TypeScript 5, ESLint
 - **Testing:** Node test runner (API + database), Vitest (storefront + ERP), Jest (mobile), Playwright (mobile e2e)
 
@@ -37,7 +37,7 @@ The product and architecture source of truth is [docs/storefront-erp-spec.md](do
 - Product detail with variants, price range, hover images, media gallery, offer badges, related items, ratings and reviews
 - Offers and collections browsing and detail pages
 - Cart (local storage for everyone, plus server sync for signed-in customers)
-- Checkout: Cash on Delivery and Paymob, shipping quote + address selection, checkout status polling and retry
+- Checkout: Cash on Delivery with free delivery
 - Customer orders: list, detail, shipping progress, and eligible cancellation
 - Wishlist (products, offers, collections), reviews and review prompts, announcement bar, advice content, shop media sections
 - Customer signup/login with rotating refresh sessions
@@ -48,7 +48,7 @@ The product and architecture source of truth is [docs/storefront-erp-spec.md](do
 - Admin login with DB-provisioned bootstrap user and rotating sessions
 - Dashboard, catalog CRUD, reordering, soft delete + trash restore + permanent delete
 - Products (variants, stock, per-variant discounts, media, hover images, related items), categories, collections, offers
-- Order list/detail, review flags, Paymob reconciliation and callback requeue
+- Order list and detail
 - Shipping overview with guarded individual and bulk actions
 - Sales summary, reviews moderation, bulk discounts, advices, announcements, shop media
 - Staff management with per-permission access enforced at the API layer
@@ -64,7 +64,6 @@ Categories (with closure table), products, variants, variant discounts, entity m
 - Public storefront routes (`/api/v1`) and ERP/admin routes (`/api/erp`) stay separated.
 - Shared contracts belong in `packages/shared`; persistence belongs in `packages/database`.
 - Prices are derived server-side; frontend-submitted prices are ignored. Shipping charges are quoted and then snapshotted immutably on the order.
-- Paymob payment status is provider-managed and driven by verified callbacks; ERP may only deny a Paymob order, which requires a provider refund first.
 - Carrier shipping gates default to disabled until the merchant account is verified.
 - Staff and permission changes must always go through API-side permission enforcement.
 
@@ -167,12 +166,10 @@ Full deploy, migration, seed, and troubleshooting flows are documented in [docs/
 
 ## Payments and Shipping Configuration
 
-Paymob and Bosta are server-only. Keep credentials out of any `NEXT_PUBLIC_*` variable, use test-mode keys while developing, and leave the Bosta activation gates off until the merchant account contracts are verified.
 
 Check carrier configuration consistency without provider requests or database queries:
 
 ```powershell
-pnpm --filter @capella/api shipping:check
 ```
 
 A successful check confirms configuration only; it does not prove merchant account behavior or authorize live activation.

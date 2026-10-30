@@ -17,11 +17,6 @@ import {
   offers,
   orderItems,
   orders,
-  shipmentEvents,
-  shipments,
-  shippingWorkItems,
-  orderReviewFlags,
-  orderStateHistory,
   entityMedia,
   productVariants,
   products,
@@ -52,11 +47,6 @@ export async function clearTestSeed() {
   await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
 
   try {
-    await db.delete(shipmentEvents);
-    await db.delete(shipments);
-    await db.delete(shippingWorkItems);
-    await db.delete(orderReviewFlags);
-    await db.delete(orderStateHistory);
     await db.delete(reviewPromptStates);
     await db.delete(reviewSubmissionHistory);
     await db.delete(reviews);

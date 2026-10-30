@@ -60,8 +60,7 @@ async function findAcceptedOrderItem(
   const baseConditions = [
     eq(orders.customerId, customerId),
     eq(orders.customerType, "registered"),
-    eq(orders.paymentStatus, "accepted"),
-    or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))!
+    eq(orders.paymentStatus, "accepted")
   ];
 
   if (entityType === "product") {
@@ -258,7 +257,6 @@ export async function claimReviewPrompt(customerId: number) {
       eq(orders.customerId, customerId),
       eq(orders.customerType, "registered"),
       eq(orders.paymentStatus, "accepted"),
-      or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))
     ))
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(1);
@@ -347,7 +345,6 @@ export async function claimReviewPrompt(customerId: number) {
       eq(orders.customerId, customerId),
       eq(orders.customerType, "registered"),
       eq(orders.paymentStatus, "accepted"),
-      or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending")),
       inArray(orderItems.itemType, ["product_variant", "offer", "collection"]),
       isNull(reviews.id),
       isNull(reviewSubmissionHistory.id),
@@ -406,7 +403,6 @@ export async function attachReviewEligibilityToOrder<
     eq(orders.customerId, customerId),
     eq(orders.customerType, "registered"),
     eq(orders.paymentStatus, "accepted"),
-    or(isNull(orders.cancellationStatus), eq(orders.cancellationStatus, "pending"))
   )).limit(1);
   const variantIds = order.items
     .filter((item) => item.itemType === "product_variant" && item.variantId != null)

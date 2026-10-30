@@ -77,8 +77,6 @@ function affectedFeature(req: Request): AppFeature | null {
   const path = req.path.toLowerCase().replace(/\/$/, "");
   if (req.method === "PUT" && path === "/cart") return "cart-sync";
   if (req.method === "POST" && path === "/checkout") return "checkout";
-  if (req.method === "POST" && path === "/checkout/shipping/quote") return "shipping-quote";
-  if (req.method === "POST" && /^\/checkout\/[^/]+\/retry$/.test(path)) return "payment-retry";
   if (req.method === "POST" && /^\/orders\/[^/]+\/cancel$/.test(path)) return "order-cancel";
   if (["POST", "DELETE"].includes(req.method) && /^\/wishlist(?:\/[^/]+\/[^/]+)?$/.test(path)) return "wishlist-write";
   if (req.method === "POST" && path === "/reviews") return "review-submit";

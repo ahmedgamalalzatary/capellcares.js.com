@@ -130,21 +130,15 @@ describe("OrdersPage", () => {
     expect(await screen.findByRole("link", { name: "checkout@example.test" })).toHaveAttribute("href", "mailto:checkout@example.test");
   });
 
-  it("labels each payment state in Arabic, Paymob orders by the provider's status", async () => {
+  it("labels each payment state in Arabic", async () => {
     await renderWith([
       makeOrder(1, "Pending Customer", "pending"),
       makeOrder(2, "Accepted Customer", "accepted"),
-      makeOrder(3, "Denied Customer", "denied"),
-      makeOrder(4, "Online Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "succeeded" }),
-      makeOrder(6, "Failed Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "failed" }),
-      makeOrder(7, "Voided Customer", "pending", { paymentMethod: "paymob", providerPaymentStatus: "voided" })
+      makeOrder(3, "Denied Customer", "denied")
     ]);
     expect(await screen.findByText("قيد المراجعة")).toBeInTheDocument();
     expect(screen.getByText("مقبول")).toBeInTheDocument();
     expect(screen.getByText("مرفوض")).toBeInTheDocument();
-    expect(screen.getByText("مدفوع عبر باي موب")).toBeInTheDocument();
-    expect(screen.getByText("فشل الدفع عبر باي موب")).toBeInTheDocument();
-    expect(screen.getByText("أُلغي الدفع عبر باي موب")).toBeInTheDocument();
     expect(screen.queryByText("pending")).not.toBeInTheDocument();
   });
 

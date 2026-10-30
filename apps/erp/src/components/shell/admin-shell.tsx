@@ -6,10 +6,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import {
   Baby, ChartColumn, ChevronLeft, Factory, FolderTree, Sparkles, Tag, Gift, Images, Layers, LayoutDashboard, Lightbulb,
-  LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Truck, Users, X, type LucideIcon,
+  LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
-import { OrderReviewFlagAlerts } from "@/features/orders/components/order-review-flag-alerts";
 import { cn } from "@/lib/utils";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import type { AdminAuthUser } from "@/lib/api/client";
@@ -49,7 +48,6 @@ const NAV: NavGroup[] = [
     label: "الطلبات والمبيعات",
     items: [
       { href: "/orders", label: "الطلبات", icon: ShoppingBag, permission: "orders.read" },
-      { href: "/shipping", label: "الشحن", icon: Truck, permission: "shipping.read" },
       { href: "/sales", label: "المبيعات", icon: ChartColumn, permission: "sales.read" },
     ],
   },
@@ -184,7 +182,6 @@ export function AdminShell({ title, description, crumbs = [], actions, children 
 
   return (
     <div className="min-h-dvh bg-canvas">
-      <OrderReviewFlagAlerts />
 
       {/* Desktop rail */}
       <aside className="fixed inset-y-0 start-0 z-30 hidden w-(--rail-width) border-e border-rail-line lg:block">

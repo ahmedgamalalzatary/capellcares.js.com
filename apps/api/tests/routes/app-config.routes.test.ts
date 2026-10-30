@@ -81,11 +81,6 @@ test("current, previous and review candidates retain checkout access while a ret
     assert.equal(retired.json.feature, "checkout");
     assert.equal(retired.json.requiredRelease, "current");
     assert.equal(retired.json.storeUrl, registry.current.android.storeUrl);
-    const methods = await request("/api/v1/payments/paymob/methods", { headers: headers("0.9.0") });
-    assert.equal(methods.status, 200);
-    const recovery = await request("/api/v1/checkout/invalid/status", { headers: headers("0.9.0") });
-    assert.equal(recovery.status, 404);
-    assert.equal(recovery.json.message, "Checkout not found");
     const browser = await request("/api/v1/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     assert.equal(browser.status, 400);
     assert.notEqual(browser.json.code, "APP_UPDATE_REQUIRED");
@@ -131,15 +126,12 @@ test("a broken release policy reports temporary unavailability but leaves paymen
     const protectedResult = await request("/api/v1/checkout", { method: "POST", headers: headers("2.0.0") });
     assert.equal(protectedResult.status, 503);
     assert.equal(protectedResult.json.code, "APP_POLICY_UNAVAILABLE");
-    assert.equal((await request("/api/v1/checkout/invalid/status")).status, 404);
   });
 });
 
 test("every gated mutation, including Express case-insensitive paths, identifies only its affected feature", async () => {
   const cases = [
     ["PUT", "/api/v1/cart", "cart-sync"], ["POST", "/api/v1/CHECKOUT", "checkout"],
-    ["POST", "/api/v1/checkout/shipping/quote", "shipping-quote"],
-    ["POST", "/api/v1/checkout/abc/retry", "payment-retry"],
     ["POST", "/api/v1/orders/1/cancel", "order-cancel"],
     ["POST", "/api/v1/wishlist", "wishlist-write"], ["DELETE", "/api/v1/wishlist/product/1", "wishlist-write"],
     ["POST", "/api/v1/reviews", "review-submit"]

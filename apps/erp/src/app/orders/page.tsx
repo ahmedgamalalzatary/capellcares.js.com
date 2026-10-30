@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReceiptText } from "lucide-react";
+import { } from "lucide-react";
 import type { OrderSummary } from "@capella/shared";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
@@ -57,11 +57,6 @@ function OrdersPageContent() {
       title="الطلبات"
       crumbs={[{ label: "الطلبات" }]}
       description="كل طلبات المتجر وحالة دفعها وتفاصيلها."
-      actions={
-        <Button asChild variant="secondary">
-          <Link href="/orders/reconciliation"><ReceiptText /> مدفوعات قيد المراجعة</Link>
-        </Button>
-      }
     >
       <AdminListHeader
         searchPlaceholder="ابحثي بكود الطلب، الاسم، البريد، أو الهاتف…"

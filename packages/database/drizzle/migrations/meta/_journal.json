@@ -477,6 +477,13 @@
       "when": 1793362975165,
       "tag": "0067_product_attributes",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1793364736475,
+      "tag": "0068_remove_online_payment_and_shipping",
+      "breakpoints": true
     }
   ]
 }
