@@ -60,20 +60,28 @@ describe("CategoryForm", () => {
     expect(screen.getByTestId("category-path")).toHaveTextContent("شعر جاف");
   });
 
-  it("offers the image slot only once the category is a direct child of a root", () => {
-    render(createElement(CategoryForm, { mode: "new", categories }));
+  it("offers the image slot on main categories and their direct children, not deeper", () => {
+    const blocked = "صورة القسم متاحة فقط للأقسام الرئيسية وأقسامها الفرعية المباشرة.";
+    const tree = [
+      ...categories,
+      { id: 50, parentId: 1, slug: "child", name: { ar: "فرعي", en: "Child" }, imagePath: null, isLeaf: true, deletedAt: null }
+    ];
+    render(createElement(CategoryForm, { mode: "new", categories: tree }));
 
     fillNames();
     fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
-
-    expect(screen.getByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).toBeInTheDocument();
+    expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+    expect(screen.getByText("رفع صورة")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
     fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
-
-    expect(screen.queryByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).not.toBeInTheDocument();
     expect(screen.getByText("رفع صورة")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "50" } });
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+    expect(screen.getByText(blocked)).toBeInTheDocument();
   });
 });
 

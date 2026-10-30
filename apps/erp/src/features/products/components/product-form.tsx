@@ -12,7 +12,7 @@ import { StatusChoice } from "@/components/forms/status-choice";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
-import { Input, InputWithAddon, Textarea } from "@/components/ui/input";
+import { Input, InputWithAddon, Select, Textarea } from "@/components/ui/input";
 import { SwitchField } from "@/components/ui/switch";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -20,11 +20,12 @@ import { CategoryPicker } from "@/components/forms/category-picker";
 import { BilingualEditorField, BilingualNameFields } from "@/components/forms/editor-form-parts";
 import { HoverImageUpload } from "@/components/forms/hover-image-upload";
 import { ProductMediaUpload } from "@/components/forms/entity-media-upload";
+import { MultiChoiceField } from "@/components/forms/multi-choice-field";
 import { RelatedItemsField } from "@/components/forms/related-items-field";
 import type { ProductFormProps } from "@/features/products/types";
 
 const STEPS = [
-  { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والكلمات المفتاحية." },
+  { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والماركة والمورد والأعمار والشخصيات والكلمات المفتاحية." },
   { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو، وصورة التمرير التي تظهر على بطاقة المنتج." },
   { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والأسعار", description: "لكل مقاس سعر بيع ومخزون، وسعر الشراء للاستخدام الداخلي." },
   { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والتحذيرات، ثم العناصر المرتبطة وحالة المنتج." },
@@ -44,7 +45,7 @@ const FIELD_GRID = "grid gap-x-4 gap-y-5 @lg:grid-cols-2";
  * Product editor as a wizard. Creating: steps unlock in order and "التالي" checks the step's required
  * data ("حفظ كمسودة" saves from any step). Editing: every step is clickable and "حفظ التعديلات" works anywhere.
  */
-export function ProductForm({ mode, initial, categories, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
+export function ProductForm({ mode, initial, categories, attributes, relatedOptions = [], relatedItemsAvailable = true }: ProductFormProps) {
   const router = useRouter();
   const editing = mode === "edit";
   const [saving, setSaving] = useState(false);
@@ -64,6 +65,10 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
     keywords, setKeywords,
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
+    brandId, setBrandId,
+    supplierId, setSupplierId,
+    ageGroupIds, setAgeGroupIds,
+    characterIds, setCharacterIds,
     media, setMedia,
     arHoverImagePath, setArHoverImagePath,
     enHoverImagePath, setEnHoverImagePath,
@@ -126,6 +131,52 @@ export function ProductForm({ mode, initial, categories, relatedOptions = [], re
         <BilingualEditorField label="الوصف" arValue={descAr} onArChange={setDescAr} enValue={descEn} onEnChange={setDescEn} multiline />
         <Field label="القسم" htmlFor="product-category" error={errors.categoryId}>
           <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
+        </Field>
+        <div className={FIELD_GRID}>
+          <Field label="الماركة" htmlFor="product-brand" error={errors.brandId}>
+            <Select
+              id="product-brand"
+              aria-invalid={Boolean(errors.brandId) || undefined}
+              value={brandId ?? ""}
+              onChange={(e) => setBrandId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">— اختاري الماركة —</option>
+              {(attributes?.brands ?? []).map((brand) => (
+                <option key={brand.id} value={brand.id}>{brand.name.ar}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="المورد" htmlFor="product-supplier" hint="للاستخدام الداخلي، لا يظهر للعملاء." error={errors.supplierId}>
+            <Select
+              id="product-supplier"
+              aria-invalid={Boolean(errors.supplierId) || undefined}
+              value={supplierId ?? ""}
+              onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">— اختاري المورد —</option>
+              {(attributes?.suppliers ?? []).map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+        <Field label="الفئات العمرية" hint="اختاري فئة واحدة أو أكثر." error={errors.ageGroupIds}>
+          <MultiChoiceField
+            legend="الفئات العمرية"
+            options={(attributes?.ageGroups ?? []).map((age) => ({ id: age.id, label: age.name.ar }))}
+            value={ageGroupIds}
+            onChange={setAgeGroupIds}
+            emptyText="لا توجد فئات عمرية بعد. أضيفيها من صفحة «الفئات العمرية»."
+          />
+        </Field>
+        <Field label="الشخصيات (اختياري)" hint="اختاري شخصية واحدة أو أكثر إن وجدت.">
+          <MultiChoiceField
+            legend="الشخصيات"
+            options={(attributes?.characters ?? []).map((character) => ({ id: character.id, label: character.name.ar }))}
+            value={characterIds}
+            onChange={setCharacterIds}
+            emptyText="لا توجد شخصيات بعد. أضيفيها من صفحة «الشخصيات»."
+          />
         </Field>
         {/* Multi-line, not one line: a long keyword list was unreadable on a phone. */}
         <Field label="كلمات مفتاحية" htmlFor="product-keywords" hint="افصلي بينها بفاصلة أو سطر جديد. تساعد العملاء في البحث." error={errors.keywords}>

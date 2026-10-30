@@ -12,13 +12,19 @@ import type { ListSchema } from "@/lib/pagination";
 import { usePaginatedList } from "@/hooks/use-paginated-list";
 import { PRODUCT_SORT_COLUMNS, productSortAccessors, type ProductSortKey } from "@/features/products/components/products-table";
 
+const isIdFilter = (value: string) => /^\d+$/.test(value);
+
 const PRODUCTS_LIST = {
   filters: {
     status: { default: "all", values: ["all", "active", "inactive"] },
-    category: { default: "", accepts: (value: string) => /^\d+$/.test(value) }
+    category: { default: "", accepts: isIdFilter },
+    brand: { default: "", accepts: isIdFilter },
+    supplier: { default: "", accepts: isIdFilter },
+    age: { default: "", accepts: isIdFilter },
+    character: { default: "", accepts: isIdFilter }
   },
   sortKeys: PRODUCT_SORT_COLUMNS.map((column) => column.key)
-} satisfies ListSchema<"status" | "category", ProductSortKey>;
+} satisfies ListSchema<"status" | "category" | "brand" | "supplier" | "age" | "character", ProductSortKey>;
 
 function scopeRank(product: Product, scopeCategoryId: number | null) {
   return product.orderings?.find((entry) =>
@@ -54,6 +60,7 @@ export function useProductsPage() {
   const search = list.state.q;
   const statusFilter = list.state.filters.status as "all" | "active" | "inactive";
   const categoryFilter: number | "" = list.state.filters.category === "" ? "" : Number(list.state.filters.category);
+  const { brand: brandFilter, supplier: supplierFilter, age: ageFilter, character: characterFilter } = list.state.filters;
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
@@ -78,6 +85,11 @@ export function useProductsPage() {
           }
         }
 
+        if (brandFilter && product.brandId !== Number(brandFilter)) return false;
+        if (supplierFilter && product.supplierId !== Number(supplierFilter)) return false;
+        if (ageFilter && !product.ageGroupIds?.includes(Number(ageFilter))) return false;
+        if (characterFilter && !product.characterIds?.includes(Number(characterFilter))) return false;
+
         if (search.trim()) {
           const normalizedSearch = search.trim().toLowerCase();
           if (
@@ -91,7 +103,7 @@ export function useProductsPage() {
 
         return true;
       });
-  }, [categoryById, categoryFilter, products, search, statusFilter]);
+  }, [ageFilter, brandFilter, categoryById, categoryFilter, characterFilter, products, search, statusFilter, supplierFilter]);
 
   const scopeCategoryId = categoryFilter === "" ? null : categoryFilter;
 
@@ -102,11 +114,11 @@ export function useProductsPage() {
   }, [filteredProducts, scopeCategoryId]);
 
   // Reordering needs the complete scope set, so it is only meaningful when no search/status filter hides part of the scope.
-  const reorderEnabled = statusFilter === "all" && !search.trim();
+  const reorderEnabled = statusFilter === "all" && !search.trim() && !brandFilter && !supplierFilter && !ageFilter && !characterFilter;
 
   useEffect(() => {
     setDraftOrder(null);
-  }, [categoryFilter, statusFilter, search, products]);
+  }, [categoryFilter, statusFilter, search, products, brandFilter, supplierFilter, ageFilter, characterFilter]);
 
   const displayProducts = useMemo(() => {
     if (!draftOrder) {
@@ -201,6 +213,10 @@ export function useProductsPage() {
     list,
     statusFilter,
     categoryFilter,
+    brandFilter,
+    supplierFilter,
+    ageFilter,
+    characterFilter,
     categoryOptions,
     totalProducts: sortedProducts.length,
     pageProducts: list.pageOf(sortedProducts),

@@ -30,7 +30,7 @@ interface Props {
 
 const STEPS = [
   { id: "basics", label: "الأساسيات", title: "ما هو هذا القسم؟", description: "الاسم باللغتين، وموقعه في شجرة الأقسام." },
-  { id: "image", label: "الصورة", title: "صورة القسم", description: "صورة اختيارية تظهر في قوائم المتجر للأقسام الفرعية المباشرة." }
+  { id: "image", label: "الصورة", title: "صورة القسم", description: "صورة تظهر في قسم «تسوق حسب القسم» وقوائم المتجر، للأقسام الرئيسية وأقسامها الفرعية المباشرة." }
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -120,7 +120,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   }, [availableCategories, parentId]);
 
   const selectedDepth = selectedPath.length;
-  const canEditImage = selectedDepth === 1;
+  const canEditImage = selectedDepth <= 1;
   const uploadContext: ErpUploadContext = mode === "edit" ? "categories.update" : "categories.create";
 
   const requirements = useMemo(() => [
@@ -227,7 +227,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
         {canEditImage ? (
           <ImageWell value={imagePath} onChange={setImagePath} uploadContext={uploadContext} disabled={saving} />
         ) : (
-          <Alert tone="info">صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.</Alert>
+          <Alert tone="info">صورة القسم متاحة فقط للأقسام الرئيسية وأقسامها الفرعية المباشرة.</Alert>
         )}
       </div>
     )

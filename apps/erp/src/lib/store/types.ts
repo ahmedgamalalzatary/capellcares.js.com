@@ -1,4 +1,4 @@
-import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ShopMediaSection } from "@capella/shared";
+import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ProductAttribute, Supplier, ShopMediaSection } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -67,6 +67,10 @@ export type SalesAnalytics = {
 };
 export type ProductApiShape = {
   id: number;
+  brandId?: number | null;
+  supplierId?: number | null;
+  ageGroupIds?: number[];
+  characterIds?: number[];
   sku?: string;
   slug?: string;
   name?: { ar?: string; en?: string };
@@ -137,9 +141,15 @@ export type CategoryApiShape = {
   deletedAt?: string | null;
 };
 
+export type ProductAttributeKind = "brands" | "characters" | "ageGroups" | "suppliers";
+
 export type ErpStoreSnapshot = {
   products: Product[];
   categories: Category[];
+  brands: ProductAttribute[];
+  characters: ProductAttribute[];
+  ageGroups: ProductAttribute[];
+  suppliers: Supplier[];
   collections: Collection[];
   offers: Offer[];
   advices: Advice[];

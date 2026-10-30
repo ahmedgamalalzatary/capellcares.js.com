@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import {
-  ChartColumn, ChevronLeft, FolderTree, Gift, Images, Layers, LayoutDashboard, Lightbulb,
+  Baby, ChartColumn, ChevronLeft, Factory, FolderTree, Sparkles, Tag, Gift, Images, Layers, LayoutDashboard, Lightbulb,
   LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Truck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -36,6 +36,10 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/products", label: "المنتجات", icon: Package, permission: "products.read" },
       { href: "/categories", label: "الأقسام", icon: FolderTree, permission: "categories.read" },
+      { href: "/brands", label: "الماركات", icon: Tag, permission: "products.read" },
+      { href: "/characters", label: "الشخصيات", icon: Sparkles, permission: "products.read" },
+      { href: "/age-groups", label: "الفئات العمرية", icon: Baby, permission: "products.read" },
+      { href: "/suppliers", label: "الموردون", icon: Factory, permission: "products.read" },
       { href: "/offers", label: "العروض", icon: Gift, permission: "offers.read" },
       { href: "/collections", label: "المجموعات", icon: Layers, permission: "collections.read" },
       { href: "/discounts", label: "الخصومات", icon: Percent, permission: "discounts.manage" },

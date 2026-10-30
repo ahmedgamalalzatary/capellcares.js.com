@@ -38,6 +38,10 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
   const offers = useStore((s) => s.offers);
   const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
+  const brands = useStore((s) => s.brands);
+  const characters = useStore((s) => s.characters);
+  const ageGroups = useStore((s) => s.ageGroups);
+  const suppliers = useStore((s) => s.suppliers);
   const loaded = useStore((s) => s.loaded);
   const error = useStore((s) => s.error);
   const product = products.find((p) => p.id === Number(id));
@@ -98,6 +102,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
         mode="edit"
         initial={relatedItems === null ? product : { ...product, relatedItems }}
         categories={categories}
+        attributes={{ brands, characters, ageGroups, suppliers }}
         relatedOptions={buildRelatedOptions(products, offers, collections)}
         relatedItemsAvailable={!relatedItemsError}
       />

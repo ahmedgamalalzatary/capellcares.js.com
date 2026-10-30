@@ -65,6 +65,10 @@ export function normalizeProduct(input: ProductApiShape): Product {
     isNew: input.isNew ?? false,
     isBestseller: input.isBestseller ?? false,
     categoryId: toNumber(input.categoryId),
+    brandId: input.brandId ?? null,
+    supplierId: input.supplierId ?? null,
+    ageGroupIds: input.ageGroupIds ?? [],
+    characterIds: input.characterIds ?? [],
     variants: (input.variants ?? []).map((v, index) => ({
       id: toNumber(v.id),
       productId: toNumber(v.productId, toNumber(input.id)),

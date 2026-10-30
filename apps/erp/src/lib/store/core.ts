@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection, Supplier } from "@capella/shared";
 import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import {
   api,
@@ -15,6 +15,7 @@ import { normalizeCategory, normalizeProduct } from "./normalizers";
 import { getErrorMessage } from "@/lib/errors";
 import { hasErpPermission } from "@/lib/erp-permissions";
 import type {
+  ProductAttributeKind,
   CategoryApiShape,
   CategoryUpsertInput,
   ErpStoreSnapshot,
@@ -32,9 +33,20 @@ function authUserKey(user: AdminAuthUser | null) {
   return user ? JSON.stringify([user.email, user.role, [...(user.permissionKeys ?? [])].sort()]) : "";
 }
 
+const ATTRIBUTE_PATHS: Record<ProductAttributeKind, string> = {
+  brands: "brands",
+  characters: "characters",
+  ageGroups: "age-groups",
+  suppliers: "suppliers"
+};
+
 export class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
+  brands: ProductAttribute[] = [];
+  characters: ProductAttribute[] = [];
+  ageGroups: ProductAttribute[] = [];
+  suppliers: Supplier[] = [];
   collections: Collection[] = [];
   offers: Offer[] = [];
   advices: Advice[] = [];
@@ -63,6 +75,10 @@ export class ErpStore {
     return {
       products: this.products,
       categories: this.categories,
+      brands: this.brands,
+      characters: this.characters,
+      ageGroups: this.ageGroups,
+      suppliers: this.suppliers,
       collections: this.collections,
       offers: this.offers,
       advices: this.advices,
@@ -92,6 +108,10 @@ export class ErpStore {
   private resetData() {
     this.products = [];
     this.categories = [];
+    this.brands = [];
+    this.characters = [];
+    this.ageGroups = [];
+    this.suppliers = [];
     this.collections = [];
     this.offers = [];
     this.advices = [];
@@ -291,11 +311,47 @@ export class ErpStore {
             orders: result.orders ?? emptySales.orders
           };
         }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/brands"),
+        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
+          store.brands = result.items;
+        }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/characters"),
+        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
+          store.characters = result.items;
+        }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/age-groups"),
+        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
+          store.ageGroups = result.items;
+        }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: Supplier[] }>("/api/erp/suppliers"),
+        assign: (result: { items: Supplier[] }, store: ErpStore) => {
+          store.suppliers = result.items;
+        }
       }
     ].filter(Boolean) as Array<{
       load: () => Promise<unknown>;
       assign: (result: any, store: ErpStore) => void;
     }>;
+  }
+
+  async upsertProductAttribute(kind: ProductAttributeKind, input: Record<string, unknown>) {
+    await this.mutate(() => api.post(`/api/erp/${ATTRIBUTE_PATHS[kind]}`, input));
+  }
+
+  async deleteProductAttribute(kind: ProductAttributeKind, id: number) {
+    await this.mutate(() => api.del(`/api/erp/${ATTRIBUTE_PATHS[kind]}/${id}`));
+  }
+
+  async reorderProductAttributes(kind: ProductAttributeKind, ids: number[]) {
+    await this.mutate(() => api.post(`/api/erp/${ATTRIBUTE_PATHS[kind]}/reorder`, { ids }));
   }
 
   async upsertProduct(p: Product) {

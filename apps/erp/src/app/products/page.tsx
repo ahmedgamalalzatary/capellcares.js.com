@@ -7,21 +7,30 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { tableSortSelect } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { Check, CircleDot, FolderTree, Percent, Plus } from "lucide-react";
+import { Baby, Check, CircleDot, Factory, FolderTree, Percent, Plus, Sparkles, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { PRODUCT_SORT_COLUMNS, ProductsTable } from "@/features/products/components/products-table";
 import { SmartPagination } from "@/components/admin/smart-pagination";
 import { useProductsPage } from "@/features/products/hooks/use-products-page";
+import { useStore } from "@/lib/store";
 
 export default function ProductsListPage() {
   const { user } = useAdminAuth();
+  const brands = useStore((state) => state.brands);
+  const characters = useStore((state) => state.characters);
+  const ageGroups = useStore((state) => state.ageGroups);
+  const suppliers = useStore((state) => state.suppliers);
   const {
     loaded,
     categories,
     list,
     statusFilter,
     categoryFilter,
+    brandFilter,
+    supplierFilter,
+    ageFilter,
+    characterFilter,
     categoryOptions,
     totalProducts,
     pageProducts,
@@ -100,6 +109,50 @@ export default function ProductsListPage() {
                 value: String(option.id),
                 label: `${"— ".repeat(option.depth)}${option.label}`
               }))
+            ]
+          },
+          {
+            key: "brand",
+            label: "الماركة",
+            icon: Tag,
+            value: brandFilter,
+            onChange: (value) => list.setFilter("brand", value),
+            options: [
+              { value: "", label: "كل الماركات" },
+              ...brands.map((brand) => ({ value: String(brand.id), label: brand.name.ar }))
+            ]
+          },
+          {
+            key: "age",
+            label: "العمر",
+            icon: Baby,
+            value: ageFilter,
+            onChange: (value) => list.setFilter("age", value),
+            options: [
+              { value: "", label: "كل الأعمار" },
+              ...ageGroups.map((age) => ({ value: String(age.id), label: age.name.ar }))
+            ]
+          },
+          {
+            key: "character",
+            label: "الشخصية",
+            icon: Sparkles,
+            value: characterFilter,
+            onChange: (value) => list.setFilter("character", value),
+            options: [
+              { value: "", label: "كل الشخصيات" },
+              ...characters.map((character) => ({ value: String(character.id), label: character.name.ar }))
+            ]
+          },
+          {
+            key: "supplier",
+            label: "المورد",
+            icon: Factory,
+            value: supplierFilter,
+            onChange: (value) => list.setFilter("supplier", value),
+            options: [
+              { value: "", label: "كل الموردين" },
+              ...suppliers.map((supplier) => ({ value: String(supplier.id), label: supplier.name }))
             ]
           }
         ]}

@@ -429,7 +429,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(8);
+    expect(apiGet).toHaveBeenCalledTimes(12);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {
