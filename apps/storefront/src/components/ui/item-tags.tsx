@@ -17,9 +17,9 @@ type Variant = "float" | "badge";
 
 // Floating accent pill — sits on top of an illustration (cards, detail images). Default is the roomy size; it shrinks only for a mobile view (below `md`) inside a grid flagged `data-cols="2"` where narrow cards would overflow — every other case keeps the roomy size.
 const FLOAT_BASE =
-  "inline-flex items-center text-xs uppercase text-canvas px-3 tracking-[0.16em] py-1.5 " +
+  "inline-flex items-center text-xs font-bold text-white px-3 py-1.5 " +
   "max-md:group-data-[cols=2]/cards:px-2 max-md:group-data-[cols=2]/cards:py-1 " +
-  "max-md:group-data-[cols=2]/cards:text-[10px] max-md:group-data-[cols=2]/cards:tracking-[0.06em]";
+  "max-md:group-data-[cols=2]/cards:text-[10px]";
 const FLOAT_BG: Record<ItemTagKind, string> = {
   new: "bg-accent",
   bestseller: "bg-accent",

@@ -281,7 +281,7 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
 
         {badge ? (
-          <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ee-2xl" />
+          <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
         ) : null}
         {onWish ? (
           <button

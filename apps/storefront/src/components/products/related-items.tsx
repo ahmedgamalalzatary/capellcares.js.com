@@ -134,7 +134,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
           }}
         />
 
-        {badge ? <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" /> : null}
+        {badge ? <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" /> : null}
 
         <button
           type="button"
