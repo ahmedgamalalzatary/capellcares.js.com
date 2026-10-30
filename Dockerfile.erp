@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/erp/package.json apps/erp/package.json
 COPY packages/shared/package.json packages/shared/package.json
-RUN --mount=type=cache,id=capellastore-pnpm,target=/pnpm/store \
+RUN --mount=type=cache,id=falta-toys-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 FROM deps AS builder

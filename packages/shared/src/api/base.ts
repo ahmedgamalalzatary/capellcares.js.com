@@ -1,5 +1,5 @@
 const DEFAULT_LOCAL_API_BASE = "http://localhost:4000";
-const DEFAULT_PRODUCTION_API_BASE = "https://api.capellacares.com";
+const DEFAULT_PRODUCTION_API_BASE = "https://api.faltatoy.com";
 
 function deriveBrowserApiBase(): string {
   if (typeof window === "undefined") {

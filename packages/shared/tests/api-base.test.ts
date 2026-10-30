@@ -57,16 +57,16 @@ test("localhost browsers derive port 4000 when no public API URL is set", () =>
   ));
 
 test("the ERP domain falls back to the production API host", () =>
-  withBrowserLocation({ protocol: "https:", hostname: "erp.capellacares.com" }, () =>
-    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.capellacares.com")
+  withBrowserLocation({ protocol: "https:", hostname: "erp.faltatoy.com" }, () =>
+    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.faltatoy.com")
   ));
 
 test("the storefront domain falls back to the production API host", () =>
-  withBrowserLocation({ protocol: "https:", hostname: "capellacares.com" }, () =>
-    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.capellacares.com")
+  withBrowserLocation({ protocol: "https:", hostname: "faltatoy.com" }, () =>
+    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.faltatoy.com")
   ));
 
 test("the www storefront domain falls back to the production API host", () =>
-  withBrowserLocation({ protocol: "https:", hostname: "www.capellacares.com" }, () =>
-    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.capellacares.com")
+  withBrowserLocation({ protocol: "https:", hostname: "www.faltatoy.com" }, () =>
+    assert.equal(resolveApiBase({} as NodeJS.ProcessEnv), "https://api.faltatoy.com")
   ));

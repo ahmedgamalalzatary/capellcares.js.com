@@ -14,10 +14,9 @@ Production uses:
 docker compose --env-file .env.production ...
 ```
 
-On the production VPS, the repository is at `~/capellastore`. Its
-`.env.production` pins `COMPOSE_PROJECT_NAME=capellcaresjscom` so Compose keeps
-using the existing MySQL and API uploads volumes after the directory rename.
-Keep that setting when updating the production environment file.
+On the production VPS, the repository is at `~/falta-toys`. `docker-compose.yml` sets the
+Compose project name to `falta-toys`, so its containers and volumes never clash with other
+projects on the same server. Host ports: API `4040`, storefront `3040`, ERP `3041`.
 
 Local Docker uses:
 
@@ -48,7 +47,7 @@ containers are created; existing containers keep their creation-time settings.
 To verify the effective settings for a container:
 
 ```bash
-docker inspect --format '{{json .HostConfig.LogConfig}}' capella-api
+docker inspect --format '{{json .HostConfig.LogConfig}}' falta-toys-api
 ```
 
 The API's `/health` runs a database query and returns 503 if it fails. Storefront
@@ -82,8 +81,8 @@ PAYMOB_CARD_INTEGRATION_ID=5885253
 PAYMOB_CARD_INTEGRATION_CONFIRMED=true
 PAYMOB_WALLET_INTEGRATION_ID=5915379
 PAYMOB_WALLET_INTEGRATION_CONFIRMED=true
-PAYMOB_NOTIFICATION_URL=https://api.capellacares.com/api/v1/payments/paymob/webhook
-PAYMOB_REDIRECTION_URL=https://capellacares.com/checkout/payment-result
+PAYMOB_NOTIFICATION_URL=https://api.faltatoy.com/api/v1/payments/paymob/webhook
+PAYMOB_REDIRECTION_URL=https://faltatoy.com/checkout/payment-result
 ```
 
 Paymob confirmed card integration `5885253` for card/3DS and wallet integration `5915379` for Egyptian mobile wallets. Test and live credentials/IDs must never be mixed. `PAYMOB_REDIRECTION_URL` is a locale-neutral base URL; the API adds the opaque checkout reference to each intention, then the storefront redirects to the shopper's saved language. Every Intention request includes the processed callback URL, and the same URL must also be configured on both integrations in the Paymob dashboard.
@@ -147,7 +146,7 @@ Use this only when the VPS database has no valuable data. `down -v` deletes the 
 Start on the VPS:
 
 ```bash
-cd ~/capellastore
+cd ~/falta-toys
 git pull
 ```
 
@@ -156,7 +155,7 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/capella-compose.yml
+docker compose --env-file .env.production config >/tmp/falta-toys-compose.yml
 ```
 
 Build and start from a clean database:
@@ -198,9 +197,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.capellacares.com/health
-curl -I https://capellacares.com
-curl -I https://erp.capellacares.com
+curl https://api.faltatoy.com/health
+curl -I https://faltatoy.com
+curl -I https://erp.faltatoy.com
 ```
 
 ## Production Existing DB Flow
@@ -210,7 +209,7 @@ Use this once production may contain valuable data. Do not use `down -v`.
 Start on the VPS:
 
 ```bash
-cd ~/capellastore
+cd ~/falta-toys
 git pull
 ```
 
@@ -219,7 +218,7 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/capella-compose.yml
+docker compose --env-file .env.production config >/tmp/falta-toys-compose.yml
 ```
 
 Build and start:
@@ -254,9 +253,9 @@ Verify public services:
 
 ```bash
 docker compose --env-file .env.production ps
-curl https://api.capellacares.com/health
-curl -I https://capellacares.com
-curl -I https://erp.capellacares.com
+curl https://api.faltatoy.com/health
+curl -I https://faltatoy.com
+curl -I https://erp.faltatoy.com
 ```
 
 ## Local Docker Fresh DB Flow
@@ -310,7 +309,7 @@ Verify local services:
 
 ```cmd
 docker compose --env-file .env.docker ps
-curl http://localhost:4000/health
+curl http://localhost:4040/health
 ```
 
 ## Local Docker Existing DB Flow
@@ -326,7 +325,7 @@ docker compose --env-file .env.docker ps
 docker compose --env-file .env.docker logs migrate --tail 80
 docker compose --env-file .env.docker exec mysql sh -lc "mysql -u\"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES LIKE 'admin_users'; SHOW TABLES LIKE 'auth_sessions';\""
 docker compose --env-file .env.docker ps
-curl http://localhost:4000/health
+curl http://localhost:4040/health
 ```
 
 If this local DB was ever bootstrapped with `drizzle-kit push`, reset it once before adopting migrate-only:
@@ -469,17 +468,17 @@ For local Docker, replace `.env.production` with `.env.docker`.
 
 Production:
 
-- Storefront: `https://capellacares.com`
-- ERP: `https://erp.capellacares.com`
-- API: `https://api.capellacares.com`
-- API health: `https://api.capellacares.com/health`
+- Storefront: `https://faltatoy.com`
+- ERP: `https://erp.faltatoy.com`
+- API: `https://api.faltatoy.com`
+- API health: `https://api.faltatoy.com/health`
 
 Local Docker:
 
-- Storefront: `http://localhost:3000`
-- ERP: `http://localhost:3001`
-- API: `http://localhost:4000`
-- API health: `http://localhost:4000/health`
+- Storefront: `http://localhost:3040`
+- ERP: `http://localhost:3041`
+- API: `http://localhost:4040`
+- API health: `http://localhost:4040/health`
 
 ## Rules
 
