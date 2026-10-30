@@ -1,5 +1,5 @@
 import type { Metadata, MetadataRoute } from "next";
-import { defaultLanguage, getEffectiveVariantPrice, pickLang, type Category, type Collection, type Language, type Offer, type Product, type ReviewPage } from "@capella/shared";
+import { defaultLanguage, getEffectiveVariantPrice, pickLang, type Category, type Collection, type Language, type Offer, type Product, type ProductAttribute, type ReviewPage } from "@capella/shared";
 import { BRAND_NAME, FALLBACK_SITE_URL } from "@/constants/brand";
 
 function getSiteUrl(): string {
@@ -246,6 +246,28 @@ export function buildCollectionsMetadata(lang: Language): Metadata {
     twitter: {
       card: "summary_large_image",
       title: joinTitle([title, BRAND_NAME]),
+      description
+    }
+  };
+}
+
+export function buildAttributeMetadata(lang: Language, item: ProductAttribute, section: "brands" | "characters"): Metadata {
+  const name = pickLang(item.name, lang);
+  const description = lang === "ar" ? `تسوق ألعاب ${name} من ${BRAND_NAME}.` : `Shop ${name} toys at ${BRAND_NAME}.`;
+  const path = `/${section}/${item.slug}`;
+
+  return {
+    title: name,
+    description,
+    alternates: buildLocalizedAlternates(lang, path),
+    openGraph: {
+      title: joinTitle([name, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, path))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([name, BRAND_NAME]),
       description
     }
   };

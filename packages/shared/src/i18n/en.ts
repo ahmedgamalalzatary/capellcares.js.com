@@ -128,9 +128,17 @@ export const en = {
     validation: "Choose 1–5 stars and write at least 3 characters.",
     submitError: "Could not submit your review. Please try again."
   },
+  notFound: {
+    title: "We can't find that page",
+    description: "The address may be wrong, or the page may have moved.",
+    cta: "Back to the shop"
+  },
   filters: {
     title: "Filters",
-    bytype: "by type",
+    brand: "Brand",
+    age: "Age",
+    character: "Character",
+    bytype: "Category",
     price: "Price",
     priceMin: "Min",
     priceMax: "Max",
@@ -289,7 +297,7 @@ export const en = {
     required: "Required"
   },
   offers: {
-    title: "offers",
+    title: "Offers",
     badge: "Offer",
     save: "Save {amount}",
     includes: "Includes",
@@ -303,7 +311,7 @@ export const en = {
     categoryFilterLabel: "Offer category"
   },
   collections: {
-    title: "SETS",
+    title: "Sets",
     badge: "Collection",
     listEmpty: "No Sets available right now.",
     related: "You may also like",

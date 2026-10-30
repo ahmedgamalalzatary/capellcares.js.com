@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
 import { dir, getDict } from "@capella/shared";
 import { CartProvider } from "@/components/providers/cart-provider";
+import { ProductAttributesProvider } from "@/components/providers/product-attributes-provider";
 import { WishlistProvider } from "@/components/providers/wishlist-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ReviewPromptProvider } from "@/components/providers/review-prompt-provider";
@@ -9,7 +10,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AskCapellaButton } from "@/components/ask-capella/ask-capella-button";
 import { BackToTop } from "@/components/shop/back-to-top";
-import { fetchAnnouncements, fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchAgeGroups, fetchAnnouncements, fetchBrands, fetchCategories, fetchCharacters, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -37,12 +38,15 @@ export default async function LocaleLayout({
 }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const [categories, products, offers, collections, announcements] = await Promise.all([
+  const [categories, products, offers, collections, announcements, brands, characters, ageGroups] = await Promise.all([
     fetchCategories({ lang }).catch(() => []),
     fetchProducts({ lang }).catch(() => []),
     fetchOffers({ lang }).catch(() => []),
     fetchCollections({ lang }).catch(() => []),
-    fetchAnnouncements({ lang }).catch(() => null)
+    fetchAnnouncements({ lang }).catch(() => null),
+    fetchBrands({ lang }).catch(() => []),
+    fetchCharacters({ lang }).catch(() => []),
+    fetchAgeGroups({ lang }).catch(() => [])
   ]);
   const navGroups = buildNav(categories, lang);
   const menuEntries = buildHeaderMenu({ navGroups, products, offers, collections, dict, lang });
@@ -64,7 +68,7 @@ export default async function LocaleLayout({
             <Suspense fallback={null}>
               <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} />
             </Suspense>
-            <div className="flex-1">{children}</div>
+            <div className="flex-1"><ProductAttributesProvider value={{ brands, characters, ageGroups }}>{children}</ProductAttributesProvider></div>
             <Footer lang={lang} dict={dict} />
             <BackToTop label={dict.common.backToTop} />
             <AskCapellaButton lang={lang} />

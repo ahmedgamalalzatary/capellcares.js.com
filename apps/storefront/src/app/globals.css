@@ -128,19 +128,9 @@ body {
 /* 404 page. Written here rather than as utilities because the padding
    shorthand also has to clear `.container`'s inline padding. */
 .not-found { padding: 120px 0; text-align: center; }
-.eyebrow {
-  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--ink); opacity: 0.65; font-weight: 600;
-}
-.shell[lang="ar"] .eyebrow { letter-spacing: 0.08em; text-transform: none; font-weight: 700; }
-@media (max-width: 640px) {
-  .eyebrow { letter-spacing: 0.14em; font-size: 10.5px; }
-  .shell[lang="ar"] .eyebrow { letter-spacing: 0.06em; }
-}
-.display {
-  font-family: var(--font-display); font-weight: 500; letter-spacing: -0.01em;
-}
-.shell[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
+.eyebrow { font-size: 14px; color: var(--ink-2); font-weight: 700; }
+.display { font-family: var(--font-display); font-weight: 800; }
+.shell[lang="ar"] .display { font-family: var(--font-ar-display); font-weight: 400; }
 .muted { color: var(--ink-2); }
 
 .sr-only {
@@ -187,9 +177,9 @@ body {
 .field > label { font-size: 12px; color: var(--ink-2); font-weight: 600; letter-spacing: 0.02em; }
 .input, .select, .textarea {
   background: var(--surface);
-  border: 1px solid var(--hairline);
+  border: 2px solid var(--hairline);
   border-radius: var(--radius);
-  padding: 10px 14px; min-height: 44px;
+  padding: 10px 14px; min-height: 46px;
   outline: none;
   transition: border var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart),
@@ -244,7 +234,7 @@ body {
    ============================================================ */
 .card {
   background: var(--surface);
-  border: 1px solid var(--hairline);
+  border: 2px solid var(--hairline);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
@@ -254,7 +244,7 @@ body {
    ============================================================ */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  height: 30px; padding: 0 14px; border-radius: .4rem;
+  height: 30px; padding: 0 14px; border-radius: var(--radius-pill);
   background: var(--warm-soft); color: var(--ink);
   font-size: 12px; font-weight: 500;
   border: 1px solid transparent;
@@ -277,26 +267,22 @@ body {
 /* Bath & Body Works–style outlined filter pills (category sub-nav row). */
 .filter-pill {
   display: inline-flex; align-items: center; justify-content: center;
-  height: 38px; padding: 0 12px; border-radius: 6px;
-  font-size: 14px; font-weight: 500; white-space: nowrap;
-  border: 1px solid var(--hairline-strong);
-
+  height: 38px; padding: 0 16px; border-radius: var(--radius-pill);
+  font-size: 14px; font-weight: 700; white-space: nowrap;
+  background: var(--surface); color: var(--ink);
+  border: 2px solid var(--hairline);
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
 }
-.filter-pill:hover { border-color: var(--ink); }
-.filter-pill--active { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
+.filter-pill:hover { border-color: var(--violet); }
+.filter-pill--active { background: var(--violet); border-color: var(--violet); color: #fff; }
 .filter-pill__x {
   margin-inline-start: 12px; font-size: 16px; line-height: 1;
 }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-  padding: 5px 9px; border-radius: 4px; font-weight: 700;
-  background: var(--ink); color: var(--canvas);
-}
-.shell[lang="ar"] .badge { letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
-@media (max-width: 640px) {
-  .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
+  font-size: 12px; padding: 4px 10px; border-radius: var(--radius-pill); font-weight: 700;
+  background: var(--ink); color: #fff;
 }
 .badge--offer { background: var(--accent); }
 .badge--new   { background: var(--sunny); color: var(--ink); }
@@ -391,21 +377,17 @@ body {
    Page heading
    ============================================================ */
 .page-head { display: grid; gap: 14px; padding: 42px 0 24px; }
-.page-head .eyebrow { color: var(--accent); opacity: 1; }
+.page-head .eyebrow { color: var(--accent); }
 .page-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(20px, 5.2vw, 48px);
-  letter-spacing: -0.018em;
-  line-height: 1.02;
+  font-weight: 800;
+  font-size: clamp(30px, 4.4vw, 52px);
+  line-height: 1.1;
   color: var(--ink);
   max-width: 22ch;
 }
-.shell[lang="ar"] .page-head h1 {
-  font-family: var(--font-ar); font-weight: 700; font-style: normal;
-  letter-spacing: -0.005em; line-height: 1.2;
-}
+.shell[lang="ar"] .page-head h1 { font-family: var(--font-ar-display); font-weight: 400; }
 .page-head p { color: var(--ink-2); font-size: 16px; line-height: 1.7; max-width: 62ch; }
 @media (max-width: 640px) {
   .page-head { padding: 20px 0 20px; gap: 10px; }
@@ -442,16 +424,14 @@ body {
 .table th {
   background: var(--warm-soft);
   color: var(--ink); font-weight: 600;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 14px;
 }
-.shell[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background var(--motion-fast); }
 .table tbody tr:hover { background: var(--surface-2); }
 
 @media (max-width: 640px) {
   .table th, .table td { padding: 12px 12px; font-size: 13px; }
-  .table th { font-size: 10.5px; }
 }
 
 /* ============================================================

@@ -5,7 +5,7 @@ import type { Category, Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { FilterSection } from "./filter-section";
-import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
+import type { AttributeFilterGroup, CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 import { ProductFilterCategoryList } from "./product-filter-category-list";
 import { PriceInput } from "../price-input";
 
@@ -26,6 +26,7 @@ interface ProductFiltersContentProps {
   showSearch?: boolean;
   showPrice?: boolean;
   scopedCategoryId?: number;
+  attributeGroups?: AttributeFilterGroup[];
   mode: "mobile" | "desktop";
 }
 
@@ -46,6 +47,7 @@ export function ProductFiltersContent({
   showSearch = true,
   showPrice = true,
   scopedCategoryId,
+  attributeGroups = [],
   mode
 }: ProductFiltersContentProps) {
   const isMobile = mode === "mobile";
@@ -68,7 +70,7 @@ export function ProductFiltersContent({
           {q && (
             <button
               onClick={() => setQ("")}
-              className="inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[oklch(0_0_0_/_0.08)] text-(--ink-3)"
+              className="inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-(--warm-soft) text-(--ink-3)"
             >
               <Icon.Close size={9} />
             </button>
@@ -94,6 +96,27 @@ export function ProductFiltersContent({
         </FilterSection>
       )}
 
+      {attributeGroups.map((group) => (
+        <FilterSection key={group.key} label={group.label} defaultOpen>
+          <div className="flex flex-wrap gap-2">
+            {group.options.map((option) => {
+              const active = group.selected.includes(option.id);
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => group.toggle(option.id)}
+                  className={active ? "filter-pill filter-pill--active" : "filter-pill"}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </FilterSection>
+      ))}
+
       {showPrice && (
       <FilterSection label={dict.filters.price} defaultOpen={false}>
         {/* `[display:grid]`, not `grid`: the global `.grid` class carries its own
@@ -102,7 +125,7 @@ export function ProductFiltersContent({
           <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} />
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-(--hairline)" />
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-(--ink-3)">
+            <span className="text-[10px] font-semibold text-(--ink-3)">
               {dict.filters.to}
             </span>
             <div className="h-px flex-1 bg-(--hairline)" />

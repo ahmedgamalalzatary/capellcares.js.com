@@ -41,7 +41,7 @@ export default async function BestsellersPage({ params }: { params: Promise<{ la
           { label: dict.nav.bestsellers }
         ]}
       />
-      <header className="page-head uppercase">
+      <header className="page-head ">
         <h1>{dict.shop.bestsellers}</h1>
       </header>
 

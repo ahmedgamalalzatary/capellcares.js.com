@@ -26,7 +26,7 @@ function EmptyShell({ isAr, icon, title, desc, ctaHref, ctaLabel }: {
       </div>
       <h2 className={`m-0 leading-[1.1] ${isAr
         ? "text-2xl font-bold font-(family-name:--font-ar) text-ink"
-        : "text-3xl font-(--font-display) text-ink"}`}>
+        : "text-3xl font-extrabold text-ink"}`}>
         {title}
       </h2>
       <p className="max-w-[44ch] text-sm leading-[1.7] text-(--ink-2)">{desc}</p>
@@ -43,7 +43,7 @@ function RowHeader({ isAr, title, count, children }: {
     <header className="mb-4 flex items-end justify-between gap-4">
       <h2 className={isAr
         ? "m-0 text-[clamp(20px,2vw,28px)] font-bold font-(family-name:--font-ar) leading-[1.15] text-ink"
-        : "m-0 text-[clamp(20px,2vw,28px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+        : "m-0 text-[clamp(20px,2vw,28px)] font-extrabold leading-[1.1] text-ink"}>
         {title}
       </h2>
       <div className="flex shrink-0 items-center gap-3">

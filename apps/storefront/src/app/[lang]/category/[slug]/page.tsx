@@ -105,7 +105,7 @@ export default async function CategoryPage({
           }))
         ]}
       />
-      <header className="page-head uppercase">
+      <header className="page-head ">
         <h1>{heading}</h1>
       </header>
       {/* An empty category is left out of every menu; reached by an old link or a search engine, it says "coming soon" rather than showing an empty grid. */}

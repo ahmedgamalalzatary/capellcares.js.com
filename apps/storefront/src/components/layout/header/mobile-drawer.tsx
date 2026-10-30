@@ -203,8 +203,8 @@ export function HeaderMobileDrawer({
                         selectTab(index);
                         e.currentTarget.scrollIntoView({ inline: "start", block: "nearest", behavior: "smooth" });
                       }}
-                      className={`relative shrink-0 scroll-ms-5 whitespace-nowrap pb-2 tracking-[0.04em] transition-colors ${
-                        isAr ? "" : "uppercase"
+                      className={`relative shrink-0 scroll-ms-5 whitespace-nowrap pb-2 transition-colors ${
+                        isAr ? "" : ""
                       } ${active ? "font-extrabold text-ink" : "text-(--ink-3) hover:text-(--ink-2)"}`}
                     >
                       {name}
@@ -252,7 +252,7 @@ export function HeaderMobileDrawer({
 
             {/* Social */}
             <div className="mt-8 px-1">
-              <p className={`mb-4 text-md font-bold tracking-[0.22em] text-ink ${isAr ? "" : "uppercase"}`}>
+              <p className={`mb-4 text-md font-bold text-ink ${isAr ? "" : ""}`}>
                 {dict.nav.followUs}
               </p>
               <div className="flex items-center gap-3">
@@ -324,7 +324,7 @@ function CategoryCard({
         href={href}
         aria-label={title}
         onClick={onClick}
-        className="group relative flex uppercase items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
+        className="group relative flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
       >
         {visual && (
           <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
@@ -359,7 +359,7 @@ function DrawerLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center justify-between font-bold border-b border-(--hairline) px-1 py-4 uppercase text-base transition-colors hover:text-accent ${
+      className={`flex items-center justify-between font-bold border-b border-(--hairline) px-1 py-4 text-base transition-colors hover:text-accent ${
         accent ? "text-accent" : "text-ink"
       }`}
     >

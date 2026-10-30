@@ -18,7 +18,7 @@ import type {
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
-import { API_BASE, authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
+import { authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
 import { getAuthSessionRevision, refreshAccessTokenOrNull } from "../auth-provider.api";
 import { normalizeCategory, normalizeProduct } from "./client/normalizers";
 import {
@@ -124,6 +124,11 @@ export async function fetchBrands(options?: { lang?: string }): Promise<ProductA
 
 export async function fetchCharacters(options?: { lang?: string }): Promise<ProductAttribute[]> {
   const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/characters`, options);
+  return data?.items ?? [];
+}
+
+export async function fetchAgeGroups(options?: { lang?: string }): Promise<ProductAttribute[]> {
+  const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/age-groups`, options);
   return data?.items ?? [];
 }
 

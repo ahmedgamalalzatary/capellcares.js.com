@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Category, Language, Product } from "@capella/shared";
 
-import type { CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
+import type { AttributeFilterKey, CategoryTreeNode, PriceRange, Sort } from "../types/product-grid.types";
 import { isInCategoryBranch, minVariantPrice, safeName } from "../utils/product-grid.utils";
 import { matchesProductQuery } from "../lib/product-search";
 import { isListedCategory } from "../lib/category-links";
@@ -19,6 +19,8 @@ interface UseProductGridFiltersOptions {
   headerCategoryIds?: number[];
   onHeaderCategoryIdsChange?: (value: number[]) => void;
 }
+
+const NO_ATTRIBUTE_FILTERS: Record<AttributeFilterKey, number[]> = { brand: [], age: [], character: [] };
 
 export function useProductGridFilters({
   products,
@@ -38,6 +40,7 @@ export function useProductGridFilters({
   // Preserve API ordering by default; merchandising/search rules may change this later.
   const [sort, setSort] = useState<Sort>("default");
   const [priceRange, setPriceRange] = useState<PriceRange>({ min: "", max: "" });
+  const [attributeFilters, setAttributeFilters] = useState<Record<AttributeFilterKey, number[]>>(NO_ATTRIBUTE_FILTERS);
 
   useEffect(() => { setQ(initialSearch); }, [initialSearch]);
   useEffect(() => { setCategory(initialCategory); }, [initialCategory]);
@@ -50,6 +53,7 @@ export function useProductGridFilters({
     setCategory(initialCategory);
     setSort("default");
     setPriceRange({ min: "", max: "" });
+    setAttributeFilters(NO_ATTRIBUTE_FILTERS);
   }, [headerCategoryIds, initialCategory]);
 
   const categoryById = useMemo(
@@ -149,6 +153,14 @@ export function useProductGridFilters({
     setPriceRange(value);
   };
 
+  const toggleAttributeFilter = (key: AttributeFilterKey, id: number) => {
+    clearHeaderCategories();
+    setAttributeFilters((current) => ({
+      ...current,
+      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id]
+    }));
+  };
+
   const updateHeaderCategoryIds = (value: number[]) => {
     onHeaderCategoryIdsChange?.(value);
   };
@@ -174,6 +186,9 @@ export function useProductGridFilters({
         const minVariant = minVariantPrice(product);
         if (!Number.isFinite(minVariant)) return false;
         if (minVariant < min || minVariant > max) return false;
+        if (attributeFilters.brand.length > 0 && !attributeFilters.brand.includes(product.brandId ?? -1)) return false;
+        if (attributeFilters.age.length > 0 && !product.ageGroupIds?.some((id) => attributeFilters.age.includes(id))) return false;
+        if (attributeFilters.character.length > 0 && !product.characterIds?.some((id) => attributeFilters.character.includes(id))) return false;
         return true;
       })
       .sort((a, b) => {
@@ -185,7 +200,7 @@ export function useProductGridFilters({
         if (sort === "newest") return b.id - a.id;
         return 0;
       });
-  }, [products, q, category, sort, priceRange, lang, categoryById, headerCategoryIds]);
+  }, [products, q, category, sort, priceRange, attributeFilters, lang, categoryById, headerCategoryIds]);
 
   const toggleParent = (parentId: number) => {
     setOpenParents((current) => ({ ...current, [parentId]: !current[parentId] }));
@@ -196,11 +211,13 @@ export function useProductGridFilters({
     setCategory(initialCategory);
     setSort("default");
     setPriceRange({ min: "", max: "" });
+    setAttributeFilters(NO_ATTRIBUTE_FILTERS);
     onHeaderCategoryIdsChange?.([]);
   };
 
   const hasActiveFilters = Boolean(
     q || category !== initialCategory || priceRange.min || priceRange.max
+      || attributeFilters.brand.length || attributeFilters.age.length || attributeFilters.character.length
   );
 
   return {
@@ -212,6 +229,8 @@ export function useProductGridFilters({
     setSort: updateSort,
     priceRange,
     setPriceRange: updatePriceRange,
+    attributeFilters,
+    toggleAttributeFilter,
     categoryTree,
     openParents,
     toggleParent,

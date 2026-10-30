@@ -6,7 +6,7 @@ import type { Category, Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { ProductFiltersContent } from "./product-filters-content";
-import type { CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
+import type { AttributeFilterGroup, CategoryTreeNode, PriceRange } from "../../../types/product-grid.types";
 
 interface FilterDrawerProps {
   open: boolean;
@@ -28,6 +28,7 @@ interface FilterDrawerProps {
   showPrice?: boolean;
   scopedCategoryId?: number;
   onClear: () => void;
+  attributeGroups?: AttributeFilterGroup[];
 }
 
 const FOCUSABLE_SELECTOR = [
@@ -62,7 +63,8 @@ export function FilterDrawer({
   showSearch,
   showPrice,
   scopedCategoryId,
-  onClear
+  onClear,
+  attributeGroups
 }: FilterDrawerProps) {
   const isAr = lang === "ar";
   const closeLabel = dict.filters.closeFilters ?? "Close filters";
@@ -137,7 +139,7 @@ export function FilterDrawer({
         tabIndex={open ? 0 : -1}
         inert={!open}
         className={cn(
-          "fixed inset-0 z-50 cursor-pointer border-0 p-0 bg-[oklch(0.22_0.04_45_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-0 z-50 cursor-pointer border-0 p-0 bg-[rgb(36_18_63_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
       />
@@ -156,15 +158,12 @@ export function FilterDrawer({
       >
         <div className="sticky top-0 z-[2] flex shrink-0 items-end justify-between gap-3 border-b border-(--hairline) bg-canvas px-5 pt-5 pb-4">
           <div>
-            <p className="mx-0 mt-0 mb-px text-[9px] font-bold tracking-[0.22em] uppercase text-(--ink-3) opacity-80">
-              {dict.brand}
-            </p>
             <span
               className={cn(
                 "block leading-[1.05] text-ink",
                 isAr
-                  ? "font-(family-name:--font-ar) text-[20px] font-bold tracking-[-0.01em]"
-                  : "font-(family-name:--font-display) text-[24px] font-normal tracking-[-0.02em]"
+                  ? "font-(family-name:--font-ar) text-[20px] font-bold "
+                  : "font-extrabold text-[24px] "
               )}
             >
               {dict.filters.title}
@@ -199,6 +198,7 @@ export function FilterDrawer({
             showSearch={showSearch}
             showPrice={showPrice}
             scopedCategoryId={scopedCategoryId}
+            attributeGroups={attributeGroups}
             mode="mobile"
           />
         </div>

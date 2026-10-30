@@ -42,7 +42,7 @@ export function StaticPage({
               return (
                 <h2
                   key={i}
-                  className="mt-5 text-lg font-semibold text-ink font-(family-name:--font-display)"
+                  className="mt-5 text-lg font-semibold text-ink font-extrabold"
                 >
                   {block.h}
                 </h2>

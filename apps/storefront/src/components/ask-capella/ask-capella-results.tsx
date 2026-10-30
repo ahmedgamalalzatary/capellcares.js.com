@@ -46,7 +46,7 @@ export function AskCapellaReplyContent({
         <Link
           href={`/${lang}/products`}
           onClick={onClose}
-          className="mt-2 inline-block font-(--font-display) text-sm text-accent underline-offset-4 hover:underline"
+          className="mt-2 inline-block font-extrabold text-sm text-accent underline-offset-4 hover:underline"
         >
           {dict.ask.browseAll}
         </Link>
@@ -62,7 +62,7 @@ export function AskCapellaReplyContent({
 
       {results.products.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.products}</p>
+          <p className="text-xs font-bold text-(--ink-3)">{dict.ask.sections.products}</p>
           {results.products.map((product) => (
             <Link
               key={product.id}
@@ -88,7 +88,7 @@ export function AskCapellaReplyContent({
 
       {results.categories.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.categories}</p>
+          <p className="text-xs font-bold text-(--ink-3)">{dict.ask.sections.categories}</p>
           <div className="flex flex-wrap gap-1.5">
             {results.categories.map((category) => (
               <Link
@@ -106,7 +106,7 @@ export function AskCapellaReplyContent({
 
       {results.offers.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.offers}</p>
+          <p className="text-xs font-bold text-(--ink-3)">{dict.ask.sections.offers}</p>
           {results.offers.map((offer) => {
             const savings = offer.originalTotal - offer.price;
             return (
@@ -130,7 +130,7 @@ export function AskCapellaReplyContent({
 
       {results.collections.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">{dict.ask.sections.collections}</p>
+          <p className="text-xs font-bold text-(--ink-3)">{dict.ask.sections.collections}</p>
           {results.collections.map((collection) => {
             const savings = collection.originalTotal - collection.price;
             return (

@@ -142,7 +142,7 @@ export function ContactView({ lang, dict }: { lang: Language; dict: any }) {
         <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Icon.Check size={28} />
         </span>
-        <h2 className="m-0 text-2xl text-ink font-(family-name:--font-display)">{t.successTitle}</h2>
+        <h2 className="m-0 text-2xl text-ink font-extrabold">{t.successTitle}</h2>
         <p className="mt-3 text-sm leading-[1.7] text-(--ink-2)">{t.successBody}</p>
         <button type="button" onClick={resetForm} className="btn btn--outline-accent mt-7">
           {t.sendAnother}

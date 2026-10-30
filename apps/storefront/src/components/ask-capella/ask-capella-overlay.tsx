@@ -34,7 +34,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
           <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
-            <Image src="/capella logo2.png" alt="Capella" fill sizes="32px" className="object-cover" />
+            <Image src="/icon.png" alt="Capella" fill sizes="32px" className="object-cover" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[#67645f]">
@@ -131,7 +131,7 @@ function CapellaBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-end gap-2 animate-[ask-bubble-in_180ms_ease_both]">
       <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
-        <Image src="/capella logo2.png" alt="" fill sizes="28px" className="object-cover" />
+        <Image src="/icon.png" alt="" fill sizes="28px" className="object-cover" />
       </div>
       <div className="max-w-[85%] rounded-[18px_18px_18px_4px] border border-(--hairline) bg-white px-4 py-3 shadow-(--shadow-1)">
         {children}

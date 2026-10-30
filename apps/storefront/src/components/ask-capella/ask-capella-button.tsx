@@ -23,13 +23,13 @@ export function AskCapellaButton({ lang }: Props) {
         >
           {/* Capella logo */}
           <Image
-            src="/capella logo2.png"
+            src="/icon.png"
             alt={dict.brand}
             width={400}
             height={100}
             className="h-5 w-auto object-contain"
           />
-          <span className="font-(--font-display) text-base leading-none">{dict.ask.button}</span>
+          <span className="font-extrabold text-base leading-none">{dict.ask.button}</span>
         </button>
       )}
 

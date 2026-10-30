@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
+import { ProductAttributeLinks } from "@/components/products/product-attribute-links";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
@@ -86,7 +87,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             overlay={(
               <>
                 {leadTag ? (
-                  <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-md" />
+                  <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
                 ) : null}
                 <WishlistButton
                   entityType="product"
@@ -101,25 +102,22 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
           <div className="grid gap-3">
-            <h1 className={lang === "ar"
-              ? "m-0 text-[clamp(20px,3.4vw,32px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
-              : "m-0 text-[clamp(20px,3.4vw,32px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
+            <h1 className={"m-0 text-[clamp(26px,3.4vw,40px)] font-extrabold leading-[1.15] text-ink"}>
               {pickLang(product.name, lang)}
             </h1>
             {categoryName ? (
-              <p className={lang === "ar" ? "font-(family-name:--font-ar)" : "tracking-[0.08em] uppercase"}>
+              <p className="m-0 text-(--ink-3)">
                 {categoryName}
               </p>
             ) : null}
             <ItemTags tags={badgeTags} variant="badge" />
+            <ProductAttributeLinks product={product} lang={lang} dict={dict} />
             {product.reviewData !== undefined && dict.reviews ? (
               <ReviewSummary entityType="product" entityId={product.id} reviewData={product.reviewData} lang={lang} dict={dict} />
             ) : null}
           </div>
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
-            <span className={lang === "ar"
-              ? "text-3xl font-bold font-(family-name:--font-ar) leading-none text-accent sm:text-[36px]"
-              : "text-3xl font-(--font-display) leading-none text-accent sm:text-[40px]"}>
+            <span className={"text-3xl font-extrabold leading-none text-(--magenta-deep) sm:text-[38px]"}>
               {variant && effectiveVariantPrice != null && !isOutOfStock ? formatPrice(effectiveVariantPrice, lang) : dict.common.outOfStock}
             </span>
             {variant && effectiveVariantPrice != null && !isOutOfStock && effectiveVariantPrice !== variant.price ? (
@@ -135,7 +133,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           <div className="grid gap-2">
-            <div className="eyebrow text-(--ink-3)! opacity-100!">
+            <div className="font-bold text-(--ink-2)">
               {dict.product.selectSize}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -143,9 +141,9 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                 <button
                   key={item.id}
                   className={[
-                    "grid min-w-28 gap-0.5 rounded-md px-4 py-3 text-start transition-colors",
-                    item.stock > 0 ? "hover:border-warm hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
-                    variantId === item.id ? "border-accent bg-canvas text-ink" : "border border-(--hairline) bg-surface text-(--ink-2)"
+                    "grid min-w-28 gap-0.5 rounded-2xl border-2 px-4 py-3 text-start transition-colors",
+                    item.stock > 0 ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
+                    variantId === item.id ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                   ].join(" ")}
                   data-active={variantId === item.id}
                   data-out={item.stock === 0 ? "true" : undefined}
@@ -160,12 +158,12 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           <div className="grid gap-2">
-            <div className="eyebrow text-(--ink-3)! opacity-100!">
+            <div className="font-bold text-(--ink-2)">
               {dict.common.quantity}
             </div>
-            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) border border-(--hairline) bg-surface p-1">
+            <div className="flex w-full max-w-60 items-center justify-between gap-1 rounded-(--radius-pill) bg-(--warm-soft) p-1">
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}
                 aria-label="−"
                 disabled={qty <= 1}
@@ -174,7 +172,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               </button>
               <span className="min-w-10 text-center text-base font-semibold tabular-nums text-ink">{qty}</span>
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.min(variant?.stock || 1, value + 1))}
                 aria-label="+"
                 disabled={variant == null || qty >= (variant?.stock ?? 0)}

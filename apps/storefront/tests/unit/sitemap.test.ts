@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/storefront-static-data", () => ({
   loadSitemapData: vi.fn(async () => ({
+    brands: [],
+    characters: [],
     products: [],
     offers: [],
     collections: [],

@@ -128,8 +128,16 @@ export const ar = {
     validation: "اختر من نجمة إلى 5 نجوم واكتب 3 أحرف على الأقل.",
     submitError: "تعذر إرسال تقييمك. حاول مرة أخرى."
   },
+  notFound: {
+    title: "مش لاقيين الصفحة دي",
+    description: "ممكن يكون العنوان غلط أو الصفحة اتنقلت.",
+    cta: "الرجوع للمتجر"
+  },
   filters: {
     title: "الفلاتر",
+    brand: "الماركة",
+    age: "السن",
+    character: "الشخصية",
     bytype: "حسب النوع",
     price: "السعر",
     priceMin: "الأدنى",

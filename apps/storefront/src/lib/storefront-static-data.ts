@@ -32,13 +32,17 @@ export async function loadSitemapData(): Promise<{
   categories: Category[];
   offers: Offer[];
   collections: Collection[];
+  brands: ProductAttribute[];
+  characters: ProductAttribute[];
 }> {
-  const [products, categories, offers, collections] = await Promise.all([
+  const [products, categories, offers, collections, brands, characters] = await Promise.all([
     safeList(() => fetchProducts()),
     safeList(() => fetchCategories()),
     safeList(() => fetchOffers()),
-    safeList(() => fetchCollections())
+    safeList(() => fetchCollections()),
+    safeList(() => fetchBrands()),
+    safeList(() => fetchCharacters())
   ]);
 
-  return { products, categories, offers, collections };
+  return { products, categories, offers, collections, brands, characters };
 }

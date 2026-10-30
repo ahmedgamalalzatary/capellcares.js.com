@@ -40,7 +40,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
           { label: dict.offers.title }
         ]}
       />
-      <header className="page-head uppercase">
+      <header className="page-head ">
         <h1>{dict.offers.title}</h1>
       </header>
 

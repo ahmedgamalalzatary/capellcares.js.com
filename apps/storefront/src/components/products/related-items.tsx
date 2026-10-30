@@ -48,7 +48,7 @@ export function RelatedItems({ items, lang, dict, title }: Props) {
         {title ? (
           <h2 className={isAr
             ? "m-0 text-[clamp(20px,2.4vw,28px)] font-bold font-(family-name:--font-ar) text-ink"
-            : "m-0 text-[clamp(22px,2.4vw,30px)] font-(--font-display) text-ink"}>
+            : "m-0 text-[clamp(22px,2.4vw,30px)] font-extrabold text-ink"}>
             {title}
           </h2>
         ) : <span />}
@@ -151,14 +151,14 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
       <div className="mt-3 grid gap-1 text-start">
         <Link href={href} className="block">
           <h3 className={`m-0 leading-tight text-ink ${
-            isAr ? "text-sm font-bold font-(family-name:--font-ar)" : "text-sm font-bold uppercase tracking-[0.06em]"
+            isAr ? "text-sm font-bold font-(family-name:--font-ar)" : "text-sm font-bold "
           }`}>
             {label}
           </h3>
         </Link>
 
         {item.categoryName ? (
-          <p className={`m-0 ${isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"}`}>
+          <p className={`m-0 ${isAr ? "text-md font-(family-name:--font-ar)" : "text-md "}`}>
             {pickLang(item.categoryName, lang)}
           </p>
         ) : null}

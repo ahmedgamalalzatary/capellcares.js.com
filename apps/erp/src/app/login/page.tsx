@@ -36,7 +36,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-3">
           <span
             aria-hidden
-            className="block size-10 shrink-0 rounded-full bg-[url('/brand/capella-logo.jpg')] bg-[length:auto_108%] bg-[position:2%_50%] shadow-[0_0_0_1px_oklch(1_0_0/0.08)]"
+            className="block size-10 shrink-0 rounded-full bg-[url('/brand/falta-logo.png')] bg-[length:auto_108%] bg-[position:2%_50%] shadow-[0_0_0_1px_oklch(1_0_0/0.08)]"
           />
           <span className="text-lg font-bold tracking-wide text-rail-strong">Capella</span>
         </div>

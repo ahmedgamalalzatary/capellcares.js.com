@@ -112,11 +112,11 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                   onMouseEnter={() => selectRoot(i)}
                   onFocus={() => selectRoot(i)}
                   className={[
-                    "relative whitespace-nowrap pb-1 tracking-[0.02em] transition-colors",
+                    "relative whitespace-nowrap pb-1 transition-colors",
                     i === activeRoot ? "text-ink" : "text-(--ink-3) hover:text-ink"
                   ].join(" ")}
                 >
-                  <span className="text-md font-bold uppercase">{label}</span>
+                  <span className="text-md font-bold ">{label}</span>
                   <span
                     className={`absolute inset-x-0 -bottom-px h-0.5 bg-accent transition-opacity ${i === activeRoot ? "opacity-100" : "opacity-0"}`}
                   />
@@ -155,7 +155,7 @@ export function ShopMegaMenu({ lang, dict, menuEntries, isAr }: ShopMegaMenuProp
                   <Link
                     href={buildCategoryHref(lang, { id: active.id, slug: active.slug })}
                     onClick={closeNow}
-                    className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
+                    className="block text-base text-ink transition-colors hover:font-bold hover:underline"
                   >
                     {dict.nav.viewAllCategory.replace("{name}", active.label)}
                   </Link>
@@ -192,7 +192,7 @@ function MediaGrid({
       <Link
         href={`/${lang}/${basePath}`}
         onClick={onNavigate}
-        className="block text-base text-ink uppercase transition-colors hover:font-bold hover:underline"
+        className="block text-base text-ink transition-colors hover:font-bold hover:underline"
       >
         {allLabel}
       </Link>
@@ -203,7 +203,7 @@ function MediaGrid({
           href={`/${lang}/${basePath}/${item.slug}`}
           aria-label={item.label}
           onClick={onNavigate}
-          className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
+          className="flex items-center gap-3 text-sm text-ink transition-colors hover:font-bold hover:underline"
         >
           <span>{item.label}</span>
         </Link>
@@ -219,7 +219,7 @@ function NavBranch({ lang, node, onNavigate }: { lang: Language; node: NavNode; 
         href={buildCategoryHref(lang, node)}
         aria-label={node.label}
         onClick={onNavigate}
-        className="flex items-center gap-3 text-sm text-ink uppercase transition-colors hover:font-bold hover:underline"
+        className="flex items-center gap-3 text-sm text-ink transition-colors hover:font-bold hover:underline"
       >
         <span>{node.label}</span>
       </Link>

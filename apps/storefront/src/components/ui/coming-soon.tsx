@@ -30,8 +30,8 @@ export function ComingSoon({
         className={cn(
           "m-0 text-[24px] text-ink",
           isAr
-            ? "font-(family-name:--font-ar) font-bold tracking-[-0.01em]"
-            : "font-(family-name:--font-display) font-medium tracking-[-0.02em]"
+            ? "font-(family-name:--font-ar) font-bold "
+            : "font-extrabold "
         )}
       >
         {title}

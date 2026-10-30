@@ -38,14 +38,14 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
           (whitespace-nowrap) width can never widen the header on small screens. */}
       <div className="relative h-4 min-w-0 flex-1 overflow-hidden sm:h-5">
         {reduced ? (
-          <p className="absolute inset-0 truncate font-bold text-center text-md leading-4 tracking-[0.04em] sm:text-sm sm:leading-5">
+          <p className="absolute inset-0 truncate font-bold text-center text-md leading-4 sm:text-sm sm:leading-5">
             {slides[index]}
           </p>
         ) : (
           <p
             key={index}
             onAnimationEnd={advance}
-              className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold tracking-[0.04em] sm:text-md"
+              className="marquee-cross absolute inset-0 flex items-center justify-center whitespace-nowrap text-md font-extrabold sm:text-md"
             style={{
               "--marquee-duration": `${CROSS_S}s`,
               "--marquee-direction": isAr ? "reverse" : "normal",

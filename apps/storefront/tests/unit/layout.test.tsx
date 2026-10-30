@@ -41,7 +41,10 @@ describe("storefront root layout", () => {
       fetchProducts: vi.fn().mockResolvedValue([]),
       fetchOffers: vi.fn().mockResolvedValue([]),
       fetchCollections: vi.fn().mockResolvedValue([]),
-      fetchAnnouncements: vi.fn().mockResolvedValue(null)
+      fetchAnnouncements: vi.fn().mockResolvedValue(null),
+      fetchBrands: vi.fn().mockResolvedValue([]),
+      fetchCharacters: vi.fn().mockResolvedValue([]),
+      fetchAgeGroups: vi.fn().mockResolvedValue([])
     }));
     vi.doMock("@/lib/nav", () => ({
       buildNav: vi.fn().mockReturnValue([])

@@ -124,7 +124,7 @@ export function ProductFilterCategoryList({
       >
         {isScopedRoot
           ? (
-            <span className="uppercase">
+            <span className="">
               {String(dict.nav.allCategoryTypes).replace("{name}", pickLang(item.name, lang))}
             </span>
           )

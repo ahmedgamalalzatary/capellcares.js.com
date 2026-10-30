@@ -103,7 +103,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
             <div className="flex items-center justify-between gap-4">
               <div className={`min-w-0 leading-none break-all text-ink ${isAr
                 ? "text-2xl font-bold font-(family-name:--font-ar)"
-                : "text-3xl font-(--font-display)"}`}>
+                : "text-3xl font-extrabold"}`}>
                 {order.orderCode}
               </div>
               <span className={`chip h-9 shrink-0 px-4 text-sm sm:h-10 sm:px-5 sm:text-base ${orderPaymentChip(order)}`}>

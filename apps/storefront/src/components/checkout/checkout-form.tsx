@@ -95,7 +95,7 @@ export function CheckoutForm({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="grid gap-4 rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:gap-5 sm:p-7">
-      <h2 className="m-0 text-lg font-medium tracking-[-0.005em] text-ink sm:text-xl">{title}</h2>
+      <h2 className="m-0 text-lg font-medium text-ink sm:text-xl">{title}</h2>
       {children}
     </section>
   );

@@ -29,6 +29,10 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
     : authHref("login", lang, `${pathname}${search ? `?${search}` : ""}`);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // The cart lives in this browser, so the server can't know the count; it appears once the page is running here.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const cartCount = mounted ? count : 0;
   const isAr = lang === "ar";
   const { switchLang } = useLanguageSwitch(lang);
 
@@ -135,7 +139,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
-              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{count}</span>}
+              {cartCount > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{cartCount}</span>}
             </Link>
           </div>
 
@@ -147,7 +151,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
-              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{count}</span>}
+              {cartCount > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{cartCount}</span>}
             </Link>
             <Link
               href={accountHref}

@@ -161,7 +161,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
                 <div className="flex flex-col gap-4 px-5 py-4">
                   {results.products.length > 0 && (
                     <section>
-                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                      <h2 className="mb-1 text-xs font-bold text-(--ink-3)">
                         {dict.ask.sections.products}
                       </h2>
                       <ul>
@@ -194,7 +194,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
 
                   {results.categories.length > 0 && (
                     <section>
-                      <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                      <h2 className="mb-2 text-xs font-bold text-(--ink-3)">
                         {dict.ask.sections.categories}
                       </h2>
                       <div className="flex flex-wrap gap-1.5">
@@ -214,7 +214,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
 
                   {results.offers.length > 0 && (
                     <section>
-                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                      <h2 className="mb-1 text-xs font-bold text-(--ink-3)">
                         {dict.ask.sections.offers}
                       </h2>
                       {results.offers.map((offer) => (
@@ -237,7 +237,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
 
                   {results.collections.length > 0 && (
                     <section>
-                      <h2 className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-(--ink-3)">
+                      <h2 className="mb-1 text-xs font-bold text-(--ink-3)">
                         {dict.ask.sections.collections}
                       </h2>
                       {results.collections.map((collection) => (
@@ -265,7 +265,7 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
                   <button
                     type="button"
                     onClick={submit}
-                    className="sticky bottom-0 -mx-5 -mb-4 w-[calc(100%+2.5rem)] border-t border-(--hairline) bg-canvas px-5 py-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-ink"
+                    className="sticky bottom-0 -mx-5 -mb-4 w-[calc(100%+2.5rem)] border-t border-(--hairline) bg-canvas px-5 py-3 text-center text-xs font-bold text-ink"
                   >
                     {dict.nav.viewAll}
                   </button>

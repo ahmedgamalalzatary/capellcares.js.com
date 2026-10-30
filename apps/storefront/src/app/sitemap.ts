@@ -5,7 +5,7 @@ import { absoluteUrl, localizePath } from "@/lib/seo";
 import { loadSitemapData } from "@/lib/storefront-static-data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { products, categories, offers, collections } = await loadSitemapData();
+  const { products, categories, offers, collections, brands, characters } = await loadSitemapData();
 
   const productEntries = products
     .filter((product) => product.status === "active" && !product.deletedAt)
@@ -39,6 +39,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     );
 
+  const attributeEntries = [
+    ...brands.filter((item) => item.hasProducts !== false).map((item) => `/brands/${item.slug}`),
+    ...characters.filter((item) => item.hasProducts !== false).map((item) => `/characters/${item.slug}`)
+  ].flatMap((path) => languages.map((lang) => ({ url: absoluteUrl(localizePath(lang as Language, path)) })));
+
   const staticEntries = languages.flatMap((lang) => {
     const locale = lang as Language;
     return [
@@ -50,5 +55,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
   });
 
-  return [...staticEntries, ...categoryEntries, ...productEntries, ...offerEntries, ...collectionEntries];
+  return [...staticEntries, ...categoryEntries, ...productEntries, ...offerEntries, ...collectionEntries, ...attributeEntries];
 }

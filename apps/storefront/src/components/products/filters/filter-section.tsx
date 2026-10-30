@@ -60,7 +60,7 @@ export function FilterSection({
         className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-[14px] text-start"
         aria-expanded={open}
       >
-        <span className="text-[10px] font-bold tracking-[0.22em] uppercase text-(--ink-3)">
+        <span className="text-base font-extrabold text-ink">
           {label}
         </span>
         <svg

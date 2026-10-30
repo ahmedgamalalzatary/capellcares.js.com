@@ -77,7 +77,7 @@ export function AuthForm({ mode, lang, dict }: { mode: Mode; lang: Language; dic
       <span className="eyebrow text-accent!">{dict.brand}</span>
       <h1 className={`mt-3 m-0 leading-[1.1] ${lang === "ar"
         ? "text-3xl font-bold font-(family-name:--font-ar) text-ink"
-        : "text-[34px] font-(--font-display) text-ink"}`}>
+        : "text-[34px] font-extrabold text-ink"}`}>
         {mode === "login" ? dict.auth.loginTitle : dict.auth.signupTitle}
       </h1>
       <p className="mt-3 text-sm leading-[1.7] text-(--ink-2)">

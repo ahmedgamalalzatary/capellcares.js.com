@@ -16,7 +16,7 @@ export function PriceInput({
   const dict = getDict(lang);
   return (
     <div className="flex items-center overflow-hidden rounded-(--radius) border border-(--hairline) bg-surface transition-[border-color,box-shadow] duration-[180ms]">
-      <span className="shrink-0 select-none ps-3 text-[10.5px] font-semibold tracking-[0.06em] text-(--ink-3)">
+      <span className="shrink-0 select-none ps-3 text-[10.5px] font-semibold text-(--ink-3)">
         {dict.common.currency}
       </span>
       <input

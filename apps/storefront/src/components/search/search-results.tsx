@@ -32,7 +32,7 @@ export function SearchResults({
     <header className="mb-6">
       <h2 className={isAr
         ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-        : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
+        : "m-0 text-[clamp(24px,2.4vw,36px)] font-extrabold leading-[1.1] text-ink"}>
         {text}
       </h2>
     </header>

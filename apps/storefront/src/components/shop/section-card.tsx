@@ -382,10 +382,10 @@ export function SectionCard(props: SectionCardProps) {
             </button>
             <div className="flex flex-col gap-4 self-center text-start">
               <div className="grid gap-3">
-                <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-(--ink-3)">
+                <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-semibold text-(--ink-3)">
                   {dict.advices.tipBadge}
                 </span>
-                <h3 className={isAr ? "text-2xl font-bold font-(family-name:--font-ar) text-ink" : "text-2xl font-bold uppercase tracking-[0.04em] text-ink"}>
+                <h3 className={isAr ? "text-2xl font-bold font-(family-name:--font-ar) text-ink" : "text-2xl font-bold text-ink"}>
                   {title}
                 </h3>
                 <p className="m-0 text-sm leading-7 text-(--ink-2)">{description}</p>
@@ -394,7 +394,7 @@ export function SectionCard(props: SectionCardProps) {
                 href={SOCIAL_LINKS.find((entry) => entry.label === "Instagram")?.href ?? ""}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold tracking-[0.06em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
               >
                 {dict.advices.readMore}
               </Link>
