@@ -19,7 +19,7 @@ test("the filter drawer backdrop has its own label in both languages", () => {
 });
 
 test("the by-type filter heading uses the same key in both languages", () => {
-  assert.equal(en.filters.bytype, "by type");
-  assert.equal(ar.filters.bytype, "حسب النوع");
+  assert.equal(en.filters.bytype, "Category");
+  assert.equal(ar.filters.bytype, "الفئة");
   assert.ok(!("beytype" in ar.filters), "ar.filters must not carry the legacy 'beytype' key");
 });

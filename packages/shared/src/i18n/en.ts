@@ -68,7 +68,7 @@ export const en = {
     backToTop: "Back to top",
     placeOrder: "Place order",
     orderPlaced: "Order placed",
-    orderPlacedDesc: "We sent a confirmation to your phone. Thanks for shopping with Falta.",
+    orderPlacedDesc: "Our team will review it and deliver it to you. Pay in cash when it arrives. Thanks for shopping with Falta.",
     edit: "Edit",
     delete: "Delete",
     cancel: "Cancel",

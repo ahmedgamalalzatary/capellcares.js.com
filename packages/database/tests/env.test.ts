@@ -66,7 +66,7 @@ test("a production-looking schema name is refused as a destructive target", () =
 test("assertDisposableTestDatabaseUrl names the offending schema in its error", () => {
   assert.throws(
     () => assertDisposableTestDatabaseUrl("mysql://root:pass@localhost:3306/capella"),
-    /"capella".*capella_test/s
+    /"capella".*faltatoy_test/s
   );
 });
 

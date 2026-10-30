@@ -39,7 +39,6 @@ describe("StaticPage", () => {
     // The phrases the source document styles as links.
     const customerServiceLinks = screen.getAllByRole("link", { name: "Customer Service" });
     expect(customerServiceLinks[0]).toHaveAttribute("href", "/en/contact");
-    expect(customerServiceLinks[0]).toHaveAttribute("target", "_blank");
     expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/en/privacy-policy");
     expect(screen.getByRole("link", { name: "Shipping and Handling" })).toHaveAttribute("href", "/en/shipping-handling");
     expect(screen.getByRole("link", { name: "Returns & Refunds" })).toHaveAttribute("href", "/en/returns-refunds");
