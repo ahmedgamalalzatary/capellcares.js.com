@@ -91,7 +91,7 @@ export async function loginAdmin(
 export async function ensureBootstrapAdmin(env: NodeJS.ProcessEnv = process.env) {
   const email = env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = env.ADMIN_PASSWORD;
-  const name = env.ADMIN_NAME?.trim() || "Capella Admin";
+  const name = env.ADMIN_NAME?.trim() || "Falta Admin";
   if (!email || !password) {
     throw new Error("Admin credentials are not configured");
   }

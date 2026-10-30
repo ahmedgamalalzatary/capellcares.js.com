@@ -35,6 +35,6 @@ export function assertDisposableTestDatabaseUrl(databaseUrl: string): void {
   throw new Error(
     `Refusing to run destructive test setup against "${databaseNameFromUrl(databaseUrl)}". ` +
       "Point TEST_DATABASE_URL at a disposable schema whose name contains 'test' " +
-      "(for example capella_test)."
+      "(for example faltatoy_test)."
   );
 }

@@ -19,19 +19,19 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
 
   if (!canReadErpModule(user, "advices")) {
     return (
-      <ForbiddenPage title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى النصائح." />
+      <ForbiddenPage title="نصائح فلتة" crumbs={[{ label: "نصائح فلتة", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية الوصول إلى النصائح." />
     );
   }
 
   if (!canUpdateErpModule(user, "advices")) {
     return (
-      <ForbiddenPage title="تعديل النصيحة" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل النصائح." />
+      <ForbiddenPage title="تعديل النصيحة" crumbs={[{ label: "نصائح فلتة", href: "/advices" }, { label: "غير مصرح" }]} message="لا تملكين صلاحية تعديل النصائح." />
     );
   }
 
   if (!loaded) {
     return (
-      <AdminShell title="تحميل…" crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "تحميل" }]}>
+      <AdminShell title="تحميل…" crumbs={[{ label: "نصائح فلتة", href: "/advices" }, { label: "تحميل" }]}>
         <FormSkeleton />
       </AdminShell>
     );
@@ -42,7 +42,7 @@ export default function EditAdvicePage({ params }: { params: Promise<{ id: strin
   return (
     <AdminShell
       title={`تعديل: ${advice.title.ar}`}
-      crumbs={[{ label: "نصائح كابيلا", href: "/advices" }, { label: "تعديل" }]}
+      crumbs={[{ label: "نصائح فلتة", href: "/advices" }, { label: "تعديل" }]}
     >
       <AdviceForm mode="edit" initial={advice} />
     </AdminShell>

@@ -16,7 +16,7 @@ describe("AskCapellaButton", () => {
   it("sits slightly closer to the bottom-end corner on mobile only", () => {
     render(createElement(AskCapellaButton, { lang: "en" }));
 
-    const button = screen.getByRole("button", { name: "Ask" });
+    const button = screen.getByRole("button", { name: "Ask Falta" });
     expect(button).toHaveClass("bottom-4", "inset-e-4", "sm:bottom-6", "sm:inset-e-6");
   });
 });

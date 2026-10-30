@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/privacy-policy",
     titleEn: "Privacy Policy",
     titleAr: "سياسة الخصوصية",
-    descEn: "How Capella Care collects, uses, stores, and protects your personal information across our website and apps.",
-    descAr: "كيف تجمع كابيلا كير معلوماتك الشخصية وتستخدمها وتخزّنها وتحميها عبر موقعنا وتطبيقاتنا."
+    descEn: "How Falta Toy collects, uses, stores, and protects your personal information across our website and apps.",
+    descAr: "كيف تجمع فلتة توي معلوماتك الشخصية وتستخدمها وتخزّنها وتحميها عبر موقعنا وتطبيقاتنا."
   });
 }
 

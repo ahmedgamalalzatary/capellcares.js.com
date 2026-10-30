@@ -38,7 +38,7 @@ describe("StaticPage", () => {
 
     // The phrases the source document styles as links.
     const customerServiceLinks = screen.getAllByRole("link", { name: "Customer Service" });
-    expect(customerServiceLinks[0]).toHaveAttribute("href", "https://wa.me/201034668590");
+    expect(customerServiceLinks[0]).toHaveAttribute("href", "/en/contact");
     expect(customerServiceLinks[0]).toHaveAttribute("target", "_blank");
     expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/en/privacy-policy");
     expect(screen.getByRole("link", { name: "Shipping and Handling" })).toHaveAttribute("href", "/en/shipping-handling");
@@ -56,7 +56,7 @@ describe("StaticPage", () => {
     }));
 
     expect(screen.getAllByRole("link", { name: "مركز المساعدة" })[0]).toHaveAttribute("href", "/ar/contact");
-    expect(screen.getAllByRole("link", { name: "خدمة العملاء" })[0]).toHaveAttribute("href", "https://wa.me/201034668590");
+    expect(screen.getAllByRole("link", { name: "خدمة العملاء" })[0]).toHaveAttribute("href", "/ar/contact");
     expect(screen.getByRole("link", { name: "سياسة الخصوصية" })).toHaveAttribute("href", "/ar/privacy-policy");
   });
 

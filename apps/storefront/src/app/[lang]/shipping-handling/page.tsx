@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/shipping-handling",
     titleEn: "Shipping and Handling",
     titleAr: "الشحن والتوصيل",
-    descEn: "Capella Care shipping and handling information — delivery times, fees, tracking, and customs duties for orders worldwide.",
-    descAr: "معلومات الشحن والتوصيل من كابيلا كير — أوقات التوصيل والرسوم والتتبع والرسوم الجمركية للطلبات حول العالم."
+    descEn: "Falta Toy delivery information: free delivery within Egypt, delivery times, and cash on delivery.",
+    descAr: "معلومات التوصيل من فلتة توي: توصيل مجاني داخل مصر وأوقات التوصيل والدفع عند الاستلام."
   });
 }
 

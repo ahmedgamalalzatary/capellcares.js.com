@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/about",
     titleEn: "About Us",
     titleAr: "نبذة عنا",
-    descEn: "Discover Capella Care — curated body, skin, and hair care, makeup, fragrances, and home scents crafted with high-quality, science-backed ingredients.",
-    descAr: "تعرّف على كابيلا كير — منتجات مختارة للعناية بالجسم والبشرة والشعر والمكياج والعطور بمكونات عالية الجودة ومدعومة علميًا."
+    descEn: "Discover Falta Toy, a toy shop for every age with the brands and characters kids love.",
+    descAr: "تعرّف على فلتة توي، متجر ألعاب لكل الأعمار من الماركات والشخصيات التي يحبها الأطفال."
   });
 }
 

@@ -72,7 +72,7 @@ install locked versions rather than resolving dependencies with `npm install`.
 Production and Docker auth require server-only ERP admin bootstrap values:
 
 ```env
-ADMIN_NAME=Capella Admin
+ADMIN_NAME=Falta Admin
 ADMIN_EMAIL=your-admin-email
 ADMIN_PASSWORD=your-strong-admin-password
 ```

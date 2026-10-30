@@ -484,6 +484,13 @@
       "when": 1793364736475,
       "tag": "0068_remove_online_payment_and_shipping",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "5",
+      "when": 1793368303182,
+      "tag": "0069_falta_announcements",
+      "breakpoints": true
     }
   ]
 }

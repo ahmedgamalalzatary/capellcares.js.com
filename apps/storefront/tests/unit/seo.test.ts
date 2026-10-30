@@ -77,7 +77,7 @@ describe("SEO metadata", () => {
   });
 
   it("titles the home (shop) page with the brand name and what it sells, without the brand suffix repeated", () => {
-    expect(buildShopMetadata("en").title).toEqual({ absolute: "Capella Care | Cosmetics, Skincare, Body & Hair Care" });
-    expect(buildShopMetadata("ar").title).toEqual({ absolute: "كابيلا كير | مستحضرات تجميل وعناية بالبشرة والجسم والشعر" });
+    expect(buildShopMetadata("en").title).toEqual({ absolute: "Falta Toy | Toy shop for kids" });
+    expect(buildShopMetadata("ar").title).toEqual({ absolute: "فلتة توي | متجر ألعاب أطفال" });
   });
 });

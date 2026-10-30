@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/terms-of-sale",
     titleEn: "Terms and Conditions of Sale",
     titleAr: "شروط وأحكام الشراء",
-    descEn: "The legal terms under which Capella Care sells products online, including pricing, ordering, payment, delivery, returns, and offers.",
-    descAr: "الشروط القانونية التي تبيع بموجبها كابيلا كير منتجاتها عبر الإنترنت، وتشمل الأسعار والطلب والدفع والتوصيل والإرجاع والعروض."
+    descEn: "The legal terms under which Falta Toy sells products online, including pricing, ordering, payment, delivery, returns, and offers.",
+    descAr: "الشروط القانونية التي تبيع بموجبها فلتة توي منتجاتها عبر الإنترنت، وتشمل الأسعار والطلب والدفع والتوصيل والإرجاع والعروض."
   });
 }
 

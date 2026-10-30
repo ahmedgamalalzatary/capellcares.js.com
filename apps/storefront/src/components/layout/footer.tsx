@@ -40,8 +40,6 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           <FooterCol title={dict.footer.support}>
             <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
             <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink>
-            <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
-            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
           </FooterCol>
 
           <FooterCol title={dict.footer.legal}>
@@ -52,7 +50,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
           </FooterCol>
 
-          <FooterCol title={dict.footer.social}>
+          {SOCIAL_LINKS.length > 0 && (
+                    <FooterCol title={dict.footer.social}>
             {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
               <a
                 key={label}
@@ -77,6 +76,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               </a>
             ))}
           </FooterCol>
+          )}
         </div>
 
         <div className="flex flex-col items-center justify-between gap-6 border-t-2 border-(--hairline) py-6 sm:flex-row">

@@ -22,8 +22,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Capella ERP", template: "%s · Capella ERP" },
-  description: "Capella admin panel",
+  title: { default: "Falta ERP", template: "%s · Falta ERP" },
+  description: "Falta Toy admin panel",
 };
 
 export const viewport: Viewport = {

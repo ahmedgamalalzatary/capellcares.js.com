@@ -20,7 +20,7 @@ function GalleryPreview() {
   const origin = Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : "";
   const requirement: AppUpdateRequired = { code: "APP_UPDATE_REQUIRED", feature: "checkout", policyRevision: "sample", requiredRelease: "sample",
     message: "Sample", explanation: { ar: "مثال: تتطلب هذه الميزة إصدارًا أحدث. تبقى بقية المهام متاحة.", en: "Sample: this feature needs a newer version. Other tasks stay available." },
-    storeUrl: "https://play.google.com/store/apps/details?id=com.capellacare.app" };
+    storeUrl: "https://play.google.com/store/apps/details?id=com.faltatoy.app" };
   return <Screen>
     <SectionHeader title={ar ? "معاينة المكونات" : "Component preview"}
       description={ar ? "أمثلة للتطوير فقط؛ ليست منتجات أو طلبات حقيقية." : "Development samples; these are not real products or orders."} />
@@ -41,7 +41,7 @@ function GalleryPreview() {
     <View style={{ width: "100%", maxWidth: 320, alignSelf: "center" }}><ProductCard product={{ ...sample, imagePath: `${origin}/brand-preview.jpg` }}
       quantity={quantity} onOpen={() => setDialog(true)} onQuantityChange={setQuantity} /></View>
     <SectionHeader title={ar ? "الوسائط" : "Media"} />
-    <MediaGallery label={ar ? "شعار كابيلا" : "Capella logo"} media={[{ type: "image", arUrl: `${origin}/brand-preview.jpg`, enUrl: `${origin}/brand-preview.jpg` },
+    <MediaGallery label={ar ? "شعار فلتة" : "Falta logo"} media={[{ type: "image", arUrl: `${origin}/brand-preview.jpg`, enUrl: `${origin}/brand-preview.jpg` },
       { type: "image", arUrl: `${origin}/brand-preview.jpg?second`, enUrl: `${origin}/brand-preview.jpg?second` }]} />
     <SectionHeader title={ar ? "حالات الاسترداد والتحديث" : "Recovery and updates"} />
     {notice && <UpdateNotice title={ar ? "مثال لتحديث اختياري" : "Sample optional update"} explanation={requirement.explanation}

@@ -34,7 +34,7 @@ export function AskCapellaOverlay({ lang, onClose }: AskCapellaOverlayProps) {
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 bg-canvas px-5 py-4">
           <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
-            <Image src="/icon.png" alt="Capella" fill sizes="32px" className="object-cover" />
+            <Image src="/icon.png" alt="Falta" fill sizes="32px" className="object-cover" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[#67645f]">

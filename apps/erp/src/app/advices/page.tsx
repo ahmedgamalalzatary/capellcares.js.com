@@ -68,7 +68,7 @@ export default function AdvicesPage() {
 
   if (!canReadErpModule(user, "advices")) {
     return (
-      <ForbiddenPage title="نصائح كابيلا" crumbs={[{ label: "نصائح كابيلا" }]} message="لا تملكين صلاحية الوصول إلى النصائح." />
+      <ForbiddenPage title="نصائح فلتة" crumbs={[{ label: "نصائح فلتة" }]} message="لا تملكين صلاحية الوصول إلى النصائح." />
     );
   }
 
@@ -109,8 +109,8 @@ export default function AdvicesPage() {
 
   return (
     <AdminShell
-      title="نصائح كابيلا"
-      crumbs={[{ label: "نصائح كابيلا" }]}
+      title="نصائح فلتة"
+      crumbs={[{ label: "نصائح فلتة" }]}
       description="نصائح بالفيديو تظهر للعملاء في المتجر."
       actions={
         <>

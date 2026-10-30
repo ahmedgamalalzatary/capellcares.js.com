@@ -68,9 +68,9 @@ export function ProductIllustration({ product, lang = "en", className }: Props) 
       <rect x="72" y="110" width="56" height="60" rx="4" fill="#ffffff" opacity="0.85" />
       <text
         x="100" y="138" textAnchor="middle"
-        fontFamily="Cormorant Garamond, serif"
+        fontFamily="Baloo Bhaijaan 2, sans-serif"
         fontSize="14" fill={p.accent}
-      >Capella</text>
+      >Falta</text>
       <text
         x="100" y="156" textAnchor="middle"
         fontFamily="Inter, sans-serif"

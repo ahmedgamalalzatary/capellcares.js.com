@@ -78,6 +78,7 @@ export function SectionCard(props: SectionCardProps) {
   const addClass =
     "inline-flex flex-1 items-center justify-center gap-2 h-11 mb-1 rounded-full bg-(--violet) font-bold text-white shadow-[0_4px_0_var(--violet-deep)] transition-[transform,box-shadow] duration-150 hover:translate-y-px hover:shadow-[0_3px_0_var(--violet-deep)] active:translate-y-1 active:shadow-none focus-visible:outline-3 focus-visible:outline-(--cyan) focus-visible:outline-offset-2 px-2";
 
+  const instagramHref = SOCIAL_LINKS.find((entry) => entry.label === "Instagram")?.href;
   const slideImageClass = "absolute inset-0 h-full w-full object-cover";
 
   // Per-kind derivations — the card knows which one it is rendering.
@@ -390,14 +391,14 @@ export function SectionCard(props: SectionCardProps) {
                 </h3>
                 <p className="m-0 text-sm leading-7 text-(--ink-2)">{description}</p>
               </div>
-              <Link
-                href={SOCIAL_LINKS.find((entry) => entry.label === "Instagram")?.href ?? ""}
+              {instagramHref ? <Link
+                href={instagramHref}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
               >
                 {dict.advices.readMore}
-              </Link>
+              </Link> : null}
             </div>
           </div>
         </div>

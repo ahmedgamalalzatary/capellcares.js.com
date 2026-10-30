@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/terms-conditions",
     titleEn: "Terms and Conditions",
     titleAr: "الشروط والأحكام",
-    descEn: "The terms and conditions governing your use of the Capella Care website, including registration, intellectual property, and liability.",
-    descAr: "الشروط والأحكام التي تحكم استخدامك لموقع كابيلا كير، وتشمل التسجيل والملكية الفكرية وحدود المسؤولية."
+    descEn: "The terms and conditions governing your use of the Falta Toy website, including registration, intellectual property, and liability.",
+    descAr: "الشروط والأحكام التي تحكم استخدامك لموقع فلتة توي، وتشمل التسجيل والملكية الفكرية وحدود المسؤولية."
   });
 }
 

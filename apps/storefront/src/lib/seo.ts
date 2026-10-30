@@ -52,31 +52,31 @@ export function buildRootMetadata(): Metadata {
       apple: { url: "/apple-icon.png", sizes: "180x180" }
     },
     title: {
-      default: `${BRAND_NAME} | Egyptian beauty and self-care`,
+      default: `${BRAND_NAME} | Toys for kids in Egypt`,
       template: `%s | ${BRAND_NAME}`
     },
-    description: "Bilingual Egyptian beauty storefront for skincare, body care, hair care, makeup, fragrances, and curated bundles.",
+    description: "Falta Toy is an Egyptian toy shop with toys for every age, from the brands and characters kids love. Free delivery, pay cash on delivery.",
     openGraph: {
       type: "website",
       siteName: BRAND_NAME,
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers.",
+      title: `${BRAND_NAME} | Toys for kids in Egypt`,
+      description: "Shop toys for every age from the brands and characters kids love. Free delivery, pay cash on delivery.",
       url: absoluteUrl("/")
     },
     twitter: {
       card: "summary_large_image",
-      title: `${BRAND_NAME} | Egyptian beauty and self-care`,
-      description: "Shop bilingual beauty and self-care essentials across skincare, body care, hair care, makeup, and offers."
+      title: `${BRAND_NAME} | Toys for kids in Egypt`,
+      description: "Shop toys for every age from the brands and characters kids love. Free delivery, pay cash on delivery."
     }
   };
 }
 
 export function buildLocaleMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "كابيلا كير | منتجات العناية والجمال" : `${BRAND_NAME} | Beauty and self-care products`;
+  const title = isAr ? "فلتة توي | ألعاب أطفال" : `${BRAND_NAME} | Toys for kids`;
   const description = isAr
-    ? "متجر كابيلا كير للعناية بالبشرة والجسم والشعر والمكياج والعطور، مع صفحات عربية وإنجليزية قابلة للفهرسة."
-    : "Capella Care storefront for skincare, body care, hair care, makeup, fragrances, and bundles with indexable Arabic and English pages.";
+    ? "فلتة توي متجر ألعاب أطفال لكل الأعمار، من الماركات والشخصيات التي يحبها الأطفال. توصيل مجاني والدفع عند الاستلام."
+    : "Falta Toy is a toy shop for every age, with the brands and characters kids love. Free delivery, pay cash on delivery.";
 
   return {
     title,
@@ -99,10 +99,10 @@ export function buildLocaleMetadata(lang: Language): Metadata {
 
 export function buildProductsMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "تسوقي منتجات العناية والجمال" : "Shop beauty and self-care products";
+  const title = isAr ? "تسوق ألعاب الأطفال" : "Shop toys for kids";
   const description = isAr
-    ? "اكتشفي منتجات العناية بالبشرة والجسم والشعر والمكياج من كابيلا كير مع تصفح عربي وإنجليزي منظم."
-    : "Browse skincare, body care, hair care, makeup, and everyday self-care products from Capella Care.";
+    ? "اكتشف ألعاب الأطفال من فلتة توي واختر حسب السن والماركة والشخصية."
+    : "Browse toys from Falta Toy and choose by age, brand, and character.";
 
   return {
     title,
@@ -126,10 +126,10 @@ export function buildCategoryMetadata(lang: Language, category: Category, path: 
   const trail = path.map((item) => pickLang(item.name, lang)).join(" / ");
   const description = trimText(
     lang === "ar"
-      ? `تسوقي ${label} من كابيلا كير. تصفحي منتجات ${trail || label} مع صفحات فئات واضحة وسهلة الفهرسة.`
-      : `Shop ${label} at Capella Care. Browse ${trail || label} products on a category page built for clear search discovery.`
+      ? `تسوق ${label} من فلتة توي. تصفح ألعاب ${trail || label}.`
+      : `Shop ${label} at Falta Toy. Browse ${trail || label} toys.`
   );
-  const title = lang === "ar" ? `${label} | منتجات كابيلا كير` : `${label} | ${count} products`;
+  const title = lang === "ar" ? `${label} | ألعاب فلتة توي` : `${label} | ${count} products`;
 
   return {
     title,
@@ -182,11 +182,11 @@ export function buildShopMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   // Home page: absolute so the layout template doesn't append the brand a second time.
   const title = isAr
-    ? "كابيلا كير | مستحضرات تجميل وعناية بالبشرة والجسم والشعر"
-    : `${BRAND_NAME} | Cosmetics, Skincare, Body & Hair Care`;
+    ? "فلتة توي | متجر ألعاب أطفال"
+    : `${BRAND_NAME} | Toy shop for kids`;
   const description = isAr
-    ? "اكتشفي أحدث العروض والمنتجات الجديدة والأكثر مبيعًا من كابيلا كير، مع نصائح عناية مختارة."
-    : "Discover active offers, new arrivals, bestsellers, and curated care advice from Capella Care.";
+    ? "تسوق الألعاب حسب الفئة والماركة والشخصية من فلتة توي، مع نصائح لاختيار اللعبة المناسبة."
+    : "Shop toys by category, brand, and character at Falta Toy, with advice on choosing the right one.";
 
   return {
     title: { absolute: title },
@@ -206,10 +206,10 @@ export function buildShopMetadata(lang: Language): Metadata {
 }
 
 export function buildOffersMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "عروض وباقات كابيلا كير" : "Capella Care offers and bundles";
+  const title = lang === "ar" ? "عروض وباقات فلتة توي" : "Falta Toy offers and bundles";
   const description = lang === "ar"
-    ? "اكتشفي باقات كابيلا كير المختارة بعناية لتسوق أوفر وروتين متكامل."
-    : "Discover curated Capella Care bundles for better-value routines and gifting.";
+    ? "اكتشف باقات ألعاب فلتة توي بسعر أوفر."
+    : "Discover Falta Toy bundles at a better price, great for gifts.";
 
   return {
     title,
@@ -229,10 +229,10 @@ export function buildOffersMetadata(lang: Language): Metadata {
 }
 
 export function buildCollectionsMetadata(lang: Language): Metadata {
-  const title = lang === "ar" ? "مجموعات كابيلا كير" : "Capella Care collections";
+  const title = lang === "ar" ? "مجموعات فلتة توي" : "Falta Toy sets";
   const description = lang === "ar"
-    ? "اكتشفي مجموعات كابيلا كير المجمعة حسب القسم لروتين متكامل وسعر أوفر."
-    : "Discover Capella Care collections grouped by category for complete routines at a better price.";
+    ? "اكتشف مجموعات ألعاب فلتة توي بسعر أوفر."
+    : "Discover Falta Toy sets grouped by category, at a better price.";
 
   return {
     title,
@@ -319,10 +319,10 @@ export function buildCollectionMetadata(lang: Language, collection: Collection):
 
 export function buildContactMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
-  const title = isAr ? "تواصلي معنا | مركز مساعدة كابيلا كير" : "Contact Us | Capella Care Help Center";
+  const title = isAr ? "تواصل معنا | مركز مساعدة فلتة توي" : "Contact Us | Falta Toy Help Center";
   const description = isAr
-    ? "تواصلي مع فريق كابيلا كير للاستفسار عن الطلبات والمنتجات أو لإرسال ملاحظاتك. نرد خلال يومي عمل."
-    : "Reach the Capella Care team for help with orders, product questions, and feedback. We reply within 2 business days.";
+    ? "تواصل مع فريق فلتة توي للاستفسار عن الطلبات والألعاب أو لإرسال ملاحظاتك. نرد خلال يومي عمل."
+    : "Reach the Falta Toy team for help with orders, toy questions, and feedback. We reply within 2 business days.";
 
   return {
     title,

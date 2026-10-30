@@ -38,10 +38,10 @@ export default function LoginPage() {
             aria-hidden
             className="block size-10 shrink-0 rounded-full bg-[url('/brand/falta-logo.png')] bg-[length:auto_108%] bg-[position:2%_50%] shadow-[0_0_0_1px_oklch(1_0_0/0.08)]"
           />
-          <span className="text-lg font-bold tracking-wide text-rail-strong">Capella</span>
+          <span className="text-lg font-bold tracking-wide text-rail-strong">Falta</span>
         </div>
         <div className="grid gap-4">
-          <h2 className="text-2xl font-bold text-rail-strong">أهلاً بعودتكِ إلى لوحة كابيلا.</h2>
+          <h2 className="text-2xl font-bold text-rail-strong">أهلاً بعودتك إلى لوحة فلتة.</h2>
           <p className="max-w-[38ch] leading-relaxed text-rail-muted">
             تحكّمي في الكتالوج، تابعي المخزون، وحدّثي العروض من مكان واحد. صُمّمت لإيقاع عملك اليومي.
           </p>
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 type="email"
                 dir="ltr"
                 autoComplete="email"
-                placeholder="admin@capella.com"
+                placeholder="admin@faltatoy.com"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}

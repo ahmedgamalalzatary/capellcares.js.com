@@ -1,6 +1,6 @@
-# Capella Store
+# Falta Toy
 
-Capella is a bilingual (Arabic/English) e-commerce platform built as a pnpm + Turborepo monorepo: a customer storefront, an Arabic-only ERP/admin app, a mobile client, and a shared Express API on MySQL.
+Falta Toy is a bilingual (Arabic/English) e-commerce platform built as a pnpm + Turborepo monorepo: a customer storefront, an Arabic-only ERP/admin app, a mobile client, and a shared Express API on MySQL.
 
 Storefront, ERP, and mobile talk to the API over HTTP only. Database schema, migrations, and seeds live in `packages/database`. Shared contracts live in `packages/shared`.
 
@@ -152,7 +152,7 @@ pnpm --filter @capella/storefront test -- tests/unit/cart.test.ts
 pnpm --filter @capella/erp test
 ```
 
-API and database tests read `.env.test` at the repo root. Keep a dedicated test database (`capella_test`) separate from local dev data. API tests touch MySQL; frontend and mobile tests do not.
+API and database tests read `.env.test` at the repo root. Keep a dedicated test database (`faltatoy_test`) separate from local dev data. API tests touch MySQL; frontend and mobile tests do not.
 
 ## Docker
 

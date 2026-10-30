@@ -102,7 +102,7 @@ function RailContent({ onNavigate }: { onNavigate?: () => void }) {
       <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3 px-5 pt-5 pb-4">
         <BrandMark />
         <span className="grid leading-tight">
-          <span className="text-md font-bold tracking-wide text-rail-strong">Capella</span>
+          <span className="text-md font-bold tracking-wide text-rail-strong">Falta</span>
           <span className="text-xs text-rail-muted">لوحة إدارة المتجر</span>
         </span>
       </Link>
@@ -175,7 +175,7 @@ export function AdminShell({ title, description, crumbs = [], actions, children 
   }, [hydrated, user, router]);
 
   useEffect(() => {
-    document.title = `${title} · Capella ERP`;
+    document.title = `${title} · Falta ERP`;
   }, [title]);
 
   if (!hydrated || !user) return null;
@@ -199,7 +199,7 @@ export function AdminShell({ title, description, crumbs = [], actions, children 
           </Dialog.Trigger>
           <Link href="/dashboard" className="flex items-center gap-2">
             <BrandMark className="size-7" />
-            <span className="text-md font-bold text-text-strong">Capella</span>
+            <span className="text-md font-bold text-text-strong">Falta</span>
           </Link>
         </div>
         <Dialog.Portal>

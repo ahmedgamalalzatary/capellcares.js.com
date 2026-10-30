@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Capella Care",
-    "slug": "capella-care",
-    "scheme": "capella",
+    "name": "Falta Toy",
+    "slug": "falta-toy",
+    "scheme": "faltatoy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.capellacare.app",
+      "bundleIdentifier": "com.faltatoy.app",
       "infoPlist": {
         "ExpoLocalization_supportsRTL": true,
         "ITSAppUsesNonExemptEncryption": false
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f1f0ed"
       },
-      "package": "com.capellacare.app"
+      "package": "com.faltatoy.app"
     },
     "plugins": [
       "expo-router",

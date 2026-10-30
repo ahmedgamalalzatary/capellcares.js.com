@@ -22,6 +22,12 @@ beforeAll(() => {
 });
 
 describe("footer", () => {
+  it("does not send customers to the old store's WhatsApp or map", () => {
+    const { container } = render(<Footer lang="en" dict={getDict("en")} />);
+    const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href") ?? "");
+    expect(hrefs.filter((href) => /wa\.me|maps\.app|capella/i.test(href))).toEqual([]);
+  });
+
   it("has no sign-up form, because nothing would receive the email", () => {
     render(<Footer lang="en" dict={getDict("en")} />);
     expect(screen.queryByRole("textbox")).toBeNull();

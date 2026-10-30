@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/returns-refunds",
     titleEn: "Returns & Refunds",
     titleAr: "الإرجاع واسترداد الأموال",
-    descEn: "Capella Care's return, exchange, and refund policy for online orders, including conditions, timelines, and eligibility.",
-    descAr: "سياسة كابيلا كير للإرجاع والاستبدال واسترداد الأموال للطلبات عبر الإنترنت، وتشمل الشروط والمواعيد والأهلية."
+    descEn: "Falta Toy's return, exchange, and refund policy for online orders, including conditions, timelines, and eligibility.",
+    descAr: "سياسة فلتة توي للإرجاع والاستبدال واسترداد الأموال للطلبات عبر الإنترنت، وتشمل الشروط والمدد."
   });
 }
 

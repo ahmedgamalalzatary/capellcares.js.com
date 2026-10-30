@@ -251,6 +251,7 @@ export function HeaderMobileDrawer({
             </div>
 
             {/* Social */}
+            {SOCIAL_LINKS.length > 0 && (
             <div className="mt-8 px-1">
               <p className={`mb-4 text-md font-bold text-ink ${isAr ? "" : ""}`}>
                 {dict.nav.followUs}
@@ -272,6 +273,7 @@ export function HeaderMobileDrawer({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Language switch */}
             <div className="mt-8 flex items-center justify-center gap-8">

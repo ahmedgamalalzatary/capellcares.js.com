@@ -9,9 +9,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     ...buildStaticPageMetadata(lang, {
       path: "/get-app",
       titleEn: "Get the App",
-      titleAr: "حمّلي التطبيق",
-      descEn: "The Capella Care app for iPhone and Android is coming soon.",
-      descAr: "تطبيق كابيلا كير لأجهزة آيفون وأندرويد قريبًا."
+      titleAr: "حمّل التطبيق",
+      descEn: "The Falta Toy app for iPhone and Android is coming soon.",
+      descAr: "تطبيق فلتة توي لأجهزة آيفون وأندرويد قريبًا."
     }),
     // A placeholder until the apps ship; nothing here for search engines yet.
     ...noIndexMetadata()
