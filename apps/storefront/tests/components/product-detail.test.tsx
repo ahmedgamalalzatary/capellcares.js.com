@@ -157,6 +157,75 @@ describe("ProductDetail", () => {
     expect(screen.getByTestId("product-media-main").querySelector("video")).toHaveAttribute("aria-label", product.name.ar);
   });
 
+  describe("info tabs", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out", lowStock: "Low", inStock: "In stock", quantity: "Quantity", addToCart: "Add", added: "Added", buyNow: "Buy", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+    const product = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "" },
+      ingredients: { ar: "", en: "" },
+      howToUse: { ar: "", en: "" },
+      warnings: { ar: "", en: "" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/main.jpg",
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/main.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      variants: [{ id: 11, productId: 1, size: "100ml", price: 50, stock: 2, sortOrder: 1 }],
+      createdAt: "",
+      updatedAt: ""
+    };
+    const renderDetail = (overrides: Partial<typeof product>) =>
+      render(createElement(ProductDetail, { product: { ...product, ...overrides }, offers: [], lang: "en", dict }));
+
+    it("hides empty and whitespace-only tabs", () => {
+      renderDetail({
+        description: { ar: "", en: "About it" },
+        ingredients: { ar: "   ", en: "  " },
+        warnings: { ar: "", en: "Keep away" }
+      });
+
+      expect(screen.getByRole("button", { name: "Description" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Warnings" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Ingredients" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "How to use" })).not.toBeInTheDocument();
+      expect(screen.getByText("About it")).toBeInTheDocument();
+    });
+
+    it("opens the first filled tab when the description is empty", () => {
+      renderDetail({ howToUse: { ar: "", en: "Apply daily" } });
+
+      expect(screen.queryByRole("button", { name: "Description" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "How to use" })).toHaveAttribute("data-active", "true");
+      expect(screen.getByText("Apply daily")).toBeInTheDocument();
+    });
+
+    it("shows a tab filled in the other language only", () => {
+      renderDetail({ ingredients: { ar: "ماء", en: "" } });
+
+      expect(screen.getByRole("button", { name: "Ingredients" })).toBeInTheDocument();
+      expect(screen.getByText("ماء")).toBeInTheDocument();
+    });
+
+    it("renders no tabs when every section is empty", () => {
+      renderDetail({});
+
+      for (const name of ["Description", "Ingredients", "How to use", "Warnings"]) {
+        expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+      }
+    });
+  });
+
   it("switches product media only when the user drags on the main media area", () => {
     const dict = {
       product: {

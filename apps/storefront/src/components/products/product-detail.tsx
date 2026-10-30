@@ -61,12 +61,14 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     router.push(`/${lang}/checkout`);
   };
 
-  const tabs: { key: Tab; label: string; content: string }[] = [
+  const allTabs: { key: Tab; label: string; content: string }[] = [
     { key: "description", label: dict.product.description, content: pickLang(product.description, lang) },
     { key: "ingredients", label: dict.product.ingredients, content: pickLang(product.ingredients, lang) },
     { key: "howToUse", label: dict.product.howToUse, content: pickLang(product.howToUse, lang) },
     { key: "warnings", label: dict.product.warnings, content: pickLang(product.warnings, lang) }
   ];
+  const tabs = allTabs.filter((item) => item.content?.trim());
+  const activeTab = tabs.find((item) => item.key === tab) ?? tabs[0];
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
@@ -196,31 +198,35 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             />
           </div>
 
-          <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 scrollbar-none sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max gap-1">
-              {tabs.map((item) => {
-                const active = tab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    className={[
-                      "relative mx-0 me-2 shrink-0 whitespace-nowrap border-0 bg-transparent px-1.5 py-3.5 text-sm transition-colors",
-                      active ? "text-ink font-semibold" : "text-(--ink-3) hover:text-(--ink-2)"
-                    ].join(" ")}
-                    data-active={active}
-                    onClick={() => setTab(item.key)}
-                  >
-                    {item.label}
-                    {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {activeTab ? (
+            <>
+              <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 scrollbar-none sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+                <div className="flex min-w-max gap-1">
+                  {tabs.map((item) => {
+                    const active = activeTab.key === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        className={[
+                          "relative mx-0 me-2 shrink-0 whitespace-nowrap border-0 bg-transparent px-1.5 py-3.5 text-sm transition-colors",
+                          active ? "text-ink font-semibold" : "text-(--ink-3) hover:text-(--ink-2)"
+                        ].join(" ")}
+                        data-active={active}
+                        onClick={() => setTab(item.key)}
+                      >
+                        {item.label}
+                        {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          <div className="text-base leading-[1.85] text-(--ink-2)">
-            {tabs.find((item) => item.key === tab)?.content}
-          </div>
+              <div className="text-base leading-[1.85] text-(--ink-2)">
+                {activeTab.content}
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
       <RelatedItems items={relatedItems} lang={lang} dict={dict} title={dict.product?.related} />
