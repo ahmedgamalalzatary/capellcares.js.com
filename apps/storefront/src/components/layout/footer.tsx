@@ -1,12 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import type { Language } from "@capella/shared";
 import { SOCIAL_LINKS } from "../../constants/socials";
 import { Icon } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
@@ -21,231 +20,115 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
     router.push(`/${next}${rest === "/" ? "" : rest}${search}`);
   };
 
-  const brandRef = useRef<HTMLDivElement>(null);
-  const [brandInView, setBrandInView] = useState(false);
-
-  useEffect(() => {
-    const el = brandRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setBrandInView(entry.isIntersecting),
-      { threshold: 0.5 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <footer className="container">
-      <div
-      dir={isAr ? "rtl" : "ltr"}
-      className="relative rounded-xl mt-8 mb-10 overflow-hidden pb-0 bg-(--footer-bg) text-ink"
-    >
-      {/* Noise grain overlay */}
-      <div aria-hidden className="footer-noise pointer-events-none absolute inset-0 opacity-[0.03]" />
-
-      {/* Hero brand mark — oversized rounded lowercase wordmark */}
-      <div className="relative px-2 py-10 text-center sm:py-20">
-        <div
-          ref={brandRef}
-          className={cn(
-            "transition-transform duration-700 ease-(--ease-out-expo)",
-            brandInView ? "[transform:scale(1)]" : "[transform:scale(1.04)]"
-          )}
-        >
-          <span dir="ltr" aria-label={dict.brand} className="brand-wordmark block w-full text-center">
-            Capella Care
-          </span>
+    <footer dir={isAr ? "rtl" : "ltr"} className="footer-burst mt-6 text-ink">
+      <div className="container">
+        <div className="flex justify-center pt-8 pb-10">
+          <Image src="/falta-logo.png" alt={dict.brand} width={371} height={479} className="h-32 w-auto sm:h-40" />
         </div>
-      </div>
 
-      {/* Main content grid */}
-      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
-        <div className="container grid grid-cols-1 gap-12 py-10 lg:grid-cols-[1.1fr_2fr]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 pb-12 sm:grid-cols-4">
+          <FooterCol title={dict.footer.shopTitle}>
+            <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
+            <FooterLink href={`/${lang}/products`}>{dict.footer.allProducts}</FooterLink>
+            <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
+            <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>
+            <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
+            <FooterLink href={`/${lang}/collections`}>{dict.footer.collections}</FooterLink>
+          </FooterCol>
 
-          {/* Newsletter / intro */}
-          <div className="border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-12 lg:max-w-md lg:border-b-0 lg:pb-0">
-            <p className="text-xl leading-snug text-ink font-(family-name:--font-display)">
-              {dict.footer.newsletterTitle}
-            </p>
-            <p className="mt-5 text-base leading-[1.75] text-ink/55">
-              {dict.footer.newsletterSubtitle}
-            </p>
+          <FooterCol title={dict.footer.support}>
+            <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
+            <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink>
+            <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
+            <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
+          </FooterCol>
 
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="mt-7 mx-auto flex  items-center overflow-hidden rounded-(--radius) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] bg-surface sm:w-full"
-            >
-              <input
-                type="email"
-                required
-                placeholder={dict.footer.emailPlaceholder}
-                aria-label={dict.footer.emailPlaceholder}
-                className="min-w-0 flex-1 bg-transparent px-5 py-3.5 text-md font-bold text-ink outline-none placeholder:text-ink/40"
-              />
-              <button
-                type="submit"
-                className={`shrink-0 border-s border-[color-mix(in_oklch,var(--ink)_18%,transparent)] px-5 py-3.5 text-xs font-semibold tracking-[0.18em] text-ink transition-colors ${isAr ? "" : "uppercase"}`}
+          <FooterCol title={dict.footer.legal}>
+            <FooterLink href={`/${lang}/terms-of-sale`}>{dict.footer.terms}</FooterLink>
+            <FooterLink href={`/${lang}/terms-conditions`}>{dict.footer.promotionTerms}</FooterLink>
+            <FooterLink href={`/${lang}/privacy-policy`}>{dict.footer.privacy}</FooterLink>
+            <FooterLink href={`/${lang}/returns-refunds`}>{dict.footer.returnsRefunds}</FooterLink>
+            <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
+          </FooterCol>
+
+          <FooterCol title={dict.footer.social}>
+            {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 font-semibold text-(--ink-2) transition-colors hover:text-(--violet)"
               >
-                {dict.footer.subscribe}
-              </button>
-            </form>
-
-            <p className="mt-4 text-md leading-relaxed text-ink">
-              {dict.footer.privacyNote}
-            </p>
-          </div>
-
-          {/* Link columns */}
-          <div className="grid grid-cols-1 justify-items-center text-center gap-y-8 min-[380px]:grid-cols-2 min-[380px]:justify-items-start min-[380px]:text-start min-[380px]:gap-x-4 min-[380px]:gap-y-10 sm:grid-cols-4 sm:gap-x-8 sm:gap-y-12 lg:border-s lg:border-[color-mix(in_oklch,var(--ink)_12%,transparent)] lg:ps-12">
-            <FooterCol title={dict.footer.navigate} isAr={isAr}>
-              <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
-              <FooterLink href={`/${lang}/category/body-care`}>{dict.footer.bodyCare}</FooterLink>
-              <FooterLink href={`/${lang}/category/skin-care`}>{dict.footer.skincare}</FooterLink>
-              <FooterLink href={`/${lang}/category/hair-care`}>{dict.footer.haircare}</FooterLink>
-              <FooterLink href={`/${lang}/category/makeup`}>{dict.footer.makeup}</FooterLink>
-              <FooterLink href={`/${lang}/category/accessories`}>{dict.footer.accessories}</FooterLink>
-              <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
-            </FooterCol>
-
-            <FooterCol title={dict.footer.social} isAr={isAr}>
-              {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center min-[380px]:justify-start hover:underline gap-2 font-bold text-sm tracking-wide text-ink/80 transition-colors duration-200 hover:text-ink"
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden
+                  fill={stroke ? "none" : "currentColor"}
+                  stroke={stroke ? "currentColor" : "none"}
+                  strokeWidth={stroke ? 2 : 0}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4 shrink-0"
-                    aria-hidden
-                    fill={stroke ? "none" : "currentColor"}
-                    stroke={stroke ? "currentColor" : "none"}
-                    strokeWidth={stroke ? 2 : 0}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d={path} />
-                  </svg>
-                  <span>{dict.footer[label.toLowerCase()]}</span>
-                </a>
-              ))}
-            </FooterCol>
+                  <path d={path} />
+                </svg>
+                <span>{dict.footer[label.toLowerCase()]}</span>
+              </a>
+            ))}
+          </FooterCol>
+        </div>
 
-            <FooterCol title={dict.footer.support} isAr={isAr}>
-              <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink>
-              <FooterLink href="https://wa.me/201034668590" external>{dict.footer.connectWhatsapp}</FooterLink>
-              <FooterLink href="https://maps.app.goo.gl/e7yyegwreC3DfEMA7?g_st=iw" external>{dict.footer.storeLocator}</FooterLink>
-            </FooterCol>
-            <FooterCol title={dict.footer.legal} isAr={isAr}>
-              <FooterLink href={`/${lang}/terms-of-sale`}>{dict.footer.terms}</FooterLink>
-              <FooterLink href={`/${lang}/terms-conditions`}>{dict.footer.promotionTerms}</FooterLink>
-              <FooterLink href={`/${lang}/privacy-policy`}>{dict.footer.privacy}</FooterLink>
-              <FooterLink href={`/${lang}/returns-refunds`}>{dict.footer.returnsRefunds}</FooterLink>
-              <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
-            </FooterCol>
+        <div className="flex flex-col items-center justify-between gap-6 border-t-2 border-(--hairline) py-6 sm:flex-row">
+          <div className="flex items-center gap-2 font-bold">
+            <Icon.CashOnDelivery className="h-10 w-auto" />
+            <span>{dict.footer.paymentMethods}</span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <StoreBadge
+              href={`/${lang}/get-app`}
+              top={dict.footer.downloadOn}
+              bottom={dict.footer.appStore}
+              icon={<Icon.Apple className="h-6 w-6" />}
+            />
+            <StoreBadge
+              href={`/${lang}/get-app`}
+              top={dict.footer.getItOn}
+              bottom={dict.footer.googlePlay}
+              icon={<Icon.GooglePlay className="h-5 w-5" />}
+            />
+          </div>
+          <div className="flex items-center rounded-full bg-surface p-1 shadow-[inset_0_0_0_2px_var(--hairline)]">
+            {(["en", "ar"] as const).map((code) => {
+              const active = lang === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => switchTo(code)}
+                  aria-pressed={active}
+                  className={`rounded-full px-4 py-1 text-sm font-bold transition-colors ${active ? "bg-(--violet) text-white" : "text-(--ink-2) hover:text-(--violet)"}`}
+                >
+                  {dict.langSwitch[code]}
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      {/* Payment methods + app download */}
-      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
-        <div className="container flex flex-col gap-10 py-10 sm:flex-row sm:items-start sm:justify-between">
-          {/* Payment methods */}
-          <div>
-            <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
-              {dict.footer.paymentMethods}
-            </div>
-            {/* Only what checkout takes: cash on delivery. */}
-            <ul aria-label={dict.footer.paymentMethods} className="m-0 w-max list-none [display:grid] grid-cols-1 gap-3 p-0">
-              <PayChip label="Cash on Delivery">
-                <Icon.CashOnDelivery className="h-16 w-auto" />
-              </PayChip>
-            </ul>
-          </div>
-
-          {/* App download */}
-          <div>
-            <div className={`mb-4 text-xs tracking-[0.3em] text-ink/80 ${isAr ? "" : "uppercase"}`}>
-              {dict.footer.getApp}
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <StoreBadge
-                href={`/${lang}/get-app`}
-                top={dict.footer.downloadOn}
-                bottom={dict.footer.appStore}
-                icon={<Icon.Apple className="h-6 w-6" />}
-              />
-              <StoreBadge
-                href={`/${lang}/get-app`}
-                top={dict.footer.getItOn}
-                bottom={dict.footer.googlePlay}
-                icon={<Icon.GooglePlay className="h-5 w-5" />}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom bar */}
-      <div className="relative border-t border-[color-mix(in_oklch,var(--ink)_12%,transparent)]">
-        <div className="container flex flex-col items-center justify-between gap-4 py-6 text-xs tracking-[0.12em] text-ink/35 sm:flex-row">
-          <span className={isAr ? "" : "uppercase"}>
-            © {year} {dict.footer.creator}.{" "}
-            {dict.footer.rights}
-          </span>
-
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
-            <div className="flex items-center rounded-(--radius-pill) border border-[color-mix(in_oklch,var(--ink)_18%,transparent)] p-0.5">
-              {(["en", "ar"] as const).map((code) => {
-                const active = lang === code;
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => switchTo(code)}
-                    aria-pressed={active}
-                    className={`rounded-(--radius-pill) px-3 py-1 text-xs font-semibold tracking-[0.08em] transition-colors ${active ? "bg-ink text-canvas" : "text-ink/45 hover:text-ink"
-                      }`}
-                  >
-                    {dict.langSwitch[code]}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-5 uppercase">
-              <span>{dict.footer.currency}</span>
-              <Dot />
-              <span>{dict.footer.madeIn}</span>
-              <Dot />
-              <span>{dict.footer.secureCheckout}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        <p className="m-0 pb-6 text-center text-sm text-(--ink-3)">
+          © {year} {dict.footer.creator}. {dict.footer.rights}
+        </p>
       </div>
     </footer>
   );
 }
 
-function FooterCol({
-  title,
-  isAr,
-  children,
-}: {
-  title: string;
-  isAr: boolean;
-  children: React.ReactNode;
-}) {
+function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="w-full border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] pb-8 last:border-b-0 last:pb-0 min-[380px]:w-auto min-[380px]:border-b-0 min-[380px]:pb-0">
-      <div className={`mb-6 text-md tracking-[0.12em] sm:text-md sm:tracking-[0.3em] text-ink/80 font-extrabold ${isAr ? "" : "uppercase"}`}>
-        {title}
-      </div>
-      <div className="grid gap-3">{children}</div>
+    <div>
+      <h2 className="mb-4 mt-0 text-lg font-extrabold text-ink">{title}</h2>
+      <div className="grid gap-2.5">{children}</div>
     </div>
   );
 }
@@ -261,7 +144,7 @@ function FooterLink({
   external?: boolean;
   children: React.ReactNode;
 }) {
-  const cls = "block text-sm leading-snug tracking-wide text-ink/80 transition-colors duration-200 hover:text-ink hover:underline cursor-pointer font-bold";
+  const cls = "block font-semibold leading-snug text-(--ink-2) transition-colors hover:text-(--violet) cursor-pointer";
   if (as === "span" || href === undefined)
     return <span className={cls}>{children}</span>;
   if (external)
@@ -273,19 +156,6 @@ function FooterLink({
     <Link className={cls} href={href}>
       {children}
     </Link>
-  );
-}
-
-/* A neutral white card that lets each payment brand keep its own colors. */
-function PayChip({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <li
-      aria-label={label}
-      title={label}
-      className="flex h-9 w-[3.4rem] items-center justify-center rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
-    >
-      {children}
-    </li>
   );
 }
 
@@ -304,7 +174,7 @@ function StoreBadge({
   return (
     <Link
       href={href}
-      className="flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 text-white transition-opacity duration-200 hover:opacity-85 cursor-pointer"
+      className="flex h-12 items-center gap-2.5 rounded-2xl bg-ink px-4 text-white transition-opacity duration-200 hover:opacity-85 cursor-pointer"
     >
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col leading-none">
@@ -312,14 +182,5 @@ function StoreBadge({
         <span className="text-sm font-semibold leading-tight">{bottom}</span>
       </span>
     </Link>
-  );
-}
-
-function Dot() {
-  return (
-    <span
-      aria-hidden
-      className="inline-block size-[3px] rounded-full bg-[color-mix(in_oklch,var(--ink)_40%,transparent)] align-middle"
-    />
   );
 }

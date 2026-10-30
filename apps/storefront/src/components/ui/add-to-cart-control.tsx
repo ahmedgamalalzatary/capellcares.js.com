@@ -16,13 +16,13 @@ interface Props {
 }
 
 const ADD_CLASS =
-  "inline-flex flex-1 items-center justify-center gap-2 h-11 px-4 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
+  "inline-flex flex-1 items-center justify-center gap-2 h-11 mb-1 rounded-full bg-(--violet) font-bold text-white shadow-[0_4px_0_var(--violet-deep)] transition-[transform,box-shadow] duration-150 hover:translate-y-px hover:shadow-[0_3px_0_var(--violet-deep)] active:translate-y-1 active:shadow-none focus-visible:outline-3 focus-visible:outline-(--cyan) focus-visible:outline-offset-2 px-4";
 
 /** Appended to whatever the card supplies, so a sold-out card always reads as one. */
 const DISABLED_CLASS = "disabled:pointer-events-none disabled:opacity-50";
 
 const STEP_CLASS =
-  "grid h-9 w-9 place-items-center border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30";
+  "grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30";
 
 /** The card action row: add → confirm → quantity stepper.
  * The stepper is derived from the cart (not local state) so a card always reflects what is in the bag across reloads and after the line is removed elsewhere; every step writes immediately, and stepping below one drops the line and hands the row back to the add button. */
@@ -58,7 +58,7 @@ export function AddToCartControl({ line, dict, maxQty, className }: Props) {
 
   if (qty > 0) {
     return (
-      <div className="inline-flex h-11 flex-1 items-center justify-between border border-(--hairline) bg-surface px-1">
+      <div className="mb-1 inline-flex h-11 flex-1 items-center justify-between rounded-full bg-(--warm-soft) px-1">
         <button type="button" aria-label="−" className={STEP_CLASS} onClick={onStep(qty - 1)}>
           <Icon.Minus />
         </button>

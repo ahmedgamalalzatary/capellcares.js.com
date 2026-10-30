@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 import { Icon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
-/** The storefront's one previous/next arrow: a bare brand-brown chevron with a soft light halo, used by every carousel, card row and pill strip.
+/** The storefront's one previous/next arrow: a violet chevron on a white disc, used by every carousel, card row and pill strip.
  * Callers only place it (`className`); look, size and behaviour live here. Disabled arrows vanish so a row's ends read as ends. */
 export function NavArrow({
   direction,
@@ -24,7 +24,7 @@ export function NavArrow({
       {...props}
       className={cn(
         show === "always" ? "grid" : "hidden lg:grid",
-        "size-12 shrink-0 place-items-center text-brand drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)] transition hover:scale-110 disabled:pointer-events-none disabled:opacity-0",
+        "size-12 shrink-0 place-items-center rounded-full bg-surface text-brand shadow-(--shadow-1) transition hover:scale-110 disabled:pointer-events-none disabled:opacity-0",
         className
       )}
     >

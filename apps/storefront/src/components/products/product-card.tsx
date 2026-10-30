@@ -34,7 +34,6 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const maxBasePrice = Math.max(...basePrices);
   const { isOutOfStock } = getProductBadgeState(product);
   const leadTag = getProductTags(product, dict, { lead: true })[0];
-  const isAr = lang === "ar";
   const images = useMemo(() => buildCardImages(product, lang), [product, lang]);
 
   // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
@@ -57,7 +56,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
+      <div className="relative aspect-square overflow-hidden rounded-3xl bg-(--warm-soft)">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
@@ -76,12 +75,12 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         {/* inset-s-0 so the badge mirrors in RTL, matching SectionCard. */}
         {leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
+          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ee-2xl" />
         ) : null}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
-            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
+            className="absolute top-0 inset-s-0 z-10 rounded-ee-2xl"
           />
         ) : null}
 
@@ -99,11 +98,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
       <div className="mt-3 grid gap-1 text-start">
         <Link href={href} className="block">
           <h3
-            className={`m-0 leading-tight text-ink ${
-              isAr
-                ? "text-sm font-bold font-(family-name:--font-ar)"
-                : "text-sm font-bold uppercase tracking-[0.06em]"
-            }`}
+            className={"m-0 text-base font-bold leading-tight text-ink"}
           >
             {pickLang(product.name, lang)}
           </h3>
@@ -111,9 +106,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         {categoryName ? (
           <p
-            className={`m-0 ${
-              isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
-            }`}
+            className={"m-0 text-sm text-(--ink-3)"}
           >
             {categoryName}
           </p>
@@ -122,7 +115,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         <CardRating rating={product.rating} dict={dict} lang={lang} />
 
         <span
-          className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
+          className={"text-lg font-extrabold leading-none text-(--magenta-deep)"}
         >
           {prices.length > 1
             ? formatPriceRange(minPrice, maxPrice, lang)

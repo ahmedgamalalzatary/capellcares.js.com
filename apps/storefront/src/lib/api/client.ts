@@ -8,6 +8,7 @@ import type {
   Order,
   OrderSummary,
   Product,
+  ProductAttribute,
   ReviewEntityType,
   ReviewCreateInput,
   ReviewPrompt,
@@ -113,6 +114,16 @@ export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[
 
 export async function fetchShopMediaSections(options?: { lang?: string }): Promise<ShopMediaSection[]> {
   const data = await getJSON<{ items: ShopMediaSection[] }>(`/api/v1/shop-media-sections`, options);
+  return data?.items ?? [];
+}
+
+export async function fetchBrands(options?: { lang?: string }): Promise<ProductAttribute[]> {
+  const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/brands`, options);
+  return data?.items ?? [];
+}
+
+export async function fetchCharacters(options?: { lang?: string }): Promise<ProductAttribute[]> {
+  const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/characters`, options);
   return data?.items ?? [];
 }
 

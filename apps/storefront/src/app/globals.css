@@ -5,52 +5,62 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Capella Care — Parchment palette, OKLCH everywhere.
-   Canvas #f1f0ed · Ink black · Surface white
-   All tones are degrees between these three anchors.
+   Falta Toy: colors taken from the logo, on a bright white page.
+   Every tile and button is chunky plastic: a solid lower edge that
+   sinks when pressed.
    ============================================================ */
 :root {
-  /* Source palette: #f1f0ed (canvas) · black (ink) · white (surface) */
-  --ink:          oklch(0.12 0.010 85);      /* near-black — headings, strong text */
-  --ink-2:        oklch(0.28 0.012 85);      /* body copy */
-  --ink-3:        oklch(0.48 0.010 85);      /* meta / secondary labels */
-  --accent:       oklch(0.32 0.018 85);      /* dark interactive — buttons, links */
-  --accent-deep:  oklch(0.18 0.012 85);      /* pressed state */
-  --accent-soft:  oklch(0.86 0.038 91);      /* hover tint — just below canvas */
-  --warm:         oklch(0.80 0.030 90);      /* mid-step between canvas & white */
-  --warm-soft:    oklch(0.92 0.022 90);      /* near-white warm — chip bg */
-  --canvas:       oklch(0.955 0.004 90);     /* #f1f0ed — primary background */
-  --surface:      oklch(1 0 0);              /* white — card background */
-  --surface-2:    oklch(0.975 0.014 90);     /* nested card / inset */
-  --text:         oklch(0.12 0.010 85);      /* body copy */
-  --hairline:     oklch(0.78 0.028 90);      /* border */
-  --hairline-strong: oklch(0.62 0.022 88);   /* strong border */
-  --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
-  --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
-  --brand:        #6e390b;                   /* Capella brown — footer wordmark, prev/next arrows */
-  --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
+  --magenta:      #e312b8;
+  --magenta-deep: #a80a87;
+  --violet:       #6b2bea;
+  --violet-deep:  #4716ad;
+  --blue:         #2456f5;
+  --blue-deep:    #1537b0;
+  --cyan:         #17cbe3;
+  --cyan-deep:    #0a93a8;
+  --sunny:        #ffc92e;
+  --sunny-deep:   #d99a00;
+
+  --ink:          #24123f;
+  --ink-2:        #4a3a66;
+  --ink-3:        #6f628a;
+  --accent:       var(--violet);
+  --accent-deep:  var(--violet-deep);
+  --accent-soft:  #e8dfff;
+  --warm:         #b9a4f7;
+  --warm-soft:    #f1ecff;
+  --canvas:       #fbfaff;
+  --surface:      #ffffff;
+  --surface-2:    #f7f5ff;
+  --text:         #24123f;
+  --hairline:     #ddd6f0;
+  --hairline-strong: #a99bcb;
+  --error:        #d3123f;
+  --success:      #0d8a5f;
+  --brand:        var(--violet);
+  --footer-bg:    #f3efff;
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
   --bg-elev:      var(--surface);
   --bg-tint:      var(--warm-soft);
   --accent-2:     var(--success);
-  --gold:         var(--warm);
+  --gold:         var(--sunny);
   --danger:       var(--error);
 
-  --radius-sm: 6px;
-  --radius:    10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 8px;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px oklch(0.12 0.01 85 / 0.06), 0 6px 16px oklch(0.12 0.01 85 / 0.08);
-  --shadow-2: 0 12px 32px oklch(0.12 0.01 85 / 0.14);
+  --shadow-1: 0 1px 2px rgb(36 18 63 / 0.08), 0 6px 16px rgb(36 18 63 / 0.1);
+  --shadow-2: 0 12px 32px rgb(36 18 63 / 0.16);
 
-  --font-display:   "Roboto", "Helvetica Neue", Arial, sans-serif;
-  --font-sans: "Roboto", "Helvetica Neue", Arial, sans-serif;
-  --font-ar:        "Tajawal", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  --font-rounded:   "Lobster", "Pacifico", "Brush Script MT", cursive;
+  --font-display:   "Baloo Bhaijaan 2", "Segoe UI", Tahoma, sans-serif;
+  --font-sans:      "Baloo Bhaijaan 2", "Segoe UI", Tahoma, sans-serif;
+  --font-ar:        "Baloo Bhaijaan 2", "Segoe UI", Tahoma, sans-serif;
+  --font-ar-display: "Lalezar", "Baloo Bhaijaan 2", Tahoma, sans-serif;
 
   --container: 1600px;
 
@@ -77,18 +87,18 @@
   --border:             var(--hairline);
   --input:              var(--hairline);
   --ring:               var(--accent);
-  --chart-1: oklch(0.32 0.018 85);
-  --chart-2: oklch(0.48 0.015 85);
-  --chart-3: oklch(0.62 0.020 90);
-  --chart-4: oklch(0.75 0.025 90);
-  --chart-5: oklch(0.955 0.004 90);
+  --chart-1: var(--violet);
+  --chart-2: var(--magenta);
+  --chart-3: var(--blue);
+  --chart-4: var(--cyan);
+  --chart-5: var(--sunny);
   --sidebar: var(--ink);
   --sidebar-foreground: var(--canvas);
   --sidebar-primary: var(--accent);
   --sidebar-primary-foreground: var(--canvas);
-  --sidebar-accent: oklch(0.22 0.012 85);
+  --sidebar-accent: var(--ink-2);
   --sidebar-accent-foreground: var(--canvas);
-  --sidebar-border: oklch(0.22 0.012 85);
+  --sidebar-border: var(--ink-2);
   --sidebar-ring: var(--warm);
 }
 
@@ -100,12 +110,13 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
+  background: var(--surface);
 }
 .shell[lang="ar"] { font-family: var(--font-ar); }
 
-::selection { background: oklch(0.32 0.018 85 / 0.18); color: var(--ink); }
+::selection { background: var(--sunny); color: var(--ink); }
 
 /* Element resets live in @layer base so Tailwind utilities (e.g. hover:underline)
    can override them — unlayered rules otherwise win over layered utilities in v4. */
@@ -132,67 +143,41 @@ body {
 .shell[lang="ar"] .display { font-family: var(--font-ar); font-weight: 700; letter-spacing: -0.005em; }
 .muted { color: var(--ink-2); }
 
-/* Oversized cursive footer wordmark (Lobster). */
-/* Footer grain overlay — an inline SVG data URI, kept here so the markup
-   stays readable. */
-.footer-noise {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-}
-
-.brand-wordmark {
-  font-family: var(--font-rounded);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 0.9;
-  color: var(--brand);
-  font-size: clamp(3.5rem, 17vw, 15rem);
-}
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
 
 /* ============================================================
-   Buttons — accent is rare; ghost & soft do most of the work.
+   Buttons: chunky plastic, sinking into their lower edge on press.
    ============================================================ */
 .btn {
+  --edge: var(--ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 44px; padding: 0 22px; border-radius: var(--radius);
-  border: 1px solid transparent; background: var(--ink); color: var(--canvas);
-  font-weight: 600; letter-spacing: 0.01em;
+  height: 46px; padding: 0 24px; margin-bottom: 4px; border-radius: var(--radius-pill);
+  border: 0; background: var(--ink-2); color: var(--surface);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--edge);
   transition: transform var(--motion-fast) var(--ease-out-quart),
               background var(--motion-fast) var(--ease-out-quart),
-              color var(--motion-fast) var(--ease-out-quart),
-              border-color var(--motion-fast) var(--ease-out-quart),
               box-shadow var(--motion-fast) var(--ease-out-quart);
 }
-.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
-.btn:active { transform: translateY(0); box-shadow: none; }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:hover { transform: translateY(1px); box-shadow: 0 3px 0 var(--edge); }
+.btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--edge); }
+.btn:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
 
-.btn--primary { background: var(--accent); color: var(--canvas); }
-.btn--primary:hover { background: var(--accent-deep); }
+.btn--primary { --edge: var(--violet-deep); background: var(--violet); }
+.btn--ghost { --edge: var(--hairline-strong); background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 2px var(--hairline-strong), 0 4px 0 var(--edge); }
+.btn--ghost:hover { background: var(--warm-soft); box-shadow: inset 0 0 0 2px var(--hairline-strong), 0 3px 0 var(--edge); }
+.btn--ghost:active { box-shadow: inset 0 0 0 2px var(--hairline-strong), 0 0 0 var(--edge); }
+.btn--soft { --edge: var(--warm); background: var(--warm-soft); color: var(--ink); }
+.btn--outline-accent { --edge: var(--violet-deep); background: var(--surface); color: var(--violet); box-shadow: inset 0 0 0 2px var(--violet), 0 4px 0 var(--edge); }
+.btn--outline-accent:hover { box-shadow: inset 0 0 0 2px var(--violet), 0 3px 0 var(--edge); }
+.btn--outline-accent:active { box-shadow: inset 0 0 0 2px var(--violet), 0 0 0 var(--edge); }
 
-.btn--ghost {
-  background: transparent; color: var(--ink);
-  border-color: var(--hairline-strong);
-}
-.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); }
-
-.btn--soft {
-  background: var(--warm-soft); color: var(--ink);
-}
-.btn--soft:hover { background: var(--warm); color: var(--canvas); }
-
-.btn--outline-accent {
-  background: transparent; color: var(--accent); border-color: var(--accent);
-}
-.btn--outline-accent:hover { background: var(--accent); color: var(--canvas); }
-
-.btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
-.btn--lg { height: 52px; padding: 0 26px; font-size: 15px; }
+.btn--sm { height: 38px; padding: 0 16px; font-size: 14px; }
+.btn--lg { height: 54px; padding: 0 30px; font-size: 17px; }
 .btn--block { width: 100%; }
 
 /* ============================================================
@@ -275,10 +260,10 @@ body {
   border: 1px solid transparent;
   transition: background var(--motion-fast), color var(--motion-fast), border-color var(--motion-fast);
 }
-.chip:hover { background: var(--warm); color: var(--canvas); }
+.chip:hover { background: var(--accent-soft); color: var(--ink); }
 .chip--active { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
 .chip--accent { background: var(--accent); color: var(--canvas); }
-.chip--gold   { background: var(--warm); color: var(--ink); }
+.chip--gold   { background: var(--sunny); color: var(--ink); }
 .chip--sage   { background: var(--canvas); color: var(--success); }
 .chip--status-ok,
 .chip--status-bad {
@@ -314,8 +299,8 @@ body {
   .badge { letter-spacing: 0.1em; font-size: 9.5px; padding: 4px 7px; }
 }
 .badge--offer { background: var(--accent); }
-.badge--new   { background: var(--warm); color: var(--ink); }
-.badge--gold  { background: var(--ink); color: var(--warm); }
+.badge--new   { background: var(--sunny); color: var(--ink); }
+.badge--gold  { background: var(--ink); color: var(--sunny); }
 
 /* ============================================================
    Divider
@@ -353,14 +338,14 @@ body {
 .pcard__img {
   aspect-ratio: 4/5;
   background:
-    radial-gradient(140% 100% at 50% 0%, oklch(0.96 0.05 80), oklch(0.92 0.05 75));
+    var(--warm-soft);
   display: grid; place-items: center; overflow: hidden;
   position: relative;
 }
 .pcard__img::after {
   content: "";
   position: absolute; inset: auto 0 0 0; height: 40%;
-  background: linear-gradient(to top, oklch(0.422 0.149 41 / 0.05), transparent);
+  background: linear-gradient(to top, rgb(107 43 234 / 0.05), transparent);
   pointer-events: none;
 }
 .pcard__img img, .pcard__img svg { width: 72%; height: 72%; object-fit: contain; }
@@ -462,7 +447,7 @@ body {
 .shell[lang="ar"] .table th { text-transform: none; letter-spacing: 0.04em; font-size: 12px; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr { transition: background var(--motion-fast); }
-.table tbody tr:hover { background: oklch(0.96 0.04 80 / 0.6); }
+.table tbody tr:hover { background: var(--surface-2); }
 
 @media (max-width: 640px) {
   .table th, .table td { padding: 12px 12px; font-size: 13px; }
@@ -498,7 +483,7 @@ body {
 
 
 .skel {
-  background: linear-gradient(90deg, var(--warm-soft) 0%, oklch(0.94 0.05 80) 50%, var(--warm-soft) 100%);
+  background: linear-gradient(90deg, var(--warm-soft) 0%, var(--accent-soft) 50%, var(--warm-soft) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.2s linear infinite;
 }
@@ -526,7 +511,7 @@ body {
 [dir="rtl"] .arrow-flip { transform: scaleX(-1); }
 
 /* ============================================================
-   Ask Capella — floating assistant (referenced from the
+   Ask Falta — floating assistant (referenced from the
    `animate-[…]` utilities on the button, panel and bubbles).
    ============================================================ */
 @keyframes ask-fab-in {
@@ -604,6 +589,94 @@ body {
         16 16,
       zoom-in;
   }
+}
+
+/* ============================================================
+   Shop page: section titles and the three kinds of tile.
+   ============================================================ */
+.shop-title {
+  --title: var(--violet);
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 24px;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(28px, 3.4vw, 44px); line-height: 1.1;
+  color: var(--ink);
+}
+.shop-title > svg { color: var(--title); }
+.shell[lang="ar"] .shop-title { font-family: var(--font-ar-display); font-weight: 400; }
+.shop-title--magenta { --title: var(--magenta); }
+.shop-title--blue    { --title: var(--blue); }
+.shop-title--cyan    { --title: var(--cyan-deep); }
+.shop-title--sunny   { --title: var(--sunny-deep); }
+
+.toy-tile--violet, .toy-round--violet, .toy-plate--violet { --tile: var(--violet); --tile-edge: var(--violet-deep); --tile-text: #fff; }
+.toy-tile--magenta, .toy-round--magenta, .toy-plate--magenta { --tile: var(--magenta); --tile-edge: var(--magenta-deep); --tile-text: #fff; }
+.toy-tile--blue, .toy-round--blue, .toy-plate--blue { --tile: var(--blue); --tile-edge: var(--blue-deep); --tile-text: #fff; }
+.toy-tile--cyan, .toy-round--cyan, .toy-plate--cyan { --tile: var(--cyan); --tile-edge: var(--cyan-deep); --tile-text: var(--ink); }
+.toy-tile--sunny, .toy-round--sunny, .toy-plate--sunny { --tile: var(--sunny); --tile-edge: var(--sunny-deep); --tile-text: var(--ink); }
+
+/* Category: a solid block of color. */
+.toy-tile {
+  display: flex; flex-direction: column; height: calc(100% - 7px);
+  padding: 12px 12px 14px; margin-bottom: 7px;
+  border-radius: var(--radius-xl);
+  background: var(--tile); color: var(--tile-text);
+  box-shadow: 0 7px 0 var(--tile-edge);
+  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
+}
+.toy-tile:hover { transform: translateY(2px); box-shadow: 0 5px 0 var(--tile-edge); }
+.toy-tile:active { transform: translateY(7px); box-shadow: 0 0 0 var(--tile-edge); }
+.toy-tile__media {
+  position: relative; display: block; aspect-ratio: 1;
+  border-radius: 18px; background: #fff; overflow: hidden;
+}
+.toy-tile__name {
+  margin-top: 12px; text-align: center;
+  font-weight: 800; font-size: clamp(16px, 1.5vw, 20px); line-height: 1.2;
+}
+.shell[lang="ar"] .toy-tile__name { font-family: var(--font-ar-display); font-weight: 400; }
+
+/* Brand: the logo on a white plate. */
+.toy-plate, .toy-round { display: block; text-align: center; color: var(--ink); }
+.toy-plate__media {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 6px;
+  border-radius: var(--radius-xl); background: #fff;
+  box-shadow: inset 0 0 0 3px var(--tile), 0 6px 0 var(--tile);
+  overflow: hidden;
+  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
+}
+.toy-plate__media img { padding: 14%; }
+.toy-plate:hover .toy-plate__media { transform: translateY(2px); box-shadow: inset 0 0 0 3px var(--tile), 0 4px 0 var(--tile); }
+.toy-plate:active .toy-plate__media { transform: translateY(6px); box-shadow: inset 0 0 0 3px var(--tile), 0 0 0 var(--tile); }
+
+/* Character: a round portrait in a thick ring. */
+.toy-round__media {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 6px;
+  border-radius: 50%; background: #fff;
+  box-shadow: inset 0 0 0 5px var(--tile), 0 6px 0 var(--tile-edge);
+  overflow: hidden;
+  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
+}
+/* The ring is drawn above the portrait. */
+.toy-round__media::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 5px var(--tile); pointer-events: none; }
+.toy-round:hover .toy-round__media { transform: translateY(2px); box-shadow: 0 4px 0 var(--tile-edge); }
+.toy-round:active .toy-round__media { transform: translateY(6px); box-shadow: 0 0 0 var(--tile-edge); }
+
+.toy-initial { font-family: var(--font-ar-display); font-size: clamp(36px, 4vw, 56px); line-height: 1; color: var(--tile-edge); }
+.toy-label { display: block; margin-top: 10px; font-weight: 700; font-size: 16px; line-height: 1.25; }
+
+.toy-tile:focus-visible, .toy-plate:focus-visible, .toy-round:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: var(--radius-xl); }
+
+/* Footer: the burst from the logo, faint. */
+.footer-burst {
+  background:
+    radial-gradient(circle at 50% 96px, var(--footer-bg) 70px, transparent 340px),
+    repeating-conic-gradient(from 0deg at 50% 96px, rgb(107 43 234 / 0.09) 0deg 5deg, transparent 5deg 13deg, rgb(227 18 184 / 0.08) 13deg 16deg, transparent 16deg 24deg),
+    var(--footer-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .toy-tile, .toy-plate__media, .toy-round__media { transition: none; }
 }
 
 /* ============================================================

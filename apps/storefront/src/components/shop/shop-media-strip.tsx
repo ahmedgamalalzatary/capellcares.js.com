@@ -151,7 +151,7 @@ function ShopMediaViewportStrip({
   priority?: boolean;
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
-  const roundedClass = flatTop ? "rounded-b-lg" : "rounded-lg";
+  const roundedClass = flatTop ? "rounded-b-3xl" : "rounded-3xl";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -375,7 +375,7 @@ export function ShopMediaStrip({
       section={section}
       label={label}
       viewport={viewport}
-      className="mb-12"
+      className="mb-14"
       flatTop={flatTop}
       priority={priority}
     />

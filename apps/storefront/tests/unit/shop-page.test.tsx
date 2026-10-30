@@ -31,20 +31,11 @@ vi.mock("@capella/shared", async () => {
         bestsellers: "Bestseller"
       },
       shop: {
-        eyebrow: "Shop",
-        heading: "Capella Shop",
-        description: "Description",
-        newProducts: "New",
-        bestsellers: "Best Seller",
-        featuredHeading: "Products",
-        viewAllOffers: "All offers",
-        viewAllProducts: "All products",
-        collectionsEyebrow: "Collections",
-        viewAllCollections: "All collections"
+        byCategory: "Shop by category",
+        byBrand: "Shop by brand",
+        byCharacter: "Shop by character"
       },
-      common: { save: "Save" },
-      offers: { title: "Offers", badge: "Offer", save: "Save {amount}" },
-      collections: { title: "Collections", badge: "Collection" },
+      common: { previous: "Previous", next: "Next" },
       shopMedia: {
         sectionLabel: "Featured media"
       }
@@ -53,19 +44,7 @@ vi.mock("@capella/shared", async () => {
 });
 
 vi.mock("@/components/products/advice-section", () => ({
-  AdviceSection: () => createElement("section", null, "Advice")
-}));
-
-vi.mock("@/components/products/product-card", () => ({
-  ProductCard: ({ product }: any) => createElement("div", null, product.name.en)
-}));
-
-vi.mock("@/components/ui/offer-illustration", () => ({
-  OfferIllustration: () => createElement("div", null, "Offer art")
-}));
-
-vi.mock("@/components/ui/collection-illustration", () => ({
-  CollectionIllustration: () => createElement("div", null, "Collection art")
+  AdviceSection: () => createElement("h2", null, "Advice")
 }));
 
 vi.mock("@/lib/storefront-page-context", () => ({
@@ -74,73 +53,19 @@ vi.mock("@/lib/storefront-page-context", () => ({
 
 vi.mock("@/lib/storefront-static-data", () => ({
   loadShopPageData: async () => ({
-    products: [
-      {
-        id: 1,
-        slug: "new-product",
-        name: { ar: "جديد", en: "New Product" },
-        description: { ar: "وصف", en: "Description" },
-        imagePath: "/uploads/new.jpg",
-        price: 100,
-        categoryId: 1,
-        variants: [],
-        stock: 5,
-        isNew: true,
-        isBestseller: false,
-        status: "active",
-        createdAt: "",
-        updatedAt: ""
-      },
-      {
-        id: 2,
-        slug: "best-product",
-        name: { ar: "الأفضل", en: "Best Product" },
-        description: { ar: "وصف", en: "Description" },
-        imagePath: "/uploads/best.jpg",
-        price: 120,
-        categoryId: 1,
-        variants: [],
-        stock: 4,
-        isNew: false,
-        isBestseller: true,
-        status: "active",
-        createdAt: "",
-        updatedAt: ""
-      }
-    ],
-    offers: [
-      {
-        id: 1,
-        slug: "summer-offer",
-        name: { ar: "عرض", en: "Summer Offer" },
-        description: { ar: "وصف", en: "Offer description" },
-        imagePath: "/uploads/offer.jpg",
-        price: 180,
-        originalTotal: 240,
-        items: [],
-        stock: 5,
-        status: "active",
-        createdAt: "",
-        updatedAt: ""
-      }
-    ],
     categories: [
-      {
-        id: 1,
-        slug: "skin-care",
-        name: { ar: "العناية", en: "Skin Care" },
-        imagePath: "/uploads/category.jpg",
-        createdAt: "",
-        updatedAt: ""
-      },
-      {
-        id: 11,
-        slug: "sets",
-        name: { ar: "مجموعات", en: "Sets" },
-        imagePath: "/uploads/sets.jpg",
-        createdAt: "",
-        updatedAt: ""
-      }
+      { id: 1, parentId: null, slug: "building", name: { ar: "تركيب", en: "Building" }, imagePath: "/uploads/building.jpg", isLeaf: false, hasProducts: true },
+      { id: 2, parentId: 1, slug: "bricks", name: { ar: "مكعبات", en: "Bricks" }, imagePath: "/uploads/bricks.jpg", isLeaf: true, hasProducts: true },
+      { id: 3, parentId: null, slug: "empty", name: { ar: "فارغ", en: "Empty" }, imagePath: null, isLeaf: true, hasProducts: false },
+      { id: 4, parentId: null, slug: "dolls", name: { ar: "عرائس", en: "Dolls" }, imagePath: null, isLeaf: true, hasProducts: true }
+    ],
+    brands: [
+      { id: 1, slug: "lego", name: { ar: "ليجو", en: "Lego" }, imagePath: "/uploads/lego.png", hasProducts: true },
+      { id: 2, slug: "unused", name: { ar: "غير مستخدم", en: "Unused brand" }, imagePath: null, hasProducts: false }
+    ],
+    characters: [
+      { id: 1, slug: "batman", name: { ar: "باتمان", en: "Batman" }, imagePath: "/uploads/batman.png", hasProducts: true },
+      { id: 2, slug: "unused", name: { ar: "غير مستخدم", en: "Unused character" }, imagePath: null, hasProducts: false }
     ],
     advices: [],
     shopMediaSections: [
@@ -234,83 +159,46 @@ vi.mock("@/lib/storefront-static-data", () => ({
           }
         ]
       }
-    ],
-    collections: [
-      {
-        id: 1,
-        slug: "skin-care-set",
-        name: { ar: "مجموعة", en: "Skin Care Set" },
-        description: { ar: "وصف", en: "Routine set" },
-        imagePath: "/uploads/collection.jpg",
-        price: 200,
-        originalTotal: 260,
-        categoryId: 11,
-        items: [{ variantId: 101, qty: 1 }, { variantId: 102, qty: 1 }],
-        stock: 3,
-        status: "active",
-        visibility: "visible",
-        createdAt: "",
-        updatedAt: ""
-      }
     ]
   })
 }));
 
 import ShopPage from "@/app/[lang]/shop/page";
-import { useCardSliderScreen } from "../helpers/media-query";
 
 describe("shop page", () => {
-  it("keeps its cards free of the image swipe, so a sideways swipe scrolls the row", async () => {
-    useCardSliderScreen();
-    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-
-    expect(screen.getAllByRole("link", { name: "Summer Offer" }).length).toBeGreaterThan(0);
-    expect(screen.queryByTestId("card-image-carousel")).toBeNull();
+  it("shows the sections in the agreed order, with an image before each", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const order = Array.from(container.querySelectorAll("h2, [data-viewport]")).map((el) =>
+      el.tagName === "H2" ? el.textContent : "image"
+    );
+    expect(order).toEqual([
+      "image", "Shop by category",
+      "image", "Shop by brand",
+      "image", "Shop by character",
+      "image", "Advice",
+      "image"
+    ]);
   });
 
-  it("renders the collections section on the shop landing page", async () => {
+  it("links each main category that has products, and leaves out the rest", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-
-    expect(screen.getByRole("heading", { name: "Collections" })).toBeInTheDocument();
-    // The collection card links to its detail page from both the image and the heading.
-    const collectionLinks = screen.getAllByRole("link", { name: /Skin Care Set/i });
-    expect(collectionLinks.length).toBeGreaterThan(0);
-    collectionLinks.forEach((link) => expect(link).toHaveAttribute("href", "/en/collections/skin-care-set"));
-    expect(screen.getByRole("link", { name: "All collections" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Building" })).toHaveAttribute("href", "/en/category/building?categoryId=1");
+    expect(screen.getByRole("link", { name: "Dolls" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Bricks" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Empty" })).toBeNull();
   });
 
-  it("names each bundle's category on its shop-row card", async () => {
+  it("links brands and characters that have products", async () => {
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-
-    // The collection is classified under "Sets" (category 11); the offer fixture carries no category, so its card shows no classification line.
-    expect(screen.getByText("Sets")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lego" })).toHaveAttribute("href", "/en/brands/lego");
+    expect(screen.getByRole("link", { name: "Batman" })).toHaveAttribute("href", "/en/characters/batman");
+    expect(screen.queryByRole("link", { name: "Unused brand" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Unused character" })).toBeNull();
   });
 
-  it("renders the configured shop media, product, collection, and advice sections", async () => {
-    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-
-    const mediaLinks = screen.getAllByRole("link", { name: "Featured media 1" });
-    const mediaHrefs = mediaLinks.map((link) => link.getAttribute("href"));
-
-    expect(mediaHrefs).toEqual(expect.arrayContaining([
-      "/en/offers",
-      "/en/new",
-      "/en/bestsellers",
-      "/en/products",
-      "/en/collections"
-    ]));
-    expect(mediaLinks[0]?.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/section-1.jpg");
-    expect(screen.getByRole("heading", { name: "Offers" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Collections" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Best Seller" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "New" })).toBeInTheDocument();
-    expect(screen.getByText("Advice")).toBeInTheDocument();
-  });
-
-  it("prioritizes only the first shop media section's visible image", async () => {
+  it("prioritizes only the first image", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
     const mediaImages = container.querySelectorAll('[data-viewport="desktop"] [data-slide] img');
-
     expect(mediaImages).toHaveLength(5);
     expect(mediaImages[0]).toHaveAttribute("data-priority", "true");
     for (const image of Array.from(mediaImages).slice(1)) {

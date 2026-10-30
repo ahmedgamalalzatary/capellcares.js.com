@@ -55,7 +55,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
   return (
     <>
       {announcements.length > 0 ? (
-      <div className="container">
+      <div>
         <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
       </div>
       ) : null}
@@ -63,15 +63,15 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
       <header
         className={[
           // bg-surface matches the white page body: it fills the notches outside the nav row's rounded top corners so scrolling content can't peek through them while the header is stuck.
-          "container sticky top-0 z-30 bg-surface transition-[background,box-shadow] duration-200"
+          "sticky top-0 z-30 bg-surface shadow-[0_3px_0_var(--accent-soft)]"
         ].join(" ")}
       >
-      <div className="grid items-center bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
+      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
           {/* Mobile left cluster: menu · login */}
-          <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
+          <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden">
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10"
               onClick={() => setMobileOpen((open) => !open)}
               aria-label="Menu"
               aria-expanded={mobileOpen}
@@ -113,28 +113,29 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
 
         <Link
           href={`/${lang}/shop`}
-          className="group flex items-center justify-self-center scale-130"
+          className="group flex items-center justify-self-center"
           aria-label={dict.brand}
         >
           <Image
-            src="/logoblack.png"
+            src="/falta-logo.png"
             alt={dict.brand}
-            width={400}
-            height={100}
-            className=" w-auto object-contain transition-transform duration-200 h-10 sm:h-14 "
+            width={371}
+            height={479}
+            priority
+            className="h-14 w-auto object-contain sm:h-[68px]"
           />
         </Link>
 
         <div className="flex items-center justify-end">
           {/* Mobile cluster: wishlist · cart */}
-          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
+          <div className="inline-flex items-center gap-0.5 min-[880px]:hidden">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart size={24} />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+              {ids.length > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--magenta) px-1 text-xs font-bold leading-none text-white">{ids.length}</span>}
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
-              <span className="absolute right-1/4 top-1/8 grid min-h-4 min-w-4 place-items-center text-xs font-semibold leading-none">{count}</span>
+              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{count}</span>}
             </Link>
           </div>
 
@@ -142,11 +143,11 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
             <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart size={24} />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+              {ids.length > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--magenta) px-1 text-xs font-bold leading-none text-white">{ids.length}</span>}
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
-              <span className="absolute right-1/4 top-1 grid min-h-4 min-w-4 place-items-center text-md font-bold leading-none  ">{count}</span>
+              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{count}</span>}
             </Link>
             <Link
               href={accountHref}

@@ -14,8 +14,8 @@ export function ShopCardRow({
 }: {
   children: React.ReactNode;
   lang: Language;
-  /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint; only item width changes — the row still scrolls and snaps either way. */
-  cols?: 1 | 2;
+  /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint, 3 fits small logo or portrait tiles; only item width changes — the row still scrolls and snaps either way. */
+  cols?: 1 | 2 | 3;
 }) {
   const isRtl = lang === "ar";
   const dict = getDict(lang);
@@ -56,7 +56,9 @@ export function ShopCardRow({
   };
 
   // Widths subtract the gaps (1.25rem / 1.5rem / 1.75rem per breakpoint) so a whole number of cards lands per screen, leaving a peek on mobile.
-  const itemWidthClass = cols === 2
+  const itemWidthClass = cols === 3
+    ? "w-[40%] sm:w-[calc((100%-3*1.5rem)/4)] lg:w-[calc((100%-5*1.75rem)/6)]"
+    : cols === 2
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
     : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
 
@@ -70,7 +72,7 @@ export function ShopCardRow({
         ref={scrollerRef}
         className={[
           // min-w-0 keeps the scroller from being widened to its content by a flex/grid parent, which would push the cards past the viewport.
-          "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-2 sm:gap-6 lg:gap-7",
+          "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-3 sm:gap-6 lg:gap-7",
           // hide the scrollbar — prev/next buttons (and swipe) are the affordance
           "scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         ].join(" ")}

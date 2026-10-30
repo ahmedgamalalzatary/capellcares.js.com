@@ -1,5 +1,5 @@
-import type { Advice, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
-import { fetchAdvices, fetchCategories, fetchCollections, fetchOffers, fetchProducts, fetchShopMediaSections } from "@/lib/api/client";
+import type { Advice, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection } from "@capella/shared";
+import { fetchAdvices, fetchBrands, fetchCategories, fetchCharacters, fetchCollections, fetchOffers, fetchProducts, fetchShopMediaSections } from "@/lib/api/client";
 
 async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
   try {
@@ -10,23 +10,21 @@ async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
 }
 
 export async function loadShopPageData(lang: string): Promise<{
-  products: Product[];
-  offers: Offer[];
-  collections: Collection[];
   categories: Category[];
+  brands: ProductAttribute[];
+  characters: ProductAttribute[];
   advices: Advice[];
   shopMediaSections: ShopMediaSection[];
 }> {
-  const [products, offers, collections, categories, advices, shopMediaSections] = await Promise.all([
-    safeList(() => fetchProducts({ lang })),
-    safeList(() => fetchOffers({ lang })),
-    safeList(() => fetchCollections({ lang })),
+  const [categories, brands, characters, advices, shopMediaSections] = await Promise.all([
     safeList(() => fetchCategories({ lang })),
+    safeList(() => fetchBrands({ lang })),
+    safeList(() => fetchCharacters({ lang })),
     safeList(() => fetchAdvices({ lang })),
     safeList(() => fetchShopMediaSections({ lang }))
   ]);
 
-  return { products, offers, collections, categories, advices, shopMediaSections };
+  return { categories, brands, characters, advices, shopMediaSections };
 }
 
 export async function loadSitemapData(): Promise<{
