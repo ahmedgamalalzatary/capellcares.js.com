@@ -64,6 +64,7 @@ const dict = {
     products: "Shop",
     new: "New",
     bestsellers: "Bestseller",
+    offers: "Offers",
     orders: "Orders",
     account: "Account"
   },
@@ -115,13 +116,13 @@ describe("HeaderMobileDrawer", () => {
     renderDrawer();
     const nav = screen.getByRole("navigation");
     const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim());
-    expect(rows).toEqual(["Shop", "Categories", "New", "Bestseller", "Account"]);
+    expect(rows).toEqual(["Shop", "Categories", "New", "Bestseller", "Offers", "Account"]);
     expect(nav.compareDocumentPosition(screen.getByRole("button", { name: "English" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("has no offers, sets or follow-us rows", () => {
+  it("has no sets or follow-us rows, and links offers to its page", () => {
     renderDrawer();
-    expect(screen.queryByText("Offers")).toBeNull();
+    expect(screen.getByRole("link", { name: "Offers" })).toHaveAttribute("href", "/en/offers");
     expect(screen.queryByText("Sets")).toBeNull();
     expect(screen.queryByText("Follow us")).toBeNull();
   });

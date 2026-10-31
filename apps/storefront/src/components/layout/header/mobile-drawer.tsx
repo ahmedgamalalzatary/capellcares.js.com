@@ -140,6 +140,10 @@ export function HeaderMobileDrawer({
             <span>{dict.nav.bestsellers}</span>
             <Icon.Chevron className={chevron} />
           </Link>
+          <Link href={`/${lang}/offers`} onClick={onClose} className={ROW}>
+            <span>{dict.nav.offers}</span>
+            <Icon.Chevron className={chevron} />
+          </Link>
 
           <Link href={accountHref} onClick={onClose} className={ROW}>
             <span>{user ? dict.nav.orders : dict.nav.account}</span>

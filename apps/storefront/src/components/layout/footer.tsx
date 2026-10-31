@@ -87,12 +87,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
         </div>
 
         <div className="flex justify-center border-t border-white/20 py-6 lg:justify-start">
-          {/* A white card so the logo keeps its own red on the dark footer. */}
           <div
             role="img"
             aria-label={dict.footer.paymentMethods}
             title={dict.footer.paymentMethods}
-            className="flex h-14 w-28 items-center justify-center overflow-hidden rounded-lg bg-white"
+            className="flex h-14 w-28 items-center justify-center overflow-hidden"
           >
             <Icon.CashOnDelivery className="h-24 w-24" />
           </div>

@@ -68,7 +68,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         className={[
           // bg-surface matches the white page body: it fills the notches outside the nav row's rounded top corners so scrolling content can't peek through them while the header is stuck.
           // While the menu or search is open the header must also rise above the floating WhatsApp button (z-50).
-          `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface shadow-[0_3px_0_var(--accent-soft)]`
+          `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface min-[880px]:shadow-[0_3px_0_var(--accent-soft)]`
         ].join(" ")}
       >
       <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr]">
