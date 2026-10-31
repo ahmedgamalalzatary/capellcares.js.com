@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Language } from "@capella/shared";
-import { SOCIAL_LINKS } from "../../constants/socials";
+import { Icon } from "@/components/ui/icons";
+import { SOCIAL_LINKS, WHATSAPP_URL } from "../../constants/socials";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   const year = new Date().getFullYear();
@@ -22,66 +23,82 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
   return (
     <footer dir={isAr ? "rtl" : "ltr"} className="footer-scallop mt-12 text-white">
       <div className="container">
-        <div className="grid gap-10 pb-10 pt-12 min-[880px]:grid-cols-[auto_1fr] min-[880px]:gap-20">
-          <Link href={`/${lang}/shop`} aria-label={dict.brand} className="justify-self-center min-[880px]:justify-self-start">
-            <Image src="/logo-footer.png" alt={dict.brand} width={429} height={604} className="h-40 w-auto min-[880px]:h-52" />
+        <div className="grid gap-10 pb-10 pt-12 lg:grid-cols-[auto_1fr] lg:gap-16">
+          <Link href={`/${lang}/shop`} aria-label={dict.brand} className="justify-self-center lg:justify-self-start">
+            <Image src="/logo-footer.png" alt={dict.brand} width={429} height={604} className="h-40 w-auto lg:h-52" />
           </Link>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 lg:border-s lg:border-white/20 lg:ps-12">
             <FooterCol title={dict.footer.shopTitle}>
               <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
               <FooterLink href={`/${lang}/products`}>{dict.footer.allProducts}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
               <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>
               <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
+              <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
+            </FooterCol>
+
+            <FooterCol title={dict.footer.social}>
+              {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 py-1 font-semibold leading-snug text-white/85 transition-colors hover:text-(--sunny)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4 shrink-0"
+                    aria-hidden
+                    fill={stroke ? "none" : "currentColor"}
+                    stroke={stroke ? "currentColor" : "none"}
+                    strokeWidth={stroke ? 2 : 0}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={path} />
+                  </svg>
+                  <span>{dict.footer[label.toLowerCase()]}</span>
+                </a>
+              ))}
             </FooterCol>
 
             <FooterCol title={dict.footer.support}>
-              <FooterLink href={`/${lang}/about`}>{dict.footer.aboutus}</FooterLink>
               <FooterLink href={`/${lang}/contact`}>{dict.footer.helpcenter}</FooterLink>
-              {SOCIAL_LINKS.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
-                    <a
-                      key={label}
-                      href={href}
-                      aria-label={dict.footer[label.toLowerCase()]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="grid h-10 w-10 place-items-center rounded-full bg-white/10 transition-colors hover:bg-(--sunny) hover:text-ink"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4"
-                        aria-hidden
-                        fill={stroke ? "none" : "currentColor"}
-                        stroke={stroke ? "currentColor" : "none"}
-                        strokeWidth={stroke ? 2 : 0}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d={path} />
-                      </svg>
-                    </a>
-                  ))}
-                </div>
-              )}
+              <a
+                className="block py-1 font-semibold leading-snug text-white/85 transition-colors hover:text-(--sunny)"
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {dict.footer.connectWhatsapp}
+              </a>
             </FooterCol>
 
-            <div className="col-span-2 sm:col-span-1">
-              <FooterCol title={dict.footer.legal}>
-                <FooterLink href={`/${lang}/terms-of-sale`}>{dict.footer.terms}</FooterLink>
-                <FooterLink href={`/${lang}/terms-conditions`}>{dict.footer.promotionTerms}</FooterLink>
-                <FooterLink href={`/${lang}/privacy-policy`}>{dict.footer.privacy}</FooterLink>
-                <FooterLink href={`/${lang}/returns-refunds`}>{dict.footer.returnsRefunds}</FooterLink>
-                <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
-              </FooterCol>
-            </div>
+            <FooterCol title={dict.footer.legal}>
+              <FooterLink href={`/${lang}/terms-of-sale`}>{dict.footer.terms}</FooterLink>
+              <FooterLink href={`/${lang}/terms-conditions`}>{dict.footer.promotionTerms}</FooterLink>
+              <FooterLink href={`/${lang}/privacy-policy`}>{dict.footer.privacy}</FooterLink>
+              <FooterLink href={`/${lang}/returns-refunds`}>{dict.footer.returnsRefunds}</FooterLink>
+              <FooterLink href={`/${lang}/shipping-handling`}>{dict.footer.shippingHandling}</FooterLink>
+            </FooterCol>
+          </div>
+        </div>
+
+        <div className="flex justify-center border-t border-white/20 py-6 lg:justify-start">
+          {/* A white card so the logo keeps its own red on the dark footer. */}
+          <div
+            role="img"
+            aria-label={dict.footer.paymentMethods}
+            title={dict.footer.paymentMethods}
+            className="flex h-14 w-28 items-center justify-center overflow-hidden rounded-lg bg-white"
+          >
+            <Icon.CashOnDelivery className="h-24 w-24" />
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-4 border-t border-white/20 pb-24 pt-5 text-center min-[880px]:flex-row min-[880px]:justify-between">
-          <p className="m-0 font-bold">{dict.footer.paymentMethods}</p>
           <p className="m-0 text-sm text-white/70">
             © {year} {dict.footer.creator}. {dict.footer.rights}
           </p>

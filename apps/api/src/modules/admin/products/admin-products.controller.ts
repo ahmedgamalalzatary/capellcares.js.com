@@ -194,9 +194,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         hasImage: hasLocalizedProductImage,
         keywordCount: productKeywords.length,
         variantCount: productVariants.length,
-        brandId: attributes.brandId !== undefined ? attributes.brandId : storedFacts?.brandId ?? null,
-        supplierId: attributes.supplierId !== undefined ? attributes.supplierId : storedFacts?.supplierId ?? null,
-        ageGroupCount: attributes.ageGroupIds ? attributes.ageGroupIds.length : storedFacts?.ageGroupCount ?? 0
+        supplierId: attributes.supplierId !== undefined ? attributes.supplierId : storedFacts?.supplierId ?? null
       })
     ) {
       return res.status(400).json({ ok: false, reason: "cannot-activate-incomplete-product" });
@@ -245,7 +243,6 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         ...parseHoverImageInput(incoming),
         media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
-        brandId: attributes.brandId,
         supplierId: attributes.supplierId,
         status: productStatus,
         isNew: incoming.isNew ?? false,

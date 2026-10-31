@@ -55,18 +55,18 @@ export function buildRootMetadata(): Metadata {
       default: `${BRAND_NAME} | Toys for kids in Egypt`,
       template: `%s | ${BRAND_NAME}`
     },
-    description: "Falta Toy is an Egyptian toy shop with toys for every age, from the brands and characters kids love. Free delivery, pay cash on delivery.",
+    description: "Falta Toy is an Egyptian toy shop with toys for every age. Free delivery, pay cash on delivery.",
     openGraph: {
       type: "website",
       siteName: BRAND_NAME,
       title: `${BRAND_NAME} | Toys for kids in Egypt`,
-      description: "Shop toys for every age from the brands and characters kids love. Free delivery, pay cash on delivery.",
+      description: "Shop toys for every age. Free delivery, pay cash on delivery.",
       url: absoluteUrl("/")
     },
     twitter: {
       card: "summary_large_image",
       title: `${BRAND_NAME} | Toys for kids in Egypt`,
-      description: "Shop toys for every age from the brands and characters kids love. Free delivery, pay cash on delivery."
+      description: "Shop toys for every age. Free delivery, pay cash on delivery."
     }
   };
 }
@@ -75,8 +75,8 @@ export function buildLocaleMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   const title = isAr ? "فلتة توي | ألعاب أطفال" : `${BRAND_NAME} | Toys for kids`;
   const description = isAr
-    ? "فلتة توي متجر ألعاب أطفال لكل الأعمار، من الماركات والشخصيات التي يحبها الأطفال. توصيل مجاني والدفع عند الاستلام."
-    : "Falta Toy is a toy shop for every age, with the brands and characters kids love. Free delivery, pay cash on delivery.";
+    ? "فلتة توي متجر ألعاب أطفال لكل الأعمار. توصيل مجاني والدفع عند الاستلام."
+    : "Falta Toy is a toy shop for every age. Free delivery, pay cash on delivery.";
 
   return {
     title,
@@ -101,8 +101,8 @@ export function buildProductsMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   const title = isAr ? "تسوق ألعاب الأطفال" : "Shop toys for kids";
   const description = isAr
-    ? "اكتشف ألعاب الأطفال من فلتة توي واختر حسب السن والماركة والشخصية."
-    : "Browse toys from Falta Toy and choose by age, brand, and character.";
+    ? "اكتشف ألعاب الأطفال من فلتة توي واختر حسب السن."
+    : "Browse toys from Falta Toy and choose by age.";
 
   return {
     title,
@@ -185,8 +185,8 @@ export function buildShopMetadata(lang: Language): Metadata {
     ? "فلتة توي | متجر ألعاب أطفال"
     : `${BRAND_NAME} | Toy shop for kids`;
   const description = isAr
-    ? "تسوق الألعاب حسب الفئة والماركة والشخصية من فلتة توي، مع نصائح لاختيار اللعبة المناسبة."
-    : "Shop toys by category, brand, and character at Falta Toy, with advice on choosing the right one.";
+    ? "تسوق الألعاب حسب الفئة من فلتة توي، مع نصائح لاختيار اللعبة المناسبة."
+    : "Shop toys by category at Falta Toy, with advice on choosing the right one.";
 
   return {
     title: { absolute: title },
@@ -246,28 +246,6 @@ export function buildCollectionsMetadata(lang: Language): Metadata {
     twitter: {
       card: "summary_large_image",
       title: joinTitle([title, BRAND_NAME]),
-      description
-    }
-  };
-}
-
-export function buildAttributeMetadata(lang: Language, item: ProductAttribute, section: "brands" | "characters"): Metadata {
-  const name = pickLang(item.name, lang);
-  const description = lang === "ar" ? `تسوق ألعاب ${name} من ${BRAND_NAME}.` : `Shop ${name} toys at ${BRAND_NAME}.`;
-  const path = `/${section}/${item.slug}`;
-
-  return {
-    title: name,
-    description,
-    alternates: buildLocalizedAlternates(lang, path),
-    openGraph: {
-      title: joinTitle([name, BRAND_NAME]),
-      description,
-      url: absoluteUrl(localizePath(lang, path))
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: joinTitle([name, BRAND_NAME]),
       description
     }
   };
@@ -498,5 +476,27 @@ export function buildRobots(): MetadataRoute.Robots {
       }
     ],
     sitemap: absoluteUrl("/sitemap.xml")
+  };
+}
+
+export function buildGenderMetadata(lang: Language, item: ProductAttribute): Metadata {
+  const name = pickLang(item.name, lang);
+  const description = lang === "ar" ? `تسوق ألعاب ${name} من ${BRAND_NAME}.` : `Shop ${name} toys at ${BRAND_NAME}.`;
+  const path = `/genders/${item.slug}`;
+
+  return {
+    title: name,
+    description,
+    alternates: buildLocalizedAlternates(lang, path),
+    openGraph: {
+      title: joinTitle([name, BRAND_NAME]),
+      description,
+      url: absoluteUrl(localizePath(lang, path))
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: joinTitle([name, BRAND_NAME]),
+      description
+    }
   };
 }

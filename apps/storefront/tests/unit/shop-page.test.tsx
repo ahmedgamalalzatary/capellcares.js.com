@@ -31,9 +31,8 @@ vi.mock("@capella/shared", async () => {
         bestsellers: "Bestseller"
       },
       shop: {
-        byCategory: "Shop by category",
-        byBrand: "Shop by brand",
-        byCharacter: "Shop by character"
+        byGender: "Shop by gender",
+        byCategory: "Shop by category"
       },
       common: { previous: "Previous", next: "Next" },
       shopMedia: {
@@ -59,13 +58,9 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 3, parentId: null, slug: "empty", name: { ar: "فارغ", en: "Empty" }, imagePath: null, isLeaf: true, hasProducts: false },
       { id: 4, parentId: null, slug: "dolls", name: { ar: "عرائس", en: "Dolls" }, imagePath: null, isLeaf: true, hasProducts: true }
     ],
-    brands: [
-      { id: 1, slug: "lego", name: { ar: "ليجو", en: "Lego" }, imagePath: "/uploads/lego.png", hasProducts: true },
-      { id: 2, slug: "unused", name: { ar: "غير مستخدم", en: "Unused brand" }, imagePath: null, hasProducts: false }
-    ],
-    characters: [
-      { id: 1, slug: "batman", name: { ar: "باتمان", en: "Batman" }, imagePath: "/uploads/batman.png", hasProducts: true },
-      { id: 2, slug: "unused", name: { ar: "غير مستخدم", en: "Unused character" }, imagePath: null, hasProducts: false }
+    genders: [
+      { id: 1, slug: "boys", name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png", hasProducts: true },
+      { id: 2, slug: "baby", name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", hasProducts: false }
     ],
     advices: [],
     shopMediaSections: [
@@ -173,11 +168,20 @@ describe("shop page", () => {
     );
     expect(order).toEqual([
       "image", "Shop by category",
-      "image", "Shop by brand",
-      "image", "Shop by character",
+      "image",
+      "image",
       "image", "Advice",
       "image"
     ]);
+  });
+
+  it("starts with every gender, above the first image, even one with no toys yet", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const section = screen.getByRole("navigation", { name: "Shop by gender" });
+    expect(screen.getByRole("link", { name: "Boys" })).toHaveAttribute("href", "/en/genders/boys");
+    expect(screen.getByRole("link", { name: "Baby" })).toHaveAttribute("href", "/en/genders/baby");
+    const firstImage = container.querySelector("[data-viewport]")!;
+    expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("has no star mark beside the section headings", async () => {
@@ -193,12 +197,9 @@ describe("shop page", () => {
     expect(screen.queryByRole("link", { name: "Empty" })).toBeNull();
   });
 
-  it("links brands and characters that have products", async () => {
-    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    expect(screen.getByRole("link", { name: "Lego" })).toHaveAttribute("href", "/en/brands/lego");
-    expect(screen.getByRole("link", { name: "Batman" })).toHaveAttribute("href", "/en/characters/batman");
-    expect(screen.queryByRole("link", { name: "Unused brand" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Unused character" })).toBeNull();
+  it("has no brand or character sections", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    expect(container.querySelector('a[href*="/brands/"], a[href*="/characters/"]')).toBeNull();
   });
 
   it("prioritizes only the first image", async () => {

@@ -240,8 +240,7 @@ describe("SectionCard", () => {
     expect(screen.getByRole("heading", { name: "Tip One" })).toBeInTheDocument();
     expect(screen.getByText("Advice description")).toBeInTheDocument();
     expect(screen.getByTitle("Tip One video")).toHaveAttribute("src", expect.stringContaining("autoplay=1"));
-    // No Falta Instagram account yet, so there is nowhere to send them.
-    expect(screen.queryByRole("link", { name: /read more/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /read more/i })).toHaveAttribute("href", expect.stringContaining("instagram.com/faltatoy"));
   });
 
   it("renders Instagram advice in the popup through the official embed markup instead of an iframe player", () => {
@@ -304,6 +303,8 @@ describe("SectionCard", () => {
     expect(closeButton).toHaveFocus();
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Tab", shiftKey: true });
+    expect(screen.getByRole("link", { name: /read more/i })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Tab" });
     expect(closeButton).toHaveFocus();
 
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });

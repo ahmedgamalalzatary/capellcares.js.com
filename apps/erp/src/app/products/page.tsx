@@ -17,8 +17,6 @@ import { useStore } from "@/lib/store";
 
 export default function ProductsListPage() {
   const { user } = useAdminAuth();
-  const brands = useStore((state) => state.brands);
-  const characters = useStore((state) => state.characters);
   const ageGroups = useStore((state) => state.ageGroups);
   const suppliers = useStore((state) => state.suppliers);
   const {
@@ -27,10 +25,8 @@ export default function ProductsListPage() {
     list,
     statusFilter,
     categoryFilter,
-    brandFilter,
     supplierFilter,
     ageFilter,
-    characterFilter,
     categoryOptions,
     totalProducts,
     pageProducts,
@@ -112,17 +108,6 @@ export default function ProductsListPage() {
             ]
           },
           {
-            key: "brand",
-            label: "الماركة",
-            icon: Tag,
-            value: brandFilter,
-            onChange: (value) => list.setFilter("brand", value),
-            options: [
-              { value: "", label: "كل الماركات" },
-              ...brands.map((brand) => ({ value: String(brand.id), label: brand.name.ar }))
-            ]
-          },
-          {
             key: "age",
             label: "العمر",
             icon: Baby,
@@ -131,17 +116,6 @@ export default function ProductsListPage() {
             options: [
               { value: "", label: "كل الأعمار" },
               ...ageGroups.map((age) => ({ value: String(age.id), label: age.name.ar }))
-            ]
-          },
-          {
-            key: "character",
-            label: "الشخصية",
-            icon: Sparkles,
-            value: characterFilter,
-            onChange: (value) => list.setFilter("character", value),
-            options: [
-              { value: "", label: "كل الشخصيات" },
-              ...characters.map((character) => ({ value: String(character.id), label: character.name.ar }))
             ]
           },
           {

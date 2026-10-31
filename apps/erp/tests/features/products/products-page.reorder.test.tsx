@@ -61,8 +61,6 @@ function makeProduct(id: number, categoryId: number, orderings: Array<{ scopeTyp
 const storeState = vi.hoisted(() => ({
   loaded: true,
   products: [] as any[],
-  brands: [],
-  characters: [],
   ageGroups: [],
   suppliers: [],
   categories: [] as any[]

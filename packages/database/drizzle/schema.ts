@@ -111,18 +111,7 @@ export const entityOrderings = mysqlTable("entity_orderings", {
   )
 }));
 
-export const brands = mysqlTable("brands", {
-  id: int("id").autoincrement().primaryKey(),
-  slug: varchar("slug", { length: 191 }).notNull().unique(),
-  arName: varchar("ar_name", { length: 255 }).notNull(),
-  enName: varchar("en_name", { length: 255 }).notNull(),
-  imagePath: varchar("image_path", { length: 1024 }),
-  sortOrder: int("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
-});
-
-export const characters = mysqlTable("characters", {
+export const genders = mysqlTable("genders", {
   id: int("id").autoincrement().primaryKey(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
@@ -138,6 +127,7 @@ export const ageGroups = mysqlTable("age_groups", {
   slug: varchar("slug", { length: 191 }).notNull().unique(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
+  imagePath: varchar("image_path", { length: 1024 }),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -178,25 +168,24 @@ export const products = mysqlTable("products", {
     .notNull()
     .references(() => categories.id, { onDelete: "restrict" }),
   // Nullable so drafts can be saved; activation requires both (see canActivateProduct).
-  brandId: int("brand_id").references(() => brands.id, { onDelete: "restrict" }),
   supplierId: int("supplier_id").references(() => suppliers.id, { onDelete: "restrict" }),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+export const productGenders = mysqlTable("product_genders", {
+  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  genderId: int("gender_id").notNull().references(() => genders.id, { onDelete: "restrict" })
+}, (table) => ({
+  productGenderUnique: unique("product_genders_unique").on(table.productId, table.genderId)
+}));
+
 export const productAgeGroups = mysqlTable("product_age_groups", {
   productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   ageGroupId: int("age_group_id").notNull().references(() => ageGroups.id, { onDelete: "restrict" })
 }, (table) => ({
   productAgeGroupUnique: unique("product_age_groups_unique").on(table.productId, table.ageGroupId)
-}));
-
-export const productCharacters = mysqlTable("product_characters", {
-  productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
-  characterId: int("character_id").notNull().references(() => characters.id, { onDelete: "restrict" })
-}, (table) => ({
-  productCharacterUnique: unique("product_characters_unique").on(table.productId, table.characterId)
 }));
 
 export const productVariants = mysqlTable(

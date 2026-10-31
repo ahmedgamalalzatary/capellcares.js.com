@@ -32,18 +32,16 @@ function authUserKey(user: AdminAuthUser | null) {
 }
 
 const ATTRIBUTE_PATHS: Record<ProductAttributeKind, string> = {
-  brands: "brands",
-  characters: "characters",
   ageGroups: "age-groups",
+  genders: "genders",
   suppliers: "suppliers"
 };
 
 export class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
-  brands: ProductAttribute[] = [];
-  characters: ProductAttribute[] = [];
   ageGroups: ProductAttribute[] = [];
+  genders: ProductAttribute[] = [];
   suppliers: Supplier[] = [];
   collections: Collection[] = [];
   offers: Offer[] = [];
@@ -73,9 +71,8 @@ export class ErpStore {
     return {
       products: this.products,
       categories: this.categories,
-      brands: this.brands,
-      characters: this.characters,
       ageGroups: this.ageGroups,
+      genders: this.genders,
       suppliers: this.suppliers,
       collections: this.collections,
       offers: this.offers,
@@ -106,9 +103,8 @@ export class ErpStore {
   private resetData() {
     this.products = [];
     this.categories = [];
-    this.brands = [];
-    this.characters = [];
     this.ageGroups = [];
+    this.genders = [];
     this.suppliers = [];
     this.collections = [];
     this.offers = [];
@@ -311,21 +307,15 @@ export class ErpStore {
         }
       },
       canRead("products.read") && {
-        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/brands"),
-        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
-          store.brands = result.items;
-        }
-      },
-      canRead("products.read") && {
-        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/characters"),
-        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
-          store.characters = result.items;
-        }
-      },
-      canRead("products.read") && {
         load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/age-groups"),
         assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
           store.ageGroups = result.items;
+        }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/genders"),
+        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
+          store.genders = result.items;
         }
       },
       canRead("products.read") && {

@@ -24,8 +24,7 @@ export function ProductGrid({
   lockCategory,
   headerCategoryIds,
   onHeaderCategoryIdsChange,
-  scopedCategoryId,
-  hiddenAttributeFilters = []
+  scopedCategoryId
 }: ProductGridProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [cols, setCols] = useState<Cols>(initialCols);
@@ -63,14 +62,11 @@ export function ProductGrid({
     onHeaderCategoryIdsChange
   });
 
-  const { brands, characters, ageGroups } = useProductAttributes();
+  const { ageGroups } = useProductAttributes();
   // Only choices some product in this list has, so picking one never empties the page.
   const groups: AttributeFilterGroup[] = [
-    { key: "brand" as const, label: dict.filters.brand, items: brands, used: new Set(products.map((p) => p.brandId)) },
-    { key: "age" as const, label: dict.filters.age, items: ageGroups, used: new Set(products.flatMap((p) => p.ageGroupIds ?? [])) },
-    { key: "character" as const, label: dict.filters.character, items: characters, used: new Set(products.flatMap((p) => p.characterIds ?? [])) }
+    { key: "age" as const, label: dict.filters.age, items: ageGroups, used: new Set(products.flatMap((p) => p.ageGroupIds ?? [])) }
   ]
-    .filter(({ key }) => !hiddenAttributeFilters.includes(key))
     .map(({ key, label, items, used }) => ({
       key,
       label,

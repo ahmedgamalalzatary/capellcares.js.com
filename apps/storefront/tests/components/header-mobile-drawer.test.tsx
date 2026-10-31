@@ -60,13 +60,12 @@ const menuEntries: HeaderMenuEntry[] = [
 const dict = {
   brand: "Falta Toy",
   nav: {
-    viewAllCategory: "All {name} →",
+    categories: "Categories",
     products: "Shop",
     new: "New",
     bestsellers: "Bestseller",
     orders: "Orders",
-    account: "Account",
-    followUs: "Follow us"
+    account: "Account"
   },
   media: { close: "Close" },
   langSwitch: { ar: "العربية", en: "English" }
@@ -112,47 +111,37 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
-  it("lists Offers, Sets, then categories by sort order, all closed", () => {
+  it("orders the menu: shop, categories, new, bestseller, account, then the language switch", () => {
     renderDrawer();
-    const sections = screen.getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded"));
-    expect(sections.map((button) => button.textContent?.trim())).toEqual(["Offers", "Sets", "Care"]);
-    expect(sections.every((button) => button.getAttribute("aria-expanded") === "false")).toBe(true);
-    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
+    const nav = screen.getByRole("navigation");
+    const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim());
+    expect(rows).toEqual(["Shop", "Categories", "New", "Bestseller", "Account"]);
+    expect(nav.compareDocumentPosition(screen.getByRole("button", { name: "English" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("opens one section at a time", () => {
+  it("has no offers, sets or follow-us rows", () => {
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
-    expect(screen.getByRole("link", { name: "All Offers →" })).toHaveAttribute("href", "/en/offers");
-    expect(screen.getByRole("link", { name: "Duo Kit" })).toHaveAttribute("href", "/en/offers/duo-kit");
-    expect(screen.getByAltText("")).toHaveAttribute("src", "/uploads/duo-kit.jpg");
-
-    fireEvent.click(screen.getByRole("button", { name: "Sets" }));
-    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
-    expect(screen.getByRole("link", { name: "All Sets →" })).toHaveAttribute("href", "/en/collections");
-    expect(screen.getByRole("link", { name: "Starter Set" })).toHaveAttribute("href", "/en/collections/starter");
+    expect(screen.queryByText("Offers")).toBeNull();
+    expect(screen.queryByText("Sets")).toBeNull();
+    expect(screen.queryByText("Follow us")).toBeNull();
   });
 
-  it("closes an open section when it is tapped again", () => {
-    renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
-    fireEvent.click(screen.getByRole("button", { name: "Offers" }));
-    expect(screen.queryByRole("link", { name: "Duo Kit" })).toBeNull();
-  });
-
-  it("shows second-level categories in their given order, without deeper levels", () => {
+  it("opens the categories dropdown with main categories in order, each going to its page", () => {
     renderDrawer({ lang: "ar", isAr: true });
-    fireEvent.click(screen.getByRole("button", { name: "Care" }));
-    expect(screen.getByRole("link", { name: "All Care →" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
-    const names = screen.getAllByRole("link").map((link) => link.textContent?.trim());
-    expect(names.indexOf("Cleansers")).toBeLessThan(names.indexOf("Serums"));
-    expect(screen.getByRole("link", { name: "Serums" })).toHaveAttribute("href", "/ar/category/serums?categoryId=2");
-    expect(screen.queryByRole("link", { name: "Vitamin C" })).toBeNull();
-  });
+    const toggle = screen.getByRole("button", { name: "Categories" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "Body" })).toBeNull();
 
-  it("makes a category with no children a plain link", () => {
-    renderDrawer();
-    expect(screen.getByRole("link", { name: "Body" })).toHaveAttribute("href", "/en/category/body?categoryId=2");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Body" })).toHaveAttribute("href", "/ar/category/body?categoryId=2");
+    expect(screen.getByRole("link", { name: "Care" })).toHaveAttribute("href", "/ar/category/care?categoryId=1");
+    const names = screen.getAllByRole("link").map((link) => link.textContent?.trim());
+    expect(names.indexOf("Body")).toBeLessThan(names.indexOf("Care"));
+    expect(screen.queryByRole("link", { name: "Cleansers" })).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(screen.queryByRole("link", { name: "Body" })).toBeNull();
   });
 
   it("links the main pages, and the account or orders page", () => {

@@ -17,10 +17,9 @@ vi.mock("@/components/forms/category-picker", () => ({ CategoryPicker: () => cre
 import { ProductForm } from "@/features/products/components/product-form";
 
 const attributes = {
-  brands: [{ id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" } }],
-  characters: [
-    { id: 7, slug: "batman", name: { ar: "باتمان", en: "Batman" } },
-    { id: 8, slug: "spiderman", name: { ar: "سبايدرمان", en: "Spiderman" } }
+  genders: [
+    { id: 5, slug: "girls", name: { ar: "بنات", en: "Girls" } },
+    { id: 6, slug: "boys", name: { ar: "أولاد", en: "Boys" } }
   ],
   ageGroups: [
     { id: 3, slug: "0-2", name: { ar: "٠-٢ سنة", en: "0-2" } },
@@ -47,10 +46,8 @@ const initial = {
   isNew: false,
   isBestseller: false,
   categoryId: 2,
-  brandId: null,
   supplierId: null,
   ageGroupIds: [],
-  characterIds: [],
   offerIds: [],
   variants: [{ id: 11, productId: 1, size: "One", price: 50, stock: 5, sortOrder: 1, discount: null }],
   createdAt: "",
@@ -71,48 +68,58 @@ beforeEach(() => upsertProduct.mockClear());
 afterEach(cleanup);
 
 describe("ProductForm attributes", () => {
-  it("saves the chosen brand, supplier, age groups and characters", async () => {
+  it("saves the chosen supplier and age groups", async () => {
     renderForm();
-    fireEvent.change(screen.getByLabelText("الماركة"), { target: { value: "1" } });
     fireEvent.change(screen.getByLabelText("المورد"), { target: { value: "9" } });
     fireEvent.click(screen.getByRole("button", { name: "٠-٢ سنة" }));
     fireEvent.click(screen.getByRole("button", { name: "٢-٤ سنة" }));
-    fireEvent.click(screen.getByRole("button", { name: "باتمان" }));
-    fireEvent.click(screen.getByRole("button", { name: "سبايدرمان" }));
     await save();
 
-    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({
-      brandId: 1,
-      supplierId: 9,
-      ageGroupIds: [3, 4],
-      characterIds: [7, 8]
-    }));
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ supplierId: 9, ageGroupIds: [3, 4] }));
+  });
+
+  it("saves one or several genders, and publishes with none", async () => {
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: "بنات" }));
+    fireEvent.click(screen.getByRole("button", { name: "أولاد" }));
+    await save();
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ genderIds: [5, 6] }));
+    cleanup();
+    upsertProduct.mockClear();
+
+    renderForm({ ...initial, status: "active", supplierId: 9 } as any);
+    await save();
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", genderIds: [] }));
   });
 
   it("removes a choice when clicked again", async () => {
-    renderForm({ ...initial, characterIds: [7, 8] } as any);
-    fireEvent.click(screen.getByRole("button", { name: "باتمان" }));
+    renderForm({ ...initial, ageGroupIds: [3, 4] } as any);
+    fireEvent.click(screen.getByRole("button", { name: "٠-٢ سنة" }));
     await save();
-    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ characterIds: [8] }));
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ ageGroupIds: [4] }));
   });
 
-  it("blocks publishing without brand, supplier and age group, but allows a draft", async () => {
+  it("has no brand or character fields", () => {
+    renderForm();
+    expect(screen.queryByText("الماركة")).toBeNull();
+    expect(screen.queryByText(/الشخصيات/)).toBeNull();
+  });
+
+  it("publishes with no age group chosen", async () => {
+    renderForm({ ...initial, status: "active", supplierId: 9 } as any);
+    await save();
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", ageGroupIds: [] }));
+  });
+
+  it("still needs a supplier to publish, but not for a draft", async () => {
     renderForm({ ...initial, status: "active" } as any);
     await save();
     expect(upsertProduct).not.toHaveBeenCalled();
-    expect(screen.getByText("اختاري الماركة")).toBeInTheDocument();
     expect(screen.getByText("اختاري المورد")).toBeInTheDocument();
-    expect(screen.getByText("اختاري فئة عمرية واحدة على الأقل")).toBeInTheDocument();
     cleanup();
 
     renderForm();
     await save();
     expect(upsertProduct).toHaveBeenCalledTimes(1);
-  });
-
-  it("publishes with characters left empty", async () => {
-    renderForm({ ...initial, status: "active", brandId: 1, supplierId: 9, ageGroupIds: [3] } as any);
-    await save();
-    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", characterIds: [] }));
   });
 });

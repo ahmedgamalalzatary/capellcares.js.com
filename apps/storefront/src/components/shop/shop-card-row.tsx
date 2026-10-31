@@ -10,12 +10,15 @@ import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 export function ShopCardRow({
   children,
   lang,
-  cols = 1
+  cols = 1,
+  gridOnMobile = false
 }: {
   children: React.ReactNode;
   lang: Language;
   /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint, 3 fits small logo or portrait tiles; only item width changes — the row still scrolls and snaps either way. */
   cols?: 1 | 2 | 3;
+  /** Below the desktop width, show a plain two-per-row grid instead of a sideways row. */
+  gridOnMobile?: boolean;
 }) {
   const isRtl = lang === "ar";
   const dict = getDict(lang);
@@ -56,7 +59,9 @@ export function ShopCardRow({
   };
 
   // Widths subtract the gaps (1.25rem / 1.5rem / 1.75rem per breakpoint) so a whole number of cards lands per screen, leaving a peek on mobile.
-  const itemWidthClass = cols === 3
+  const itemWidthClass = gridOnMobile
+    ? "min-w-0 min-[880px]:w-[calc((100%-4*1.5rem)/5)] min-[880px]:shrink-0 min-[880px]:snap-start"
+    : cols === 3
     ? "w-[40%] sm:w-[calc((100%-3*1.5rem)/4)] lg:w-[calc((100%-5*1.75rem)/6)]"
     : cols === 2
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
@@ -72,14 +77,17 @@ export function ShopCardRow({
         ref={scrollerRef}
         className={[
           // min-w-0 keeps the scroller from being widened to its content by a flex/grid parent, which would push the cards past the viewport.
-          "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-3 sm:gap-6 lg:gap-7",
+          // [display:grid], not grid: the global .grid class carries its own gap. Auto margins centre a short desktop line without clipping a long one.
+          gridOnMobile
+            ? "[display:grid] min-w-0 grid-cols-2 gap-4 pt-1 pb-3 min-[880px]:flex min-[880px]:snap-x min-[880px]:snap-mandatory min-[880px]:gap-6 min-[880px]:overflow-x-auto min-[880px]:scroll-smooth min-[880px]:[&>:first-child]:ms-auto min-[880px]:[&>:last-child]:me-auto"
+            : "flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pt-1 pb-3 sm:gap-6 lg:gap-7",
           // hide the scrollbar — prev/next buttons (and swipe) are the affordance
           "scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         ].join(" ")}
       >
         {Children.map(children, (child) =>
           child == null ? null : (
-            <div className={`shrink-0 snap-start ${itemWidthClass}`}>
+            <div className={gridOnMobile ? itemWidthClass : `shrink-0 snap-start ${itemWidthClass}`}>
               {child}
             </div>
           )

@@ -110,7 +110,6 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       arHoverImagePath: products.arHoverImagePath,
       status: products.status,
       categoryId: products.categoryId,
-      brandId: products.brandId,
       deletedAt: products.deletedAt,
       categorySlug: categories.slug,
       isNew: products.isNew,
@@ -127,7 +126,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   const rankByProductId = rankForProductScope(orderingRows, scopeCategoryId);
   const mediaByProduct = await loadMediaRows(productIds);
   const { offerIdsByProductId } = await loadActiveOfferData(productIds);
-  const { ageGroupIdsByProduct, characterIdsByProduct } = await loadProductAttributeLinks(productIds);
+  const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks(productIds);
   const variantsRows = await db
     .select({
       id: productVariants.id,
@@ -166,7 +165,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
         warnings: { ar: "", en: "" },
         offerIds: offerIdsByProductId.get(r.id) ?? [],
         ageGroupIds: ageGroupIdsByProduct.get(r.id) ?? [],
-        characterIds: characterIdsByProduct.get(r.id) ?? []
+        genderIds: genderIdsByProduct.get(r.id) ?? []
       };
     })
     .sort(compareByScopedOrdering.bind(null, "storefront"));
@@ -197,7 +196,6 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
       isNew: products.isNew,
       isBestseller: products.isBestseller,
       categoryId: products.categoryId,
-      brandId: products.brandId,
       deletedAt: products.deletedAt,
       categorySlug: categories.slug
     })
@@ -209,7 +207,7 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
   if (!product) return null;
   const mediaByProduct = await loadMediaRows([product.id]);
   const { offerIdsByProductId } = await loadActiveOfferData([product.id]);
-  const { ageGroupIdsByProduct, characterIdsByProduct } = await loadProductAttributeLinks([product.id]);
+  const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks([product.id]);
 
   const variantsRows = await db
     .select({
@@ -239,7 +237,7 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
     warnings: { ar: product.arWarnings ?? "", en: product.enWarnings ?? "" },
     offerIds: offerIdsByProductId.get(product.id) ?? [],
     ageGroupIds: ageGroupIdsByProduct.get(product.id) ?? [],
-    characterIds: characterIdsByProduct.get(product.id) ?? []
+    genderIds: genderIdsByProduct.get(product.id) ?? []
   };
 }
 
@@ -256,7 +254,7 @@ export async function listAdminProductsRepo() {
   }
   const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
   const { offerIdsByProductId } = await loadActiveOfferData(rows.map((r) => r.id));
-  const { ageGroupIdsByProduct, characterIdsByProduct } = await loadProductAttributeLinks(rows.map((r) => r.id));
+  const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks(rows.map((r) => r.id));
 
   const variantsRows = await db
     .select({
@@ -290,7 +288,7 @@ export async function listAdminProductsRepo() {
         media,
         offerIds: offerIdsByProductId.get(r.id) ?? [],
         ageGroupIds: ageGroupIdsByProduct.get(r.id) ?? [],
-        characterIds: characterIdsByProduct.get(r.id) ?? [],
+        genderIds: genderIdsByProduct.get(r.id) ?? [],
         variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder)
       };
     })
@@ -305,7 +303,7 @@ export async function findAdminProductByIdRepo(id: number) {
 
   const mediaByProduct = await loadMediaRows([row.id]);
   const { offerIdsByProductId } = await loadActiveOfferData([row.id]);
-  const { ageGroupIdsByProduct, characterIdsByProduct } = await loadProductAttributeLinks([row.id]);
+  const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks([row.id]);
   const variantsRows = await db
     .select({
       id: productVariants.id,
@@ -328,7 +326,7 @@ export async function findAdminProductByIdRepo(id: number) {
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],
     ageGroupIds: ageGroupIdsByProduct.get(row.id) ?? [],
-    characterIds: characterIdsByProduct.get(row.id) ?? [],
+    genderIds: genderIdsByProduct.get(row.id) ?? [],
     variants: variantsRows.map((variant) => mapVariant(variant, discountByVariantId.get(variant.id) ?? null)).sort((a, b) => a.sortOrder - b.sortOrder)
   };
 }

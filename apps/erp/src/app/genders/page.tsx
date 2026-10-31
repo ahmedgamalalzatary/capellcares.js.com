@@ -2,6 +2,6 @@
 
 import { AttributeListPage } from "@/features/product-attributes/components/attribute-list-page";
 
-export default function BrandsPage() {
-  return <AttributeListPage kind="brands" />;
+export default function GendersPage() {
+  return <AttributeListPage kind="genders" />;
 }

@@ -42,8 +42,6 @@ describe("storefront root layout", () => {
       fetchOffers: vi.fn().mockResolvedValue([]),
       fetchCollections: vi.fn().mockResolvedValue([]),
       fetchAnnouncements: vi.fn().mockResolvedValue(null),
-      fetchBrands: vi.fn().mockResolvedValue([]),
-      fetchCharacters: vi.fn().mockResolvedValue([]),
       fetchAgeGroups: vi.fn().mockResolvedValue([])
     }));
     vi.doMock("@/lib/nav", () => ({
@@ -79,6 +77,6 @@ describe("storefront root layout", () => {
 
     expect(markup).toContain('lang="ar" dir="rtl"');
     expect(markup).toContain('data-review-prompt-provider="true"');
-    expect(markup).toContain('href="https://wa.me/201034668590"');
+    expect(markup).toContain('href="https://wa.me/96566343797"');
   });
 });

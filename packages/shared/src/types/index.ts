@@ -22,7 +22,7 @@ export interface Category {
   deletedAt?: string | null;
 }
 
-/** A brand, character or age group chosen on a product. Age groups have no image. */
+/** An age group or gender chosen on a product. Genders show their photo on the shop page; age group photos stay in the ERP. */
 export interface ProductAttribute {
   id: number;
   slug: string;
@@ -110,11 +110,10 @@ export interface Product extends HoverImagePaths {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
-  brandId?: number | null;
   /** ERP payloads only: suppliers never reach the storefront or mobile app. */
   supplierId?: number | null;
   ageGroupIds?: number[];
-  characterIds?: number[];
+  genderIds?: number[];
   variants: ProductVariant[];
   /** Present on storefront payloads only; the ERP never reads reviews here. */
   rating?: RatingSummary;

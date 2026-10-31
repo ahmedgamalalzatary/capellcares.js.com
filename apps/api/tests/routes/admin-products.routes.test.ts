@@ -32,9 +32,8 @@ beforeEach(async () => {
   await resetApiTestDatabase();
 });
 
-function makeCompleteProduct(categoryId: number, ids: { brandId: number; supplierId: number; ageGroupId: number }) {
+function makeCompleteProduct(categoryId: number, ids: { supplierId: number; ageGroupId: number }) {
   return {
-    brandId: ids.brandId,
     supplierId: ids.supplierId,
     ageGroupIds: [ids.ageGroupId],
     sku: "ROUTE-ACTIVE-COMPLETE",

@@ -223,7 +223,7 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
-  const mediaRoundedClass = "rounded-3xl";
+  const mediaRoundedClass = "rounded-t-3xl";
   const closeAdvice = () => {
     setAdviceOpen(false);
     setAdvicePreviewActive(false);

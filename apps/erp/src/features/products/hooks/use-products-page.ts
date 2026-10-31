@@ -18,13 +18,11 @@ const PRODUCTS_LIST = {
   filters: {
     status: { default: "all", values: ["all", "active", "inactive"] },
     category: { default: "", accepts: isIdFilter },
-    brand: { default: "", accepts: isIdFilter },
     supplier: { default: "", accepts: isIdFilter },
-    age: { default: "", accepts: isIdFilter },
-    character: { default: "", accepts: isIdFilter }
+    age: { default: "", accepts: isIdFilter }
   },
   sortKeys: PRODUCT_SORT_COLUMNS.map((column) => column.key)
-} satisfies ListSchema<"status" | "category" | "brand" | "supplier" | "age" | "character", ProductSortKey>;
+} satisfies ListSchema<"status" | "category" | "supplier" | "age", ProductSortKey>;
 
 function scopeRank(product: Product, scopeCategoryId: number | null) {
   return product.orderings?.find((entry) =>
@@ -60,7 +58,7 @@ export function useProductsPage() {
   const search = list.state.q;
   const statusFilter = list.state.filters.status as "all" | "active" | "inactive";
   const categoryFilter: number | "" = list.state.filters.category === "" ? "" : Number(list.state.filters.category);
-  const { brand: brandFilter, supplier: supplierFilter, age: ageFilter, character: characterFilter } = list.state.filters;
+  const { supplier: supplierFilter, age: ageFilter } = list.state.filters;
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [pendingToggle, setPendingToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
@@ -85,10 +83,8 @@ export function useProductsPage() {
           }
         }
 
-        if (brandFilter && product.brandId !== Number(brandFilter)) return false;
         if (supplierFilter && product.supplierId !== Number(supplierFilter)) return false;
         if (ageFilter && !product.ageGroupIds?.includes(Number(ageFilter))) return false;
-        if (characterFilter && !product.characterIds?.includes(Number(characterFilter))) return false;
 
         if (search.trim()) {
           const normalizedSearch = search.trim().toLowerCase();
@@ -103,7 +99,7 @@ export function useProductsPage() {
 
         return true;
       });
-  }, [ageFilter, brandFilter, categoryById, categoryFilter, characterFilter, products, search, statusFilter, supplierFilter]);
+  }, [ageFilter, categoryById, categoryFilter, products, search, statusFilter, supplierFilter]);
 
   const scopeCategoryId = categoryFilter === "" ? null : categoryFilter;
 
@@ -114,11 +110,11 @@ export function useProductsPage() {
   }, [filteredProducts, scopeCategoryId]);
 
   // Reordering needs the complete scope set, so it is only meaningful when no search/status filter hides part of the scope.
-  const reorderEnabled = statusFilter === "all" && !search.trim() && !brandFilter && !supplierFilter && !ageFilter && !characterFilter;
+  const reorderEnabled = statusFilter === "all" && !search.trim() && !supplierFilter && !ageFilter;
 
   useEffect(() => {
     setDraftOrder(null);
-  }, [categoryFilter, statusFilter, search, products, brandFilter, supplierFilter, ageFilter, characterFilter]);
+  }, [categoryFilter, statusFilter, search, products, supplierFilter, ageFilter]);
 
   const displayProducts = useMemo(() => {
     if (!draftOrder) {
@@ -213,10 +209,8 @@ export function useProductsPage() {
     list,
     statusFilter,
     categoryFilter,
-    brandFilter,
     supplierFilter,
     ageFilter,
-    characterFilter,
     categoryOptions,
     totalProducts: sortedProducts.length,
     pageProducts: list.pageOf(sortedProducts),

@@ -1,5 +1,5 @@
 import type { Advice, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection } from "@capella/shared";
-import { fetchAdvices, fetchBrands, fetchCategories, fetchCharacters, fetchCollections, fetchOffers, fetchProducts, fetchShopMediaSections } from "@/lib/api/client";
+import { fetchAdvices, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts, fetchShopMediaSections } from "@/lib/api/client";
 
 async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
   try {
@@ -11,20 +11,18 @@ async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
 
 export async function loadShopPageData(lang: string): Promise<{
   categories: Category[];
-  brands: ProductAttribute[];
-  characters: ProductAttribute[];
+  genders: ProductAttribute[];
   advices: Advice[];
   shopMediaSections: ShopMediaSection[];
 }> {
-  const [categories, brands, characters, advices, shopMediaSections] = await Promise.all([
+  const [categories, genders, advices, shopMediaSections] = await Promise.all([
     safeList(() => fetchCategories({ lang })),
-    safeList(() => fetchBrands({ lang })),
-    safeList(() => fetchCharacters({ lang })),
+    safeList(() => fetchGenders({ lang })),
     safeList(() => fetchAdvices({ lang })),
     safeList(() => fetchShopMediaSections({ lang }))
   ]);
 
-  return { categories, brands, characters, advices, shopMediaSections };
+  return { categories, genders, advices, shopMediaSections };
 }
 
 export async function loadSitemapData(): Promise<{
@@ -32,17 +30,15 @@ export async function loadSitemapData(): Promise<{
   categories: Category[];
   offers: Offer[];
   collections: Collection[];
-  brands: ProductAttribute[];
-  characters: ProductAttribute[];
+  genders: ProductAttribute[];
 }> {
-  const [products, categories, offers, collections, brands, characters] = await Promise.all([
+  const [products, categories, offers, collections, genders] = await Promise.all([
     safeList(() => fetchProducts()),
     safeList(() => fetchCategories()),
     safeList(() => fetchOffers()),
     safeList(() => fetchCollections()),
-    safeList(() => fetchBrands()),
-    safeList(() => fetchCharacters())
+    safeList(() => fetchGenders())
   ]);
 
-  return { products, categories, offers, collections, brands, characters };
+  return { products, categories, offers, collections, genders };
 }

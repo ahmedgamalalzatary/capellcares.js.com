@@ -7,18 +7,14 @@ const reorderProductAttributes = vi.fn().mockResolvedValue(undefined);
 
 const state = {
   loaded: true,
-  brands: [
-    { id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" }, imagePath: "/uploads/lego.png" },
-    { id: 2, slug: "barbie", name: { ar: "باربي", en: "Barbie" }, imagePath: null }
-  ],
-  characters: [],
-  ageGroups: [{ id: 5, slug: "0-2", name: { ar: "٠-٢", en: "0-2" } }],
+  ageGroups: [{ id: 5, slug: "0-2", name: { ar: "٠-٢", en: "0-2" }, imagePath: "/uploads/age.png" }],
+  genders: [],
   suppliers: [{ id: 9, name: "Supplier 1" }]
 };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-  usePathname: () => "/brands",
+  usePathname: () => "/age-groups",
   useSearchParams: () => new URLSearchParams()
 }));
 
@@ -42,7 +38,7 @@ vi.mock("@/components/shell/admin-shell", () => ({
 }));
 
 vi.mock("@/components/forms/single-image-field", () => ({
-  SingleImageField: ({ label }: any) => <div>{label}</div>
+  SingleImageField: ({ label, onChange }: any) => <button type="button" onClick={() => onChange("/uploads/new.png")}>{label}</button>
 }));
 
 import { AttributeListPage } from "@/features/product-attributes/components/attribute-list-page";
@@ -55,38 +51,60 @@ function openEditor(label: string) {
 }
 
 describe("AttributeListPage", () => {
-  it("lists brands with both names", () => {
-    render(<AttributeListPage kind="brands" />);
-    expect(screen.getByRole("heading", { name: "الماركات" })).toBeInTheDocument();
-    expect(screen.getByText("ليجو")).toBeInTheDocument();
-    expect(screen.getByText("LEGO")).toBeInTheDocument();
+  it("lists age groups with both names", () => {
+    render(<AttributeListPage kind="ageGroups" />);
+    expect(screen.getByRole("heading", { name: "الفئات العمرية" })).toBeInTheDocument();
+    expect(screen.getByText("٠-٢")).toBeInTheDocument();
+    expect(screen.getByText("0-2")).toBeInTheDocument();
   });
 
-  it("creates a brand with Arabic and English names and offers an image", async () => {
-    render(<AttributeListPage kind="brands" />);
-    openEditor("ماركة جديدة");
-    expect(screen.getByText("صورة الماركة")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "فيشر" } });
-    fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "Fisher" } });
+  it("does not save an age group without a photo", () => {
+    render(<AttributeListPage kind="ageGroups" />);
+    openEditor("فئة عمرية جديدة");
+    fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "٣-٥" } });
+    fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "3-5" } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
-    await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("brands", {
-      name: { ar: "فيشر", en: "Fisher" },
-      imagePath: null
+    expect(upsertProductAttribute).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("أضيفي صورة الفئة العمرية");
+  });
+
+  it("saves an age group with both names and its photo", async () => {
+    render(<AttributeListPage kind="ageGroups" />);
+    openEditor("فئة عمرية جديدة");
+    fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "٣-٥" } });
+    fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "3-5" } });
+    fireEvent.click(screen.getByRole("button", { name: "صورة الفئة العمرية" }));
+    fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
+    await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("ageGroups", {
+      name: { ar: "٣-٥", en: "3-5" },
+      imagePath: "/uploads/new.png"
     }));
   });
 
   it("does not save without both names", () => {
-    render(<AttributeListPage kind="brands" />);
-    openEditor("ماركة جديدة");
+    render(<AttributeListPage kind="ageGroups" />);
+    openEditor("فئة عمرية جديدة");
     fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
     expect(upsertProductAttribute).not.toHaveBeenCalled();
     expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
   });
 
-  it("age groups have no image", () => {
-    render(<AttributeListPage kind="ageGroups" />);
-    openEditor("فئة عمرية جديدة");
-    expect(screen.queryByText(/صورة/)).not.toBeInTheDocument();
+  it("saves a gender with both names and its photo, and refuses one without a photo", async () => {
+    render(<AttributeListPage kind="genders" />);
+    expect(screen.getByText("لا توجد أنواع بعد")).toBeInTheDocument();
+    openEditor("نوع جديد");
+    fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "بنات" } });
+    fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "Girls" } });
+    fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
+    expect(upsertProductAttribute).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("أضيفي صورة النوع");
+
+    fireEvent.click(screen.getByRole("button", { name: "صورة النوع" }));
+    fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
+    await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("genders", {
+      name: { ar: "بنات", en: "Girls" },
+      imagePath: "/uploads/new.png"
+    }));
   });
 
   it("suppliers need only one name", async () => {
@@ -100,7 +118,10 @@ describe("AttributeListPage", () => {
   });
 
   it("shows an empty message when the list has nothing", () => {
-    render(<AttributeListPage kind="characters" />);
-    expect(screen.getByText("لا توجد شخصيات بعد")).toBeInTheDocument();
+    const stored = state.suppliers;
+    state.suppliers = [];
+    render(<AttributeListPage kind="suppliers" />);
+    expect(screen.getByText("لا يوجد موردون بعد")).toBeInTheDocument();
+    state.suppliers = stored;
   });
 });

@@ -563,63 +563,39 @@ body {
 .shop-title--cyan    { --title: var(--cyan-deep); }
 .shop-title--sunny   { --title: var(--sunny-deep); }
 
-.toy-tile--violet, .toy-round--violet, .toy-plate--violet { --tile: var(--violet); --tile-edge: var(--violet-deep); --tile-text: #fff; }
-.toy-tile--magenta, .toy-round--magenta, .toy-plate--magenta { --tile: var(--magenta); --tile-edge: var(--magenta-deep); --tile-text: #fff; }
-.toy-tile--blue, .toy-round--blue, .toy-plate--blue { --tile: var(--blue); --tile-edge: var(--blue-deep); --tile-text: #fff; }
-.toy-tile--cyan, .toy-round--cyan, .toy-plate--cyan { --tile: var(--cyan); --tile-edge: var(--cyan-deep); --tile-text: var(--ink); }
-.toy-tile--sunny, .toy-round--sunny, .toy-plate--sunny { --tile: var(--sunny); --tile-edge: var(--sunny-deep); --tile-text: var(--ink); }
-
-/* Category: a solid block of color. */
+/* Category card: the picture stands alone, with rounded top corners and no line along its bottom edge. */
 .toy-tile {
-  display: flex; flex-direction: column; height: calc(100% - 7px);
-  padding: 12px 12px 14px; margin-bottom: 7px;
-  border-radius: var(--radius-xl);
-  background: var(--tile); color: var(--tile-text);
-  box-shadow: 0 7px 0 var(--tile-edge);
-  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
+  display: flex; flex-direction: column; height: 100%;
+  text-align: center; color: var(--ink);
+  transition: transform var(--motion-fast) var(--ease-out-quart);
 }
-.toy-tile:hover { transform: translateY(2px); box-shadow: 0 5px 0 var(--tile-edge); }
-.toy-tile:active { transform: translateY(7px); box-shadow: 0 0 0 var(--tile-edge); }
+.toy-tile:hover { transform: translateY(-3px); }
+.toy-tile:active { transform: translateY(0); }
 .toy-tile__media {
   position: relative; display: block; aspect-ratio: 1;
-  border-radius: 18px; background: #fff; overflow: hidden;
+  border: 1px solid var(--hairline); border-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: #fff; overflow: hidden;
 }
 .toy-tile__name {
-  margin-top: 12px; text-align: center;
+  margin-top: 10px;
   font-weight: 800; font-size: clamp(16px, 1.5vw, 20px); line-height: 1.2;
 }
 .shell[lang="ar"] .toy-tile__name { font-family: var(--font-ar-display); font-weight: 400; }
 
-/* Brand: the logo on a white plate. */
-.toy-plate, .toy-round { display: block; text-align: center; color: var(--ink); }
-.toy-plate__media {
-  position: relative; display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 6px;
-  border-radius: var(--radius-xl); background: #fff;
-  box-shadow: inset 0 0 0 3px var(--tile), 0 6px 0 var(--tile);
-  overflow: hidden;
-  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
+.toy-tile:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: var(--radius-xl); }
+
+/* Gender banner: a wide picture, rounded on all sides like the banners below it. */
+.gender-tile {
+  position: relative; display: grid; place-items: center; aspect-ratio: 2 / 1;
+  border-radius: var(--radius-xl); background: var(--warm-soft); overflow: hidden;
+  transition: transform var(--motion-fast) var(--ease-out-quart);
 }
-.toy-plate__media img { padding: 14%; }
-.toy-plate:hover .toy-plate__media { transform: translateY(2px); box-shadow: inset 0 0 0 3px var(--tile), 0 4px 0 var(--tile); }
-.toy-plate:active .toy-plate__media { transform: translateY(6px); box-shadow: inset 0 0 0 3px var(--tile), 0 0 0 var(--tile); }
-
-/* Character: a round portrait in a thick ring. */
-.toy-round__media {
-  position: relative; display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 6px;
-  border-radius: 50%; background: #fff;
-  box-shadow: inset 0 0 0 5px var(--tile), 0 6px 0 var(--tile-edge);
-  overflow: hidden;
-  transition: transform var(--motion-fast) var(--ease-out-quart), box-shadow var(--motion-fast) var(--ease-out-quart);
-}
-/* The ring is drawn above the portrait. */
-.toy-round__media::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 5px var(--tile); pointer-events: none; }
-.toy-round:hover .toy-round__media { transform: translateY(2px); box-shadow: 0 4px 0 var(--tile-edge); }
-.toy-round:active .toy-round__media { transform: translateY(6px); box-shadow: 0 0 0 var(--tile-edge); }
-
-.toy-initial { font-family: var(--font-ar-display); font-size: clamp(36px, 4vw, 56px); line-height: 1; color: var(--tile-edge); }
-.toy-label { display: block; margin-top: 10px; font-weight: 700; font-size: 16px; line-height: 1.25; }
-
-.toy-tile:focus-visible, .toy-plate:focus-visible, .toy-round:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: var(--radius-xl); }
+@media (min-width: 640px) { .gender-tile { aspect-ratio: 485 / 168; } }
+.gender-tile:hover { transform: translateY(-3px); }
+.gender-tile:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; }
+.gender-tile__name { font-weight: 800; font-size: clamp(18px, 2.4vw, 28px); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .gender-tile { transition: none; } }
 
 /* Footer: a scalloped edge, echoing the round dots on the logo's T and Y. */
 .footer-scallop { position: relative; background: var(--ink); }
@@ -633,7 +609,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn, .toy-tile, .toy-plate__media, .toy-round__media { transition: none; }
+  .btn, .toy-tile { transition: none; }
 }
 
 /* ============================================================

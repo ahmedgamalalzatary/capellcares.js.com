@@ -170,7 +170,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="flex h-11 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-(--surface-2) px-4 text-start text-(--ink-3) transition-colors hover:border-warm"
+          className="flex h-11 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-surface px-4 text-start text-(--ink-3) transition-colors hover:border-warm"
         >
           <Icon.Search />
           <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>

@@ -7,8 +7,7 @@ const {
   fetchAdvices,
   fetchCategories,
   fetchShopMediaSections,
-  fetchBrands,
-  fetchCharacters
+  fetchGenders,
 } = vi.hoisted(() => ({
   fetchProducts: vi.fn(),
   fetchOffers: vi.fn(),
@@ -16,8 +15,7 @@ const {
   fetchAdvices: vi.fn(),
   fetchCategories: vi.fn(),
   fetchShopMediaSections: vi.fn(),
-  fetchBrands: vi.fn(),
-  fetchCharacters: vi.fn()
+  fetchGenders: vi.fn(),
 }));
 
 vi.mock("@/lib/api/client", () => ({
@@ -27,8 +25,7 @@ vi.mock("@/lib/api/client", () => ({
   fetchAdvices,
   fetchCategories,
   fetchShopMediaSections,
-  fetchBrands,
-  fetchCharacters
+  fetchGenders,
 }));
 
 describe("storefront static data", () => {
@@ -40,23 +37,20 @@ describe("storefront static data", () => {
     fetchAdvices.mockReset();
     fetchCategories.mockReset();
     fetchShopMediaSections.mockReset();
-    fetchBrands.mockReset();
-    fetchCharacters.mockReset();
+    fetchGenders.mockReset();
+    fetchGenders.mockRejectedValue(new Error("offline"));
   });
 
   it("returns empty shop data when the API is unavailable", async () => {
     fetchCategories.mockRejectedValue(new Error("offline"));
     fetchAdvices.mockRejectedValue(new Error("offline"));
     fetchShopMediaSections.mockRejectedValue(new Error("offline"));
-    fetchBrands.mockRejectedValue(new Error("offline"));
-    fetchCharacters.mockRejectedValue(new Error("offline"));
 
     const { loadShopPageData } = await import("@/lib/storefront-static-data");
 
     await expect(loadShopPageData("ar")).resolves.toEqual({
       categories: [],
-      brands: [],
-      characters: [],
+      genders: [],
       advices: [],
       shopMediaSections: []
     });
@@ -71,6 +65,7 @@ describe("storefront static data", () => {
     const { loadSitemapData } = await import("@/lib/storefront-static-data");
 
     await expect(loadSitemapData()).resolves.toEqual({
+      genders: [],
       products: [],
       categories: [],
       offers: [],

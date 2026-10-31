@@ -35,10 +35,9 @@ export type SalesAnalytics = {
 };
 export type ProductApiShape = {
   id: number;
-  brandId?: number | null;
   supplierId?: number | null;
   ageGroupIds?: number[];
-  characterIds?: number[];
+  genderIds?: number[];
   sku?: string;
   slug?: string;
   name?: { ar?: string; en?: string };
@@ -109,14 +108,13 @@ export type CategoryApiShape = {
   deletedAt?: string | null;
 };
 
-export type ProductAttributeKind = "brands" | "characters" | "ageGroups" | "suppliers";
+export type ProductAttributeKind = "ageGroups" | "genders" | "suppliers";
 
 export type ErpStoreSnapshot = {
   products: Product[];
   categories: Category[];
-  brands: ProductAttribute[];
-  characters: ProductAttribute[];
   ageGroups: ProductAttribute[];
+  genders: ProductAttribute[];
   suppliers: Supplier[];
   collections: Collection[];
   offers: Offer[];

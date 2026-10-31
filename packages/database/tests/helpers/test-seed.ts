@@ -1,12 +1,11 @@
 import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import {
   ageGroups,
-  brands,
+  genders,
   categories,
   categoryPaths,
-  characters,
   productAgeGroups,
-  productCharacters,
+  productGenders,
   suppliers,
   bundleDiscounts,
   collectionItems,
@@ -64,11 +63,10 @@ export async function clearTestSeed() {
     await db.delete(productVariants);
     await db.delete(offers);
     await db.delete(productAgeGroups);
-    await db.delete(productCharacters);
+    await db.delete(productGenders);
     await db.delete(products);
-    await db.delete(brands);
-    await db.delete(characters);
     await db.delete(ageGroups);
+    await db.delete(genders);
     await db.delete(suppliers);
     await db.delete(customers);
 
@@ -117,10 +115,9 @@ export async function seedTestData() {
   });
   await rebuildCategoryPaths();
 
-  const [brand] = await db.insert(brands).values({ slug: "test-brand", arName: "ماركة", enName: "Test Brand" }).$returningId();
   const [supplier] = await db.insert(suppliers).values({ name: "Test Supplier" }).$returningId();
-  const [ageGroup] = await db.insert(ageGroups).values({ slug: "test-age", arName: "٠-٢", enName: "0-2" }).$returningId();
-  const attributes = { brandId: brand.id, supplierId: supplier.id };
+  const [ageGroup] = await db.insert(ageGroups).values({ slug: "test-age", arName: "٠-٢", enName: "0-2", imagePath: "/uploads/test-age.png" }).$returningId();
+  const attributes = { supplierId: supplier.id };
 
   const firstProductId = await ensureProduct({
     ...attributes,
@@ -274,7 +271,6 @@ async function ensureProduct(input: {
   enName: string;
   categoryId: number;
   buyingPrice: string;
-  brandId: number;
   supplierId: number;
 }) {
   const [existing] = await db.select().from(products).where(eq(products.sku, input.sku)).limit(1);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Baby, Check, Pencil, Plus, Sparkles, Tag, Trash2, Truck, type LucideIcon } from "lucide-react";
+import { Baby, Check, Pencil, PersonStanding, Plus, Trash2, Truck, type LucideIcon } from "lucide-react";
 import type { ProductAttribute, Supplier } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
@@ -45,31 +45,22 @@ type Config = {
 };
 
 const CONFIG: Record<ProductAttributeKind, Config> = {
-  brands: {
-    title: "الماركات",
-    description: "الماركات التي تختارينها للمنتج، وتظهر في قسم «تسوق حسب الماركة» بالمتجر.",
-    noun: "ماركة",
-    newLabel: "ماركة جديدة",
-    imageLabel: "صورة الماركة",
-    emptyTitle: "لا توجد ماركات بعد",
-    emptyDescription: "ابدئي بإضافة أول ماركة.",
-    icon: Tag
-  },
-  characters: {
-    title: "الشخصيات",
-    description: "الشخصيات مثل سبايدرمان وباتمان، وتظهر في قسم «تسوق حسب الشخصية» بالمتجر.",
-    noun: "شخصية",
-    newLabel: "شخصية جديدة",
-    imageLabel: "صورة الشخصية",
-    emptyTitle: "لا توجد شخصيات بعد",
-    emptyDescription: "ابدئي بإضافة أول شخصية.",
-    icon: Sparkles
+  genders: {
+    title: "الأنواع",
+    description: "مثل أولاد وبنات وبيبي. تظهر كلها بصورها في أول صفحة التسوق بالمتجر.",
+    noun: "نوع",
+    newLabel: "نوع جديد",
+    imageLabel: "صورة النوع",
+    emptyTitle: "لا توجد أنواع بعد",
+    emptyDescription: "ابدئي بإضافة أول نوع، مثل أولاد.",
+    icon: PersonStanding
   },
   ageGroups: {
     title: "الفئات العمرية",
     description: "الأعمار التي تختارينها للمنتج، ويستخدمها العملاء لتصفية المنتجات.",
     noun: "فئة عمرية",
     newLabel: "فئة عمرية جديدة",
+    imageLabel: "صورة الفئة العمرية",
     emptyTitle: "لا توجد فئات عمرية بعد",
     emptyDescription: "ابدئي بإضافة أول فئة، مثل 0-2 سنة.",
     icon: Baby
@@ -113,7 +104,7 @@ function AttributeEditor({
   const [nameAr, setNameAr] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [imagePath, setImagePath] = useState<string | null>(null);
-  const [errors, setErrors] = useState<{ nameAr?: string; nameEn?: string }>({});
+  const [errors, setErrors] = useState<{ nameAr?: string; nameEn?: string; image?: string }>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -127,10 +118,11 @@ function AttributeEditor({
   const save = async () => {
     const next = {
       nameAr: nameAr.trim() ? undefined : isSupplier ? "أدخلي اسم المورد" : "أدخلي الاسم بالعربية",
-      nameEn: isSupplier || nameEn.trim() ? undefined : "أدخلي الاسم بالإنجليزية"
+      nameEn: isSupplier || nameEn.trim() ? undefined : "أدخلي الاسم بالإنجليزية",
+      image: !config.imageLabel || imagePath ? undefined : `أضيفي ${config.imageLabel}`
     };
     setErrors(next);
-    if (next.nameAr || next.nameEn) return;
+    if (next.nameAr || next.nameEn || next.image) return;
 
     const id = row ? { id: row.id } : {};
     const input = isSupplier
@@ -182,14 +174,17 @@ function AttributeEditor({
           </div>
         )}
         {config.imageLabel ? (
-          <SingleImageField label={config.imageLabel} value={imagePath} onChange={setImagePath} uploadContext="products.update" disabled={saving} />
+          <div className="grid gap-1.5">
+            <SingleImageField label={config.imageLabel} value={imagePath} onChange={setImagePath} uploadContext="products.update" disabled={saving} />
+            {errors.image ? <p role="alert" className="text-xs text-danger">{errors.image}</p> : null}
+          </div>
         ) : null}
       </div>
     </Modal>
   );
 }
 
-/** Brands, characters, age groups and suppliers: small lists chosen on a product, so they edit in a modal instead of a wizard. */
+/** Age groups, genders and suppliers: small lists chosen on a product, so they edit in a modal instead of a wizard. */
 export function AttributeListPage({ kind }: { kind: ProductAttributeKind }) {
   const { user } = useAdminAuth();
   const config = CONFIG[kind];

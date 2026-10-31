@@ -34,7 +34,6 @@ export async function createAdminProductRepo(input: {
   enHoverImagePath?: string | null;
   media?: ProductMediaItem[];
   categoryId: number;
-  brandId?: number | null;
   supplierId?: number | null;
   status: "active" | "inactive";
   isNew?: boolean;
@@ -81,7 +80,6 @@ export async function createAdminProductRepo(input: {
           ...(hoverUpdate.hasEnHoverUpdate ? { hoverImagePath: hoverUpdate.enHoverImagePath } : {}),
           ...(hoverUpdate.hasArHoverUpdate ? { arHoverImagePath: hoverUpdate.arHoverImagePath } : {}),
           categoryId: input.categoryId,
-          ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
           ...(input.supplierId !== undefined ? { supplierId: input.supplierId } : {}),
           status: input.status,
           isNew: input.isNew ?? false,
@@ -115,7 +113,6 @@ export async function createAdminProductRepo(input: {
       hoverImagePath: hoverUpdate.enHoverImagePath,
       arHoverImagePath: hoverUpdate.arHoverImagePath,
       categoryId: input.categoryId,
-      brandId: input.brandId ?? null,
       supplierId: input.supplierId ?? null,
       status: input.status,
       isNew: input.isNew ?? false,
