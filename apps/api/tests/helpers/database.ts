@@ -1,6 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import {
   ageGroups,
+  brands,
   categories,
   suppliers,
   adminUserPermissions,
@@ -75,6 +76,7 @@ export async function deleteCustomerByEmail(email: string) {
 }
 
 export async function getBaselineIds() {
+  const [brand] = await db.select({ id: brands.id }).from(brands).where(eq(brands.slug, "test-brand"));
   const [supplier] = await db.select({ id: suppliers.id }).from(suppliers).where(eq(suppliers.name, "Test Supplier"));
   const [ageGroup] = await db.select({ id: ageGroups.id }).from(ageGroups).where(eq(ageGroups.slug, "test-age"));
   const [productOne, productTwo, offer, collection, customer] = await Promise.all([
@@ -85,7 +87,7 @@ export async function getBaselineIds() {
     db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
   ]);
 
-  if (!supplier || !ageGroup || !productOne || !productTwo || !offer || !collection || !customer) {
+  if (!brand || !supplier || !ageGroup || !productOne || !productTwo || !offer || !collection || !customer) {
     throw new Error("Baseline test seed is incomplete");
   }
 
@@ -126,6 +128,7 @@ export async function getBaselineIds() {
   }
 
   return {
+    brandId: brand.id,
     supplierId: supplier.id,
     ageGroupId: ageGroup.id,
     productOneId: productOne.id,

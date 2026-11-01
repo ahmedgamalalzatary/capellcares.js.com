@@ -20,7 +20,7 @@ interface UseProductGridFiltersOptions {
   onHeaderCategoryIdsChange?: (value: number[]) => void;
 }
 
-const NO_ATTRIBUTE_FILTERS: Record<AttributeFilterKey, number[]> = { age: [] };
+const NO_ATTRIBUTE_FILTERS: Record<AttributeFilterKey, number[]> = { brand: [], age: [] };
 
 export function useProductGridFilters({
   products,
@@ -186,6 +186,7 @@ export function useProductGridFilters({
         const minVariant = minVariantPrice(product);
         if (!Number.isFinite(minVariant)) return false;
         if (minVariant < min || minVariant > max) return false;
+        if (attributeFilters.brand.length > 0 && !attributeFilters.brand.includes(product.brandId ?? -1)) return false;
         if (attributeFilters.age.length > 0 && !product.ageGroupIds?.some((id) => attributeFilters.age.includes(id))) return false;
         return true;
       })
@@ -215,7 +216,7 @@ export function useProductGridFilters({
 
   const hasActiveFilters = Boolean(
     q || category !== initialCategory || priceRange.min || priceRange.max
-      || attributeFilters.age.length
+      || attributeFilters.brand.length || attributeFilters.age.length
   );
 
   return {

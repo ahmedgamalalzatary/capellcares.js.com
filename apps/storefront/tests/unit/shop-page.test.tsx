@@ -32,7 +32,8 @@ vi.mock("@capella/shared", async () => {
       },
       shop: {
         byGender: "Shop by gender",
-        byCategory: "Shop by category"
+        byCategory: "Shop by category",
+        byBrand: "Shop by brand"
       },
       common: { previous: "Previous", next: "Next" },
       shopMedia: {
@@ -58,8 +59,12 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 3, parentId: null, slug: "empty", name: { ar: "فارغ", en: "Empty" }, imagePath: null, isLeaf: true, hasProducts: false },
       { id: 4, parentId: null, slug: "dolls", name: { ar: "عرائس", en: "Dolls" }, imagePath: null, isLeaf: true, hasProducts: true }
     ],
+    brands: [
+      { id: 1, slug: "lego", name: { ar: "ليجو", en: "Lego" }, imagePath: "/uploads/lego.png", hasProducts: true },
+      { id: 2, slug: "unused", name: { ar: "غير مستخدم", en: "Unused brand" }, imagePath: null, hasProducts: false }
+    ],
     genders: [
-      { id: 1, slug: "boys", name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png", hasProducts: true },
+      { id: 1, slug: "boys", name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png", arImagePath: "/uploads/boys-ar.png", hasProducts: true },
       { id: 2, slug: "baby", name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", hasProducts: false }
     ],
     advices: [],
@@ -159,6 +164,7 @@ vi.mock("@/lib/storefront-static-data", () => ({
 }));
 
 import ShopPage from "@/app/[lang]/shop/page";
+import { GenderTiles } from "@/components/shop/shop-tiles";
 
 describe("shop page", () => {
   it("shows the sections in the agreed order, with an image before each", async () => {
@@ -168,7 +174,7 @@ describe("shop page", () => {
     );
     expect(order).toEqual([
       "image", "Shop by category",
-      "image",
+      "image", "Shop by brand",
       "image",
       "image", "Advice",
       "image"
@@ -197,9 +203,32 @@ describe("shop page", () => {
     expect(screen.queryByRole("link", { name: "Empty" })).toBeNull();
   });
 
-  it("has no brand or character sections", async () => {
+  it("links brands that have products, and has no character section", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    expect(container.querySelector('a[href*="/brands/"], a[href*="/characters/"]')).toBeNull();
+    expect(screen.getByRole("link", { name: "Lego" })).toHaveAttribute("href", "/en/brands/lego");
+    expect(screen.queryByRole("link", { name: "Unused brand" })).toBeNull();
+    expect(container.querySelector('a[href*="/characters/"]')).toBeNull();
+  });
+
+  it("gives the footer's Category and Brands links a place to land", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    expect(container.querySelector("#categories")).toHaveTextContent("Shop by category");
+    expect(container.querySelector("#brands")).toHaveTextContent("Shop by brand");
+  });
+
+  it("shows the gender picture made for the page's language", () => {
+    const genders = [
+      { id: 1, slug: "boys", name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png", arImagePath: "/uploads/boys-ar.png" },
+      // Saved before Arabic pictures existed: it keeps showing its one picture.
+      { id: 2, slug: "baby", name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", arImagePath: null }
+    ];
+    const src = (container: HTMLElement, href: string) => container.querySelector(`a[href="${href}"] img`)?.getAttribute("src");
+    const arabic = render(<GenderTiles genders={genders} lang="ar" label="x" />);
+    expect(src(arabic.container, "/ar/genders/boys")).toContain("boys-ar.png");
+    expect(src(arabic.container, "/ar/genders/baby")).toContain("baby.png");
+    arabic.unmount();
+    const english = render(<GenderTiles genders={genders} lang="en" label="x" />);
+    expect(src(english.container, "/en/genders/boys")).not.toContain("boys-ar");
   });
 
   it("prioritizes only the first image", async () => {

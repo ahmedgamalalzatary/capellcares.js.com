@@ -33,6 +33,7 @@ interface HeaderMenuCategoryEntry {
   key: string;
   slug: string;
   label: string;
+  imagePath?: string | null;
   sortOrder?: number;
   createdAt?: string;
   id?: number;
@@ -122,6 +123,7 @@ export function buildHeaderMenu({
       id: group.root.id,
       slug: group.root.slug,
       label: pickLang(group.root.name, lang),
+      imagePath: group.root.imagePath ?? null,
       sortOrder: group.root.sortOrder,
       createdAt: group.root.createdAt,
       children: group.children

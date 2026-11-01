@@ -8,6 +8,7 @@ const reorderProductAttributes = vi.fn().mockResolvedValue(undefined);
 const state = {
   loaded: true,
   ageGroups: [{ id: 5, slug: "0-2", name: { ar: "٠-٢", en: "0-2" }, imagePath: "/uploads/age.png" }],
+  brands: [{ id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" }, imagePath: null }],
   genders: [],
   suppliers: [{ id: 9, name: "Supplier 1" }]
 };
@@ -89,21 +90,37 @@ describe("AttributeListPage", () => {
     expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
   });
 
-  it("saves a gender with both names and its photo, and refuses one without a photo", async () => {
+  it("saves a gender with both names and both photos, and refuses one missing a photo", async () => {
     render(<AttributeListPage kind="genders" />);
     expect(screen.getByText("لا توجد أنواع بعد")).toBeInTheDocument();
     openEditor("نوع جديد");
     fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "بنات" } });
     fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "Girls" } });
+    fireEvent.click(screen.getByRole("button", { name: "صورة النوع بالإنجليزية" }));
     fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
     expect(upsertProductAttribute).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("أضيفي صورة النوع");
+    expect(screen.getByRole("alert")).toHaveTextContent("أضيفي صورة النوع بالعربية");
 
-    fireEvent.click(screen.getByRole("button", { name: "صورة النوع" }));
+    fireEvent.click(screen.getByRole("button", { name: "صورة النوع بالعربية" }));
     fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
     await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("genders", {
       name: { ar: "بنات", en: "Girls" },
-      imagePath: "/uploads/new.png"
+      imagePath: "/uploads/new.png",
+      arImagePath: "/uploads/new.png"
+    }));
+  });
+
+  it("saves a brand with both names, with its picture being optional", async () => {
+    render(<AttributeListPage kind="brands" />);
+    expect(screen.getByText("LEGO")).toBeInTheDocument();
+    openEditor("ماركة جديدة");
+    fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "باربي" } });
+    fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "Barbie" } });
+    expect(screen.getByRole("button", { name: "صورة الماركة" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
+    await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("brands", {
+      name: { ar: "باربي", en: "Barbie" },
+      imagePath: null
     }));
   });
 

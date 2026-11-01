@@ -36,6 +36,7 @@ vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector({
     loaded: true,
     products,
+    brands: [],
     ageGroups: [],
     suppliers: [],
     categories: [{ id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]

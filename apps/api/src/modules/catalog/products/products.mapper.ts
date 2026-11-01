@@ -13,6 +13,7 @@ type ProductRow = {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
+  brandId: number | null;
   ageGroupIds: number[];
   genderIds: number[];
   variants: Array<{
@@ -51,6 +52,7 @@ export function toStorefrontProduct(product: ProductRow): Omit<Product, "buyingP
     isNew: product.isNew,
     isBestseller: product.isBestseller,
     categoryId: product.categoryId,
+    brandId: product.brandId,
     ageGroupIds: product.ageGroupIds,
     genderIds: product.genderIds,
     variants: product.variants

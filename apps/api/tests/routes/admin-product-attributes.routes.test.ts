@@ -83,15 +83,41 @@ test("a name is required", async () => {
   });
 });
 
-test("brands and characters no longer exist", async () => {
+test("brands can be created with or without a picture, listed, renamed and reordered", async () => {
+  await withTestServer(app, async (request) => {
+    const created = await post(request, "/api/erp/brands", { name: { ar: "ليجو", en: "LEGO" }, imagePath: "/uploads/lego.png" });
+    assert.equal(created.status, 200);
+    const id = created.json.id as number;
+
+    const second = await post(request, "/api/erp/brands", { name: { ar: "باربي", en: "Barbie" } });
+    assert.equal(second.status, 200);
+    await post(request, "/api/erp/brands/reorder", { ids: [second.json.id, id] });
+    await post(request, "/api/erp/brands", { id, name: { ar: "ليجو", en: "LEGO Toys" }, imagePath: "/uploads/lego.png" });
+
+    const headers = await getAdminAuthHeaders(request);
+    const list = await request("/api/erp/brands", { headers });
+    const items = list.json.items.filter((item: { slug: string }) => item.slug !== "test-brand");
+    assert.deepEqual(items.map((item: { slug: string }) => item.slug), ["barbie", "lego"]);
+    assert.equal(items[0].imagePath, null);
+    assert.equal(items[1].name.en, "LEGO Toys");
+    assert.equal(items[1].imagePath, "/uploads/lego.png");
+  });
+});
+
+test("duplicate brand names are rejected", async () => {
+  await withTestServer(app, async (request) => {
+    await post(request, "/api/erp/brands", { name: { ar: "ليجو", en: "LEGO" } });
+    const duplicate = await post(request, "/api/erp/brands", { name: { ar: "ليجو", en: "LEGO" } });
+    assert.equal(duplicate.status, 409);
+    assert.equal(duplicate.json.reason, "name-conflict");
+  });
+});
+
+test("characters no longer exist", async () => {
   await withTestServer(app, async (request) => {
     const headers = await getAdminAuthHeaders(request);
-    for (const path of ["/api/erp/brands", "/api/erp/characters"]) {
-      assert.equal((await request(path, { headers })).status, 404, path);
-    }
-    for (const path of ["/api/v1/brands", "/api/v1/characters"]) {
-      assert.equal((await request(path)).status, 404, path);
-    }
+    assert.equal((await request("/api/erp/characters", { headers })).status, 404);
+    assert.equal((await request("/api/v1/characters")).status, 404);
   });
 });
 
@@ -110,25 +136,29 @@ test("suppliers hold only a unique name", async () => {
 
 test("admin lists require a login", async () => {
   await withTestServer(app, async (request) => {
-    for (const path of ["age-groups", "suppliers"]) {
+    for (const path of ["brands", "age-groups", "suppliers"]) {
       const response = await request(`/api/erp/${path}`);
       assert.equal(response.status, 401, path);
     }
   });
 });
 
-test("publishing a product needs a supplier, and the age group is optional", async () => {
+test("publishing a product needs a brand and a supplier, and the age group is optional", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
-    const noSupplier = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { supplierId: null, status: "active" }));
+    const noSupplier = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: ids.brandId, supplierId: null, status: "active" }));
     assert.equal(noSupplier.status, 400);
     assert.equal(noSupplier.json.reason, "cannot-activate-incomplete-product");
+
+    const noBrand = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: null, supplierId: ids.supplierId, status: "active" }));
+    assert.equal(noBrand.status, 400);
+    assert.equal(noBrand.json.reason, "cannot-activate-incomplete-product");
 
     const draft = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { status: "inactive" }));
     assert.equal(draft.status, 200);
 
-    const published = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { supplierId: ids.supplierId, sku: "ATTR-2", name: { ar: "لعبة ٢", en: "Attribute Toy 2" }, status: "active" }));
+    const published = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: ids.brandId, supplierId: ids.supplierId, sku: "ATTR-2", name: { ar: "لعبة ٢", en: "Attribute Toy 2" }, status: "active" }));
     assert.equal(published.status, 200);
   });
 });
@@ -150,6 +180,8 @@ test("unknown attribute ids are rejected", async () => {
     const response = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { ageGroupIds: [999999], status: "inactive" }));
     assert.equal(response.status, 400);
     assert.equal(response.json.reason, "invalid-product-attributes");
+    const unknownBrand = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: 999999, status: "inactive" }));
+    assert.equal(unknownBrand.json.reason, "invalid-product-attributes");
   });
 });
 
@@ -158,6 +190,7 @@ test("attributes save on a product, and editing without them keeps them", async 
   await withTestServer(app, async (request) => {
     const secondAge = await post(request, "/api/erp/age-groups", { name: { ar: "٢-٤", en: "2-4" }, imagePath: "/uploads/two.png" });
     await post(request, "/api/erp/products", productInput(ids.leafCategoryId, {
+      brandId: ids.brandId,
       supplierId: ids.supplierId,
       ageGroupIds: [ids.ageGroupId, secondAge.json.id],
       status: "inactive"
@@ -168,6 +201,7 @@ test("attributes save on a product, and editing without them keeps them", async 
 
     const headers = await getAdminAuthHeaders(request);
     const stored = await request(`/api/erp/products/${row!.id}`, { headers });
+    assert.equal(stored.json.brandId, ids.brandId);
     assert.equal(stored.json.supplierId, ids.supplierId);
     assert.deepEqual([...stored.json.ageGroupIds].sort(), [ids.ageGroupId, secondAge.json.id].sort());
 
@@ -178,7 +212,7 @@ test("items in use cannot be deleted, unused items can", async () => {
   const ids = await getBaselineIds();
   await withTestServer(app, async (request) => {
     const headers = await getAdminAuthHeaders(request);
-    for (const [path, id] of [["suppliers", ids.supplierId], ["age-groups", ids.ageGroupId]] as const) {
+    for (const [path, id] of [["brands", ids.brandId], ["suppliers", ids.supplierId], ["age-groups", ids.ageGroupId]] as const) {
       const blocked = await request(`/api/erp/${path}/${id}`, { method: "DELETE", headers });
       assert.equal(blocked.status, 409, path);
       assert.equal(blocked.json.reason, "in-use");
@@ -190,14 +224,16 @@ test("items in use cannot be deleted, unused items can", async () => {
   });
 });
 
-test("the storefront sees the ages but never the supplier", async () => {
+test("the storefront sees the brand and ages but never the supplier", async () => {
   const ids = await getBaselineIds();
   await withTestServer(app, async (request) => {
     const list = await request("/api/v1/products");
     const product = list.json.items[0];
+    assert.equal(product.brandId, ids.brandId);
     assert.deepEqual(product.ageGroupIds, [ids.ageGroupId]);
 
     const detail = await request(`/api/v1/products/${product.slug}`);
+    assert.equal(detail.json.brandId, ids.brandId);
 
     for (const payload of [list.json, detail.json]) {
       assert.ok(!JSON.stringify(payload).toLowerCase().includes("supplier"), "supplier leaked");
@@ -210,24 +246,34 @@ test("storefront lists mark which items have visible products", async () => {
   const ids = await getBaselineIds();
   await withTestServer(app, async (request) => {
     await post(request, "/api/erp/age-groups", { name: { ar: "فارغ", en: "Empty" }, imagePath: "/uploads/empty.png" });
+    await post(request, "/api/erp/brands", { name: { ar: "فارغ", en: "Empty brand" } });
+    const brands = await request("/api/v1/brands");
+    const brandBySlug = new Map(brands.json.items.map((item: { slug: string; hasProducts: boolean }) => [item.slug, item.hasProducts]));
+    assert.equal(brandBySlug.get("test-brand"), true);
+    assert.equal(brandBySlug.get("empty-brand"), false);
+
     const ages = await request("/api/v1/age-groups");
     assert.equal(ages.json.items.find((item: { id: number }) => item.id === ids.ageGroupId).hasProducts, true);
     assert.equal(ages.json.items.find((item: { slug: string }) => item.slug === "empty").hasProducts, false);
   });
 });
 
-test("genders can be created with a photo, chosen on a product, and shown to the storefront", async () => {
+test("genders can be created with an Arabic and an English photo, chosen on a product, and shown to the storefront", async () => {
   const ids = await getBaselineIds();
   await withTestServer(app, async (request) => {
     const noPhoto = await post(request, "/api/erp/genders", { name: { ar: "بنات", en: "Girls" } });
     assert.equal(noPhoto.status, 400);
     assert.equal(noPhoto.json.reason, "image-required");
+    const noArabicPhoto = await post(request, "/api/erp/genders", { name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png" });
+    assert.equal(noArabicPhoto.status, 400);
+    assert.equal(noArabicPhoto.json.reason, "image-required");
 
-    const girls = await post(request, "/api/erp/genders", { name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png" });
-    const boys = await post(request, "/api/erp/genders", { name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png" });
-    const baby = await post(request, "/api/erp/genders", { name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png" });
+    const girls = await post(request, "/api/erp/genders", { name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png", arImagePath: "/uploads/girls-ar.png" });
+    const boys = await post(request, "/api/erp/genders", { name: { ar: "أولاد", en: "Boys" }, imagePath: "/uploads/boys.png", arImagePath: "/uploads/boys-ar.png" });
+    const baby = await post(request, "/api/erp/genders", { name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", arImagePath: "/uploads/baby-ar.png" });
 
     const saved = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, {
+      brandId: ids.brandId,
       supplierId: ids.supplierId,
       genderIds: [girls.json.id, boys.json.id],
       status: "active"
@@ -239,6 +285,7 @@ test("genders can be created with a photo, chosen on a product, and shown to the
     const bySlug = new Map(list.json.items.map((item: { slug: string; hasProducts: boolean; imagePath: string }) => [item.slug, item]));
     assert.equal((bySlug.get("girls") as any).hasProducts, true);
     assert.equal((bySlug.get("girls") as any).imagePath, "/uploads/girls.png");
+    assert.equal((bySlug.get("girls") as any).arImagePath, "/uploads/girls-ar.png");
     assert.equal((bySlug.get("baby") as any).hasProducts, false);
 
     const products = await request("/api/v1/products");

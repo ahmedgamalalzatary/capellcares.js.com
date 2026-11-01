@@ -34,10 +34,6 @@ vi.mock("@/components/layout/header/announcement-bar", () => ({
   AnnouncementBar: ({ items }: { items: string[] }) => createElement("div", { "data-testid": "announcement-bar" }, items.join("|"))
 }));
 
-vi.mock("@/components/layout/header/shop-mega-menu", () => ({
-  ShopMegaMenu: () => null
-}));
-
 vi.mock("@/components/layout/header/search-overlay", () => ({
   SearchOverlay: () => null
 }));
@@ -97,6 +93,23 @@ describe("Header layout stability", () => {
       "href",
       "/en/login?next=%2Fen%2Fproducts%3Fsort%3Dprice-desc"
     );
+  });
+
+  it("has one big search bar on desktop, and no shop menu button", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} />);
+    const bar = screen.getByTestId("desktop-search");
+    expect(bar).toHaveTextContent("Search");
+    expect(bar.className).toContain("w-full");
+    expect(screen.queryByRole("button", { name: "Shop" })).toBeNull();
+  });
+
+  it("puts the logo first, then search, then the icons on desktop", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} />);
+    const logo = screen.getByRole("link", { name: "Capella" });
+    const bar = screen.getByTestId("desktop-search");
+    const icons = screen.getByRole("button", { name: "Language" });
+    expect(logo.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bar.compareDocumentPosition(icons) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders CMS announcement texts when provided", () => {

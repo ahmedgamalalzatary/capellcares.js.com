@@ -17,6 +17,7 @@ vi.mock("@/components/forms/category-picker", () => ({ CategoryPicker: () => cre
 import { ProductForm } from "@/features/products/components/product-form";
 
 const attributes = {
+  brands: [{ id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" } }],
   genders: [
     { id: 5, slug: "girls", name: { ar: "بنات", en: "Girls" } },
     { id: 6, slug: "boys", name: { ar: "أولاد", en: "Boys" } }
@@ -46,6 +47,7 @@ const initial = {
   isNew: false,
   isBestseller: false,
   categoryId: 2,
+  brandId: null,
   supplierId: null,
   ageGroupIds: [],
   offerIds: [],
@@ -68,14 +70,15 @@ beforeEach(() => upsertProduct.mockClear());
 afterEach(cleanup);
 
 describe("ProductForm attributes", () => {
-  it("saves the chosen supplier and age groups", async () => {
+  it("saves the chosen brand, supplier and age groups", async () => {
     renderForm();
+    fireEvent.change(screen.getByLabelText("الماركة"), { target: { value: "1" } });
     fireEvent.change(screen.getByLabelText("المورد"), { target: { value: "9" } });
     fireEvent.click(screen.getByRole("button", { name: "٠-٢ سنة" }));
     fireEvent.click(screen.getByRole("button", { name: "٢-٤ سنة" }));
     await save();
 
-    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ supplierId: 9, ageGroupIds: [3, 4] }));
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ brandId: 1, supplierId: 9, ageGroupIds: [3, 4] }));
   });
 
   it("saves one or several genders, and publishes with none", async () => {
@@ -87,7 +90,7 @@ describe("ProductForm attributes", () => {
     cleanup();
     upsertProduct.mockClear();
 
-    renderForm({ ...initial, status: "active", supplierId: 9 } as any);
+    renderForm({ ...initial, status: "active", brandId: 1, supplierId: 9 } as any);
     await save();
     expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", genderIds: [] }));
   });
@@ -99,14 +102,20 @@ describe("ProductForm attributes", () => {
     expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ ageGroupIds: [4] }));
   });
 
-  it("has no brand or character fields", () => {
+  it("has no character field", () => {
     renderForm();
-    expect(screen.queryByText("الماركة")).toBeNull();
     expect(screen.queryByText(/الشخصيات/)).toBeNull();
   });
 
-  it("publishes with no age group chosen", async () => {
+  it("does not publish without a brand", async () => {
     renderForm({ ...initial, status: "active", supplierId: 9 } as any);
+    await save();
+    expect(upsertProduct).not.toHaveBeenCalled();
+    expect(screen.getByText("اختاري الماركة")).toBeInTheDocument();
+  });
+
+  it("publishes with no age group chosen", async () => {
+    renderForm({ ...initial, status: "active", brandId: 1, supplierId: 9 } as any);
     await save();
     expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", ageGroupIds: [] }));
   });

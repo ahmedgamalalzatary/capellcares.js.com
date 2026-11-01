@@ -505,6 +505,13 @@
       "when": 1793462136436,
       "tag": "0071_add_genders",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "5",
+      "when": 1793563441766,
+      "tag": "0072_restore_brands_gender_ar_image",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { BackToTop } from "@/components/shop/back-to-top";
-import { fetchAgeGroups, fetchAnnouncements, fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
+import { fetchAgeGroups, fetchAnnouncements, fetchBrands, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
 import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -38,12 +38,14 @@ export default async function LocaleLayout({
 }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const [categories, products, offers, collections, announcements, ageGroups] = await Promise.all([
+  const [categories, products, offers, collections, announcements, brands, genders, ageGroups] = await Promise.all([
     fetchCategories({ lang }).catch(() => []),
     fetchProducts({ lang }).catch(() => []),
     fetchOffers({ lang }).catch(() => []),
     fetchCollections({ lang }).catch(() => []),
     fetchAnnouncements({ lang }).catch(() => null),
+    fetchBrands({ lang }).catch(() => []),
+    fetchGenders({ lang }).catch(() => []),
     fetchAgeGroups({ lang }).catch(() => [])
   ]);
   const navGroups = buildNav(categories, lang);
@@ -64,9 +66,9 @@ export default async function LocaleLayout({
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
             />
             <Suspense fallback={null}>
-              <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} />
+              <Header lang={lang} dict={dict} menuEntries={menuEntries} brands={brands} genders={genders} announcements={announcements} />
             </Suspense>
-            <div className="flex-1"><ProductAttributesProvider value={{ ageGroups }}>{children}</ProductAttributesProvider></div>
+            <div className="flex-1"><ProductAttributesProvider value={{ brands, ageGroups }}>{children}</ProductAttributesProvider></div>
             <Footer lang={lang} dict={dict} />
             <BackToTop label={dict.common.backToTop} />
             <WhatsAppButton label={dict.nav.whatsapp} />

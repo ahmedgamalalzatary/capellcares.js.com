@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Baby, Check, Pencil, PersonStanding, Plus, Trash2, Truck, type LucideIcon } from "lucide-react";
+import { Baby, Check, Pencil, PersonStanding, Plus, Tag, Trash2, Truck, type LucideIcon } from "lucide-react";
 import type { ProductAttribute, Supplier } from "@capella/shared";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { AdminListHeader } from "@/components/admin/admin-list-header";
@@ -39,18 +39,34 @@ type Config = {
   noun: string;
   newLabel: string;
   imageLabel?: string;
+  /** Set when the picture can be left out. */
+  imageOptional?: boolean;
+  /** Set when each language has its own picture; imageLabel is then the English one. */
+  arImageLabel?: string;
   emptyTitle: string;
   emptyDescription: string;
   icon: LucideIcon;
 };
 
 const CONFIG: Record<ProductAttributeKind, Config> = {
+  brands: {
+    title: "الماركات",
+    description: "الماركات التي تختارينها للمنتج، وتظهر في قسم «تسوق حسب الماركة» بالمتجر.",
+    noun: "ماركة",
+    newLabel: "ماركة جديدة",
+    imageLabel: "صورة الماركة",
+    imageOptional: true,
+    emptyTitle: "لا توجد ماركات بعد",
+    emptyDescription: "ابدئي بإضافة أول ماركة.",
+    icon: Tag
+  },
   genders: {
     title: "الأنواع",
     description: "مثل أولاد وبنات وبيبي. تظهر كلها بصورها في أول صفحة التسوق بالمتجر.",
     noun: "نوع",
     newLabel: "نوع جديد",
-    imageLabel: "صورة النوع",
+    imageLabel: "صورة النوع بالإنجليزية",
+    arImageLabel: "صورة النوع بالعربية",
     emptyTitle: "لا توجد أنواع بعد",
     emptyDescription: "ابدئي بإضافة أول نوع، مثل أولاد.",
     icon: PersonStanding
@@ -78,12 +94,12 @@ const CONFIG: Record<ProductAttributeKind, Config> = {
 
 const LIST_SCHEMA = { filters: {}, sortKeys: ["name"] } satisfies ListSchema<never, "name">;
 
-type Row = { id: number; primary: string; secondary?: string; imagePath?: string | null };
+type Row = { id: number; primary: string; secondary?: string; imagePath?: string | null; arImagePath?: string | null };
 
 function toRow(item: ProductAttribute | Supplier): Row {
   if ("name" in item && typeof item.name === "string") return { id: item.id, primary: item.name };
   const attribute = item as ProductAttribute;
-  return { id: attribute.id, primary: attribute.name.ar, secondary: attribute.name.en, imagePath: attribute.imagePath };
+  return { id: attribute.id, primary: attribute.name.ar, secondary: attribute.name.en, imagePath: attribute.imagePath, arImagePath: attribute.arImagePath };
 }
 
 const nameAccessors = { name: (row: Row) => row.primary };
@@ -104,7 +120,8 @@ function AttributeEditor({
   const [nameAr, setNameAr] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [imagePath, setImagePath] = useState<string | null>(null);
-  const [errors, setErrors] = useState<{ nameAr?: string; nameEn?: string; image?: string }>({});
+  const [arImagePath, setArImagePath] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ nameAr?: string; nameEn?: string; image?: string; arImage?: string }>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -112,6 +129,7 @@ function AttributeEditor({
     setNameAr(row?.primary ?? "");
     setNameEn(row?.secondary ?? "");
     setImagePath(row?.imagePath ?? null);
+    setArImagePath(row?.arImagePath ?? null);
     setErrors({});
   }, [open, row]);
 
@@ -119,10 +137,11 @@ function AttributeEditor({
     const next = {
       nameAr: nameAr.trim() ? undefined : isSupplier ? "أدخلي اسم المورد" : "أدخلي الاسم بالعربية",
       nameEn: isSupplier || nameEn.trim() ? undefined : "أدخلي الاسم بالإنجليزية",
-      image: !config.imageLabel || imagePath ? undefined : `أضيفي ${config.imageLabel}`
+      image: !config.imageLabel || config.imageOptional || imagePath ? undefined : `أضيفي ${config.imageLabel}`,
+      arImage: !config.arImageLabel || arImagePath ? undefined : `أضيفي ${config.arImageLabel}`
     };
     setErrors(next);
-    if (next.nameAr || next.nameEn || next.image) return;
+    if (next.nameAr || next.nameEn || next.image || next.arImage) return;
 
     const id = row ? { id: row.id } : {};
     const input = isSupplier
@@ -130,7 +149,8 @@ function AttributeEditor({
       : {
           ...id,
           name: { ar: nameAr.trim(), en: nameEn.trim() },
-          ...(config.imageLabel ? { imagePath } : {})
+          ...(config.imageLabel ? { imagePath } : {}),
+          ...(config.arImageLabel ? { arImagePath } : {})
         };
     setSaving(true);
     try {
@@ -173,6 +193,12 @@ function AttributeEditor({
             />
           </div>
         )}
+        {config.arImageLabel ? (
+          <div className="grid gap-1.5">
+            <SingleImageField label={config.arImageLabel} value={arImagePath} onChange={setArImagePath} uploadContext="products.update" disabled={saving} />
+            {errors.arImage ? <p role="alert" className="text-xs text-danger">{errors.arImage}</p> : null}
+          </div>
+        ) : null}
         {config.imageLabel ? (
           <div className="grid gap-1.5">
             <SingleImageField label={config.imageLabel} value={imagePath} onChange={setImagePath} uploadContext="products.update" disabled={saving} />
@@ -184,7 +210,7 @@ function AttributeEditor({
   );
 }
 
-/** Age groups, genders and suppliers: small lists chosen on a product, so they edit in a modal instead of a wizard. */
+/** Brands, age groups, genders and suppliers: small lists chosen on a product, so they edit in a modal instead of a wizard. */
 export function AttributeListPage({ kind }: { kind: ProductAttributeKind }) {
   const { user } = useAdminAuth();
   const config = CONFIG[kind];

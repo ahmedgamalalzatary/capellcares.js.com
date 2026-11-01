@@ -65,6 +65,7 @@ export function normalizeProduct(input: ProductApiShape): Product {
     isNew: input.isNew ?? false,
     isBestseller: input.isBestseller ?? false,
     categoryId: toNumber(input.categoryId),
+    brandId: input.brandId ?? null,
     supplierId: input.supplierId ?? null,
     ageGroupIds: input.ageGroupIds ?? [],
     genderIds: input.genderIds ?? [],

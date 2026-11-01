@@ -32,6 +32,7 @@ function authUserKey(user: AdminAuthUser | null) {
 }
 
 const ATTRIBUTE_PATHS: Record<ProductAttributeKind, string> = {
+  brands: "brands",
   ageGroups: "age-groups",
   genders: "genders",
   suppliers: "suppliers"
@@ -40,6 +41,7 @@ const ATTRIBUTE_PATHS: Record<ProductAttributeKind, string> = {
 export class ErpStore {
   products: Product[] = [];
   categories: Category[] = [];
+  brands: ProductAttribute[] = [];
   ageGroups: ProductAttribute[] = [];
   genders: ProductAttribute[] = [];
   suppliers: Supplier[] = [];
@@ -71,6 +73,7 @@ export class ErpStore {
     return {
       products: this.products,
       categories: this.categories,
+      brands: this.brands,
       ageGroups: this.ageGroups,
       genders: this.genders,
       suppliers: this.suppliers,
@@ -103,6 +106,7 @@ export class ErpStore {
   private resetData() {
     this.products = [];
     this.categories = [];
+    this.brands = [];
     this.ageGroups = [];
     this.genders = [];
     this.suppliers = [];
@@ -304,6 +308,12 @@ export class ErpStore {
             variantTotals: result.variantTotals ?? emptySales.variantTotals,
             orders: result.orders ?? emptySales.orders
           };
+        }
+      },
+      canRead("products.read") && {
+        load: () => api.get<{ items: ProductAttribute[] }>("/api/erp/brands"),
+        assign: (result: { items: ProductAttribute[] }, store: ErpStore) => {
+          store.brands = result.items;
         }
       },
       canRead("products.read") && {

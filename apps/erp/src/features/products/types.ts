@@ -2,6 +2,7 @@ import type { Category, Product, ProductAttribute, Supplier } from "@capella/sha
 import type { RelatedOption } from "@/lib/related-options";
 
 export interface ProductAttributeOptions {
+  brands: ProductAttribute[];
   ageGroups: ProductAttribute[];
   genders: ProductAttribute[];
   suppliers: Supplier[];

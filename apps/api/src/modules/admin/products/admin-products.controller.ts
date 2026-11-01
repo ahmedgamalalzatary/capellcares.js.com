@@ -194,6 +194,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         hasImage: hasLocalizedProductImage,
         keywordCount: productKeywords.length,
         variantCount: productVariants.length,
+        brandId: attributes.brandId !== undefined ? attributes.brandId : storedFacts?.brandId ?? null,
         supplierId: attributes.supplierId !== undefined ? attributes.supplierId : storedFacts?.supplierId ?? null
       })
     ) {
@@ -243,6 +244,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         ...parseHoverImageInput(incoming),
         media: mediaUpdate,
         categoryId: Number(incoming.categoryId ?? 0),
+        brandId: attributes.brandId,
         supplierId: attributes.supplierId,
         status: productStatus,
         isNew: incoming.isNew ?? false,

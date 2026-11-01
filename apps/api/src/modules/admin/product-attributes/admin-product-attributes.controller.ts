@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, asc, eq, inArray, max, ne, or } from "drizzle-orm";
 import {
   ageGroups,
+  brands,
   genders,
   productAgeGroups,
   productGenders,
@@ -12,6 +13,7 @@ import { db } from "@capella/database/src/db";
 import { resolveEntitySlug } from "../../../services/slug.service.js";
 import {
   listVisibleAgeGroupIdsRepo,
+  listVisibleBrandIdsRepo,
   listVisibleGenderIdsRepo
 } from "../../catalog/products/product/attributes.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
@@ -34,20 +36,22 @@ async function anyRow(query: Promise<unknown[]>) {
   return (await query).length > 0;
 }
 
-/** Age groups and genders share one shape, and both need a name in each language and a photo. The two tables have identical column names, so one typed reference serves both. */
+/** Brands, age groups and genders share one shape. A brand's picture is optional, an age group needs one, and a gender needs one per language. The tables have matching column names (only genders add ar_image_path), so one typed reference serves them all. */
 function namedAttributeHandlers(config: {
-  table: typeof ageGroups | typeof genders;
+  table: typeof brands | typeof ageGroups | typeof genders;
+  image: "optional" | "required" | "bilingual";
   isInUse: (id: number) => Promise<boolean>;
   visibleIds: () => Promise<Set<number | null>>;
 }) {
-  const table = config.table as typeof ageGroups;
+  const table = config.table as typeof genders;
   const listRows = () => db.select().from(table).orderBy(asc(table.sortOrder), asc(table.id));
-  const toItem = (row: typeof ageGroups.$inferSelect) => ({
+  const toItem = (row: typeof genders.$inferSelect) => ({
     id: row.id,
     slug: row.slug,
     name: { ar: row.arName, en: row.enName },
     sortOrder: row.sortOrder,
-    imagePath: row.imagePath ?? null
+    imagePath: row.imagePath ?? null,
+    ...(config.image === "bilingual" ? { arImagePath: row.arImagePath ?? null } : {})
   });
 
   return {
@@ -67,7 +71,10 @@ function namedAttributeHandlers(config: {
         const enName = String(incoming.name?.en ?? "").trim();
         if (!arName || !enName) return res.status(400).json({ ok: false, reason: "name-required" });
         const imagePath = typeof incoming.imagePath === "string" ? incoming.imagePath.trim() : "";
-        if (!imagePath) return res.status(400).json({ ok: false, reason: "image-required" });
+        const arImagePath = typeof incoming.arImagePath === "string" ? incoming.arImagePath.trim() : "";
+        if (config.image !== "optional" && !imagePath) return res.status(400).json({ ok: false, reason: "image-required" });
+        if (config.image === "bilingual" && !arImagePath) return res.status(400).json({ ok: false, reason: "image-required" });
+        const imageValues = { imagePath: imagePath || null, ...(config.image === "bilingual" ? { arImagePath } : {}) };
 
         const id = incoming.id == null ? null : positiveId(incoming.id);
         if (incoming.id != null && id == null) return res.status(400).json({ ok: false, reason: "invalid-id" });
@@ -85,12 +92,12 @@ function namedAttributeHandlers(config: {
           // The slug stays fixed on rename so shared links keep working.
           const [existing] = await db.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
           if (!existing) return res.status(404).json({ ok: false, reason: "not-found" });
-          await db.update(table).set({ arName, enName, imagePath }).where(eq(table.id, id));
+          await db.update(table).set({ arName, enName, ...imageValues }).where(eq(table.id, id));
         } else {
           const [{ highest }] = await db.select({ highest: max(table.sortOrder) }).from(table);
           const [created] = await db
             .insert(table)
-            .values({ slug: newSlug, arName, enName, imagePath, sortOrder: (highest ?? 0) + 1 })
+            .values({ slug: newSlug, arName, enName, ...imageValues, sortOrder: (highest ?? 0) + 1 })
             .$returningId();
           savedId = created.id;
         }
@@ -126,9 +133,10 @@ function namedAttributeHandlers(config: {
         const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
         if (!row) return res.status(404).json({ ok: false, reason: "not-found" });
         await db.delete(table).where(eq(table.id, id));
-        if (row.imagePath) {
+        const pictures = [row.imagePath, row.arImagePath].filter((path): path is string => Boolean(path));
+        if (pictures.length > 0) {
           const { deleteLocalUploadUrls } = await import("../../uploads/uploads.service.js");
-          await deleteLocalUploadUrls([row.imagePath]);
+          await deleteLocalUploadUrls(pictures);
         }
         await safeRevalidate();
         return res.json({ ok: true });
@@ -139,14 +147,23 @@ function namedAttributeHandlers(config: {
   };
 }
 
+export const brandHandlers = namedAttributeHandlers({
+  table: brands,
+  image: "optional",
+  isInUse: (id) => anyRow(db.select({ id: products.id }).from(products).where(eq(products.brandId, id)).limit(1)),
+  visibleIds: listVisibleBrandIdsRepo
+});
+
 export const ageGroupHandlers = namedAttributeHandlers({
   table: ageGroups,
+  image: "required",
   isInUse: (id) => anyRow(db.select({ id: productAgeGroups.productId }).from(productAgeGroups).where(eq(productAgeGroups.ageGroupId, id)).limit(1)),
   visibleIds: listVisibleAgeGroupIdsRepo
 });
 
 export const genderHandlers = namedAttributeHandlers({
   table: genders,
+  image: "bilingual",
   isInUse: (id) => anyRow(db.select({ id: productGenders.productId }).from(productGenders).where(eq(productGenders.genderId, id)).limit(1)),
   visibleIds: listVisibleGenderIdsRepo
 });

@@ -11,6 +11,7 @@ import { useStore } from "@/lib/store";
 export default function NewProductPage() {
   const { user } = useAdminAuth();
   const categories = useStore((s) => s.categories);
+  const brands = useStore((s) => s.brands);
   const ageGroups = useStore((s) => s.ageGroups);
   const genders = useStore((s) => s.genders);
   const suppliers = useStore((s) => s.suppliers);
@@ -25,7 +26,7 @@ export default function NewProductPage() {
   }
   return (
     <AdminShell title="إضافة منتج جديد" crumbs={[{ label: "المنتجات", href: "/products" }, { label: "منتج جديد" }]}>
-      <ProductForm mode="new" categories={categories} attributes={{ ageGroups, genders, suppliers }} relatedOptions={buildRelatedOptions(products, offers, collections)} />
+      <ProductForm mode="new" categories={categories} attributes={{ brands, ageGroups, genders, suppliers }} relatedOptions={buildRelatedOptions(products, offers, collections)} />
     </AdminShell>
   );
 }

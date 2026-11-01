@@ -18,6 +18,9 @@ export const ar = {
     search: "ابحث عن منتج",
     categories: "الأقسام",
     allCategories: "كل الأقسام",
+    genders: "النوع",
+    brands: "الماركات",
+    allBrands: "كل الماركات",
     allCategoryTypes: "كل أنواع {name}",
     announcement: "توصيل مجاني لكل الطلبات والدفع عند الاستلام",
     announcements: [
@@ -135,6 +138,7 @@ export const ar = {
   },
   filters: {
     title: "الفلاتر",
+    brand: "الماركة",
     age: "السن",
     bytype: "الفئة",
     price: "السعر",
@@ -343,6 +347,7 @@ export const ar = {
   shop: {
     byGender: "تسوق حسب النوع",
     byCategory: "تسوق حسب الفئة",
+    byBrand: "تسوق حسب الماركة",
     eyebrow: "متجر فلتة",
     heading: "كل ما تحتاجه، في مكان واحد.",
     description: "ألعاب وعروض ومنتجات جديدة ونصائح، كلها من فلتة.",
@@ -368,8 +373,8 @@ export const ar = {
     rights: "كل الحقوق محفوظة.",
     currency: "العملة: ج.م.",
     creator: "بت تكنولوجي",
-    shop: "المتجر",
-    allProducts: "كل الألعاب",
+    categories: "الفئة",
+    brands: "الماركات",
     new: "جديد",
     bestseller: "الأكثر مبيعًا",
     social: "تابعنا",
@@ -385,6 +390,10 @@ export const ar = {
     returnsRefunds: "الإرجاع والاسترداد",
     shippingHandling: "الشحن والتوصيل",
     paymentMethods: "الدفع عند الاستلام",
+    downloadOn: "حمّله من",
+    appStore: "آب ستور",
+    getItOn: "احصل عليه من",
+    googlePlay: "جوجل بلاي",
     whatsapp: "واتساب"
   },
   contact: {
@@ -442,7 +451,7 @@ export const ar = {
     about: {
       title: "نبذة عنا",
       blocks: [
-        { p: "فلتة توي متجر ألعاب للأطفال من كل الأعمار. نجمع لك ألعابًا يحبها الأطفال، ليسهل عليك اختيار اللعبة المناسبة." },
+        { p: "فلتة توي متجر ألعاب للأطفال من كل الأعمار. نجمع لك ألعابًا من الماركات التي يحبها الأطفال، ليسهل عليك اختيار اللعبة المناسبة." },
         { h: "ما يهمنا" },
         { ul: [
           "المرح أولًا: ألعاب يحب الأطفال اللعب بها فعلًا.",

@@ -15,9 +15,11 @@ export interface ProductGridProps {
   onHeaderCategoryIdsChange?: (value: number[]) => void;
   /** Set by pages that already stand for one category (category pages), so the filter panel names its catch-all pill after that category instead of offering a generic "all categories" that would duplicate the tree root. */
   scopedCategoryId?: number;
+  /** Filters this page already stands for (a brand page has no use for a brand filter). */
+  hiddenAttributeFilters?: AttributeFilterKey[];
 }
 
-export type AttributeFilterKey = "age";
+export type AttributeFilterKey = "brand" | "age";
 
 export interface AttributeFilterGroup {
   key: AttributeFilterKey;

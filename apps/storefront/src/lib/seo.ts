@@ -101,8 +101,8 @@ export function buildProductsMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   const title = isAr ? "تسوق ألعاب الأطفال" : "Shop toys for kids";
   const description = isAr
-    ? "اكتشف ألعاب الأطفال من فلتة توي واختر حسب السن."
-    : "Browse toys from Falta Toy and choose by age.";
+    ? "اكتشف ألعاب الأطفال من فلتة توي واختر حسب السن والماركة."
+    : "Browse toys from Falta Toy and choose by age and brand.";
 
   return {
     title,
@@ -185,8 +185,8 @@ export function buildShopMetadata(lang: Language): Metadata {
     ? "فلتة توي | متجر ألعاب أطفال"
     : `${BRAND_NAME} | Toy shop for kids`;
   const description = isAr
-    ? "تسوق الألعاب حسب الفئة من فلتة توي، مع نصائح لاختيار اللعبة المناسبة."
-    : "Shop toys by category at Falta Toy, with advice on choosing the right one.";
+    ? "تسوق الألعاب حسب الفئة والماركة من فلتة توي، مع نصائح لاختيار اللعبة المناسبة."
+    : "Shop toys by category and brand at Falta Toy, with advice on choosing the right one.";
 
   return {
     title: { absolute: title },
@@ -480,9 +480,17 @@ export function buildRobots(): MetadataRoute.Robots {
 }
 
 export function buildGenderMetadata(lang: Language, item: ProductAttribute): Metadata {
+  return buildAttributeMetadata(lang, item, "genders");
+}
+
+export function buildBrandMetadata(lang: Language, item: ProductAttribute): Metadata {
+  return buildAttributeMetadata(lang, item, "brands");
+}
+
+function buildAttributeMetadata(lang: Language, item: ProductAttribute, section: "brands" | "genders"): Metadata {
   const name = pickLang(item.name, lang);
   const description = lang === "ar" ? `تسوق ألعاب ${name} من ${BRAND_NAME}.` : `Shop ${name} toys at ${BRAND_NAME}.`;
-  const path = `/genders/${item.slug}`;
+  const path = `/${section}/${item.slug}`;
 
   return {
     title: name,

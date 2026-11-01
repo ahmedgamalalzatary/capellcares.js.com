@@ -18,6 +18,9 @@ export const en = {
     search: "Search products",
     categories: "Categories",
     allCategories: "All Categories",
+    genders: "Gender",
+    brands: "Brands",
+    allBrands: "All Brands",
     allCategoryTypes: "All {name} Types",
     announcement: "Free delivery on every order, pay cash on delivery",
     announcements: [
@@ -135,6 +138,7 @@ export const en = {
   },
   filters: {
     title: "Filters",
+    brand: "Brand",
     age: "Age",
     bytype: "Category",
     price: "Price",
@@ -341,6 +345,7 @@ export const en = {
   shop: {
     byGender: "Shop by gender",
     byCategory: "Shop by category",
+    byBrand: "Shop by brand",
     eyebrow: "The Falta shop",
     heading: "Everything you need, in one place.",
     description: "Toys, offers, new arrivals and advice, all from Falta.",
@@ -366,8 +371,8 @@ export const en = {
     rights: "All rights reserved.",
     currency: "EGP",
     creator: "bit Technology",
-    shop: "Shop",
-    allProducts: "All toys",
+    categories: "Category",
+    brands: "Brands",
     new: "New",
     bestseller: "Bestseller",
     aboutus: "About Us",
@@ -384,6 +389,10 @@ export const en = {
     returnsRefunds: "Returns & Refunds",
     shippingHandling: "Shipping and Handling",
     paymentMethods: "Cash on delivery",
+    downloadOn: "Download on the",
+    appStore: "App Store",
+    getItOn: "Get it on",
+    googlePlay: "Google Play",
     whatsapp: "WhatsApp"
   },
   contact: {
@@ -441,7 +450,7 @@ export const en = {
     about: {
       title: "About Us",
       blocks: [
-        { p: "Falta Toy is a toy shop for kids of every age. We bring together toys children love, so finding the right one is easy." },
+        { p: "Falta Toy is a toy shop for kids of every age. We bring together toys from the brands children love, so finding the right one is easy." },
         { h: "What matters to us" },
         { ul: [
           "Fun first: toys that kids actually want to play with.",

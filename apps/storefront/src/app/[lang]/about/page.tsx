@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/about",
     titleEn: "About Us",
     titleAr: "نبذة عنا",
-    descEn: "Discover Falta Toy, a toy shop for every age.",
-    descAr: "تعرّف على فلتة توي، متجر ألعاب لكل الأعمار."
+    descEn: "Discover Falta Toy, a toy shop for every age with the brands kids love.",
+    descAr: "تعرّف على فلتة توي، متجر ألعاب لكل الأعمار من الماركات التي يحبها الأطفال."
   });
 }
 

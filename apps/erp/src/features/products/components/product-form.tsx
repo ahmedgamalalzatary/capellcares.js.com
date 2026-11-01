@@ -25,7 +25,7 @@ import { RelatedItemsField } from "@/components/forms/related-items-field";
 import type { ProductFormProps } from "@/features/products/types";
 
 const STEPS = [
-  { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والمورد والأنواع والأعمار والكلمات المفتاحية." },
+  { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والماركة والمورد والأنواع والأعمار والكلمات المفتاحية." },
   { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو، وصورة التمرير التي تظهر على بطاقة المنتج." },
   { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والأسعار", description: "لكل مقاس سعر بيع ومخزون، وسعر الشراء للاستخدام الداخلي." },
   { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والتحذيرات، ثم العناصر المرتبطة وحالة المنتج." },
@@ -65,6 +65,7 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
     keywords, setKeywords,
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
+    brandId, setBrandId,
     supplierId, setSupplierId,
     ageGroupIds, setAgeGroupIds,
     genderIds, setGenderIds,
@@ -131,19 +132,34 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
         <Field label="القسم" htmlFor="product-category" error={errors.categoryId}>
           <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
         </Field>
-        <Field label="المورد" htmlFor="product-supplier" hint="للاستخدام الداخلي، لا يظهر للعملاء." error={errors.supplierId}>
-          <Select
-            id="product-supplier"
-            aria-invalid={Boolean(errors.supplierId) || undefined}
-            value={supplierId ?? ""}
-            onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">— اختاري المورد —</option>
-            {(attributes?.suppliers ?? []).map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-            ))}
-          </Select>
-        </Field>
+        <div className={FIELD_GRID}>
+          <Field label="الماركة" htmlFor="product-brand" error={errors.brandId}>
+            <Select
+              id="product-brand"
+              aria-invalid={Boolean(errors.brandId) || undefined}
+              value={brandId ?? ""}
+              onChange={(e) => setBrandId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">— اختاري الماركة —</option>
+              {(attributes?.brands ?? []).map((brand) => (
+                <option key={brand.id} value={brand.id}>{brand.name.ar}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="المورد" htmlFor="product-supplier" hint="للاستخدام الداخلي، لا يظهر للعملاء." error={errors.supplierId}>
+            <Select
+              id="product-supplier"
+              aria-invalid={Boolean(errors.supplierId) || undefined}
+              value={supplierId ?? ""}
+              onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">— اختاري المورد —</option>
+              {(attributes?.suppliers ?? []).map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+              ))}
+            </Select>
+          </Field>
+        </div>
         <Field label="الأنواع (اختياري)" hint="اختاري نوعًا واحدًا أو أكثر إن وجد.">
           <MultiChoiceField
             legend="الأنواع"

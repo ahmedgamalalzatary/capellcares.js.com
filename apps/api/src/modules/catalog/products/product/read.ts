@@ -110,6 +110,7 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
       arHoverImagePath: products.arHoverImagePath,
       status: products.status,
       categoryId: products.categoryId,
+      brandId: products.brandId,
       deletedAt: products.deletedAt,
       categorySlug: categories.slug,
       isNew: products.isNew,
@@ -196,6 +197,7 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
       isNew: products.isNew,
       isBestseller: products.isBestseller,
       categoryId: products.categoryId,
+      brandId: products.brandId,
       deletedAt: products.deletedAt,
       categorySlug: categories.slug
     })

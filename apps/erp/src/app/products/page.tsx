@@ -7,7 +7,7 @@ import { useAdminAuth } from "@/components/providers/admin-auth";
 import { ACTIVE_STATUS_FILTER_OPTIONS, AdminListHeader } from "@/components/admin/admin-list-header";
 import { tableSortSelect } from "@/components/admin/admin-list-header";
 import { AdminShell } from "@/components/shell/admin-shell";
-import { Baby, Check, CircleDot, Factory, FolderTree, Percent, Plus, Sparkles, Tag } from "lucide-react";
+import { Baby, Check, CircleDot, Factory, FolderTree, Percent, Plus, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateErpModule, canReadErpModule, canSoftDeleteErpModule, canToggleErpModule, canUpdateErpModule, hasErpPermission } from "@/lib/erp-permissions";
 import { PRODUCT_SORT_COLUMNS, ProductsTable } from "@/features/products/components/products-table";
@@ -17,6 +17,7 @@ import { useStore } from "@/lib/store";
 
 export default function ProductsListPage() {
   const { user } = useAdminAuth();
+  const brands = useStore((state) => state.brands);
   const ageGroups = useStore((state) => state.ageGroups);
   const suppliers = useStore((state) => state.suppliers);
   const {
@@ -25,6 +26,7 @@ export default function ProductsListPage() {
     list,
     statusFilter,
     categoryFilter,
+    brandFilter,
     supplierFilter,
     ageFilter,
     categoryOptions,
@@ -105,6 +107,17 @@ export default function ProductsListPage() {
                 value: String(option.id),
                 label: `${"— ".repeat(option.depth)}${option.label}`
               }))
+            ]
+          },
+          {
+            key: "brand",
+            label: "الماركة",
+            icon: Tag,
+            value: brandFilter,
+            onChange: (value) => list.setFilter("brand", value),
+            options: [
+              { value: "", label: "كل الماركات" },
+              ...brands.map((brand) => ({ value: String(brand.id), label: brand.name.ar }))
             ]
           },
           {

@@ -67,6 +67,7 @@ vi.mock("@/lib/store", () => ({
       createdAt: "",
       updatedAt: ""
     }],
+    brands: [],
     ageGroups: [],
     suppliers: [],
     categories: [{ id: 5, parentId: null, slug: "cat", name: { ar: "قسم", en: "Category" }, isLeaf: true }]

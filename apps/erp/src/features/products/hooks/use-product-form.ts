@@ -14,6 +14,7 @@ const REQUIREMENT_ERROR: Record<string, string> = {
   buyingPrice: "أدخلي سعر شراء أكبر من صفر",
   keywords: "أضيفي كلمات مفتاحية",
   categoryId: "اختاري قسمًا",
+  brandId: "اختاري الماركة",
   supplierId: "اختاري المورد",
   image: "أضيفي صورة المنتج",
   variants: "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح"
@@ -45,6 +46,7 @@ export function useProductForm({
   const [keywords, setKeywords] = useState((initial?.keywords ?? []).join(", "));
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
+  const [brandId, setBrandId] = useState<number | null>(initial?.brandId ?? null);
   const [supplierId, setSupplierId] = useState<number | null>(initial?.supplierId ?? null);
   const [ageGroupIds, setAgeGroupIds] = useState<number[]>(initial?.ageGroupIds ?? []);
   const [genderIds, setGenderIds] = useState<number[]>(initial?.genderIds ?? []);
@@ -85,10 +87,11 @@ export function useProductForm({
     { key: "buyingPrice", label: "سعر الشراء", target: "pricing", ok: !!buyingPrice && buyingPrice > 0 },
     { key: "keywords", label: "كلمات مفتاحية", target: "basics", ok: keywords.trim().length > 0 },
     { key: "categoryId", label: "اختيار قسم", target: "basics", ok: !!categoryId },
+    { key: "brandId", label: "الماركة", target: "basics", ok: !!brandId },
     { key: "supplierId", label: "المورد", target: "basics", ok: !!supplierId },
     { key: "image", label: "صورة المنتج", target: "media", ok: media.some((item) => item.type === "image") },
     { key: "variants", label: "مقاس وسعر", target: "pricing", ok: variants.length > 0 && variants.every((v) => v.size.trim() && v.price > 0) }
-  ], [nameAr, nameEn, buyingPrice, keywords, categoryId, supplierId, media, variants]);
+  ], [nameAr, nameEn, buyingPrice, keywords, categoryId, brandId, supplierId, media, variants]);
 
   /** Marks the given requirements' fields as errors when unmet; returns true when all are met. */
   const checkRequirements = (keys: string[]) => {
@@ -114,6 +117,7 @@ export function useProductForm({
       if (!buyingPrice || buyingPrice <= 0) next.buyingPrice = "أدخلي سعر شراء أكبر من صفر";
       if (variants.length === 0 || variants.some((v) => !v.size.trim() || v.price <= 0)) next.variants = "أضيفي مقاسًا واحدًا على الأقل مع سعر صحيح";
       if (!categoryId) next.categoryId = "اختاري قسمًا";
+      if (!brandId) next.brandId = REQUIREMENT_ERROR.brandId;
       if (!supplierId) next.supplierId = REQUIREMENT_ERROR.supplierId;
       if (!keywords.trim()) next.keywords = "أضيفي كلمات مفتاحية";
       if (!media.some((item) => item.type === "image")) next.image = "أضيفي صورة المنتج";
@@ -149,6 +153,7 @@ export function useProductForm({
       isNew,
       isBestseller,
       categoryId: categoryId ?? 0,
+      brandId,
       supplierId,
       ageGroupIds,
       genderIds,
@@ -200,6 +205,7 @@ export function useProductForm({
     keywords, setKeywords,
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
+    brandId, setBrandId,
     supplierId, setSupplierId,
     ageGroupIds, setAgeGroupIds,
     genderIds, setGenderIds,

@@ -35,6 +35,7 @@ export type SalesAnalytics = {
 };
 export type ProductApiShape = {
   id: number;
+  brandId?: number | null;
   supplierId?: number | null;
   ageGroupIds?: number[];
   genderIds?: number[];
@@ -108,11 +109,12 @@ export type CategoryApiShape = {
   deletedAt?: string | null;
 };
 
-export type ProductAttributeKind = "ageGroups" | "genders" | "suppliers";
+export type ProductAttributeKind = "brands" | "ageGroups" | "genders" | "suppliers";
 
 export type ErpStoreSnapshot = {
   products: Product[];
   categories: Category[];
+  brands: ProductAttribute[];
   ageGroups: ProductAttribute[];
   genders: ProductAttribute[];
   suppliers: Supplier[];

@@ -6,12 +6,14 @@ import {
   adminListSuppliers,
   adminUpsertSupplier,
   ageGroupHandlers,
+  brandHandlers,
   genderHandlers
 } from "./admin-product-attributes.controller.js";
 
 export const adminProductAttributeRoutes = Router();
 
 for (const [path, handlers] of [
+  ["/brands", brandHandlers],
   ["/age-groups", ageGroupHandlers],
   ["/genders", genderHandlers]
 ] as const) {
@@ -26,5 +28,6 @@ adminProductAttributeRoutes.post("/suppliers", requireErpPermission("products.up
 adminProductAttributeRoutes.delete("/suppliers/:id", requireErpPermission("products.update"), wrapAsync(adminDeleteSupplier));
 
 export const storefrontProductAttributeRoutes = Router();
+storefrontProductAttributeRoutes.get("/brands", wrapAsync(brandHandlers.storefrontList));
 storefrontProductAttributeRoutes.get("/age-groups", wrapAsync(ageGroupHandlers.storefrontList));
 storefrontProductAttributeRoutes.get("/genders", wrapAsync(genderHandlers.storefrontList));

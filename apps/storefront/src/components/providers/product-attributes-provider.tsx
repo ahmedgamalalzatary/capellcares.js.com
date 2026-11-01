@@ -4,12 +4,13 @@ import { createContext, useContext, type ReactNode } from "react";
 import type { ProductAttribute } from "@capella/shared";
 
 export interface ProductAttributeLists {
+  brands: ProductAttribute[];
   ageGroups: ProductAttribute[];
 }
 
-const ProductAttributesContext = createContext<ProductAttributeLists>({ ageGroups: [] });
+const ProductAttributesContext = createContext<ProductAttributeLists>({ brands: [], ageGroups: [] });
 
-/** The age list, loaded once by the locale layout for every filter panel and product page. */
+/** The brand and age lists, loaded once by the locale layout for every filter panel and product page. */
 export function ProductAttributesProvider({ value, children }: { value: ProductAttributeLists; children: ReactNode }) {
   return <ProductAttributesContext.Provider value={value}>{children}</ProductAttributesContext.Provider>;
 }

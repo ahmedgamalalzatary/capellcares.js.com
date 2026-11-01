@@ -38,6 +38,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
   const offers = useStore((s) => s.offers);
   const collections = useStore((s) => s.collections);
   const categories = useStore((s) => s.categories);
+  const brands = useStore((s) => s.brands);
   const ageGroups = useStore((s) => s.ageGroups);
   const genders = useStore((s) => s.genders);
   const suppliers = useStore((s) => s.suppliers);
@@ -101,7 +102,7 @@ function EditProductPageContent({ params }: { params: Promise<{ id: string }> })
         mode="edit"
         initial={relatedItems === null ? product : { ...product, relatedItems }}
         categories={categories}
-        attributes={{ ageGroups, genders, suppliers }}
+        attributes={{ brands, ageGroups, genders, suppliers }}
         relatedOptions={buildRelatedOptions(products, offers, collections)}
         relatedItemsAvailable={!relatedItemsError}
       />

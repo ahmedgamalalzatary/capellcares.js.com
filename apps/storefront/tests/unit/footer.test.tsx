@@ -64,15 +64,43 @@ describe("footer", () => {
   it("links to the toy shop's pages, not the old beauty categories", () => {
     const { container } = render(<Footer lang="en" dict={getDict("en")} />);
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual(expect.arrayContaining(["/en/shop", "/en/products", "/en/new", "/en/bestsellers", "/en/offers"]));
+    expect(hrefs).toEqual(expect.arrayContaining(["/en/new", "/en/bestsellers", "/en/offers"]));
     expect(hrefs.some((href) => href?.includes("/category/"))).toBe(false);
   });
 
-  it("has no Sets link and no app store badges", () => {
+  it("offers Category and Brands in the shop column, in place of Shop and All toys", () => {
+    render(<Footer lang="en" dict={getDict("en")} />);
+    expect(screen.getByRole("link", { name: "Category" })).toHaveAttribute("href", "/en/shop#categories");
+    expect(screen.getByRole("link", { name: "Brands" })).toHaveAttribute("href", "/en/shop#brands");
+    expect(screen.queryByRole("link", { name: "Shop" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "All toys" })).toBeNull();
+  });
+
+  it("has no Sets link", () => {
     const { container } = render(<Footer lang="en" dict={getDict("en")} />);
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) => a.getAttribute("href"));
     expect(hrefs).not.toContain("/en/collections");
-    expect(hrefs).not.toContain("/en/get-app");
+  });
+
+  it("shows cash on delivery, the app badges, then the language switch, with the copyright below them", () => {
+    render(<Footer lang="en" dict={getDict("en")} />);
+    const cash = screen.getByRole("img", { name: getDict("en").footer.paymentMethods });
+    const appStore = screen.getByRole("link", { name: /App Store/ });
+    const googlePlay = screen.getByRole("link", { name: /Google Play/ });
+    const language = screen.getByRole("button", { name: getDict("en").langSwitch.en });
+    const copyright = screen.getByText(/bit Technology/);
+    expect(appStore).toHaveAttribute("href", "/en/get-app");
+    expect(googlePlay).toHaveAttribute("href", "/en/get-app");
+    for (const [earlier, later] of [[cash, appStore], [appStore, googlePlay], [googlePlay, language], [language, copyright]] as const) {
+      expect(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it("draws the cash on delivery logo in the footer's yellow", () => {
+    render(<Footer lang="en" dict={getDict("en")} />);
+    const cash = screen.getByRole("img", { name: getDict("en").footer.paymentMethods });
+    expect(cash.className).toContain("text-(--sunny)");
+    expect(cash.querySelector("g")).toHaveAttribute("fill", "currentColor");
   });
 
   it("shows the white logo", () => {

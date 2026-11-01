@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Language } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
+import { SocialIcon } from "./social-icon";
 import { SOCIAL_LINKS, WHATSAPP_URL } from "../../constants/socials";
 
 export function Footer({ lang, dict }: { lang: Language; dict: any }) {
@@ -30,8 +31,8 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
           <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 lg:border-s lg:border-white/20 lg:ps-12">
             <FooterCol title={dict.footer.shopTitle}>
-              <FooterLink href={`/${lang}/shop`}>{dict.footer.shop}</FooterLink>
-              <FooterLink href={`/${lang}/products`}>{dict.footer.allProducts}</FooterLink>
+              <FooterLink href={`/${lang}/shop#categories`}>{dict.footer.categories}</FooterLink>
+              <FooterLink href={`/${lang}/shop#brands`}>{dict.footer.brands}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
               <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>
               <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
@@ -47,18 +48,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 py-1 font-semibold leading-snug text-white/85 transition-colors hover:text-(--sunny)"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4 shrink-0"
-                    aria-hidden
-                    fill={stroke ? "none" : "currentColor"}
-                    stroke={stroke ? "currentColor" : "none"}
-                    strokeWidth={stroke ? 2 : 0}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d={path} />
-                  </svg>
+                  <SocialIcon path={path} stroke={stroke} className="h-4 w-4 shrink-0" />
                   <span>{dict.footer[label.toLowerCase()]}</span>
                 </a>
               ))}
@@ -86,22 +76,23 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           </div>
         </div>
 
-        <div className="flex justify-center border-t border-white/20 py-6 lg:justify-start">
+        {/* [display:grid], not grid: the global .grid class carries its own gap. Equal outer columns keep the badges in the true middle. */}
+        <div className="[display:grid] items-center justify-items-center gap-6 border-t border-white/20 py-6 min-[880px]:grid-cols-[1fr_auto_1fr]">
           <div
             role="img"
             aria-label={dict.footer.paymentMethods}
             title={dict.footer.paymentMethods}
-            className="flex h-14 w-28 items-center justify-center overflow-hidden"
+            className="flex h-14 w-28 items-center justify-center overflow-hidden text-(--sunny) min-[880px]:justify-self-start"
           >
             <Icon.CashOnDelivery className="h-24 w-24" />
           </div>
-        </div>
 
-        <div className="flex flex-col items-center gap-4 border-t border-white/20 pb-24 pt-5 text-center min-[880px]:flex-row min-[880px]:justify-between">
-          <p className="m-0 text-sm text-white/70">
-            © {year} {dict.footer.creator}. {dict.footer.rights}
-          </p>
-          <div className="flex items-center rounded-full bg-white/10 p-1">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <StoreBadge href={`/${lang}/get-app`} top={dict.footer.downloadOn} bottom={dict.footer.appStore} icon={<Icon.Apple className="h-6 w-6" />} />
+            <StoreBadge href={`/${lang}/get-app`} top={dict.footer.getItOn} bottom={dict.footer.googlePlay} icon={<Icon.GooglePlay className="h-5 w-5" />} />
+          </div>
+
+          <div className="flex items-center rounded-full bg-white/10 p-1 min-[880px]:justify-self-end">
             {(["en", "ar"] as const).map((code) => {
               const active = lang === code;
               return (
@@ -118,6 +109,10 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             })}
           </div>
         </div>
+
+        <p className="m-0 border-t border-white/20 pb-24 pt-5 text-center text-sm text-white/70">
+          © {year} {dict.footer.creator}. {dict.footer.rights}
+        </p>
       </div>
     </footer>
   );
@@ -129,6 +124,19 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
       <h2 className="mb-3 mt-0 text-lg font-extrabold text-(--sunny)">{title}</h2>
       <div className="grid gap-1">{children}</div>
     </div>
+  );
+}
+
+/* Leads to the "coming soon" page until the apps ship. */
+function StoreBadge({ href, top, bottom, icon }: { href: string; top: string; bottom: string; icon: React.ReactNode }) {
+  return (
+    <Link href={href} className="flex h-12 items-center gap-2.5 rounded-2xl bg-white/10 px-4 text-white transition-colors hover:bg-white/20">
+      <span className="shrink-0">{icon}</span>
+      <span className="flex flex-col text-start leading-none">
+        <span className="text-[0.6rem] tracking-wide opacity-80">{top}</span>
+        <span className="text-sm font-semibold leading-tight">{bottom}</span>
+      </span>
+    </Link>
   );
 }
 

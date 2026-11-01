@@ -11,12 +11,11 @@ import { useWishlist } from "@/components/providers/wishlist-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { HeaderMobileDrawer } from "./header/mobile-drawer";
 import { AnnouncementBar } from "./header/announcement-bar";
-import { ShopMegaMenu } from "./header/shop-mega-menu";
 import { SearchOverlay } from "./header/search-overlay";
 import { useLanguageSwitch } from "../../hooks/use-language-switch";
 import type { HeaderProps } from "../../types/header.types";
 
-export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncements }: HeaderProps) {
+export function Header({ lang, dict, menuEntries, brands = [], genders = [], announcements: cmsAnnouncements }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
@@ -71,10 +70,10 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
           `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface min-[880px]:shadow-[0_3px_0_var(--accent-soft)]`
         ].join(" ")}
       >
-      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr]">
-        <div className="flex items-center">
-          {/* Mobile left cluster: menu · login */}
-          <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden">
+      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_1fr_auto] min-[880px]:gap-8">
+        {/* Mobile left cluster: menu · login */}
+        <div className="flex items-center min-[880px]:hidden">
+          <div className="inline-flex items-center justify-center gap-0.5">
             <button
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10"
               onClick={() => setMobileOpen((open) => !open)}
@@ -91,34 +90,11 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
               <Icon.User size={24} />
             </Link>
           </div>
-
-          {/* Desktop left cluster: lang · search · shop */}
-          <div className="hidden min-[880px]:flex items-center gap-0.5">
-            <button
-              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
-              onClick={switchLang}
-              aria-label="Language"
-              title="Language"
-            >
-              <Icon.Globe size={24} />
-              <span className="absolute bottom-1 right-1 text-xs font-semibold">{dict.langSwitch.short}</span>
-            </button>
-            <button
-              className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
-              onClick={() => setSearchOpen((s) => !s)}
-              aria-label={dict.nav.search}
-              aria-expanded={searchOpen}
-              title={dict.nav.search}
-            >
-              <Icon.Search size={24} />
-            </button>
-            <ShopMegaMenu lang={lang} dict={dict} menuEntries={menuEntries} isAr={isAr} />
-          </div>
         </div>
 
         <Link
           href={`/${lang}/shop`}
-          className="group flex items-center justify-self-center"
+          className="group flex items-center justify-self-center min-[880px]:justify-self-start"
           aria-label={dict.brand}
         >
           <Image
@@ -130,6 +106,18 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
             className="h-14 w-auto object-contain sm:h-[68px]"
           />
         </Link>
+
+        {/* Desktop: the big search bar. It opens the same overlay as phones, which holds the live results. */}
+        <button
+          type="button"
+          data-testid="desktop-search"
+          onClick={() => setSearchOpen(true)}
+          aria-expanded={searchOpen}
+          className="hidden h-12 w-full items-center gap-2.5 rounded-(--radius-pill) border border-(--hairline) bg-surface px-5 text-start text-(--ink-3) transition-colors hover:border-warm min-[880px]:flex"
+        >
+          <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
+          <Icon.Search />
+        </button>
 
         <div className="flex items-center justify-end">
           {/* Mobile cluster: wishlist · cart */}
@@ -144,8 +132,17 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
             </Link>
           </div>
 
-          {/* Desktop right cluster: wishlist · cart · login */}
+          {/* Desktop right cluster: language · wishlist · cart · login */}
           <div className="hidden min-[880px]:inline-flex items-center gap-0.5 sm:gap-1">
+            <button
+              className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              onClick={switchLang}
+              aria-label="Language"
+              title="Language"
+            >
+              <Icon.Globe size={24} />
+              <span className="absolute bottom-1 right-1 text-xs font-semibold">{dict.langSwitch.short}</span>
+            </button>
             <Link href={`/${lang}/wishlist`} className="relative grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
               <Icon.Heart size={24} />
               {ids.length > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--magenta) px-1 text-xs font-bold leading-none text-white">{ids.length}</span>}
@@ -183,6 +180,13 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         lang={lang}
         dict={dict}
         menuEntries={menuEntries}
+        brands={brands}
+        genders={genders}
+        // The menu closes first, so following a result does not leave it open over the new page.
+        onOpenSearch={() => {
+          setMobileOpen(false);
+          setSearchOpen(true);
+        }}
         isAr={isAr}
         mobileOpen={mobileOpen}
         user={user}

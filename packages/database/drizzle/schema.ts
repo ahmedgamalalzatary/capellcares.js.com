@@ -111,12 +111,24 @@ export const entityOrderings = mysqlTable("entity_orderings", {
   )
 }));
 
+export const brands = mysqlTable("brands", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 191 }).notNull().unique(),
+  arName: varchar("ar_name", { length: 255 }).notNull(),
+  enName: varchar("en_name", { length: 255 }).notNull(),
+  imagePath: varchar("image_path", { length: 1024 }),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
 export const genders = mysqlTable("genders", {
   id: int("id").autoincrement().primaryKey(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
   imagePath: varchar("image_path", { length: 1024 }),
+  arImagePath: varchar("ar_image_path", { length: 1024 }),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -168,6 +180,7 @@ export const products = mysqlTable("products", {
     .notNull()
     .references(() => categories.id, { onDelete: "restrict" }),
   // Nullable so drafts can be saved; activation requires both (see canActivateProduct).
+  brandId: int("brand_id").references(() => brands.id, { onDelete: "restrict" }),
   supplierId: int("supplier_id").references(() => suppliers.id, { onDelete: "restrict" }),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

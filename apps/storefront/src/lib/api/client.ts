@@ -117,9 +117,18 @@ export async function fetchShopMediaSections(options?: { lang?: string }): Promi
   return data?.items ?? [];
 }
 
+export async function fetchBrands(options?: { lang?: string }): Promise<ProductAttribute[]> {
+  const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/brands`, options);
+  return data?.items ?? [];
+}
+
 export async function fetchGenders(options?: { lang?: string }): Promise<ProductAttribute[]> {
   const data = await getJSON<{ items: ProductAttribute[] }>(`/api/v1/genders`, options);
-  return (data?.items ?? []).map((item) => ({ ...item, imagePath: item.imagePath ? resolveMediaUrl(item.imagePath) : null }));
+  return (data?.items ?? []).map((item) => ({
+    ...item,
+    imagePath: item.imagePath ? resolveMediaUrl(item.imagePath) : null,
+    arImagePath: item.arImagePath ? resolveMediaUrl(item.arImagePath) : null
+  }));
 }
 
 export async function fetchAgeGroups(options?: { lang?: string }): Promise<ProductAttribute[]> {

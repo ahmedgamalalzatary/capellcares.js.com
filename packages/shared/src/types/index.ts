@@ -22,12 +22,14 @@ export interface Category {
   deletedAt?: string | null;
 }
 
-/** An age group or gender chosen on a product. Genders show their photo on the shop page; age group photos stay in the ERP. */
+/** A brand, age group or gender chosen on a product. Brands and genders show their picture in the shop; age group photos stay in the ERP. */
 export interface ProductAttribute {
   id: number;
   slug: string;
   name: Bilingual;
   imagePath?: string | null;
+  /** Genders only: the Arabic picture. imagePath is then the English one. */
+  arImagePath?: string | null;
   sortOrder?: number;
   /** Storefront lists only: false when no visible product uses it, so it stays out of the shop. */
   hasProducts?: boolean;
@@ -110,6 +112,7 @@ export interface Product extends HoverImagePaths {
   isNew: boolean;
   isBestseller: boolean;
   categoryId: number;
+  brandId?: number | null;
   /** ERP payloads only: suppliers never reach the storefront or mobile app. */
   supplierId?: number | null;
   ageGroupIds?: number[];

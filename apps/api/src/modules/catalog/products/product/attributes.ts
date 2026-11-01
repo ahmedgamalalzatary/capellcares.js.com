@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   ageGroups,
+  brands,
   genders,
   productAgeGroups,
   productGenders,
@@ -12,6 +13,7 @@ import { db } from "@capella/database/src/db";
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ProductAttributeInput = {
+  brandId?: number | null;
   supplierId?: number | null;
   ageGroupIds?: number[];
   genderIds?: number[];
@@ -37,16 +39,17 @@ function parseOptionalIds(value: unknown): number[] | undefined | "invalid" {
 
 /** A missing key means "leave as stored", so callers that do not send attributes never clear them. Returns null when a value is malformed. */
 export function parseProductAttributeInput(incoming: Record<string, unknown>): ProductAttributeInput | null {
+  const brandId = parseOptionalId(incoming.brandId);
   const supplierId = parseOptionalId(incoming.supplierId);
   const ageGroupIds = parseOptionalIds(incoming.ageGroupIds);
   const genderIds = parseOptionalIds(incoming.genderIds);
-  if (supplierId === "invalid" || ageGroupIds === "invalid" || genderIds === "invalid") {
+  if (brandId === "invalid" || supplierId === "invalid" || ageGroupIds === "invalid" || genderIds === "invalid") {
     return null;
   }
-  return { supplierId, ageGroupIds, genderIds };
+  return { brandId, supplierId, ageGroupIds, genderIds };
 }
 
-async function allExist(table: typeof suppliers | typeof ageGroups | typeof genders, ids: number[]) {
+async function allExist(table: typeof brands | typeof suppliers | typeof ageGroups | typeof genders, ids: number[]) {
   if (ids.length === 0) return true;
   const rows = await db.select({ id: table.id }).from(table).where(inArray(table.id, ids));
   return rows.length === ids.length;
@@ -54,6 +57,7 @@ async function allExist(table: typeof suppliers | typeof ageGroups | typeof gend
 
 export async function productAttributesExist(input: ProductAttributeInput) {
   const checks = await Promise.all([
+    allExist(brands, input.brandId ? [input.brandId] : []),
     allExist(suppliers, input.supplierId ? [input.supplierId] : []),
     allExist(ageGroups, input.ageGroupIds ?? []),
     allExist(genders, input.genderIds ?? [])
@@ -99,6 +103,11 @@ export async function replaceProductAttributeLinks(
 }
 
 const visibleProduct = and(eq(products.status, "active"), isNull(products.deletedAt));
+
+export async function listVisibleBrandIdsRepo() {
+  const rows = await db.selectDistinct({ id: products.brandId }).from(products).where(visibleProduct);
+  return new Set(rows.map((row) => row.id));
+}
 
 export async function listVisibleAgeGroupIdsRepo() {
   const rows = await db

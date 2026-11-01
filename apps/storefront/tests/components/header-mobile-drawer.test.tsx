@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { HeaderMobileDrawer } from "@/components/layout/header/mobile-drawer";
@@ -40,6 +40,7 @@ const menuEntries: HeaderMenuEntry[] = [
     id: 1,
     slug: "care",
     label: "Care",
+    imagePath: "/uploads/care.jpg",
     sortOrder: 2,
     children: [
       { id: 5, slug: "cleansers", label: "Cleansers", imagePath: "/uploads/cleansers.jpg", children: [] },
@@ -57,9 +58,22 @@ const menuEntries: HeaderMenuEntry[] = [
   }
 ];
 
+const brands = [
+  { id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" }, imagePath: "/uploads/lego.png", hasProducts: true },
+  { id: 2, slug: "unused", name: { ar: "غير", en: "Unused" }, imagePath: null, hasProducts: false }
+];
+const genders = [{ id: 1, slug: "girls", name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png", hasProducts: false }];
+
 const dict = {
   brand: "Falta Toy",
+  footer: { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp" },
   nav: {
+    search: "Search",
+    followUs: "Follow us",
+    genders: "Gender",
+    brands: "Brands",
+    allBrands: "All Brands",
+    allCategories: "All Categories",
     categories: "Categories",
     products: "Shop",
     new: "New",
@@ -77,6 +91,9 @@ function renderDrawer(overrides: Record<string, unknown> = {}) {
     lang: "en" as const,
     dict,
     menuEntries,
+    brands,
+    genders,
+    onOpenSearch: vi.fn(),
     isAr: false,
     mobileOpen: true,
     user: null,
@@ -106,25 +123,61 @@ describe("HeaderMobileDrawer", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it("has no search box, because search now sits in the header", () => {
-    renderDrawer();
-    expect(screen.queryByRole("button", { name: /search/i })).toBeNull();
-    expect(screen.queryByRole("textbox")).toBeNull();
+  it("has a search bar at the top, beside the logo, that opens search", () => {
+    const { onOpenSearch } = renderDrawer();
+    const search = screen.getByRole("button", { name: "Search" });
+    const logo = screen.getByRole("img", { name: "Falta Toy" });
+    const close = screen.getByRole("button", { name: "Close" });
+    expect(logo.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(search.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(search);
+    expect(onOpenSearch).toHaveBeenCalledTimes(1);
   });
 
-  it("orders the menu: shop, categories, new, bestseller, account, then the language switch", () => {
+  it("orders the menu: shop, gender, categories, brands, new, bestseller, account, follow us, then the language switch", () => {
     renderDrawer();
     const nav = screen.getByRole("navigation");
-    const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim());
-    expect(rows).toEqual(["Shop", "Categories", "New", "Bestseller", "Offers", "Account"]);
+    const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim()).filter(Boolean);
+    expect(rows).toEqual(["Shop", "Gender", "Categories", "Brands", "New", "Bestseller", "Offers", "Account"]);
+    expect(screen.getByRole("link", { name: "Account" }).compareDocumentPosition(screen.getByText("Follow us")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(nav.compareDocumentPosition(screen.getByRole("button", { name: "English" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("has no sets or follow-us rows, and links offers to its page", () => {
+  it("has no sets row, and links offers to its page", () => {
     renderDrawer();
     expect(screen.getByRole("link", { name: "Offers" })).toHaveAttribute("href", "/en/offers");
     expect(screen.queryByText("Sets")).toBeNull();
-    expect(screen.queryByText("Follow us")).toBeNull();
+  });
+
+  it("shows the follow us section in the main menu, with every account", () => {
+    renderDrawer();
+    expect(within(screen.getByRole("navigation")).getByText("Follow us")).toBeInTheDocument();
+    for (const name of ["Facebook", "Instagram", "TikTok", "YouTube", "WhatsApp"]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("target", "_blank");
+    }
+  });
+
+  it("opens brands like categories: all brands first, then each brand with its picture, leaving out brands with no toys", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Brands" }));
+    expect(screen.getByRole("link", { name: "All Brands" })).toHaveAttribute("href", "/en/shop#brands");
+    const lego = screen.getByRole("link", { name: "LEGO" });
+    expect(lego).toHaveAttribute("href", "/en/brands/lego");
+    expect(lego.querySelector("img")?.getAttribute("src")).toContain("lego.png");
+    expect(screen.queryByRole("link", { name: "Unused" })).toBeNull();
+  });
+
+  it("shows each category with its picture, under an all categories link", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Categories" }));
+    expect(screen.getByRole("link", { name: "All Categories" })).toHaveAttribute("href", "/en/shop#categories");
+    expect(screen.getByRole("link", { name: "Care" }).querySelector("img")?.getAttribute("src")).toContain("care.jpg");
+  });
+
+  it("opens every gender above the categories", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Gender" }));
+    expect(screen.getByRole("link", { name: "Girls" })).toHaveAttribute("href", "/en/genders/girls");
   });
 
   it("opens the categories dropdown with main categories in order, each going to its page", () => {
