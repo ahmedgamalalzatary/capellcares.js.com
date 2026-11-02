@@ -63,6 +63,15 @@ export type ProductApiShape = {
   arHoverImagePath?: string | null;
   enHoverImagePath?: string | null;
   media?: EntityMedia[];
+  colors?: Array<{
+    id: number | string;
+    name?: { ar?: string; en?: string };
+    arName?: string;
+    enName?: string;
+    hex?: string | null;
+    media?: EntityMedia[];
+    sortOrder?: number | string;
+  }>;
   youtubeUrl?: string | null;
   status?: "active" | "inactive";
   categoryId?: number | string;
@@ -71,6 +80,7 @@ export type ProductApiShape = {
     productId?: number | string;
     size?: string;
     sizeLabel?: string;
+    colorId?: number | string | null;
     price?: number | string;
     sellingPrice?: number | string;
     stock?: number | string;

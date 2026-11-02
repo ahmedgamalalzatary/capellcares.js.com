@@ -19,6 +19,8 @@ export const en = {
     categories: "Categories",
     allCategories: "All Categories",
     genders: "Gender",
+    allGenders: "All Genders",
+    home: "Home",
     brands: "Brands",
     allBrands: "All Brands",
     allCategoryTypes: "All {name} Types",
@@ -54,6 +56,7 @@ export const en = {
     save: "Save",
     quantity: "Quantity",
     size: "Size",
+    color: "Color",
     total: "Total",
     subtotal: "Subtotal",
     shipping: "Shipping",
@@ -97,6 +100,7 @@ export const en = {
     related: "You may also like",
     sku: "SKU",
     selectSize: "Select size",
+    selectColor: "Select color",
     moreSizes: "{n} sizes"
   },
   media: {
@@ -234,7 +238,7 @@ export const en = {
     unavailableItem: "No longer available"
   },
   advices: {
-    title: "Falta advices",
+    title: "Videos",
     description: "Tips for choosing and playing with toys, from Falta.",
     eyebrow: "Falta advices",
     tipBadge: "Tip",

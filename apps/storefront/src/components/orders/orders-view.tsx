@@ -1,5 +1,6 @@
 "use client";
 
+import { orderLineColor } from "@/lib/cart-line-size";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice, type Language, type OrderSummary } from "@capella/shared";
@@ -167,6 +168,9 @@ export function OrdersView({ lang, dict }: { lang: Language; dict: any }) {
                           <div className="truncate text-sm font-medium text-ink">{orderItemName(item, lang)}</div>
                           {category ? (
                             <div className="truncate text-sm text-(--ink-3)">{category}</div>
+                          ) : null}
+                          {orderLineColor(item, lang) ? (
+                            <div className="truncate text-sm text-(--ink-3)">{dict.common.color}: {orderLineColor(item, lang)}</div>
                           ) : null}
                           {item.snapshotSizeLabel ? (
                             <div className="truncate text-sm text-(--ink-3)">{dict.common.size}: {item.snapshotSizeLabel}</div>

@@ -512,6 +512,20 @@
       "when": 1793563441766,
       "tag": "0072_restore_brands_gender_ar_image",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1793625823069,
+      "tag": "0073_product_colors",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "5",
+      "when": 1793625823982,
+      "tag": "0074_variant_color_key",
+      "breakpoints": true
     }
   ]
 }

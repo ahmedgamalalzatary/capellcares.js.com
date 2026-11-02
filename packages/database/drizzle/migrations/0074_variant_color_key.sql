@@ -1,0 +1,4 @@
+ALTER TABLE `product_variants` ADD `color_id` int;--> statement-breakpoint
+ALTER TABLE `product_variants` ADD `active_variant_key` varchar(96) GENERATED ALWAYS AS ((case when `deleted_at` is null then concat(`size_label`, '|', coalesce(`color_id`, 0)) else null end)) STORED;--> statement-breakpoint
+ALTER TABLE `product_variants` ADD CONSTRAINT `product_variants_active_variant_unique` UNIQUE(`product_id`,`active_variant_key`);--> statement-breakpoint
+ALTER TABLE `product_variants` ADD CONSTRAINT `product_variants_color_id_product_colors_id_fk` FOREIGN KEY (`color_id`) REFERENCES `product_colors`(`id`) ON DELETE restrict ON UPDATE no action;

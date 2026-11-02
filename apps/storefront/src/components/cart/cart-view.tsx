@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { pickLang, formatPrice, getEffectiveVariantPrice, type Category, type Language, type Product, type Offer, type Collection } from "@capella/shared";
 import { fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
-import { cartLineSizeLabel } from "@/lib/cart-line-size";
+import { cartLineSizeLabel, productLineOptions } from "@/lib/cart-line-size";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
@@ -68,12 +68,15 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           const v = p?.variants.find((v) => v.id === l.variantId);
           if (!p || !v) return null;
           const category = categories.find((c) => c.id === p.categoryId);
-          const size = cartLineSizeLabel(l, { products, offers, collections });
+          const options = productLineOptions(p, v, lang);
           return {
             key,
             type: "product" as const,
             title: pickLang(p.name, lang),
-            meta: size ? `${dict.common.size}: ${size}` : "",
+            meta: [
+              options.size ? `${dict.common.size}: ${options.size}` : "",
+              options.color ? `${dict.common.color}: ${options.color}` : ""
+            ].filter(Boolean).join(" · "),
             category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,

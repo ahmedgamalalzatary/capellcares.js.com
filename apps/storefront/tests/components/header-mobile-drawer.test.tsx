@@ -1,9 +1,10 @@
 import { createElement } from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { HeaderMobileDrawer } from "@/components/layout/header/mobile-drawer";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
+import { SOCIAL_LINKS } from "@/constants/socials";
 
 const menuEntries: HeaderMenuEntry[] = [
   {
@@ -62,7 +63,7 @@ const brands = [
   { id: 1, slug: "lego", name: { ar: "ليجو", en: "LEGO" }, imagePath: "/uploads/lego.png", hasProducts: true },
   { id: 2, slug: "unused", name: { ar: "غير", en: "Unused" }, imagePath: null, hasProducts: false }
 ];
-const genders = [{ id: 1, slug: "girls", name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png", hasProducts: false }];
+const genders = [{ id: 1, slug: "girls", name: { ar: "بنات", en: "Girls" }, imagePath: "/uploads/girls.png", arImagePath: "/uploads/girls-ar.png", hasProducts: false }];
 
 const dict = {
   brand: "Falta Toy",
@@ -71,6 +72,7 @@ const dict = {
     search: "Search",
     followUs: "Follow us",
     genders: "Gender",
+    allGenders: "All Genders",
     brands: "Brands",
     allBrands: "All Brands",
     allCategories: "All Categories",
@@ -178,6 +180,27 @@ describe("HeaderMobileDrawer", () => {
     renderDrawer();
     fireEvent.click(screen.getByRole("button", { name: "Gender" }));
     expect(screen.getByRole("link", { name: "Girls" })).toHaveAttribute("href", "/en/genders/girls");
+  });
+
+  it("shows each gender with its picture in the page language, under an all genders link", () => {
+    renderDrawer();
+    fireEvent.click(screen.getByRole("button", { name: "Gender" }));
+    expect(screen.getByRole("link", { name: "All Genders" })).toHaveAttribute("href", "/en/shop#genders");
+    expect(screen.getByRole("link", { name: "Girls" }).querySelector("img")?.getAttribute("src")).toContain("girls.png");
+    cleanup();
+
+    renderDrawer({ lang: "ar", isAr: true });
+    fireEvent.click(screen.getByRole("button", { name: "Gender" }));
+    expect(screen.getByRole("link", { name: "بنات" }).querySelector("img")?.getAttribute("src")).toContain("girls-ar.png");
+  });
+
+  it("lists YouTube where the footer has Instagram, and Instagram where it has YouTube", () => {
+    renderDrawer();
+    const names = within(screen.getByRole("navigation")).getAllByRole("link", { name: /^(Facebook|Instagram|TikTok|YouTube|WhatsApp)$/ })
+      .map((link) => link.getAttribute("aria-label"));
+    const footerOrder = SOCIAL_LINKS.map((link) => link.label as string);
+    const swapped = footerOrder.map((name) => name === "Instagram" ? "YouTube" : name === "YouTube" ? "Instagram" : name);
+    expect(names).toEqual(swapped);
   });
 
   it("opens the categories dropdown with main categories in order, each going to its page", () => {

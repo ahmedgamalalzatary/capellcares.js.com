@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, productColorName, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductAttributeLinks } from "@/components/products/product-attribute-links";
 import { ProductIllustration } from "@/components/ui/product-illustration";
@@ -38,15 +38,42 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
     star: true,
   }));
 
-  const firstInStockVariant = product.variants.find((variant) => variant.stock > 0);
-  const [variantId, setVariantId] = useState<number | null>(firstInStockVariant?.id ?? product.variants[0]?.id ?? null);
+  const variants = product.variants;
+  // Only colours and sizes that some variant uses are offered; a product without either shows no choice at all.
+  const colors = useMemo(
+    () => (product.colors ?? []).filter((color) => variants.some((item) => item.colorId === color.id)),
+    [product.colors, variants]
+  );
+  const sizes = useMemo(
+    () => [...new Set(variants.map((item) => item.size.trim()).filter(Boolean))],
+    [variants]
+  );
+  const startVariant = variants.find((item) => item.stock > 0) ?? variants[0];
+  const [colorId, setColorId] = useState<number | null>(startVariant?.colorId ?? null);
+  const [size, setSize] = useState<string>(startVariant?.size.trim() ?? "");
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<Tab>("description");
   const { added, flash: flashAdded } = useAddedFlash();
-  const variant = useMemo(
-    () => product.variants.find((item) => item.id === variantId) ?? null,
-    [variantId, product.variants]
-  );
+  const variantFor = (sizeLabel: string, color: number | null) =>
+    variants.find((item) => item.size.trim() === sizeLabel && (item.colorId ?? null) === color) ?? null;
+  const variant = variantFor(size, colorId);
+  const color = colors.find((item) => item.id === colorId) ?? null;
+  // The chosen colour's gallery; a colour without pictures of its own shows the general ones.
+  const galleryMedia = color && color.media.length > 0 ? color.media : product.media;
+
+  const chooseColor = (id: number) => {
+    setColorId(id);
+    setQty(1);
+    if (variantFor(size, id)?.stock) return;
+    const fallback = variants.find((item) => item.colorId === id && item.stock > 0)
+      ?? variants.find((item) => item.colorId === id);
+    if (fallback) setSize(fallback.size.trim());
+  };
+
+  const chooseSize = (label: string) => {
+    setSize(label);
+    setQty(1);
+  };
   const effectiveVariantPrice = variant ? getEffectiveVariantPrice(variant) : null;
   const isOutOfStock = variant == null || variant.stock === 0;
 
@@ -75,7 +102,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
         <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
-            media={product.media}
+            key={colorId ?? 0}
+            media={galleryMedia}
             lang={lang}
             imagePath={product.imagePath}
             videoUrl={product.youtubeUrl}
@@ -132,36 +160,86 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             )}
           </div>
 
-          <div className="grid gap-2">
-            <div className="font-bold text-(--ink-2)">
-              {dict.product.selectSize}
+          {colors.length > 0 ? (
+            <div className="grid gap-2">
+              <div id="product-color-label" className="font-bold text-(--ink-2)">
+                {dict.product.selectColor}
+                {color && productColorName(color, lang) ? (
+                  <span className="ms-2 font-semibold text-(--ink-3)">{productColorName(color, lang)}</span>
+                ) : null}
+              </div>
+              <div role="radiogroup" aria-labelledby="product-color-label" className="flex flex-wrap gap-2.5">
+                {colors.map((item) => {
+                  const name = productColorName(item, lang);
+                  const active = colorId === item.id;
+                  const soldOut = !variants.some((entry) => entry.colorId === item.id && entry.stock > 0);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      aria-label={name || item.hex || undefined}
+                      title={name || undefined}
+                      onClick={() => chooseColor(item.id)}
+                      className={[
+                        "relative grid min-h-11 min-w-11 place-items-center rounded-full border-2 p-1 transition-colors",
+                        active ? "border-(--violet)" : "border-(--hairline) hover:border-(--ink-3)",
+                        soldOut ? "opacity-45" : ""
+                      ].join(" ")}
+                    >
+                      {item.hex ? (
+                        <span aria-hidden className="block size-8 rounded-full shadow-[inset_0_0_0_1px_var(--hairline)]" style={{ backgroundColor: item.hex }} />
+                      ) : (
+                        <span className="px-2.5 text-sm font-semibold text-ink">{name}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {product.variants.map((item) => (
-                <button
-                  key={item.id}
-                  className={[
-                    "grid min-w-28 gap-0.5 rounded-2xl border-2 px-4 py-3 text-start transition-colors",
-                    item.stock > 0 ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
-                    variantId === item.id ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
-                  ].join(" ")}
-                  data-active={variantId === item.id}
-                  data-out={item.stock === 0 ? "true" : undefined}
-                  onClick={() => item.stock > 0 && setVariantId(item.id)}
-                  disabled={item.stock === 0}
-                >
-                  <span className="text-sm font-medium">{item.size}</span>
-                  <span className="text-xs opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span>
-                </button>
-              ))}
+          ) : null}
+
+          {sizes.length > 0 ? (
+            <div className="grid gap-2">
+              <div id="product-size-label" className="font-bold text-(--ink-2)">
+                {dict.product.selectSize}
+              </div>
+              <div role="radiogroup" aria-labelledby="product-size-label" className="flex flex-wrap gap-2">
+                {sizes.map((label) => {
+                  const item = variantFor(label, colorId);
+                  const available = Boolean(item && item.stock > 0);
+                  const active = size === label;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      className={[
+                        "grid min-w-28 gap-0.5 rounded-2xl border-2 px-4 py-3 text-start transition-colors",
+                        available ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
+                        active ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
+                      ].join(" ")}
+                      data-active={active}
+                      data-out={available ? undefined : "true"}
+                      onClick={() => available && chooseSize(label)}
+                      disabled={!available}
+                    >
+                      <span className="text-sm font-medium">{label}</span>
+                      {item ? <span className="text-xs opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="grid gap-2">
             <div className="font-bold text-(--ink-2)">
               {dict.common.quantity}
             </div>
-            <div className="flex w-full max-w-60 items-center justify-between gap-1 rounded-(--radius-pill) bg-(--warm-soft) p-1">
+            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) bg-(--warm-soft) p-1">
               <button
                 className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}

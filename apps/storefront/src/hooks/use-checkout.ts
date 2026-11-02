@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/components/providers/auth-provider";
 import { useCart } from "@/components/providers/cart-provider";
 import { fetchCollections, fetchOffers, fetchProducts, submitCheckout } from "@/lib/api/client";
-import { cartLineSizeLabel } from "@/lib/cart-line-size";
+import { cartLineSizeLabel, productLineOptions } from "@/lib/cart-line-size";
 import { clearCheckoutRequest, getCheckoutIdempotencyKey } from "@/lib/checkout-request";
 import type {
   CheckoutCatalogState,
@@ -73,7 +73,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
           return {
             key: `p${line.productId}${line.variantId}`,
             title: pickLang(product.name, lang),
-            meta: cartLineSizeLabel(line, { products, offers, collections }) ?? variant.size,
+            meta: (() => {
+              const options = productLineOptions(product, variant, lang);
+              return [options.size, options.color].filter(Boolean).join(" / ");
+            })(),
             unit: getEffectiveVariantPrice(variant),
             qty: line.qty
           };

@@ -70,7 +70,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface min-[880px]:shadow-[0_3px_0_var(--accent-soft)]`
         ].join(" ")}
       >
-      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_1fr_auto] min-[880px]:gap-8">
+      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
         {/* Mobile left cluster: menu · login */}
         <div className="flex items-center min-[880px]:hidden">
           <div className="inline-flex items-center justify-center gap-0.5">
@@ -106,6 +106,16 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
             className="h-14 w-auto object-contain sm:h-[68px]"
           />
         </Link>
+
+        {/* Desktop: quick links between the logo and the search bar. The shop page is the home page. */}
+        <nav aria-label={dict.nav.home} className="hidden items-center gap-6 min-[880px]:flex">
+          <Link href={`/${lang}/shop`} className="text-base font-bold text-ink transition-colors hover:text-(--violet)">
+            {dict.nav.home}
+          </Link>
+          <Link href={`/${lang}/shop#categories`} className="text-base font-bold text-ink transition-colors hover:text-(--violet)">
+            {dict.nav.categories}
+          </Link>
+        </nav>
 
         {/* Desktop: the big search bar. It opens the same overlay as phones, which holds the live results. */}
         <button

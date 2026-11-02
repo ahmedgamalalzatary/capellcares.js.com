@@ -12,6 +12,13 @@ import { Icon } from "@/components/ui/icons";
 import { DESKTOP_BREAKPOINT } from "@/constants/ui";
 import { SocialIcon } from "../social-icon";
 import { SOCIAL_LINKS } from "../../../constants/socials";
+
+/** The menu lists YouTube where Instagram sits in the footer, and Instagram where YouTube sits. */
+const MENU_SOCIAL_LINKS = SOCIAL_LINKS.map((link, _index, all) => (
+  link.label === "Instagram" ? all.find((item) => item.label === "YouTube") ?? link
+    : link.label === "YouTube" ? all.find((item) => item.label === "Instagram") ?? link
+      : link
+));
 import type { HeaderProps } from "../../../types/header.types";
 
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries" | "brands" | "genders"> & {
@@ -78,7 +85,7 @@ export function HeaderMobileDrawer({
             {items.map((item) => (
               <Link key={item.key} href={item.href} onClick={onClose} className={SUB_ROW}>
                 {withPictures && (
-                  <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface">
+                  <span className="relative size-9 shrink-0 overflow-hidden rounded-sm bg-surface">
                     {item.imagePath ? <Image src={item.imagePath} alt="" fill sizes="36px" className="object-contain" /> : null}
                   </span>
                 )}
@@ -165,7 +172,18 @@ export function HeaderMobileDrawer({
           {section(
             "genders",
             dict.nav.genders,
-            genders.map((gender) => ({ key: `gender-${gender.id}`, href: `/${lang}/genders/${gender.slug}`, label: pickLang(gender.name, lang) }))
+            genders.map((gender) => {
+              // Same picture as the shop's gender banners: the Arabic one on Arabic pages when it exists.
+              const picture = lang === "ar" ? gender.arImagePath || gender.imagePath : gender.imagePath;
+              return {
+                key: `gender-${gender.id}`,
+                href: `/${lang}/genders/${gender.slug}`,
+                label: pickLang(gender.name, lang),
+                imagePath: picture ? resolveMediaUrl(picture) : null
+              };
+            }),
+            { href: `/${lang}/shop#genders`, label: dict.nav.allGenders },
+            true
           )}
           {section(
             "categories",
@@ -216,7 +234,7 @@ export function HeaderMobileDrawer({
           <div className="px-5 py-4">
             <p className="m-0 mb-3 text-lg font-bold text-ink">{dict.nav.followUs}</p>
             <div className="flex flex-wrap gap-2">
-              {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+              {MENU_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
                 <a
                   key={label}
                   href={href}

@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import { entityMedia } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
@@ -95,6 +95,11 @@ export function resolvePrimaryEntityImagePath(
   return resolved || (imagePath ? resolvePublicEntityMediaUrl(imagePath) : null);
 }
 
+/** A product's own rows are its general gallery; rows tied to one of its colours belong to that colour (see product/colors.ts). */
+function ownerFilter(type: EntityMediaOwnerType, condition: SQL): SQL {
+  return type === "product" ? and(condition, isNull(entityMedia.productColorId))! : condition;
+}
+
 function ownerColumn(type: EntityMediaOwnerType) {
   return type === "product"
     ? entityMedia.productId
@@ -123,7 +128,7 @@ export async function loadEntityMediaRows(type: EntityMediaOwnerType, ids: numbe
       sortOrder: entityMedia.sortOrder
     })
     .from(entityMedia)
-    .where(inArray(column, ids))
+    .where(ownerFilter(type, inArray(column, ids)))
     .orderBy(asc(entityMedia.sortOrder), asc(entityMedia.id));
 
   const byOwner = new Map<number, Array<{
@@ -147,7 +152,7 @@ async function replaceEntityMediaWithin(
   media: EntityMediaItem[]
 ) {
   const column = ownerColumn(owner.type);
-  await tx.delete(entityMedia).where(eq(column, owner.id));
+  await tx.delete(entityMedia).where(ownerFilter(owner.type, eq(column, owner.id)));
   if (media.length === 0) return;
 
   await tx.insert(entityMedia).values(media.map((item, index) => ({

@@ -1025,4 +1025,97 @@ describe("ProductDetail", () => {
       expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 11, qty: 2 });
     });
   });
+
+  describe("sizes and colours", () => {
+    const dict = {
+      product: { description: "Description", ingredients: "Ingredients", howToUse: "How to use", warnings: "Warnings", selectSize: "Select size", selectColor: "Select color" },
+      badges: { new: "New", bestseller: "Best", offer: "Offer" },
+      common: { outOfStock: "Out of stock", lowStock: "Only {n}", inStock: "In stock", quantity: "Quantity", addToCart: "Add to cart", added: "Added", buyNow: "Buy now", addToWishlist: "Wishlist" },
+      offers: { save: "Save {amount}" }
+    };
+
+    const base = {
+      id: 1,
+      sku: "SKU-1",
+      slug: "product-1",
+      name: { ar: "منتج", en: "Product" },
+      description: { ar: "", en: "Description" },
+      ingredients: { ar: "", en: "" },
+      howToUse: { ar: "", en: "" },
+      warnings: { ar: "", en: "" },
+      keywords: [],
+      buyingPrice: 10,
+      imagePath: "/uploads/general.jpg",
+      media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/general.jpg" }],
+      status: "active" as const,
+      isNew: false,
+      isBestseller: false,
+      categoryId: 5,
+      createdAt: "",
+      updatedAt: ""
+    };
+
+    const coloured = {
+      ...base,
+      colors: [
+        { id: 7, name: { ar: "أسود", en: "Black" }, hex: "#000000", media: [{ type: "image" as const, arUrl: null, enUrl: "/uploads/black.jpg" }] },
+        { id: 8, name: { ar: "", en: "" }, hex: "#0000ff", media: [] }
+      ],
+      variants: [
+        { id: 21, productId: 1, size: "S", colorId: 7, price: 100, stock: 3, sortOrder: 1 },
+        { id: 22, productId: 1, size: "S", colorId: 8, price: 100, stock: 0, sortOrder: 2 },
+        { id: 23, productId: 1, size: "M", colorId: 7, price: 150, stock: 5, sortOrder: 3 },
+        { id: 24, productId: 1, size: "M", colorId: 8, price: 150, stock: 2, sortOrder: 4 }
+      ]
+    };
+
+    beforeEach(() => cartAdd.mockReset());
+
+    it("adds the variant of the chosen size and colour", () => {
+      render(createElement(ProductDetail, { product: coloured, offers: [], lang: "en", dict }));
+
+      expect(screen.getByText("Select color")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("radio", { name: "#0000ff" }));
+      fireEvent.click(screen.getByRole("radio", { name: /M/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+
+      expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 24, qty: 1 });
+    });
+
+    it("starts on the first colour and size in stock", () => {
+      render(createElement(ProductDetail, { product: coloured, offers: [], lang: "en", dict }));
+      expect(screen.getByRole("radio", { name: "Black" })).toBeChecked();
+      expect(screen.getByRole("radio", { name: /S/ })).toBeChecked();
+    });
+
+    it("moves to a size that exists in stock when the chosen colour lacks the current one", () => {
+      render(createElement(ProductDetail, { product: coloured, offers: [], lang: "en", dict }));
+      fireEvent.click(screen.getByRole("radio", { name: "#0000ff" }));
+
+      expect(screen.getByRole("radio", { name: /S/ })).toBeDisabled();
+      expect(screen.getByRole("radio", { name: /M/ })).toBeChecked();
+    });
+
+    it("shows the chosen colour's pictures, and the general ones for a colour without its own", () => {
+      render(createElement(ProductDetail, { product: coloured, offers: [], lang: "en", dict }));
+      expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/black.jpg");
+
+      fireEvent.click(screen.getByRole("radio", { name: "#0000ff" }));
+      expect(screen.getAllByRole("img", { name: "Product" })[0]).toHaveAttribute("src", "/uploads/general.jpg");
+    });
+
+    it("hides the size and colour choices when the product has neither", () => {
+      render(createElement(ProductDetail, {
+        product: { ...base, variants: [{ id: 31, productId: 1, size: "", colorId: null, price: 80, stock: 4, sortOrder: 1 }] },
+        offers: [],
+        lang: "en",
+        dict
+      }));
+
+      expect(screen.queryByText("Select size")).toBeNull();
+      expect(screen.queryByText("Select color")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+      expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 31, qty: 1 });
+    });
+  });
 });

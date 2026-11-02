@@ -201,29 +201,56 @@ export const productAgeGroups = mysqlTable("product_age_groups", {
   productAgeGroupUnique: unique("product_age_groups_unique").on(table.productId, table.ageGroupId)
 }));
 
+/**
+ * A product's colours. Each colour carries its own gallery (entity_media.product_color_id) and every variant may point at one.
+ * Soft-deleted when a sold variant still points at it, so order history keeps its link.
+ */
+export const productColors = mysqlTable(
+  "product_colors",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    arName: varchar("ar_name", { length: 255 }).notNull().default(""),
+    enName: varchar("en_name", { length: 255 }).notNull().default(""),
+    hex: varchar("hex", { length: 7 }),
+    sortOrder: int("sort_order").notNull().default(0),
+    deletedAt: datetime("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+  },
+  (table) => ({
+    productIndex: index("product_colors_product_idx").on(table.productId, table.sortOrder)
+  })
+);
+
 export const productVariants = mysqlTable(
   "product_variants",
   {
     id: int("id").autoincrement().primaryKey(),
     productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    /** Empty when the product has no sizes. */
     sizeLabel: varchar("size_label", { length: 64 }).notNull(),
+    /** Null when the product has no colours. MySQL forbids SET NULL/CASCADE on a column a stored generated column reads, so removal is handled in code. */
+    colorId: int("color_id").references(() => productColors.id, { onDelete: "restrict" }),
     sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
     stockQty: int("stock_qty").notNull().default(0),
     sortOrder: int("sort_order").notNull().default(0),
     deletedAt: datetime("deleted_at"),
-    // Uniqueness must ignore soft-deleted rows: a deleted 100ml variant must not block creating a new 100ml variant for the same product.
+    // Uniqueness must ignore soft-deleted rows: a deleted "S / black" variant must not block creating a new one for the same product.
     // MySQL has no partial unique index, so uniqueness is keyed off a generated column that is NULL for soft-deleted rows (multiple NULLs are allowed).
-    activeSizeLabel: varchar("active_size_label", { length: 64 }).generatedAlwaysAs(
-      sql`(case when \`deleted_at\` is null then \`size_label\` else null end)`,
+    activeVariantKey: varchar("active_variant_key", { length: 96 }).generatedAlwaysAs(
+      sql`(case when \`deleted_at\` is null then concat(\`size_label\`, '|', coalesce(\`color_id\`, 0)) else null end)`,
       { mode: "stored" }
     ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
   },
   (table) => ({
-    productActiveSizeUnique: unique("product_variants_active_size_unique").on(
+    // The product foreign key needs an index of its own; the unique key below must stay free to change.
+    productIndex: index("product_variants_product_idx").on(table.productId),
+    productActiveVariantUnique: unique("product_variants_active_variant_unique").on(
       table.productId,
-      table.activeSizeLabel
+      table.activeVariantKey
     )
   })
 );
@@ -311,6 +338,8 @@ export const entityMedia = mysqlTable(
     productId: int("product_id").references(() => products.id, { onDelete: "cascade" }),
     offerId: int("offer_id").references(() => offers.id, { onDelete: "cascade" }),
     collectionId: int("collection_id").references(() => collections.id, { onDelete: "cascade" }),
+    /** Product media only: set when the item belongs to one colour's gallery, null for the product's general gallery. */
+    productColorId: int("product_color_id").references(() => productColors.id, { onDelete: "cascade" }),
     mediaType: mysqlEnum("media_type", ["image", "video"]).notNull(),
     url: varchar("url", { length: 1024 }),
     arUrl: varchar("ar_url", { length: 1024 }),
@@ -583,6 +612,8 @@ export const orderItems = mysqlTable("order_items", {
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
   snapshotSizeLabel: text("snapshot_size_label"),
+  snapshotColorAr: varchar("snapshot_color_ar", { length: 255 }),
+  snapshotColorEn: varchar("snapshot_color_en", { length: 255 }),
   snapshotComponents: text("snapshot_components"),
   snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 2 }),
   snapshotDiscountId: int("snapshot_discount_id"),

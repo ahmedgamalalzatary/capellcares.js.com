@@ -27,7 +27,9 @@ const discountSchema = z.object({
 export const productVariantSchema = z.object({
   id: z.number().int().positive(),
   productId: z.number().int().positive(),
-  sizeLabel: z.string().min(1),
+  /** Empty when the product has no sizes. */
+  sizeLabel: z.string(),
+  colorId: z.number().int().positive().nullable().optional(),
   sellingPrice: z.number().nonnegative(),
   stockQty: z.number().int().nonnegative(),
   sortOrder: z.number().int(),

@@ -26,6 +26,13 @@ import {
   productAttributesExist,
   replaceProductAttributeLinks
 } from "../../catalog/products/product/attributes.js";
+import {
+  loadActiveProductColorIds,
+  parseProductColorsInput,
+  removeProductColorsRepo,
+  saveProductColorsRepo
+} from "../../catalog/products/product/colors.js";
+import { normalizeVariantSizeLabel } from "../../catalog/products/product/shared.js";
 
 type NormalizedVariantDiscount = {
   type: "percentage" | "fixed";
@@ -184,6 +191,30 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
     if (!attributes || !(await productAttributesExist(attributes))) {
       return res.status(400).json({ ok: false, reason: "invalid-product-attributes" });
     }
+    const colors = parseProductColorsInput(incoming.colors);
+    if (colors === "invalid") {
+      return res.status(400).json({ ok: false, reason: "invalid-product-color" });
+    }
+    // Variants may only point at a colour sent with this save, or at a stored one when the colours are left as they are.
+    const knownColorIds = new Set(colors
+      ? colors.map((color) => color.id)
+      : incoming.id ? await loadActiveProductColorIds(Number(incoming.id)) : []);
+    const variantKeys = new Set<string>();
+    for (const variant of productVariants) {
+      const colorId = variant?.colorId == null ? null : Number(variant.colorId);
+      if (colorId === null ? knownColorIds.size > 0 : !knownColorIds.has(colorId)) {
+        return res.status(400).json({ ok: false, reason: "invalid-variant-color" });
+      }
+      const key = `${normalizeVariantSizeLabel(String(variant?.sizeLabel ?? variant?.size ?? "")).toLowerCase()}|${colorId ?? ""}`;
+      if (variantKeys.has(key)) {
+        return res.status(400).json({ ok: false, reason: "duplicate-product-variant" });
+      }
+      variantKeys.add(key);
+    }
+    const colorImage = colors
+      ?.flatMap((color) => color.media)
+      .find((item) => item.type === "image");
+    const colorImagePath = colorImage?.type === "image" ? colorImage.enUrl ?? colorImage.arUrl : null;
     const storedFacts = incoming.id ? (await findProductActivationRepo(Number(incoming.id)))?.facts : undefined;
     if (
       productStatus === "active" &&
@@ -191,10 +222,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         arName: productNameAr,
         enName: productNameEn,
         categoryId: incoming.categoryId ? Number(incoming.categoryId) : null,
-        hasImage: hasLocalizedProductImage,
+        hasImage: hasLocalizedProductImage || Boolean(colorImagePath) || (colors === undefined && Boolean(storedFacts?.hasImage)),
         keywordCount: productKeywords.length,
         variantCount: productVariants.length,
-        brandId: attributes.brandId !== undefined ? attributes.brandId : storedFacts?.brandId ?? null,
         supplierId: attributes.supplierId !== undefined ? attributes.supplierId : storedFacts?.supplierId ?? null
       })
     ) {
@@ -243,6 +273,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         imagePath: productImagePath,
         ...parseHoverImageInput(incoming),
         media: mediaUpdate,
+        fallbackImagePath: colorImagePath,
         categoryId: Number(incoming.categoryId ?? 0),
         brandId: attributes.brandId,
         supplierId: attributes.supplierId,
@@ -251,6 +282,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         isBestseller: incoming.isBestseller ?? false
       }, tx);
       await replaceProductAttributeLinks(product.id, attributes, tx);
+      const savedColors = colors ? await saveProductColorsRepo(product.id, colors, tx) : null;
       await replaceVariantsRepo(
         product.id,
         productVariants.map((v: any) => {
@@ -258,6 +290,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
           return {
             id: v.id ? Number(v.id) : undefined,
             sizeLabel: v.sizeLabel ?? v.size ?? "",
+            colorId: v.colorId == null
+              ? null
+              : savedColors?.idMap.get(Number(v.colorId)) ?? Number(v.colorId),
             sellingPrice: Number(v.sellingPrice ?? v.price ?? 0),
             stockQty: Number(v.stockQty ?? v.stock ?? 0),
             discount: validatedDiscount.ok ? validatedDiscount.value : null
@@ -265,6 +300,9 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         }),
         tx
       );
+      if (savedColors) {
+        await removeProductColorsRepo(savedColors.removedIds, tx);
+      }
       if (Object.prototype.hasOwnProperty.call(incoming, "relatedItems")) {
         const relatedRefs = parseRelatedItems(incoming.relatedItems).filter(
           (target) => !(target.type === "product" && target.id === product.id)
@@ -458,6 +496,7 @@ export async function adminUpdateProductDiscounts(req: Request, res: Response) {
       return {
         id: variant.id,
         sizeLabel: variant.size,
+        colorId: variant.colorId,
         sellingPrice: variant.price,
         stockQty: variant.stock,
         discount: incoming && Object.prototype.hasOwnProperty.call(incoming, "discount")

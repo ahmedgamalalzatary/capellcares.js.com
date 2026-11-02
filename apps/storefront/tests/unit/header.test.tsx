@@ -60,7 +60,9 @@ const dict = {
     wishlist: "Wishlist",
     cart: "Cart",
     account: "Account",
-    orders: "Orders"
+    orders: "Orders",
+    home: "Home",
+    categories: "Categories"
   },
   langSwitch: {
     short: "AR"
@@ -110,6 +112,18 @@ describe("Header layout stability", () => {
     const icons = screen.getByRole("button", { name: "Language" });
     expect(logo.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(bar.compareDocumentPosition(icons) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("links home and categories between the logo and the search bar on desktop", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} />);
+    const logo = screen.getByRole("link", { name: "Capella" });
+    const home = screen.getByRole("link", { name: "Home" });
+    const categories = screen.getByRole("link", { name: "Categories" });
+    const bar = screen.getByTestId("desktop-search");
+    expect(home).toHaveAttribute("href", "/en/shop");
+    expect(categories).toHaveAttribute("href", "/en/shop#categories");
+    expect(logo.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(categories.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders CMS announcement texts when provided", () => {

@@ -50,7 +50,10 @@ export interface EntityOrderingRef {
 export interface ProductVariant {
   id: number;
   productId: number;
+  /** Empty when the product has no sizes. Every variant of one size shares its price. */
   size: string;
+  /** The ProductColor it belongs to; null/absent when the product has no colours. */
+  colorId?: number | null;
   price: number;
   stock: number;
   sortOrder?: number;
@@ -84,6 +87,18 @@ export type EntityMedia = EntityImageMedia | EntityVideoMedia;
 export type ProductMedia = EntityMedia;
 
 /**
+ * One colour of a product: a picked swatch and/or a written name, plus its own gallery.
+ * In the ERP a new colour carries a negative temporary id until saved; variants point at it by that id.
+ */
+export interface ProductColor {
+  id: number;
+  name: Bilingual;
+  hex: string | null;
+  media: EntityMedia[];
+  sortOrder?: number;
+}
+
+/**
  * The one hover-image shape every purchasable entity shares: `hoverImagePath` is the
  * legacy/English path, `arHoverImagePath` the Arabic overlay, and `enHoverImagePath`
  * the explicit English override.
@@ -106,7 +121,9 @@ export interface Product extends HoverImagePaths {
   keywords: string[];
   buyingPrice: number;
   imagePath: string;
+  /** The general gallery: shown when the product has no colours or the chosen colour has no media of its own. */
   media?: EntityMedia[];
+  colors?: ProductColor[];
   youtubeUrl?: string;
   status: ProductStatus;
   isNew: boolean;
@@ -394,6 +411,9 @@ export interface OrderItem {
   snapshotNameAr: string | null;
   snapshotNameEn: string | null;
   snapshotSizeLabel: string | null;
+  /** The colour's name (or picked colour) when the variant had one. */
+  snapshotColorAr?: string | null;
+  snapshotColorEn?: string | null;
   snapshotBaseUnitPrice?: number | null;
   snapshotDiscountId?: number | null;
   snapshotDiscountType?: "percentage" | "fixed" | null;

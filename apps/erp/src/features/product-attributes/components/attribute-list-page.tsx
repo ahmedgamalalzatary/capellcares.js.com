@@ -10,6 +10,7 @@ import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { SmartPagination } from "@/components/admin/smart-pagination";
 import { BilingualNameFields } from "@/components/forms/editor-form-parts";
+import { LangImageField } from "@/components/forms/lang-image-field";
 import { SingleImageField } from "@/components/forms/single-image-field";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
@@ -193,13 +194,31 @@ function AttributeEditor({
             />
           </div>
         )}
-        {config.arImageLabel ? (
-          <div className="grid gap-1.5">
-            <SingleImageField label={config.arImageLabel} value={arImagePath} onChange={setArImagePath} uploadContext="products.update" disabled={saving} />
-            {errors.arImage ? <p role="alert" className="text-xs text-danger">{errors.arImage}</p> : null}
+        {config.arImageLabel && config.imageLabel ? (
+          // Arabic | English side by side as compact rows, so the window fits on screen instead of two full-width pictures.
+          <div className="grid gap-4 @lg:grid-cols-2">
+            <LangImageField
+              lang="ar"
+              title={config.arImageLabel}
+              value={arImagePath}
+              onChange={setArImagePath}
+              uploadContext="products.update"
+              disabled={saving}
+              error={errors.arImage}
+              inputTestId={`${kind}-image-ar-input`}
+            />
+            <LangImageField
+              lang="en"
+              title={config.imageLabel}
+              value={imagePath}
+              onChange={setImagePath}
+              uploadContext="products.update"
+              disabled={saving}
+              error={errors.image}
+              inputTestId={`${kind}-image-en-input`}
+            />
           </div>
-        ) : null}
-        {config.imageLabel ? (
+        ) : config.imageLabel ? (
           <div className="grid gap-1.5">
             <SingleImageField label={config.imageLabel} value={imagePath} onChange={setImagePath} uploadContext="products.update" disabled={saving} />
             {errors.image ? <p role="alert" className="text-xs text-danger">{errors.image}</p> : null}

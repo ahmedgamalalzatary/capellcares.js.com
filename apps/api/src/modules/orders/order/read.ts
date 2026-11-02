@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { collectionItems, offerItems, orderItems, orders, productVariants, products } from "@capella/database/drizzle/schema";
+import { collectionItems, offerItems, orderItems, orders, productColors, productVariants, products } from "@capella/database/drizzle/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   mergeProductTotal,
@@ -112,12 +112,16 @@ export async function getSalesAnalyticsRepo() {
     .select({
       variantId: productVariants.id,
       productId: productVariants.productId,
-      variantLabel: productVariants.sizeLabel,
+      sizeLabel: productVariants.sizeLabel,
+      colorAr: productColors.arName,
+      colorEn: productColors.enName,
+      colorHex: productColors.hex,
       sellingPrice: productVariants.sellingPrice,
       productName: products.enName
     })
     .from(productVariants)
-    .innerJoin(products, eq(products.id, productVariants.productId));
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .leftJoin(productColors, eq(productColors.id, productVariants.colorId));
   const offerItemRows = await db.select().from(offerItems);
   const collectionItemRows = await db.select().from(collectionItems);
 
@@ -127,7 +131,8 @@ export async function getSalesAnalyticsRepo() {
       {
         variantId: row.variantId,
         productId: row.productId,
-        variantLabel: row.variantLabel,
+        // The ERP reads Arabic, so the colour part of "S / أسود" is the Arabic name when there is one.
+        variantLabel: [row.sizeLabel, row.colorAr || row.colorEn || row.colorHex || ""].filter(Boolean).join(" / "),
         productName: row.productName,
         defaultUnitPrice: toNumber(row.sellingPrice)
       }

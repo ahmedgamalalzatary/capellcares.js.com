@@ -33,9 +33,17 @@ function toBilingual(
 }
 
 export function normalizeProduct(input: ProductApiShape): Product {
+  const colors = (input.colors ?? []).map((color) => ({
+    id: toNumber(color.id),
+    name: toBilingual(color.name, color.arName, color.enName),
+    hex: color.hex ?? null,
+    media: color.media ?? [],
+    sortOrder: color.sortOrder == null ? undefined : toNumber(color.sortOrder)
+  }));
+  // With colours, the stored card picture is a colour's picture, so it never stands in for an empty general gallery.
   const normalizedMedia = input.media?.length
     ? input.media
-    : input.imagePath
+    : input.imagePath && colors.length === 0
       ? [{ type: "image" as const, arUrl: null, enUrl: input.imagePath }]
       : [];
   const primaryImage = normalizedMedia.find((item) => item.type === "image");
@@ -60,6 +68,7 @@ export function normalizeProduct(input: ProductApiShape): Product {
     // An explicitly null English hover image means it was cleared; only an absent field falls back to the legacy path.
     enHoverImagePath: input.enHoverImagePath !== undefined ? input.enHoverImagePath : input.hoverImagePath ?? "",
     media: normalizedMedia,
+    colors,
     youtubeUrl: input.youtubeUrl ?? undefined,
     status: input.status ?? "inactive",
     isNew: input.isNew ?? false,
@@ -73,6 +82,7 @@ export function normalizeProduct(input: ProductApiShape): Product {
       id: toNumber(v.id),
       productId: toNumber(v.productId, toNumber(input.id)),
       size: v.size ?? v.sizeLabel ?? "",
+      colorId: v.colorId == null ? null : toNumber(v.colorId),
       price: toNumber(v.price ?? v.sellingPrice),
       stock: toNumber(v.stock ?? v.stockQty),
       sortOrder: toNumber(v.sortOrder, index + 1),

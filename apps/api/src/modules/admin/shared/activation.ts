@@ -7,7 +7,6 @@ type BaseFacts = { arName: string; enName: string; categoryId: number | null; ha
 export type ProductActivationFacts = BaseFacts & {
   keywordCount: number;
   variantCount: number;
-  brandId: number | null;
   supplierId: number | null;
 };
 export type BundleActivationFacts = BaseFacts & { price: number };
@@ -18,10 +17,11 @@ function hasBasics(facts: BaseFacts) {
 }
 
 export function canActivateProduct(facts: ProductActivationFacts) {
+  // Brand, size, colour and gender are optional; the storefront hides whichever is empty.
   return hasBasics(facts)
     && facts.keywordCount > 0
     && facts.variantCount > 0
-    && Boolean(facts.brandId && facts.supplierId);
+    && Boolean(facts.supplierId);
 }
 
 export function canActivateBundle(facts: BundleActivationFacts) {
@@ -58,7 +58,6 @@ export async function findProductActivationRepo(id: number) {
       keywords: products.keywords,
       categoryId: products.categoryId,
       imagePath: products.imagePath,
-      brandId: products.brandId,
       supplierId: products.supplierId
     })
     .from(products)
@@ -78,7 +77,6 @@ export async function findProductActivationRepo(id: number) {
       hasImage: await storedHasImage("product", id, row.imagePath),
       keywordCount: row.keywords.split(",").filter((keyword) => keyword.trim()).length,
       variantCount: variants.length,
-      brandId: row.brandId,
       supplierId: row.supplierId
     } satisfies ProductActivationFacts
   };

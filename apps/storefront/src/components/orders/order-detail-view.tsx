@@ -1,5 +1,6 @@
 "use client";
 
+import { orderLineColor } from "@/lib/cart-line-size";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatPrice, type Language, type Order } from "@capella/shared";
@@ -178,6 +179,8 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                         ) : null}
                         {item.snapshotSizeLabel ? <span>{dict.common.size}: {item.snapshotSizeLabel}</span> : null}
                         {item.snapshotSizeLabel ? <span aria-hidden>·</span> : null}
+                        {orderLineColor(item, lang) ? <span>{dict.common.color}: {orderLineColor(item, lang)}</span> : null}
+                        {orderLineColor(item, lang) ? <span aria-hidden>·</span> : null}
                         <span>{formatPrice(item.unitPrice, lang)} × {item.qty}</span>
                         {/* Until the catalog lands every line looks unresolvable,
                             so the notice waits for the fetch to settle. */}

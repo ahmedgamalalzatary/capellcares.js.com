@@ -23,6 +23,7 @@ import { api } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/errors";
 import { getStore, useStore } from "@/lib/store";
 import { buildDiscountState, toDateTimeLocal, toIsoOrEmpty, type VariantDiscountState } from "@/features/discounts/lib/discount";
+import { groupVariantsBySize } from "@/features/products/lib/variant-matrix";
 
 export default function ProductDiscountPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAdminAuth();
@@ -60,6 +61,9 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
 
   const title = product ? `خصم: ${product.name.ar}` : "خصومات المنتج";
 
+  // One card per size: its discount is copied to every colour of that size so they keep one price.
+  const sizeGroups = useMemo(() => groupVariantsBySize(variants), [variants]);
+
   const hasInvalidDiscount = useMemo(() => {
     return variants.some((variant) => {
       const discount = variant.discount;
@@ -91,8 +95,9 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
   if (!product) return notFound();
 
   const updateVariantDiscount = (variantId: number, discount: ProductVariant["discount"]) => {
+    const size = variants.find((variant) => variant.id === variantId)?.size;
     setVariants((current) => current.map((variant) => (
-      variant.id === variantId ? { ...variant, discount } : variant
+      variant.size === size ? { ...variant, discount } : variant
     )));
   };
 
@@ -115,12 +120,12 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
     }
   };
 
-  const activeCount = variants.filter((variant) => variant.discount?.status === "active").length;
+  const activeCount = sizeGroups.filter((group) => group[0]!.discount?.status === "active").length;
 
   return (
     <AdminShell
       title={title}
-      description="خصم مستقل لكل مقاس، بفترة بداية ونهاية."
+      description="خصم مستقل لكل مقاس يشمل كل ألوانه، بفترة بداية ونهاية."
       crumbs={[{ label: "المنتجات", href: "/products" }, { label: "خصم" }]}
     >
       {variants.length === 0 ? (
@@ -145,7 +150,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
             <span className="flex items-center gap-2">
               <Swatch tone={activeCount > 0 ? "success" : "neutral"} />
               <span>
-                خصم مفعّل على <span className="num">{formatNumber(activeCount)}</span> من <span className="num">{formatNumber(variants.length)}</span> {variants.length === 1 ? "مقاس" : "مقاسات"}
+                خصم مفعّل على <span className="num">{formatNumber(activeCount)}</span> من <span className="num">{formatNumber(sizeGroups.length)}</span> {sizeGroups.length === 1 ? "مقاس" : "مقاسات"}
               </span>
             </span>
           }
@@ -157,7 +162,9 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
               </Button>
             </>
           }
-          main={variants.map((variant) => {
+          main={sizeGroups.map((group) => {
+            const variant = group[0]!;
+            const groupStock = group.reduce((sum, item) => sum + item.stock, 0);
             const discount = buildDiscountState(variant);
             const isActive = discount.status === "active";
             const effectivePrice = variant.discount ? getEffectiveVariantPrice(variant) : variant.price;
@@ -178,7 +185,7 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
                       )}
                       <span aria-hidden>·</span>
                       <span>
-                        المخزون <span className="num">{formatNumber(variant.stock)}</span>
+                        المخزون <span className="num">{formatNumber(groupStock)}</span>
                       </span>
                     </span>
                   }

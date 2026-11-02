@@ -1,5 +1,6 @@
 "use client";
 
+import { variantOptionLabel } from "@capella/shared";
 import Link from "next/link";
 import { useState } from "react";
 import { Package } from "lucide-react";
@@ -39,7 +40,7 @@ export function StockAlerts({ alerts, loaded }: { alerts: ReturnType<typeof stoc
                   <Link href={`/products/${product.id}/edit`} className="font-medium text-text-strong decoration-line-strong underline-offset-4 hover:underline">
                     {product.name.ar}
                   </Link>
-                  <span className="block text-sm text-text-muted">{variant.size}</span>
+                  <span className="block text-sm text-text-muted">{variantOptionLabel(variant, product.colors, "ar")}</span>
                 </TD>
                 <TD data-label="مبيعات 30 يومًا" className="whitespace-nowrap text-sm text-text-muted">
                   {/* Phones already show the cell label above the value. */}

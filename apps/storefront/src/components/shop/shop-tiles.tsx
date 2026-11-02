@@ -58,10 +58,11 @@ export function BrandTiles({ brands, lang }: { brands: ProductAttribute[]; lang:
 }
 
 /** The top of the shop page: every gender as a wide picture banner. The picture carries the design, so the name is its label for screen readers. */
-export function GenderTiles({ genders, lang, label }: { genders: ProductAttribute[]; lang: Language; label: string }) {
+export function GenderTiles({ genders, lang, label, className = "" }: { genders: ProductAttribute[]; lang: Language; label: string; className?: string }) {
   return (
-    <nav aria-label={label} className="mb-6">
-      <ul className="m-0 [display:grid] list-none grid-cols-2 gap-3 p-0 sm:gap-4 lg:grid-cols-3">
+    <nav id="genders" aria-label={label} className={`mb-6 scroll-mt-28 ${className}`}>
+      {/* Phones: every gender on one line, sharing the width, so nothing scrolls sideways. */}
+      <ul className="m-0 [display:grid] list-none grid-cols-2 gap-3 p-0 max-[879px]:grid-flow-col max-[879px]:auto-cols-fr max-[879px]:grid-cols-none max-[879px]:gap-2 sm:gap-4 lg:grid-cols-3">
         {genders.map((gender) => {
           // A gender saved before it had an Arabic picture keeps showing its one picture.
           const picture = lang === "ar" ? gender.arImagePath || gender.imagePath : gender.imagePath;

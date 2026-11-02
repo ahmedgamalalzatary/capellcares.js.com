@@ -72,7 +72,7 @@ afterEach(cleanup);
 describe("ProductForm attributes", () => {
   it("saves the chosen brand, supplier and age groups", async () => {
     renderForm();
-    fireEvent.change(screen.getByLabelText("الماركة"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("الماركة (اختياري)"), { target: { value: "1" } });
     fireEvent.change(screen.getByLabelText("المورد"), { target: { value: "9" } });
     fireEvent.click(screen.getByRole("button", { name: "٠-٢ سنة" }));
     fireEvent.click(screen.getByRole("button", { name: "٢-٤ سنة" }));
@@ -107,11 +107,10 @@ describe("ProductForm attributes", () => {
     expect(screen.queryByText(/الشخصيات/)).toBeNull();
   });
 
-  it("does not publish without a brand", async () => {
+  it("publishes without a brand", async () => {
     renderForm({ ...initial, status: "active", supplierId: 9 } as any);
     await save();
-    expect(upsertProduct).not.toHaveBeenCalled();
-    expect(screen.getByText("اختاري الماركة")).toBeInTheDocument();
+    expect(upsertProduct).toHaveBeenCalledWith(expect.objectContaining({ status: "active", brandId: null }));
   });
 
   it("publishes with no age group chosen", async () => {

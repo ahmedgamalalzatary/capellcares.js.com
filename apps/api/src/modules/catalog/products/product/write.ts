@@ -1,5 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import { collectionItems, entityMedia, entityOrderings, offerItems, orderItems, products, productVariants, relatedItems, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
+import { collectionItems, entityMedia, entityOrderings, offerItems, orderItems, productColors, products, productVariants, relatedItems, variantDiscounts, wishlists } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import {
   normalizeMedia,
@@ -33,6 +33,8 @@ export async function createAdminProductRepo(input: {
   arHoverImagePath?: string | null;
   enHoverImagePath?: string | null;
   media?: ProductMediaItem[];
+  /** The card picture to use when the general gallery has no image (the first colour picture). */
+  fallbackImagePath?: string | null;
   categoryId: number;
   brandId?: number | null;
   supplierId?: number | null;
@@ -45,7 +47,7 @@ export async function createAdminProductRepo(input: {
     ? input.media ?? normalizeMedia(undefined, input.imagePath ?? null)
     : undefined;
   const primaryImagePath = mediaUpdate
-    ? mediaUpdate.find((item) => item.type === "image")?.enUrl ?? null
+    ? mediaUpdate.find((item) => item.type === "image")?.enUrl ?? input.fallbackImagePath ?? null
     : null;
   const hoverUpdate = resolveHoverImageUpdate(input);
   const repo = executor ?? db;
@@ -130,6 +132,7 @@ export async function replaceVariantsRepo(
   variants: Array<{
     id?: number;
     sizeLabel: string;
+    colorId?: number | null;
     sellingPrice: number;
     stockQty: number;
     discount?: {
@@ -193,6 +196,7 @@ export async function replaceVariantsRepo(
           .update(productVariants)
           .set({
             sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
+            colorId: variant.colorId ?? null,
             sellingPrice: sql`${variant.sellingPrice}`,
             stockQty: variant.stockQty,
             sortOrder
@@ -202,6 +206,7 @@ export async function replaceVariantsRepo(
         const [createdVariant] = await tx.insert(productVariants).values({
           productId,
           sizeLabel: normalizeVariantSizeLabel(variant.sizeLabel),
+          colorId: variant.colorId ?? null,
           sellingPrice: sql`${variant.sellingPrice}`,
           stockQty: variant.stockQty,
           sortOrder
@@ -349,6 +354,7 @@ export async function hardDeleteProductRepo(id: number): Promise<{ mediaUrls: st
     }
     await tx.delete(entityMedia).where(eq(entityMedia.productId, id));
     await tx.delete(productVariants).where(eq(productVariants.productId, id));
+    await tx.delete(productColors).where(eq(productColors.productId, id));
     await tx.delete(products).where(eq(products.id, id));
     return {
       mediaUrls: [

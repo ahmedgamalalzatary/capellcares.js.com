@@ -41,6 +41,14 @@ vi.mock("@/components/shell/admin-shell", () => ({
 vi.mock("@/components/forms/single-image-field", () => ({
   SingleImageField: ({ label, onChange }: any) => <button type="button" onClick={() => onChange("/uploads/new.png")}>{label}</button>
 }));
+vi.mock("@/components/forms/lang-image-field", () => ({
+  LangImageField: ({ title, onChange, error }: any) => (
+    <div>
+      <button type="button" onClick={() => onChange("/uploads/new.png")}>{title}</button>
+      {error ? <p role="alert">{error}</p> : null}
+    </div>
+  )
+}));
 
 import { AttributeListPage } from "@/features/product-attributes/components/attribute-list-page";
 

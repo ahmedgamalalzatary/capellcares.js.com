@@ -188,7 +188,11 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                             <span className="text-text-strong">{item.snapshotNameAr || item.snapshotNameEn || "عنصر غير مسمى"}</span>
                           </div>
                           {item.snapshotNameEn && item.snapshotNameAr ? <p dir="auto" className="mt-0.5 text-sm text-text-muted">{item.snapshotNameEn}</p> : null}
-                          {item.snapshotSizeLabel ? <p dir="auto" className="text-sm text-text-muted">{item.snapshotSizeLabel}</p> : null}
+                          {item.snapshotSizeLabel || item.snapshotColorAr ? (
+                            <p dir="auto" className="text-sm text-text-muted">
+                              {[item.snapshotSizeLabel, item.snapshotColorAr || item.snapshotColorEn].filter(Boolean).join(" / ")}
+                            </p>
+                          ) : null}
                         </TD>
                         <TD data-label="الكمية" className="num whitespace-nowrap text-text-2">{item.qty}</TD>
                         <TD data-label="سعر الوحدة" className="whitespace-nowrap">

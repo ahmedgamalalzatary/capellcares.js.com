@@ -1,5 +1,6 @@
 "use client";
 
+import { variantOptionLabel } from "@capella/shared";
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
@@ -186,9 +187,9 @@ export function BundleForm<TBundle extends BundleEntity>({ config, mode, initial
                     </Field>
                     <Field label={<span className="@2xl:sr-only">المقاس</span>} htmlFor={`${kind}-item-variant-${index}`}>
                       <Select id={`${kind}-item-variant-${index}`} disabled={!product} value={row.variantId} onChange={(event) => updateRow(index, { variantId: Number(event.target.value) })}>
-                        <option value={0}>— مقاس —</option>
+                        <option value={0}>— مقاس / لون —</option>
                         {variants.map((candidate) => (
-                          <option key={candidate.id} value={candidate.id}>{candidate.size}</option>
+                          <option key={candidate.id} value={candidate.id}>{variantOptionLabel(candidate, product?.colors, "ar") || "بدون مقاس"}</option>
                         ))}
                       </Select>
                     </Field>

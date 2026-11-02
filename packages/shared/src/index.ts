@@ -6,3 +6,4 @@ export * from "@capella/shared/i18n";
 export * from "@capella/shared/dto";
 export * from "@capella/shared/schemas";
 export * from "./entity-media.js";
+export * from "./product-variants.js";

@@ -1,7 +1,9 @@
 export interface ProductVariantDto {
   id: number;
   productId: number;
+  /** Empty when the product has no sizes. */
   sizeLabel: string;
+  colorId?: number | null;
   sellingPrice: number;
   stockQty: number;
   sortOrder: number;

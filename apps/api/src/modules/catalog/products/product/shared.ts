@@ -40,6 +40,7 @@ export function mapVariant(v: {
   id: number;
   productId: number;
   sizeLabel: string;
+  colorId: number | null;
   sellingPrice: unknown;
   stockQty: number;
   sortOrder: number;
@@ -48,6 +49,7 @@ export function mapVariant(v: {
     id: v.id,
     productId: v.productId,
     size: v.sizeLabel,
+    colorId: v.colorId,
     price: toNumber(v.sellingPrice),
     stock: v.stockQty,
     sortOrder: v.sortOrder,

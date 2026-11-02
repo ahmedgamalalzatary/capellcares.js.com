@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cartLineSizeLabel } from "@/lib/cart-line-size";
+import { cartLineSizeLabel, productLineOptions } from "@/lib/cart-line-size";
 import type { Collection, Offer, Product } from "@capella/shared";
 
 const products: Product[] = [
@@ -82,5 +82,16 @@ describe("cartLineSizeLabel", () => {
 
   it("returns the included collection variant sizes", () => {
     expect(cartLineSizeLabel({ type: "collection", collectionId: 3, qty: 1 }, catalog)).toBe("30ml");
+  });
+});
+
+describe("productLineOptions", () => {
+  const colors = [{ id: 7, name: { ar: "أسود", en: "Black" }, hex: "#000000", media: [] }, { id: 8, name: { ar: "", en: "" }, hex: "#0000ff", media: [] }];
+  const line = (size: string, colorId: number | null) => ({ id: 1, productId: 1, size, colorId, price: 1, stock: 1 });
+
+  it("names the size and the colour in the page language, or the picked colour when unnamed", () => {
+    expect(productLineOptions({ colors }, line("S", 7), "ar")).toEqual({ size: "S", color: "أسود" });
+    expect(productLineOptions({ colors }, line("", 8), "en")).toEqual({ size: null, color: "#0000ff" });
+    expect(productLineOptions({ colors: [] }, line("M", null), "en")).toEqual({ size: "M", color: null });
   });
 });

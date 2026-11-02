@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { groupVariantsBySize } from "@/features/products/lib/variant-matrix";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
@@ -26,7 +27,8 @@ import { cn } from "@/lib/utils";
 import { SelectionGroup } from "@/features/discounts/components/selection-group";
 import { inCategory, previewPrice, toggleId } from "@/features/discounts/lib/discount";
 
-type Target = { kind: "variant" | "offer" | "collection"; id: number; label: string; price: number; hasDiscount: boolean };
+/** A product target is one size: its discount covers every colour of that size, so they keep one price. */
+type Target = { kind: "variant" | "offer" | "collection"; id: number; variantIds?: number[]; label: string; price: number; hasDiscount: boolean };
 
 const STEPS = [
   { id: "items", label: "العناصر", title: "اختاري العناصر", description: "يمكنك جمع منتجات وأقسام وعروض ومجموعات في خصم واحد." },
@@ -73,8 +75,16 @@ export default function DiscountsPage() {
     const result: Target[] = [];
     for (const product of products) {
       if (product.deletedAt || (!selectedProducts.has(product.id) && !inCategory(product.categoryId, selectedCategories, parents))) continue;
-      for (const variant of product.variants) {
-        result.push({ kind: "variant", id: variant.id, label: `${product.name.ar} — ${variant.size}`, price: variant.price, hasDiscount: Boolean(variant.discount) });
+      for (const group of groupVariantsBySize(product.variants)) {
+        const lead = group[0]!;
+        result.push({
+          kind: "variant",
+          id: lead.id,
+          variantIds: group.map((variant) => variant.id),
+          label: lead.size ? `${product.name.ar} — ${lead.size}` : product.name.ar,
+          price: lead.price,
+          hasDiscount: group.some((variant) => Boolean(variant.discount))
+        });
       }
     }
     for (const offer of offers) {
@@ -124,7 +134,7 @@ export default function DiscountsPage() {
 
   const selectionPayload = () => ({
     productIds, offerIds, collectionIds, categoryIds,
-    excludeVariantIds: targets.filter((target) => target.kind === "variant" && isExcluded(target)).map((target) => target.id),
+    excludeVariantIds: targets.filter((target) => target.kind === "variant" && isExcluded(target)).flatMap((target) => target.variantIds ?? [target.id]),
     excludeOfferIds: targets.filter((target) => target.kind === "offer" && isExcluded(target)).map((target) => target.id),
     excludeCollectionIds: targets.filter((target) => target.kind === "collection" && isExcluded(target)).map((target) => target.id)
   });

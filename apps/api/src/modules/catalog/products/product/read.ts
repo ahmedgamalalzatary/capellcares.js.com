@@ -5,6 +5,7 @@ import { db } from "@capella/database/src/db";
 import { collectBranchIds } from "../../categories/category-tree.js";
 import { resolveHoverImageFields, resolveLocalizedHoverImagePath } from "../../../shared/hover-image/hover-image.js";
 import { loadProductAttributeLinks } from "./attributes.js";
+import { loadProductColors } from "./colors.js";
 import { loadProductOrderingRowsRepo, rankForProductScope } from "./ordering.js";
 import {
   loadMediaRows,
@@ -14,6 +15,11 @@ import {
   resolvePrimaryImagePath,
   toKeywords
 } from "./shared.js";
+
+/** The stored card picture stands in for an empty general gallery only on products without colours; with colours it is a colour's picture. */
+function generalFallback(colors: unknown[] | undefined, imagePath: string | null) {
+  return colors?.length ? null : imagePath;
+}
 
 async function loadActiveOfferData(productIds: number[]) {
   if (productIds.length === 0) {
@@ -128,11 +134,13 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
   const mediaByProduct = await loadMediaRows(productIds);
   const { offerIdsByProductId } = await loadActiveOfferData(productIds);
   const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks(productIds);
+  const colorsByProduct = await loadProductColors(productIds);
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
       sizeLabel: productVariants.sizeLabel,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -150,13 +158,14 @@ export async function findVisibleProducts(params: { lang: "ar" | "en"; q?: strin
 
   return rows
     .map((r) => {
-      const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+      const media = normalizeMedia(mediaByProduct.get(r.id), generalFallback(colorsByProduct.get(r.id), r.imagePath));
       return {
         ...r,
         sortOrder: rankByProductId.get(r.id),
         imagePath: resolvePrimaryImagePath(media, r.imagePath, params.lang),
         hoverImagePath: resolveLocalizedHoverImagePath(r.arHoverImagePath, r.hoverImagePath, params.lang) ?? "",
         media,
+        colors: colorsByProduct.get(r.id) ?? [],
         keywords: toKeywords(r.keywords),
         variants: (variantsByProduct.get(r.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
         name: { ar: r.arName, en: r.enName },
@@ -210,12 +219,14 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
   const mediaByProduct = await loadMediaRows([product.id]);
   const { offerIdsByProductId } = await loadActiveOfferData([product.id]);
   const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks([product.id]);
+  const colorsByProduct = await loadProductColors([product.id]);
 
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
       sizeLabel: productVariants.sizeLabel,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -224,12 +235,13 @@ export async function findVisibleProductBySlug(slug: string, lang: "ar" | "en" =
     .where(and(eq(productVariants.productId, product.id), isNull(productVariants.deletedAt)));
   const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
-  const media = normalizeMedia(mediaByProduct.get(product.id), product.imagePath);
+  const media = normalizeMedia(mediaByProduct.get(product.id), generalFallback(colorsByProduct.get(product.id), product.imagePath));
   return {
     ...product,
     imagePath: resolvePrimaryImagePath(media, product.imagePath, lang),
     hoverImagePath: resolveLocalizedHoverImagePath(product.arHoverImagePath, product.hoverImagePath, lang) ?? "",
     media,
+    colors: colorsByProduct.get(product.id) ?? [],
     keywords: toKeywords(product.keywords),
     variants: variantsRows.map((variant) => mapVariant(variant, discountByVariantId.get(variant.id) ?? null)).sort((a, b) => a.sortOrder - b.sortOrder),
     name: { ar: product.arName, en: product.enName },
@@ -257,12 +269,14 @@ export async function listAdminProductsRepo() {
   const mediaByProduct = await loadMediaRows(rows.map((r) => r.id));
   const { offerIdsByProductId } = await loadActiveOfferData(rows.map((r) => r.id));
   const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks(rows.map((r) => r.id));
+  const colorsByProduct = await loadProductColors(rows.map((r) => r.id));
 
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
       sizeLabel: productVariants.sizeLabel,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -280,7 +294,7 @@ export async function listAdminProductsRepo() {
 
   return rows
     .map((r) => {
-      const media = normalizeMedia(mediaByProduct.get(r.id), r.imagePath);
+      const media = normalizeMedia(mediaByProduct.get(r.id), generalFallback(colorsByProduct.get(r.id), r.imagePath));
       return {
         ...r,
         sortOrder: rootRankByProductId.get(r.id),
@@ -288,6 +302,7 @@ export async function listAdminProductsRepo() {
         imagePath: resolvePrimaryImagePath(media, r.imagePath),
         ...resolveHoverImageFields(r.arHoverImagePath, r.hoverImagePath, "en"),
         media,
+        colors: colorsByProduct.get(r.id) ?? [],
         offerIds: offerIdsByProductId.get(r.id) ?? [],
         ageGroupIds: ageGroupIdsByProduct.get(r.id) ?? [],
         genderIds: genderIdsByProduct.get(r.id) ?? [],
@@ -306,11 +321,13 @@ export async function findAdminProductByIdRepo(id: number) {
   const mediaByProduct = await loadMediaRows([row.id]);
   const { offerIdsByProductId } = await loadActiveOfferData([row.id]);
   const { ageGroupIdsByProduct, genderIdsByProduct } = await loadProductAttributeLinks([row.id]);
+  const colorsByProduct = await loadProductColors([row.id]);
   const variantsRows = await db
     .select({
       id: productVariants.id,
       productId: productVariants.productId,
       sizeLabel: productVariants.sizeLabel,
+      colorId: productVariants.colorId,
       sellingPrice: productVariants.sellingPrice,
       stockQty: productVariants.stockQty,
       sortOrder: productVariants.sortOrder
@@ -319,12 +336,13 @@ export async function findAdminProductByIdRepo(id: number) {
     .where(and(eq(productVariants.productId, row.id), isNull(productVariants.deletedAt)));
   const discountByVariantId = await loadVariantDiscountRows(variantsRows.map((variant) => variant.id));
 
-  const media = normalizeMedia(mediaByProduct.get(row.id), row.imagePath);
+  const media = normalizeMedia(mediaByProduct.get(row.id), generalFallback(colorsByProduct.get(row.id), row.imagePath));
   return {
     ...row,
     imagePath: resolvePrimaryImagePath(media, row.imagePath),
     ...resolveHoverImageFields(row.arHoverImagePath, row.hoverImagePath, "en"),
     media,
+    colors: colorsByProduct.get(row.id) ?? [],
     keywords: toKeywords(row.keywords),
     offerIds: offerIdsByProductId.get(row.id) ?? [],
     ageGroupIds: ageGroupIdsByProduct.get(row.id) ?? [],

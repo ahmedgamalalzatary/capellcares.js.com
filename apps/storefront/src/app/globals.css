@@ -605,6 +605,17 @@ body {
 .toy-initial { font-family: var(--font-ar-display); font-size: clamp(36px, 4vw, 56px); line-height: 1; color: var(--tile-edge); }
 .toy-label { display: block; margin-top: 10px; font-weight: 700; font-size: 16px; line-height: 1.25; }
 
+/* Desktop brands: just the logo in a circle; the name stays for screen readers only. */
+@media (min-width: 880px) {
+  .toy-plate__media { border-radius: 50%; }
+  .toy-plate__media img { padding: 20%; }
+  .toy-plate:focus-visible { border-radius: 50%; }
+  .toy-plate .toy-label {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+}
+
 .toy-tile:focus-visible, .toy-plate:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; border-radius: var(--radius-xl); }
 
 /* Gender banner: a wide picture, rounded on all sides like the banners below it. */
@@ -614,6 +625,8 @@ body {
   transition: transform var(--motion-fast) var(--ease-out-quart);
 }
 @media (min-width: 640px) { .gender-tile { aspect-ratio: 485 / 168; } }
+/* Phones fit every gender on one line, so each keeps the picture's own shape instead of cropping it. */
+@media (max-width: 879px) { .gender-tile { aspect-ratio: 485 / 168; border-radius: var(--radius); } }
 .gender-tile:hover { transform: translateY(-3px); }
 .gender-tile:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; }
 .gender-tile__name { font-weight: 800; font-size: clamp(18px, 2.4vw, 28px); color: var(--ink); }

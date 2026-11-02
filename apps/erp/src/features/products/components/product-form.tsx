@@ -19,15 +19,16 @@ import { cn } from "@/lib/utils";
 import { CategoryPicker } from "@/components/forms/category-picker";
 import { BilingualEditorField, BilingualNameFields } from "@/components/forms/editor-form-parts";
 import { HoverImageUpload } from "@/components/forms/hover-image-upload";
-import { ProductMediaUpload } from "@/components/forms/entity-media-upload";
+import { EntityMediaUpload, ProductMediaUpload } from "@/components/forms/entity-media-upload";
 import { MultiChoiceField } from "@/components/forms/multi-choice-field";
 import { RelatedItemsField } from "@/components/forms/related-items-field";
 import type { ProductFormProps } from "@/features/products/types";
+import { ColorDot, ColorPick, colorLabel } from "@/features/products/components/color-pick";
 
 const STEPS = [
   { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والماركة والمورد والأنواع والأعمار والكلمات المفتاحية." },
-  { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو، وصورة التمرير التي تظهر على بطاقة المنتج." },
-  { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والأسعار", description: "لكل مقاس سعر بيع ومخزون، وسعر الشراء للاستخدام الداخلي." },
+  { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو العامة، وصور كل لون، وصورة التمرير التي تظهر على بطاقة المنتج." },
+  { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والألوان والأسعار", description: "لكل مقاس سعر بيع، ولكل مقاس ولون مخزون، وسعر الشراء للاستخدام الداخلي." },
   { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والتحذيرات، ثم العناصر المرتبطة وحالة المنتج." },
 ] as const;
 
@@ -75,14 +76,20 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
     status, setStatus,
     isNew, setIsNew,
     isBestseller, setIsBestseller,
-    variants,
+    sizes,
+    addSize,
+    updateSize,
+    removeSize,
+    stockOf,
+    setStock,
+    colors,
+    addColor,
+    updateColor,
+    removeColor,
     relatedItems,
     setRelatedItems,
     errors,
     relatedSelectableOptions,
-    updateVariant,
-    addVariant,
-    removeVariant,
     requirements,
     checkRequirements,
     missing,
@@ -133,14 +140,13 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
           <CategoryPicker id="product-category" categories={categories} value={categoryId} onChange={setCategoryId} />
         </Field>
         <div className={FIELD_GRID}>
-          <Field label="الماركة" htmlFor="product-brand" error={errors.brandId}>
+          <Field label="الماركة (اختياري)" htmlFor="product-brand">
             <Select
               id="product-brand"
-              aria-invalid={Boolean(errors.brandId) || undefined}
               value={brandId ?? ""}
               onChange={(e) => setBrandId(e.target.value ? Number(e.target.value) : null)}
             >
-              <option value="">— اختاري الماركة —</option>
+              <option value="">— بدون ماركة —</option>
               {(attributes?.brands ?? []).map((brand) => (
                 <option key={brand.id} value={brand.id}>{brand.name.ar}</option>
               ))}
@@ -193,14 +199,38 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
     ),
     media: (
       <div className="grid gap-6">
-        <div className="grid gap-3">
+        <section className="grid gap-3">
+          {colors.length > 0 ? (
+            <div>
+              <h3 className="text-base font-bold text-text-strong">الصور العامة</h3>
+              <p className="text-sm text-text-muted">تظهر للون الذي ليست له صور خاصة. اختيارية عند وجود صور للألوان.</p>
+            </div>
+          ) : null}
           <ProductMediaUpload value={media} onChange={setMedia} uploadContext={uploadContext} />
           {errors.image ? (
             <p role="alert" className="text-sm text-danger">
               {errors.image}
             </p>
           ) : null}
-        </div>
+        </section>
+        {colors.map((color, index) => (
+          <section key={color.id} className="grid gap-3 border-t border-line pt-5">
+            <div className="flex items-center gap-2">
+              <ColorDot hex={color.hex} />
+              <div>
+                <h3 className="text-base font-bold text-text-strong">صور اللون: <bdi>{colorLabel(color, index)}</bdi></h3>
+                <p className="text-sm text-text-muted">تظهر في المتجر عندما يختار العميل هذا اللون، مهما كان المقاس.</p>
+              </div>
+            </div>
+            <EntityMediaUpload
+              value={color.media}
+              onChange={(next) => updateColor(color.id, { media: next })}
+              uploadContext={uploadContext}
+              entityLabel="لون"
+              testIdPrefix={`product-color-${index}`}
+            />
+          </section>
+        ))}
         <section className="grid gap-3 border-t border-line pt-5">
           <div>
             <h3 className="text-base font-bold text-text-strong">صورة التمرير</h3>
@@ -219,57 +249,53 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
     ),
     pricing: (
       <div className="grid gap-6">
+        {errors.variants ? <Alert tone="danger">{errors.variants}</Alert> : null}
         <section className="grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-base font-bold text-text-strong">المقاسات</h3>
-            <Button size="sm" onClick={addVariant}>
+            <div>
+              <h3 className="text-base font-bold text-text-strong">المقاسات والأسعار</h3>
+              <p className="text-sm text-text-muted">كل الألوان في المقاس الواحد لها نفس السعر. اتركي المقاس فارغًا إذا لم يكن للمنتج مقاسات.</p>
+            </div>
+            <Button size="sm" onClick={addSize}>
               <Plus /> إضافة مقاس
             </Button>
           </div>
-          {errors.variants ? <Alert tone="danger">{errors.variants}</Alert> : null}
-          <div aria-hidden className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-3 px-0.5 text-xs font-medium text-text-muted @lg:grid">
+          <div aria-hidden className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-3 px-0.5 text-xs font-medium text-text-muted @lg:grid">
             <span>المقاس</span>
             <span>سعر البيع</span>
-            <span>المخزون</span>
           </div>
           <ol className="grid gap-2">
-            {variants.map((v, index) => (
+            {sizes.map((size, index) => (
               <li
-                key={v.id}
-                className="grid grid-cols-2 gap-x-3 gap-y-2.5 rounded-control bg-sunken p-3 @lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] @lg:items-center @lg:bg-transparent @lg:p-0"
+                key={size.key}
+                className="grid grid-cols-2 gap-x-3 gap-y-2.5 rounded-control bg-sunken p-3 @lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] @lg:items-center @lg:bg-transparent @lg:p-0"
               >
                 <div className="col-span-2 flex items-center justify-between @lg:hidden">
                   <span className="text-sm font-medium text-text-2">
                     مقاس <span className="num">{formatNumber(index + 1)}</span>
                   </span>
-                  <Button variant="danger-ghost" size="icon-sm" aria-label="حذف المقاس" disabled={variants.length === 1} onClick={() => removeVariant(v.id)}>
+                  <Button variant="danger-ghost" size="icon-sm" aria-label="حذف المقاس" disabled={sizes.length === 1} onClick={() => removeSize(size.key)}>
                     <Trash2 />
                   </Button>
                 </div>
-                <Field label={<span className="@lg:sr-only">المقاس</span>} htmlFor={`variant-size-${v.id}`} className="col-span-2 @lg:col-span-1">
-                  <Input id={`variant-size-${v.id}`} value={v.size} onChange={(e) => updateVariant(v.id, { size: e.target.value })} placeholder="100ml" />
+                <Field label={<span className="@lg:sr-only">المقاس</span>} htmlFor={`size-label-${size.key}`}>
+                  <Input
+                    id={`size-label-${size.key}`}
+                    value={size.label}
+                    onChange={(e) => updateSize(size.key, { label: e.target.value })}
+                    placeholder={sizes.length === 1 ? "بدون مقاس" : "مثال: S"}
+                  />
                 </Field>
-                <Field label={<span className="@lg:sr-only">سعر البيع</span>} htmlFor={`variant-price-${v.id}`}>
+                <Field label={<span className="@lg:sr-only">سعر البيع</span>} htmlFor={`size-price-${size.key}`}>
                   <InputWithAddon
-                    id={`variant-price-${v.id}`}
+                    id={`size-price-${size.key}`}
                     type="number"
                     inputMode="decimal"
                     min="0"
                     className="num"
                     addon="ج.م"
-                    value={v.price}
-                    onChange={(e) => updateVariant(v.id, { price: Number(e.target.value) })}
-                  />
-                </Field>
-                <Field label={<span className="@lg:sr-only">المخزون</span>} htmlFor={`variant-stock-${v.id}`}>
-                  <Input
-                    id={`variant-stock-${v.id}`}
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    className="num"
-                    value={v.stock}
-                    onChange={(e) => updateVariant(v.id, { stock: Number(e.target.value) })}
+                    value={size.price}
+                    onChange={(e) => updateSize(size.key, { price: Number(e.target.value) })}
                   />
                 </Field>
                 <Button
@@ -277,14 +303,120 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
                   size="icon"
                   aria-label="حذف المقاس"
                   className="hidden @lg:inline-flex"
-                  disabled={variants.length === 1}
-                  onClick={() => removeVariant(v.id)}
+                  disabled={sizes.length === 1}
+                  onClick={() => removeSize(size.key)}
                 >
                   <Trash2 />
                 </Button>
               </li>
             ))}
           </ol>
+        </section>
+        <section className="grid gap-2 border-t border-line pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-bold text-text-strong">الألوان (اختياري)</h3>
+              <p className="text-sm text-text-muted">اختاري اللون من اللوحة أو اكتبي اسمه. لكل لون صوره الخاصة في خطوة الوسائط.</p>
+            </div>
+            <Button size="sm" onClick={addColor}>
+              <Plus /> إضافة لون
+            </Button>
+          </div>
+          {colors.length === 0 ? (
+            <p className="rounded-control bg-sunken px-3 py-2.5 text-sm text-text-muted">بدون ألوان — لا يظهر اختيار اللون في المتجر.</p>
+          ) : (
+            <>
+              <div aria-hidden className="hidden grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-3 px-0.5 text-xs font-medium text-text-muted @lg:grid">
+                <span>اللون</span>
+                <span>الاسم بالعربية</span>
+                <span>الاسم بالإنجليزية</span>
+              </div>
+              <ol className="grid gap-2">
+                {colors.map((color, index) => (
+                  <li
+                    key={color.id}
+                    className="grid grid-cols-2 gap-x-3 gap-y-2.5 rounded-control bg-sunken p-3 @lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] @lg:items-center @lg:bg-transparent @lg:p-0"
+                  >
+                    <div className="col-span-2 flex items-center justify-between @lg:hidden">
+                      <span className="text-sm font-medium text-text-2">
+                        لون <span className="num">{formatNumber(index + 1)}</span>
+                      </span>
+                      <Button variant="danger-ghost" size="icon-sm" aria-label={`حذف اللون ${colorLabel(color, index)}`} onClick={() => removeColor(color.id)}>
+                        <Trash2 />
+                      </Button>
+                    </div>
+                    <Field label={<span className="@lg:sr-only">اللون</span>} htmlFor={`color-hex-${color.id}`} className="col-span-2 @lg:col-span-1">
+                      <ColorPick id={`color-hex-${color.id}`} value={color.hex} onChange={(hex) => updateColor(color.id, { hex })} />
+                    </Field>
+                    <Field label={<span className="@lg:sr-only">الاسم بالعربية</span>} htmlFor={`color-ar-${color.id}`}>
+                      <Input
+                        id={`color-ar-${color.id}`}
+                        value={color.name.ar}
+                        onChange={(e) => updateColor(color.id, { name: { ...color.name, ar: e.target.value } })}
+                        placeholder="مثال: أحمر"
+                      />
+                    </Field>
+                    <Field label={<span className="@lg:sr-only">الاسم بالإنجليزية</span>} htmlFor={`color-en-${color.id}`}>
+                      <Input
+                        id={`color-en-${color.id}`}
+                        dir="ltr"
+                        value={color.name.en}
+                        onChange={(e) => updateColor(color.id, { name: { ...color.name, en: e.target.value } })}
+                        placeholder="e.g. Red"
+                      />
+                    </Field>
+                    <Button variant="danger-ghost" size="icon" aria-label={`حذف اللون ${colorLabel(color, index)}`} className="hidden @lg:inline-flex" onClick={() => removeColor(color.id)}>
+                      <Trash2 />
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+        </section>
+        <section className="grid gap-3 border-t border-line pt-5">
+          <div>
+            <h3 className="text-base font-bold text-text-strong">المخزون</h3>
+            <p className="text-sm text-text-muted">عدد القطع المتاحة لكل مقاس{colors.length > 0 ? " ولون" : ""}.</p>
+          </div>
+          <div className="grid gap-3">
+            {sizes.map((size, sizeIndex) => (
+              <fieldset key={size.key} className="grid gap-2 rounded-control bg-sunken p-3">
+                <legend className="sr-only">مخزون {size.label.trim() || `المقاس ${sizeIndex + 1}`}</legend>
+                {sizes.length > 1 || size.label.trim() ? (
+                  <p aria-hidden className="text-sm font-medium text-text-strong">{size.label.trim() || `مقاس ${formatNumber(sizeIndex + 1)}`}</p>
+                ) : null}
+                <div className="grid grid-cols-2 gap-3 @lg:grid-cols-4">
+                  {(colors.length > 0 ? colors : [null]).map((color, colorIndex) => {
+                    const colorId = color?.id ?? null;
+                    const inputId = `stock-${size.key}-${colorId ?? 0}`;
+                    return (
+                      <Field
+                        key={colorId ?? 0}
+                        htmlFor={inputId}
+                        label={color ? (
+                          <span className="inline-flex min-w-0 items-center gap-1.5">
+                            <ColorDot hex={color.hex} />
+                            <bdi className="truncate">{colorLabel(color, colorIndex)}</bdi>
+                          </span>
+                        ) : "المخزون"}
+                      >
+                        <Input
+                          id={inputId}
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          className="num"
+                          value={stockOf(size.key, colorId)}
+                          onChange={(e) => setStock(size.key, colorId, Number(e.target.value))}
+                        />
+                      </Field>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+          </div>
         </section>
         <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
           <Field label="سعر الشراء" htmlFor="product-buying-price" hint="للاستخدام الداخلي، لا يظهر للعملاء." error={errors.buyingPrice}>

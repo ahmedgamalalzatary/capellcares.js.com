@@ -27,6 +27,8 @@ interface OrderItem {
   snapshotNameAr?: string | null;
   snapshotNameEn?: string | null;
   snapshotSizeLabel?: string | null;
+  snapshotColorAr?: string | null;
+  snapshotColorEn?: string | null;
   snapshotComponents?: Array<{ variantId: number; qty: number; unitPrice?: number; sizeLabel?: string | null }> | null;
   snapshotBaseUnitPrice?: number | null;
   snapshotDiscountId?: number | null;
@@ -229,6 +231,8 @@ export async function createOrderWithItems(input: {
         snapshotNameAr: item.snapshotNameAr ?? null,
         snapshotNameEn: item.snapshotNameEn ?? null,
         snapshotSizeLabel: item.snapshotSizeLabel ?? null,
+        snapshotColorAr: item.snapshotColorAr ?? null,
+        snapshotColorEn: item.snapshotColorEn ?? null,
         snapshotComponents: item.snapshotComponents ? JSON.stringify(item.snapshotComponents) : null,
         snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : sql`${item.snapshotBaseUnitPrice}`,
         snapshotDiscountId: item.snapshotDiscountId ?? null,

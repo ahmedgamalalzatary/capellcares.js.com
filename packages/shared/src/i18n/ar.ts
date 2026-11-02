@@ -21,6 +21,8 @@ export const ar = {
     genders: "النوع",
     brands: "الماركات",
     allBrands: "كل الماركات",
+    allGenders: "كل الأنواع",
+    home: "الرئيسية",
     allCategoryTypes: "كل أنواع {name}",
     announcement: "توصيل مجاني لكل الطلبات والدفع عند الاستلام",
     announcements: [
@@ -54,6 +56,7 @@ export const ar = {
     save: "وفر",
     quantity: "الكمية",
     size: "الحجم",
+    color: "اللون",
     total: "الإجمالي",
     subtotal: "المجموع الفرعي",
     shipping: "الشحن",
@@ -97,6 +100,7 @@ export const ar = {
     related: "قد يعجبك أيضًا",
     sku: "كود المنتج",
     selectSize: "اختر الحجم",
+    selectColor: "اختر اللون",
     moreSizes: "{n} أحجام"
   },
   media: {
@@ -236,7 +240,7 @@ export const ar = {
     unavailableItem: "لم يعد متوفراً"
   },
   advices: {
-    title: "نصائح فلتة",
+    title: "فيديوهات",
     description: "نصائح لاختيار الألعاب واللعب بها من فلتة.",
     eyebrow: "نصائح فلتة",
     tipBadge: "نصيحة",

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
-import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
+import { collectionItems, collections, offerItems, offers, orders, productColors, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "./order.repository.js";
 import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repository.js";
 import { UNTOUCHED_EXPIRY_MS } from "./order/shared.js";
@@ -79,6 +79,9 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
           id: productVariants.id,
           sellingPrice: productVariants.sellingPrice,
           sizeLabel: productVariants.sizeLabel,
+          colorAr: productColors.arName,
+          colorEn: productColors.enName,
+          colorHex: productColors.hex,
           arName: products.arName,
           enName: products.enName,
           discountId: variantDiscounts.id,
@@ -90,6 +93,7 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
         })
         .from(productVariants)
         .innerJoin(products, eq(products.id, productVariants.productId))
+        .leftJoin(productColors, eq(productColors.id, productVariants.colorId))
         .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
         .where(
           and(
@@ -125,7 +129,10 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
         lineTotal: multiplyMoney(unitPrice, item.qty),
         snapshotNameAr: variant.arName,
         snapshotNameEn: variant.enName,
-        snapshotSizeLabel: variant.sizeLabel,
+        snapshotSizeLabel: variant.sizeLabel || null,
+        // A swatch-only colour keeps its picked colour so the order still says which one was bought.
+        snapshotColorAr: variant.colorAr || variant.colorEn || variant.colorHex || null,
+        snapshotColorEn: variant.colorEn || variant.colorAr || variant.colorHex || null,
         snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
         snapshotDiscountId: pricing.snapshotDiscountId,
         snapshotDiscountType: pricing.snapshotDiscountType,

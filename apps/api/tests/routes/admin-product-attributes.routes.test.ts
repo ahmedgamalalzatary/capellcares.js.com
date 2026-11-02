@@ -143,7 +143,7 @@ test("admin lists require a login", async () => {
   });
 });
 
-test("publishing a product needs a brand and a supplier, and the age group is optional", async () => {
+test("publishing a product needs a supplier, while the brand and age group are optional", async () => {
   const ids = await getBaselineIds();
 
   await withTestServer(app, async (request) => {
@@ -151,9 +151,8 @@ test("publishing a product needs a brand and a supplier, and the age group is op
     assert.equal(noSupplier.status, 400);
     assert.equal(noSupplier.json.reason, "cannot-activate-incomplete-product");
 
-    const noBrand = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: null, supplierId: ids.supplierId, status: "active" }));
-    assert.equal(noBrand.status, 400);
-    assert.equal(noBrand.json.reason, "cannot-activate-incomplete-product");
+    const noBrand = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { brandId: null, supplierId: ids.supplierId, sku: "ATTR-NO-BRAND", name: { ar: "لعبة بلا ماركة", en: "No Brand Toy" }, status: "active" }));
+    assert.equal(noBrand.status, 200);
 
     const draft = await post(request, "/api/erp/products", productInput(ids.leafCategoryId, { status: "inactive" }));
     assert.equal(draft.status, 200);

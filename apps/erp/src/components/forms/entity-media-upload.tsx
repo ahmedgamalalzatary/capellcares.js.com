@@ -19,7 +19,7 @@ interface Props {
   onChange: (media: EntityMedia[]) => void;
   uploadContext?: ErpUploadContext;
   entityLabel?: string;
-  testIdPrefix?: "product" | "offer" | "collection";
+  testIdPrefix?: string;
 }
 
 export function EntityMediaUpload({
