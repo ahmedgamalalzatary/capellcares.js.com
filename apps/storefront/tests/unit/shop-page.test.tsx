@@ -181,13 +181,13 @@ describe("shop page", () => {
     ]);
   });
 
-  it("starts with every gender, above the first image, even one with no toys yet", async () => {
+  it("starts with the first image, then every gender, even one with no toys yet", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
     const section = screen.getByRole("navigation", { name: "Shop by gender" });
     expect(screen.getByRole("link", { name: "Boys" })).toHaveAttribute("href", "/en/genders/boys");
     expect(screen.getByRole("link", { name: "Baby" })).toHaveAttribute("href", "/en/genders/baby");
     const firstImage = container.querySelector("[data-viewport]")!;
-    expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
   it("has no star mark beside the section headings", async () => {

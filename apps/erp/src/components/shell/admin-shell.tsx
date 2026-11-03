@@ -78,11 +78,11 @@ function isActive(pathname: string, href: string) {
 }
 
 function BrandMark({ className }: { className?: string }) {
-  // The logo's face circle, cropped from the official lockup.
+  // The round Falta Toy badge; scaled slightly so the image's white rim stays outside the circle.
   return (
     <span
       aria-hidden
-      className={cn("block size-9 shrink-0 rounded-full bg-[url('/brand/falta-logo.png')] bg-[length:auto_108%] bg-[position:2%_50%] shadow-[0_0_0_1px_oklch(1_0_0/0.08)]", className)}
+      className={cn("block size-9 shrink-0 rounded-full bg-[url('/brand/falta-mark.png')] bg-[length:106%] bg-center shadow-[0_0_0_1px_oklch(1_0_0/0.08)]", className)}
     />
   );
 }

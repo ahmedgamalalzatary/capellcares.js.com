@@ -27,25 +27,25 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const shopBrands = brands.filter((brand) => brand.hasProducts !== false);
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
+  // Section 1 sits flush under the header box (flat top), so the two read as one block.
   const media = (slot: 1 | 2 | 3 | 4 | 5) => (
     <ShopMediaStrip
       lang={lang}
       section={shopMediaBySlot.get(slot) ?? { id: -slot, slot, status: "inactive", items: [] }}
       label={dict.shopMedia.sectionLabel}
+      flatTop={slot === 1}
       priority={slot === 1}
     />
   );
 
   return (
     // The last section drops its bottom margin so the footer's own gap is the only space above it.
-    <main className="container pt-5 [&>:last-child]:mb-0">
-      {/* Phones show the first picture section above the genders; desktop keeps the genders on top. */}
-      <div className="flex flex-col">
-        {genders.length > 0 && (
-          <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} className="max-[879px]:order-2 max-[879px]:mb-14" />
-        )}
-        <div className="max-[879px]:order-1 max-[879px]:[&>*]:mb-6">{media(1)}</div>
-      </div>
+    <main className="container [&>:last-child]:mb-0">
+      {media(1)}
+
+      {genders.length > 0 && (
+        <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} className="mb-14" />
+      )}
 
       {mainCategories.length > 0 && (
         <section id="categories" className="mb-14 scroll-mt-28">

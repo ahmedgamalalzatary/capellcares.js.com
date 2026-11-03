@@ -125,7 +125,8 @@ function Slide({
           width={1600}
           height={viewport === "desktop" ? 600 : 900}
           sizes="100vw"
-          className={`${viewport === "mobile" ? "h-full w-full " : ""}object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]`}
+          // Fills its box on both sizes, so the box's rounded corners land on the picture rather than on empty space below it.
+          className={`h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]`}
           priority={priority}
         />
       </div>

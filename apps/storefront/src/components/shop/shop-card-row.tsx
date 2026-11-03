@@ -62,7 +62,7 @@ export function ShopCardRow({
   const itemWidthClass = gridOnMobile
     ? "min-w-0 min-[880px]:w-[calc((100%-4*1.5rem)/5)] min-[880px]:shrink-0 min-[880px]:snap-start"
     : cols === 3
-    ? "w-[40%] sm:w-[calc((100%-3*1.5rem)/4)] lg:w-[calc((100%-5*1.75rem)/6)]"
+    ? "w-[40%] sm:w-[calc((100%-3*1.5rem)/4)] min-[880px]:w-[calc((100%-5*1.5rem)/6)] lg:w-[calc((100%-7*1.75rem)/8)]"
     : cols === 2
     ? "w-[calc((100%-1.25rem)/2)] sm:w-[calc((100%-2*1.5rem)/3)] lg:w-[calc((100%-3*1.75rem)/4)]"
     : "w-[78%] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-2*1.75rem)/3)]";
