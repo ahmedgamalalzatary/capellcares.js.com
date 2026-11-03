@@ -36,10 +36,10 @@ async function anyRow(query: Promise<unknown[]>) {
   return (await query).length > 0;
 }
 
-/** Brands, age groups and genders share one shape. A brand's picture is optional, an age group needs one, and a gender needs one per language. The tables have matching column names (only genders add ar_image_path), so one typed reference serves them all. */
+/** Brands, age groups and genders share one shape. Brand and age-group pictures are optional, and a gender needs one per language. The tables have matching column names (only genders add ar_image_path), so one typed reference serves them all. */
 function namedAttributeHandlers(config: {
   table: typeof brands | typeof ageGroups | typeof genders;
-  image: "optional" | "required" | "bilingual";
+  image: "optional" | "bilingual";
   isInUse: (id: number) => Promise<boolean>;
   visibleIds: () => Promise<Set<number | null>>;
 }) {
@@ -156,7 +156,7 @@ export const brandHandlers = namedAttributeHandlers({
 
 export const ageGroupHandlers = namedAttributeHandlers({
   table: ageGroups,
-  image: "required",
+  image: "optional",
   isInUse: (id) => anyRow(db.select({ id: productAgeGroups.productId }).from(productAgeGroups).where(eq(productAgeGroups.ageGroupId, id)).limit(1)),
   visibleIds: listVisibleAgeGroupIdsRepo
 });

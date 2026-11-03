@@ -121,7 +121,7 @@ describe("Header layout stability", () => {
     const categories = screen.getByRole("link", { name: "Categories" });
     const bar = screen.getByTestId("desktop-search");
     expect(home).toHaveAttribute("href", "/en/shop");
-    expect(categories).toHaveAttribute("href", "/en/shop#categories");
+    expect(categories).toHaveAttribute("href", "/en/products");
     expect(logo.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(categories.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

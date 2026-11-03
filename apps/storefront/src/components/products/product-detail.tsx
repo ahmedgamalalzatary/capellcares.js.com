@@ -217,7 +217,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                       role="radio"
                       aria-checked={active}
                       className={[
-                        "grid min-w-28 gap-0.5 rounded-2xl border-2 px-4 py-3 text-start transition-colors",
+                        "grid min-w-28 gap-0.5 rounded-lg border-2 px-4 py-3 text-start transition-colors",
                         available ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
                         active ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                       ].join(" ")}
@@ -261,10 +261,10 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           <div className="grid sm:grid-cols-[1fr_1fr_auto]">
-            <button className="btn btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
+            <button className="btn btn--primary btn--flat btn--block" onClick={addToCart} disabled={isOutOfStock}>
               {added ? dict.common.added : dict.common.addToCart}
             </button>
-            <button className="btn btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>
+            <button className="btn btn--ghost btn--flat btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}
             </button>
             <ShareButton

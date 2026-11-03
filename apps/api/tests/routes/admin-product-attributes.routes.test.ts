@@ -57,11 +57,20 @@ test("age groups can be created, listed, renamed and reordered, and keep their p
   });
 });
 
-test("an age group needs a photo", async () => {
+test("an age group's photo is optional, and can be removed later", async () => {
   await withTestServer(app, async (request) => {
-    const response = await post(request, "/api/erp/age-groups", { name: { ar: "٣-٥", en: "3-5" }, imagePath: " " });
-    assert.equal(response.status, 400);
-    assert.equal(response.json.reason, "image-required");
+    const created = await post(request, "/api/erp/age-groups", { name: { ar: "٣-٥", en: "3-5" }, imagePath: " " });
+    assert.equal(created.status, 200);
+
+    const headers = await getAdminAuthHeaders(request);
+    const findIt = async () => (await request("/api/erp/age-groups", { headers })).json.items.find((item: { id: number }) => item.id === created.json.id);
+    assert.equal((await findIt()).imagePath, null);
+
+    await post(request, "/api/erp/age-groups", { id: created.json.id, name: { ar: "٣-٥", en: "3-5" }, imagePath: "/uploads/age.png" });
+    assert.equal((await findIt()).imagePath, "/uploads/age.png");
+
+    await post(request, "/api/erp/age-groups", { id: created.json.id, name: { ar: "٣-٥", en: "3-5" } });
+    assert.equal((await findIt()).imagePath, null);
   });
 });
 

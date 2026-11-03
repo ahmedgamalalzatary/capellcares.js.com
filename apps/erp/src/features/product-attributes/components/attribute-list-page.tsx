@@ -78,6 +78,7 @@ const CONFIG: Record<ProductAttributeKind, Config> = {
     noun: "فئة عمرية",
     newLabel: "فئة عمرية جديدة",
     imageLabel: "صورة الفئة العمرية",
+    imageOptional: true,
     emptyTitle: "لا توجد فئات عمرية بعد",
     emptyDescription: "ابدئي بإضافة أول فئة، مثل 0-2 سنة.",
     icon: Baby

@@ -16,7 +16,7 @@ interface Props {
 }
 
 const ADD_CLASS =
-  "inline-flex flex-1 items-center justify-center gap-2 h-11 mb-1 rounded-full bg-(--violet) font-bold text-white shadow-[0_4px_0_var(--violet-deep)] transition-[transform,box-shadow] duration-150 hover:translate-y-px hover:shadow-[0_3px_0_var(--violet-deep)] active:translate-y-1 active:shadow-none focus-visible:outline-3 focus-visible:outline-(--cyan) focus-visible:outline-offset-2 px-4";
+  "inline-flex flex-1 items-center justify-center gap-2 h-11 mb-1 rounded-full bg-(--violet) font-bold text-white transition-colors duration-150 hover:bg-(--violet-deep) focus-visible:outline-3 focus-visible:outline-(--cyan) focus-visible:outline-offset-2 px-4";
 
 /** Appended to whatever the card supplies, so a sold-out card always reads as one. */
 const DISABLED_CLASS = "disabled:pointer-events-none disabled:opacity-50";

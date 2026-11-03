@@ -67,14 +67,17 @@ describe("AttributeListPage", () => {
     expect(screen.getByText("0-2")).toBeInTheDocument();
   });
 
-  it("does not save an age group without a photo", () => {
+  it("saves an age group without a photo, since its picture is optional", async () => {
     render(<AttributeListPage kind="ageGroups" />);
     openEditor("فئة عمرية جديدة");
     fireEvent.change(screen.getByLabelText(/الاسم بالعربية/), { target: { value: "٣-٥" } });
     fireEvent.change(screen.getByLabelText(/الاسم بالإنجليزية/), { target: { value: "3-5" } });
+    expect(screen.getByRole("button", { name: "صورة الفئة العمرية" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "حفظ" }));
-    expect(upsertProductAttribute).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("أضيفي صورة الفئة العمرية");
+    await waitFor(() => expect(upsertProductAttribute).toHaveBeenCalledWith("ageGroups", {
+      name: { ar: "٣-٥", en: "3-5" },
+      imagePath: null
+    }));
   });
 
   it("saves an age group with both names and its photo", async () => {
