@@ -58,19 +58,21 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
   return (
     <>
       {announcements.length > 0 ? (
-      <div>
+      <div className="container">
         <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
       </div>
       ) : null}
 
       <header
         className={[
-          // bg-surface matches the white page body: it fills the notches outside the nav row's rounded top corners so scrolling content can't peek through them while the header is stuck.
+          // bg-surface matches the white page body: it fills the notches outside the nav box's rounded top corners so scrolling content can't peek through them while the header is stuck.
           // While the menu or search is open the header must also rise above the floating WhatsApp button (z-50).
-          `sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface min-[880px]:shadow-[0_3px_0_var(--accent-soft)]`
+          `container sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface`
         ].join(" ")}
       >
-      <div className="container grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
+      {/* The nav box: rounded on top only, so the shop page's first picture section (flat on top) joins it as one block. */}
+      <div className="rounded-t-3xl bg-(--accent-soft) px-3 sm:px-5">
+      <div className="grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
         {/* Mobile left cluster: menu · login */}
         <div className="flex items-center min-[880px]:hidden">
           <div className="inline-flex items-center justify-center gap-0.5">
@@ -173,7 +175,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
       </div>
 
       {/* Phones and tablets: search is always on show. It opens the same overlay as desktop, which holds the live results. */}
-      <div className="container pb-2 min-[880px]:hidden">
+      <div className="pb-2 min-[880px]:hidden">
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
@@ -182,6 +184,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           <Icon.Search />
           <span className="min-w-0 flex-1 truncate">{dict.nav.search}</span>
         </button>
+      </div>
       </div>
 
       <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
