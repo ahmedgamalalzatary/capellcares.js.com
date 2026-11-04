@@ -41,7 +41,8 @@ export function InputWithAddon({ addon, className, ...props }: ComponentProps<"i
   return (
     <span className={cn("relative flex min-w-0", className)}>
       <Input className="pe-12" {...props} />
-      <span aria-hidden className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">{addon}</span>
+      {/* font-sans: callers put `num` on the wrapper for the digits, but the unit is Arabic text (Roboto has no Arabic glyphs). */}
+      <span aria-hidden className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 font-sans text-sm text-text-muted">{addon}</span>
     </span>
   );
 }

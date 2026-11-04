@@ -251,7 +251,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
               </Card>
 
               <Card>
-                <CardHeader title="بيانات الطلب" description="التوقيت المحلي للقاهرة" />
+                <CardHeader title="بيانات الطلب" description="التوقيت المحلي للكويت" />
                 <CardBody className="pt-0 sm:pt-0">
                   <DetailGrid>
                     <Detail label="رقم الطلب الداخلي"><bdi>#{order.id}</bdi></Detail>
