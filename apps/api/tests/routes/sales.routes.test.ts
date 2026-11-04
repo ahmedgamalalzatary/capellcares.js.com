@@ -17,8 +17,8 @@ beforeEach(async () => {
 test("erp sales uses the sold bundle composition after the catalog changes", async () => {
   const ids = await getBaselineIds();
   const created = await createOrderFromCheckout({
-    fullName: "Historical bundle", phone: "01012345678", email: "history@example.com",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    fullName: "Historical bundle", phone: "55123456", email: "history@example.com",
+    areaId: ids.areaId, addressLine: "Street 1",
     buildingApartment: "1", paymentMethod: "cod",
     items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
   });
@@ -31,8 +31,8 @@ test("erp sales uses the sold bundle composition after the catalog changes", asy
     assert.equal(response.json.summary.totalUnitsSold, 2);
     assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.unitsSold, 1);
     assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.secondVariantId)?.unitsSold, 1);
-    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.revenue, 27.22);
-    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.secondVariantId)?.revenue, 42.78);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.revenue, 27.222);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.secondVariantId)?.revenue, 42.778);
   });
 });
 
@@ -43,7 +43,7 @@ test("erp sales expands collection lines into the variants actually sold", async
     categoryId: ids.leafCategoryId, status: "active", visibility: "visible" }).$returningId();
   await db.insert(collectionItems).values({ collectionId: collection.id, variantId: ids.firstVariantId, qty: 2 });
   const [order] = await db.insert(orders).values({ orderCode: "COLL-SALE-1", customerType: "registered",
-    customerId: ids.customerId, fullName: "Collection Buyer", phone: "01011111111",
+    customerId: ids.customerId, fullName: "Collection Buyer", phone: "55123456",
     email: "collection-sales@capella.test", governorate: "Cairo", cityArea: "Nasr City",
     addressLine: "Street 1", buildingApartment: "1", paymentMethod: "cod",
     paymentStatus: "accepted", totalAmount: "90.00" }).$returningId();
@@ -57,6 +57,23 @@ test("erp sales expands collection lines into the variants actually sold", async
   });
 });
 
+test("erp sales counts product revenue without the delivery fee", async () => {
+  const ids = await getBaselineIds();
+  const [order] = await db.insert(orders).values({ orderCode: "DELIV-SALE-1", customerType: "registered",
+    customerId: ids.customerId, fullName: "Delivery Buyer", phone: "55111111",
+    email: "delivery-sales@capella.test", governorate: "حولي", cityArea: "السالمية",
+    addressLine: "Block 1", buildingApartment: "1", paymentMethod: "cod",
+    paymentStatus: "accepted", deliveryFee: "1.500", totalAmount: "36.500" }).$returningId();
+  await db.insert(orderItems).values({ orderId: order.id, itemType: "product_variant", variantId: ids.firstVariantId,
+    qty: 1, unitPrice: "35.000", lineTotal: "35.000", snapshotNameEn: "Delivered product" });
+  await withTestServer(app, async (request) => {
+    const response = await request("/api/erp/sales", { headers: await getAdminAuthHeaders(request) });
+    assert.equal(response.status, 200);
+    assert.equal(response.json.variantTotals.find((row: any) => row.variantId === ids.firstVariantId)?.revenue, 35);
+    assert.equal(response.json.summary.totalRevenue, 35);
+  });
+});
+
 test("erp sales excludes denied orders from recognized revenue and units", async () => {
   const ids = await getBaselineIds();
 
@@ -65,7 +82,7 @@ test("erp sales excludes denied orders from recognized revenue and units", async
     customerType: "registered",
     customerId: ids.customerId,
     fullName: "Denied Customer",
-    phone: "01011111111",
+    phone: "55123456",
     email: "denied@capella.test",
     governorate: "Cairo",
     cityArea: "Nasr City",
@@ -95,7 +112,7 @@ test("erp sales excludes denied orders from recognized revenue and units", async
     customerType: "registered",
     customerId: ids.customerId,
     fullName: "Accepted Customer",
-    phone: "01022222222",
+    phone: "55123456",
     email: "accepted@capella.test",
     governorate: "Cairo",
     cityArea: "Maadi",
@@ -172,7 +189,7 @@ test("erp sales expands offer quantities using underlying offer item quantities"
     customerType: "registered",
     customerId: ids.customerId,
     fullName: "Pending Customer",
-    phone: "01033333333",
+    phone: "55123456",
     email: "pending@capella.test",
     governorate: "Giza",
     cityArea: "Dokki",
@@ -221,7 +238,7 @@ test("erp sales tags every order item with the product and variant it sold", asy
   const ids = await getBaselineIds();
   const [order] = await db.insert(orders).values({
     orderCode: "TAG-001", customerType: "registered", customerId: ids.customerId,
-    fullName: "Tagged Items", phone: "01044444444", email: "tagged@capella.test",
+    fullName: "Tagged Items", phone: "55123456", email: "tagged@capella.test",
     governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 4", buildingApartment: "4",
     paymentMethod: "cod", paymentStatus: "accepted", totalAmount: "140.00"
   }).$returningId();

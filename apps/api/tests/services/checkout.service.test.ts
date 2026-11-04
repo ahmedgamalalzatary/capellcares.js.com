@@ -7,13 +7,12 @@ import { bundleDiscounts, collectionItems, collections, offerItems, offers, orde
 import { createOrderFromCheckout } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
-function baseCheckoutPayload() {
+function baseCheckoutPayload(areaId: number) {
   return {
     fullName: "Checkout Guard",
-    phone: "01012345678",
+    phone: "55123456",
     email: "guard-checkout@capella.test",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId,
     addressLine: "Street 9",
     buildingApartment: "Building 9",
     paymentMethod: "cod" as const
@@ -30,7 +29,7 @@ test("priceCheckout returns authoritative snapshots without creating an order or
   const beforeOrders = await db.select({ id: orders.id }).from(orders);
 
   const priced = await module.priceCheckout?.({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
   });
 
@@ -48,10 +47,9 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
 
   const result = await createOrderFromCheckout({
     fullName: "Checkout Variant",
-    phone: "01012345678",
+    phone: "55123456",
     email: "variant-checkout@capella.test",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId: ids.areaId,
     addressLine: "Street 1",
     buildingApartment: "Building 2",
     paymentMethod: "cod",
@@ -99,7 +97,7 @@ test("createOrderFromCheckout ignores a single-variant active offer price for a 
   await db.insert(offerItems).values({ offerId: createdOffer.id, variantId: ids.firstVariantId, qty: 1 });
 
   const result = await createOrderFromCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
   });
 
@@ -127,7 +125,7 @@ test("createOrderFromCheckout charges the normal variant price when no single-va
 
   // The baseline offer is a two-item bundle, so the product line must keep price 35.
   const result = await createOrderFromCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
   });
 
@@ -154,7 +152,7 @@ test("createOrderFromCheckout applies an active variant discount and snapshots b
   });
 
   const result = await createOrderFromCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 2 }]
   });
 
@@ -198,7 +196,7 @@ test("createOrderFromCheckout rejects a discount that would reduce the checkout 
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
     }),
     /invalid discounted price/i
@@ -211,7 +209,7 @@ test("createOrderFromCheckout rejects a variant whose product is inactive", asyn
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
     })
   );
@@ -223,7 +221,7 @@ test("createOrderFromCheckout rejects a soft-deleted product", async () => {
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
     })
   );
@@ -235,7 +233,7 @@ test("createOrderFromCheckout rejects a soft-deleted variant", async () => {
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
     })
   );
@@ -247,7 +245,7 @@ test("createOrderFromCheckout rejects a hidden offer", async () => {
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
     })
   );
@@ -259,7 +257,7 @@ test("createOrderFromCheckout rejects an inactive offer", async () => {
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
     })
   );
@@ -271,7 +269,7 @@ test("createOrderFromCheckout rejects a soft-deleted offer", async () => {
 
   await assert.rejects(
     createOrderFromCheckout({
-      ...baseCheckoutPayload(),
+      ...baseCheckoutPayload(ids.areaId),
       items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
     })
   );
@@ -282,10 +280,9 @@ test("createOrderFromCheckout deducts offer stock from each included variant mul
 
   await createOrderFromCheckout({
     fullName: "Checkout Offer",
-    phone: "01012345678",
+    phone: "55123456",
     email: "offer-checkout@capella.test",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId: ids.areaId,
     addressLine: "Street 2",
     buildingApartment: "Building 5",
     paymentMethod: "cod",
@@ -308,8 +305,8 @@ test("priceCheckout snapshots bundle components with their sold quantities", asy
   const ids = await getBaselineIds();
   const { priceCheckout } = await import("../../src/modules/orders/orders.service.js");
   const priced = await priceCheckout({
-    fullName: "Snapshot buyer", phone: "01012345678", email: "snapshot@example.com",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    fullName: "Snapshot buyer", phone: "55123456", email: "snapshot@example.com",
+    areaId: ids.areaId, addressLine: "Street 1",
     buildingApartment: "1", paymentMethod: "cod",
     items: [{ type: "offer", offerId: ids.offerId, qty: 2 }]
   });
@@ -333,7 +330,7 @@ test("createOrderFromCheckout accepts a 100% variant discount as a free order", 
   });
 
   const result = await createOrderFromCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
   });
   const [line] = await db.select({ unitPrice: orderItems.unitPrice, snapshotDiscountValue: orderItems.snapshotDiscountValue })
@@ -355,7 +352,7 @@ test("priceCheckout discounts offer and collection selling prices independently 
   ]);
   const { priceCheckout } = await import("../../src/modules/orders/orders.service.js");
   const priced = await priceCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [
       { type: "offer", offerId: ids.offerId, qty: 1 },
       { type: "collection", collectionId: ids.collectionId, qty: 1 },
@@ -374,7 +371,7 @@ test("bundle order snapshots preserve every unique size label beyond 64 characte
   await db.update(productVariants).set({ sizeLabel: secondLabel }).where(eq(productVariants.id, ids.secondVariantId));
 
   const created = await createOrderFromCheckout({
-    ...baseCheckoutPayload(),
+    ...baseCheckoutPayload(ids.areaId),
     items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
   });
 
@@ -387,8 +384,8 @@ test("denying a COD bundle restores the checkout-time components after catalog e
   const ids = await getBaselineIds();
   const { updateOrderPaymentStatusRepo } = await import("../../src/modules/orders/order.repository.js");
   const created = await createOrderFromCheckout({
-    fullName: "Bundle buyer", phone: "01012345678", email: "bundle-snapshot@example.com",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 1",
+    fullName: "Bundle buyer", phone: "55123456", email: "bundle-snapshot@example.com",
+    areaId: ids.areaId, addressLine: "Street 1",
     buildingApartment: "1", paymentMethod: "cod",
     items: [{ type: "offer", offerId: ids.offerId, qty: 1 }]
   });
@@ -423,10 +420,9 @@ test("createOrderFromCheckout stores a collection order line and deducts each un
 
   const result = await createOrderFromCheckout({
     fullName: "Checkout Collection",
-    phone: "01012345678",
+    phone: "55123456",
     email: "collection-checkout@capella.test",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId: ids.areaId,
     addressLine: "Street 3",
     buildingApartment: "Building 6",
     paymentMethod: "cod",

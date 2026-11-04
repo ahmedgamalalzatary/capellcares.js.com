@@ -220,9 +220,10 @@ function ProductDiscountPageContent({ params }: { params: Promise<{ id: string }
                           id={`discount-value-${variant.id}`}
                           type="number"
                           inputMode="decimal"
+                          step="0.001"
                           min="0"
                           className="num"
-                          addon={discount.type === "percentage" ? "%" : "ج.م"}
+                          addon={discount.type === "percentage" ? "%" : "د.ك"}
                           value={discount.value}
                           onChange={(e) => updateVariantDiscount(variant.id, { ...discount, value: Number(e.target.value) })}
                         />

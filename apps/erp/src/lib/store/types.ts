@@ -58,6 +58,7 @@ export type ProductApiShape = {
   enWarnings?: string | null;
   keywords?: string[] | string;
   buyingPrice?: number | string;
+  deliveryFee?: number | string | null;
   imagePath?: string | null;
   hoverImagePath?: string | null;
   arHoverImagePath?: string | null;

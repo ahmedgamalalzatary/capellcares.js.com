@@ -35,6 +35,10 @@ describe("previewPrice", () => {
   it("never goes below zero", () => {
     expect(previewPrice(100, "fixed", 150)).toBe(0);
   });
+
+  it("keeps fils (three decimals)", () => {
+    expect(previewPrice(1.25, "percentage", 10)).toBe(1.125);
+  });
 });
 
 describe("inCategory", () => {

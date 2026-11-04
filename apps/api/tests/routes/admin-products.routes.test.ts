@@ -1513,3 +1513,43 @@ serialTest("admin product toggle-status refuses to switch on an incomplete draft
     assert.equal(after!.status, "inactive");
   });
 });
+
+serialTest("admin product saves its own delivery fee; empty or 0 clears it back to the area fee", async () => {
+  const ids = await getBaselineIds();
+
+  await withTestServer(app, async (request) => {
+    const headers = { ...(await getAdminAuthHeaders(request)), "content-type": "application/json" };
+    const save = async (body: Record<string, unknown>) => request("/api/erp/products", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...makeCompleteProduct(ids.leafCategoryId, ids), ...body })
+    });
+    const created = await save({ deliveryFee: 0.75 });
+    assert.equal(created.status, 200, JSON.stringify(created.json));
+    const [row] = await db.select({ id: products.id }).from(products).where(eq(products.sku, "ROUTE-ACTIVE-COMPLETE"));
+    const read = async () => (await request(`/api/erp/products/${row!.id}`, { headers })).json.deliveryFee;
+    assert.equal(await read(), 0.75);
+
+    await save({ id: row!.id, deliveryFee: 0 });
+    assert.equal(await read(), null);
+    await save({ id: row!.id, deliveryFee: 1.125 });
+    assert.equal(await read(), 1.125);
+    await save({ id: row!.id, deliveryFee: null });
+    assert.equal(await read(), null);
+  });
+});
+
+serialTest("admin product refuses a negative or over-precise delivery fee", async () => {
+  const ids = await getBaselineIds();
+  await withTestServer(app, async (request) => {
+    const headers = { ...(await getAdminAuthHeaders(request)), "content-type": "application/json" };
+    for (const deliveryFee of [-1, 1.0005, "abc"]) {
+      const response = await request("/api/erp/products", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ...makeCompleteProduct(ids.leafCategoryId, ids), deliveryFee })
+      });
+      assert.equal(response.status, 400, String(deliveryFee));
+    }
+  });
+});

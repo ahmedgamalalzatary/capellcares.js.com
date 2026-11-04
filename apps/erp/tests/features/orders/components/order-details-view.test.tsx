@@ -81,6 +81,21 @@ describe("OrderDetailsPage", () => {
     expect(screen.queryByText("pending")).not.toBeInTheDocument();
   });
 
+  it("shows the delivery area and fee, and fils-exact product savings", async () => {
+    fetchOrder.mockResolvedValueOnce({ ...detailedOrder, governorate: "حولي", cityArea: "السالمية", areaId: 3,
+      deliveryFee: 1.5, totalAmount: 201.5,
+      items: [{ ...detailedOrder.items[0], unitPrice: 1.125, lineTotal: 2.25, snapshotBaseUnitPrice: 1.25 }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = await screen.findByRole("region", { name: "ملخص المبالغ" });
+    expect(totals).toHaveTextContent("رسوم التوصيل");
+    expect(totals).toHaveTextContent("1.5 د.ك");
+    expect(totals).toHaveTextContent("0.25 د.ك");
+    expect(totals).toHaveTextContent("201.5 د.ك");
+    expect(screen.getByText("حولي")).toBeInTheDocument();
+    expect(screen.getByText("السالمية")).toBeInTheDocument();
+    expect(screen.getByText("المنطقة")).toBeInTheDocument();
+  });
+
   it("waits for read permission before fetching and survives access changes", async () => {
     mockedUseAdminAuth.mockReturnValue({ user: { name: "Staff", email: "staff@example.test", role: "staff", permissionKeys: [] },
       hydrated: true, logout: vi.fn() });
@@ -207,8 +222,8 @@ describe("OrderDetailsPage", () => {
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
     fireEvent.change(await screen.findByRole("combobox", { name: "حالة الدفع عند الاستلام" }), { target: { value: "accepted" } });
     const refreshed = "2026-09-21T11:00:00.000Z";
-    await waitFor(() => expect(screen.getByText(new Date(refreshed).toLocaleString("ar-EG-u-nu-latn", {
-      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo"
+    await waitFor(() => expect(screen.getByText(new Date(refreshed).toLocaleString("ar-KW-u-nu-latn", {
+      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuwait"
     }))).toBeInTheDocument());
     expect(screen.getByRole("combobox", { name: "حالة الدفع عند الاستلام" })).toHaveValue("accepted");
     expect(screen.queryByText("مهلة مراجعة الدفع عند الاستلام")).not.toBeInTheDocument();

@@ -44,6 +44,8 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "collections.toggle_status",
     "collections.update",
     "dashboard.read",
+    "delivery.read",
+    "delivery.update",
     "discounts.manage",
     "offers.create",
     "offers.permanent_delete",

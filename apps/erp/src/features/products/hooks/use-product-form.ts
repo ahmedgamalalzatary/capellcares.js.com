@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { resolveLocalizedEntityMediaUrl, type Product, type ProductColor, type RelatedItemRef } from "@capella/shared";
+import { filsAmountSchema, resolveLocalizedEntityMediaUrl, type Product, type ProductColor, type RelatedItemRef } from "@capella/shared";
 import { getStore } from "@/lib/store";
 import { showErrorToast } from "@/lib/errors";
 import { slugifyFormName } from "@/lib/slug";
@@ -66,6 +66,8 @@ export function useProductForm({
   const [warnEn, setWarnEn] = useState(initial?.warnings.en ?? "");
   const [sku, setSku] = useState(initial?.sku ?? "");
   const [buyingPrice, setBuyingPrice] = useState(initial?.buyingPrice ?? 0);
+  // Text so "1." can be typed; empty (or 0) means the delivery area's fee applies.
+  const [deliveryFee, setDeliveryFee] = useState(initial?.deliveryFee ? String(initial.deliveryFee) : "");
   const [keywords, setKeywords] = useState((initial?.keywords ?? []).join(", "));
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null);
@@ -171,6 +173,9 @@ export function useProductForm({
     } else if (!nameAr.trim() && !nameEn.trim()) {
       next.nameAr = "أدخلي اسم المنتج بالعربية أو الإنجليزية على الأقل";
     }
+    if (deliveryFee.trim() && !filsAmountSchema.safeParse(Number(deliveryFee)).success) {
+      next.deliveryFee = "أدخلي رقمًا صحيحًا (حتى 3 خانات عشرية) أو اتركيه فارغًا";
+    }
     // Sizes and colours must be consistent even for a draft: the server refuses repeats and blank colours.
     if (variantsProblem && (effectiveStatus === "active" || variantsProblem !== "price")) next.variants = MATRIX_ERROR[variantsProblem];
     setErrors(next);
@@ -194,6 +199,7 @@ export function useProductForm({
       // The field is a textarea, so Enter is as natural a separator as a comma.
       keywords: keywords.split(/[,،\n]/).map((s) => s.trim()).filter(Boolean),
       buyingPrice: Number(buyingPrice) || 0,
+      deliveryFee: deliveryFee.trim() && Number(deliveryFee) > 0 ? Number(deliveryFee) : null,
       imagePath: primaryImage,
       ...hoverImagePayload,
       media,
@@ -248,6 +254,7 @@ export function useProductForm({
     warnEn, setWarnEn,
     sku, setSku,
     buyingPrice, setBuyingPrice,
+    deliveryFee, setDeliveryFee,
     keywords, setKeywords,
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,

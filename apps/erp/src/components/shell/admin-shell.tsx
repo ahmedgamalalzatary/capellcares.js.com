@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import {
   Baby, ChartColumn, ChevronLeft, Factory, FolderTree, Gift, Images, Layers, LayoutDashboard, Lightbulb,
-  LogOut, Menu, Package, Percent, PersonStanding, ShoppingBag, Star, Tag, Trash2, Users, X, type LucideIcon,
+  LogOut, Menu, Package, Percent, PersonStanding, ShoppingBag, Star, Tag, Trash2, Truck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/orders", label: "الطلبات", icon: ShoppingBag, permission: "orders.read" },
       { href: "/sales", label: "المبيعات", icon: ChartColumn, permission: "sales.read" },
+      { href: "/delivery", label: "التوصيل", icon: Truck, permission: "delivery.read" },
     ],
   },
   {

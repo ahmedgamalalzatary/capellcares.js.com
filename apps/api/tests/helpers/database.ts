@@ -10,6 +10,7 @@ import {
   carts,
   collections,
   customers,
+  deliveryAreas,
   permissions,
   advices,
   offers,
@@ -86,8 +87,9 @@ export async function getBaselineIds() {
     db.select({ id: collections.id }).from(collections).where(eq(collections.slug, "test-collection-baseline")).then((rows) => rows[0]),
     db.select({ id: customers.id }).from(customers).where(eq(customers.email, "seed-customer@capella.test")).then((rows) => rows[0])
   ]);
+  const [area] = await db.select({ id: deliveryAreas.id }).from(deliveryAreas).where(eq(deliveryAreas.enName, "Salmiya"));
 
-  if (!brand || !supplier || !ageGroup || !productOne || !productTwo || !offer || !collection || !customer) {
+  if (!brand || !supplier || !ageGroup || !productOne || !productTwo || !offer || !collection || !customer || !area) {
     throw new Error("Baseline test seed is incomplete");
   }
 
@@ -138,6 +140,8 @@ export async function getBaselineIds() {
     rootCategoryId: rootCategory.id,
     leafCategoryId: leafCategory.id,
     customerId: customer.id,
+    /** Free baseline delivery area (Hawalli / Salmiya). */
+    areaId: area.id,
     firstVariantId: firstVariant.id,
     secondVariantId: secondVariant.id
   };

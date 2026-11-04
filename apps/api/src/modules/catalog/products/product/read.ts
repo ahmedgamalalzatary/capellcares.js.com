@@ -339,6 +339,7 @@ export async function findAdminProductByIdRepo(id: number) {
   const media = normalizeMedia(mediaByProduct.get(row.id), generalFallback(colorsByProduct.get(row.id), row.imagePath));
   return {
     ...row,
+    deliveryFee: row.deliveryFee == null ? null : Number(row.deliveryFee),
     imagePath: resolvePrimaryImagePath(media, row.imagePath),
     ...resolveHoverImageFields(row.arHoverImagePath, row.hoverImagePath, "en"),
     media,

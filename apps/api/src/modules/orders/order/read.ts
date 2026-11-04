@@ -17,6 +17,7 @@ export async function listCustomerOrdersRepo(customerId: number) {
 
   const summaries = rows.map((row) => ({
     ...row,
+    deliveryFee: toNumber(row.deliveryFee),
     totalAmount: toNumber(row.totalAmount)
   }));
 
@@ -66,6 +67,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
 
   return {
     ...order,
+    deliveryFee: toNumber(order.deliveryFee),
     totalAmount: toNumber(order.totalAmount),
     items: items.map((item) => ({
       ...item,
@@ -87,7 +89,11 @@ export async function getSalesAnalyticsRepo() {
   const allOrderRows = await db.select().from(orders).orderBy(desc(orders.createdAt));
   const orderRows = allOrderRows.filter((order) => order.paymentStatus === "accepted");
   const itemRows = await db.select().from(orderItems).orderBy(desc(orderItems.orderId));
-  const recognizedCentsByOrder = new Map(orderRows.map((order) => [order.id, Math.round(toNumber(order.totalAmount) * 100)]));
+  // Product revenue in fils: what the order took for its items, so the delivery fee never counts as sales.
+  const recognizedFilsByOrder = new Map(orderRows.map((order) => [
+    order.id,
+    Math.round(toNumber(order.totalAmount) * 1000) - Math.round(toNumber(order.deliveryFee) * 1000)
+  ]));
   // Bucket the lines once so the allocation loop below is a single pass over itemRows instead of scanning every item for every recognized order.
   const linesByOrderId = new Map<number, typeof itemRows>();
   for (const item of itemRows) {
@@ -95,16 +101,16 @@ export async function getSalesAnalyticsRepo() {
     if (bucket) bucket.push(item);
     else linesByOrderId.set(item.orderId, [item]);
   }
-  const lineRevenueCents = new Map<number, number>();
+  const lineRevenueFils = new Map<number, number>();
   for (const order of orderRows) {
     const lines = linesByOrderId.get(order.id) ?? [];
-    const grossCents = recognizedCentsByOrder.get(order.id) ?? 0;
-    const netCents = grossCents;
+    const grossFils = recognizedFilsByOrder.get(order.id) ?? 0;
+    const itemsFils = lines.reduce((sum, line) => sum + Math.round(toNumber(line.lineTotal) * 1000), 0);
     let allocated = 0;
     lines.forEach((line, index) => {
-      const amount = index === lines.length - 1 ? netCents - allocated :
-        grossCents > 0 ? Math.round(Math.round(toNumber(line.lineTotal) * 100) * netCents / grossCents) : 0;
-      lineRevenueCents.set(line.id, amount);
+      const amount = index === lines.length - 1 ? grossFils - allocated :
+        itemsFils > 0 ? Math.round(Math.round(toNumber(line.lineTotal) * 1000) * grossFils / itemsFils) : 0;
+      lineRevenueFils.set(line.id, amount);
       allocated += amount;
     });
   }
@@ -171,12 +177,12 @@ export async function getSalesAnalyticsRepo() {
       orderId: order.id,
       orderCode: order.orderCode,
       paymentStatus: order.paymentStatus,
-      totalAmount: (recognizedCentsByOrder.get(order.id) ?? 0) / 100,
+      totalAmount: toNumber(order.totalAmount),
       unitsSold: 0,
       createdAt: order.createdAt.toISOString(),
       items: []
     });
-    totalRevenue += (recognizedCentsByOrder.get(order.id) ?? 0) / 100;
+    totalRevenue += (recognizedFilsByOrder.get(order.id) ?? 0) / 1000;
   }
 
   for (const item of itemRows) {
@@ -200,14 +206,14 @@ export async function getSalesAnalyticsRepo() {
         const unitsSold = expandedItem.qty * item.qty;
         return [{ variant, unitsSold, weight: (expandedItem.unitPrice ?? variant.defaultUnitPrice) * unitsSold }];
       });
-      const paidCents = lineRevenueCents.get(item.id) ?? 0;
+      const paidFils = lineRevenueFils.get(item.id) ?? 0;
       const weightSum = components.reduce((sum, component) => sum + component.weight, 0);
-      let allocatedCents = 0;
+      let allocatedFils = 0;
       for (const [index, { variant, unitsSold, weight }] of components.entries()) {
-        const componentCents = index === components.length - 1 ? paidCents - allocatedCents
-          : Math.round(paidCents * (weightSum > 0 ? weight / weightSum : 1 / components.length));
-        allocatedCents += componentCents;
-        const revenue = componentCents / 100;
+        const componentFils = index === components.length - 1 ? paidFils - allocatedFils
+          : Math.round(paidFils * (weightSum > 0 ? weight / weightSum : 1 / components.length));
+        allocatedFils += componentFils;
+        const revenue = componentFils / 1000;
         const label = `${variant.productName} / ${variant.variantLabel}`;
         totalUnitsSold += unitsSold;
         orderBreakdown.unitsSold += unitsSold;
@@ -228,7 +234,7 @@ export async function getSalesAnalyticsRepo() {
     }
 
     const unitsSold = item.qty;
-    const revenue = (lineRevenueCents.get(item.id) ?? 0) / 100;
+    const revenue = (lineRevenueFils.get(item.id) ?? 0) / 1000;
     const label = `${variant.productName} / ${variant.variantLabel}`;
     totalUnitsSold += unitsSold;
     orderBreakdown.unitsSold += unitsSold;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Metadata } from "next";
 
-import { buildProductMetadata, buildShopMetadata, productJsonLd } from "@/lib/seo";
+import { buildLocaleMetadata, buildProductMetadata, buildRootMetadata, buildShopMetadata, productJsonLd, websiteJsonLd } from "@/lib/seo";
 
 describe("SEO metadata", () => {
   it("uses a Next.js-supported OpenGraph type for product pages", () => {
@@ -73,11 +73,21 @@ describe("SEO metadata", () => {
     });
 
     expect(jsonLd.offers?.price).toBe(100);
+    expect(jsonLd.offers?.priceCurrency).toBe("KWD");
     expect(jsonLd.aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: 4.5, reviewCount: 12 });
   });
 
   it("titles the home (shop) page with the brand name and what it sells, without the brand suffix repeated", () => {
     expect(buildShopMetadata("en").title).toEqual({ absolute: "Falta Toy | Toy shop for kids" });
     expect(buildShopMetadata("ar").title).toEqual({ absolute: "فلتة توي | متجر ألعاب أطفال" });
+  });
+
+  it("presents the shop as Kuwaiti, without promising free delivery", () => {
+    const root = buildRootMetadata();
+    const text = JSON.stringify([root, buildLocaleMetadata("en"), buildLocaleMetadata("ar"), websiteJsonLd()]);
+    expect(text).not.toMatch(/Egypt|مصر|EGP|ar[-_]EG|en-EG|Free delivery|توصيل مجاني/);
+    expect(JSON.stringify(root.title)).toMatch(/Kuwait/);
+    expect((buildLocaleMetadata("ar").openGraph as { locale?: string }).locale).toBe("ar_KW");
+    expect(websiteJsonLd().inLanguage).toEqual(["ar-KW", "en-KW"]);
   });
 });

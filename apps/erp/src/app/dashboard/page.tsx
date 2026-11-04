@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const periodLabel = range === "today" ? "اليوم" : `آخر ${rangeLabels[range]}`;
 
   const greeting = now && user
-    ? `${now.getHours() < 12 ? "صباح الخير" : "مساء الخير"}، ${user.name} · ${now.toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long" })}`
+    ? `${now.getHours() < 12 ? "صباح الخير" : "مساء الخير"}، ${user.name} · ${now.toLocaleDateString("ar-KW-u-nu-latn", { weekday: "long", day: "numeric", month: "long" })}`
     : "نظرة سريعة على المتجر.";
 
   return (

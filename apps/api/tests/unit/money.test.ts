@@ -3,14 +3,16 @@ import test from "node:test";
 
 import { addMoney, multiplyMoney } from "../../src/modules/orders/money.js";
 
-test("multiplyMoney returns exact decimal products using minor-unit arithmetic", () => {
+test("multiplyMoney returns exact decimal products using fils (3-digit) arithmetic", () => {
   assert.equal(multiplyMoney(19.99, 3), 59.97);
   assert.equal(multiplyMoney(0.1, 3), 0.3);
+  assert.equal(multiplyMoney(1.125, 3), 3.375);
 });
 
-test("addMoney returns exact decimal sums using minor-unit arithmetic", () => {
+test("addMoney returns exact decimal sums using fils (3-digit) arithmetic", () => {
   assert.equal(addMoney(0.1, 0.2), 0.3);
   assert.equal(addMoney(59.97, 10), 69.97);
+  assert.equal(addMoney(0.001, 0.002), 0.003);
 });
 
 test("multiplyMoney rejects non-integer quantities", () => {

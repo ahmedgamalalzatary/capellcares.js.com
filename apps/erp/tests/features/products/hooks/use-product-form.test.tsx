@@ -115,3 +115,36 @@ describe("product slug on save", () => {
     expect(upsertProduct.mock.calls[0]?.[0].slug).toBe("");
   });
 });
+
+describe("product own delivery fee", () => {
+  const base = {
+    id: 5, sku: "SKU-5", slug: "fee-product", name: { ar: "منتج", en: "Product" },
+    description: { ar: "", en: "" }, ingredients: { ar: "", en: "" }, howToUse: { ar: "", en: "" }, warnings: { ar: "", en: "" },
+    keywords: [], buyingPrice: 10, imagePath: "", media: [], status: "inactive", isNew: false, isBestseller: false,
+    categoryId: 2, variants: [{ id: 51, productId: 5, sizeLabel: "", sellingPrice: 5, stockQty: 1, sortOrder: 1 }],
+    createdAt: "", updatedAt: "", deletedAt: null
+  } as any;
+
+  it("loads the saved fee and sends a changed one", async () => {
+    const { result } = renderHook(() => useProductForm({ initial: normalizeProduct({ ...base, deliveryFee: "0.750" }) }));
+    expect(result.current.deliveryFee).toBe("0.75");
+    act(() => result.current.setDeliveryFee("1.125"));
+    await act(async () => { await result.current.save(); });
+    expect(upsertProduct.mock.calls[0]?.[0].deliveryFee).toBe(1.125);
+  });
+
+  it("sends null when the box is empty, so the area fee applies", async () => {
+    const { result } = renderHook(() => useProductForm({ initial: normalizeProduct(base) }));
+    expect(result.current.deliveryFee).toBe("");
+    await act(async () => { await result.current.save(); });
+    expect(upsertProduct.mock.calls[0]?.[0].deliveryFee).toBe(null);
+  });
+
+  it("refuses an invalid fee", async () => {
+    const { result } = renderHook(() => useProductForm({ initial: normalizeProduct(base) }));
+    act(() => result.current.setDeliveryFee("1.0005"));
+    await act(async () => { await result.current.save(); });
+    expect(upsertProduct).not.toHaveBeenCalled();
+    expect(result.current.errors.deliveryFee).toMatch(/3 خانات/);
+  });
+});

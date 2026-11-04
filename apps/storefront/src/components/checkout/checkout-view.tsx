@@ -10,7 +10,7 @@ import type { CheckoutViewProps } from "../../types/checkout-view.types";
 
 export function CheckoutView({ lang, dict }: CheckoutViewProps) {
   useCart();
-  const { form, errors, placing, orderId, resolved, subtotal, setField, placeOrder } = useCheckout({ lang, dict });
+  const { form, errors, placing, orderId, resolved, subtotal, governorates, quote, quoteState, setField, placeOrder } = useCheckout({ lang, dict });
 
   if (orderId) {
     return (
@@ -63,10 +63,11 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         form={form}
         errors={errors}
         placing={placing}
+        governorates={governorates}
         setField={setField}
         placeOrder={placeOrder}
       />
-      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} />
+      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} quote={quote} quoteState={quoteState} />
     </div>
   );
 }

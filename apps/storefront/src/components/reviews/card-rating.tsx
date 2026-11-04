@@ -8,7 +8,7 @@ export function CardRating({ rating, dict, lang }: { rating?: RatingSummary | nu
   }
 
   const labels = dict.reviews;
-  const locale = lang === "ar" ? "ar-EG" : "en-EG";
+  const locale = lang === "ar" ? "ar-KW" : "en-KW";
   const average = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating.average);
   const count = new Intl.NumberFormat(locale).format(rating.count);
   const ratingText = template(labels.outOfFive, { rating: average });

@@ -63,6 +63,7 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
     warnEn, setWarnEn,
     sku, setSku,
     buyingPrice, setBuyingPrice,
+    deliveryFee, setDeliveryFee,
     keywords, setKeywords,
     youtubeUrl, setYoutubeUrl,
     categoryId, setCategoryId,
@@ -291,9 +292,10 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
                     id={`size-price-${size.key}`}
                     type="number"
                     inputMode="decimal"
+                    step="0.001"
                     min="0"
                     className="num"
-                    addon="ج.م"
+                    addon="د.ك"
                     value={size.price}
                     onChange={(e) => updateSize(size.key, { price: Number(e.target.value) })}
                   />
@@ -424,12 +426,30 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
               id="product-buying-price"
               type="number"
               inputMode="decimal"
+              step="0.001"
               min="0"
               className="num"
-              addon="ج.م"
+              addon="د.ك"
               aria-invalid={Boolean(errors.buyingPrice) || undefined}
               value={buyingPrice}
               onChange={(e) => setBuyingPrice(Number(e.target.value))}
+            />
+          </Field>
+          <Field
+            label="رسوم توصيل خاصة"
+            htmlFor="product-delivery-fee"
+            hint="اتركيه فارغًا (أو 0) لتُحسب رسوم منطقة العميل. إذا أدخلتِ رقمًا يُحسب بدلًا منها مرة واحدة في الطلب."
+            error={errors.deliveryFee}
+          >
+            <InputWithAddon
+              id="product-delivery-fee"
+              inputMode="decimal"
+              className="num"
+              addon="د.ك"
+              placeholder="رسوم المنطقة"
+              aria-invalid={Boolean(errors.deliveryFee) || undefined}
+              value={deliveryFee}
+              onChange={(e) => setDeliveryFee(e.target.value)}
             />
           </Field>
         </div>

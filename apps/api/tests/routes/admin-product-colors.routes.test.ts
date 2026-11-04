@@ -231,10 +231,9 @@ serialTest("an order line remembers the colour of the variant bought, and a swat
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Colour Buyer",
-        phone: "01012345678",
+        phone: "55123456",
         email: "colour-buyer@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",

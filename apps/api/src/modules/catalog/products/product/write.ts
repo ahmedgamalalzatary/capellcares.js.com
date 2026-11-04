@@ -18,6 +18,8 @@ export async function createAdminProductRepo(input: {
   arName: string;
   enName: string;
   buyingPrice: number;
+  /** Own delivery fee; null = use the area fee, undefined = keep what is saved. */
+  deliveryFee?: number | null;
   keywords: string;
   arDescription?: string | null;
   enDescription?: string | null;
@@ -69,6 +71,7 @@ export async function createAdminProductRepo(input: {
           arName: input.arName,
           enName: input.enName,
           buyingPrice: sql`${input.buyingPrice}`,
+          ...(input.deliveryFee !== undefined ? { deliveryFee: input.deliveryFee == null ? null : input.deliveryFee.toFixed(3) } : {}),
           keywords: input.keywords,
           arDescription: input.arDescription ?? null,
           enDescription: input.enDescription ?? null,
@@ -103,6 +106,7 @@ export async function createAdminProductRepo(input: {
       arName: input.arName,
       enName: input.enName,
       buyingPrice: sql`${input.buyingPrice}`,
+      deliveryFee: input.deliveryFee == null ? null : input.deliveryFee.toFixed(3),
       keywords: input.keywords,
       arDescription: input.arDescription ?? null,
       enDescription: input.enDescription ?? null,

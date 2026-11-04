@@ -47,7 +47,7 @@ export async function listAdminOrdersPageRepo(query: AdminOrdersQuery) {
   ]);
 
   return {
-    items: rows.map((row) => ({ ...row, totalAmount: toNumber(row.totalAmount) })),
+    items: rows.map((row) => ({ ...row, deliveryFee: toNumber(row.deliveryFee), totalAmount: toNumber(row.totalAmount) })),
     pagination: pageMeta(Number(total), query.page)
   };
 }

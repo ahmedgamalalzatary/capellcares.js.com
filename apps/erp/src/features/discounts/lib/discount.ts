@@ -19,7 +19,7 @@ export function toggleId(current: number[], id: number) {
 
 export function previewPrice(price: number, type: "percentage" | "fixed", value: number) {
   if (!Number.isFinite(value) || value <= 0) return price;
-  return Math.max(0, Number((type === "percentage" ? price * (1 - value / 100) : price - value).toFixed(2)));
+  return Math.max(0, Number((type === "percentage" ? price * (1 - value / 100) : price - value).toFixed(3)));
 }
 
 export function toDateTimeLocal(value: string) {

@@ -41,8 +41,8 @@ function OrderDate({ value }: { value?: string | null }) {
   if (!value || Number.isNaN(new Date(value).getTime())) return <>غير متوفر</>;
   return (
     <time dateTime={value}>
-      {new Date(value).toLocaleString("ar-EG-u-nu-latn", {
-        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo"
+      {new Date(value).toLocaleString("ar-KW-u-nu-latn", {
+        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuwait"
       })}
     </time>
   );
@@ -126,7 +126,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
 
   const paymentDisplay = order ? orderPaymentBadge(order) : null;
   const savings = order?.items.reduce((sum, item) => sum + Math.max(0,
-    Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 100) - Math.round(item.unitPrice * 100)) * item.qty, 0) ?? 0;
+    Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 1000) - Math.round(item.unitPrice * 1000)) * item.qty, 0) ?? 0;
 
   return (
     <AdminShell
@@ -209,7 +209,8 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                 </Table>
                 <div role="region" aria-label="ملخص المبالغ" className="border-t border-line px-5 py-4 sm:px-6">
                   <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                    {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 100)}</span></Detail> : null}
+                    {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 1000)}</span></Detail> : null}
+                    <Detail label="رسوم التوصيل"><span className="num">{formatMoney(order.deliveryFee ?? 0)}</span></Detail>
                     <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>
                   </dl>
                 </div>
@@ -286,7 +287,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                 <CardBody className="pt-0 sm:pt-0">
                   <dl className="grid gap-4">
                     <Detail label="المحافظة">{order.governorate}</Detail>
-                    <Detail label="المدينة / المنطقة">{order.cityArea}</Detail>
+                    <Detail label="المنطقة">{order.cityArea}</Detail>
                     <Detail label="العنوان">{order.addressLine}</Detail>
                     <Detail label="المبنى / الشقة">{order.buildingApartment}</Detail>
                   </dl>

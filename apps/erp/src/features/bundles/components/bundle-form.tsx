@@ -234,9 +234,10 @@ export function BundleForm<TBundle extends BundleEntity>({ config, mode, initial
               id={`${kind}-price`}
               type="number"
               inputMode="decimal"
+              step="0.001"
               min="0"
               className="num"
-              addon="ج.م"
+              addon="د.ك"
               aria-invalid={Boolean(errors.price) || undefined}
               value={price}
               onChange={(event) => setPrice(Number(event.target.value))}

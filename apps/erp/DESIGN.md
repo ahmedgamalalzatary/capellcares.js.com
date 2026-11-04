@@ -40,10 +40,10 @@ The base layer also sets selection, focus, scrollbars, `option { Canvas/CanvasTe
 - UI font: `--font-sans` (Tajawal). Digits: `--font-num` (Roboto) — apply the `num` class on **digits only**
   (Roboto has no Arabic glyphs).
 - **Latin tabular digits everywhere** via `lib/format.ts`: `formatNumber`, `formatMoney`, `formatMoneyRange`.
-  Never `formatPrice(..., "ar")`. Dates use the `ar-EG-u-nu-latn` locale so they keep Latin digits.
+  Never `formatPrice(..., "ar")`. Dates use the `ar-KW-u-nu-latn` locale so they keep Latin digits; order times show in Kuwait time.
 - Copy is Arabic-only, feminine address. No English labels ("Percentage", "Name (English)" → Arabic).
 - No numbered section labels (01/02…), no eyebrow/kicker text above headings.
-- Number inputs have no spin arrows (global rule); units via `InputWithAddon` ("ج.م", "%").
+- Number inputs have no spin arrows (global rule); units via `InputWithAddon` ("د.ك", "%"). Money is Kuwaiti dinars with up to 3 decimals (fils): money inputs use `step="0.001"`.
 - Switches sit right next to their label (`SwitchField`).
 
 ## 4. Layout & width (binding)
@@ -82,6 +82,10 @@ Shared form parts (`src/components/forms/`, used by product/offer/collection/cat
 
 Shop media: `features/shop-media/components/{section-editor,announcements-editor}.tsx` holds the editors;
 `app/shop-media/page.tsx` owns their draft/save state and uses the shared `admin/fold-button`.
+
+Delivery (`/delivery`): `app/delivery/page.tsx` loads and saves the whole governorate → area → fee setup at once
+(`PUT /api/erp/delivery`); editing rules live in `features/delivery/lib/delivery-draft.ts`, one `GovernorateCard` per
+governorate. A product's own delivery fee is in the product form (step 3, beside the buying price).
 
 Dashboard: cards in `src/features/dashboard/components/`; calculations in `src/features/dashboard/lib/metrics.ts`
 (tests: `tests/features/dashboard/lib/metrics.test.ts`). It is a daily overview — attention strip (reconciliation, flagged orders, pending

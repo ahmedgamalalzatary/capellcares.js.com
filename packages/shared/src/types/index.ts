@@ -120,6 +120,8 @@ export interface Product extends HoverImagePaths {
   warnings: Bilingual;
   keywords: string[];
   buyingPrice: number;
+  /** ERP only: this product's own delivery fee; null = the delivery area's fee applies. */
+  deliveryFee?: number | null;
   imagePath: string;
   /** The general gallery: shown when the product has no colours or the chosen colour has no media of its own. */
   media?: EntityMedia[];
@@ -435,11 +437,15 @@ export interface OrderSummary {
   email: string;
   governorate: string;
   cityArea: string;
+  /** Delivery area picked at checkout; null for older orders or once the area is deleted (the names above stay). */
+  areaId: number | null;
   addressLine: string;
   buildingApartment: string;
   notes: string | null;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  /** Included in totalAmount. */
+  deliveryFee: number;
   totalAmount: number;
   createdAt: string;
   /** Present on the storefront order list (which renders item thumbnails per card) and absent on the admin list, which only needs order-level columns. */
@@ -472,8 +478,7 @@ export interface CheckoutForm {
   fullName: string;
   phone: string;
   email: string;
-  governorate: string;
-  cityArea: string;
+  areaId: number;
   addressLine: string;
   buildingApartment: string;
   notes?: string;
@@ -515,5 +520,5 @@ export function getEffectiveVariantPrice(
     ? variant.price * (1 - discount.value / 100)
     : variant.price - discount.value;
 
-  return Math.max(0, Number(nextPrice.toFixed(2)));
+  return Math.max(0, Number(nextPrice.toFixed(3)));
 }

@@ -46,7 +46,7 @@ vi.mock("@/lib/api/client", () => ({
 import { OrderDetailView } from "@/components/orders/order-detail-view";
 
 const dict = {
-  common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", currency: "EGP", size: "Size" },
+  common: { loading: "Loading", empty: "Empty", total: "Total", subtotal: "Subtotal", shipping: "Shipping", currency: "KWD", size: "Size" },
   itemType: { product: "Product type", offer: "Offer type", collection: "Collection type" },
   cart: { item: "Item", qty: "Qty", price: "Price" },
   checkout: {
@@ -149,6 +149,17 @@ describe("OrderDetailView reviews", () => {
   });
 
 
+  it("shows the delivery fee that is part of the total", async () => {
+    fetchCustomerOrderById.mockResolvedValue({
+      ...(await fetchCustomerOrderById()),
+      deliveryFee: 1.5,
+      totalAmount: 76.5
+    });
+    render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
+    const meta = await screen.findByText(/KWD\s*76\.5/);
+    expect(meta).toHaveTextContent(/Shipping:\s*KWD\s*1\.5/);
+  });
+
   it("shows the order total in the header metadata and each item's classification", async () => {
     fetchCustomerOrderById.mockResolvedValue({
       ...(await fetchCustomerOrderById()),
@@ -157,7 +168,7 @@ describe("OrderDetailView reviews", () => {
 
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 12 }));
 
-    expect(await screen.findByText(/EGP\s*75/)).toBeInTheDocument();
+    expect(await screen.findByText(/KWD\s*75/)).toBeInTheDocument();
     expect(await screen.findByText("Body Lotion")).toBeInTheDocument();
     expect(screen.getByText("Product type")).toBeInTheDocument();
     expect(screen.getByText("Size: 100ml")).toBeInTheDocument();

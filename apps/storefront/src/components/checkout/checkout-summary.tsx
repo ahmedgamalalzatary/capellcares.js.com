@@ -3,7 +3,8 @@
 import { formatPrice } from "@capella/shared";
 import type { CheckoutSummaryProps } from "../../types/checkout-view.types";
 
-export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSummaryProps) {
+export function CheckoutSummary({ lang, dict, resolved, subtotal, quote, quoteState }: CheckoutSummaryProps) {
+  const total = quoteState === "ready" && quote ? quote.total : subtotal;
   return (
     <aside className="rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
       <span className="eyebrow text-(--ink-3)!">{dict.checkout.reviewEyebrow}</span>
@@ -31,16 +32,28 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal }: CheckoutSumm
         <span className="text-(--ink-2)">{dict.common.subtotal}</span>
         <span className="text-ink">{formatPrice(subtotal, lang)}</span>
       </div>
-      <div className="flex items-center justify-between py-1 text-sm">
+      <div className="flex items-center justify-between gap-3 py-1 text-sm">
         <span className="text-(--ink-2)">{dict.common.shipping}</span>
-        <span className="font-semibold text-(--success)">{dict.common.freeDelivery}</span>
+        <span data-testid="checkout-delivery" className="text-end">
+          {quoteState === "ready" && quote ? (
+            quote.deliveryFee === 0
+              ? <span className="font-semibold text-(--success)">{dict.common.freeDelivery}</span>
+              : <span className="text-ink">{formatPrice(quote.deliveryFee, lang)}</span>
+          ) : quoteState === "loading" ? (
+            <span className="text-(--ink-3)">{dict.common.loading}</span>
+          ) : quoteState === "error" ? (
+            <span className="text-(--danger)">{dict.checkout.deliveryQuoteFailed}</span>
+          ) : (
+            <span className="text-(--ink-3)">{dict.checkout.chooseArea}</span>
+          )}
+        </span>
       </div>
       <div className="mt-4 flex items-end justify-between border-t border-(--hairline) pt-4">
         <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>
         <span className={`leading-none text-accent ${lang === "ar"
           ? "text-2xl font-bold font-(family-name:--font-ar)"
-          : "text-3xl font-extrabold"}`}>
-          {formatPrice(subtotal, lang)}
+          : "text-3xl font-extrabold"}`} data-testid="checkout-total">
+          {formatPrice(total, lang)}
         </span>
       </div>
     </aside>

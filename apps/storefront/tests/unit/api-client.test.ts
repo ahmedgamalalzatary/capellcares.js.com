@@ -9,10 +9,9 @@ describe("storefront api client", () => {
   });
   const checkoutInput = {
     fullName: "Capella User",
-    phone: "01012345678",
+    phone: "55123456",
     email: "user@capella.test",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId: 10,
     addressLine: "Main Street",
     buildingApartment: "10",
     paymentMethod: "cod" as const,

@@ -62,6 +62,7 @@ export function normalizeProduct(input: ProductApiShape): Product {
         ? input.keywords.split(",").map((x) => x.trim()).filter(Boolean)
         : [],
     buyingPrice: toNumber(input.buyingPrice),
+    deliveryFee: input.deliveryFee == null || input.deliveryFee === "" ? null : toNumber(input.deliveryFee),
     imagePath: input.imagePath ?? (primaryImage ? resolveLocalizedEntityMediaUrl(primaryImage, "en") : ""),
     hoverImagePath: input.hoverImagePath ?? "",
     arHoverImagePath: input.arHoverImagePath ?? "",

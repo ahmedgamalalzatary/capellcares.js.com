@@ -3,35 +3,5 @@ export const PAYMENT_METHODS = {
 } as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS];
 
-export const GOVERNORATES = [
-  "Cairo",
-  "Giza",
-  "Alexandria",
-  "Qalyubia",
-  "Dakahlia",
-  "Sharqia",
-  "Gharbia",
-  "Monufia",
-  "Beheira",
-  "Kafr El Sheikh",
-  "Damietta",
-  "Port Said",
-  "Ismailia",
-  "Suez",
-  "North Sinai",
-  "South Sinai",
-  "Faiyum",
-  "Beni Suef",
-  "Minya",
-  "Asyut",
-  "Sohag",
-  "Qena",
-  "Luxor",
-  "Aswan",
-  "Red Sea",
-  "New Valley",
-  "Matruh"
-] as const;
-export type Governorate = (typeof GOVERNORATES)[number];
-
-export const EG_PHONE_REGEX = /^(?:\+20|0020|0)?1[0125]\d{8}$/;
+/** Kuwaiti mobile: 8 digits starting 5, 6 or 9, optionally prefixed with +965 or 00965. */
+export const KW_PHONE_REGEX = /^(?:\+965|00965)?[569]\d{7}$/;

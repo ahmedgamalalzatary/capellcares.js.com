@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     path: "/shipping-handling",
     titleEn: "Shipping and Handling",
     titleAr: "الشحن والتوصيل",
-    descEn: "Falta Toy delivery information: free delivery within Egypt, delivery times, and cash on delivery.",
-    descAr: "معلومات التوصيل من فلتة توي: توصيل مجاني داخل مصر وأوقات التوصيل والدفع عند الاستلام."
+    descEn: "Falta Toy delivery information: delivery across Kuwait, fees by area, delivery times, and cash on delivery.",
+    descAr: "معلومات التوصيل من فلتة توي: التوصيل داخل الكويت ورسومه حسب المنطقة وأوقات التوصيل والدفع عند الاستلام."
   });
 }
 

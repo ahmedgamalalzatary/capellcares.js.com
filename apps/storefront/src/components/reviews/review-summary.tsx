@@ -106,7 +106,7 @@ function LoadedReviewSummary({ entityType, entityId, reviewData, lang, dict }: P
                       <div className="mt-1 text-xs font-medium text-(--success)">{labels.verifiedPurchase}</div>
                       <p className="mb-0 mt-3 whitespace-pre-wrap leading-7 text-(--ink-2)">{review.comment}</p>
                       <time className="mt-3 block text-xs text-(--ink-3)" dateTime={review.createdAt}>
-                        {new Intl.DateTimeFormat(lang === "ar" ? "ar-EG" : "en-EG", { dateStyle: "medium" }).format(new Date(review.createdAt))}
+                        {new Intl.DateTimeFormat(lang === "ar" ? "ar-KW" : "en-KW", { dateStyle: "medium" }).format(new Date(review.createdAt))}
                       </time>
                     </article>
                   ))}

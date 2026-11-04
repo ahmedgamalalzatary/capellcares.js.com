@@ -1,13 +1,13 @@
-export const CURRENCY = "EGP" as const;
+export const CURRENCY = "KWD" as const;
 export type Currency = typeof CURRENCY;
 
 export function formatPrice(amount: number, lang: "ar" | "en" = "en") {
-  const locale = lang === "ar" ? "ar-EG" : "en-EG";
+  const locale = lang === "ar" ? "ar-KW" : "en-KW";
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: CURRENCY,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 3
   }).format(amount);
 }
 

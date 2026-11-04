@@ -12,12 +12,12 @@ beforeEach(resetApiTestDatabase);
 const HOUR = 60 * 60 * 1000;
 
 async function placeOrder(variantId: number, customerId: number | null, idempotencyKey: string, now?: Date) {
+  const ids = await getBaselineIds();
   return createOrderFromCheckout({
     fullName: "Buyer",
-    phone: "01012345678",
+    phone: "55123456",
     email: "buyer@example.com",
-    governorate: "Cairo",
-    cityArea: "Nasr City",
+    areaId: ids.areaId,
     addressLine: "1 Main Street",
     buildingApartment: "Building 2",
     paymentMethod: "cod",

@@ -526,6 +526,13 @@
       "when": 1793625823982,
       "tag": "0074_variant_color_key",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "5",
+      "when": 1793789503675,
+      "tag": "0075_kuwait_delivery",
+      "breakpoints": true
     }
   ]
 }

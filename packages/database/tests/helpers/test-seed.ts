@@ -12,6 +12,8 @@ import {
   collectionItems,
   collections,
   customers,
+  deliveryAreas,
+  deliveryGovernorates,
   entityOrderings,
   offerItems,
   offers,
@@ -55,6 +57,8 @@ export async function clearTestSeed() {
     await db.delete(bundleDiscounts);
     await db.delete(collectionItems);
     await db.delete(orders);
+    await db.delete(deliveryAreas);
+    await db.delete(deliveryGovernorates);
     await db.delete(offerItems);
     await db.delete(collections);
     await db.delete(categoryPaths);
@@ -185,6 +189,9 @@ export async function seedTestData() {
   });
   await ensureCollectionItem({ collectionId, variantId: firstVariantId, qty: 1 });
   await ensureCollectionItem({ collectionId, variantId: secondVariantId, qty: 1 });
+  // Free so seeded checkouts keep their item-only totals; delivery tests add their own priced areas.
+  const [governorate] = await db.insert(deliveryGovernorates).values({ arName: "حولي", enName: "Hawalli" }).$returningId();
+  await db.insert(deliveryAreas).values({ governorateId: governorate!.id, arName: "السالمية", enName: "Salmiya", fee: "0.000" });
   await ensureCustomer({
     name: "Seed Customer",
     email: seedCustomerEmail,

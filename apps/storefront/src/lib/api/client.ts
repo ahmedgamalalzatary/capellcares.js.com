@@ -1,6 +1,9 @@
 import type {
   Advice,
   Category,
+  CheckoutDeliveryGovernorate,
+  CheckoutQuoteDto,
+  CheckoutQuoteRequestDto,
   CheckoutRequestDto,
   CheckoutResponseDto,
   Collection,
@@ -18,7 +21,7 @@ import type {
   StorefrontOfferDetail,
   StorefrontProductDetail
 } from "@capella/shared";
-import { authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
+import { API_BASE, authedGetJSON, authedMutationJSON, getJSON } from "./client/http";
 import { getAuthSessionRevision, refreshAccessTokenOrNull } from "../auth-provider.api";
 import { normalizeCategory, normalizeProduct, resolveMediaUrl } from "./client/normalizers";
 import {
@@ -187,6 +190,21 @@ export async function submitCheckout(
     requestToken,
     { method: "POST", body: input, retryOn401: false, idempotencyKey: options?.idempotencyKey }
   );
+}
+
+/** Where checkout can deliver right now (set up in the ERP); never cached so ERP edits show at once. */
+export async function fetchDeliveryGovernorates(): Promise<CheckoutDeliveryGovernorate[]> {
+  const response = await fetch(`${API_BASE}/api/v1/delivery/governorates`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`API ${response.status} delivery governorates`);
+  const data = await response.json() as { governorates: CheckoutDeliveryGovernorate[] };
+  return data.governorates;
+}
+
+/** Server-priced subtotal, delivery fee and total for the cart and chosen area. */
+export async function quoteCheckout(input: CheckoutQuoteRequestDto): Promise<CheckoutQuoteDto> {
+  const quote = await authedMutationJSON<CheckoutQuoteDto>("/api/v1/checkout/quote", null, { method: "POST", body: input });
+  if (!quote) throw new Error("Checkout quote failed");
+  return quote;
 }
 
 async function checkoutRequestToken(accessToken: string | null, required = false) {

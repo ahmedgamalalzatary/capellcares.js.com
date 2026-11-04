@@ -16,8 +16,12 @@ describe("number formatting", () => {
     expect(formatNumber(1234.5)).toBe("1,234.5");
   });
 
-  it("appends the Arabic currency label for money", () => {
-    expect(formatMoney(1000)).toBe("1,000 ج.م");
+  it("appends the Kuwaiti dinar label for money", () => {
+    expect(formatMoney(1000)).toBe("1,000 د.ك");
+  });
+
+  it("keeps fils (three decimals) in money", () => {
+    expect(formatMoney(1.125)).toBe("1.125 د.ك");
   });
 
   it("collapses a money range with one value", () => {
@@ -25,7 +29,7 @@ describe("number formatting", () => {
   });
 
   it("renders a money range with a dash between the bounds", () => {
-    expect(formatMoneyRange(5, 10)).toBe("5 – 10 ج.م");
+    expect(formatMoneyRange(5, 10)).toBe("5 – 10 د.ك");
   });
 });
 

@@ -28,10 +28,9 @@ test("checkout route allows guest checkout when the email already exists", async
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Existing Guest",
-        phone: "01012345678",
+        phone: "55123456",
         email: "seed-customer@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -53,10 +52,9 @@ test("checkout route returns a pending COD payment status for a created order", 
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Pending COD",
-        phone: "01012345678",
+        phone: "55123456",
         email: "pending-cod@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -83,8 +81,8 @@ test("checkout route returns the same COD order for the same idempotency key", a
   const ids = await getBaselineIds();
   const idempotencyKey = crypto.randomUUID();
   const body = JSON.stringify({
-    fullName: "Idempotent COD", phone: "01012345678", email: "cod-idempotent@capella.test",
-    governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10", buildingApartment: "4",
+    fullName: "Idempotent COD", phone: "55123456", email: "cod-idempotent@capella.test",
+    areaId: ids.areaId, addressLine: "Street 10", buildingApartment: "4",
     paymentMethod: "cod", items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }]
   });
 
@@ -115,10 +113,9 @@ test("checkout route persists registered customer orders for authenticated custo
       },
       body: JSON.stringify({
         fullName: "Registered Customer",
-        phone: "01012345678",
+        phone: "55123456",
         email: "seed-customer@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -152,10 +149,9 @@ test("checkout route rejects an invalid Bearer token without creating a guest or
       },
       body: JSON.stringify({
         fullName: "Expired Customer",
-        phone: "01012345678",
+        phone: "55123456",
         email: "seed-customer@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -180,10 +176,9 @@ test("checkout route ignores guest-supplied customerId values", async () => {
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Guest Spoof Attempt",
-        phone: "01012345678",
+        phone: "55123456",
         email: "guest-spoof@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -217,10 +212,9 @@ test("checkout route uses the authenticated customer id instead of trusting the 
       },
       body: JSON.stringify({
         fullName: "Authenticated Customer",
-        phone: "01012345678",
+        phone: "55123456",
         email: "seed-customer@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -269,10 +263,9 @@ test("checkout route accepts buyable collection items", async () => {
       headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
       body: JSON.stringify({
         fullName: "Collection Customer",
-        phone: "01012345678",
+        phone: "55123456",
         email: "collection-route@capella.test",
-        governorate: "Cairo",
-        cityArea: "Nasr City",
+        areaId: ids.areaId,
         addressLine: "Street 10",
         buildingApartment: "Building 4",
         paymentMethod: "cod",
@@ -290,9 +283,9 @@ test("checkout rejects a cart when the displayed total is stale", async () => {
   await withTestServer(app, async (request) => {
     const response = await request("/api/v1/checkout", {
       method: "POST", headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() },
-      body: JSON.stringify({ fullName: "Stale Price", phone: "01012345678", email: "stale-price@example.com",
-        governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street 10", buildingApartment: "4",
-        paymentMethod: "cod", expectedAmountCents: 1,
+      body: JSON.stringify({ fullName: "Stale Price", phone: "55123456", email: "stale-price@example.com",
+        areaId: ids.areaId, addressLine: "Street 10", buildingApartment: "4",
+        paymentMethod: "cod", expectedAmountFils: 1,
         items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }] })
     });
     assert.equal(response.status, 409);

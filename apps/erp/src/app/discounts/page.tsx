@@ -217,10 +217,11 @@ export default function DiscountsPage() {
               id="bulk-discount-value"
               type="number"
               inputMode="decimal"
+              step="0.001"
               min="0"
               max={type === "percentage" ? 100 : undefined}
               className="num"
-              addon={type === "percentage" ? "%" : "ج.م"}
+              addon={type === "percentage" ? "%" : "د.ك"}
               aria-invalid={Boolean(errors.value) || undefined}
               value={value}
               onChange={(event) => setValue(Number(event.target.value))}

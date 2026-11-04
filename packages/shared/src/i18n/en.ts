@@ -24,9 +24,9 @@ export const en = {
     brands: "Brands",
     allBrands: "All Brands",
     allCategoryTypes: "All {name} Types",
-    announcement: "Free delivery on every order, pay cash on delivery",
+    announcement: "Delivery across Kuwait, pay cash on delivery",
     announcements: [
-      "Free delivery on every order",
+      "Delivery across Kuwait",
       "Pay cash when your order arrives",
       "New toys just landed"
     ],
@@ -62,6 +62,7 @@ export const en = {
     shipping: "Shipping",
     calculatedAtCheckout: "Calculated at checkout",
     freeDelivery: "Free delivery",
+    deliveryAtCheckout: "Calculated at checkout",
     continue: "Continue",
     back: "Back",
     breadcrumbHome: "Home",
@@ -83,7 +84,7 @@ export const en = {
     yes: "Yes",
     no: "No",
     added: "Added",
-    currency: "EGP"
+    currency: "KWD"
   },
   itemType: {
     product: "Product",
@@ -173,7 +174,7 @@ export const en = {
     emptyTagline: "Pick a toy and it will wait for you here.",
     summaryEyebrow: "Summary",
     summaryTitle: "Your order",
-    codNote: "Cash on delivery, free delivery",
+    codNote: "Cash on delivery",
     saveForLater: "Save to wishlist",
     saved: "Saved",
     each: "each",
@@ -256,9 +257,12 @@ export const en = {
     phone: "Phone number",
     email: "Email",
     country: "Country",
-    countryEgypt: "Egypt",
+    countryKuwait: "Kuwait",
     governorate: "Governorate",
-    city: "City / Area",
+    area: "Area",
+    chooseArea: "Choose your area to see the delivery fee.",
+    noDeliveryAreas: "Delivery isn't available right now. Please contact customer service.",
+    deliveryQuoteFailed: "We couldn't work out the delivery fee. Please try again.",
     addressLine: "Street address",
     building: "Building / Apartment",
     notes: "Notes (optional)",
@@ -269,7 +273,7 @@ export const en = {
     reviewEyebrow: "Review",
     eyebrow: "Almost there",
     placeOrder: "Place order",
-    egPhoneInvalid: "Enter a valid Egyptian phone number.",
+    kwPhoneInvalid: "Enter a valid Kuwaiti mobile number (8 digits).",
     required: "Required"
   },
   offers: {
@@ -373,7 +377,7 @@ export const en = {
     helpcenter: "Help Center",
     storeLocator: "Stores Locator",
     rights: "All rights reserved.",
-    currency: "EGP",
+    currency: "KWD",
     creator: "bit Technology",
     categories: "Category",
     brands: "Brands",
@@ -447,7 +451,7 @@ export const en = {
     sendAnother: "Send another message",
     asideTitle: "Other ways to reach us",
     hoursTitle: "Support hours",
-    hoursValue: "Sunday–Thursday, 9am–5pm (Cairo time), excluding holidays.",
+    hoursValue: "Sunday–Thursday, 9am–5pm (Kuwait time), excluding holidays.",
     responseTime: "We aim to reply within 2 business days.",
   },
   pages: {
@@ -554,7 +558,7 @@ export const en = {
         { h: "Payment Methods" },
         { p: "We accept cash on delivery only, in Kuwait Dinars. You pay when your order arrives." },
         { h: "Shipping and Delivery" },
-        { p: "We will make every effort to deliver your order on time. If we cannot, we will contact you as soon as possible to agree another time. If an order cannot be delivered, we reserve the right to cancel it and return the products to our warehouses. Delivery is free. Please find more information on the “[Shipping and Handling](/shipping-handling)” page." },
+        { p: "We will make every effort to deliver your order on time. If we cannot, we will contact you as soon as possible to agree another time. If an order cannot be delivered, we reserve the right to cancel it and return the products to our warehouses. Delivery fees depend on your area and are shown at checkout. Please find more information on the “[Shipping and Handling](/shipping-handling)” page." },
         { h: "Return and Refund Policy for Online Orders" },
         { p: "Regarding the return of products purchased online, you will bear full responsibility for all risks (including loss and/or damage to the products) upon delivery of the product to the address specified in the order. We will not be responsible for refunds or replacements if the specified address is incorrect. There may be delays in supplying products, or we may be unable to provide them due to reasons beyond our control (for example: material shortages, import delays, or higher-than-expected demand). Accordingly, we will keep you updated with the latest developments, but we will not be liable for any delay resulting from such events. Please review all terms on the “[Returns & Refunds](/returns-refunds)” page." },
         { h: "Promotional Offers" },

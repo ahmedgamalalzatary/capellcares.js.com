@@ -1,13 +1,13 @@
 // One number style across the ERP: Latin tabular digits (what staff type into inputs and what SKUs use),
-// with the Arabic currency label. Pair with the `num` class for aligned columns.
-const numberFormat = new Intl.NumberFormat("en-EG", { maximumFractionDigits: 2 });
+// with the Kuwaiti dinar label; up to three decimals because the dinar is split into 1000 fils. Pair with the `num` class for aligned columns.
+const numberFormat = new Intl.NumberFormat("en-KW", { maximumFractionDigits: 3 });
 
 export function formatNumber(value: number) {
   return numberFormat.format(value);
 }
 
 export function formatMoney(value: number) {
-  return `${numberFormat.format(value)} ج.م`;
+  return `${numberFormat.format(value)} د.ك`;
 }
 
 export function formatMoneyRange(min: number, max: number) {
@@ -15,11 +15,11 @@ export function formatMoneyRange(min: number, max: number) {
 }
 
 export function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(value).toLocaleDateString("ar-KW-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function formatDateShort(value: string) {
-  return new Date(value).toLocaleDateString("ar-EG-u-nu-latn");
+  return new Date(value).toLocaleDateString("ar-KW-u-nu-latn");
 }
 
 /** Local-time `YYYY-MM-DD` key, used to bucket records by calendar day. */

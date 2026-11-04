@@ -119,6 +119,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
               {itemsCountLabel(units, dict)}
               {" "}
               {dict.common.total}: {formatPrice(order.totalAmount, lang)}
+              {order.deliveryFee > 0 ? <>{" · "}{dict.common.shipping}: {formatPrice(order.deliveryFee, lang)}</> : null}
             </p>
             <Link href={`/${lang}/orders`} className="btn btn--ghost w-full sm:w-auto">{dict.orders.backToOrders}</Link>
           </div>

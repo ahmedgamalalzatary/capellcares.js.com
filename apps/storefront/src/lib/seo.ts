@@ -52,21 +52,21 @@ export function buildRootMetadata(): Metadata {
       apple: { url: "/apple-icon.png", sizes: "180x180" }
     },
     title: {
-      default: `${BRAND_NAME} | Toys for kids in Egypt`,
+      default: `${BRAND_NAME} | Toys for kids in Kuwait`,
       template: `%s | ${BRAND_NAME}`
     },
-    description: "Falta Toy is an Egyptian toy shop with toys for every age. Free delivery, pay cash on delivery.",
+    description: "Falta Toy is a Kuwaiti toy shop with toys for every age. Delivery across Kuwait, pay cash on delivery.",
     openGraph: {
       type: "website",
       siteName: BRAND_NAME,
-      title: `${BRAND_NAME} | Toys for kids in Egypt`,
-      description: "Shop toys for every age. Free delivery, pay cash on delivery.",
+      title: `${BRAND_NAME} | Toys for kids in Kuwait`,
+      description: "Shop toys for every age. Delivery across Kuwait, pay cash on delivery.",
       url: absoluteUrl("/")
     },
     twitter: {
       card: "summary_large_image",
-      title: `${BRAND_NAME} | Toys for kids in Egypt`,
-      description: "Shop toys for every age. Free delivery, pay cash on delivery."
+      title: `${BRAND_NAME} | Toys for kids in Kuwait`,
+      description: "Shop toys for every age. Delivery across Kuwait, pay cash on delivery."
     }
   };
 }
@@ -75,15 +75,15 @@ export function buildLocaleMetadata(lang: Language): Metadata {
   const isAr = lang === "ar";
   const title = isAr ? "فلتة توي | ألعاب أطفال" : `${BRAND_NAME} | Toys for kids`;
   const description = isAr
-    ? "فلتة توي متجر ألعاب أطفال لكل الأعمار. توصيل مجاني والدفع عند الاستلام."
-    : "Falta Toy is a toy shop for every age. Free delivery, pay cash on delivery.";
+    ? "فلتة توي متجر ألعاب أطفال لكل الأعمار. التوصيل داخل الكويت والدفع عند الاستلام."
+    : "Falta Toy is a toy shop for every age. Delivery across Kuwait, pay cash on delivery.";
 
   return {
     title,
     description,
     alternates: buildLocalizedAlternates(lang, ""),
     openGraph: {
-      locale: isAr ? "ar_EG" : "en_US",
+      locale: isAr ? "ar_KW" : "en_US",
       type: "website",
       title,
       description,
@@ -391,7 +391,7 @@ export function productJsonLd(lang: Language, product: Product & { reviewData?: 
     offers: firstVariant ? {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/products/${product.slug}`)),
-      priceCurrency: "EGP",
+      priceCurrency: "KWD",
       price: getEffectiveVariantPrice(firstVariant),
       availability: firstVariant.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     } : undefined
@@ -409,7 +409,7 @@ export function offerJsonLd(lang: Language, offer: Offer & { reviewData?: Review
     offers: {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/offers/${offer.slug}`)),
-      priceCurrency: "EGP",
+      priceCurrency: "KWD",
       price: offer.price,
       availability: offer.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     }
@@ -427,7 +427,7 @@ export function collectionJsonLd(lang: Language, collection: Collection & { revi
     offers: {
       "@type": "Offer",
       url: absoluteUrl(localizePath(lang, `/collections/${collection.slug}`)),
-      priceCurrency: "EGP",
+      priceCurrency: "KWD",
       price: collection.price,
       availability: collection.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     }
@@ -440,7 +440,7 @@ export function websiteJsonLd() {
     "@type": "WebSite",
     name: BRAND_NAME,
     url: getSiteUrl(),
-    inLanguage: ["ar-EG", "en-EG"]
+    inLanguage: ["ar-KW", "en-KW"]
   };
 }
 

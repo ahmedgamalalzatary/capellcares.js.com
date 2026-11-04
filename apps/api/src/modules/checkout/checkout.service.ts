@@ -1,5 +1,5 @@
-import { EG_PHONE_REGEX, GOVERNORATES } from "@capella/shared/constants";
-import { createOrderFromCheckout } from "../orders/orders.service.js";
+import { KW_PHONE_REGEX } from "@capella/shared/constants";
+import { createOrderFromCheckout, quoteCheckout } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
 
 function validateCheckoutPayload(payload: CheckoutPayload) {
@@ -7,8 +7,7 @@ function validateCheckoutPayload(payload: CheckoutPayload) {
     "fullName",
     "phone",
     "email",
-    "governorate",
-    "cityArea",
+    "areaId",
     "addressLine",
     "buildingApartment",
     "items"
@@ -20,10 +19,7 @@ function validateCheckoutPayload(payload: CheckoutPayload) {
       throw new Error(`Field is required: ${field}`);
     }
   }
-  if (!EG_PHONE_REGEX.test(payload.phone)) throw new Error("Invalid Egyptian phone number");
-  if (!GOVERNORATES.includes(payload.governorate as (typeof GOVERNORATES)[number])) {
-    throw new Error("Invalid governorate");
-  }
+  if (!KW_PHONE_REGEX.test(payload.phone)) throw new Error("Invalid Kuwaiti phone number");
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error("At least one item is required");
 }
 
@@ -33,4 +29,10 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
     throw new Error("Idempotency-Key header is required for checkout");
   }
   return createOrderFromCheckout(payload, { idempotencyKey: options.idempotencyKey.trim() });
+}
+
+/** Checkout's live price box: subtotal, delivery fee and total for the chosen area. */
+export async function quoteCheckoutTotals(payload: Pick<CheckoutPayload, "areaId" | "items">) {
+  const { subtotal, deliveryFee, total } = await quoteCheckout(payload);
+  return { subtotal, deliveryFee, total };
 }

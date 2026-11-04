@@ -22,6 +22,8 @@ const MODULE_LABELS: Record<string, string> = {
   collections: "المجموعات",
   advices: "النصائح",
   orders: "الطلبات",
+  delivery: "التوصيل",
+  shop_media: "وسائط المتجر",
   reviews: "التقييمات",
   sales: "المبيعات",
   trash: "المهملات"

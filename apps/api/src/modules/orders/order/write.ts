@@ -150,6 +150,7 @@ export async function createOrderWithItems(input: {
     email: string;
     governorate: string;
     cityArea: string;
+    areaId?: number | null;
     addressLine: string;
     buildingApartment: string;
     notes: string;
@@ -158,6 +159,7 @@ export async function createOrderWithItems(input: {
     idempotencyKey?: string | null;
     checkoutFingerprint?: string | null;
     codExpiresAt?: Date | null;
+    deliveryFee?: number;
     totalAmount: number;
   };
   items: OrderItem[];
@@ -208,6 +210,7 @@ export async function createOrderWithItems(input: {
     const [order] = await tx.insert(orders).values({
       ...input.order,
       orderCode: generatePendingOrderCode(),
+      deliveryFee: sql`${input.order.deliveryFee ?? 0}`,
       totalAmount: sql`${input.order.totalAmount}`
     }).$returningId();
 

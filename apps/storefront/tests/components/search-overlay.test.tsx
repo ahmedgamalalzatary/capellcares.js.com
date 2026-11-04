@@ -190,7 +190,7 @@ describe("SearchOverlay", () => {
 
     fireEvent.change(screen.getByPlaceholderText(dict.nav.search), { target: { value: "rose" } });
 
-    expect(await screen.findByText(/EGP\s*100/)).toBeInTheDocument();
-    expect(screen.queryByText(/EGP\s*200/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/KWD\s*100/)).toBeInTheDocument();
+    expect(screen.queryByText(/KWD\s*200/)).not.toBeInTheDocument();
   });
 });

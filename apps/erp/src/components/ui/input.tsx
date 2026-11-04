@@ -36,7 +36,7 @@ export function Select({ className, children, ...props }: ComponentProps<"select
   );
 }
 
-/** Input with a short unit at the inline end (ج.م, %). */
+/** Input with a short unit at the inline end (د.ك, %). */
 export function InputWithAddon({ addon, className, ...props }: ComponentProps<"input"> & { addon: ReactNode }) {
   return (
     <span className={cn("relative flex min-w-0", className)}>

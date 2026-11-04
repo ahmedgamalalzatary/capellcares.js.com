@@ -7,6 +7,8 @@ import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repos
 import { UNTOUCHED_EXPIRY_MS } from "./order/shared.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
+import { computeDeliveryFee, type DeliveryLine } from "../delivery/delivery-fee.js";
+import { findCheckoutAreaRepo } from "../delivery/delivery.repository.js";
 
 export class CheckoutAmountChangedError extends Error {
   constructor() {
@@ -58,7 +60,7 @@ function resolveEffectiveDiscountedPrice(input: {
   }
 
   return {
-    unitPrice: Number(discountedPrice.toFixed(2)),
+    unitPrice: Number(discountedPrice.toFixed(3)),
     snapshotBaseUnitPrice: input.basePrice,
     snapshotDiscountId: discount.id,
     snapshotDiscountType: discount.type,
@@ -70,6 +72,7 @@ function resolveEffectiveDiscountedPrice(input: {
 
 export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
   const pricedItems: Array<any> = [];
+  const deliveryLines: DeliveryLine[] = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
     if (item.type === "product") {
@@ -84,6 +87,8 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
           colorHex: productColors.hex,
           arName: products.arName,
           enName: products.enName,
+          productId: products.id,
+          productDeliveryFee: products.deliveryFee,
           discountId: variantDiscounts.id,
           discountType: variantDiscounts.type,
           discountValue: variantDiscounts.value,
@@ -120,6 +125,10 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
           : null
       });
       const unitPrice = pricing.unitPrice;
+      deliveryLines.push({
+        productId: variant.productId,
+        ownFee: variant.productDeliveryFee == null ? null : Number(variant.productDeliveryFee)
+      });
       pricedItems.push({
         itemType: "product_variant",
         variantId,
@@ -157,6 +166,7 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
         )
         .limit(1);
       if (!collection) throw new Error(`Collection not found: ${collectionId}`);
+      deliveryLines.push({ productId: null, ownFee: null });
       const discount = (await loadBundleDiscountsRepo("collection", [collectionId])).get(collectionId) ?? null;
       const pricing = resolveEffectiveDiscountedPrice({
         basePrice: Number(collection.fixedPrice),
@@ -196,6 +206,7 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
       )
       .limit(1);
     if (!offer) throw new Error(`Offer not found: ${offerId}`);
+    deliveryLines.push({ productId: null, ownFee: null });
     const discount = (await loadBundleDiscountsRepo("offer", [offerId])).get(offerId) ?? null;
     const pricing = resolveEffectiveDiscountedPrice({
       basePrice: Number(offer.fixedPrice),
@@ -249,8 +260,17 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
   return {
     items: pricedItems,
     totalAmount,
+    deliveryLines,
     reservations: [...reservationQuantities.entries()].map(([variantId, qty]) => ({ variantId, qty }))
   };
+}
+
+/** Items, delivery and total for one area: what checkout shows and what the order charges. Unknown or closed areas throw. */
+export async function quoteCheckout(payload: Pick<CheckoutPayload, "items" | "areaId">) {
+  const area = await findCheckoutAreaRepo(payload.areaId);
+  const priced = await priceCheckout(payload);
+  const deliveryFee = computeDeliveryFee(area.fee, priced.deliveryLines);
+  return { area, priced, subtotal: priced.totalAmount, deliveryFee, total: addMoney(priced.totalAmount, deliveryFee) };
 }
 
 export async function createOrderFromCheckout(
@@ -268,10 +288,9 @@ export async function createOrderFromCheckout(
     }
     return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
   }
-  const priced = await priceCheckout(payload);
+  const { area, priced, deliveryFee, total: totalAmount } = await quoteCheckout(payload);
   const pricedItems = priced.items;
-  const totalAmount = priced.totalAmount;
-  if (payload.expectedAmountCents != null && Math.round(totalAmount * 100) !== payload.expectedAmountCents) {
+  if (payload.expectedAmountFils != null && Math.round(totalAmount * 1000) !== payload.expectedAmountFils) {
     throw new CheckoutAmountChangedError();
   }
   const paymentStatus: PaymentStatus = totalAmount === 0 ? "accepted" : "pending";
@@ -284,8 +303,9 @@ export async function createOrderFromCheckout(
       fullName: payload.fullName,
       phone: payload.phone,
       email: payload.email,
-      governorate: payload.governorate,
-      cityArea: payload.cityArea,
+      governorate: area.governorateArName,
+      cityArea: area.arName,
+      areaId: area.id,
       addressLine: payload.addressLine,
       buildingApartment: payload.buildingApartment,
       notes: payload.notes ?? "",
@@ -294,6 +314,7 @@ export async function createOrderFromCheckout(
       idempotencyKey: options.idempotencyKey,
       checkoutFingerprint,
       codExpiresAt: totalAmount === 0 ? null : new Date((options.now ?? new Date()).getTime() + UNTOUCHED_EXPIRY_MS),
+      deliveryFee,
       totalAmount
       },
       items: pricedItems

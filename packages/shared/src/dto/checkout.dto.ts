@@ -27,13 +27,23 @@ export interface CheckoutRequestDto {
   fullName: string;
   phone: string;
   email: string;
-  governorate: string;
-  cityArea: string;
+  areaId: number;
   addressLine: string;
   buildingApartment: string;
   notes?: string;
   paymentMethod: "cod";
-  expectedAmountCents?: number;
+  expectedAmountFils?: number;
   customerId?: number | null;
   items: CheckoutItemDto[];
+}
+
+export interface CheckoutQuoteRequestDto {
+  areaId: number;
+  items: CheckoutItemDto[];
+}
+
+export interface CheckoutQuoteDto {
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
 }

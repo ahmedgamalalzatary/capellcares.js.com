@@ -149,7 +149,7 @@ export function orderPaymentChip(order: Pick<OrderSummary, "paymentStatus">): st
 }
 
 export function formatOrderDate(value: string, lang: Language): string {
-  return new Date(value).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", {
+  return new Date(value).toLocaleDateString(lang === "ar" ? "ar-KW" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric"

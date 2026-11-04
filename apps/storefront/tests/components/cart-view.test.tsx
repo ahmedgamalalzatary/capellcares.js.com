@@ -86,8 +86,16 @@ describe("CartView", () => {
     render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
 
     // Discounted unit price is 100 (50% off 200), qty 2 -> line total 200, not 400.
-    expect((await screen.findAllByText(/EGP\s*200/)).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/EGP\s*400/)).not.toBeInTheDocument();
+    expect((await screen.findAllByText(/KWD\s*200/)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/KWD\s*400/)).not.toBeInTheDocument();
+  });
+
+  it("leaves the delivery fee to checkout instead of promising free delivery", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+    const dict = getDict("en");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
+    expect(await screen.findByText(dict.common.deliveryAtCheckout)).toBeInTheDocument();
+    expect(screen.queryByText(dict.common.freeDelivery)).not.toBeInTheDocument();
   });
 
   it("shows the chosen size on product, offer, and collection cart lines", async () => {
@@ -131,9 +139,9 @@ describe("CartView", () => {
     const dict = getDict("en");
     render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict })));
 
-    // "EGP 100 each" under the name, "EGP 200" as the line total.
+    // "KWD 100 each" under the name, "KWD 200" as the line total.
     expect(await screen.findByText(dict.cart.each)).toBeInTheDocument();
-    expect(screen.getByText(/EGP\s*100/)).toBeInTheDocument();
+    expect(screen.getByText(/KWD\s*100/)).toBeInTheDocument();
   });
 
   it("raises a line's quantity and re-prices the line total", async () => {
@@ -146,7 +154,7 @@ describe("CartView", () => {
     fireEvent.click(screen.getByRole("button", { name: "+" }));
 
     // Unit price is the discounted 100, so two units cost 200.
-    await waitFor(() => expect(screen.getAllByText(/EGP\s*200/).length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText(/KWD\s*200/).length).toBeGreaterThan(0));
     expect(loadCartLines(window.localStorage)).toEqual([
       { type: "product", productId: 1, variantId: 11, qty: 2 }
     ]);

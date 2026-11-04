@@ -20,7 +20,7 @@ function endsIn(endsAt: string, now: Date) {
 }
 
 function formatEnd(endsAt: string) {
-  return new Date(endsAt).toLocaleString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
+  return new Date(endsAt).toLocaleString("ar-KW-u-nu-latn", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
 }
 
 /** Running discounts that stop within a week, soonest first, so a sale never ends unnoticed. */

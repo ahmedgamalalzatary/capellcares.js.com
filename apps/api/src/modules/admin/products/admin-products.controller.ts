@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { and, eq, ne, or } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
+import { filsAmountSchema } from "@capella/shared";
 import { entityMedia, products } from "@capella/database/drizzle/schema";
 import { listCategoriesRepo } from "../../catalog/categories/category.repository.js";
 import { buildLineage } from "../../catalog/categories/category-tree.js";
@@ -152,6 +153,16 @@ export async function adminGetProduct(req: Request, res: Response) {
   return res.json({ ...product, relatedItems });
 }
 
+/** The product's own delivery fee: left out = unchanged, empty or 0 = none (the area fee applies). */
+function parseProductDeliveryFee(incoming: any): number | null | undefined | "invalid" {
+  if (!Object.prototype.hasOwnProperty.call(incoming, "deliveryFee")) return undefined;
+  const value = incoming.deliveryFee;
+  if (value == null || value === "") return null;
+  const parsed = filsAmountSchema.safeParse(value);
+  if (!parsed.success) return "invalid";
+  return parsed.data === 0 ? null : parsed.data;
+}
+
 export async function adminUpsertProduct(req: Request, res: Response, next: NextFunction) {
   try {
     const incoming = req.body as any;
@@ -187,6 +198,10 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
           ? [{ type: "image" as const, arUrl: null, enUrl: productImagePath }]
           : []
         : undefined;
+    const deliveryFee = parseProductDeliveryFee(incoming);
+    if (deliveryFee === "invalid") {
+      return res.status(400).json({ ok: false, reason: "invalid-delivery-fee" });
+    }
     const attributes = parseProductAttributeInput(incoming);
     if (!attributes || !(await productAttributesExist(attributes))) {
       return res.status(400).json({ ok: false, reason: "invalid-product-attributes" });
@@ -260,6 +275,7 @@ export async function adminUpsertProduct(req: Request, res: Response, next: Next
         arName: productNameAr,
         enName: productNameEn,
         buyingPrice: Number(incoming.buyingPrice ?? 0),
+        deliveryFee,
         keywords: productKeywords.join(","),
         arDescription: incoming.description?.ar ?? incoming.arDescription ?? null,
         enDescription: incoming.description?.en ?? incoming.enDescription ?? null,

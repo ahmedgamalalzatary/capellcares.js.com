@@ -1,17 +1,20 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { GOVERNORATES } from "@capella/shared";
 import type { CheckoutFormProps } from "../../types/checkout-view.types";
 
 export function CheckoutForm({
+  lang,
   dict,
   form,
   errors,
   placing,
+  governorates,
   setField,
   placeOrder
 }: CheckoutFormProps) {
+  const name = (entry: { arName: string; enName: string }) => (lang === "ar" ? entry.arName : entry.enName);
+  const areas = governorates?.find((governorate) => String(governorate.id) === form.governorateId)?.areas ?? [];
   return (
     <form
       className="grid gap-7"
@@ -30,14 +33,14 @@ export function CheckoutForm({
             <input className="input" type="email" value={form.email} onChange={(event) => setField("email", event.target.value)} />
           </Field>
           <Field label={dict.checkout.phone} error={errors.phone}>
-            <input className="input" inputMode="tel" placeholder="01XXXXXXXXX" value={form.phone} onChange={(event) => setField("phone", event.target.value)} />
+            <input className="input" inputMode="tel" dir="ltr" placeholder="XXXXXXXX" value={form.phone} onChange={(event) => setField("phone", event.target.value)} />
           </Field>
         </div>
       </Section>
 
       <Section title={dict.checkout.shipping}>
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Display only. We ship within Egypt exclusively, so this field
+          {/* Display only. We ship within Kuwait exclusively, so this field
               is fixed and disabled: it is NOT part of the checkout form state and
               is never sent to the API — placeOrder builds its payload from `form`,
               which has no country key. It exists purely to tell the customer where
@@ -45,28 +48,52 @@ export function CheckoutForm({
               (form state + validation + order payload) instead of a label. */}
           <Field label={dict.checkout.country}>
             {/* defaultValue, not value: a controlled field with no onChange warns. */}
-            <select className="select" defaultValue="EG" disabled aria-readonly="true">
-              <option value="EG">{dict.checkout.countryEgypt}</option>
+            <select className="select" defaultValue="KW" disabled aria-readonly="true">
+              <option value="KW">{dict.checkout.countryKuwait}</option>
             </select>
           </Field>
-          <Field label={dict.checkout.governorate} error={errors.governorate}>
-            <select className="select" value={form.governorate} onChange={(event) => setField("governorate", event.target.value)}>
+          {governorates?.length === 0 ? (
+            <p role="alert" className="text-sm text-(--danger) md:col-span-2">{dict.checkout.noDeliveryAreas}</p>
+          ) : null}
+          {/* Only what the ERP set up (active governorates with an active area); a governorate change clears the area, since areas belong to one governorate. */}
+          <Field label={dict.checkout.governorate} error={errors.governorateId}>
+            <select
+              className="select"
+              value={form.governorateId}
+              onChange={(event) => {
+                setField("governorateId", event.target.value);
+                setField("areaId", "");
+              }}
+            >
               <option value="">—</option>
-              {GOVERNORATES.map((governorate) => (
-                <option key={governorate} value={governorate}>
-                  {governorate}
+              {(governorates ?? []).map((governorate) => (
+                <option key={governorate.id} value={String(governorate.id)}>
+                  {name(governorate)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label={dict.checkout.city} error={errors.city}>
-            <input className="input" value={form.cityArea} onChange={(event) => setField("cityArea", event.target.value)} />
+          <Field label={dict.checkout.area} error={errors.areaId}>
+            <select
+              className="select"
+              value={form.areaId}
+              disabled={!form.governorateId}
+              onChange={(event) => setField("areaId", event.target.value)}
+            >
+              <option value="">—</option>
+              {areas.map((area) => (
+                <option key={area.id} value={String(area.id)}>
+                  {name(area)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {/* Area | building share a row, so the full-width street line never leaves a half-empty one. */}
+          <Field label={dict.checkout.building} error={errors.building}>
+            <input className="input" value={form.buildingApartment} onChange={(event) => setField("buildingApartment", event.target.value)} />
           </Field>
           <Field label={dict.checkout.addressLine} error={errors.addressLine} fullWidth>
             <input className="input" value={form.addressLine} onChange={(event) => setField("addressLine", event.target.value)} />
-          </Field>
-          <Field label={dict.checkout.building} error={errors.building}>
-            <input className="input" value={form.buildingApartment} onChange={(event) => setField("buildingApartment", event.target.value)} />
           </Field>
           <Field label={dict.checkout.notes} fullWidth>
             <textarea className="textarea" value={form.notes} onChange={(event) => setField("notes", event.target.value)} rows={3} />

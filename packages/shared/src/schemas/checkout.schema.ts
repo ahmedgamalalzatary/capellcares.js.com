@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EG_PHONE_REGEX, GOVERNORATES } from "../constants/index.js";
+import { KW_PHONE_REGEX } from "../constants/index.js";
 
 export const checkoutProductItemSchema = z.object({
   type: z.literal("product"),
@@ -22,18 +22,24 @@ export const checkoutCollectionItemSchema = z.object({
 const checkoutItemsSchema = z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema, checkoutCollectionItemSchema])).min(1);
 export const checkoutSchema = z.object({
   fullName: z.string().min(1),
-  phone: z.string().regex(EG_PHONE_REGEX, "Invalid Egyptian phone number"),
+  phone: z.string().regex(KW_PHONE_REGEX, "Invalid Kuwaiti phone number"),
   email: z.string().email(),
-  governorate: z.string().min(1).max(120),
-  cityArea: z.string().min(1),
+  areaId: z.number().int().positive(),
   addressLine: z.string().min(1),
   buildingApartment: z.string().min(1),
   notes: z.string().optional(),
   paymentMethod: z.literal("cod"),
-  expectedAmountCents: z.number().int().nonnegative().safe().optional(),
+  /** The total the customer saw (items + delivery) in fils; a mismatch means prices or fees changed. */
+  expectedAmountFils: z.number().int().nonnegative().safe().optional(),
   customerId: z.number().int().positive().nullable().optional(),
   items: checkoutItemsSchema
-}).refine(input => GOVERNORATES.includes(input.governorate as (typeof GOVERNORATES)[number]), "Invalid governorate");
+});
+
+/** Price preview for checkout: the same items and area, nothing else. */
+export const checkoutQuoteSchema = z.object({
+  areaId: z.number().int().positive(),
+  items: checkoutItemsSchema
+});
 
 export const checkoutResponseSchema = z.object({
   id: z.number().int().positive(),

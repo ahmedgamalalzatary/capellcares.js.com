@@ -66,9 +66,9 @@ test("quantity controls enforce stock boundaries and announce their value", () =
 test("price keeps original and discounted amounts readable in both languages", () => {
   const { PriceText } = components(); expect(typeof PriceText).toBe("function");
   const view = render(<PriceText amount={90} original={100} />);
-  expect(view.getByText(/^EGP\s*90$/)).toBeTruthy(); expect(view.getByText(/^EGP\s*100$/)).toBeTruthy();
+  expect(view.getByText(/^KWD\s*90$/)).toBeTruthy(); expect(view.getByText(/^KWD\s*100$/)).toBeTruthy();
   mockLanguage = "ar"; view.rerender(<PriceText amount={90} original={100} />);
-  expect(view.getByText(/٩٠.*ج\.م/)).toBeTruthy();
+  expect(view.getByText(/٩٠.*د\.ك/)).toBeTruthy();
 });
 
 test("rating is one readable accessibility value rather than five focus targets", () => {

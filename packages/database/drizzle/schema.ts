@@ -159,7 +159,7 @@ export const products = mysqlTable("products", {
   slug: varchar("slug", { length: 191 }).notNull().unique(),
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
-  buyingPrice: decimal("buying_price", { precision: 10, scale: 2 }).notNull(),
+  buyingPrice: decimal("buying_price", { precision: 10, scale: 3 }).notNull(),
   keywords: text("keywords").notNull(),
   arDescription: text("ar_description"),
   enDescription: text("en_description"),
@@ -182,6 +182,8 @@ export const products = mysqlTable("products", {
   // Nullable so drafts can be saved; activation requires both (see canActivateProduct).
   brandId: int("brand_id").references(() => brands.id, { onDelete: "restrict" }),
   supplierId: int("supplier_id").references(() => suppliers.id, { onDelete: "restrict" }),
+  /** This product's own delivery fee; null or 0 means it uses the delivery area's fee (see delivery-fee.ts). */
+  deliveryFee: decimal("delivery_fee", { precision: 10, scale: 3 }),
   deletedAt: datetime("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
@@ -232,7 +234,7 @@ export const productVariants = mysqlTable(
     sizeLabel: varchar("size_label", { length: 64 }).notNull(),
     /** Null when the product has no colours. MySQL forbids SET NULL/CASCADE on a column a stored generated column reads, so removal is handled in code. */
     colorId: int("color_id").references(() => productColors.id, { onDelete: "restrict" }),
-    sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
+    sellingPrice: decimal("selling_price", { precision: 10, scale: 3 }).notNull(),
     stockQty: int("stock_qty").notNull().default(0),
     sortOrder: int("sort_order").notNull().default(0),
     deletedAt: datetime("deleted_at"),
@@ -264,7 +266,7 @@ export const variantDiscounts = mysqlTable(
       .references(() => productVariants.id, { onDelete: "cascade" })
       .unique(),
     type: mysqlEnum("type", ["percentage", "fixed"]).notNull(),
-    value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+    value: decimal("value", { precision: 10, scale: 3 }).notNull(),
     startsAt: datetime("starts_at").notNull(),
     endsAt: datetime("ends_at").notNull(),
     status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
@@ -284,7 +286,7 @@ export const offers = mysqlTable("offers", {
   imagePath: varchar("image_path", { length: 1024 }),
   hoverImagePath: varchar("hover_image_path", { length: 1024 }),
   arHoverImagePath: varchar("ar_hover_image_path", { length: 1024 }),
-  fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
+  fixedPrice: decimal("fixed_price", { precision: 10, scale: 3 }).notNull(),
   // Nullable only for offers created before classification existed; the migration deactivates those so an uncategorised offer never reaches the storefront, and every admin-API write requires a root category.
   categoryId: int("category_id").references(() => categories.id, { onDelete: "restrict" }),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
@@ -305,7 +307,7 @@ export const collections = mysqlTable("collections", {
   imagePath: varchar("image_path", { length: 1024 }),
   hoverImagePath: varchar("hover_image_path", { length: 1024 }),
   arHoverImagePath: varchar("ar_hover_image_path", { length: 1024 }),
-  fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull(),
+  fixedPrice: decimal("fixed_price", { precision: 10, scale: 3 }).notNull(),
   categoryId: int("category_id")
     .notNull()
     .references(() => categories.id, { onDelete: "restrict" }),
@@ -321,7 +323,7 @@ export const bundleDiscounts = mysqlTable("bundle_discounts", {
   offerId: int("offer_id").unique().references(() => offers.id, { onDelete: "cascade" }),
   collectionId: int("collection_id").unique().references(() => collections.id, { onDelete: "cascade" }),
   type: mysqlEnum("type", ["percentage", "fixed"]).notNull(),
-  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  value: decimal("value", { precision: 10, scale: 3 }).notNull(),
   startsAt: datetime("starts_at").notNull(),
   endsAt: datetime("ends_at").notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
@@ -566,6 +568,34 @@ export const carts = mysqlTable("carts", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
+/** Governorates customers can deliver to; only active ones with an active area reach checkout. */
+export const deliveryGovernorates = mysqlTable("delivery_governorates", {
+  id: int("id").autoincrement().primaryKey(),
+  arName: varchar("ar_name", { length: 120 }).notNull().unique(),
+  enName: varchar("en_name", { length: 120 }).notNull().unique(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+});
+
+export const deliveryAreas = mysqlTable("delivery_areas", {
+  id: int("id").autoincrement().primaryKey(),
+  governorateId: int("governorate_id")
+    .notNull()
+    .references(() => deliveryGovernorates.id, { onDelete: "cascade" }),
+  arName: varchar("ar_name", { length: 120 }).notNull(),
+  enName: varchar("en_name", { length: 120 }).notNull(),
+  fee: decimal("fee", { precision: 10, scale: 3 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  governorateArNameUnique: unique("delivery_areas_governorate_ar_name_unique").on(table.governorateId, table.arName),
+  governorateEnNameUnique: unique("delivery_areas_governorate_en_name_unique").on(table.governorateId, table.enName)
+}));
+
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
   orderCode: varchar("order_code", { length: 32 }).notNull().unique(),
@@ -576,6 +606,8 @@ export const orders = mysqlTable("orders", {
   email: varchar("email", { length: 255 }).notNull(),
   governorate: varchar("governorate", { length: 120 }).notNull(),
   cityArea: varchar("city_area", { length: 120 }).notNull(),
+  /** The delivery area picked at checkout; governorate/cityArea keep its Arabic names as they were then. */
+  areaId: int("area_id").references(() => deliveryAreas.id, { onDelete: "set null" }),
   addressLine: varchar("address_line", { length: 255 }).notNull(),
   buildingApartment: varchar("building_apartment", { length: 255 }).notNull(),
   notes: text("notes"),
@@ -584,7 +616,9 @@ export const orders = mysqlTable("orders", {
   idempotencyKey: varchar("idempotency_key", { length: 64 }).unique(),
   checkoutFingerprint: varchar("checkout_fingerprint", { length: 64 }),
   codExpiresAt: datetime("cod_expires_at"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  /** Part of totalAmount; frozen at checkout so later rate changes never touch old orders. */
+  deliveryFee: decimal("delivery_fee", { precision: 10, scale: 3 }).notNull().default("0"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 3 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
@@ -607,18 +641,18 @@ export const orderItems = mysqlTable("order_items", {
   offerId: int("offer_id").references(() => offers.id, { onDelete: "restrict" }),
   collectionId: int("collection_id").references(() => collections.id, { onDelete: "restrict" }),
   qty: int("qty").notNull(),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 3 }).notNull(),
+  lineTotal: decimal("line_total", { precision: 10, scale: 3 }).notNull(),
   snapshotNameAr: varchar("snapshot_name_ar", { length: 255 }),
   snapshotNameEn: varchar("snapshot_name_en", { length: 255 }),
   snapshotSizeLabel: text("snapshot_size_label"),
   snapshotColorAr: varchar("snapshot_color_ar", { length: 255 }),
   snapshotColorEn: varchar("snapshot_color_en", { length: 255 }),
   snapshotComponents: text("snapshot_components"),
-  snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 2 }),
+  snapshotBaseUnitPrice: decimal("snapshot_base_unit_price", { precision: 10, scale: 3 }),
   snapshotDiscountId: int("snapshot_discount_id"),
   snapshotDiscountType: mysqlEnum("snapshot_discount_type", ["percentage", "fixed"]),
-  snapshotDiscountValue: decimal("snapshot_discount_value", { precision: 10, scale: 2 }),
+  snapshotDiscountValue: decimal("snapshot_discount_value", { precision: 10, scale: 3 }),
   snapshotDiscountStartsAt: datetime("snapshot_discount_starts_at"),
   snapshotDiscountEndsAt: datetime("snapshot_discount_ends_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -292,7 +292,7 @@
   /* Native <select> lists are drawn by the browser/OS, which can't paint oklch colours (rows render blank).
      System colours always render and still follow the light/dark color-scheme. */
   option, optgroup { background-color: Canvas; color: CanvasText; }
-  /* Spin arrows collide with unit addons (ج.م, %) and are useless on touch; typing is the input. */
+  /* Spin arrows collide with unit addons (د.ك, %) and are useless on touch; typing is the input. */
   input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

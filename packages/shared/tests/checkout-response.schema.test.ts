@@ -9,7 +9,7 @@ test("checkout response contract describes the created order", () => {
 
 test("checkout accepts cash on delivery only", () => {
   const input = {
-    fullName: "Buyer", phone: "01012345678", email: "buyer@example.com", governorate: "Cairo", cityArea: "Nasr City",
+    fullName: "Buyer", phone: "55123456", email: "buyer@example.com", areaId: 1,
     addressLine: "1 Main Street", buildingApartment: "2", items: [{ type: "product", variantId: 1, qty: 1 }]
   };
   assert.equal(checkoutSchema.safeParse({ ...input, paymentMethod: "cod" }).success, true);

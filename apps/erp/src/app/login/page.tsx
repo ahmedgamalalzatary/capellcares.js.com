@@ -46,7 +46,7 @@ export default function LoginPage() {
             تحكّمي في الكتالوج، تابعي المخزون، وحدّثي العروض من مكان واحد. صُمّمت لإيقاع عملك اليومي.
           </p>
         </div>
-        <p className="text-xs tracking-wide text-rail-muted">ج.م · عربي</p>
+        <p className="text-xs tracking-wide text-rail-muted">د.ك · عربي</p>
       </aside>
 
       <section className="grid place-items-center bg-canvas p-6">

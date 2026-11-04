@@ -16,12 +16,12 @@ function validateQuantity(value: number, name: string) {
 
 function toMinorUnits(value: number) {
   validateMoney(value, "value");
-  return Math.round(value * 100);
+  return Math.round(value * 1000);
 }
 
 function fromMinorUnits(value: number) {
   validateMoney(value, "value");
-  return value / 100;
+  return value / 1000;
 }
 
 export function multiplyMoney(amount: number, quantity: number) {
