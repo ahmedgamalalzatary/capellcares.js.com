@@ -35,7 +35,7 @@ describe("footer", () => {
     expect(hrefOf("Facebook")).toBe("https://www.facebook.com/share/1DVxmjxPFQ/?mibextid=wwXIfr");
     expect(hrefOf("Instagram")).toBe("https://www.instagram.com/faltatoy?exln=eGNqYnhoMzNmeWJh&utm_source=qr");
     expect(hrefOf("TikTok")).toBe("https://www.tiktok.com/@faltatoy?_r=1&_t=ZS-9B0eYWrRqcP");
-    expect(hrefOf("YouTube")).toBe("https://youtube.com/@faltatoy9081?si=EkpBtHEp0BoVO_zH");
+    expect(hrefOf("YouTube")).toBe("https://youtube.com/@faltatoy?si=-NI9JrD0nCY_wRBz");
     expect(hrefOf("WhatsApp")).toBe("https://wa.me/96566343797");
     expect(hrefOf("Customer Service")).toBe("https://wa.me/96566343797");
     expect(container.textContent).not.toMatch(/capella/i);

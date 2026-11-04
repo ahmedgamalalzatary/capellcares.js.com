@@ -299,6 +299,24 @@ describe("ShopMediaStrip carousel", () => {
     expect(container.querySelector('[data-viewport="desktop"]')).toBeNull();
   });
 
+  it("shows nothing on desktop when only mobile images are set", () => {
+    mockViewport(true);
+    const section = makeSection(2);
+    section.items = section.items.map((item) => ({ ...item, arImagePath: null, enImagePath: null }));
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(container.querySelector("[data-viewport]")).toBeNull();
+  });
+
+  it("shows nothing on mobile when only desktop images are set", () => {
+    mockViewport(false);
+    const section = makeSection(2);
+    section.items = section.items.map((item) => ({ ...item, arMobileImagePath: null, enMobileImagePath: null }));
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(container.querySelector("[data-viewport]")).toBeNull();
+  });
+
   it("renders dots and arrows when there are multiple images", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={makeSection(3)} label="Media" />);
     const desktopStrip = getDesktopStrip(container);

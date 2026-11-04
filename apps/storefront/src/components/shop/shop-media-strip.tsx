@@ -341,12 +341,6 @@ export function ShopMediaStrip({
   flatTop?: boolean;
   priority?: boolean;
 }) {
-  if (section.status !== "active") {
-    return null;
-  }
-
-  const desktopItems = pickSlidesForViewport(section, lang, "desktop");
-  const mobileItems = pickSlidesForViewport(section, lang, "mobile");
   const [prefersDesktop, setPrefersDesktop] = useState(true);
 
   useEffect(() => {
@@ -362,13 +356,12 @@ export function ShopMediaStrip({
     };
   }, []);
 
-  const viewport = prefersDesktop
-    ? (desktopItems.length > 0 ? "desktop" : mobileItems.length > 0 ? "mobile" : null)
-    : (mobileItems.length > 0 ? "mobile" : desktopItems.length > 0 ? "desktop" : null);
-
-  if (!viewport) {
+  if (section.status !== "active") {
     return null;
   }
+
+  // Each device shows only its own pictures; a device with none shows nothing rather than borrowing the other device's.
+  const viewport = prefersDesktop ? "desktop" : "mobile";
 
   return (
     <ShopMediaViewportStrip
