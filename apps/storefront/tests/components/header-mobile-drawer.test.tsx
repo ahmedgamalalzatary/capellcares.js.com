@@ -82,7 +82,8 @@ const dict = {
     bestsellers: "Bestseller",
     offers: "Offers",
     orders: "Orders",
-    account: "Account"
+    account: "Account",
+    wishlist: "Wishlist"
   },
   media: { close: "Close" },
   langSwitch: { ar: "العربية", en: "English" }
@@ -136,11 +137,12 @@ describe("HeaderMobileDrawer", () => {
     expect(onOpenSearch).toHaveBeenCalledTimes(1);
   });
 
-  it("orders the menu: shop, gender, categories, brands, new, bestseller, account, follow us, then the language switch", () => {
+  it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, wishlist, account, follow us, then the language switch", () => {
     renderDrawer();
     const nav = screen.getByRole("navigation");
     const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim()).filter(Boolean);
-    expect(rows).toEqual(["Shop", "Gender", "Categories", "Brands", "New", "Bestseller", "Offers", "Account"]);
+    expect(rows).toEqual(["Shop", "Gender", "Categories", "Brands", "New", "Bestseller", "Offers", "Wishlist", "Account"]);
+    expect(screen.getByRole("link", { name: "Wishlist" })).toHaveAttribute("href", "/en/wishlist");
     expect(screen.getByRole("link", { name: "Account" }).compareDocumentPosition(screen.getByText("Follow us")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(nav.compareDocumentPosition(screen.getByRole("button", { name: "English" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

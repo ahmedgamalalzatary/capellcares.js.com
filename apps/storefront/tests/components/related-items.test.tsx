@@ -46,7 +46,8 @@ import { useCardSliderScreen } from "../helpers/media-query";
 const dict = {
   common: { addToCart: "Add to cart", added: "Added", addToWishlist: "Wishlist", quantity: "Quantity" },
   offers: { badge: "Offer" },
-  collections: { badge: "Set" }
+  collections: { badge: "Set" },
+  badges: { discount: "{n}% OFF" }
 };
 
 describe("RelatedItems", () => {
@@ -212,4 +213,9 @@ describe("RelatedItems", () => {
     expect(toggle).toHaveBeenCalledWith("product", 1);
   });
 
+  it("ribbons a discounted related product with its biggest % OFF", () => {
+    render(createElement(RelatedItems, { items: [{ ...items[0]!, discountPercent: 23 }], lang: "en", dict, title: "Related" }));
+
+    expect(screen.getByText("23% OFF")).toBeInTheDocument();
+  });
 });

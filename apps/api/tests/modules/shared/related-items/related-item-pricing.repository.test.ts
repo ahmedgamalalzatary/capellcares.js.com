@@ -327,3 +327,23 @@ test("getStorefrontRelatedCardsRepo carries each card's gallery and language-spe
   const enCards = await getStorefrontRelatedCardsRepo({ type: "product", id: ids.productTwoId }, "en");
   assert.match(enCards.find((card) => card.type === "product")?.hoverImagePath ?? "", /product-hover-en\.jpg$/);
 });
+
+test("getStorefrontRelatedCardsRepo reports a related product's biggest live discount across its sizes", async () => {
+  const ids = await getBaselineIds();
+  await db.insert(variantDiscounts).values({
+    variantId: ids.firstVariantId, type: "percentage", value: "10",
+    startsAt: new Date("2000-01-01T00:00:00.000Z"), endsAt: new Date("2999-01-01T00:00:00.000Z"), status: "active"
+  });
+  const [bigVariant] = await db.insert(productVariants).values({
+    productId: ids.productOneId, sizeLabel: "500ml", sellingPrice: "200.00", stockQty: 3
+  }).$returningId();
+  await db.insert(variantDiscounts).values({
+    variantId: bigVariant.id, type: "fixed", value: "76",
+    startsAt: new Date("2000-01-01T00:00:00.000Z"), endsAt: new Date("2999-01-01T00:00:00.000Z"), status: "active"
+  });
+  await setRelatedLinksForSourceRepo({ type: "product", id: ids.productTwoId }, [{ type: "product", id: ids.productOneId }]);
+
+  const cards = await getStorefrontRelatedCardsRepo({ type: "product", id: ids.productTwoId });
+
+  assert.equal(cards.find((card) => card.id === ids.productOneId)?.discountPercent, 38);
+});

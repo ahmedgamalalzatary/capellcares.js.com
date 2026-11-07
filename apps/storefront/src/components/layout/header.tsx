@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authHref } from "@/lib/auth-redirect";
+import { compareHeaderCategoryEntries, type HeaderMenuEntry } from "@/lib/header-menu";
+import { buildCategoryHref } from "@/lib/category-links";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -15,7 +17,7 @@ import { SearchOverlay } from "./header/search-overlay";
 import { useLanguageSwitch } from "../../hooks/use-language-switch";
 import type { HeaderProps } from "../../types/header.types";
 
-export function Header({ lang, dict, menuEntries, brands = [], genders = [], announcements: cmsAnnouncements }: HeaderProps) {
+export function Header({ lang, dict, menuEntries, brands = [], genders = [], announcements: cmsAnnouncements, bestsellers = [] }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
@@ -34,6 +36,13 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
   const cartCount = mounted ? count : 0;
   const isAr = lang === "ar";
   const { switchLang } = useLanguageSwitch(lang);
+
+  // Main categories in the same order as the menu, for the search screen's category buttons.
+  const searchCategories = useMemo(() => menuEntries
+    .filter((entry): entry is Extract<HeaderMenuEntry, { type: "category" }> => entry.type === "category")
+    .slice()
+    .sort(compareHeaderCategoryEntries)
+    .map((category) => ({ key: category.key, label: category.label, href: buildCategoryHref(lang, { id: category.id, slug: category.slug }) })), [menuEntries, lang]);
 
   const announcements: string[] = cmsAnnouncements
     ?? (Array.isArray(dict.nav.announcements) ? dict.nav.announcements : [dict.nav.announcement]);
@@ -187,7 +196,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
       </div>
       </div>
 
-      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} bestsellers={bestsellers} categories={searchCategories} />
 
       <HeaderMobileDrawer
         lang={lang}

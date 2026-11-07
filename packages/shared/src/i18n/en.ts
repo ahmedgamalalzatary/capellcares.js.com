@@ -16,6 +16,8 @@ export const en = {
     signup: "Sign up",
     logout: "Log out",
     search: "Search products",
+    popularSearches: "Popular Searches",
+    mostPopular: "Our Most Popular",
     categories: "Categories",
     allCategories: "All Categories",
     genders: "Gender",
@@ -324,7 +326,7 @@ export const en = {
     signupSubtitle: "One quick step and you are ready to shop."
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
-  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },
+  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer", discount: "{n}% OFF" },
   ask: {
     sections: {
       products: "Products",

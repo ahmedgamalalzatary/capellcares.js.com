@@ -1,4 +1,4 @@
-import type { Language, ProductAttribute } from "@capella/shared";
+import type { Language, Product, ProductAttribute } from "@capella/shared";
 import type { HeaderMenuEntry } from "@/lib/header-menu";
 
 export interface HeaderProps {
@@ -8,4 +8,6 @@ export interface HeaderProps {
   brands?: ProductAttribute[];
   genders?: ProductAttribute[];
   announcements?: string[] | null;
+  /** Up to 10 best sellers for the search screen's suggestions. */
+  bestsellers?: Product[];
 }

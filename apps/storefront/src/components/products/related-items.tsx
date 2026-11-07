@@ -8,6 +8,7 @@ import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
+import { DiscountRibbon } from "@/components/ui/discount-ribbon";
 import { CardRating } from "@/components/reviews/card-rating";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
@@ -134,7 +135,9 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
           }}
         />
 
-        {badge ? <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" /> : null}
+        {item.type === "product" && (item.discountPercent ?? 0) > 0 ? (
+          <DiscountRibbon percent={item.discountPercent} dict={dict} />
+        ) : badge ? <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" /> : null}
 
         <button
           type="button"

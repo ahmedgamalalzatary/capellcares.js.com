@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, getProductDiscountPercent, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
+import { DiscountRibbon } from "@/components/ui/discount-ribbon";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { CardRating } from "@/components/reviews/card-rating";
 import { CardImageCarousel } from "@/components/ui/card-image-carousel";
@@ -34,6 +35,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const maxBasePrice = Math.max(...basePrices);
   const { isOutOfStock } = getProductBadgeState(product);
   const leadTag = getProductTags(product, dict, { lead: true })[0];
+  const discountPercent = getProductDiscountPercent(product.variants);
   const images = useMemo(() => buildCardImages(product, lang), [product, lang]);
 
   // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
@@ -73,15 +75,16 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           )}
         />
 
-        {/* inset-s-0 so the badge mirrors in RTL, matching SectionCard. */}
-        {leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
-        ) : null}
+        {/* One label in the corner: out of stock beats the % OFF ribbon, which beats new/bestseller/offer. inset-s so it mirrors in RTL, matching SectionCard. */}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
             className="absolute top-2.5 inset-s-2.5 z-10 rounded-full"
           />
+        ) : discountPercent > 0 ? (
+          <DiscountRibbon percent={discountPercent} dict={dict} />
+        ) : leadTag ? (
+          <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
         ) : null}
 
         <button

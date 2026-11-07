@@ -69,6 +69,12 @@ services:
       HOSTINGER_PUBLIC_BASE_URL: ${HOSTINGER_PUBLIC_BASE_URL:?set HOSTINGER_PUBLIC_BASE_URL in env file}
       STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:-http://storefront:3000}
       STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
+      # New-order WhatsApp alert to staff via this store's own OpenWA (below). Alerts stay off until all four are set.
+      OPENWA_URL: http://openwa:2785
+      OPENWA_API_KEY: ${OPENWA_API_KEY:-}
+      OPENWA_SESSION_ID: ${OPENWA_SESSION_ID:-}
+      STAFF_WHATSAPP_NUMBER: ${STAFF_WHATSAPP_NUMBER:-}
+      ERP_PUBLIC_URL: ${ERP_PUBLIC_URL:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -155,6 +161,32 @@ services:
       retries: 8
       start_period: 20s
 
+  # Self-hosted WhatsApp gateway that sends the staff new-order alerts. The API never waits on it, so the store keeps working if it is down.
+  # Baileys engine: no browser, ~30-80 MB per session on this shared server. Port is localhost-only: open the dashboard through an SSH tunnel to scan the QR.
+  openwa:
+    image: ${OPENWA_IMAGE:-ghcr.io/rmyndharis/openwa:latest}
+    container_name: falta-toys-openwa
+    mem_limit: 512m
+    init: true
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      ENGINE_TYPE: baileys
+      # The same key the API sends; at least 32 characters.
+      API_MASTER_KEY: ${OPENWA_API_KEY:-}
+      AUTO_START_SESSIONS: "true"
+    ports:
+      - "127.0.0.1:${OPENWA_HOST_PORT:-2785}:2785"
+    volumes:
+      - openwa-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2785/api/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
 volumes:
   mysql-data:
   api-uploads:
+  openwa-data:

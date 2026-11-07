@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product } from "@capella/shared";
 import { Icon } from "@/components/ui/icons";
 import { ProductIllustration } from "@/components/ui/product-illustration";
+import { ProductCard } from "@/components/products/product-card";
 import { buildCategoryHref } from "@/lib/category-links";
 import { searchStorefront, type StorefrontSearchResults } from "@/lib/storefront-search";
 
@@ -14,9 +15,15 @@ type SearchOverlayProps = {
   dict: any;
   open: boolean;
   onClose: () => void;
+  /** Best sellers, most important first: the first 6 names become "Popular Searches" and the first 10 fill "Our Most Popular". */
+  bestsellers?: Product[];
+  /** Main categories, already in menu order. */
+  categories?: { key: string; label: string; href: string }[];
 };
 
-export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps) {
+const CHIP = "rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-warm hover:bg-(--warm-soft)";
+
+export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], categories = [] }: SearchOverlayProps) {
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<StorefrontSearchResults | null>(null);
@@ -143,6 +150,53 @@ export function SearchOverlay({ lang, dict, open, onClose }: SearchOverlayProps)
               <Icon.Close />
             </button>
           </form>
+
+          {/* Before anything is typed: quick ways in — best-seller names, main categories, then best-seller cards. */}
+          {!term.trim() && (bestsellers.length > 0 || categories.length > 0) && (
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-4">
+              {bestsellers.length > 0 && (
+                <section aria-labelledby="search-popular-words">
+                  <h2 id="search-popular-words" className="mb-2 text-base font-bold text-ink">{dict.nav.popularSearches}</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {bestsellers.slice(0, 6).map((product) => (
+                      <Link key={product.id} href={`/${lang}/products/${product.slug}`} onClick={onClose} className={CHIP}>
+                        {pickLang(product.name, lang)}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {categories.length > 0 && (
+                <section aria-labelledby="search-main-categories">
+                  <h2 id="search-main-categories" className="mb-2 text-base font-bold text-ink">{dict.ask.sections.categories}</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <Link key={category.key} href={category.href} onClick={onClose} className={CHIP}>
+                        {category.label}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {bestsellers.length > 0 && (
+                <section aria-labelledby="search-most-popular">
+                  <h2 id="search-most-popular" className="mb-2 text-base font-bold text-ink">{dict.nav.mostPopular}</h2>
+                  {/* Sideways scroll; a click on a card leaves the page, so close first. */}
+                  <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden" onClickCapture={(event) => {
+                    if ((event.target as HTMLElement).closest("a")) onClose();
+                  }}>
+                    {bestsellers.slice(0, 10).map((product) => (
+                      <div key={product.id} className="w-40 shrink-0 snap-start sm:w-44">
+                        <ProductCard product={product} lang={lang} dict={dict} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
 
           {/* overscroll-contain: a scroll reaching this list's end must not chain to the page. */}
           {term.trim() && (

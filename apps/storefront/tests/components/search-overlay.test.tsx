@@ -9,6 +9,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push })
 }));
 
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
+}));
+
+vi.mock("@/components/products/product-card", () => ({
+  ProductCard: ({ product }: any) => createElement("div", { "data-testid": "popular-card" }, product.name.en)
+}));
+
 vi.mock("@/lib/api/client", () => {
   const discountedProduct = {
     id: 1,
@@ -192,5 +200,43 @@ describe("SearchOverlay", () => {
 
     expect(await screen.findByText(/KWD\s*100/)).toBeInTheDocument();
     expect(screen.queryByText(/KWD\s*200/)).not.toBeInTheDocument();
+  });
+
+  const popular = (id: number) => ({
+    id, sku: `S${id}`, slug: `toy-${id}`, name: { ar: `لعبة ${id}`, en: `Toy ${id}` },
+    description: { ar: "", en: "" }, ingredients: { ar: "", en: "" }, howToUse: { ar: "", en: "" }, warnings: { ar: "", en: "" },
+    keywords: [], buyingPrice: 1, imagePath: null, status: "active" as const, isNew: false, isBestseller: true, categoryId: 1,
+    variants: [{ id: id * 10, productId: id, size: "", price: 10, stock: 3, sortOrder: 1 }], createdAt: "", updatedAt: ""
+  });
+  const bestsellers = Array.from({ length: 12 }, (_, index) => popular(index + 1));
+  const categories = [
+    { key: "c1", label: "Scooters", href: "/en/category/scooters?categoryId=1" },
+    { key: "c2", label: "Lego", href: "/en/category/lego?categoryId=2" }
+  ];
+
+  it("before typing, shows 6 best-seller names, the main categories and 10 best-seller cards", () => {
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
+
+    const words = screen.getByRole("region", { name: dict.nav.popularSearches });
+    const wordLinks = Array.from(words.querySelectorAll("a"));
+    expect(wordLinks.map((link) => link.textContent)).toEqual(["Toy 1", "Toy 2", "Toy 3", "Toy 4", "Toy 5", "Toy 6"]);
+    expect(wordLinks[0]).toHaveAttribute("href", "/en/products/toy-1");
+
+    const cats = screen.getByRole("region", { name: dict.ask.sections.categories });
+    expect(Array.from(cats.querySelectorAll("a"), (link) => link.getAttribute("href"))).toEqual(categories.map((c) => c.href));
+
+    expect(screen.getByRole("region", { name: dict.nav.mostPopular })).toBeInTheDocument();
+    expect(screen.getAllByTestId("popular-card")).toHaveLength(10);
+  });
+
+  it("swaps the suggestions for live results once the shopper types", async () => {
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
+
+    fireEvent.change(screen.getByPlaceholderText(dict.nav.search), { target: { value: "rose" } });
+
+    expect(await screen.findByText(dict.ask.sections.products)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: dict.nav.popularSearches })).toBeNull();
   });
 });

@@ -16,6 +16,8 @@ export const ar = {
     signup: "إنشاء حساب",
     logout: "تسجيل الخروج",
     search: "ابحث عن منتج",
+    popularSearches: "عمليات بحث شائعة",
+    mostPopular: "الأكثر رواجًا",
     categories: "الأقسام",
     allCategories: "كل الأقسام",
     genders: "النوع",
@@ -326,7 +328,7 @@ export const ar = {
     signupSubtitle: "خطوة واحدة وتبدأ التسوق."
   },
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
-  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
+  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض", discount: "خصم {n}%" },
   ask: {
     sections: {
       products: "المنتجات",

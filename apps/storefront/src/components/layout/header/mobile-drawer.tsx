@@ -225,6 +225,10 @@ export function HeaderMobileDrawer({
             <span>{dict.nav.offers}</span>
             <Icon.Chevron className={chevron} />
           </Link>
+          <Link href={`/${lang}/wishlist`} onClick={onClose} className={ROW}>
+            <span>{dict.nav.wishlist}</span>
+            <Icon.Heart size={22} className="shrink-0 text-(--ink-3)" />
+          </Link>
 
           <Link href={accountHref} onClick={onClose} className={ROW}>
             <span>{user ? dict.nav.orders : dict.nav.account}</span>

@@ -129,7 +129,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
         </div>
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
-          <div className="grid gap-3">
+          {/* Below lg (one column) the description block is pulled up under the ratings; -order-2/-order-1 keep the title group first and the description second. */}
+          <div className="-order-2 grid gap-3 lg:order-none">
             <h1 className={"m-0 text-[clamp(26px,3.4vw,40px)] font-extrabold leading-[1.15] text-ink"}>
               {pickLang(product.name, lang)}
             </h1>
@@ -217,7 +218,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                       role="radio"
                       aria-checked={active}
                       className={[
-                        "grid min-w-28 gap-0.5 rounded-lg border-2 px-4 py-3 text-start transition-colors",
+                        "grid min-w-24 gap-0.5 rounded-lg border-2 px-3 py-2 text-start transition-colors",
                         available ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
                         active ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                       ].join(" ")}
@@ -226,8 +227,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                       onClick={() => available && chooseSize(label)}
                       disabled={!available}
                     >
-                      <span className="text-sm font-medium">{label}</span>
-                      {item ? <span className="text-xs opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span> : null}
+                      <span className="text-base font-medium">{label}</span>
+                      {item ? <span className="text-sm opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span> : null}
                     </button>
                   );
                 })}
@@ -275,7 +276,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           {activeTab ? (
-            <>
+            <div data-testid="product-info-tabs" className="-order-1 grid lg:order-none">
               <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 scrollbar-none sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
                 <div className="flex min-w-max gap-1">
                   {tabs.map((item) => {
@@ -298,10 +299,10 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                 </div>
               </div>
 
-              <div className="text-base leading-[1.85] text-(--ink-2)">
+              <div className="pt-4 text-base leading-[1.85] text-(--ink-2) sm:pt-5">
                 {activeTab.content}
               </div>
-            </>
+            </div>
           ) : null}
         </div>
       </div>
