@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authHref } from "@/lib/auth-redirect";
+import { compareHeaderCategoryEntries, type HeaderMenuEntry } from "@/lib/header-menu";
+import { buildCategoryHref } from "@/lib/category-links";
 import { Icon } from "@/components/ui/icons";
 import { useCart } from "@/components/providers/cart-provider";
 import { useWishlist } from "@/components/providers/wishlist-provider";
@@ -16,7 +18,7 @@ import { SearchOverlay } from "./header/search-overlay";
 import { useLanguageSwitch } from "../../hooks/use-language-switch";
 import type { HeaderProps } from "../../types/header.types";
 
-export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncements }: HeaderProps) {
+export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncements, bestsellers = [] }: HeaderProps) {
   const { count } = useCart();
   const { ids } = useWishlist();
   const { user } = useAuth();
@@ -31,6 +33,13 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
   const [searchOpen, setSearchOpen] = useState(false);
   const isAr = lang === "ar";
   const { switchLang } = useLanguageSwitch(lang);
+
+  // Main categories in the same order as the menu, for the search screen's category buttons.
+  const searchCategories = useMemo(() => menuEntries
+    .filter((entry): entry is Extract<HeaderMenuEntry, { type: "category" }> => entry.type === "category")
+    .slice()
+    .sort(compareHeaderCategoryEntries)
+    .map((category) => ({ key: category.key, label: category.label, href: buildCategoryHref(lang, { id: category.id, slug: category.slug }) })), [menuEntries, lang]);
 
   const announcements: string[] = cmsAnnouncements
     ?? (Array.isArray(dict.nav.announcements) ? dict.nav.announcements : [dict.nav.announcement]);
@@ -68,7 +77,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
       >
       <div className="grid items-center bg-canvas rounded-t-lg min-[880px]:rounded-t-lg gap-2 sm:gap-4 px-3 py-4 grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center">
-          {/* Mobile left cluster: menu · login */}
+          {/* Mobile left cluster: menu · search */}
           <div className="inline-flex items-center justify-center gap-0.5 min-[880px]:hidden scale-110">
             <button
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent p-1 text-ink sm:h-10 sm:w-10 scale-130"
@@ -78,13 +87,16 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
             >
               <MenuToggle open={mobileOpen} />
             </button>
-            <Link
-              href={accountHref}
-              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
-              aria-label={user ? dict.nav.orders : dict.nav.account}
+            <button
+              type="button"
+              data-testid="mobile-search"
+              className="grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              onClick={() => setSearchOpen(true)}
+              aria-label={dict.nav.search}
+              aria-expanded={searchOpen}
             >
-              <Icon.User size={24} />
-            </Link>
+              <Icon.Search size={24} />
+            </button>
           </div>
 
           {/* Desktop left cluster: lang · search · shop */}
@@ -126,11 +138,14 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         </Link>
 
         <div className="flex items-center justify-end">
-          {/* Mobile cluster: wishlist · cart */}
+          {/* Mobile cluster: orders (login when signed out) · cart; the wishlist lives in the menu */}
           <div className="inline-flex items-center gap-0.5 min-[880px]:hidden  scale-110">
-            <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
-              <Icon.Heart size={24} />
-              {ids.length > 0 && <span className="absolute right-1 top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-xs font-semibold leading-none text-canvas">{ids.length}</span>}
+            <Link
+              href={accountHref}
+              className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
+              aria-label={user ? dict.nav.orders : dict.nav.account}
+            >
+              <Icon.User size={24} />
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
@@ -159,7 +174,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
         </div>
       </div>
 
-      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchOverlay lang={lang} dict={dict} open={searchOpen} onClose={() => setSearchOpen(false)} bestsellers={bestsellers} categories={searchCategories} />
 
       <HeaderMobileDrawer
         lang={lang}

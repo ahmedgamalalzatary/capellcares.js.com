@@ -310,4 +310,14 @@ describe("storefront api client", () => {
 
     await expect(fetchCustomerOrders("token")).rejects.toBe(failure);
   });
+
+  it("keeps a main category's Arabic and English shop pictures as full media URLs", async () => {
+    const { normalizeCategory } = await import("@/lib/api/client/normalizers");
+    const category = normalizeCategory({
+      id: 1, parentId: null, slug: "body", name: { ar: "الجسم", en: "Body" },
+      enShopImagePath: "/uploads/en.jpg", arShopImagePath: null
+    } as any);
+    expect(category.enShopImagePath).toMatch(/^https?:\/\/.+\/uploads\/en\.jpg$/);
+    expect(category.arShopImagePath).toBeNull();
+  });
 });

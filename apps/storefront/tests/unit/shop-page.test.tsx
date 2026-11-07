@@ -40,7 +40,8 @@ vi.mock("@capella/shared", async () => {
         viewAllOffers: "All offers",
         viewAllProducts: "All products",
         collectionsEyebrow: "Collections",
-        viewAllCollections: "All collections"
+        viewAllCollections: "All collections",
+        categories: "Categories"
       },
       common: { save: "Save" },
       offers: { title: "Offers", badge: "Offer", save: "Save {amount}" },
@@ -140,7 +141,12 @@ vi.mock("@/lib/storefront-static-data", () => ({
         imagePath: "/uploads/sets.jpg",
         createdAt: "",
         updatedAt: ""
-      }
+      },
+      { id: 21, parentId: null, slug: "body", name: { ar: "الجسم", en: "Body" }, enShopImagePath: "/uploads/body-en.jpg", arShopImagePath: "/uploads/body-ar.jpg", hasProducts: true, isLeaf: false },
+      { id: 22, parentId: null, slug: "hair", name: { ar: "الشعر", en: "Hair" }, arShopImagePath: "/uploads/hair-ar.jpg", hasProducts: true, isLeaf: false },
+      { id: 23, parentId: null, slug: "face", name: { ar: "الوجه", en: "Face" }, hasProducts: true, isLeaf: false },
+      { id: 24, parentId: 21, slug: "oils", name: { ar: "زيوت", en: "Oils" }, enShopImagePath: "/uploads/oils.jpg", hasProducts: true, isLeaf: true },
+      { id: 25, parentId: null, slug: "empty", name: { ar: "فارغ", en: "Empty" }, enShopImagePath: "/uploads/empty.jpg", hasProducts: false, isLeaf: true }
     ],
     advices: [],
     shopMediaSections: [
@@ -316,5 +322,22 @@ describe("shop page", () => {
     for (const image of Array.from(mediaImages).slice(1)) {
       expect(image).toHaveAttribute("data-priority", "false");
     }
+  });
+
+  it("shows main categories with a picture in a Categories row between the first picture section and offers", async () => {
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    const row = screen.getByRole("region", { name: "Categories" });
+    const links = Array.from(row.querySelectorAll("a"));
+    // Body has its English picture; Hair falls back to its Arabic one; Face (no picture), Oils (sub-category) and Empty (no products) stay out.
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/en/category/body?categoryId=21", "/en/category/hair?categoryId=22"]);
+    expect(links.map((link) => link.querySelector("img")?.getAttribute("src"))).toEqual([
+      expect.stringContaining("body-en.jpg"),
+      expect.stringContaining("hair-ar.jpg")
+    ]);
+    expect(row).toHaveTextContent("Body");
+
+    const offers = screen.getByRole("heading", { name: "Offers" });
+    expect(row.compareDocumentPosition(offers) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

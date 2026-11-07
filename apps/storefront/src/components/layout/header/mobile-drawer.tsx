@@ -248,6 +248,9 @@ export function HeaderMobileDrawer({
                   {dict.nav.orders}
                 </DrawerLink>
               )}
+              <DrawerLink href={`/${lang}/wishlist`} isAr={isAr} onClick={onClose}>
+                {dict.nav.wishlist}
+              </DrawerLink>
             </div>
 
             {/* Social */}

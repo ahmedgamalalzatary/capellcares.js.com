@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/input";
-import { resolveMediaSrc } from "@/lib/media";
+import { resolveMediaSrc, validateImageFile } from "@/lib/media";
 import { useImageUpload } from "@/hooks/use-image-upload";
 import { ImageActions } from "@/components/forms/image-actions";
-import type { ErpUploadContext } from "@/lib/api/client";
+import { LangSlotRow } from "@/components/forms/media-frame";
+import { api, type ErpUploadContext } from "@/lib/api/client";
+import { getErrorMessage } from "@/lib/errors";
 import { buildCategoryTreeOptions, getDescendantCategoryIds } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { getStore } from "@/lib/store";
@@ -30,7 +32,7 @@ interface Props {
 
 const STEPS = [
   { id: "basics", label: "الأساسيات", title: "ما هو هذا القسم؟", description: "الاسم باللغتين، وموقعه في شجرة الأقسام." },
-  { id: "image", label: "الصورة", title: "صورة القسم", description: "صورة اختيارية تظهر في قوائم المتجر للأقسام الفرعية المباشرة." }
+  { id: "image", label: "الصورة", title: "صورة القسم", description: "للقسم الرئيسي: صورة لكل لغة تظهر في صف الأقسام بالمتجر. للقسم الفرعي المباشر: صورة تظهر في قوائم المتجر." }
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -88,6 +90,72 @@ function ImageWell({
   );
 }
 
+/** A main category's two shop pictures (Arabic and English), side by side; the shop shows the other language's picture when one is missing. */
+function ShopImagesField({
+  arValue,
+  enValue,
+  onChange,
+  uploadContext,
+  disabled
+}: {
+  arValue: string | null;
+  enValue: string | null;
+  onChange: (lang: "ar" | "en", value: string | null) => void;
+  uploadContext: ErpUploadContext;
+  disabled?: boolean;
+}) {
+  const [uploading, setUploading] = useState<"ar" | "en" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = async (lang: "ar" | "en", files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setUploading(lang);
+    setError(null);
+    try {
+      const result = await api.uploadImage(file, uploadContext);
+      onChange(lang, result.url);
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError, "تعذر رفع الصورة"));
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  return (
+    <div className="@container grid gap-3">
+      <div className="grid gap-4 @lg:grid-cols-2">
+        {(["ar", "en"] as const).map((lang) => {
+          const value = lang === "ar" ? arValue : enValue;
+          const other = lang === "ar" ? enValue : arValue;
+          return (
+            <LangSlotRow
+              key={lang}
+              lang={lang}
+              title={lang === "ar" ? "الصورة العربية" : "الصورة الإنجليزية"}
+              emptyNote={other ? "تظهر الصورة الأخرى بدلها" : "غير مضافة"}
+              src={value ? resolveMediaSrc(value) : null}
+              inputTestId={`category-shop-image-${lang}-input`}
+              canUpload={!disabled && uploading === null}
+              busy={uploading !== null}
+              onFiles={(files) => { void handleFile(lang, files); }}
+              onRemove={() => onChange(lang, null)}
+              removeLabel={`إزالة الصورة ${lang === "ar" ? "العربية" : "الإنجليزية"}`}
+            />
+          );
+        })}
+      </div>
+      {uploading ? <p role="status" className="text-sm text-text-muted">جارٍ رفع الصورة…</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+    </div>
+  );
+}
+
 export function CategoryForm({ mode, initial, categories }: Props) {
   const router = useRouter();
   const editing = mode === "edit";
@@ -95,6 +163,8 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   const [nameEn, setNameEn] = useState(initial?.name.en ?? "");
   const [parentId, setParentId] = useState<number | null>(initial?.parentId ?? null);
   const [imagePath, setImagePath] = useState(initial?.imagePath ?? null);
+  const [arShopImagePath, setArShopImagePath] = useState(initial?.arShopImagePath ?? null);
+  const [enShopImagePath, setEnShopImagePath] = useState(initial?.enShopImagePath ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -121,6 +191,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
 
   const selectedDepth = selectedPath.length;
   const canEditImage = selectedDepth === 1;
+  const canEditShopImages = selectedDepth === 0;
   const uploadContext: ErpUploadContext = mode === "edit" ? "categories.update" : "categories.create";
 
   const requirements = useMemo(() => [
@@ -164,6 +235,8 @@ export function CategoryForm({ mode, initial, categories }: Props) {
         name: { ar: nameAr.trim(), en: nameEn.trim() },
         parentId,
         imagePath: canEditImage ? imagePath : null,
+        enShopImagePath: canEditShopImages ? enShopImagePath : null,
+        arShopImagePath: canEditShopImages ? arShopImagePath : null,
         isLeaf: true,
         deletedAt: initial?.deletedAt ?? null
       });
@@ -224,10 +297,18 @@ export function CategoryForm({ mode, initial, categories }: Props) {
     ),
     image: (
       <div className="grid gap-3">
-        {canEditImage ? (
+        {canEditShopImages ? (
+          <ShopImagesField
+            arValue={arShopImagePath}
+            enValue={enShopImagePath}
+            onChange={(lang, value) => (lang === "ar" ? setArShopImagePath(value) : setEnShopImagePath(value))}
+            uploadContext={uploadContext}
+            disabled={saving}
+          />
+        ) : canEditImage ? (
           <ImageWell value={imagePath} onChange={setImagePath} uploadContext={uploadContext} disabled={saving} />
         ) : (
-          <Alert tone="info">صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.</Alert>
+          <Alert tone="info">صور القسم متاحة للأقسام الرئيسية والأقسام الفرعية المباشرة فقط.</Alert>
         )}
       </div>
     )

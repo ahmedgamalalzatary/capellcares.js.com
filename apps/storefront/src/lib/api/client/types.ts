@@ -33,6 +33,8 @@ export type CategoryApiShape = {
   parentId: number | null;
   slug: string;
   imagePath?: string | null;
+  enShopImagePath?: string | null;
+  arShopImagePath?: string | null;
   sortOrder?: number;
   createdAt?: string;
   name?: { ar?: string; en?: string };

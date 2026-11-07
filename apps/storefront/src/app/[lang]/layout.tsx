@@ -46,6 +46,8 @@ export default async function LocaleLayout({
   ]);
   const navGroups = buildNav(categories, lang);
   const menuEntries = buildHeaderMenu({ navGroups, products, offers, collections, dict, lang });
+  // The search screen's suggestions: the same best sellers the /bestsellers page lists, capped at what it shows.
+  const bestsellers = products.filter((product) => product.status === "active" && !product.deletedAt && product.isBestseller).slice(0, 10);
 
   return (
     <AuthProvider>
@@ -62,7 +64,7 @@ export default async function LocaleLayout({
               dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
             />
             <Suspense fallback={null}>
-              <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} />
+              <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} bestsellers={bestsellers} />
             </Suspense>
             <div className="flex-1">{children}</div>
             <Footer lang={lang} dict={dict} />

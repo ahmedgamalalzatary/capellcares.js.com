@@ -108,4 +108,14 @@ describe("Header layout stability", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} announcements={[]} />);
     expect(screen.queryByTestId("announcement-bar")).not.toBeInTheDocument();
   });
+
+  it("on phones puts search on the left and orders on the right, with no wishlist icon", () => {
+    render(<Header lang="en" dict={dict} menuEntries={[]} />);
+    expect(screen.getByTestId("mobile-search")).toHaveAttribute("aria-label", "Search");
+    const accountLinks = screen.getAllByRole("link", { name: "Account" });
+    // One in the phone cluster, one in the desktop cluster.
+    expect(accountLinks).toHaveLength(2);
+    // Only the desktop cluster still carries a wishlist icon.
+    expect(screen.getAllByRole("link", { name: "Wishlist" })).toHaveLength(1);
+  });
 });

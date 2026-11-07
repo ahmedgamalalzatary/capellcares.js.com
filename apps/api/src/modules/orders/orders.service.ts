@@ -9,6 +9,7 @@ import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.j
 import { addMoney, multiplyMoney } from "./money.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
+import { notifyStaffOfNewOrder } from "./order-alert.js";
 
 export class CheckoutAmountChangedError extends Error {
   constructor() {
@@ -309,5 +310,7 @@ export async function createOrderFromCheckout(
     }
     return { id: winner.id, orderCode: winner.orderCode, paymentStatus: winner.paymentStatus, replayed: true };
   }
+  // Staff hear about every new website order on WhatsApp; fire-and-forget after the order is saved, so the alert can never fail or slow checkout.
+  void notifyStaffOfNewOrder(createdOrder.id);
   return { id: createdOrder.id, orderCode: createdOrder.orderCode, paymentStatus, replayed: false };
 }

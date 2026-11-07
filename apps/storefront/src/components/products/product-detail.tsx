@@ -143,7 +143,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                 <button
                   key={item.id}
                   className={[
-                    "grid min-w-28 gap-0.5 rounded-md px-4 py-3 text-start transition-colors",
+                    "grid min-w-24 gap-0.5 rounded-md px-3 py-2 text-start transition-colors",
                     item.stock > 0 ? "hover:border-warm hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
                     variantId === item.id ? "border-accent bg-canvas text-ink" : "border border-(--hairline) bg-surface text-(--ink-2)"
                   ].join(" ")}
@@ -152,8 +152,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                   onClick={() => item.stock > 0 && setVariantId(item.id)}
                   disabled={item.stock === 0}
                 >
-                  <span className="text-sm font-medium">{item.size}</span>
-                  <span className="text-xs opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span>
+                  <span className="text-base font-medium">{item.size}</span>
+                  <span className="text-sm opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span>
                 </button>
               ))}
             </div>

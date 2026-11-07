@@ -16,6 +16,8 @@ export const en = {
     signup: "Sign up",
     logout: "Log out",
     search: "Search products",
+    popularSearches: "Popular Searches",
+    mostPopular: "Our Most Popular",
     categories: "Categories",
     allCategories: "All Categories",
     allCategoryTypes: "All {name} Types",
@@ -379,7 +381,8 @@ export const en = {
     newProducts: "New arrivals",
     bestsellers: "Bestseller",
     featuredHeading: "Featured products",
-    viewAllProducts: "View all →"
+    viewAllProducts: "View all →",
+    categories: "Categories"
   },
   shopMedia: {
     sectionLabel: "Featured media"

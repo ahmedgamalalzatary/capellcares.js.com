@@ -53,6 +53,9 @@ export const categories = mysqlTable("categories", {
   arName: varchar("ar_name", { length: 255 }).notNull(),
   enName: varchar("en_name", { length: 255 }).notNull(),
   imagePath: varchar("image_path", { length: 1024 }),
+  // Main categories only: the shop page's categories row shows the picture for the page language.
+  enShopImagePath: varchar("en_shop_image_path", { length: 1024 }),
+  arShopImagePath: varchar("ar_shop_image_path", { length: 1024 }),
   sortOrder: int("sort_order").notNull().default(0),
   isLeaf: boolean("is_leaf").notNull().default(false),
   deletedAt: datetime("deleted_at"),

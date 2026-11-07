@@ -16,6 +16,8 @@ export const ar = {
     signup: "إنشاء حساب",
     logout: "تسجيل الخروج",
     search: "ابحث عن منتج",
+    popularSearches: "عمليات بحث شائعة",
+    mostPopular: "الأكثر رواجًا",
     categories: "الأقسام",
     allCategories: "كل الأقسام",
     allCategoryTypes: "كل أنواع {name}",
@@ -381,7 +383,8 @@ export const ar = {
     newProducts: "الأحدث",
     bestsellers: "الأكثر مبيعًا",
     featuredHeading: "منتجات مميزة",
-    viewAllProducts: "كل المنتجات ←"
+    viewAllProducts: "كل المنتجات ←",
+    categories: "الأقسام"
   },
   shopMedia: {
     sectionLabel: "وسائط مميزة"

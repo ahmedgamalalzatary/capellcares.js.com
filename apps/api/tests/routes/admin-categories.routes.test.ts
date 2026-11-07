@@ -651,3 +651,55 @@ test("admin category create rejects images for categories deeper than one level 
     assert.equal(response.json.reason, "invalid-image-depth");
   });
 });
+
+test("admin category saves Arabic and English shop pictures on a main category, and the storefront list carries them", async () => {
+  const slug = `main-shop-pictures-${Date.now()}`;
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug,
+        name: { ar: "قسم رئيسي", en: "Main Section" },
+        parentId: null,
+        isLeaf: true,
+        enShopImagePath: "/uploads/main-en.jpg",
+        arShopImagePath: "/uploads/main-ar.jpg"
+      })
+    });
+    assert.equal(response.status, 200);
+
+    const list = await request("/api/v1/categories");
+    const listed = (list.json.items as any[]).find((item) => item.slug === slug);
+    assert.equal(listed?.enShopImagePath, "/uploads/main-en.jpg");
+    assert.equal(listed?.arShopImagePath, "/uploads/main-ar.jpg");
+  });
+
+  const [saved] = await db
+    .select({ en: categories.enShopImagePath, ar: categories.arShopImagePath })
+    .from(categories)
+    .where(eq(categories.slug, slug))
+    .limit(1);
+  assert.deepEqual(saved, { en: "/uploads/main-en.jpg", ar: "/uploads/main-ar.jpg" });
+});
+
+test("admin category rejects shop pictures on a sub-category", async () => {
+  const ids = await getBaselineIds();
+  await withTestServer(app, async (request) => {
+    const authHeaders = await getAdminAuthHeaders(request);
+    const response = await request("/api/erp/categories", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        slug: `sub-shop-picture-${Date.now()}`,
+        name: { ar: "فرعي", en: "Sub" },
+        parentId: ids.rootCategoryId,
+        isLeaf: true,
+        arShopImagePath: "/uploads/not-allowed.jpg"
+      })
+    });
+    assert.equal(response.status, 400);
+    assert.equal(response.json.reason, "invalid-image-depth");
+  });
+});

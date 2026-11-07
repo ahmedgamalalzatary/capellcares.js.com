@@ -60,20 +60,56 @@ describe("CategoryForm", () => {
     expect(screen.getByTestId("category-path")).toHaveTextContent("شعر جاف");
   });
 
-  it("offers the image slot only once the category is a direct child of a root", () => {
+  it("gives a main category Arabic and English shop pictures, a direct child one picture, and deeper ones none", () => {
     render(createElement(CategoryForm, { mode: "new", categories }));
 
     fillNames();
     fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
-
-    expect(screen.getByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).toBeInTheDocument();
+    // No parent = main category: one picture per language for the shop's categories row.
+    expect(screen.getByText("الصورة العربية")).toBeInTheDocument();
+    expect(screen.getByText("الصورة الإنجليزية")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
     fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
-
-    expect(screen.queryByText("صورة القسم متاحة فقط للأقسام الفرعية المباشرة تحت قسم رئيسي.")).not.toBeInTheDocument();
+    expect(screen.queryByText("الصورة العربية")).not.toBeInTheDocument();
     expect(screen.getByText("رفع صورة")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+    expect(screen.getByText("صور القسم متاحة للأقسام الرئيسية والأقسام الفرعية المباشرة فقط.")).toBeInTheDocument();
+  });
+
+  it("keeps a main category's shop pictures when saving, and sends no sub-category picture", async () => {
+    render(createElement(CategoryForm, {
+      mode: "edit",
+      categories,
+      initial: { ...categories[0]!, imagePath: "/uploads/stale.jpg", enShopImagePath: "/uploads/en.jpg", arShopImagePath: "/uploads/ar.jpg" }
+    }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ التعديلات" })[0]!);
+
+    await waitFor(() => expect(upsertCategory).toHaveBeenCalled());
+    expect(upsertCategory.mock.calls[0]![0]).toMatchObject({
+      imagePath: null,
+      enShopImagePath: "/uploads/en.jpg",
+      arShopImagePath: "/uploads/ar.jpg"
+    });
+  });
+
+  it("drops shop pictures once a main category is moved under a parent", async () => {
+    render(createElement(CategoryForm, {
+      mode: "edit",
+      categories,
+      initial: { id: 9, parentId: null, slug: "x", name: { ar: "س", en: "X" }, isLeaf: true, deletedAt: null, enShopImagePath: "/uploads/en.jpg", arShopImagePath: "/uploads/ar.jpg" }
+    }));
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ التعديلات" })[0]!);
+
+    await waitFor(() => expect(upsertCategory).toHaveBeenCalled());
+    expect(upsertCategory.mock.calls[0]![0]).toMatchObject({ enShopImagePath: null, arShopImagePath: null });
   });
 });
 

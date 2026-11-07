@@ -64,6 +64,9 @@ export type CategoryWriteInput = {
   arName: string;
   enName: string;
   imagePath: string | null;
+  /** Main categories only: the shop page's categories-row picture per language. */
+  enShopImagePath?: string | null;
+  arShopImagePath?: string | null;
   isLeaf: boolean;
 };
 
@@ -112,6 +115,8 @@ export async function writeCategoryRepo(
         arName: input.arName,
         enName: input.enName,
         imagePath: input.imagePath,
+        enShopImagePath: input.enShopImagePath ?? null,
+        arShopImagePath: input.arShopImagePath ?? null,
         isLeaf: input.isLeaf
       })
       .where(eq(categories.id, input.id));
@@ -128,6 +133,8 @@ export async function writeCategoryRepo(
       arName: input.arName,
       enName: input.enName,
       imagePath: input.imagePath,
+      enShopImagePath: input.enShopImagePath ?? null,
+      arShopImagePath: input.arShopImagePath ?? null,
       isLeaf: input.isLeaf
     })
     .$returningId();

@@ -55,6 +55,13 @@ export async function upsertCategory(input: CategoryWriteInput) {
     );
   }
 
+  if ((input.enShopImagePath || input.arShopImagePath) && nextDepth !== 0) {
+    throwCoded(
+      "CATEGORY_INVALID_IMAGE_DEPTH",
+      "Category shop pictures are only allowed for main (root) categories"
+    );
+  }
+
   const isGrandchildCategory = nextDepth === 2;
   if (isGrandchildCategory) {
     const nameConflict = await findSameParentGrandchildNameConflictRepo({
@@ -71,7 +78,9 @@ export async function upsertCategory(input: CategoryWriteInput) {
   return writeCategoryRepo(
     {
       ...input,
-      imagePath: input.imagePath ?? null
+      imagePath: input.imagePath ?? null,
+      enShopImagePath: input.enShopImagePath ?? null,
+      arShopImagePath: input.arShopImagePath ?? null
     },
     previous?.parentId ?? null
   );

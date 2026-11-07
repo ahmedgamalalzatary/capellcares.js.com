@@ -6,6 +6,7 @@ import { generateOrderCode, generatePendingOrderCode, UNTOUCHED_EXPIRY_MS } from
 import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../shipping/shipping-dispatch.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../checkout/financial-evidence.repository.js";
+import { notifyStaffOfNewOrder } from "../../orders/order-alert.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -62,7 +63,7 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
   const verified = options.verified;
   const [bound] = await db.select({ sessionId: paymentAttempts.checkoutSessionId }).from(paymentAttempts)
     .where(eq(paymentAttempts.paymobOrderId, String(transaction.order?.id ?? ""))).limit(1);
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // All financial paths serialize on the session before taking attempt/order or inbox locks. Unbound events take only their inbox lock and cannot affect money.
     if (bound) await tx.select({ id: checkoutSessions.id }).from(checkoutSessions)
       .where(eq(checkoutSessions.id, bound.sessionId)).for("update");
@@ -96,6 +97,9 @@ export async function processPaymobTransaction(transaction: PaymobTransaction, o
     }
     return outcome;
   });
+  // A paid-online order exists only once its payment succeeds; alert staff after that commit, never inside the transaction.
+  if (result.outcome === "succeeded") void notifyStaffOfNewOrder(result.orderId);
+  return result;
 }
 
 const PROCESSED_OUTCOMES = new Set(["succeeded", "refunded", "failed", "pending", "refund_pending_success"]);

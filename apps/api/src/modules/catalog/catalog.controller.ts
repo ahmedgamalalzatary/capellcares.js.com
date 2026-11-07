@@ -22,6 +22,8 @@ export async function listCategories(_req: Request, res: Response) {
     parentId: category.parentId,
     slug: category.slug,
     imagePath: category.imagePath ?? null,
+    enShopImagePath: category.enShopImagePath ?? null,
+    arShopImagePath: category.arShopImagePath ?? null,
     sortOrder: category.sortOrder ?? 0,
     name: {
       ar: category.arName,

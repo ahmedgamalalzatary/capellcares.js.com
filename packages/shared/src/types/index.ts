@@ -15,6 +15,9 @@ export interface Category {
   slug: string;
   name: Bilingual;
   imagePath?: string | null;
+  /** Main categories only: the shop page's categories-row picture per language. */
+  enShopImagePath?: string | null;
+  arShopImagePath?: string | null;
   sortOrder?: number;
   isLeaf: boolean;
   /** Storefront list only: false when no visible product sits in the category or beneath it, so it stays out of menus and its page shows "coming soon". */

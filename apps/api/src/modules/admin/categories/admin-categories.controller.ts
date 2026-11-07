@@ -12,6 +12,8 @@ import { upsertCategory } from "../../../services/category.service.js";
 import { toSlug } from "../../../services/slug.service.js";
 import { isDuplicateEntryError } from "../shared/db-errors.js";
 
+const optionalPath = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+
 export async function adminListCategories(_req: Request, res: Response) {
   res.json({ items: await listCategoriesRepo(true, "erp") });
 }
@@ -25,7 +27,9 @@ export async function adminUpsertCategory(req: Request, res: Response, next: Nex
       slug: toSlug(incoming.slug || incoming.name?.en || incoming.enName || incoming.name?.ar || incoming.arName),
       arName: incoming.name?.ar ?? incoming.arName ?? "",
       enName: incoming.name?.en ?? incoming.enName ?? "",
-      imagePath: typeof incoming.imagePath === "string" && incoming.imagePath.trim() ? incoming.imagePath.trim() : null,
+      imagePath: optionalPath(incoming.imagePath),
+      enShopImagePath: optionalPath(incoming.enShopImagePath),
+      arShopImagePath: optionalPath(incoming.arShopImagePath),
       isLeaf: Boolean(incoming.isLeaf)
     });
     res.json({ ok: true });

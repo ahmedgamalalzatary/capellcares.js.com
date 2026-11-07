@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { SectionCard } from "@/components/shop/section-card";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
+import { ShopCategoryRow } from "@/components/shop/shop-category-row";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -49,6 +50,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
         flatTop
         priority
       />
+
+      {/* Main categories with a shop picture, between the first picture section and offers */}
+      <ShopCategoryRow categories={categories} lang={lang} title={dict.shop.categories} />
 
       {/* Offers */}
       {activeOffers.length > 0 && (
