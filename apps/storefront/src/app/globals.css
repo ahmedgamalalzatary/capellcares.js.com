@@ -112,7 +112,7 @@ body {
   text-rendering: optimizeLegibility;
   font-size: 16px;
   line-height: 1.55;
-  background: var(--surface);
+  background: #fafafa;
 }
 .shell[lang="ar"] { font-family: var(--font-ar); }
 
@@ -623,7 +623,7 @@ body {
   border-radius: var(--radius-xl); background: var(--warm-soft); overflow: hidden;
   transition: transform var(--motion-fast) var(--ease-out-quart);
 }
-@media (min-width: 640px) { .gender-tile { aspect-ratio: 485 / 168; } }
+@media (min-width: 640px) { .gender-tile { aspect-ratio: 485 / 200; } }
 /* Phones fit every gender on one line, so each keeps the picture's own shape instead of cropping it. */
 @media (max-width: 879px) { .gender-tile { aspect-ratio: 485 / 168; border-radius: var(--radius); } }
 .gender-tile:hover { transform: translateY(-3px); }

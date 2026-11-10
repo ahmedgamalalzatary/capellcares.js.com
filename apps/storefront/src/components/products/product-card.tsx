@@ -58,7 +58,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     <article className="group">
-      <div className="relative aspect-square overflow-hidden rounded-t-3xl bg-(--warm-soft)">
+      <div className="relative aspect-square overflow-hidden rounded-t-xl bg-surface">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}

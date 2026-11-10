@@ -223,7 +223,7 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
-  const mediaRoundedClass = "rounded-t-3xl";
+  const mediaRoundedClass = "rounded-t-xl";
   const closeAdvice = () => {
     setAdviceOpen(false);
     setAdvicePreviewActive(false);
@@ -266,7 +266,7 @@ export function SectionCard(props: SectionCardProps) {
 
   return (
     <article className="group">
-      <div className={`relative aspect-square overflow-hidden ${mediaRoundedClass} bg-(--warm-soft)`}>
+      <div className={`relative aspect-square overflow-hidden ${mediaRoundedClass} bg-surface`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (
           <>
