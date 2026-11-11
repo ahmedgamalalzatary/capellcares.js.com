@@ -37,7 +37,6 @@
     "src",
     "tests",
     "next-env.d.ts",
-    "proxy.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
