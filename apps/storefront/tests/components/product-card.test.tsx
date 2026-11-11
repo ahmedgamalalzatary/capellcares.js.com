@@ -356,6 +356,18 @@ describe("ProductCard", () => {
     expect(screen.queryByText("New")).toBeNull();
   });
 
+  it("lets the % OFF ribbon stick out past the card's edge, outside the picture's clipping box", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: makeProduct([{ id: 11, productId: 1, size: "S", price: 100, stock: 2, sortOrder: 1, discount: activeDiscount("percentage", 20) }])
+    }));
+
+    const ribbon = screen.getByTestId("discount-ribbon");
+    expect(ribbon.className.split(" ")).toContain("-inset-s-1");
+    expect(ribbon.parentElement!.closest(".overflow-hidden")).toBeNull();
+  });
+
   it("shows no ribbon when no size is discounted", () => {
     render(createElement(ProductCard, {
       lang: "en",

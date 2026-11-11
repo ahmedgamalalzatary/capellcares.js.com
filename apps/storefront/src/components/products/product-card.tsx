@@ -57,7 +57,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   };
 
   return (
-    <article className="group">
+    // relative: the % OFF ribbon is placed on the article, outside the picture's clipping box, so it can stick out past the edge.
+    <article className="group relative">
       <div className="relative aspect-square overflow-hidden rounded-t-xl bg-surface">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
@@ -75,15 +76,13 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           )}
         />
 
-        {/* One label in the corner: out of stock beats the % OFF ribbon, which beats new/bestseller/offer. inset-s so it mirrors in RTL, matching SectionCard. */}
+        {/* One label in the corner: out of stock beats the % OFF ribbon (drawn on the article below), which beats new/bestseller/offer. inset-s so it mirrors in RTL, matching SectionCard. */}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
             className="absolute top-2.5 inset-s-2.5 z-10 rounded-full"
           />
-        ) : discountPercent > 0 ? (
-          <DiscountRibbon percent={discountPercent} dict={dict} />
-        ) : leadTag ? (
+        ) : discountPercent > 0 ? null : leadTag ? (
           <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
         ) : null}
 
@@ -96,6 +95,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         </button>
 
       </div>
+
+      {!isOutOfStock ? <DiscountRibbon percent={discountPercent} dict={dict} /> : null}
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
       <div className="mt-3 grid gap-1 text-start">

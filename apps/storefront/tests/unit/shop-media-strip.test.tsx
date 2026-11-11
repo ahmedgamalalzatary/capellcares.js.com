@@ -268,7 +268,7 @@ describe("ShopMediaStrip carousel", () => {
     expect(priorityImages()[0]?.closest("[data-slide]")).toHaveAttribute("aria-label", "Media 2");
   });
 
-  it("skips items without desktop images in the desktop strip", () => {
+  it("shows an item's mobile image on desktop when it has no desktop image", () => {
     const section = makeSection(3);
     section.items[1] = {
       ...section.items[1],
@@ -281,40 +281,47 @@ describe("ShopMediaStrip carousel", () => {
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
 
     const desktopStrip = getDesktopStrip(container);
-    expect(desktopStrip.querySelectorAll("[data-slide]")).toHaveLength(4);
-    expect(desktopStrip.querySelector('[aria-label="Media 3"]')).toBeNull();
+    expect(desktopStrip.querySelectorAll("[data-slide]")).toHaveLength(5);
+    expect(desktopStrip.querySelector('[aria-label="Media 2"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-only.jpg");
   });
 
-  it("hides the desktop strip when no desktop images are available", () => {
-    const section = makeSection(2);
-    section.items = section.items.map((item) => ({
-      ...item,
-      arImagePath: null,
-      enImagePath: null,
-      arMobileImagePath: `http://localhost:4000/uploads/mobile-${item.id}.jpg`,
-      enMobileImagePath: `http://localhost:4000/uploads/mobile-${item.id}.jpg`
-    }));
-
-    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(container.querySelector('[data-viewport="desktop"]')).toBeNull();
-  });
-
-  it("shows nothing on desktop when only mobile images are set", () => {
+  it("shows the mobile images on desktop when only mobile images are set", () => {
     mockViewport(true);
     const section = makeSection(2);
     section.items = section.items.map((item) => ({ ...item, arImagePath: null, enImagePath: null }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(container.querySelector("[data-viewport]")).toBeNull();
+    const strip = container.querySelector('[data-viewport="desktop"]');
+    expect(strip).not.toBeNull();
+    expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
   });
 
-  it("shows nothing on mobile when only desktop images are set", () => {
+  it("shows the desktop images on mobile when only desktop images are set", () => {
     mockViewport(false);
     const section = makeSection(2);
     section.items = section.items.map((item) => ({ ...item, arMobileImagePath: null, enMobileImagePath: null }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(container.querySelector("[data-viewport]")).toBeNull();
+    const strip = container.querySelector('[data-viewport="mobile"]');
+    expect(strip).not.toBeNull();
+    expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+  });
+
+  it("prefers the other language on the same device before borrowing the other device's image", () => {
+    mockViewport(true);
+    const section = makeSection(1);
+    section.items[0] = { ...section.items[0], enImagePath: null, arImagePath: "http://localhost:4000/uploads/ar-desktop.jpg" };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(getDesktopStrip(container).querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/ar-desktop.jpg");
+  });
+
+  it("drops an item that has no image for any device", () => {
+    const section = makeSection(2);
+    section.items[1] = { ...section.items[1], arImagePath: null, enImagePath: null, arMobileImagePath: null, enMobileImagePath: null };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(getDesktopStrip(container).querySelectorAll("[data-slide]")).toHaveLength(1);
   });
 
   it("renders dots and arrows when there are multiple images", () => {

@@ -27,13 +27,13 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const shopBrands = brands.filter((brand) => brand.hasProducts !== false);
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
-  // Section 1 sits flush under the header box (flat top), so the two read as one block.
+  // Section 1 sits under the gender pictures as its own card, so all four corners are rounded.
   const media = (slot: 1 | 2 | 3 | 4 | 5) => (
     <ShopMediaStrip
       lang={lang}
       section={shopMediaBySlot.get(slot) ?? { id: -slot, slot, status: "inactive", items: [] }}
       label={dict.shopMedia.sectionLabel}
-      flatTop={slot === 1}
+      corners={slot === 1 ? "all" : "top"}
       priority={slot === 1}
     />
   );
@@ -41,11 +41,11 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   return (
     // The last section drops its bottom margin so the footer's own gap is the only space above it.
     <main className="container [&>:last-child]:mb-0">
-      {media(1)}
-
       {genders.length > 0 && (
-        <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} className="mb-14" />
+        <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} className="mt-6" />
       )}
+
+      {media(1)}
 
       {mainCategories.length > 0 && (
         <section id="categories" className="mb-14 scroll-mt-28">

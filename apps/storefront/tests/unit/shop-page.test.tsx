@@ -181,13 +181,26 @@ describe("shop page", () => {
     ]);
   });
 
-  it("starts with the first image, then every gender, even one with no toys yet", async () => {
+  it("starts with every gender, even one with no toys yet, then the first image", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
     const section = screen.getByRole("navigation", { name: "Shop by gender" });
     expect(screen.getByRole("link", { name: "Boys" })).toHaveAttribute("href", "/en/genders/boys");
     expect(screen.getByRole("link", { name: "Baby" })).toHaveAttribute("href", "/en/genders/baby");
     const firstImage = container.querySelector("[data-viewport]")!;
-    expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("rounds all four corners of the first image, now that it no longer sits flush under the header", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const firstImage = container.querySelector("[data-viewport]")!;
+    expect(firstImage.querySelector(".rounded-2xl")).not.toBeNull();
+  });
+
+  it("lays the main categories out as one sideways row on every screen size", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const scroller = container.querySelector("#categories .overflow-x-auto");
+    expect(scroller).not.toBeNull();
+    expect(scroller!.className).not.toMatch(/grid-cols-2/);
   });
 
   it("has no star mark beside the section headings", async () => {

@@ -79,8 +79,8 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           `container sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-surface`
         ].join(" ")}
       >
-      {/* The nav box: rounded on top only, so the shop page's first picture section (flat on top) joins it as one block. */}
-      <div className="rounded-t-3xl bg-(--accent-soft) px-3 sm:px-5">
+      {/* The nav box: a card rounded on all four corners. */}
+      <div className="rounded-xl bg-(--accent-soft) px-3 sm:px-5">
       <div className="grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
         {/* Mobile left cluster: menu · login */}
         <div className="flex items-center min-[880px]:hidden">

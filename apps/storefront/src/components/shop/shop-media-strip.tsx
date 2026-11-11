@@ -61,6 +61,12 @@ function buildShopMediaHref(
   }
 }
 
+function pickItemImage(item: ShopMediaSection["items"][number], lang: Language, viewport: "desktop" | "mobile") {
+  const ar = viewport === "desktop" ? item.arImagePath : item.arMobileImagePath;
+  const en = viewport === "desktop" ? item.enImagePath : item.enMobileImagePath;
+  return lang === "ar" ? ar || en : en || ar;
+}
+
 function pickSlidesForViewport(
   section: ShopMediaSection,
   lang: Language,
@@ -68,13 +74,9 @@ function pickSlidesForViewport(
 ) {
   return section.items
     .map((item) => {
-      const requestedImagePath = lang === "ar"
-        ? (viewport === "desktop" ? item.arImagePath : item.arMobileImagePath)
-        : (viewport === "desktop" ? item.enImagePath : item.enMobileImagePath);
-      const fallbackImagePath = lang === "ar"
-        ? (viewport === "desktop" ? item.enImagePath : item.enMobileImagePath)
-        : (viewport === "desktop" ? item.arImagePath : item.arMobileImagePath);
-      const imagePath = requestedImagePath || fallbackImagePath;
+      // Own device first (page language, then the other language); a device with no picture borrows the other device's.
+      const other = viewport === "desktop" ? "mobile" : "desktop";
+      const imagePath = pickItemImage(item, lang, viewport) || pickItemImage(item, lang, other);
       if (!imagePath) {
         return null;
       }
@@ -140,7 +142,7 @@ function ShopMediaViewportStrip({
   label,
   viewport,
   className,
-  flatTop = false,
+  corners = "top",
   priority = false
 }: {
   lang: Language;
@@ -148,11 +150,15 @@ function ShopMediaViewportStrip({
   label: string;
   viewport: "desktop" | "mobile";
   className: string;
-  flatTop?: boolean;
+  /** Which corners are rounded: "top" (default, the strip sits on the section below it) or "all". */
+  corners?: "top" | "all";
   priority?: boolean;
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
-  const roundedClass = flatTop ? "rounded-b-3xl" : "rounded-t-3xl";
+  // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding/loading picture with square corners until it settles.
+  const roundedClass = corners === "all"
+    ? "rounded-2xl [clip-path:inset(0_round_var(--radius-2xl))]"
+    : "rounded-t-2xl [clip-path:inset(0_round_var(--radius-2xl)_var(--radius-2xl)_0_0)]";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -332,13 +338,14 @@ export function ShopMediaStrip({
   lang,
   section,
   label,
-  flatTop = false,
+  corners = "top",
   priority = false
 }: {
   lang: Language;
   section: ShopMediaSection;
   label: string;
-  flatTop?: boolean;
+  /** Which corners are rounded: "top" (default, the strip sits on the section below it) or "all". */
+  corners?: "top" | "all";
   priority?: boolean;
 }) {
   const [prefersDesktop, setPrefersDesktop] = useState(true);
@@ -360,7 +367,7 @@ export function ShopMediaStrip({
     return null;
   }
 
-  // Each device shows only its own pictures; a device with none shows nothing rather than borrowing the other device's.
+  // Each device prefers its own pictures and falls back to the other device's, per item (see pickSlidesForViewport).
   const viewport = prefersDesktop ? "desktop" : "mobile";
 
   return (
@@ -370,7 +377,7 @@ export function ShopMediaStrip({
       label={label}
       viewport={viewport}
       className="mb-14"
-      flatTop={flatTop}
+      corners={corners}
       priority={priority}
     />
   );

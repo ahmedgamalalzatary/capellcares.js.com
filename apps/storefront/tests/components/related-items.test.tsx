@@ -217,5 +217,6 @@ describe("RelatedItems", () => {
     render(createElement(RelatedItems, { items: [{ ...items[0]!, discountPercent: 23 }], lang: "en", dict, title: "Related" }));
 
     expect(screen.getByText("23% OFF")).toBeInTheDocument();
+    expect(screen.getByTestId("discount-ribbon").parentElement!.closest(".overflow-hidden")).toBeNull();
   });
 });

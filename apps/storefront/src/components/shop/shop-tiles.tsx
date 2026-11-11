@@ -16,10 +16,10 @@ export function ShopHeading({ children, color = "violet" }: { children: ReactNod
   );
 }
 
-/** Two cards per row on phones and tablets, one sideways line on desktop. */
+/** One sideways line of category cards on every screen size: phones swipe it, desktop uses the row's arrows. */
 export function CategoryTiles({ categories, lang }: { categories: Category[]; lang: Language }) {
   return (
-    <ShopCardRow lang={lang} gridOnMobile>
+    <ShopCardRow lang={lang} cols={5}>
       {categories.map((category) => (
         <Link key={category.id} href={`/${lang}/category/${category.slug}?categoryId=${category.id}`} className="toy-tile">
           <span className="toy-tile__media">
