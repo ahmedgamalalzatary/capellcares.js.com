@@ -99,6 +99,29 @@ vi.mock("@/lib/api/client", () => {
 import { SearchOverlay } from "@/components/layout/header/search-overlay";
 
 describe("SearchOverlay", () => {
+  const mockPointer = (fine: boolean) => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: fine && query.includes("pointer: fine"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    })) as any;
+  };
+
+  it("does not focus the box on touch screens, so the keyboard stays closed until tapped", () => {
+    mockPointer(false);
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+    expect(screen.getByPlaceholderText(dict.nav.search)).not.toHaveFocus();
+  });
+
+  it("focuses the box with a mouse, where no on-screen keyboard appears", () => {
+    mockPointer(true);
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+    expect(screen.getByPlaceholderText(dict.nav.search)).toHaveFocus();
+  });
+
   it("shows products, categories, offers, and collections for a global search", async () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));

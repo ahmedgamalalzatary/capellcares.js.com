@@ -213,6 +213,8 @@ export interface RelatedItemCard {
   variantId: number | null;
   /** Price before the saving: a product's pre-discount selling price, or a bundle's sum of parts. Null when the card is not discounted. */
   originalTotal: number | null;
+  /** A product's biggest live saving across all its sizes, as a whole percent (0 when none); 0 for offers and collections. Optional so older payloads still parse. */
+  discountPercent?: number;
   /** Classification line shown under a product's name. Null for offers and collections, whose cards carry no category line. */
   categoryName: Bilingual | null;
   /** Average stars and review count for the card; zeroed when unreviewed. */
@@ -493,4 +495,16 @@ export function getEffectiveVariantPrice(
     : variant.price - discount.value;
 
   return Math.max(0, Number(nextPrice.toFixed(2)));
+}
+
+/** The biggest live saving across a product's sizes, as a whole percent; 0 when no size is discounted right now. */
+export function getProductDiscountPercent(
+  variants: Pick<ProductVariant, "price" | "discount">[],
+  now: Date = new Date()
+) {
+  return variants.reduce((best, variant) => {
+    if (variant.price <= 0) return best;
+    const percent = Math.round(((variant.price - getEffectiveVariantPrice(variant, now)) / variant.price) * 100);
+    return Math.max(best, percent);
+  }, 0);
 }

@@ -27,6 +27,8 @@ export interface StorefrontRelatedCard {
   variantId: number | null;
   /** Price before the saving: a product's pre-discount selling price, or a bundle's sum of parts. Null when the card is not discounted. */
   originalTotal: number | null;
+  /** A product's biggest live saving across all its sizes, as a whole percent (0 when none); offers and collections always carry 0. */
+  discountPercent: number;
   /** Classification line shown under a product's name. Null for offers and collections, whose cards carry no category line. */
   categoryName: { ar: string; en: string } | null;
 }

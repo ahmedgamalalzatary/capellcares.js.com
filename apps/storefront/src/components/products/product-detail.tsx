@@ -100,7 +100,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
         </div>
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
-          <div className="grid gap-3">
+          {/* The description block is pulled up under the ratings; -order-2/-order-1 keep the title group first and the description second. */}
+          <div className="-order-2 grid gap-3">
             <h1 className={lang === "ar"
               ? "m-0 text-[clamp(20px,3.4vw,32px)] font-bold font-(family-name:--font-ar) leading-[1.2] tracking-normal text-ink"
               : "m-0 text-[clamp(20px,3.4vw,32px)] font-(--font-display) leading-[1.05] tracking-[-0.01em] text-ink"}>
@@ -199,7 +200,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           {activeTab ? (
-            <>
+            <div data-testid="product-info-tabs" className="-order-1 grid">
               <div className="-mx-4 overflow-x-auto border-b border-(--hairline) px-4 scrollbar-none sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
                 <div className="flex min-w-max gap-1">
                   {tabs.map((item) => {
@@ -225,7 +226,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               <div className="text-base leading-[1.85] text-(--ink-2)">
                 {activeTab.content}
               </div>
-            </>
+            </div>
           ) : null}
         </div>
       </div>

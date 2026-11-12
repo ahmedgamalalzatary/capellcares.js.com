@@ -178,6 +178,7 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
 
       <HeaderMobileDrawer
         lang={lang}
+        wishlistCount={ids.length}
         dict={dict}
         menuEntries={menuEntries}
         isAr={isAr}

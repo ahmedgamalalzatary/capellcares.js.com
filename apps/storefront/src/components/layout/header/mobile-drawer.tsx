@@ -17,6 +17,8 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
   onClose: () => void;
   onSwitchLang: () => void;
   onOpenSearch: () => void;
+  /** Saved items, shown beside the Wishlist row. */
+  wishlistCount?: number;
 };
 
 // Tab order: Offers, Sets, then the category roots. The New/Bestsellers entries the header menu also carries are deliberately not surfaced here.
@@ -40,7 +42,8 @@ export function HeaderMobileDrawer({
   user,
   onClose,
   onSwitchLang,
-  onOpenSearch
+  onOpenSearch,
+  wishlistCount = 0
 }: HeaderMobileDrawerProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
@@ -237,6 +240,17 @@ export function HeaderMobileDrawer({
               <DrawerLink href={`/${lang}/shop`} isAr={isAr} onClick={onClose}>
                 {dict.nav.products}
               </DrawerLink>
+              {/* Wishlist sits right after Shop, with the same saved-item count as the header's heart. */}
+              <DrawerLink href={`/${lang}/wishlist`} isAr={isAr} onClick={onClose}>
+                <span className="inline-flex items-center gap-2">
+                  {dict.nav.wishlist}
+                  {wishlistCount > 0 && (
+                    <span data-testid="drawer-wishlist-count" className="grid min-h-5 min-w-5 place-items-center rounded-full bg-ink px-1.5 text-xs font-semibold leading-none text-canvas">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </span>
+              </DrawerLink>
               <DrawerLink href={`/${lang}/new`} isAr={isAr} onClick={onClose} accent>
                 {dict.nav.new}
               </DrawerLink>
@@ -248,9 +262,6 @@ export function HeaderMobileDrawer({
                   {dict.nav.orders}
                 </DrawerLink>
               )}
-              <DrawerLink href={`/${lang}/wishlist`} isAr={isAr} onClick={onClose}>
-                {dict.nav.wishlist}
-              </DrawerLink>
             </div>
 
             {/* Social */}

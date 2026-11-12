@@ -2,15 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { compareByScopedOrdering, pickLang, type Category, type Language } from "@capella/shared";
 import { buildCategoryHref, isListedCategory } from "@/lib/category-links";
+import { ShopCardRow } from "@/components/shop/shop-card-row";
 
-/** The page-language picture of a main category, falling back to the other language's; null when it has neither. */
+/** The page-language shop picture of a main category, falling back to the other language's; null when it has neither. (In the ERP a main category's pictures are its two shop pictures.) */
 function shopPictureFor(category: Category, lang: Language) {
   return lang === "ar"
     ? category.arShopImagePath || category.enShopImagePath || null
     : category.enShopImagePath || category.arShopImagePath || null;
 }
 
-/** Shop page "Categories" row: every listed main category that has a shop picture, in the ERP tree order, scrolling sideways. */
+/** Shop page "Categories" row, laid out like Falta's: every listed main category that has a shop picture, in the ERP tree order, as square picture cards in one sideways row (swipe on phones, arrows on desktop). */
 export function ShopCategoryRow({ categories, lang, title }: { categories: Category[]; lang: Language; title: string }) {
   const items = categories
     .filter((category) => category.parentId === null && isListedCategory(category))
@@ -30,29 +31,32 @@ export function ShopCategoryRow({ categories, lang, title }: { categories: Categ
       >
         {title}
       </h2>
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none sm:mx-0 sm:gap-4 sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <ShopCardRow lang={lang} cols={5}>
         {items.map(({ category, picture }) => {
           const name = pickLang(category.name, lang);
           return (
             <Link
               key={category.id}
               href={buildCategoryHref(lang, category)}
-              className="group grid w-32 shrink-0 snap-start gap-2 sm:w-40 lg:w-48"
+              className="group flex h-full flex-col text-center text-ink transition-transform duration-200 hover:-translate-y-0.5"
             >
-              <span className="relative block aspect-square overflow-hidden rounded-lg bg-(--warm-soft)">
+              {/* The picture stands alone: rounded top corners, no line along its bottom edge. */}
+              <span className="relative block aspect-square overflow-hidden rounded-t-lg border border-b-0 border-(--hairline) bg-surface">
                 <Image
                   src={picture}
                   alt={name}
                   fill
-                  sizes="(min-width: 1024px) 192px, (min-width: 640px) 160px, 128px"
+                  sizes="(min-width: 1024px) 17vw, (min-width: 640px) 23vw, 34vw"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
-              <span className="truncate text-center text-sm font-bold text-ink sm:text-base">{name}</span>
+              <span className={`mt-2.5 text-sm font-bold leading-tight sm:text-base ${isAr ? "font-(family-name:--font-ar)" : "uppercase tracking-[0.04em]"}`}>
+                {name}
+              </span>
             </Link>
           );
         })}
-      </div>
+      </ShopCardRow>
     </section>
   );
 }

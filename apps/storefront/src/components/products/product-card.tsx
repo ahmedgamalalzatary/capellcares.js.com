@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, type Language, type Product } from "@capella/shared";
+import { pickLang, formatPrice, formatPriceRange, getEffectiveVariantPrice, getProductBadgeState, getProductDiscountPercent, type Language, type Product } from "@capella/shared";
 import { ProductIllustration } from "@/components/ui/product-illustration";
 import { ItemTagPill, getProductTags } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
+import { DiscountRibbon } from "@/components/ui/discount-ribbon";
 import { AddToCartControl } from "@/components/ui/add-to-cart-control";
 import { CardRating } from "@/components/reviews/card-rating";
 import { CardImageCarousel } from "@/components/ui/card-image-carousel";
@@ -34,6 +35,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   const maxBasePrice = Math.max(...basePrices);
   const { isOutOfStock } = getProductBadgeState(product);
   const leadTag = getProductTags(product, dict, { lead: true })[0];
+  const discountPercent = getProductDiscountPercent(product.variants);
   const isAr = lang === "ar";
   const images = useMemo(() => buildCardImages(product, lang), [product, lang]);
 
@@ -56,7 +58,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
   };
 
   return (
-    <article className="group">
+    // relative: the % OFF ribbon is placed on the article, outside the picture's clipping box, so it can stick out past the edge.
+    <article className="group relative">
       <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
@@ -74,15 +77,14 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
           )}
         />
 
-        {/* inset-s-0 so the badge mirrors in RTL, matching SectionCard. */}
-        {leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
-        ) : null}
+        {/* One label in the corner: out of stock beats the % OFF ribbon (drawn on the article below), which beats new/bestseller/offer. inset-s-0 so it mirrors in RTL, matching SectionCard. */}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
             className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
+        ) : discountPercent > 0 ? null : leadTag ? (
+          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
         ) : null}
 
         <button
@@ -94,6 +96,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         </button>
 
       </div>
+
+      {!isOutOfStock ? <DiscountRibbon percent={discountPercent} dict={dict} /> : null}
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
       <div className="mt-3 grid gap-1 text-start">

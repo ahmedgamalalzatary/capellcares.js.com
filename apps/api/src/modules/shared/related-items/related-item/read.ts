@@ -2,7 +2,7 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { categories, collectionItems, collections, offerItems, offers, productVariants, products, relatedItems, variantDiscounts } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { loadBundleDiscountsRepo } from "../../../catalog/offers/bundle-discount.repository.js";
-import { getEffectiveVariantPrice, type Language } from "@capella/shared";
+import { getEffectiveVariantPrice, getProductDiscountPercent, type Language } from "@capella/shared";
 import { EMPTY_RATING, safeRatingSummaries } from "../../../reviews/review.repository.js";
 import {
   loadEntityMediaRows,
@@ -24,8 +24,8 @@ type VariantPricingRow = {
   discountStatus: "active" | "inactive" | null;
 };
 
-function effectivePriceOf(variant: VariantPricingRow): number {
-  return getEffectiveVariantPrice({
+function pricingOf(variant: VariantPricingRow) {
+  return {
     price: Number(variant.sellingPrice),
     discount: variant.discountStatus
       ? {
@@ -36,7 +36,11 @@ function effectivePriceOf(variant: VariantPricingRow): number {
           status: variant.discountStatus
         }
       : null
-  });
+  };
+}
+
+function effectivePriceOf(variant: VariantPricingRow): number {
+  return getEffectiveVariantPrice(pricingOf(variant));
 }
 
 /** A saving is only worth showing when the original is genuinely higher. */
@@ -183,6 +187,9 @@ export async function getStorefrontRelatedCardsRepo(
         price,
         variantId: cheapest.id,
         originalTotal: savingOrNull(Number(cheapest.sellingPrice), price),
+        discountPercent: getProductDiscountPercent(
+          variantRows.filter((variant) => variant.productId === row.id).map(pricingOf)
+        ),
         categoryName: row.categoryArName != null && row.categoryEnName != null
           ? { ar: row.categoryArName, en: row.categoryEnName }
           : null
@@ -244,6 +251,7 @@ export async function getStorefrontRelatedCardsRepo(
         price,
         variantId: null,
         originalTotal: savingOrNull(parts, price),
+        discountPercent: 0,
         categoryName: null
       });
     }
@@ -302,6 +310,7 @@ export async function getStorefrontRelatedCardsRepo(
         price,
         variantId: null,
         originalTotal: savingOrNull(sumBundleParts(items), price),
+        discountPercent: 0,
         categoryName: null
       });
     }

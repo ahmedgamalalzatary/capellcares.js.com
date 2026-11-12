@@ -339,7 +339,7 @@ export const ar = {
     signupSubtitle: "خطوة واحدة ويبدأ روتينك مع كابيلا."
   },
   langSwitch: { ar: "العربية", en: "English", short: "ع" },
-  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض" },
+  badges: { new: "جديد", bestseller: "الأكثر مبيعًا", offer: "عرض", discount: "خصم {n}%" },
   ask: {
     button: "اسألي",
     placeholder: "عن ماذا تبحثين؟",

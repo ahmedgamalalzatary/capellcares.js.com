@@ -199,17 +199,39 @@ describe("HeaderMobileDrawer", () => {
       onOpenSearch: vi.fn()
     }));
 
+    expect(screen.queryByTestId("drawer-wishlist-count")).toBeNull();
     expect(screen.getByRole("link", { name: "Products" })).toHaveAttribute("href", "/en/shop");
     expect(screen.getByRole("link", { name: "New" })).toHaveAttribute("href", "/en/new");
     expect(screen.getByRole("link", { name: "Bestseller" })).toHaveAttribute("href", "/en/bestsellers");
-    // The wishlist left the phone header, so it sits right under Bestseller/Orders.
-    const quick = ["Bestseller", "Orders", "Wishlist"].map((name) => screen.getByRole("link", { name }));
-    expect(quick[2]).toHaveAttribute("href", "/en/wishlist");
-    expect(quick[0]!.compareDocumentPosition(quick[1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(quick[1]!.compareDocumentPosition(quick[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Wishlist sits between Shop and New, then Bestseller and Orders follow.
+    const quick = ["Products", "Wishlist", "New", "Bestseller", "Orders"].map((name) => screen.getByRole("link", { name }));
+    expect(quick[1]).toHaveAttribute("href", "/en/wishlist");
+    quick.slice(1).forEach((link, index) => {
+      expect(quick[index]!.compareDocumentPosition(link!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
     // Offers/Sets live in the tab strip now, so they are not repeated down here.
     expect(screen.queryByRole("link", { name: "Collections" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Offers" })).toBeNull();
+  });
+
+  it("shows the saved-item count beside Wishlist", () => {
+    render(createElement(HeaderMobileDrawer, {
+      lang: "en",
+      dict: {
+        nav: { search: "Search", viewAll: "View all", viewAllCategory: "All {name} →", products: "Products", new: "New", bestsellers: "Bestseller", orders: "Orders", wishlist: "Wishlist", followUs: "Follow us" },
+        langSwitch: { ar: "Arabic", en: "English" }
+      },
+      menuEntries,
+      isAr: false,
+      mobileOpen: true,
+      user: null,
+      onClose: vi.fn(),
+      onSwitchLang: vi.fn(),
+      onOpenSearch: vi.fn(),
+      wishlistCount: 3
+    }));
+    expect(screen.getByTestId("drawer-wishlist-count")).toHaveTextContent("3");
+    expect(screen.getByRole("link", { name: /Wishlist/ })).toHaveAttribute("href", "/en/wishlist");
   });
 
   it("uses the provided lang for nested category links", () => {

@@ -8,6 +8,7 @@ import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { ItemTagPill, type ItemTag } from "@/components/ui/item-tags";
+import { DiscountRibbon } from "@/components/ui/discount-ribbon";
 import { CardRating } from "@/components/reviews/card-rating";
 import { ColumnsToggle, type Cols } from "@/components/ui/columns-toggle";
 import { Icon } from "@/components/ui/icons";
@@ -101,7 +102,9 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
 
   return (
     <article className="group" data-testid="related-item">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
+      {/* The outer box lifts on hover and carries the % OFF ribbon, which sticks out past the edge; the inner box clips the picture. */}
+      <div className="group/media relative transition-transform duration-200 hover:-translate-y-0.5">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-shadow duration-200 group-hover/media:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
@@ -134,7 +137,8 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
           }}
         />
 
-        {badge ? <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" /> : null}
+        {item.type === "product" && (item.discountPercent ?? 0) > 0 ? null
+          : badge ? <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" /> : null}
 
         <button
           type="button"
@@ -145,6 +149,8 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
         >
           {isWishlisted ? <Icon.HeartFill size={17} /> : <Icon.Heart size={17} className="stroke-[2.4]" />}
         </button>
+      </div>
+      {item.type === "product" ? <DiscountRibbon percent={item.discountPercent} dict={dict} /> : null}
       </div>
 
       {/* Details: image → name → price, stacked beneath the image. */}

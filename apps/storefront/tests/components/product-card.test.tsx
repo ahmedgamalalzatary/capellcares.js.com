@@ -55,7 +55,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { useCardSliderScreen } from "../helpers/media-query";
 
 const dict = {
-  badges: { new: "New", bestseller: "Bestseller", offer: "Offer" },
+  badges: { new: "New", bestseller: "Bestseller", offer: "Offer", discount: "{n}% OFF" },
   common: {
     outOfStock: "Out",
     addToWishlist: "Wishlist",
@@ -333,5 +333,64 @@ describe("ProductCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
 
     expect(cartAdd).toHaveBeenCalledWith({ type: "product", productId: 1, variantId: 12, qty: 1 });
+  });
+
+  const activeDiscount = (type: "percentage" | "fixed", value: number) => ({
+    type, value, status: "active" as const, startsAt: "2000-01-01T00:00:00Z", endsAt: "2999-01-01T00:00:00Z"
+  });
+
+  it("shows the biggest size discount as a % OFF ribbon in place of the lead label", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        ...makeProduct([
+          { id: 11, productId: 1, size: "S", price: 100, stock: 2, sortOrder: 1, discount: activeDiscount("percentage", 10) },
+          { id: 12, productId: 1, size: "L", price: 200, stock: 2, sortOrder: 2, discount: activeDiscount("fixed", 76) }
+        ] as Product["variants"]),
+        isNew: true
+      }
+    }));
+
+    expect(screen.getByText("38% OFF")).toBeInTheDocument();
+    expect(screen.queryByText("New")).toBeNull();
+  });
+
+  it("lets the % OFF ribbon stick out past the card's edge, outside the picture's clipping box", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: makeProduct([{ id: 11, productId: 1, size: "S", price: 100, stock: 2, sortOrder: 1, discount: activeDiscount("percentage", 20) }] as Product["variants"])
+    }));
+
+    const ribbon = screen.getByTestId("discount-ribbon");
+    expect(ribbon.className.split(" ")).toContain("-inset-s-1");
+    expect(ribbon.parentElement!.closest(".overflow-hidden")).toBeNull();
+  });
+
+  it("shows no ribbon when no size is discounted", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: { ...makeProduct([{ id: 11, productId: 1, size: "S", price: 100, stock: 2, sortOrder: 1 }] as Product["variants"]), isNew: true }
+    }));
+
+    expect(screen.queryByText(/% OFF/)).toBeNull();
+    expect(screen.getByText("New")).toBeInTheDocument();
+  });
+
+  it("shows only the out-of-stock label on a sold-out product, never stacked with another label", () => {
+    render(createElement(ProductCard, {
+      lang: "en",
+      dict,
+      product: {
+        ...makeProduct([{ id: 11, productId: 1, size: "S", price: 100, stock: 0, sortOrder: 1, discount: activeDiscount("percentage", 20) }] as Product["variants"]),
+        isNew: true
+      }
+    }));
+
+    expect(screen.getByText("Out")).toBeInTheDocument();
+    expect(screen.queryByText("New")).toBeNull();
+    expect(screen.queryByText(/% OFF/)).toBeNull();
   });
 });

@@ -74,7 +74,8 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
 
   useEffect(() => {
     if (open) {
-      inputRef.current?.focus();
+      // Touch screens: no auto-focus, or the on-screen keyboard pops up and covers the suggestions. It opens when the customer taps the box.
+      if (window.matchMedia?.("(hover: hover) and (pointer: fine)").matches) inputRef.current?.focus();
     } else {
       setTerm("");
     }

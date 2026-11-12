@@ -337,7 +337,7 @@ export const en = {
     signupSubtitle: "One quick step before your Capella routine begins."
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
-  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer" },
+  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer", discount: "{n}% OFF" },
   ask: {
     button: "Ask",
     placeholder: "What are you looking for?",
