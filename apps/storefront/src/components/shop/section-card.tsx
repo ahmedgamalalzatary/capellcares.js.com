@@ -223,7 +223,8 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
-  const mediaRoundedClass = "rounded-t-xl";
+  // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding or zooming picture with square corners, over the card border.
+  const mediaRoundedClass = "rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)]";
   const closeAdvice = () => {
     setAdviceOpen(false);
     setAdvicePreviewActive(false);
@@ -265,7 +266,8 @@ export function SectionCard(props: SectionCardProps) {
   };
 
   return (
-    <article className="group">
+    // Advice cards are a picture only, so they need no space under it.
+    <article className={`group rounded-md border border-ink bg-surface ${props.kind === "advice" ? "overflow-hidden" : "pb-3"}`}>
       <div className={`relative aspect-square overflow-hidden ${mediaRoundedClass} bg-surface`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (
@@ -282,7 +284,7 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
 
         {badge ? (
-          <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
+          <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]" />
         ) : null}
         {onWish ? (
           <button
@@ -296,7 +298,7 @@ export function SectionCard(props: SectionCardProps) {
       </div>
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
-      {props.kind === "advice" ? null : <div className="mt-3 grid gap-1 text-start">
+      {props.kind === "advice" ? null : <div className="mt-3 grid gap-1 px-3 text-start">
         {href ? (
           <Link href={href} className="block">
             <h3 className={nameClass}>{title}</h3>
@@ -326,7 +328,7 @@ export function SectionCard(props: SectionCardProps) {
       </div>}
 
       {href && cartLine ? (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 px-3">
           <AddToCartControl line={cartLine} dict={dict} maxQty={cartMaxQty} className={addClass} />
         </div>
       ) : null}

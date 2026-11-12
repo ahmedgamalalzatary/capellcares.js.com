@@ -33,7 +33,9 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
   const advance = () => setIndex((i) => (i + 1) % slides.length);
 
   return (
-    <div className="my-4 flex items-center gap-2 rounded-lg bg-(--violet) px-3 py-3 text-white sm:px-4 sm:py-2">
+    // Full page width; the half-circle bottom edge comes from .announce-scallop.
+    <div className="announce-scallop relative z-61 text-white">
+    <div className="container flex items-center gap-2 py-3 sm:py-2.5">
       {/* Fixed-height clip box; the text is absolutely positioned so its
           (whitespace-nowrap) width can never widen the header on small screens. */}
       <div className="relative h-4 min-w-0 flex-1 overflow-hidden sm:h-5">
@@ -75,6 +77,7 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
           </svg>
         )}
       </button>
+    </div>
     </div>
   );
 }

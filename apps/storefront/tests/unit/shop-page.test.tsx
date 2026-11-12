@@ -190,10 +190,14 @@ describe("shop page", () => {
     expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("rounds all four corners of the first image, now that it no longer sits flush under the header", async () => {
+  it("rounds all four corners of every picture section", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    const firstImage = container.querySelector("[data-viewport]")!;
-    expect(firstImage.querySelector(".rounded-2xl")).not.toBeNull();
+    const sections = [...container.querySelectorAll("[data-viewport]")];
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      expect(section.querySelector(".rounded-2xl")).not.toBeNull();
+      expect(section.querySelector(".rounded-t-2xl")).toBeNull();
+    }
   });
 
   it("lays the main categories out as one sideways row on every screen size", async () => {

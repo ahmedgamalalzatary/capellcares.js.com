@@ -96,7 +96,6 @@ function Slide({
   label,
   index,
   active,
-  viewport,
   onClickCapture,
   priority = false
 }: {
@@ -105,7 +104,6 @@ function Slide({
   label: string;
   index: number;
   active: boolean;
-  viewport: "desktop" | "mobile";
   onClickCapture?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
   priority?: boolean;
 }) {
@@ -120,12 +118,13 @@ function Slide({
       draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      <div className={`relative overflow-hidden ${viewport === "desktop" ? "aspect-[8/3]" : ""}`}>
+      {/* 7:3 on every screen size, the same banner shape teeela.com uses. */}
+      <div className="relative aspect-[7/3] overflow-hidden">
         <Image
           src={imagePath}
           alt=""
-          width={1600}
-          height={viewport === "desktop" ? 600 : 900}
+          width={1400}
+          height={600}
           sizes="100vw"
           // Fills its box on both sizes, so the box's rounded corners land on the picture rather than on empty space below it.
           className={`h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]`}
@@ -142,7 +141,6 @@ function ShopMediaViewportStrip({
   label,
   viewport,
   className,
-  corners = "top",
   priority = false
 }: {
   lang: Language;
@@ -150,15 +148,11 @@ function ShopMediaViewportStrip({
   label: string;
   viewport: "desktop" | "mobile";
   className: string;
-  /** Which corners are rounded: "top" (default, the strip sits on the section below it) or "all". */
-  corners?: "top" | "all";
   priority?: boolean;
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
   // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding/loading picture with square corners until it settles.
-  const roundedClass = corners === "all"
-    ? "rounded-2xl [clip-path:inset(0_round_var(--radius-2xl))]"
-    : "rounded-t-2xl [clip-path:inset(0_round_var(--radius-2xl)_var(--radius-2xl)_0_0)]";
+  const roundedClass = "rounded-2xl [clip-path:inset(0_round_var(--radius-2xl))]";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -196,7 +190,7 @@ function ShopMediaViewportStrip({
     return (
       <section className={className} data-viewport={viewport}>
         <div className={`grid grid-cols-1 overflow-hidden ${roundedClass}`}>
-          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active viewport={viewport} priority={priority} />
+          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active priority={priority} />
         </div>
       </section>
     );
@@ -304,7 +298,6 @@ function ShopMediaViewportStrip({
                 label={label}
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
-                viewport={viewport}
                 onClickCapture={handleSlideClickCapture}
                 priority={priority && renderedIndex === renderedActive}
               />
@@ -338,14 +331,11 @@ export function ShopMediaStrip({
   lang,
   section,
   label,
-  corners = "top",
   priority = false
 }: {
   lang: Language;
   section: ShopMediaSection;
   label: string;
-  /** Which corners are rounded: "top" (default, the strip sits on the section below it) or "all". */
-  corners?: "top" | "all";
   priority?: boolean;
 }) {
   const [prefersDesktop, setPrefersDesktop] = useState(true);
@@ -377,7 +367,6 @@ export function ShopMediaStrip({
       label={label}
       viewport={viewport}
       className="mb-14"
-      corners={corners}
       priority={priority}
     />
   );

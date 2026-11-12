@@ -24,7 +24,7 @@ export function CategoryTiles({ categories, lang }: { categories: Category[]; la
         <Link key={category.id} href={`/${lang}/category/${category.slug}?categoryId=${category.id}`} className="toy-tile">
           <span className="toy-tile__media">
             {category.imagePath ? (
-              <Image src={category.imagePath} alt="" fill sizes="(min-width: 880px) 20vw, 50vw" className="object-cover" />
+              <Image src={category.imagePath} alt="" fill sizes="(min-width: 880px) 17vw, 34vw" className="object-cover" />
             ) : null}
           </span>
           <span className="toy-tile__name">{pickLang(category.name, lang)}</span>
@@ -44,7 +44,7 @@ export function BrandTiles({ brands, lang }: { brands: ProductAttribute[]; lang:
           <Link key={brand.id} href={`/${lang}/brands/${brand.slug}`} className={`toy-plate toy-plate--${PLATE_COLORS[index % PLATE_COLORS.length]}`}>
             <span className="toy-plate__media">
               {imagePath ? (
-                <Image src={imagePath} alt="" fill sizes="(min-width: 1024px) 16vw, 42vw" className="object-contain" />
+                <Image src={imagePath} alt="" fill sizes="(min-width: 1024px) 10vw, 26vw" className="object-contain" />
               ) : (
                 <span aria-hidden="true" className="toy-initial">{name.charAt(0)}</span>
               )}
@@ -70,7 +70,7 @@ export function GenderTiles({ genders, lang, label, className = "" }: { genders:
             <li key={gender.id} className="min-w-0">
               <Link href={`/${lang}/genders/${gender.slug}`} className="gender-tile">
                 {picture ? (
-                  <Image src={picture} alt={pickLang(gender.name, lang)} fill sizes="33vw" className="object-cover" />
+                  <Image src={picture} alt={pickLang(gender.name, lang)} fill sizes="33vw" className="object-contain" />
                 ) : (
                   <span className="gender-tile__name">{pickLang(gender.name, lang)}</span>
                 )}

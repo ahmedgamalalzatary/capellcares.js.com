@@ -16,6 +16,7 @@ export const en = {
     signup: "Sign up",
     logout: "Log out",
     search: "Search products",
+    searchButton: "Search",
     popularSearches: "Popular Searches",
     mostPopular: "Our Most Popular",
     categories: "Categories",

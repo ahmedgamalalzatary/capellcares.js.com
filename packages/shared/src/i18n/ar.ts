@@ -16,6 +16,7 @@ export const ar = {
     signup: "إنشاء حساب",
     logout: "تسجيل الخروج",
     search: "ابحث عن منتج",
+    searchButton: "بحث",
     popularSearches: "عمليات بحث شائعة",
     mostPopular: "الأكثر رواجًا",
     categories: "الأقسام",

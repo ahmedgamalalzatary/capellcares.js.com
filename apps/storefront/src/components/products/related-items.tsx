@@ -101,10 +101,10 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
           : null;
 
   return (
-    <article className="group" data-testid="related-item">
+    <article className="group rounded-md border border-ink bg-surface pb-3" data-testid="related-item">
       {/* The outer box lifts on hover and carries the % OFF ribbon, which sticks out past the edge; the inner box clips the picture. */}
       <div className="group/media relative transition-transform duration-200 hover:-translate-y-0.5">
-      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-shadow duration-200 group-hover/media:shadow-(--shadow-2)">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)] bg-surface transition-shadow duration-200 group-hover/media:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
@@ -138,7 +138,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
         />
 
         {item.type === "product" && (item.discountPercent ?? 0) > 0 ? null
-          : badge ? <ItemTagPill tag={badge} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" /> : null}
+          : badge ? <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]" /> : null}
 
         <button
           type="button"
@@ -154,7 +154,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
       </div>
 
       {/* Details: image → name → price, stacked beneath the image. */}
-      <div className="mt-3 grid gap-1 text-start">
+      <div className="mt-3 grid gap-1 px-3 text-start">
         <Link href={href} className="block">
           <h3 className={`m-0 leading-tight text-ink ${
             isAr ? "text-sm font-bold font-(family-name:--font-ar)" : "text-sm font-bold "
@@ -182,7 +182,7 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
       </div>
 
       {cartLine ? (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 px-3">
           <AddToCartControl line={cartLine} dict={dict} />
         </div>
       ) : null}

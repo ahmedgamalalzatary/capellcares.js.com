@@ -12,8 +12,8 @@
 :root {
   --magenta:      #e312b8;
   --magenta-deep: #a80a87;
-  --violet:       #6b2bea;
-  --violet-deep:  #4716ad;
+  --violet:       #91008d; /* same as the announcement bar */
+  --violet-deep:  #640062;
   --blue:         #2456f5;
   --blue-deep:    #1537b0;
   --cyan:         #17cbe3;
@@ -39,6 +39,7 @@
   --success:      #0d8a5f;
   --brand:        var(--violet);
   --footer-bg:    #f3efff;
+  --announce:     var(--violet);
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
@@ -336,7 +337,7 @@ body {
 .pcard__img::after {
   content: "";
   position: absolute; inset: auto 0 0 0; height: 40%;
-  background: linear-gradient(to top, rgb(107 43 234 / 0.05), transparent);
+  background: linear-gradient(to top, rgb(145 0 141 / 0.05), transparent);
   pointer-events: none;
 }
 .pcard__img img, .pcard__img svg { width: 72%; height: 72%; object-fit: contain; }
@@ -623,13 +624,25 @@ body {
   border-radius: var(--radius-lg); background: var(--warm-soft); overflow: hidden;
   transition: transform var(--motion-fast) var(--ease-out-quart);
 }
-@media (min-width: 640px) { .gender-tile { aspect-ratio: 485 / 200; } }
-/* Phones fit every gender on one line, so each keeps the picture's own shape instead of cropping it. */
-@media (max-width: 879px) { .gender-tile { aspect-ratio: 485 / 168; border-radius: var(--radius-sm); } }
+/* Taller than the picture itself: the whole picture shows, centred on white, so nothing is cropped. */
+@media (min-width: 640px) { .gender-tile { aspect-ratio: 2 / 1; } }
+@media (max-width: 879px) { .gender-tile { aspect-ratio: 5 / 3; border-radius: var(--radius-sm); } }
 .gender-tile:hover { transform: translateY(-3px); }
 .gender-tile:focus-visible { outline: 3px solid var(--cyan-deep); outline-offset: 3px; }
 .gender-tile__name { font-weight: 800; font-size: clamp(18px, 2.4vw, 28px); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .gender-tile { transition: none; } }
+
+/* Announcement bar: a row of half-circles hanging from its bottom edge. They overlap the header below by 8px, so the bar sits above it, even while the menu lifts the header to z-60 (z-61). */
+.announce-scallop { background: var(--announce); }
+.announce-scallop::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -8px;
+  height: 8px;
+  pointer-events: none;
+  background: radial-gradient(circle at 8px 0, var(--announce) 7.5px, transparent 8px) center top / 16px 8px repeat-x;
+}
 
 /* Footer: a scalloped edge, echoing the round dots on the logo's T and Y. */
 .footer-scallop { position: relative; background: var(--ink); }

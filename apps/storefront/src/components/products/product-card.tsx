@@ -58,8 +58,8 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
   return (
     // relative: the % OFF ribbon is placed on the article, outside the picture's clipping box, so it can stick out past the edge.
-    <article className="group relative">
-      <div className="relative aspect-square overflow-hidden rounded-t-xl bg-surface">
+    <article className="group relative rounded-md border border-ink bg-surface pb-3">
+      <div className="relative aspect-square overflow-hidden rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)] bg-surface">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
@@ -80,10 +80,10 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
-            className="absolute top-2.5 inset-s-2.5 z-10 rounded-full"
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]"
           />
         ) : discountPercent > 0 ? null : leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
+          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]" />
         ) : null}
 
         <button
@@ -99,7 +99,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
       {!isOutOfStock ? <DiscountRibbon percent={discountPercent} dict={dict} /> : null}
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
-      <div className="mt-3 grid gap-1 text-start">
+      <div className="mt-3 grid gap-1 px-3 text-start">
         <Link href={href} className="block">
           <h3
             className={"m-0 text-base font-bold leading-tight text-ink"}
@@ -135,7 +135,7 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
       </div>
 
       {!isOutOfStock && buyVariant ? (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 px-3">
           <AddToCartControl
             line={{ type: "product", productId: product.id, variantId: buyVariant.id, qty: 1 }}
             dict={dict}

@@ -96,7 +96,6 @@ function renderDrawer(overrides: Record<string, unknown> = {}) {
     menuEntries,
     brands,
     genders,
-    onOpenSearch: vi.fn(),
     isAr: false,
     mobileOpen: true,
     user: null,
@@ -115,26 +114,34 @@ beforeAll(() => {
 });
 
 describe("HeaderMobileDrawer", () => {
-  it("is a named dialog that closes from its button and with Escape", () => {
+  it("is a named panel that closes with Escape (the header's menu button closes it too)", () => {
     const { onClose } = renderDrawer();
     expect(screen.getByRole("dialog", { name: "Falta Toy" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(onClose).toHaveBeenCalledTimes(1);
-
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("has a search bar at the top, beside the logo, that opens search", () => {
-    const { onOpenSearch } = renderDrawer();
-    const search = screen.getByRole("button", { name: "Search" });
-    const logo = screen.getByRole("img", { name: "Falta Toy" });
-    const close = screen.getByRole("button", { name: "Close" });
-    expect(logo.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(search.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    fireEvent.click(search);
-    expect(onOpenSearch).toHaveBeenCalledTimes(1);
+  it("hangs under the header and slides in from the reading side", () => {
+    renderDrawer({ mobileOpen: false });
+    const closedEn = screen.getByRole("dialog", { hidden: true });
+    expect(closedEn.className).toContain("top-full");
+    expect(closedEn.className).toContain("-translate-x-full");
+    cleanup();
+
+    renderDrawer({ mobileOpen: false, lang: "ar", isAr: true });
+    expect(screen.getByRole("dialog", { hidden: true }).className).toMatch(/(^|\s)translate-x-full/);
+    cleanup();
+
+    renderDrawer();
+    expect(screen.getByRole("dialog").className).toContain("translate-x-0");
+  });
+
+  it("shows gender, categories and brands as white cards that open their entries as white cards", () => {
+    renderDrawer();
+    const gender = screen.getByRole("button", { name: "Gender" });
+    expect(gender.className).toContain("bg-surface");
+    fireEvent.click(gender);
+    expect(screen.getByRole("link", { name: "Girls" }).className).toContain("bg-surface");
   });
 
   it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, wishlist, account, follow us, then the language switch", () => {

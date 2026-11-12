@@ -16,17 +16,11 @@ export interface ItemTag {
 type Variant = "float" | "badge";
 
 // Floating accent pill — sits on top of an illustration (cards, detail images). Default is the roomy size; it shrinks only for a mobile view (below `md`) inside a grid flagged `data-cols="2"` where narrow cards would overflow — every other case keeps the roomy size.
+// Capella's corner label (square, uppercase, spaced letters), on the footer's dark purple.
 const FLOAT_BASE =
-  "inline-flex items-center text-xs font-bold text-white px-3 py-1.5 " +
+  "inline-flex items-center gap-1 bg-ink text-xs font-bold uppercase tracking-[0.12em] text-white px-3 py-1.5 " +
   "max-md:group-data-[cols=2]/cards:px-2 max-md:group-data-[cols=2]/cards:py-1 " +
-  "max-md:group-data-[cols=2]/cards:text-[10px]";
-const FLOAT_BG: Record<ItemTagKind, string> = {
-  new: "bg-accent",
-  bestseller: "bg-accent",
-  offer: "bg-accent",
-  collection: "bg-accent",
-  outOfStock: "bg-ink",
-};
+  "max-md:group-data-[cols=2]/cards:text-[10px] max-md:group-data-[cols=2]/cards:tracking-[0.06em]";
 
 // Inline CSS badge row (product detail) — colours defined in globals.css.
 const BADGE_CLASS: Record<ItemTagKind, string> = {
@@ -39,7 +33,7 @@ const BADGE_CLASS: Record<ItemTagKind, string> = {
 
 function pillClass(tag: ItemTag, variant: Variant, className?: string): string {
   const floatPointerClass = tag.href ? "" : " pointer-events-none";
-  const base = variant === "badge" ? BADGE_CLASS[tag.kind] : `${FLOAT_BASE}${floatPointerClass} ${FLOAT_BG[tag.kind]}`;
+  const base = variant === "badge" ? BADGE_CLASS[tag.kind] : `${FLOAT_BASE}${floatPointerClass}`;
   return className ? `${base} ${className}` : base;
 }
 

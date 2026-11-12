@@ -27,13 +27,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const shopBrands = brands.filter((brand) => brand.hasProducts !== false);
   const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
 
-  // Section 1 sits under the gender pictures as its own card, so all four corners are rounded.
+  // Every picture section is its own card, rounded on all four corners.
   const media = (slot: 1 | 2 | 3 | 4 | 5) => (
     <ShopMediaStrip
       lang={lang}
       section={shopMediaBySlot.get(slot) ?? { id: -slot, slot, status: "inactive", items: [] }}
       label={dict.shopMedia.sectionLabel}
-      corners={slot === 1 ? "all" : "top"}
       priority={slot === 1}
     />
   );
