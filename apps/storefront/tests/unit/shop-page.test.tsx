@@ -195,7 +195,7 @@ describe("shop page", () => {
     const sections = [...container.querySelectorAll("[data-viewport]")];
     expect(sections.length).toBeGreaterThan(0);
     for (const section of sections) {
-      expect(section.querySelector(".rounded-2xl")).not.toBeNull();
+      expect(section.querySelector(".rounded-\\[12px\\]")).not.toBeNull();
       expect(section.querySelector(".rounded-t-2xl")).toBeNull();
     }
   });

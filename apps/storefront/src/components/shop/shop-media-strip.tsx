@@ -74,9 +74,8 @@ function pickSlidesForViewport(
 ) {
   return section.items
     .map((item) => {
-      // Own device first (page language, then the other language); a device with no picture borrows the other device's.
-      const other = viewport === "desktop" ? "mobile" : "desktop";
-      const imagePath = pickItemImage(item, lang, viewport) || pickItemImage(item, lang, other);
+      // Own device first (page language, then the other language). Only desktop borrows: a missing desktop picture falls back to the mobile one, but phones never show a desktop picture (a wide banner is unreadable on a phone), so a slide with no mobile picture is dropped there.
+      const imagePath = pickItemImage(item, lang, viewport) || (viewport === "desktop" ? pickItemImage(item, lang, "mobile") : null);
       if (!imagePath) {
         return null;
       }
@@ -90,15 +89,23 @@ function pickSlidesForViewport(
     .filter((item): item is NonNullable<typeof item> => item != null);
 }
 
+// Banner shapes (width / height): desktop matches dabdoob's 1248×381 banner, phones match teeela.com's 7:3.
+const SLIDE_SHAPE = {
+  desktop: { aspectClass: "aspect-[1248/381]", width: 1248, height: 381 },
+  mobile: { aspectClass: "aspect-[7/3]", width: 1400, height: 600 }
+} as const;
+
 function Slide({
   href,
   imagePath,
   label,
   index,
   active,
+  viewport,
   onClickCapture,
   priority = false
 }: {
+  viewport: "desktop" | "mobile";
   href: string;
   imagePath: string;
   label: string;
@@ -118,13 +125,12 @@ function Slide({
       draggable={false}
       className="group relative block w-full shrink-0 overflow-hidden"
     >
-      {/* 7:3 on every screen size, the same banner shape teeela.com uses. */}
-      <div className="relative aspect-[7/3] overflow-hidden">
+      <div className={`relative ${SLIDE_SHAPE[viewport].aspectClass} overflow-hidden`}>
         <Image
           src={imagePath}
           alt=""
-          width={1400}
-          height={600}
+          width={SLIDE_SHAPE[viewport].width}
+          height={SLIDE_SHAPE[viewport].height}
           sizes="100vw"
           // Fills its box on both sizes, so the box's rounded corners land on the picture rather than on empty space below it.
           className={`h-full w-full object-cover object-bottom transition-transform duration-300 group-hover:scale-[1.02]`}
@@ -152,7 +158,7 @@ function ShopMediaViewportStrip({
 }) {
   const items = pickSlidesForViewport(section, lang, viewport);
   // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding/loading picture with square corners until it settles.
-  const roundedClass = "rounded-2xl [clip-path:inset(0_round_var(--radius-2xl))]";
+  const roundedClass = "rounded-[12px] [clip-path:inset(0_round_12px)]";
   const [pos, setPos] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -190,7 +196,7 @@ function ShopMediaViewportStrip({
     return (
       <section className={className} data-viewport={viewport}>
         <div className={`grid grid-cols-1 overflow-hidden ${roundedClass}`}>
-          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active priority={priority} />
+          <Slide href={item.href} imagePath={item.imagePath} label={label} index={0} active viewport={viewport} priority={priority} />
         </div>
       </section>
     );
@@ -298,6 +304,7 @@ function ShopMediaViewportStrip({
                 label={label}
                 index={logicalIndex}
                 active={renderedIndex === renderedActive}
+                viewport={viewport}
                 onClickCapture={handleSlideClickCapture}
                 priority={priority && renderedIndex === renderedActive}
               />
@@ -357,7 +364,7 @@ export function ShopMediaStrip({
     return null;
   }
 
-  // Each device prefers its own pictures and falls back to the other device's, per item (see pickSlidesForViewport).
+  // Each device prefers its own pictures; only desktop falls back to the mobile ones, per item (see pickSlidesForViewport).
   const viewport = prefersDesktop ? "desktop" : "mobile";
 
   return (

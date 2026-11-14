@@ -33,8 +33,8 @@ export function AnnouncementBar({ items, isAr, pauseLabel, playLabel }: Announce
   const advance = () => setIndex((i) => (i + 1) % slides.length);
 
   return (
-    // Full page width; the half-circle bottom edge comes from .announce-scallop.
-    <div className="announce-scallop relative z-61 text-white">
+    // Full page width, straight bottom edge.
+    <div className="announce-bar relative z-61 text-white">
     <div className="container flex items-center gap-2 py-3 sm:py-2.5">
       {/* Fixed-height clip box; the text is absolutely positioned so its
           (whitespace-nowrap) width can never widen the header on small screens. */}

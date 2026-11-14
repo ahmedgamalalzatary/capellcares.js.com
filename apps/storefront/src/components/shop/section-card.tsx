@@ -223,7 +223,7 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
-  // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding or zooming picture with square corners, over the card border.
+  // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding or zooming picture with square corners, past the card edge.
   const mediaRoundedClass = "rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)]";
   const closeAdvice = () => {
     setAdviceOpen(false);
@@ -267,7 +267,7 @@ export function SectionCard(props: SectionCardProps) {
 
   return (
     // Advice cards are a picture only, so they need no space under it.
-    <article className={`group rounded-md border border-ink bg-surface ${props.kind === "advice" ? "overflow-hidden" : "pb-3"}`}>
+    <article className={`group rounded-md bg-surface ${props.kind === "advice" ? "overflow-hidden" : "pb-3"}`}>
       <div className={`relative aspect-square overflow-hidden ${mediaRoundedClass} bg-surface`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (

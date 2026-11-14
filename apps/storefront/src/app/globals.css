@@ -31,6 +31,7 @@
   --warm-soft:    #f1ecff;
   --canvas:       #fbfaff;
   --surface:      #ffffff;
+  --page-bg:      #f1f0ed; /* page body and header: Capella's (main branch) header colour */
   --surface-2:    #f7f5ff;
   --text:         #24123f;
   --hairline:     #ddd6f0;
@@ -113,7 +114,7 @@ body {
   text-rendering: optimizeLegibility;
   font-size: 16px;
   line-height: 1.55;
-  background: #fafafa;
+  background: var(--page-bg);
 }
 .shell[lang="ar"] { font-family: var(--font-ar); }
 
@@ -171,6 +172,8 @@ body {
 .btn--flat, .btn--flat:hover, .btn--flat:active { margin-bottom: 0; transform: none; box-shadow: none; }
 .btn--ghost.btn--flat, .btn--ghost.btn--flat:hover, .btn--ghost.btn--flat:active { box-shadow: inset 0 0 0 2px var(--hairline-strong); }
 .btn--primary.btn--flat:hover { background: var(--violet-deep); }
+/* Outline in the footer colour: no fill, a 1px ink ring (product page quantity / buy now / share). */
+.btn--outline-ink, .btn--outline-ink:hover, .btn--outline-ink:active { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 
 .btn--sm { height: 38px; padding: 0 16px; font-size: 14px; }
 .btn--lg { height: 54px; padding: 0 30px; font-size: 17px; }
@@ -632,17 +635,8 @@ body {
 .gender-tile__name { font-weight: 800; font-size: clamp(18px, 2.4vw, 28px); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .gender-tile { transition: none; } }
 
-/* Announcement bar: a row of half-circles hanging from its bottom edge. They overlap the header below by 8px, so the bar sits above it, even while the menu lifts the header to z-60 (z-61). */
-.announce-scallop { background: var(--announce); }
-.announce-scallop::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: -8px;
-  height: 8px;
-  pointer-events: none;
-  background: radial-gradient(circle at 8px 0, var(--announce) 7.5px, transparent 8px) center top / 16px 8px repeat-x;
-}
+/* Announcement bar: a plain purple strip with a straight bottom edge. */
+.announce-bar { background: var(--announce); }
 
 /* Footer: a scalloped edge, echoing the round dots on the logo's T and Y. */
 .footer-scallop { position: relative; background: var(--ink); }

@@ -218,7 +218,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                       role="radio"
                       aria-checked={active}
                       className={[
-                        "grid min-w-24 gap-0.5 rounded-lg border-2 px-3 py-2 text-start transition-colors",
+                        "grid min-w-24 gap-0.5 rounded-lg border px-3 py-2 text-start transition-colors",
                         available ? "hover:bg-(--warm-soft)" : "cursor-not-allowed opacity-45 line-through",
                         active ? "border-(--violet) bg-(--warm-soft) text-ink" : "border-(--hairline) bg-surface text-(--ink-2)"
                       ].join(" ")}
@@ -240,7 +240,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             <div className="font-bold text-(--ink-2)">
               {dict.common.quantity}
             </div>
-            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) bg-(--warm-soft) p-1">
+            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) border border-ink bg-transparent p-1">
               <button
                 className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}
@@ -265,13 +265,14 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             <button className="btn btn--primary btn--flat btn--block" onClick={addToCart} disabled={isOutOfStock}>
               {added ? dict.common.added : dict.common.addToCart}
             </button>
-            <button className="btn btn--ghost btn--flat btn--block" onClick={buyNow} disabled={isOutOfStock}>
+            <button className="btn btn--outline-ink btn--flat btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}
             </button>
             <ShareButton
               path={`/${lang}/products/${product.slug}`}
               title={pickLang(product.name, lang)}
               dict={dict}
+              className="btn--outline-ink"
             />
           </div>
 

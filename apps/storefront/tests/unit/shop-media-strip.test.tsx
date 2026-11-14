@@ -296,18 +296,40 @@ describe("ShopMediaStrip carousel", () => {
     expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
   });
 
-  it("shows the desktop images on mobile when only desktop images are set", () => {
+  it("never shows desktop images on mobile: a section with only desktop images is hidden on phones", () => {
     mockViewport(false);
     const section = makeSection(2);
     section.items = section.items.map((item) => ({ ...item, arMobileImagePath: null, enMobileImagePath: null }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    const strip = container.querySelector('[data-viewport="mobile"]');
-    expect(strip).not.toBeNull();
-    expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+    expect(container.querySelector('[data-viewport="mobile"]')).toBeNull();
+    expect(container.querySelector('img[src="http://localhost:4000/uploads/img-1.jpg"]')).toBeNull();
   });
 
-  it("prefers the other language on the same device before borrowing the other device's image", () => {
+  it("drops only the mobile slide that has no mobile image, without borrowing its desktop image", () => {
+    mockViewport(false);
+    const section = makeSection(2);
+    section.items[1] = { ...section.items[1], arMobileImagePath: null, enMobileImagePath: null };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    const strip = container.querySelector('[data-viewport="mobile"]');
+    expect(strip!.querySelectorAll("[data-slide]")).toHaveLength(1);
+    expect(strip!.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
+  });
+
+  it("uses dabdoob's 1248:381 banner shape on desktop", () => {
+    mockViewport(true);
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+    expect(container.querySelector('[data-viewport="desktop"] [class~="aspect-[1248/381]"]')).not.toBeNull();
+  });
+
+  it("uses teeela's 7:3 banner shape on mobile", () => {
+    mockViewport(false);
+    const { container } = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+    expect(container.querySelector('[data-viewport="mobile"] [class~="aspect-[7/3]"]')).not.toBeNull();
+  });
+
+  it("prefers the other language on desktop before borrowing the mobile image", () => {
     mockViewport(true);
     const section = makeSection(1);
     section.items[0] = { ...section.items[0], enImagePath: null, arImagePath: "http://localhost:4000/uploads/ar-desktop.jpg" };
