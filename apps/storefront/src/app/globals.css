@@ -28,6 +28,7 @@
   --error:        oklch(0.499 0.165 32);     /* red — unchanged, semantic */
   --success:      oklch(0.52 0.10 145);      /* green — unchanged, semantic */
   --brand:        #6e390b;                   /* Capella brown — footer wordmark, prev/next arrows */
+  --ribbon:       #bf9b30;                   /* gold — the % OFF ribbon on discounted cards */
   --footer-bg:    oklch(0.955 0.004 90);     /* #f1f0ed — light footer ground */
 
   /* Aliases kept for code that still references the old names. */

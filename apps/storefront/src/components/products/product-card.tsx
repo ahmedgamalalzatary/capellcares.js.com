@@ -21,9 +21,11 @@ interface Props {
   dict: any;
   /** Resolved category name shown as the classification line beneath the product name. */
   categoryName?: string;
+  /** Shrinks the floating badge for narrow cards — the search overlay's popular row. */
+  compactTags?: boolean;
 }
 
-export function ProductCard({ product, lang, dict, categoryName }: Props) {
+export function ProductCard({ product, lang, dict, categoryName, compactTags = false }: Props) {
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
@@ -81,10 +83,15 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
+            size={compactTags ? "compact" : "default"}
             className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
         ) : discountPercent > 0 ? null : leadTag ? (
-          <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
+          <ItemTagPill
+            tag={leadTag}
+            size={compactTags ? "compact" : "default"}
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
+          />
         ) : null}
 
         <button
@@ -125,20 +132,22 @@ export function ProductCard({ product, lang, dict, categoryName }: Props) {
 
         <CardRating rating={product.rating} dict={dict} lang={lang} />
 
-        <span
-          className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
-        >
-          {prices.length > 1
-            ? formatPriceRange(minPrice, maxPrice, lang)
-            : formatPrice(minPrice, lang)}
-        </span>
-        {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
-          <span className="text-sm text-(--ink-3) line-through">
-            {basePrices.length > 1
-              ? formatPriceRange(minBasePrice, maxBasePrice, lang)
-              : formatPrice(minBasePrice, lang)}
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span
+            className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
+          >
+            {prices.length > 1
+              ? formatPriceRange(minPrice, maxPrice, lang)
+              : formatPrice(minPrice, lang)}
           </span>
-        ) : null}
+          {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
+            <span className="text-sm text-(--ink-3) line-through">
+              {basePrices.length > 1
+                ? formatPriceRange(minBasePrice, maxBasePrice, lang)
+                : formatPrice(minBasePrice, lang)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {!isOutOfStock && buyVariant ? (

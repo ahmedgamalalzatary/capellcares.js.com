@@ -66,9 +66,6 @@ export default async function CategoryPage({
   const category = requireStorefrontValue(resolvedCategory);
   const path = getCategoryPath(categories, category.id);
   const categoryName = pickLang(category.name, lang);
-  const heading = category.isLeaf
-    ? categoryName
-    : dict.nav.viewAllCategory.replace("{name}", categoryName);
   const subCats = categories.filter((c) => c.parentId === category.id && isListedCategory(c));
   const subtreeCategoryIds = new Set<number>([category.id]);
   let changed = true;
@@ -106,7 +103,7 @@ export default async function CategoryPage({
         ]}
       />
       <header className="page-head uppercase">
-        <h1>{heading}</h1>
+        <h1>{categoryName}</h1>
       </header>
       {/* An empty category is left out of every menu; reached by an old link or a search engine, it says "coming soon" rather than showing an empty grid. */}
       {category.hasProducts === false ? (

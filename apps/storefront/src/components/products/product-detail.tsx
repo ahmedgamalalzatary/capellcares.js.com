@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { pickLang, formatPrice, getEffectiveVariantPrice, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
+import { pickLang, formatPrice, getEffectiveVariantPrice, getProductDiscountPercent, type Language, type Product, type ReviewPage, type Offer, type RelatedItemCard } from "@capella/shared";
 import { RelatedItems } from "@/components/products/related-items";
 import { ProductIllustration } from "@/components/ui/product-illustration";
+import { DiscountRibbon } from "@/components/ui/discount-ribbon";
 import { ItemTagPill, ItemTags, getProductTags, type ItemTag } from "@/components/ui/item-tags";
 import { Icon } from "@/components/ui/icons";
 import { ShareButton } from "@/components/ui/share-button";
@@ -29,7 +30,10 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   const router = useRouter();
   const cart = useCart();
   // New/bestseller float over the media as a single lead tag, exactly like the cards do; only the linked offers remain as inline badges beside the title.
-  const leadTag = getProductTags(product, dict)[0];
+  // A live saving outranks them, drawn as the same % OFF ribbon the cards use.
+  const discountPercent = getProductDiscountPercent(product.variants);
+  const productOutOfStock = product.variants.every((item) => item.stock === 0);
+  const leadTag = discountPercent > 0 ? undefined : getProductTags(product, dict)[0];
   const badgeTags: ItemTag[] = offers.map((offer): ItemTag => ({
     kind: "offer",
     label: pickLang(offer.name, lang),
@@ -72,7 +76,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
-        <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
+        <div className="relative grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
           <EntityMediaGallery
             media={product.media}
             lang={lang}
@@ -97,6 +101,8 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               </>
             )}
           />
+          {/* Drawn beside the gallery, not inside its overlay: that box clips its children, which would cut the ribbon's overhang. */}
+          {!productOutOfStock ? <DiscountRibbon percent={discountPercent} dict={dict} /> : null}
         </div>
 
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">

@@ -123,13 +123,13 @@ describe("category page", () => {
     expect(notFound).toHaveBeenCalled();
   });
 
-  it("shows the page heading as all plus the name for a parent category", async () => {
+  it("shows the page heading as just the name for a parent category", async () => {
     render(await CategoryPage({
       params: Promise.resolve({ lang: "en", slug: "hair-care" }),
       searchParams: Promise.resolve({ categoryId: "8" })
     }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "All Hair Care" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Hair Care" })).toBeInTheDocument();
   });
 
   it("shows the page heading as just the name for a leaf category", async () => {
@@ -179,7 +179,7 @@ describe("category page", () => {
       searchParams: Promise.resolve({ categoryId: "69" })
     }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "All Conditioner" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Conditioner" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Coming soon" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continue shopping" })).toHaveAttribute("href", "/en/products");
     expect(screen.queryByTestId("product-grid")).not.toBeInTheDocument();

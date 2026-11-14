@@ -382,7 +382,7 @@ function PopularCardRow({ lang, dict, products, onClose }: { lang: Language; dic
         >
           {products.map((product) => (
             <div key={product.id} className="w-40 shrink-0 snap-start sm:w-44">
-              <ProductCard product={product} lang={lang} dict={dict} />
+              <ProductCard product={product} lang={lang} dict={dict} compactTags />
             </div>
           ))}
         </div>

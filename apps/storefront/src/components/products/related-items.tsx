@@ -171,14 +171,16 @@ function RelatedCard({ item, lang, dict }: { item: RelatedItemCard; lang: Langua
 
         <CardRating rating={item.rating} dict={dict} lang={lang} />
 
-        <span className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}>
-          {formatPrice(item.price, lang)}
-        </span>
-        {/* Only a genuine saving is struck through, the same test the offer and
-            collection detail views apply to their own original totals. */}
-        {item.originalTotal != null && item.originalTotal > item.price ? (
-          <span className="text-sm text-(--ink-3) line-through">{formatPrice(item.originalTotal, lang)}</span>
-        ) : null}
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}>
+            {formatPrice(item.price, lang)}
+          </span>
+          {/* Only a genuine saving is struck through, the same test the offer and
+              collection detail views apply to their own original totals. */}
+          {item.originalTotal != null && item.originalTotal > item.price ? (
+            <span className="text-sm text-(--ink-3) line-through">{formatPrice(item.originalTotal, lang)}</span>
+          ) : null}
+        </div>
       </div>
 
       {cartLine ? (
