@@ -11,7 +11,7 @@ function shopPictureFor(category: Category, lang: Language) {
     : category.enShopImagePath || category.arShopImagePath || null;
 }
 
-/** Shop page "Categories" row, laid out like Falta's: every listed main category that has a shop picture, in the ERP tree order, as square picture cards in one sideways row (swipe on phones, arrows on desktop). */
+/** Shop page "Categories" row, laid out like Falta's: every listed main category that has a shop picture, in the ERP tree order, as 1:1.6 portrait picture cards in one sideways row (swipe on phones, arrows on desktop). */
 export function ShopCategoryRow({ categories, lang, title }: { categories: Category[]; lang: Language; title: string }) {
   const items = categories
     .filter((category) => category.parentId === null && isListedCategory(category))
@@ -41,7 +41,7 @@ export function ShopCategoryRow({ categories, lang, title }: { categories: Categ
               className="group flex h-full flex-col text-center text-ink transition-transform duration-200 hover:-translate-y-0.5"
             >
               {/* The picture stands alone: rounded top corners, no line along its bottom edge. */}
-              <span className="relative block aspect-square overflow-hidden rounded-t-lg border border-b-0 border-(--hairline) bg-surface">
+              <span className="relative block aspect-5/8 overflow-hidden rounded-t-lg border border-b-0 border-(--hairline) bg-surface">
                 <Image
                   src={picture}
                   alt={name}
