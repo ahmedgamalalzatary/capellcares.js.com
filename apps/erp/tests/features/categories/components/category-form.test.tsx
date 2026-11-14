@@ -26,6 +26,7 @@ vi.mock("@/lib/store", () => ({
 }));
 
 import { CategoryForm } from "@/features/categories/components/category-form";
+import { normalizeCategory } from "@/lib/store/normalizers";
 
 afterEach(() => {
   cleanup();
@@ -96,6 +97,37 @@ describe("CategoryForm", () => {
       enShopImagePath: "/uploads/en.jpg",
       arShopImagePath: "/uploads/ar.jpg"
     });
+  });
+
+  it("previews and preserves a main category's pictures loaded from the API", async () => {
+    const input = {
+      id: 1,
+      parentId: null,
+      slug: "hair-care",
+      arName: "العناية بالشعر",
+      enName: "Hair Care",
+      arShopImagePath: "https://media.example.com/hair-ar.webp",
+      enShopImagePath: "https://media.example.com/hair-en.webp",
+      isLeaf: false,
+      deletedAt: null
+    };
+    const { container } = render(createElement(CategoryForm, {
+      mode: "edit",
+      categories,
+      initial: normalizeCategory(input)
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+    expect(Array.from(container.querySelectorAll("img"), (image) => image.getAttribute("src"))).toEqual([
+      "https://media.example.com/hair-ar.webp",
+      "https://media.example.com/hair-en.webp"
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "حفظ التعديلات" }));
+    await waitFor(() => expect(upsertCategory).toHaveBeenCalledWith(expect.objectContaining({
+      arShopImagePath: "https://media.example.com/hair-ar.webp",
+      enShopImagePath: "https://media.example.com/hair-en.webp"
+    })));
   });
 
   it("drops shop pictures once a main category is moved under a parent", async () => {

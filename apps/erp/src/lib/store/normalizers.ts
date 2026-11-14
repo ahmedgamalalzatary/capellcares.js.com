@@ -101,6 +101,8 @@ export function normalizeCategory(input: CategoryApiShape): Category {
     parentId: input.parentId == null ? null : Number(input.parentId),
     slug: input.slug,
     imagePath: input.imagePath ?? null,
+    arShopImagePath: input.arShopImagePath ?? null,
+    enShopImagePath: input.enShopImagePath ?? null,
     sortOrder: input.sortOrder == null ? undefined : toNumber(input.sortOrder),
     name: {
       ar: input.name?.ar ?? input.arName ?? "",

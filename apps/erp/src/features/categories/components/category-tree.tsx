@@ -107,7 +107,11 @@ function Tree({
                 <span aria-hidden className="size-8 shrink-0 pointer-coarse:size-11" />
               )}
 
-              <Thumb src={category.imagePath} fallback={initial} size="sm" />
+              <Thumb
+                src={category.parentId === null ? category.arShopImagePath || category.enShopImagePath : category.imagePath}
+                fallback={initial}
+                size="sm"
+              />
 
               <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 <Link
