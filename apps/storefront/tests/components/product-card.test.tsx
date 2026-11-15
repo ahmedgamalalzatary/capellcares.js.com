@@ -365,6 +365,7 @@ describe("ProductCard", () => {
 
     const ribbon = screen.getByTestId("discount-ribbon");
     expect(ribbon.className.split(" ")).toContain("inset-s-0");
+    expect(ribbon.className.split(" ")).toContain("text-white");
     expect(ribbon.parentElement!.closest(".overflow-hidden")).toBeNull();
   });
 

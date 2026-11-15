@@ -48,6 +48,9 @@ describe("AdviceSection", () => {
     }));
 
     expect(screen.getByText("Capella Advices")).toBeInTheDocument();
+    for (const arrow of screen.getAllByRole("button", { name: /previous|next/i })) {
+      expect(arrow.className).toContain("text-white");
+    }
     expect(screen.getByRole("link", { name: "Advice" })).toHaveAttribute("href", "https://instagram.com/capella");
     expect(screen.queryByRole("img", { name: "Advice" })).toBeNull();
   });

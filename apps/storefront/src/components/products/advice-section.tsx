@@ -25,7 +25,7 @@ export function AdviceSection({
         </h2>
       </header>
 
-      <ShopCardRow lang={lang}>
+      <ShopCardRow lang={lang} arrowTone="light">
         {advices.map((advice) => (
           <SectionCard key={advice.id} kind="advice" data={advice} lang={lang} dict={dict} />
         ))}

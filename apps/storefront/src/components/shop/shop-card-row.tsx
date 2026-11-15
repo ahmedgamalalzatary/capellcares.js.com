@@ -10,13 +10,16 @@ import { NoCardImageSwipe } from "@/components/ui/card-image-carousel";
 export function ShopCardRow({
   children,
   lang,
-  cols = 1
+  cols = 1,
+  arrowTone
 }: {
   children: React.ReactNode;
   lang: Language;
   /** Card density, matching ColumnsToggle: 1 keeps the roomy default (3 per screen desktop), 2 packs one extra card into every breakpoint; only item width changes — the row still scrolls and snaps either way. */
   /** 5 is the category tiles: about three on phones, six per desktop row (the same sizes as Falta's category row). */
   cols?: 1 | 2 | 5;
+  /** Prev/next arrow colour; only the Capella Advices row passes "light". */
+  arrowTone?: "dark" | "light";
 }) {
   const isRtl = lang === "ar";
   const dict = getDict(lang);
@@ -92,6 +95,7 @@ export function ShopCardRow({
         direction="prev"
         isRtl={isRtl}
         aria-label={dict.common.previous}
+        tone={arrowTone}
         onClick={() => scrollByPage("prev")}
         disabled={!canPrev}
         className={`${arrowClass} inset-s-1`}
@@ -100,6 +104,7 @@ export function ShopCardRow({
         direction="next"
         isRtl={isRtl}
         aria-label={dict.common.next}
+        tone={arrowTone}
         onClick={() => scrollByPage("next")}
         disabled={!canNext}
         className={`${arrowClass} inset-e-1`}
