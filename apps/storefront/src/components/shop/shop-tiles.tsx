@@ -70,7 +70,7 @@ export function GenderTiles({ genders, lang, label, className = "" }: { genders:
             <li key={gender.id} className="min-w-0">
               <Link href={`/${lang}/genders/${gender.slug}`} className="gender-tile">
                 {picture ? (
-                  <Image src={picture} alt={pickLang(gender.name, lang)} fill sizes="33vw" className="object-contain" />
+                  <Image src={picture} alt={pickLang(gender.name, lang)} fill sizes="33vw" className="object-cover" />
                 ) : (
                   <span className="gender-tile__name">{pickLang(gender.name, lang)}</span>
                 )}

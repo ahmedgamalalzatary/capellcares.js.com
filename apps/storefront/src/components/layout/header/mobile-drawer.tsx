@@ -14,13 +14,6 @@ import { SocialIcon } from "../social-icon";
 import { SOCIAL_LINKS } from "../../../constants/socials";
 import type { HeaderProps } from "../../../types/header.types";
 
-/** The menu lists YouTube where Instagram sits in the footer, and Instagram where YouTube sits. */
-const MENU_SOCIAL_LINKS = SOCIAL_LINKS.map((link, _index, all) => (
-  link.label === "Instagram" ? all.find((item) => item.label === "YouTube") ?? link
-    : link.label === "YouTube" ? all.find((item) => item.label === "Instagram") ?? link
-      : link
-));
-
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries" | "brands" | "genders"> & {
   isAr: boolean;
   mobileOpen: boolean;
@@ -33,7 +26,7 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
 type Section = "genders" | "categories" | "brands";
 type SectionItem = { key: string; href: string; label: string; imagePath?: string | null };
 
-/** On the footer's dark purple: page links and + rows; a + row opens its entries as white cards, the way Capella's menu shows them. */
+/** On the search button's purple (--violet): page links and + rows; a + row opens its entries as white cards, the way Capella's menu shows them. */
 const CARD = "flex min-h-14 items-center gap-3 rounded-md bg-surface px-3 py-2 font-semibold text-ink shadow-(--shadow-1) transition-transform duration-200 hover:-translate-y-0.5";
 const ROW = "flex min-h-13 w-full items-center justify-between gap-3 border-b border-white/20 px-1 text-start text-lg font-bold text-white transition-colors hover:text-(--sunny)";
 
@@ -165,7 +158,7 @@ export function HeaderMobileDrawer({
       role="dialog"
       aria-label={dict.brand}
       style={{ "--menu-height": panelHeight ? `${panelHeight}px` : "calc(100dvh - 8rem)" } as CSSProperties}
-      className={`absolute inset-x-0 top-full flex h-(--menu-height) flex-col bg-ink text-white transition-[translate,visibility] duration-500 ease-(--ease-out-quart) motion-reduce:transition-none min-[880px]:hidden ${
+      className={`absolute inset-x-0 top-full flex h-(--menu-height) flex-col bg-(--violet) text-white transition-[translate,visibility] duration-500 ease-(--ease-out-quart) motion-reduce:transition-none min-[880px]:hidden ${
         mobileOpen ? "visible translate-x-0" : `invisible ${closedOffset}`
       }`}
     >
@@ -205,7 +198,7 @@ export function HeaderMobileDrawer({
         <div className="px-1 pt-6">
           <p className="m-0 mb-3 text-lg font-bold text-white">{dict.nav.followUs}</p>
           <div className="flex flex-wrap gap-2">
-            {MENU_SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
+            {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
               <a
                 key={label}
                 href={href}

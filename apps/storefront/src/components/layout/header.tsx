@@ -70,8 +70,8 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
         <AnnouncementBar items={announcements} isAr={isAr} pauseLabel={dict.nav.pause} playLabel={dict.nav.play} />
       ) : null}
 
-      {/* Full page width, in the page background colour (--page-bg), flush under the announcement bar. While the menu or search is open it must rise above the floating WhatsApp button (z-50). */}
-      <header className={`sticky top-0 ${mobileOpen || searchOpen ? "z-60" : "z-30"} bg-(--page-bg) min-[880px]:border-b min-[880px]:border-(--hairline)`}>
+      {/* Full page width, in the page background colour (--page-bg), flush under the announcement bar. While the menu or search is open it must rise above the floating WhatsApp button (z-50); the search overlay lives inside it, so while search is open it must also rise above the announcement bar (z-61). */}
+      <header className={`sticky top-0 ${searchOpen ? "z-70" : mobileOpen ? "z-60" : "z-30"} bg-(--page-bg) min-[880px]:border-b min-[880px]:border-(--hairline)`}>
       <div className="container">
       <div className="grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
         {/* Mobile left cluster: menu · login */}
@@ -128,7 +128,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           buttonLabel={dict.nav.searchButton}
           onClick={() => setSearchOpen(true)}
           expanded={searchOpen}
-          className="hidden h-12 rounded-md min-[880px]:flex"
+          className="hidden h-12 min-[880px]:flex"
         />
 
         <div className="flex items-center justify-end">

@@ -21,7 +21,7 @@ interface Props {
   dict: any;
   /** Resolved category name shown as the classification line beneath the product name. */
   categoryName?: string;
-  /** Shrinks the floating badge for narrow cards: the search overlay's popular row. */
+  /** Shrinks the floating badge for narrow cards — the search overlay's popular row. */
   compactTags?: boolean;
 }
 
@@ -38,6 +38,7 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
   const { isOutOfStock } = getProductBadgeState(product);
   const leadTag = getProductTags(product, dict, { lead: true })[0];
   const discountPercent = getProductDiscountPercent(product.variants);
+  const isAr = lang === "ar";
   const images = useMemo(() => buildCardImages(product, lang), [product, lang]);
 
   // The variant we transact on from the card: cheapest one that is in stock, falling back to the cheapest overall so the buttons still resolve a target.
@@ -60,8 +61,8 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
 
   return (
     // relative: the % OFF ribbon is placed on the article, outside the picture's clipping box, so it can stick out past the edge.
-    <article className="group relative rounded-md bg-surface pb-3">
-      <div className="relative aspect-square overflow-hidden rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)] bg-surface">
+    <article className="group relative">
+      <div className="relative aspect-8/9 overflow-hidden rounded-t-lg bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)">
         {/* The whole card is the image; everything else floats on top of it. */}
         <CardImageCarousel
           images={images}
@@ -78,18 +79,18 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
           )}
         />
 
-        {/* One label in the corner: out of stock beats the % OFF ribbon (drawn on the article below), which beats new/bestseller/offer. inset-s so it mirrors in RTL, matching SectionCard. */}
+        {/* One label in the corner: out of stock beats the % OFF ribbon (drawn on the article below), which beats new/bestseller/offer. inset-s-0 so it mirrors in RTL, matching SectionCard. */}
         {isOutOfStock ? (
           <ItemTagPill
             tag={{ kind: "outOfStock", label: dict.common.outOfStock }}
             size={compactTags ? "compact" : "default"}
-            className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]"
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
         ) : discountPercent > 0 ? null : leadTag ? (
           <ItemTagPill
             tag={leadTag}
             size={compactTags ? "compact" : "default"}
-            className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]"
+            className="absolute top-0 inset-s-0 z-10 rounded-ss-lg"
           />
         ) : null}
 
@@ -106,10 +107,14 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
       {!isOutOfStock ? <DiscountRibbon percent={discountPercent} dict={dict} /> : null}
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
-      <div className="mt-3 grid gap-1 px-3 text-start">
+      <div className="mt-3 grid gap-1 text-start">
         <Link href={href} className="block">
           <h3
-            className={"m-0 text-base font-bold leading-tight text-ink"}
+            className={`m-0 leading-tight text-ink ${
+              isAr
+                ? "text-sm font-bold font-(family-name:--font-ar)"
+                : "text-sm font-bold uppercase tracking-[0.06em]"
+            }`}
           >
             {pickLang(product.name, lang)}
           </h3>
@@ -117,7 +122,9 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
 
         {categoryName ? (
           <p
-            className={"m-0 text-sm text-(--ink-3)"}
+            className={`m-0 ${
+              isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"
+            }`}
           >
             {categoryName}
           </p>
@@ -125,24 +132,26 @@ export function ProductCard({ product, lang, dict, categoryName, compactTags = f
 
         <CardRating rating={product.rating} dict={dict} lang={lang} />
 
-        <span
-          className={"text-lg font-extrabold leading-none text-(--magenta-deep)"}
-        >
-          {prices.length > 1
-            ? formatPriceRange(minPrice, maxPrice, lang)
-            : formatPrice(minPrice, lang)}
-        </span>
-        {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
-          <span className="text-sm text-(--ink-3) line-through">
-            {basePrices.length > 1
-              ? formatPriceRange(minBasePrice, maxBasePrice, lang)
-              : formatPrice(minBasePrice, lang)}
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span
+            className={`font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`}
+          >
+            {prices.length > 1
+              ? formatPriceRange(minPrice, maxPrice, lang)
+              : formatPrice(minPrice, lang)}
           </span>
-        ) : null}
+          {(minBasePrice !== minPrice || maxBasePrice !== maxPrice) ? (
+            <span className="text-sm text-(--ink-3) line-through">
+              {basePrices.length > 1
+                ? formatPriceRange(minBasePrice, maxBasePrice, lang)
+                : formatPrice(minBasePrice, lang)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {!isOutOfStock && buyVariant ? (
-        <div className="mt-3 flex gap-2 px-3">
+        <div className="mt-3 flex gap-2">
           <AddToCartControl
             line={{ type: "product", productId: product.id, variantId: buyVariant.id, qty: 1 }}
             dict={dict}

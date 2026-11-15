@@ -39,12 +39,12 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
   return (
     // The last section drops its bottom margin so the footer's own gap is the only space above it.
-    <main className="container [&>:last-child]:mb-0">
-      {genders.length > 0 && (
-        <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} className="mt-6" />
-      )}
-
+    <main className="container pt-6 [&>:last-child]:mb-0">
       {media(1)}
+
+      {genders.length > 0 && (
+        <GenderTiles genders={genders} lang={lang} label={dict.shop.byGender} />
+      )}
 
       {mainCategories.length > 0 && (
         <section id="categories" className="mb-14 scroll-mt-28">
@@ -56,7 +56,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       {media(2)}
 
       {shopBrands.length > 0 && (
-        <section id="brands" className="mb-14 scroll-mt-28">
+        <section id="brands" className="mb-6 scroll-mt-28">
           <ShopHeading color="blue">{dict.shop.byBrand}</ShopHeading>
           <BrandTiles brands={shopBrands} lang={lang} />
         </section>

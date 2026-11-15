@@ -108,6 +108,8 @@ services:
     stop_grace_period: 30s
     restart: unless-stopped
     environment:
+      # Runtime copy of the build arg above: the build arg only reaches the builder stage, and /api/revalidate refuses to load in production without it.
+      STOREFRONT_REVALIDATE_SECRET: ${STOREFRONT_REVALIDATE_SECRET:?set STOREFRONT_REVALIDATE_SECRET in env file}
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
       API_INTERNAL_URL: http://api:4000

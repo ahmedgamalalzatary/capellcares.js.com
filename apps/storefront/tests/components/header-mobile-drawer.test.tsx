@@ -203,13 +203,11 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("link", { name: "بنات" }).querySelector("img")?.getAttribute("src")).toContain("girls-ar.png");
   });
 
-  it("lists YouTube where the footer has Instagram, and Instagram where it has YouTube", () => {
+  it("lists the social links in the footer's order", () => {
     renderDrawer();
     const names = within(screen.getByRole("navigation")).getAllByRole("link", { name: /^(Facebook|Instagram|TikTok|YouTube|WhatsApp)$/ })
       .map((link) => link.getAttribute("aria-label"));
-    const footerOrder = SOCIAL_LINKS.map((link) => link.label as string);
-    const swapped = footerOrder.map((name) => name === "Instagram" ? "YouTube" : name === "YouTube" ? "Instagram" : name);
-    expect(names).toEqual(swapped);
+    expect(names).toEqual(SOCIAL_LINKS.map((link) => link.label as string));
   });
 
   it("opens the categories dropdown with main categories in order, each going to its page", () => {

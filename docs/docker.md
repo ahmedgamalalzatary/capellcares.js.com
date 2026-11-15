@@ -4,19 +4,24 @@ This guide is ordered by the normal flow of commands: prepare env, build/start, 
 
 ## Environment Files
 
-- `.env`: local non-Docker development.
-- `.env.docker`: local Docker Compose on your PC.
-- `.env.production`: production Docker Compose on the VPS.
+- `.env` on your PC: local non-Docker development.
+- `.env.docker` on your PC: local Docker Compose.
+- `.env` on the VPS (`/root/faltatoy/.env`): production Docker Compose. There is no `.env.production`.
 
 Production uses:
 
 ```bash
-docker compose --env-file .env.production ...
+docker compose --env-file .env ...
 ```
 
-On the production VPS, the repository is at `~/falta-toys`. `docker-compose.yml` sets the
-Compose project name to `falta-toys`, so its containers and volumes never clash with other
-projects on the same server. Host ports: API `4040`, storefront `3040`, ERP `3041`.
+On the production VPS (the shared server, `root@2.24.8.179`), the repository is at
+`/root/faltatoy` on the `falta-toys` branch. `docker-compose.yml` sets the Compose project
+name to `falta-toys`, so its containers and volumes never clash with the other projects on
+the same server; never stop or change their containers. Host ports (bound to `127.0.0.1`,
+served through the host's nginx): API `4040`, storefront `3040`, ERP `3041`, OpenWA `2786`.
+
+Keep the VPS checkout clean (`git status --short` empty): every compose change belongs in
+the repo, or the next `git pull` that touches the same file stops with an error.
 
 Local Docker uses:
 
@@ -97,6 +102,11 @@ CORS_ALLOWED_ORIGINS=https://erp.example.com,https://shop.example.com
 
 Outside production these fall back to dev defaults / `localhost:3000,localhost:3001`.
 
+The storefront needs `STOREFRONT_REVALIDATE_SECRET` twice, and `docker-compose.yml` passes
+it both ways: as a build arg (for `next build`) and as a runtime environment variable. The
+build arg only reaches the builder stage, not the final image, so without the runtime copy
+`/api/revalidate` fails in production and ERP edits stop refreshing the store.
+
 Remove old ERP dev fallback variables from production and Docker env files:
 
 ```env
@@ -118,7 +128,7 @@ Use this only when the VPS database has no valuable data. `down -v` deletes the 
 Start on the VPS:
 
 ```bash
-cd ~/falta-toys
+cd /root/faltatoy
 git pull
 ```
 
@@ -127,48 +137,48 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/falta-toys-compose.yml
+docker compose --env-file .env config >/tmp/falta-toys-compose.yml
 ```
 
 Build and start from a clean database:
 
 ```bash
-docker compose --env-file .env.production pull mysql
-docker compose --env-file .env.production down -v
-docker compose --env-file .env.production build
-docker compose --env-file .env.production up -d
+docker compose --env-file .env pull mysql
+docker compose --env-file .env down -v
+docker compose --env-file .env build
+docker compose --env-file .env up -d
 ```
 
 Verify containers are created and healthy enough to run commands:
 
 ```bash
-docker compose --env-file .env.production ps
-docker compose --env-file .env.production logs migrate --tail 80
-docker compose --env-file .env.production logs api --tail 80
+docker compose --env-file .env ps
+docker compose --env-file .env logs migrate --tail 80
+docker compose --env-file .env logs api --tail 80
 ```
 
 Verify auth tables exist:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
 ```
 
 Optional seed data:
 
 ```bash
-docker compose --env-file .env.production run --rm --no-deps migrate pnpm db:seed
+docker compose --env-file .env run --rm --no-deps migrate pnpm db:seed
 ```
 
 Verify seed data if you ran seed:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''categories'\''; SELECT COUNT(*) AS categories FROM categories;"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''categories'\''; SELECT COUNT(*) AS categories FROM categories;"'
 ```
 
 Verify public services:
 
 ```bash
-docker compose --env-file .env.production ps
+docker compose --env-file .env ps
 curl https://api.faltatoy.com/health
 curl -I https://faltatoy.com
 curl -I https://erp.faltatoy.com
@@ -181,7 +191,7 @@ Use this once production may contain valuable data. Do not use `down -v`.
 Start on the VPS:
 
 ```bash
-cd ~/falta-toys
+cd /root/faltatoy
 git pull
 ```
 
@@ -190,41 +200,41 @@ Verify repo state before touching Docker:
 ```bash
 git status --short
 git log -1 --oneline
-docker compose --env-file .env.production config >/tmp/falta-toys-compose.yml
+docker compose --env-file .env config >/tmp/falta-toys-compose.yml
 ```
 
 Build and start:
 
 ```bash
-docker compose --env-file .env.production pull mysql
-docker compose --env-file .env.production build
-docker compose --env-file .env.production up -d
+docker compose --env-file .env pull mysql
+docker compose --env-file .env build
+docker compose --env-file .env up -d
 ```
 
 Verify containers are created and the API container can run commands:
 
 ```bash
-docker compose --env-file .env.production ps
-docker compose --env-file .env.production logs migrate --tail 80
-docker compose --env-file .env.production logs api --tail 80
+docker compose --env-file .env ps
+docker compose --env-file .env logs migrate --tail 80
+docker compose --env-file .env logs api --tail 80
 ```
 
 Verify schema after the migrate service completes:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''admin_users'\''; SHOW TABLES LIKE '\''auth_sessions'\'';"'
 ```
 
 Restart app services after schema changes:
 
 ```bash
-docker compose --env-file .env.production restart api storefront erp
+docker compose --env-file .env restart api storefront erp
 ```
 
 Verify public services:
 
 ```bash
-docker compose --env-file .env.production ps
+docker compose --env-file .env ps
 curl https://api.faltatoy.com/health
 curl -I https://faltatoy.com
 curl -I https://erp.faltatoy.com
@@ -335,106 +345,119 @@ curl http://localhost:4000/health
 Build one service:
 
 ```bash
-docker compose --env-file .env.production build api
-docker compose --env-file .env.production build storefront
-docker compose --env-file .env.production build erp
+docker compose --env-file .env build api
+docker compose --env-file .env build storefront
+docker compose --env-file .env build erp
 ```
 
-Restart only the changed service after a targeted rebuild:
+Restart only the changed service after a targeted rebuild. `--no-deps` leaves the
+services it depends on (MySQL, API) running untouched:
 
 ```bash
-docker compose --env-file .env.production up -d api
-docker compose --env-file .env.production up -d storefront
-docker compose --env-file .env.production up -d erp
+docker compose --env-file .env up -d --no-deps api
+docker compose --env-file .env up -d --no-deps storefront
+docker compose --env-file .env up -d --no-deps erp
+```
+
+Storefront-only update (no API or schema change), the usual front-end deploy:
+
+```bash
+cd /root/faltatoy
+git status --short   # must be empty
+git pull --ff-only
+docker compose --env-file .env build storefront
+docker compose --env-file .env up -d --no-deps storefront
+docker compose --env-file .env ps
+curl -I https://faltatoy.com
 ```
 
 If API code or schema changed and storefront / ERP depend on that new behavior:
 
 ```bash
-docker compose --env-file .env.production up -d api storefront erp
+docker compose --env-file .env up -d api storefront erp
 ```
 
 Stop without deleting data:
 
 ```bash
-docker compose --env-file .env.production down
+docker compose --env-file .env down
 ```
 
 Stop and delete Docker volumes:
 
 ```bash
-docker compose --env-file .env.production down -v
+docker compose --env-file .env down -v
 ```
 
 Restart services:
 
 ```bash
-docker compose --env-file .env.production restart api storefront erp
-docker compose --env-file .env.production restart api
-docker compose --env-file .env.production restart erp
+docker compose --env-file .env restart api storefront erp
+docker compose --env-file .env restart api
+docker compose --env-file .env restart erp
 ```
 
 Show running containers:
 
 ```bash
-docker compose --env-file .env.production ps
+docker compose --env-file .env ps
 ```
 
-For local Docker, replace `.env.production` with `.env.docker`.
+For local Docker, replace `.env` with `.env.docker`.
 
 ## Logs
 
 All logs:
 
 ```bash
-docker compose --env-file .env.production logs
+docker compose --env-file .env logs
 ```
 
 Tail all logs:
 
 ```bash
-docker compose --env-file .env.production logs --tail 100
+docker compose --env-file .env logs --tail 100
 ```
 
 Service logs:
 
 ```bash
-docker compose --env-file .env.production logs migrate --tail 80
-docker compose --env-file .env.production logs api --tail 80
-docker compose --env-file .env.production logs storefront --tail 80
-docker compose --env-file .env.production logs erp --tail 80
-docker compose --env-file .env.production logs mysql --tail 80
+docker compose --env-file .env logs migrate --tail 80
+docker compose --env-file .env logs api --tail 80
+docker compose --env-file .env logs storefront --tail 80
+docker compose --env-file .env logs erp --tail 80
+docker compose --env-file .env logs mysql --tail 80
 ```
 
-For local Docker, replace `.env.production` with `.env.docker`.
+For local Docker, replace `.env` with `.env.docker`.
 
 ## Database Checks
 
 Open MySQL with the app user:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
 ```
 
 Check whether a table exists:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''auth_sessions'\'';"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''auth_sessions'\'';"'
 ```
 
 Describe a table:
 
 ```bash
-docker compose --env-file .env.production exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "DESCRIBE admin_users;"'
+docker compose --env-file .env exec mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "DESCRIBE admin_users;"'
 ```
 
 List migration files inside the API container:
 
 ```bash
-docker compose --env-file .env.production run --rm --no-deps migrate sh -lc "ls -1 /app/packages/database/drizzle/migrations"
+docker compose --env-file .env run --rm --no-deps migrate sh -lc "ls -1 /app/packages/database/drizzle/migrations"
 ```
 
-For local Docker, replace `.env.production` with `.env.docker`.
+For local Docker, replace `.env` with `.env.docker`.
 
 ## URLs
 
@@ -490,15 +513,15 @@ dependency installation can stay cached when only application source changes.
 Normal rebuild:
 
 ```bash
-docker compose --env-file .env.production build
-docker compose --env-file .env.production up -d
+docker compose --env-file .env build
+docker compose --env-file .env up -d
 ```
 
 Targeted rebuild:
 
 ```bash
-docker compose --env-file .env.production build storefront
-docker compose --env-file .env.production up -d storefront
+docker compose --env-file .env build storefront
+docker compose --env-file .env up -d storefront
 ```
 
 Use `--no-cache` only as a recovery tool, not as the default. Typical reasons:
@@ -511,13 +534,13 @@ Use `--no-cache` only as a recovery tool, not as the default. Typical reasons:
 Forced clean rebuild for one service:
 
 ```bash
-docker compose --env-file .env.production build --no-cache api
-docker compose --env-file .env.production up -d api
+docker compose --env-file .env build --no-cache api
+docker compose --env-file .env up -d api
 ```
 
 Forced clean rebuild for the full stack:
 
 ```bash
-docker compose --env-file .env.production build --no-cache
-docker compose --env-file .env.production up -d
+docker compose --env-file .env build --no-cache
+docker compose --env-file .env up -d
 ```
