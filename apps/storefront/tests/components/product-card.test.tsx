@@ -356,7 +356,7 @@ describe("ProductCard", () => {
     expect(screen.queryByText("New")).toBeNull();
   });
 
-  it("lets the % OFF ribbon stick out past the card's edge, outside the picture's clipping box", () => {
+  it("positions the discount tag flush with the card corner", () => {
     render(createElement(ProductCard, {
       lang: "en",
       dict,
@@ -364,7 +364,7 @@ describe("ProductCard", () => {
     }));
 
     const ribbon = screen.getByTestId("discount-ribbon");
-    expect(ribbon.className.split(" ")).toContain("-inset-s-1");
+    expect(ribbon.className.split(" ")).toContain("inset-s-0");
     expect(ribbon.parentElement!.closest(".overflow-hidden")).toBeNull();
   });
 

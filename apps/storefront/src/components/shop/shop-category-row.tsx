@@ -40,8 +40,8 @@ export function ShopCategoryRow({ categories, lang, title }: { categories: Categ
               href={buildCategoryHref(lang, category)}
               className="group flex h-full flex-col text-center text-ink transition-transform duration-200 hover:-translate-y-0.5"
             >
-              {/* The picture stands alone: rounded top corners, no line along its bottom edge. */}
-              <span className="relative block aspect-5/8 overflow-hidden rounded-t-lg border border-b-0 border-(--hairline) bg-surface">
+              {/* The picture stands alone: rounded top corners, no border. */}
+              <span className="relative block aspect-5/8 overflow-hidden rounded-t-lg bg-surface">
                 <Image
                   src={picture}
                   alt={name}
