@@ -826,7 +826,7 @@ describe("ProductDetail", () => {
     }));
 
     expect(screen.getAllByText("Out of stock").length).toBeGreaterThanOrEqual(2);
-    const primaryPrice = document.querySelector(".text-3xl, .sm\\:text-\\[40px\\]");
+    const primaryPrice = document.querySelector(".text-\\[34px\\]");
     expect(primaryPrice).toHaveTextContent("Out of stock");
   });
 

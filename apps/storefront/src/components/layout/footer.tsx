@@ -31,7 +31,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
           <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 lg:border-s lg:border-white/20 lg:ps-12">
             <FooterCol title={dict.footer.shopTitle}>
-              <FooterLink href={`/${lang}/shop#categories`}>{dict.footer.categories}</FooterLink>
+              <FooterLink href={`/${lang}/categories`}>{dict.footer.categories}</FooterLink>
               <FooterLink href={`/${lang}/shop#brands`}>{dict.footer.brands}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
               <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>

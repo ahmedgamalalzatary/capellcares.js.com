@@ -29,7 +29,7 @@ interface Props {
 export function ProductDetail({ product, offers, lang, dict, categoryName, relatedItems = [] }: Props) {
   const router = useRouter();
   const cart = useCart();
-  // New/bestseller float over the media as a single lead tag, exactly like the cards do; only the linked offers remain as inline badges beside the title.
+  // New/bestseller sit in the media's top corner as a single lead tag, styled exactly like the shop cards; only the linked offers remain as inline badges beside the title.
   const leadTag = getProductTags(product, dict)[0];
   const badgeTags: ItemTag[] = offers.map((offer): ItemTag => ({
     kind: "offer",
@@ -115,7 +115,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             overlay={(
               <>
                 {leadTag ? (
-                  <ItemTagPill tag={leadTag} className="absolute top-2.5 inset-s-2.5 z-10 rounded-full" />
+                  <ItemTagPill tag={leadTag} className="absolute top-0 inset-s-0 z-10 rounded-ss-md" />
                 ) : null}
                 <WishlistButton
                   entityType="product"
@@ -146,7 +146,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             ) : null}
           </div>
           <div className="flex flex-wrap items-end gap-3 border-y border-(--hairline) py-4 sm:py-5">
-            <span className={"text-3xl font-extrabold leading-none text-(--magenta-deep) sm:text-[38px]"}>
+            <span className={"text-[34px] font-extrabold leading-none text-(--magenta-deep) sm:text-[42px]"}>
               {variant && effectiveVariantPrice != null && !isOutOfStock ? formatPrice(effectiveVariantPrice, lang) : dict.common.outOfStock}
             </span>
             {variant && effectiveVariantPrice != null && !isOutOfStock && effectiveVariantPrice !== variant.price ? (

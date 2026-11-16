@@ -116,7 +116,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           <Link href={`/${lang}/shop`} className="text-base font-bold text-ink transition-colors hover:text-(--violet)">
             {dict.nav.home}
           </Link>
-          <Link href={`/${lang}/products`} className="text-base font-bold text-ink transition-colors hover:text-(--violet)">
+          <Link href={`/${lang}/categories`} className="text-base font-bold text-ink transition-colors hover:text-(--violet)">
             {dict.nav.categories}
           </Link>
         </nav>

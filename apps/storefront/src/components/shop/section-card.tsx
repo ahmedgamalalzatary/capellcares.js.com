@@ -73,10 +73,12 @@ export function SectionCard(props: SectionCardProps) {
   }, [adviceOpen]);
 
   // Typography mirrors ProductCard exactly, only the content/colors differ per kind.
-  const nameClass = "m-0 text-base font-bold leading-tight text-ink";
-  const priceClass = "text-lg font-extrabold leading-none text-(--magenta-deep)";
+  const nameClass = `m-0 leading-tight text-ink ${
+    isAr ? "text-sm font-bold font-(family-name:--font-ar)" : "text-sm font-bold uppercase tracking-[0.06em]"
+  }`;
+  const priceClass = `font-bold leading-none text-accent ${isAr ? "text-base" : "text-lg"}`;
   const addClass =
-    "inline-flex flex-1 items-center justify-center gap-2 h-11 mb-1 rounded-full bg-(--violet) font-bold text-white shadow-[0_4px_0_var(--violet-deep)] transition-[transform,box-shadow] duration-150 hover:translate-y-px hover:shadow-[0_3px_0_var(--violet-deep)] active:translate-y-1 active:shadow-none focus-visible:outline-3 focus-visible:outline-(--cyan) focus-visible:outline-offset-2 px-2";
+    "inline-flex flex-1 items-center justify-center gap-2 h-11 px-2 bg-accent font-semibold tracking-[0.01em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2";
 
   const instagramHref = SOCIAL_LINKS.find((entry) => entry.label === "Instagram")?.href;
   const slideImageClass = "absolute inset-0 h-full w-full object-cover";
@@ -223,8 +225,7 @@ export function SectionCard(props: SectionCardProps) {
   }
 
   const savings = price != null && originalTotal != null ? originalTotal - price : 0;
-  // clip-path repeats the rounding: overflow-hidden alone lets Chrome draw a sliding or zooming picture with square corners, past the card edge.
-  const mediaRoundedClass = "rounded-t-[calc(var(--radius-md)-1px)] [clip-path:inset(0_round_calc(var(--radius-md)-1px)_calc(var(--radius-md)-1px)_0_0)]";
+  const mediaRoundedClass = props.kind === "advice" ? "rounded-lg" : "rounded-t-lg";
   const closeAdvice = () => {
     setAdviceOpen(false);
     setAdvicePreviewActive(false);
@@ -266,9 +267,8 @@ export function SectionCard(props: SectionCardProps) {
   };
 
   return (
-    // Advice cards are a picture only, so they need no space under it.
-    <article className={`group rounded-md bg-surface ${props.kind === "advice" ? "overflow-hidden" : "pb-3"}`}>
-      <div className={`relative aspect-square overflow-hidden ${mediaRoundedClass} bg-surface`}>
+    <article className="group">
+      <div className={`relative aspect-8/9 overflow-hidden ${mediaRoundedClass} bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:shadow-(--shadow-2)`}>
         {/* The whole card is the image; everything else floats on top of it. */}
         {props.kind === "advice" ? (
           <>
@@ -284,7 +284,7 @@ export function SectionCard(props: SectionCardProps) {
         ) : null}
 
         {badge ? (
-          <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-[calc(var(--radius-md)-1px)]" />
+          <ItemTagPill tag={badge} className="absolute top-0 inset-s-0 z-10 rounded-ss-lg" />
         ) : null}
         {onWish ? (
           <button
@@ -298,7 +298,7 @@ export function SectionCard(props: SectionCardProps) {
       </div>
 
       {/* Details: image → name → category → price, stacked beneath the image. */}
-      {props.kind === "advice" ? null : <div className="mt-3 grid gap-1 px-3 text-start">
+      {props.kind === "advice" ? null : <div className="mt-3 grid gap-1 text-start">
         {href ? (
           <Link href={href} className="block">
             <h3 className={nameClass}>{title}</h3>
@@ -308,7 +308,7 @@ export function SectionCard(props: SectionCardProps) {
         )}
 
         {categoryName ? (
-          <p className={"m-0 text-sm text-(--ink-3)"}>
+          <p className={`m-0 ${isAr ? "text-md font-(family-name:--font-ar)" : "text-md tracking-[0.04em]"}`}>
             {categoryName}
           </p>
         ) : null}
@@ -328,14 +328,14 @@ export function SectionCard(props: SectionCardProps) {
       </div>}
 
       {href && cartLine ? (
-        <div className="mt-3 flex gap-2 px-3">
+        <div className="mt-3 flex gap-2">
           <AddToCartControl line={cartLine} dict={dict} maxQty={cartMaxQty} className={addClass} />
         </div>
       ) : null}
 
       {props.kind === "advice" && adviceOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4"
           role="dialog"
           aria-modal="true"
           aria-label={title}
@@ -385,10 +385,10 @@ export function SectionCard(props: SectionCardProps) {
             </button>
             <div className="flex flex-col gap-4 self-center text-start">
               <div className="grid gap-3">
-                <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-semibold text-(--ink-3)">
+                <span className="inline-flex w-fit items-center rounded-full bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-(--ink-3)">
                   {dict.advices.tipBadge}
                 </span>
-                <h3 className={isAr ? "text-2xl font-bold font-(family-name:--font-ar) text-ink" : "text-2xl font-bold text-ink"}>
+                <h3 className={isAr ? "text-2xl font-bold font-(family-name:--font-ar) text-ink" : "text-2xl font-bold uppercase tracking-[0.04em] text-ink"}>
                   {title}
                 </h3>
                 <p className="m-0 text-sm leading-7 text-(--ink-2)">{description}</p>
@@ -397,7 +397,7 @@ export function SectionCard(props: SectionCardProps) {
                 href={instagramHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-(--radius) bg-accent px-5 py-3 text-sm font-semibold tracking-[0.06em] text-canvas transition-[transform,background,color,box-shadow] duration-150 hover:-translate-y-px hover:bg-accent-deep hover:shadow-(--shadow-1) active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
               >
                 {dict.advices.readMore}
               </Link> : null}

@@ -26,9 +26,9 @@ type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries"
 type Section = "genders" | "categories" | "brands";
 type SectionItem = { key: string; href: string; label: string; imagePath?: string | null };
 
-/** On the search button's purple (--violet): page links and + rows; a + row opens its entries as white cards, the way Capella's menu shows them. */
+/** On Falta's page colour (--page-bg): page links and + rows all look the same; a + row opens its entries as white cards, the way Capella's menu shows them. */
 const CARD = "flex min-h-14 items-center gap-3 rounded-md bg-surface px-3 py-2 font-semibold text-ink shadow-(--shadow-1) transition-transform duration-200 hover:-translate-y-0.5";
-const ROW = "flex min-h-13 w-full items-center justify-between gap-3 border-b border-white/20 px-1 text-start text-lg font-bold text-white transition-colors hover:text-(--sunny)";
+const ROW = "flex min-h-13 w-full items-center justify-between gap-3 border-b border-(--hairline) px-1 text-start text-lg font-bold text-ink transition-colors hover:text-(--violet)";
 
 export function HeaderMobileDrawer({
   lang,
@@ -49,31 +49,30 @@ export function HeaderMobileDrawer({
   const [panelHeight, setPanelHeight] = useState<number>();
   const chevron = `shrink-0 ${isAr ? "rotate-180" : ""}`;
 
-  /** A + row that opens its list in place as white cards; picking a card goes to that item's page. */
+  /** A + row (styled like New / Bestseller) that opens its list in place as white cards; picking a card goes to that item's page. */
   const section = (id: Section, label: string, items: SectionItem[], all: { href: string; label: string }) => {
     if (items.length === 0) return null;
     const open = openSection === id;
     return (
       <div>
-        {/* The parent is a white card too, a little bolder than its children. */}
         <button
           type="button"
           aria-expanded={open}
           onClick={() => setOpenSection(open ? null : id)}
-          className={`${CARD} w-full justify-between text-start text-lg font-bold`}
+          className={ROW}
         >
           <span>{label}</span>
           {open ? <Icon.Minus size={20} className="shrink-0 text-(--violet)" /> : <Icon.Plus size={20} className="shrink-0 text-(--ink-3)" />}
         </button>
         {open && (
-          <div className="grid gap-2.5 ps-4 pt-2.5 animate-in fade-in slide-in-from-top-2 duration-300 motion-reduce:animate-none">
+          <div className="grid gap-2.5 border-b border-(--hairline) py-3 ps-4 animate-in fade-in slide-in-from-top-2 duration-300 motion-reduce:animate-none">
             <Link href={all.href} onClick={onClose} className={CARD}>
               <span className="min-w-0 flex-1 truncate">{all.label}</span>
               <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
             </Link>
             {items.map((item) => (
               <Link key={item.key} href={item.href} onClick={onClose} className={CARD}>
-                <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-(--warm-soft)">
+                <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-white">
                   {item.imagePath ? <Image src={item.imagePath} alt="" fill sizes="40px" className="object-contain" /> : null}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -158,45 +157,45 @@ export function HeaderMobileDrawer({
       role="dialog"
       aria-label={dict.brand}
       style={{ "--menu-height": panelHeight ? `${panelHeight}px` : "calc(100dvh - 8rem)" } as CSSProperties}
-      className={`absolute inset-x-0 top-full flex h-(--menu-height) flex-col bg-(--violet) text-white transition-[translate,visibility] duration-500 ease-(--ease-out-quart) motion-reduce:transition-none min-[880px]:hidden ${
+      className={`absolute inset-x-0 top-full flex h-(--menu-height) flex-col bg-(--page-bg) text-ink transition-[translate,visibility] duration-500 ease-(--ease-out-quart) motion-reduce:transition-none min-[880px]:hidden ${
         mobileOpen ? "visible translate-x-0" : `invisible ${closedOffset}`
       }`}
     >
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-1">
         <Link href={`/${lang}/shop`} onClick={onClose} className={ROW}>
           <span>{dict.nav.products}</span>
-          <Icon.Chevron className={`${chevron} text-white/60`} />
+          <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
         </Link>
 
-        <div className="grid gap-2.5 border-b border-white/20 py-3">
+        <div>
           {section("genders", dict.nav.genders, genderItems, { href: `/${lang}/shop#genders`, label: dict.nav.allGenders })}
-          {section("categories", dict.nav.categories, categoryItems, { href: `/${lang}/shop#categories`, label: dict.nav.allCategories })}
+          {section("categories", dict.nav.categories, categoryItems, { href: `/${lang}/categories`, label: dict.nav.allCategories })}
           {section("brands", dict.nav.brands, brandItems, { href: `/${lang}/shop#brands`, label: dict.nav.allBrands })}
         </div>
 
         <Link href={`/${lang}/new`} onClick={onClose} className={ROW}>
           <span>{dict.nav.new}</span>
-          <Icon.Chevron className={`${chevron} text-white/60`} />
+          <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
         </Link>
         <Link href={`/${lang}/bestsellers`} onClick={onClose} className={ROW}>
           <span>{dict.nav.bestsellers}</span>
-          <Icon.Chevron className={`${chevron} text-white/60`} />
+          <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
         </Link>
         <Link href={`/${lang}/offers`} onClick={onClose} className={ROW}>
           <span>{dict.nav.offers}</span>
-          <Icon.Chevron className={`${chevron} text-white/60`} />
+          <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
         </Link>
         <Link href={`/${lang}/wishlist`} onClick={onClose} className={ROW}>
           <span>{dict.nav.wishlist}</span>
-          <Icon.Heart size={22} className="shrink-0 text-white/60" />
+          <Icon.Heart size={22} className="shrink-0 text-(--ink-3)" />
         </Link>
         <Link href={accountHref} onClick={onClose} className={ROW}>
           <span>{user ? dict.nav.orders : dict.nav.account}</span>
-          <Icon.User size={22} className="shrink-0 text-white/60" />
+          <Icon.User size={22} className="shrink-0 text-(--ink-3)" />
         </Link>
 
         <div className="px-1 pt-6">
-          <p className="m-0 mb-3 text-lg font-bold text-white">{dict.nav.followUs}</p>
+          <p className="m-0 mb-3 text-lg font-bold text-ink">{dict.nav.followUs}</p>
           <div className="flex flex-wrap gap-2">
             {SOCIAL_LINKS.map(({ label, href, path, stroke }) => (
               <a
@@ -214,7 +213,7 @@ export function HeaderMobileDrawer({
         </div>
       </nav>
 
-      <div className="flex shrink-0 gap-1 border-t border-white/20 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="flex shrink-0 gap-1 border-t border-(--hairline) p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {(["en", "ar"] as const).map((code) => {
           const active = lang === code;
           return (
@@ -224,7 +223,7 @@ export function HeaderMobileDrawer({
               onClick={active ? undefined : onSwitchLang}
               aria-pressed={active}
               className={`min-h-11 flex-1 rounded-full font-bold transition-colors ${
-                active ? "bg-surface text-ink" : "text-white/70 hover:bg-white/10 hover:text-white"
+                active ? "bg-surface text-ink" : "text-(--ink-3) hover:bg-black/5 hover:text-ink"
               }`}
             >
               {dict.langSwitch[code]}

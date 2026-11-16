@@ -70,7 +70,7 @@ describe("footer", () => {
 
   it("offers Category and Brands in the shop column, in place of Shop and All toys", () => {
     render(<Footer lang="en" dict={getDict("en")} />);
-    expect(screen.getByRole("link", { name: "Category" })).toHaveAttribute("href", "/en/shop#categories");
+    expect(screen.getByRole("link", { name: "Category" })).toHaveAttribute("href", "/en/categories");
     expect(screen.getByRole("link", { name: "Brands" })).toHaveAttribute("href", "/en/shop#brands");
     expect(screen.queryByRole("link", { name: "Shop" })).toBeNull();
     expect(screen.queryByRole("link", { name: "All toys" })).toBeNull();

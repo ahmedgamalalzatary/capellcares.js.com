@@ -16,21 +16,41 @@ export function ShopHeading({ children, color = "violet" }: { children: ReactNod
   );
 }
 
+/** One category card: its picture, then its name. Shared by the shop page's row and the all categories page's grid, so both look the same. */
+function CategoryTile({ category, lang }: { category: Category; lang: Language }) {
+  return (
+    <Link href={`/${lang}/category/${category.slug}?categoryId=${category.id}`} className="toy-tile">
+      <span className="toy-tile__media">
+        {category.imagePath ? (
+          <Image src={category.imagePath} alt="" fill sizes="(min-width: 880px) 17vw, 34vw" className="object-cover" />
+        ) : null}
+      </span>
+      <span className="toy-tile__name">{pickLang(category.name, lang)}</span>
+    </Link>
+  );
+}
+
 /** One sideways line of category cards on every screen size: phones swipe it, desktop uses the row's arrows. */
 export function CategoryTiles({ categories, lang }: { categories: Category[]; lang: Language }) {
   return (
     <ShopCardRow lang={lang} cols={5}>
       {categories.map((category) => (
-        <Link key={category.id} href={`/${lang}/category/${category.slug}?categoryId=${category.id}`} className="toy-tile">
-          <span className="toy-tile__media">
-            {category.imagePath ? (
-              <Image src={category.imagePath} alt="" fill sizes="(min-width: 880px) 17vw, 34vw" className="object-cover" />
-            ) : null}
-          </span>
-          <span className="toy-tile__name">{pickLang(category.name, lang)}</span>
-        </Link>
+        <CategoryTile key={category.id} category={category} lang={lang} />
       ))}
     </ShopCardRow>
+  );
+}
+
+/** The all categories page: the same cards as the shop row, laid out as a grid (2 across on phones, up to 5 on desktop). */
+export function CategoryGrid({ categories, lang, label }: { categories: Category[]; lang: Language; label: string }) {
+  return (
+    <ul aria-label={label} className="m-0 [display:grid] list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+      {categories.map((category) => (
+        <li key={category.id} className="min-w-0">
+          <CategoryTile category={category} lang={lang} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

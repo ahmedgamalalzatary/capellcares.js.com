@@ -27,6 +27,11 @@ export async function loadShopPageData(lang: string): Promise<{
   return { categories, brands, genders, advices, shopMediaSections };
 }
 
+/** The all categories page: every category; the page itself keeps the main ones that have a picture. */
+export async function loadCategoriesPageData(lang: string): Promise<Category[]> {
+  return safeList(() => fetchCategories({ lang }));
+}
+
 export async function loadSitemapData(): Promise<{
   products: Product[];
   categories: Category[];

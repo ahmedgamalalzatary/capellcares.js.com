@@ -242,7 +242,7 @@ export const en = {
     unavailableItem: "No longer available"
   },
   advices: {
-    title: "Videos",
+    title: "Falta & Zubi",
     description: "Tips for choosing and playing with toys, from Falta.",
     eyebrow: "Falta advices",
     tipBadge: "Tip",
@@ -578,7 +578,7 @@ export const en = {
       blocks: [
         { p: "Please read this document carefully, as it contains the terms and conditions under which we sell the products listed on our website, mobile application, tablet device, or any other platform (collectively referred to as the “Website”). By accessing, browsing, using, registering on, or placing a purchase order through our Website, you agree to be bound by these terms. If you do not agree to these terms of use, please stop using the Website immediately." },
         { h: "Information About Us" },
-        { p: "This Website is owned and operated by Al-Sabriya Combined Company for General Trading and Contracting, a company registered in the State of Kuwait, and “Faltatoy” is a registered trademark belonging to the company." },
+        { p: "This website is owned and operated by Al-Sabriya Combined Company for General Trading and Contracting, a company registered in the State of Kuwait under license number (2741/2008). “Faltatoy” is a registered trademark belonging to the company, with registration number (KW1681280)." },
         { h: "Terms and Conditions" },
         { p: "These terms and conditions apply to your use of the Website. By accessing, browsing, using, or registering on our Website, you confirm that you have read, understood, and fully agreed to these terms and conditions. Please check this page regularly to see if our terms and conditions have been updated. Any new terms and conditions shall take effect upon their publication on this Website." },
         { p: "We reserve the right to:" },

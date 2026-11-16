@@ -74,8 +74,8 @@ function pickSlidesForViewport(
 ) {
   return section.items
     .map((item) => {
-      // Own device first (page language, then the other language). Only desktop borrows: a missing desktop picture falls back to the mobile one, but phones never show a desktop picture (a wide banner is unreadable on a phone), so a slide with no mobile picture is dropped there.
-      const imagePath = pickItemImage(item, lang, viewport) || (viewport === "desktop" ? pickItemImage(item, lang, "mobile") : null);
+      // Own device first (page language, then the other language). Only phones borrow: no mobile picture → the desktop one shows on phones too; desktop never shows a mobile picture, so a slide with no desktop picture is dropped there. No picture at all → dropped everywhere.
+      const imagePath = pickItemImage(item, lang, viewport) || (viewport === "mobile" ? pickItemImage(item, lang, "desktop") : null);
       if (!imagePath) {
         return null;
       }
@@ -364,7 +364,7 @@ export function ShopMediaStrip({
     return null;
   }
 
-  // Each device prefers its own pictures; only desktop falls back to the mobile ones, per item (see pickSlidesForViewport).
+  // Each device prefers its own pictures; only phones fall back to the desktop ones, per item (see pickSlidesForViewport).
   const viewport = prefersDesktop ? "desktop" : "mobile";
 
   return (

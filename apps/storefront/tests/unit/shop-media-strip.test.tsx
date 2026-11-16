@@ -268,53 +268,66 @@ describe("ShopMediaStrip carousel", () => {
     expect(priorityImages()[0]?.closest("[data-slide]")).toHaveAttribute("aria-label", "Media 2");
   });
 
-  it("shows an item's mobile image on desktop when it has no desktop image", () => {
-    const section = makeSection(3);
-    section.items[1] = {
-      ...section.items[1],
-      arImagePath: null,
-      enImagePath: null,
-      arMobileImagePath: "http://localhost:4000/uploads/mobile-only.jpg",
-      enMobileImagePath: "http://localhost:4000/uploads/mobile-only.jpg"
-    };
-
-    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-
-    const desktopStrip = getDesktopStrip(container);
-    expect(desktopStrip.querySelectorAll("[data-slide]")).toHaveLength(5);
-    expect(desktopStrip.querySelector('[aria-label="Media 2"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-only.jpg");
-  });
-
-  it("shows the mobile images on desktop when only mobile images are set", () => {
-    mockViewport(true);
-    const section = makeSection(2);
-    section.items = section.items.map((item) => ({ ...item, arImagePath: null, enImagePath: null }));
-
-    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    const strip = container.querySelector('[data-viewport="desktop"]');
-    expect(strip).not.toBeNull();
-    expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
-  });
-
-  it("never shows desktop images on mobile: a section with only desktop images is hidden on phones", () => {
+  // The four rules: desktop only + no mobile → the desktop picture on both; both → each its own; mobile only → phones only; neither → nothing.
+  it("rule 1: shows the desktop image on phones when there is no mobile image", () => {
     mockViewport(false);
     const section = makeSection(2);
     section.items = section.items.map((item) => ({ ...item, arMobileImagePath: null, enMobileImagePath: null }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(container.querySelector('[data-viewport="mobile"]')).toBeNull();
-    expect(container.querySelector('img[src="http://localhost:4000/uploads/img-1.jpg"]')).toBeNull();
+    const strip = container.querySelector('[data-viewport="mobile"]');
+    expect(strip).not.toBeNull();
+    expect(strip!.querySelector('[aria-label="Media 1"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
   });
 
-  it("drops only the mobile slide that has no mobile image, without borrowing its desktop image", () => {
-    mockViewport(false);
-    const section = makeSection(2);
-    section.items[1] = { ...section.items[1], arMobileImagePath: null, enMobileImagePath: null };
+  it("rule 1: still shows the desktop image on desktop when there is no mobile image", () => {
+    mockViewport(true);
+    const section = makeSection(1);
+    section.items = section.items.map((item) => ({ ...item, arMobileImagePath: null, enMobileImagePath: null }));
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    const strip = container.querySelector('[data-viewport="mobile"]');
-    expect(strip!.querySelectorAll("[data-slide]")).toHaveLength(1);
-    expect(strip!.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
+    expect(getDesktopStrip(container).querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+  });
+
+  it("rule 2: each device shows its own image when both are set", () => {
+    mockViewport(false);
+    const mobile = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+    expect(mobile.container.querySelector('[data-viewport="mobile"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
+    mobile.unmount();
+
+    mockViewport(true);
+    const desktop = render(<ShopMediaStrip lang="en" section={makeSection(1)} label="Media" />);
+    expect(getDesktopStrip(desktop.container).querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
+  });
+
+  it("rule 3: never shows a mobile image on desktop: a section with only mobile images is hidden there", () => {
+    mockViewport(true);
+    const section = makeSection(2);
+    section.items = section.items.map((item) => ({ ...item, arImagePath: null, enImagePath: null }));
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(container.querySelector('[data-viewport="desktop"]')).toBeNull();
+    expect(container.querySelector('img[src="http://localhost:4000/uploads/mobile-img-1.jpg"]')).toBeNull();
+  });
+
+  it("rule 3: shows the mobile image on phones when there is no desktop image", () => {
+    mockViewport(false);
+    const section = makeSection(1);
+    section.items = section.items.map((item) => ({ ...item, arImagePath: null, enImagePath: null }));
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(container.querySelector('[data-viewport="mobile"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/mobile-img-1.jpg");
+  });
+
+  it("rule 3: drops only the desktop slide that has no desktop image", () => {
+    mockViewport(true);
+    const section = makeSection(2);
+    section.items[1] = { ...section.items[1], arImagePath: null, enImagePath: null };
+
+    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    const strip = getDesktopStrip(container);
+    expect(strip.querySelectorAll("[data-slide]")).toHaveLength(1);
+    expect(strip.querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/img-1.jpg");
   });
 
   it("uses dabdoob's 1248:381 banner shape on desktop", () => {
@@ -329,21 +342,26 @@ describe("ShopMediaStrip carousel", () => {
     expect(container.querySelector('[data-viewport="mobile"] [class~="aspect-[7/3]"]')).not.toBeNull();
   });
 
-  it("prefers the other language on desktop before borrowing the mobile image", () => {
-    mockViewport(true);
+  it("prefers the other language on phones before borrowing the desktop image", () => {
+    mockViewport(false);
     const section = makeSection(1);
-    section.items[0] = { ...section.items[0], enImagePath: null, arImagePath: "http://localhost:4000/uploads/ar-desktop.jpg" };
+    section.items[0] = { ...section.items[0], enMobileImagePath: null, arMobileImagePath: "http://localhost:4000/uploads/ar-mobile.jpg" };
 
     const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(getDesktopStrip(container).querySelector("img")).toHaveAttribute("src", "http://localhost:4000/uploads/ar-desktop.jpg");
+    expect(container.querySelector('[data-viewport="mobile"] img')).toHaveAttribute("src", "http://localhost:4000/uploads/ar-mobile.jpg");
   });
 
-  it("drops an item that has no image for any device", () => {
+  it("rule 4: drops an item that has no image for any device, on both devices", () => {
     const section = makeSection(2);
     section.items[1] = { ...section.items[1], arImagePath: null, enImagePath: null, arMobileImagePath: null, enMobileImagePath: null };
 
-    const { container } = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
-    expect(getDesktopStrip(container).querySelectorAll("[data-slide]")).toHaveLength(1);
+    const desktop = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(getDesktopStrip(desktop.container).querySelectorAll("[data-slide]")).toHaveLength(1);
+    desktop.unmount();
+
+    mockViewport(false);
+    const mobile = render(<ShopMediaStrip lang="en" section={section} label="Media" />);
+    expect(mobile.container.querySelectorAll('[data-viewport="mobile"] [data-slide]')).toHaveLength(1);
   });
 
   it("renders dots and arrows when there are multiple images", () => {

@@ -136,12 +136,21 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("dialog").className).toContain("translate-x-0");
   });
 
-  it("shows gender, categories and brands as white cards that open their entries as white cards", () => {
+  it("shows gender, categories and brands as plain rows like New, opening their entries as white cards with a white picture box", () => {
     renderDrawer();
     const gender = screen.getByRole("button", { name: "Gender" });
-    expect(gender.className).toContain("bg-surface");
+    const newRow = screen.getByRole("link", { name: "New" });
+    expect(gender.className).not.toContain("bg-surface");
+    expect(gender.className).toContain(newRow.className.split(" ").find((c) => c.startsWith("min-h-"))!);
     fireEvent.click(gender);
-    expect(screen.getByRole("link", { name: "Girls" }).className).toContain("bg-surface");
+    const girls = screen.getByRole("link", { name: "Girls" });
+    expect(girls.className).toContain("bg-surface");
+    expect(girls.querySelector("span")!.className).toContain("bg-white");
+  });
+
+  it("uses Falta's page colour behind the menu", () => {
+    renderDrawer({ mobileOpen: true });
+    expect(screen.getByRole("dialog").className).toContain("bg-(--page-bg)");
   });
 
   it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, wishlist, account, follow us, then the language switch", () => {
@@ -181,7 +190,7 @@ describe("HeaderMobileDrawer", () => {
   it("shows each category with its picture, under an all categories link", () => {
     renderDrawer();
     fireEvent.click(screen.getByRole("button", { name: "Categories" }));
-    expect(screen.getByRole("link", { name: "All Categories" })).toHaveAttribute("href", "/en/shop#categories");
+    expect(screen.getByRole("link", { name: "All Categories" })).toHaveAttribute("href", "/en/categories");
     expect(screen.getByRole("link", { name: "Care" }).querySelector("img")?.getAttribute("src")).toContain("care.jpg");
   });
 

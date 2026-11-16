@@ -139,7 +139,7 @@ export function FilterDrawer({
         tabIndex={open ? 0 : -1}
         inert={!open}
         className={cn(
-          "fixed inset-0 z-50 cursor-pointer border-0 p-0 bg-[rgb(36_18_63_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-0 z-100 cursor-pointer border-0 p-0 bg-[rgb(36_18_63_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
       />
@@ -152,7 +152,7 @@ export function FilterDrawer({
         // The drawer stays mounted so it can slide; `inert` keeps the off-screen copy out of the tab order and the accessibility tree meanwhile.
         inert={!open}
         className={cn(
-          "fixed inset-y-0 start-0 z-[51] flex w-[min(340px,90vw)] flex-col overflow-y-auto bg-canvas transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-y-0 start-0 z-101 flex w-[min(340px,90vw)] flex-col overflow-y-auto bg-canvas transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "translate-x-0" : isAr ? "translate-x-full" : "-translate-x-full"
         )}
       >
