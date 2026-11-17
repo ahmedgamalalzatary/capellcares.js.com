@@ -54,7 +54,7 @@ export function OfferDetail({ offer, category, categories = [], items, lang, dic
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
-        <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
+        <div className="grid gap-3 self-start sm:gap-4">
           <EntityMediaGallery
             media={offer.media}
             lang={lang}
