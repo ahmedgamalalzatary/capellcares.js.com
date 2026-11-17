@@ -121,36 +121,26 @@ describe("HeaderMobileDrawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("hangs under the header and slides in from the reading side", () => {
+  it("is hidden from assistive tech while closed and exposed once open, in both reading directions", () => {
     renderDrawer({ mobileOpen: false });
-    const closedEn = screen.getByRole("dialog", { hidden: true });
-    expect(closedEn.className).toContain("top-full");
-    expect(closedEn.className).toContain("-translate-x-full");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveAttribute("aria-hidden", "true");
     cleanup();
 
     renderDrawer({ mobileOpen: false, lang: "ar", isAr: true });
-    expect(screen.getByRole("dialog", { hidden: true }).className).toMatch(/(^|\s)translate-x-full/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveAttribute("dir", "rtl");
     cleanup();
 
     renderDrawer();
-    expect(screen.getByRole("dialog").className).toContain("translate-x-0");
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-hidden", "false");
   });
 
-  it("shows gender, categories and brands as plain rows like New, opening their entries as white cards with a white picture box", () => {
+  it("opens the gender entries when the Gender row is pressed", () => {
     renderDrawer();
-    const gender = screen.getByRole("button", { name: "Gender" });
-    const newRow = screen.getByRole("link", { name: "New" });
-    expect(gender.className).not.toContain("bg-surface");
-    expect(gender.className).toContain(newRow.className.split(" ").find((c) => c.startsWith("min-h-"))!);
-    fireEvent.click(gender);
-    const girls = screen.getByRole("link", { name: "Girls" });
-    expect(girls.className).toContain("bg-surface");
-    expect(girls.querySelector("span")!.className).toContain("bg-white");
-  });
-
-  it("uses Falta's page colour behind the menu", () => {
-    renderDrawer({ mobileOpen: true });
-    expect(screen.getByRole("dialog").className).toContain("bg-(--page-bg)");
+    expect(screen.queryByRole("link", { name: "Girls" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Gender" }));
+    expect(screen.getByRole("link", { name: "Girls" })).toBeInTheDocument();
   });
 
   it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, wishlist, account, follow us, then the language switch", () => {

@@ -156,6 +156,7 @@ export function HeaderMobileDrawer({
       dir={isAr ? "rtl" : "ltr"}
       role="dialog"
       aria-label={dict.brand}
+      aria-hidden={!mobileOpen}
       style={{ "--menu-height": panelHeight ? `${panelHeight}px` : "calc(100dvh - 8rem)" } as CSSProperties}
       className={`absolute inset-x-0 top-full flex h-(--menu-height) flex-col bg-(--page-bg) text-ink transition-[translate,visibility] duration-500 ease-(--ease-out-quart) motion-reduce:transition-none min-[880px]:hidden ${
         mobileOpen ? "visible translate-x-0" : `invisible ${closedOffset}`

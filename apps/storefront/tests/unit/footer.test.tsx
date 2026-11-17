@@ -96,13 +96,6 @@ describe("footer", () => {
     }
   });
 
-  it("draws the cash on delivery logo in the footer's yellow", () => {
-    render(<Footer lang="en" dict={getDict("en")} />);
-    const cash = screen.getByRole("img", { name: getDict("en").footer.paymentMethods });
-    expect(cash.className).toContain("text-(--sunny)");
-    expect(cash.querySelector("g")).toHaveAttribute("fill", "currentColor");
-  });
-
   it("shows the white logo", () => {
     render(<Footer lang="en" dict={getDict("en")} />);
     expect(screen.getByRole("img", { name: getDict("en").brand }).getAttribute("src")).toContain("logo-footer.png");

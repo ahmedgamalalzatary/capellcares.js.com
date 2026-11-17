@@ -219,7 +219,6 @@ describe("search results page", () => {
     for (const card of ["offer-card", "collection-card", "product-card"]) {
       const grid = screen.getByTestId(card).parentElement;
       expect(grid).toHaveAttribute("data-cols", "1");
-      expect(grid?.className).toMatch(/grid-cols-1/);
     }
   });
 

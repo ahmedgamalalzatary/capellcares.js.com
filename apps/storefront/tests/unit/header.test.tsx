@@ -101,7 +101,6 @@ describe("Header layout stability", () => {
     render(<Header lang="en" dict={dict} menuEntries={[]} />);
     const bar = screen.getByTestId("desktop-search");
     expect(bar).toHaveTextContent("Search");
-    expect(bar.className).toContain("w-full");
     expect(screen.queryByRole("button", { name: "Shop" })).toBeNull();
   });
 

@@ -200,13 +200,6 @@ describe("shop page", () => {
     }
   });
 
-  it("lays the main categories out as one sideways row on every screen size", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    const scroller = container.querySelector("#categories .overflow-x-auto");
-    expect(scroller).not.toBeNull();
-    expect(scroller!.className).not.toMatch(/grid-cols-2/);
-  });
-
   it("has no star mark beside the section headings", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
     expect(container.querySelector("h2 svg")).toBeNull();

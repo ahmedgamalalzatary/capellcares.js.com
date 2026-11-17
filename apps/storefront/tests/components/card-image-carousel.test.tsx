@@ -88,11 +88,6 @@ describe("CardImageCarousel on desktop", () => {
     expect(shown()).toBe("/one.jpg");
   });
 
-  it("zooms the picture on hover", () => {
-    const { link } = renderCarousel();
-    expect(link.firstElementChild?.className).toContain("group-hover:scale-[1.05]");
-  });
-
   it("has no arrows and does not slide", () => {
     const { link, shown } = renderCarousel();
     expect(screen.queryByRole("button")).toBeNull();

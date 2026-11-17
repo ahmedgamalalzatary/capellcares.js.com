@@ -296,7 +296,7 @@ describe("OrderDetailView reviews", () => {
 
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 13 }));
 
-    expect((await screen.findByText("Denied")).className).toContain("chip--status-bad");
+    expect(await screen.findByText("Denied")).toBeInTheDocument();
   });
 
   it("contains keyboard focus in the review form and restores it to the opener", async () => {

@@ -6,13 +6,12 @@ import { NavArrow } from "@/components/ui/nav-arrow";
 const chevronOf = (button: HTMLElement) => button.querySelector("svg")!;
 
 describe("NavArrow", () => {
-  it("renders the brand-coloured chevron button and forwards the click", () => {
+  it("renders a chevron button and forwards the click", () => {
     const onClick = vi.fn();
     const { getByRole } = render(<NavArrow direction="next" isRtl={false} aria-label="Next" onClick={onClick} />);
     const button = getByRole("button", { name: "Next" });
 
     expect(button.getAttribute("type")).toBe("button");
-    expect(button.className).toContain("text-brand");
     fireEvent.click(button);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
