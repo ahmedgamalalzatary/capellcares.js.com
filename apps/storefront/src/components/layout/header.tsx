@@ -91,7 +91,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
               className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)"
               aria-label={user ? dict.nav.orders : dict.nav.account}
             >
-              <Icon.User size={24} />
+              <Icon.User size={28} />
             </Link>
           </div>
         </div>
@@ -135,13 +135,14 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           {/* Mobile cluster: wishlist · cart */}
           <div className="inline-flex items-center gap-2 min-[880px]:hidden">
             <Link href={`/${lang}/wishlist`} className="relative grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.wishlist}>
-              <Icon.Heart size={24} />
+              <Icon.Heart size={28} />
               {ids.length > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--magenta) px-1 text-xs font-bold leading-none text-white">{ids.length}</span>}
             </Link>
             {/* Last icon: as wide as the icon so it sits flush with the container edge. */}
             <Link href={`/${lang}/cart`} className="relative grid h-9 place-items-center border-0 bg-transparent text-ink" aria-label={dict.nav.cart}>
-              <Icon.Cart size={24} />
-              {cartCount > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{cartCount}</span>}
+              <Icon.Cart size={28} />
+              {/* Main's style: the count always shows, as plain text tucked into the basket's top corner. */}
+              <span className="absolute right-1 top-0.5 grid min-h-4 min-w-4 place-items-center text-sm font-bold leading-none">{cartCount}</span>
             </Link>
           </div>
 
@@ -162,7 +163,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
             </Link>
             <Link href={`/${lang}/cart`} className="relative grid h-10 w-10 place-items-center rounded-full bg-transparent text-ink transition-colors hover:bg-(--warm-soft)" aria-label={dict.nav.cart}>
               <Icon.Cart size={24} />
-              {cartCount > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-(--sunny) px-1 text-xs font-bold leading-none text-ink">{cartCount}</span>}
+              <span className="absolute right-1/4 top-0.5 grid min-h-4 min-w-4 place-items-center text-lg font-bold leading-none">{cartCount}</span>
             </Link>
             <Link
               href={accountHref}
@@ -240,7 +241,7 @@ function SearchBar({ label, buttonLabel, onClick, expanded, className, testId }:
 function MenuToggle({ open }: { open: boolean }) {
   const ease = "ease-[cubic-bezier(0.76,0,0.24,1)] motion-reduce:transition-none";
   return (
-    <svg width={18} height={24} viewBox="3 0 18 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"
+    <svg width={21} height={28} viewBox="3 0 18 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"
       className={`transition-transform duration-500 ${ease} ${open ? "rotate-90" : ""}`}>
       <line x1="4" y1="7" x2="20" y2="7" className={`origin-center transition-transform duration-500 ${ease} ${open ? "translate-y-[5px] rotate-45" : ""}`} style={{ transformBox: "fill-box" }} />
       <line x1="4" y1="12" x2="20" y2="12" className={`transition-opacity duration-300 ${open ? "opacity-0" : ""}`} />

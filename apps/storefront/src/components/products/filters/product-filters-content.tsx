@@ -56,7 +56,7 @@ export function ProductFiltersContent({
     <>
       {showSearch && (
       <FilterSection label={dict.nav.search} defaultOpen>
-        <div className="flex items-center gap-[10px] rounded-(--radius) border border-(--hairline) bg-surface px-[14px] py-[9px]">
+        <div className="flex items-center gap-[10px] rounded-[6px] bg-surface px-[14px] py-[9px]">
           <Icon.Search size={14} className="shrink-0 text-(--ink-3)" />
           <input
             value={q}
@@ -107,7 +107,7 @@ export function ProductFiltersContent({
                   type="button"
                   aria-pressed={active}
                   onClick={() => group.toggle(option.id)}
-                  className={active ? "filter-pill filter-pill--active" : "filter-pill"}
+                  className={active ? "filter-pill filter-pill--borderless filter-pill--active" : "filter-pill filter-pill--borderless"}
                 >
                   {option.label}
                 </button>

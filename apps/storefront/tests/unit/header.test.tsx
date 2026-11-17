@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let pathname = "/en/products";
 let searchParams = new URLSearchParams("sort=new");
+let cartCount = 2;
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname,
@@ -15,7 +16,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/components/providers/cart-provider", () => ({
-  useCart: () => ({ count: 2 })
+  useCart: () => ({ count: cartCount })
 }));
 
 vi.mock("@/components/providers/wishlist-provider", () => ({
@@ -95,6 +96,16 @@ describe("Header layout stability", () => {
       "href",
       "/en/login?next=%2Fen%2Fproducts%3Fsort%3Dprice-desc"
     );
+  });
+
+  it("always shows the cart count on the cart icons, even when the cart is empty", () => {
+    cartCount = 0;
+    const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
+    for (const link of screen.getAllByRole("link", { name: "Cart" })) expect(link).toHaveTextContent("0");
+
+    cartCount = 2;
+    rerender(<Header lang="en" dict={dict} menuEntries={[]} />);
+    for (const link of screen.getAllByRole("link", { name: "Cart" })) expect(link).toHaveTextContent("2");
   });
 
   it("has one big search bar on desktop, and no shop menu button", () => {

@@ -11,7 +11,7 @@ const categories: Category[] = [
 ];
 
 describe("FilterDrawer", () => {
-  it("locks body scroll while open and forwards close actions", () => {
+  it("locks page scroll (html and body) while open and forwards close actions", () => {
     const onClose = vi.fn();
 
     const { rerender } = render(createElement(FilterDrawer, {
@@ -46,6 +46,8 @@ describe("FilterDrawer", () => {
       onClear: vi.fn()
     }));
 
+    // Phones scroll the <html> element, so a body-only lock lets the page move under the drawer.
+    expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 
     fireEvent.click(screen.getByRole("button", { name: /close filters/i }));
@@ -83,6 +85,7 @@ describe("FilterDrawer", () => {
       onClear: vi.fn()
     }));
 
+    expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
   });
 

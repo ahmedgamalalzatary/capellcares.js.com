@@ -73,14 +73,21 @@ export function FilterDrawer({
   // Whatever opened the drawer gets focus back when it closes.
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Lock <html> as well as <body>: phones scroll the document element, so a body-only lock lets a finger drag the page under the drawer. Same non-shifting lock as the menu and search screen; restores what was there before so an outer lock survives.
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!open) return;
+    const html = document.documentElement;
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
+    const previousOverflow = html.style.overflow;
+    const previousPaddingRight = html.style.paddingRight;
+    const previousBodyOverflow = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      html.style.overflow = previousOverflow;
+      html.style.paddingRight = previousPaddingRight;
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, [open]);
 
@@ -139,7 +146,7 @@ export function FilterDrawer({
         tabIndex={open ? 0 : -1}
         inert={!open}
         className={cn(
-          "fixed inset-0 z-100 cursor-pointer border-0 p-0 bg-[rgb(36_18_63_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-0 z-100 cursor-pointer touch-none border-0 p-0 bg-[rgb(36_18_63_/_0.45)] backdrop-blur-[4px] transition-opacity duration-[280ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
       />
@@ -152,11 +159,11 @@ export function FilterDrawer({
         // The drawer stays mounted so it can slide; `inert` keeps the off-screen copy out of the tab order and the accessibility tree meanwhile.
         inert={!open}
         className={cn(
-          "fixed inset-y-0 start-0 z-101 flex w-[min(340px,90vw)] flex-col overflow-y-auto bg-canvas transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "fixed inset-y-0 start-0 z-101 flex w-[min(340px,90vw)] flex-col overflow-y-auto overscroll-contain bg-(--page-bg) transition-transform duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           open ? "translate-x-0" : isAr ? "translate-x-full" : "-translate-x-full"
         )}
       >
-        <div className="sticky top-0 z-[2] flex shrink-0 items-end justify-between gap-3 border-b border-(--hairline) bg-canvas px-5 pt-5 pb-4">
+        <div className="sticky top-0 z-[2] flex shrink-0 items-end justify-between gap-3 border-b border-(--hairline) bg-(--page-bg) px-5 pt-5 pb-4">
           <div>
             <span
               className={cn(
@@ -173,14 +180,14 @@ export function FilterDrawer({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="mb-[2px] inline-flex size-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--hairline) bg-surface text-(--ink-3) transition-[background] duration-[160ms]"
+            className="mb-[2px] inline-flex size-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-surface text-ink transition-[background] duration-[160ms]"
             aria-label={closeLabel}
           >
-            <Icon.Close size={13} />
+            <Icon.Close size={14} className="stroke-3" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-canvas px-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain bg-(--page-bg) px-5">
           <ProductFiltersContent
             lang={lang}
             dict={dict}
@@ -203,7 +210,7 @@ export function FilterDrawer({
           />
         </div>
 
-        <div className="sticky bottom-0 z-[2] flex shrink-0 gap-[10px] border-t border-(--hairline) bg-canvas px-5 py-4">
+        <div className="sticky bottom-0 z-[2] flex shrink-0 gap-[10px] border-t border-(--hairline) bg-(--page-bg) px-5 py-4">
           <button onClick={onClear} className="btn btn--sm flex-1">
             {dict.common.clear}
           </button>

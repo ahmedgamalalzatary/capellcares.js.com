@@ -273,6 +273,9 @@ body {
 }
 .filter-pill:hover { border-color: var(--ink); }
 .filter-pill--active { background: var(--ink); border-color: var(--ink); color: var(--canvas); }
+/* Filters drawer: no outline; a white chip on the page colour until picked. */
+.filter-pill--borderless, .filter-pill--borderless:hover { border-color: transparent; }
+.filter-pill--borderless:not(.filter-pill--active) { background: var(--surface); }
 .filter-pill__x {
   margin-inline-start: 12px; font-size: 16px; line-height: 1;
 }
@@ -570,8 +573,7 @@ body {
 .toy-tile:hover { transform: translateY(-3px); }
 .toy-tile:active { transform: translateY(0); }
 .toy-tile__media {
-  /* Tall 5:8 portrait, the same shape as Capella's shop categories. */
-  position: relative; display: block; aspect-ratio: 5 / 8;
+  position: relative; display: block; aspect-ratio: 1;
   border: 1px solid var(--hairline); border-bottom: 0;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: #fff; overflow: hidden;

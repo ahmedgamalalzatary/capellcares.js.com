@@ -20,11 +20,11 @@ export function CategoryPill({
       <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
       <span
         className={cn(
-          "flex w-full items-center rounded-(--radius) border px-[14px] transition-[background,border-color,color] duration-[180ms]",
+          "flex w-full items-center rounded-[6px] px-[14px] transition-[background,color] duration-[180ms]",
           indent ? "h-[30px] text-[12px]" : "h-[34px] text-[13px]",
           checked
-            ? "border-(--accent) bg-[oklch(0.32_0.018_85_/_0.08)] font-semibold text-(--accent)"
-            : "border-transparent bg-transparent font-normal text-(--ink-3)"
+            ? "bg-[oklch(0.32_0.018_85_/_0.08)] font-semibold text-(--accent)"
+            : "bg-transparent font-normal text-(--ink-3)"
         )}
       >
         {checked && (

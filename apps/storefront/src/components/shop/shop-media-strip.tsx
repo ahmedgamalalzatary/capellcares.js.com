@@ -373,7 +373,7 @@ export function ShopMediaStrip({
       section={section}
       label={label}
       viewport={viewport}
-      className="mb-14"
+      className="mb-8"
       priority={priority}
     />
   );
