@@ -87,3 +87,12 @@ test("pruneExpiredBuckets removes only expired entries", () => {
   assert.equal(buckets.has("stale"), false);
   assert.equal(buckets.has("fresh"), true);
 });
+
+test("evaluateRateLimit flags only the first blocked request of a window, so blocks can be logged without flooding", () => {
+  const buckets = new Map();
+  evaluateRateLimit(buckets, "a", 0, 1000, 1);
+  assert.deepEqual(evaluateRateLimit(buckets, "a", 1, 1000, 1), { allowed: false, firstBlock: true });
+  assert.deepEqual(evaluateRateLimit(buckets, "a", 2, 1000, 1), { allowed: false, firstBlock: false });
+  evaluateRateLimit(buckets, "a", 1001, 1000, 1);
+  assert.deepEqual(evaluateRateLimit(buckets, "a", 1002, 1000, 1), { allowed: false, firstBlock: true });
+});

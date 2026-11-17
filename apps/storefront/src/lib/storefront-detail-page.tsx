@@ -3,6 +3,7 @@ import { getDict } from "@capella/shared";
 import { notFound } from "next/navigation";
 
 import { resolveStorefrontLang } from "./storefront-page-context";
+import { serializeJsonLd } from "@/lib/seo";
 
 export async function resolveStorefrontSlugPageContext(params: Promise<{ lang: string; slug: string }>) {
   const [{ slug }, lang] = await Promise.all([params, resolveStorefrontLang(params)]);
@@ -33,7 +34,7 @@ export function StorefrontJsonLd({ payloads }: { payloads: unknown[] }): ReactEl
           key={index}
           data-testid="json-ld-script"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(payload) }}
         />
       ))}
     </>

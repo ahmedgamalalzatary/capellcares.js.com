@@ -10,6 +10,8 @@ type RateLimitOptions = {
 export type RateLimitBucket = {
   count: number;
   resetAt: number;
+  /** Set once the window has refused a request, so only the first refusal is logged. */
+  blocked?: boolean;
 };
 
 const buckets = new Map<string, RateLimitBucket>();
@@ -24,7 +26,7 @@ export function evaluateRateLimit(
   now: number,
   windowMs: number,
   max: number
-): { allowed: boolean } {
+): { allowed: true } | { allowed: false; firstBlock: boolean } {
   const current = store.get(key);
   if (!current || current.resetAt <= now) {
     store.set(key, { count: 1, resetAt: now + windowMs });
@@ -32,7 +34,9 @@ export function evaluateRateLimit(
   }
 
   if (current.count >= max) {
-    return { allowed: false };
+    const firstBlock = !current.blocked;
+    current.blocked = true;
+    return { allowed: false, firstBlock };
   }
 
   current.count += 1;
@@ -60,9 +64,11 @@ export function rateLimit(options: RateLimitOptions) {
   return (req: Request, res: Response, next: NextFunction) => {
     const identity = options.key?.(req) ?? req.ip ?? "unknown";
     const key = `${options.keyPrefix}:${identity}`;
-    const { allowed } = evaluateRateLimit(buckets, key, Date.now(), options.windowMs, options.max);
+    const result = evaluateRateLimit(buckets, key, Date.now(), options.windowMs, options.max);
 
-    if (!allowed) {
+    if (!result.allowed) {
+      // One line per offender per window: enough to spot brute-force or abuse in the logs without letting an attacker flood them.
+      if (result.firstBlock) console.warn(`Rate limit hit: ${options.keyPrefix} from ${req.ip ?? "unknown"} on ${req.method} ${req.path}`);
       return res.status(429).json({ message: "Too many requests" });
     }
 

@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { EmailTakenError, InvalidCredentialsError } from "./auth-errors.js";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { createCustomer, findCustomerByEmail, findCustomerById } from "./customer.repository.js";
 import {
@@ -32,7 +33,7 @@ function resolveJwtAccessTtl(raw: string | undefined): JwtExpiresIn {
 
 export async function signup(input: { name: string; email: string; password: string }) {
   const existing = await findCustomerByEmail(input.email);
-  if (existing) throw new Error("Email already exists");
+  if (existing) throw new EmailTakenError();
   const passwordHash = await bcrypt.hash(input.password, 10);
   const created = await createCustomer({ name: input.name, email: input.email, passwordHash });
   return { id: created.id, name: input.name, email: input.email };
@@ -40,9 +41,9 @@ export async function signup(input: { name: string; email: string; password: str
 
 export async function login(input: { email: string; password: string }) {
   const customer = await findCustomerByEmail(input.email);
-  if (!customer) throw new Error("Invalid credentials");
+  if (!customer) throw new InvalidCredentialsError();
   const ok = await bcrypt.compare(input.password, customer.passwordHash);
-  if (!ok) throw new Error("Invalid credentials");
+  if (!ok) throw new InvalidCredentialsError();
   const session = await createRefreshSession({ accountType: "customer", customerId: customer.id });
   const accessToken = issueAccessToken(customer.id, session.sessionId);
   const refreshToken = session.refreshToken;

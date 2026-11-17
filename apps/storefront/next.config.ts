@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import type { NextConfig } from "next";
 import { loadWorkspaceEnv } from "@capella/shared/config/workspace-env";
+import { webSecurityHeaders } from "@capella/shared/config/security-headers";
 
 loadWorkspaceEnv();
 
@@ -45,6 +46,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: resolve(process.cwd(), "..", ".."),
   reactStrictMode: true,
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: webSecurityHeaders }];
+  },
   images: {
     dangerouslyAllowLocalIP: isNonProduction,
     remotePatterns: resolveRemotePatterns()

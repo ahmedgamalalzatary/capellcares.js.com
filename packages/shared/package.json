@@ -16,6 +16,7 @@
     "./schemas": "./src/schemas/index.ts",
     "./api/base": "./src/api/base.ts",
     "./config/workspace-env": "./src/config/workspace-env.ts",
+    "./config/security-headers": "./src/config/security-headers.ts",
     "./ui": "./src/ui/index.ts",
     "./tests/contracts": "./tests/contracts/index.ts"
   },

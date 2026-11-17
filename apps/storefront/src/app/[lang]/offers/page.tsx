@@ -4,7 +4,7 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { OfferGrid } from "@/components/offers/offer-grid";
 import { fetchCategories, fetchOffers } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
-import { buildOffersMetadata, breadcrumbJsonLd } from "@/lib/seo";
+import { buildOffersMetadata, breadcrumbJsonLd, serializeJsonLd } from "@/lib/seo";
 
 export async function generateMetadata({
   params
@@ -26,7 +26,7 @@ export default async function OffersPage({ params }: { params: Promise<{ lang: s
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: serializeJsonLd(
             breadcrumbJsonLd([
               { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
               { name: dict.offers.title }

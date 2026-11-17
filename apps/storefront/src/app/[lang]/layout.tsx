@@ -12,7 +12,7 @@ import { BackToTop } from "@/components/shop/back-to-top";
 import { fetchAnnouncements, fetchCategories, fetchCollections, fetchOffers, fetchProducts } from "@/lib/api/client";
 import { buildHeaderMenu } from "@/lib/header-menu";
 import { buildNav } from "@/lib/nav";
-import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
+import { buildLocaleMetadata, organizationJsonLd, websiteJsonLd, serializeJsonLd } from "@/lib/seo";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 
 // The root <html dir> is derived from the x-capella-locale request header set by middleware; static prerendering has no request, so at build time the header is absent and dir wrongly defaults to "ar"/rtl on the EN page.
@@ -57,11 +57,11 @@ export default async function LocaleLayout({
           <div className="shell" lang={lang} dir={dir(lang)}>
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd()) }}
             />
             <script
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd()) }}
             />
             <Suspense fallback={null}>
               <Header lang={lang} dict={dict} menuEntries={menuEntries} announcements={announcements} bestsellers={bestsellers} />

@@ -478,3 +478,16 @@ export function buildRobots(): MetadataRoute.Robots {
     sitemap: absoluteUrl("/sitemap.xml")
   };
 }
+
+/** JSON for an inline `<script type="application/ld+json">`. Plain JSON.stringify lets stored text such as a product name containing `</script>` end the tag and inject markup, so `<`, `>`, `&` and the U+2028/U+2029 line separators are written as \u escapes, which JSON parsers read back unchanged. */
+const JSON_LD_ESCAPES: Record<string, string> = {
+  "<": "\\u003c",
+  ">": "\\u003e",
+  "&": "\\u0026",
+  "\u2028": "\\u2028",
+  "\u2029": "\\u2029"
+};
+
+export function serializeJsonLd(payload: unknown): string {
+  return JSON.stringify(payload).replace(/[<>&\u2028\u2029]/g, (char) => JSON_LD_ESCAPES[char] ?? char);
+}

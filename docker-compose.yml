@@ -187,7 +187,8 @@ services:
   # Self-hosted WhatsApp gateway that sends the staff new-order alerts. The API never waits on it, so the store keeps working if it is down.
   # Baileys engine: no browser, ~30-80 MB per session on this shared server. Host port is localhost-only (2785 = just4kids, 2786 = falta).
   openwa:
-    image: ${OPENWA_IMAGE:-ghcr.io/rmyndharis/openwa:latest}
+    # Pinned by digest (OpenWA 0.29.1) so a new upstream push is never pulled silently; to upgrade, pull the new release, test it, then update this digest.
+    image: ${OPENWA_IMAGE:-ghcr.io/rmyndharis/openwa@sha256:5d4e2d71d3802e6cd66ac92ff3543f2eb391d20e7db711e8641c5127644a817a}
     container_name: capella-openwa
     mem_limit: 512m
     init: true

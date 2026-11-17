@@ -31,6 +31,19 @@ describe("storefront next config", () => {
     setEnv("NODE_ENV", originalNodeEnv);
   });
 
+  it("sends security headers on every route", async () => {
+    process.chdir(storefrontDir);
+
+    const mod = await importConfig();
+    const rules = await mod.default.headers();
+    const headers = Object.fromEntries(rules.find((rule: { source: string }) => rule.source === "/:path*").headers.map((h: { key: string; value: string }) => [h.key, h.value]));
+
+    expect(headers["X-Content-Type-Options"]).toBe("nosniff");
+    expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["Strict-Transport-Security"]).toBe("max-age=31536000; includeSubDomains");
+    expect(headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
+  });
+
   it("exposes the API URL through the Next env block", async () => {
     setEnv("NEXT_PUBLIC_API_URL", "http://localhost:4000");
     process.chdir(storefrontDir);

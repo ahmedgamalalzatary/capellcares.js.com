@@ -4,7 +4,7 @@ import { CollectionGrid } from "@/components/collections/collection-grid";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { fetchCategories, fetchCollections } from "@/lib/api/client";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
-import { breadcrumbJsonLd, buildCollectionsMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, buildCollectionsMetadata, serializeJsonLd } from "@/lib/seo";
 
 export async function generateMetadata({
   params
@@ -29,7 +29,7 @@ export default async function CollectionsPage({ params }: { params: Promise<{ la
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
+          __html: serializeJsonLd(
             breadcrumbJsonLd([
               { name: dict.common.breadcrumbHome, url: `/${lang}/shop` },
               { name: dict.collections.title }

@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import { EmailTakenError, InvalidCredentialsError } from "./auth-errors.js";
 import { login, logoutCustomerSession, refreshCustomerSession, signup } from "./auth.service.js";
 import { RefreshTokenRejectedError } from "../../services/auth-session.service.js";
 import {
@@ -8,30 +9,37 @@ import {
 } from "./cookie-options.js";
 import { canExposeRefreshToken, extractRefreshToken, isMobileClient } from "./mobile-client.js";
 
-export async function signupController(req: Request, res: Response) {
+export async function signupController(req: Request, res: Response, next: NextFunction) {
   try {
     const user = await signup(req.body);
     res.status(201).json({ user });
   } catch (error) {
-    res.status(400).json({ message: error instanceof Error ? error.message : "Signup failed" });
+    if (error instanceof EmailTakenError) return res.status(400).json({ message: error.message });
+    return next(error);
   }
 }
 
-export async function loginController(req: Request, res: Response) {
-  try {
-    const result = await login(req.body);
-    if (!isMobileClient(req)) {
-      res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
+export function createLoginController(loginCustomer: typeof login = login) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await loginCustomer(req.body);
+      if (!isMobileClient(req)) {
+        res.cookie(CUSTOMER_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
+      }
+      res.json({
+        accessToken: result.accessToken,
+        user: result.user,
+        ...(isMobileClient(req) ? { refreshToken: result.refreshToken } : {})
+      });
+    } catch (error) {
+      if (error instanceof InvalidCredentialsError) return res.status(401).json({ message: error.message });
+      // Database or config failures must not reach the client as a 401 carrying their internal message.
+      return next(error);
     }
-    res.json({
-      accessToken: result.accessToken,
-      user: result.user,
-      ...(isMobileClient(req) ? { refreshToken: result.refreshToken } : {})
-    });
-  } catch (error) {
-    res.status(401).json({ message: error instanceof Error ? error.message : "Login failed" });
-  }
+  };
 }
+
+export const loginController = createLoginController();
 
 export function createRefreshController(
   refreshSession: typeof refreshCustomerSession = refreshCustomerSession

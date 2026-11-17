@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import { InvalidCredentialsError } from "../../auth/auth-errors.js";
 import {
   clearRefreshCookieOptions,
   ADMIN_REFRESH_COOKIE,
@@ -12,9 +13,10 @@ import {
 import { loginAdmin, logoutAdminSession, refreshAdminSession } from "./admin-auth.service.js";
 import { RefreshTokenRejectedError } from "../../../services/auth-session.service.js";
 
-export function adminLoginController(req: Request, res: Response) {
-  loginAdmin(req.body)
-    .then((result) => {
+export function createAdminLoginController(login: typeof loginAdmin = loginAdmin) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await login(req.body);
       if (!isMobileClient(req)) {
         res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
       }
@@ -23,9 +25,18 @@ export function adminLoginController(req: Request, res: Response) {
         user: result.user,
         ...(isMobileClient(req) ? { refreshToken: result.refreshToken } : {})
       });
-    })
-    .catch((error: Error) => res.status(401).json({ message: error.message }));
+    } catch (error) {
+      if (error instanceof InvalidCredentialsError) {
+        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+        console.warn(`Failed admin login for ${email || "(no email)"} from ${req.ip ?? "unknown"}`);
+        return res.status(401).json({ message: error.message });
+      }
+      return next(error);
+    }
+  };
 }
+
+export const adminLoginController = createAdminLoginController();
 
 export function createAdminRefreshController(
   refreshSession: typeof refreshAdminSession = refreshAdminSession

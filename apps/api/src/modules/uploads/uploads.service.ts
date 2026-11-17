@@ -16,6 +16,23 @@ const MIME_TO_EXTENSION: Record<AllowedMimeType, string> = {
   "video/webm": "webm"
 };
 
+/** An upload refused for a reason the uploader can act on; only these messages are shown to the client, every other failure stays a generic server error. */
+export class UploadRejectedError extends Error {}
+
+/** Leading bytes ("magic numbers") each allowed type must start with, so a file cannot claim to be an image while carrying HTML or a script. */
+function matchesMimeSignature(mimeType: AllowedMimeType, buffer: Buffer): boolean {
+  const startsWith = (bytes: number[], offset = 0) =>
+    buffer.length >= offset + bytes.length && bytes.every((byte, index) => buffer[offset + index] === byte);
+  const ascii = (text: string) => [...text].map((char) => char.charCodeAt(0));
+  switch (mimeType) {
+    case "image/png": return startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    case "image/jpeg": return startsWith([0xff, 0xd8, 0xff]);
+    case "image/webp": return startsWith(ascii("RIFF")) && startsWith(ascii("WEBP"), 8);
+    case "video/mp4": return startsWith(ascii("ftyp"), 4);
+    case "video/webm": return startsWith([0x1a, 0x45, 0xdf, 0xa3]);
+  }
+}
+
 function sanitizeFileName(input: string): string {
   return basename(input).replace(/[^a-zA-Z0-9._-]/g, "-");
 }
@@ -53,9 +70,14 @@ function getAllowedMimeTypes() {
   );
 }
 
-function getMaxBytes() {
-  const parsed = Number(process.env.UPLOAD_MAX_BYTES ?? 20 * 1024 * 1024);
+function getMaxBytes(env: NodeJS.ProcessEnv = process.env) {
+  const parsed = Number(env.UPLOAD_MAX_BYTES ?? 20 * 1024 * 1024);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 20 * 1024 * 1024;
+}
+
+/** JSON body limit for the upload route: the base64 form of the largest allowed file (4 bytes per 3) plus room for the other fields. */
+export function resolveUploadBodyLimitBytes(env: NodeJS.ProcessEnv = process.env): number {
+  return Math.ceil(getMaxBytes(env) / 3) * 4 + 64 * 1024;
 }
 
 function resolvePublicBaseUrl(): string {
@@ -76,13 +98,16 @@ export async function uploadBase64Media(
 ) {
   const allowedMimeTypes = getAllowedMimeTypes();
   if (!allowedMimeTypes.has(payload.mimeType.toLowerCase())) {
-    throw new Error(`Unsupported mime type: ${payload.mimeType}`);
+    throw new UploadRejectedError(`Unsupported mime type: ${payload.mimeType}`);
   }
 
   const buffer = Buffer.from(payload.contentBase64, "base64");
   const maxBytes = options?.maxBytes ?? getMaxBytes();
   if (buffer.byteLength > maxBytes) {
-    throw new Error(`Upload exceeds maximum size of ${maxBytes} bytes`);
+    throw new UploadRejectedError(`Upload exceeds maximum size of ${maxBytes} bytes`);
+  }
+  if (!matchesMimeSignature(payload.mimeType, buffer)) {
+    throw new UploadRejectedError(`File content does not match the declared type ${payload.mimeType}`);
   }
 
   const uploadsDir = options?.uploadsDir ?? resolve(process.cwd(), "uploads");

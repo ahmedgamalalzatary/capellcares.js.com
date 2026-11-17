@@ -9,7 +9,10 @@ import { shopMediaSectionItems, shopMediaSections } from "@capella/database/driz
 import { db } from "@capella/database/src/db";
 
 import { parseUploadBody } from "../../src/modules/uploads/uploads.schemas.js";
-import { deleteLocalUploadUrls, uploadBase64Media } from "../../src/modules/uploads/uploads.service.js";
+import { deleteLocalUploadUrls, resolveUploadBodyLimitBytes, uploadBase64Media, UploadRejectedError } from "../../src/modules/uploads/uploads.service.js";
+
+const WEBP_BYTES = Buffer.concat([Buffer.from("RIFF"), Buffer.from([0, 0, 0, 0]), Buffer.from("WEBPimage-binary")]);
+const MP4_BYTES = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from("ftypisomvideo-binary")]);
 
 test("parseUploadBody accepts valid image upload payload", () => {
   const parsed = parseUploadBody({
@@ -52,7 +55,7 @@ test("uploadBase64Media saves image file and returns public URL + path", async (
       {
         fileName: "body-lotion.webp",
         mimeType: "image/webp",
-        contentBase64: Buffer.from("image-binary").toString("base64")
+        contentBase64: WEBP_BYTES.toString("base64")
       },
       {
         uploadsDir,
@@ -65,7 +68,7 @@ test("uploadBase64Media saves image file and returns public URL + path", async (
     assert.match(result.url, /^https:\/\/example\.com\/uploads\/.+\.webp$/);
 
     const writtenBytes = readFileSync(join(uploadsDir, result.fileName));
-    assert.equal(writtenBytes.toString("utf8"), "image-binary");
+    assert.deepEqual(writtenBytes, WEBP_BYTES);
   } finally {
     rmSync(uploadsDir, { recursive: true, force: true });
   }
@@ -78,7 +81,7 @@ test("uploadBase64Media saves video files without changing the extension", async
       {
         fileName: "routine-demo.mp4",
         mimeType: "video/mp4",
-        contentBase64: Buffer.from("video-binary").toString("base64")
+        contentBase64: MP4_BYTES.toString("base64")
       },
       {
         uploadsDir,
@@ -91,7 +94,7 @@ test("uploadBase64Media saves video files without changing the extension", async
     assert.match(result.url, /^https:\/\/example\.com\/uploads\/.+\.mp4$/);
 
     const writtenBytes = readFileSync(join(uploadsDir, result.fileName));
-    assert.equal(writtenBytes.toString("utf8"), "video-binary");
+    assert.deepEqual(writtenBytes, MP4_BYTES);
   } finally {
     rmSync(uploadsDir, { recursive: true, force: true });
   }
@@ -151,4 +154,51 @@ test("deleteLocalUploadUrls preserves files referenced by shop media", async () 
     await db.delete(shopMediaSections).where(eq(shopMediaSections.id, section.id));
     rmSync(absolutePath, { force: true });
   }
+});
+
+test("uploadBase64Media rejects content that does not match the declared file type", async () => {
+  const uploadsDir = mkdtempSync(join(tmpdir(), "capella-upload-test-"));
+  try {
+    await assert.rejects(
+      () =>
+        uploadBase64Media(
+          {
+            fileName: "fake.png",
+            mimeType: "image/png",
+            contentBase64: Buffer.from("<html><script>alert(1)</script></html>").toString("base64")
+          },
+          { uploadsDir, maxBytes: 1024 * 1024, publicBaseUrl: "https://example.com/uploads" }
+        ),
+      (error: unknown) => error instanceof UploadRejectedError && /does not match/i.test(error.message)
+    );
+  } finally {
+    rmSync(uploadsDir, { recursive: true, force: true });
+  }
+});
+
+test("uploadBase64Media accepts real PNG, JPEG and WebM signatures", async () => {
+  const uploadsDir = mkdtempSync(join(tmpdir(), "capella-upload-test-"));
+  try {
+    const samples = [
+      { mimeType: "image/png" as const, bytes: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1]) },
+      { mimeType: "image/jpeg" as const, bytes: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1]) },
+      { mimeType: "video/webm" as const, bytes: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 1]) }
+    ];
+    for (const sample of samples) {
+      const result = await uploadBase64Media(
+        { fileName: "sample", mimeType: sample.mimeType, contentBase64: sample.bytes.toString("base64") },
+        { uploadsDir, maxBytes: 1024 * 1024, publicBaseUrl: "https://example.com/uploads" }
+      );
+      assert.ok(result.fileName);
+    }
+  } finally {
+    rmSync(uploadsDir, { recursive: true, force: true });
+  }
+});
+
+test("resolveUploadBodyLimitBytes leaves room for a base64-encoded file of the configured maximum", () => {
+  const maxBytes = 20 * 1024 * 1024;
+  const limit = resolveUploadBodyLimitBytes({ UPLOAD_MAX_BYTES: String(maxBytes) });
+  assert.ok(limit >= Math.ceil(maxBytes / 3) * 4);
+  assert.ok(limit < maxBytes * 2);
 });

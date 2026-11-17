@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { InvalidCredentialsError } from "../../auth/auth-errors.js";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import {
   createAdminUser,
@@ -64,13 +65,13 @@ export async function loginAdmin(
   const email = input.email.trim().toLowerCase();
   const admin = await findAdminUserByEmail(email);
   if (!admin) {
-    throw new Error("Invalid admin credentials");
+    throw new InvalidCredentialsError("Invalid admin credentials");
   }
   if (admin.role === "staff" && !admin.isActive) {
-    throw new Error("Invalid admin credentials");
+    throw new InvalidCredentialsError("Invalid admin credentials");
   }
   const ok = await bcrypt.compare(input.password, admin.passwordHash);
-  if (!ok) throw new Error("Invalid admin credentials");
+  if (!ok) throw new InvalidCredentialsError("Invalid admin credentials");
 
   const accessSecret = resolveSecret("JWT_ACCESS_SECRET", {
     value: env.JWT_ACCESS_SECRET,
