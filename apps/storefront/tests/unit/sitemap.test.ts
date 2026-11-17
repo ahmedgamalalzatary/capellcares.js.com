@@ -23,4 +23,11 @@ describe("sitemap", () => {
     expect(urls.some((url) => url.endsWith("/category/care"))).toBe(true);
     expect(urls.some((url) => url.endsWith("/category/empty"))).toBe(false);
   });
+
+  it("lists the all categories and all brands pages", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    expect(urls.some((url) => url.endsWith("/en/categories"))).toBe(true);
+    expect(urls.some((url) => url.endsWith("/en/brands"))).toBe(true);
+  });
 });

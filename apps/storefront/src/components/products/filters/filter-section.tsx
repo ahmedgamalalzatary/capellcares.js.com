@@ -50,7 +50,7 @@ export function FilterSection({
     };
   }, [open]);
 
-  const chevronColor = "var(--ink-3)";
+  const chevronColor = "var(--ink)";
 
   return (
     <div className="border-b border-(--hairline)">

@@ -17,8 +17,6 @@ import type { HeaderProps } from "../../../types/header.types";
 type HeaderMobileDrawerProps = Pick<HeaderProps, "lang" | "dict" | "menuEntries" | "brands" | "genders"> & {
   isAr: boolean;
   mobileOpen: boolean;
-  user: { id: number; name: string; email: string } | null;
-  accountHref: string;
   onClose: () => void;
   onSwitchLang: () => void;
 };
@@ -38,8 +36,6 @@ export function HeaderMobileDrawer({
   genders = [],
   isAr,
   mobileOpen,
-  user,
-  accountHref,
   onClose,
   onSwitchLang
 }: HeaderMobileDrawerProps) {
@@ -50,7 +46,8 @@ export function HeaderMobileDrawer({
   const chevron = `shrink-0 ${isAr ? "rotate-180" : ""}`;
 
   /** A + row (styled like New / Bestseller) that opens its list in place as white cards; picking a card goes to that item's page. */
-  const section = (id: Section, label: string, items: SectionItem[], all: { href: string; label: string }) => {
+  /** `all` adds an "All …" card above the entries; genders have none. */
+  const section = (id: Section, label: string, items: SectionItem[], all?: { href: string; label: string }) => {
     if (items.length === 0) return null;
     const open = openSection === id;
     return (
@@ -66,10 +63,12 @@ export function HeaderMobileDrawer({
         </button>
         {open && (
           <div className="grid gap-2.5 border-b border-(--hairline) py-3 ps-4 animate-in fade-in slide-in-from-top-2 duration-300 motion-reduce:animate-none">
-            <Link href={all.href} onClick={onClose} className={CARD}>
-              <span className="min-w-0 flex-1 truncate">{all.label}</span>
-              <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
-            </Link>
+            {all ? (
+              <Link href={all.href} onClick={onClose} className={CARD}>
+                <span className="min-w-0 flex-1 truncate">{all.label}</span>
+                <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
+              </Link>
+            ) : null}
             {items.map((item) => (
               <Link key={item.key} href={item.href} onClick={onClose} className={CARD}>
                 <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-white">
@@ -169,9 +168,9 @@ export function HeaderMobileDrawer({
         </Link>
 
         <div>
-          {section("genders", dict.nav.genders, genderItems, { href: `/${lang}/shop#genders`, label: dict.nav.allGenders })}
+          {section("genders", dict.nav.genders, genderItems)}
           {section("categories", dict.nav.categories, categoryItems, { href: `/${lang}/categories`, label: dict.nav.allCategories })}
-          {section("brands", dict.nav.brands, brandItems, { href: `/${lang}/shop#brands`, label: dict.nav.allBrands })}
+          {section("brands", dict.nav.brands, brandItems, { href: `/${lang}/brands`, label: dict.nav.allBrands })}
         </div>
 
         <Link href={`/${lang}/new`} onClick={onClose} className={ROW}>
@@ -185,14 +184,6 @@ export function HeaderMobileDrawer({
         <Link href={`/${lang}/offers`} onClick={onClose} className={ROW}>
           <span>{dict.nav.offers}</span>
           <Icon.Chevron className={`${chevron} text-(--ink-3)`} />
-        </Link>
-        <Link href={`/${lang}/wishlist`} onClick={onClose} className={ROW}>
-          <span>{dict.nav.wishlist}</span>
-          <Icon.Heart size={22} className="shrink-0 text-(--ink-3)" />
-        </Link>
-        <Link href={accountHref} onClick={onClose} className={ROW}>
-          <span>{user ? dict.nav.orders : dict.nav.account}</span>
-          <Icon.User size={22} className="shrink-0 text-(--ink-3)" />
         </Link>
 
         <div className="px-1 pt-6">

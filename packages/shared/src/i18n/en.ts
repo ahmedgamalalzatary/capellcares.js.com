@@ -355,8 +355,9 @@ export const en = {
   },
   shop: {
     byGender: "Shop by gender",
-    byCategory: "Shop by category",
-    byBrand: "Shop by brand",
+    byCategory: "Categories",
+    byBrand: "Brands",
+    viewAll: "View all",
     eyebrow: "The Falta shop",
     heading: "Everything you need, in one place.",
     description: "Toys, offers, new arrivals and advice, all from Falta.",

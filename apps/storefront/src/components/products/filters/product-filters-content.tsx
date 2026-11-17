@@ -57,7 +57,7 @@ export function ProductFiltersContent({
       {showSearch && (
       <FilterSection label={dict.nav.search} defaultOpen>
         <div className="flex items-center gap-[10px] rounded-[6px] bg-surface px-[14px] py-[9px]">
-          <Icon.Search size={14} className="shrink-0 text-(--ink-3)" />
+          <Icon.Search size={14} className="shrink-0 text-ink" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -70,7 +70,7 @@ export function ProductFiltersContent({
           {q && (
             <button
               onClick={() => setQ("")}
-              className="inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-(--warm-soft) text-(--ink-3)"
+              className="inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-(--warm-soft) text-ink"
             >
               <Icon.Close size={9} />
             </button>
@@ -125,7 +125,7 @@ export function ProductFiltersContent({
           <PriceInput value={priceRange.min} onChange={(value) => setPriceRange((state) => ({ ...state, min: value }))} placeholder={dict.filters.priceMin} lang={lang} />
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-(--hairline)" />
-            <span className="text-[10px] font-semibold text-(--ink-3)">
+            <span className="text-[10px] font-semibold text-ink">
               {dict.filters.to}
             </span>
             <div className="h-px flex-1 bg-(--hairline)" />

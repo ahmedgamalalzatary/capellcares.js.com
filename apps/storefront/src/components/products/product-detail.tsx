@@ -100,7 +100,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
   return (
     <>
       <div className="grid gap-6 py-2 sm:gap-8 sm:py-4 lg:grid-cols-[.7fr_1fr] lg:gap-15">
-        <div className="grid gap-3 self-start sm:gap-4 lg:sticky lg:top-35">
+        <div className="grid gap-3 self-start sm:gap-4">
           <EntityMediaGallery
             key={colorId ?? 0}
             media={galleryMedia}
@@ -131,7 +131,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
         <div className="grid gap-5 self-start sm:gap-7 lg:gap-8">
           {/* On every screen size the description block is pulled up under the ratings; -order-2/-order-1 keep the title group first and the description second. */}
           <div className="-order-2 grid gap-3">
-            <h1 className={"m-0 text-[clamp(26px,3.4vw,40px)] font-extrabold leading-[1.15] text-ink"}>
+            <h1 className={"m-0 text-[clamp(20px,3.4vw,32px)] font-extrabold leading-[1.15] text-ink"}>
               {pickLang(product.name, lang)}
             </h1>
             {categoryName ? (
@@ -228,7 +228,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
                       disabled={!available}
                     >
                       <span className="text-base font-medium">{label}</span>
-                      {item ? <span className="text-sm opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span> : null}
+                      {item ? <span className="text-base opacity-80">{formatPrice(getEffectiveVariantPrice(item), lang)}</span> : null}
                     </button>
                   );
                 })}
@@ -240,9 +240,9 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
             <div className="font-bold text-(--ink-2)">
               {dict.common.quantity}
             </div>
-            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) border border-ink bg-transparent p-1">
+            <div className="flex w-full items-center justify-between gap-1 rounded-(--radius-pill) border border-(--hairline) bg-surface p-1">
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.max(1, value - 1))}
                 aria-label="−"
                 disabled={qty <= 1}
@@ -251,7 +251,7 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
               </button>
               <span className="min-w-10 text-center text-base font-semibold tabular-nums text-ink">{qty}</span>
               <button
-                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+                className="grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-(--ink-2) transition-colors hover:bg-(--warm-soft) hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                 onClick={() => setQty((value) => Math.min(variant?.stock || 1, value + 1))}
                 aria-label="+"
                 disabled={variant == null || qty >= (variant?.stock ?? 0)}
@@ -262,17 +262,17 @@ export function ProductDetail({ product, offers, lang, dict, categoryName, relat
           </div>
 
           <div className="grid sm:grid-cols-[1fr_1fr_auto]">
-            <button className="btn btn--primary btn--flat btn--block" onClick={addToCart} disabled={isOutOfStock}>
+            <button className="btn btn--main btn--primary btn--block" onClick={addToCart} disabled={isOutOfStock}>
               {added ? dict.common.added : dict.common.addToCart}
             </button>
-            <button className="btn btn--outline-ink btn--flat btn--block" onClick={buyNow} disabled={isOutOfStock}>
+            <button className="btn btn--main btn--ghost btn--block" onClick={buyNow} disabled={isOutOfStock}>
               {dict.common.buyNow}
             </button>
             <ShareButton
               path={`/${lang}/products/${product.slug}`}
               title={pickLang(product.name, lang)}
               dict={dict}
-              className="btn--outline-ink"
+              className="btn--main"
             />
           </div>
 

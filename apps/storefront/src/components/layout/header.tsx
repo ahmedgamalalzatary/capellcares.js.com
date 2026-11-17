@@ -199,9 +199,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
         genders={genders}
         isAr={isAr}
         mobileOpen={mobileOpen}
-        user={user}
         onClose={() => setMobileOpen(false)}
-        accountHref={accountHref}
         onSwitchLang={switchLang}
       />
       </header>

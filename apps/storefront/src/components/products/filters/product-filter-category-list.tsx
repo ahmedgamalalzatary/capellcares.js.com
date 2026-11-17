@@ -42,7 +42,7 @@ function ParentToggle({
       aria-expanded={isOpen}
       onClick={onClick}
       className={cn(
-        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border-0 text-(--ink-3) transition-[background] duration-[160ms]",
+        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border-0 text-ink transition-[background] duration-[160ms]",
         compact ? "size-5" : "size-6",
         isOpen ? "bg-[oklch(0_0_0_/_0.06)]" : "bg-transparent"
       )}

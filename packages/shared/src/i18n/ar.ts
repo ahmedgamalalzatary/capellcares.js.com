@@ -357,8 +357,9 @@ export const ar = {
   },
   shop: {
     byGender: "تسوق حسب النوع",
-    byCategory: "تسوق حسب الفئة",
-    byBrand: "تسوق حسب الماركة",
+    byCategory: "الأقسام",
+    byBrand: "الماركات",
+    viewAll: "عرض الكل",
     eyebrow: "متجر فلتة",
     heading: "كل ما تحتاجه، في مكان واحد.",
     description: "ألعاب وعروض ومنتجات جديدة ونصائح، كلها من فلتة.",

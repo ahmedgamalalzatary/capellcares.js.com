@@ -30,6 +30,18 @@ function CategoryTile({ category, lang }: { category: Category; lang: Language }
   );
 }
 
+/** A shop section's title with a "View all" link at the other end of the line, leading to the section's all page. */
+export function ShopSectionHeading({ children, color, viewAll }: { children: ReactNode; color?: Parameters<typeof ShopHeading>[0]["color"]; viewAll: { href: string; label: string } }) {
+  return (
+    <div className="shop-title-row">
+      <ShopHeading color={color}>{children}</ShopHeading>
+      <Link href={viewAll.href} className="shrink-0 text-sm font-bold text-(--violet) underline-offset-4 hover:underline">
+        {viewAll.label}
+      </Link>
+    </div>
+  );
+}
+
 /** One sideways line of category cards on every screen size: phones swipe it, desktop uses the row's arrows. */
 export function CategoryTiles({ categories, lang }: { categories: Category[]; lang: Language }) {
   return (
@@ -54,26 +66,44 @@ export function CategoryGrid({ categories, lang, label }: { categories: Category
   );
 }
 
+/** One brand plate: its logo (or first letter), then its name. Shared by the shop page's row and the all brands page's grid. */
+function BrandTile({ brand, lang, index }: { brand: ProductAttribute; lang: Language; index: number }) {
+  const name = pickLang(brand.name, lang);
+  const imagePath = brand.imagePath ? resolveMediaUrl(brand.imagePath) : "";
+  return (
+    <Link href={`/${lang}/brands/${brand.slug}`} className={`toy-plate toy-plate--${PLATE_COLORS[index % PLATE_COLORS.length]}`}>
+      <span className="toy-plate__media">
+        {imagePath ? (
+          <Image src={imagePath} alt="" fill sizes="(min-width: 1024px) 10vw, 26vw" className="object-contain" />
+        ) : (
+          <span aria-hidden="true" className="toy-initial">{name.charAt(0)}</span>
+        )}
+      </span>
+      <span className="toy-label">{name}</span>
+    </Link>
+  );
+}
+
 export function BrandTiles({ brands, lang }: { brands: ProductAttribute[]; lang: Language }) {
   return (
     <ShopCardRow lang={lang} cols={3}>
-      {brands.map((brand, index) => {
-        const name = pickLang(brand.name, lang);
-        const imagePath = brand.imagePath ? resolveMediaUrl(brand.imagePath) : "";
-        return (
-          <Link key={brand.id} href={`/${lang}/brands/${brand.slug}`} className={`toy-plate toy-plate--${PLATE_COLORS[index % PLATE_COLORS.length]}`}>
-            <span className="toy-plate__media">
-              {imagePath ? (
-                <Image src={imagePath} alt="" fill sizes="(min-width: 1024px) 10vw, 26vw" className="object-contain" />
-              ) : (
-                <span aria-hidden="true" className="toy-initial">{name.charAt(0)}</span>
-              )}
-            </span>
-            <span className="toy-label">{name}</span>
-          </Link>
-        );
-      })}
+      {brands.map((brand, index) => (
+        <BrandTile key={brand.id} brand={brand} lang={lang} index={index} />
+      ))}
     </ShopCardRow>
+  );
+}
+
+/** The all brands page: the same plates as the shop row, each a fixed small circle (104px, 140px from tablets up); a line fits as many as the screen allows, down to one on a very narrow screen. */
+export function BrandGrid({ brands, lang, label }: { brands: ProductAttribute[]; lang: Language; label: string }) {
+  return (
+    <ul aria-label={label} className="m-0 [display:grid] list-none grid-cols-[repeat(auto-fill,104px)] gap-4 p-0 sm:grid-cols-[repeat(auto-fill,140px)] lg:gap-6">
+      {brands.map((brand, index) => (
+        <li key={brand.id} className="min-w-0">
+          <BrandTile brand={brand} lang={lang} index={index} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

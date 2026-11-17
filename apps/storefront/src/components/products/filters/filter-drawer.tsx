@@ -211,10 +211,10 @@ export function FilterDrawer({
         </div>
 
         <div className="sticky bottom-0 z-[2] flex shrink-0 gap-[10px] border-t border-(--hairline) bg-(--page-bg) px-5 py-4">
-          <button onClick={onClear} className="btn btn--sm flex-1">
+          <button onClick={onClear} className="btn btn--main btn--sm flex-1">
             {dict.common.clear}
           </button>
-          <button onClick={onClose} className="btn btn--primary btn--sm flex-[2]">
+          <button onClick={onClose} className="btn btn--main btn--primary btn--sm flex-[2]">
             {dict.filters.showResults ?? "Show results"}
           </button>
         </div>

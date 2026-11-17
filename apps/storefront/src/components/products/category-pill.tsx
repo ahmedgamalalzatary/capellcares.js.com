@@ -24,7 +24,7 @@ export function CategoryPill({
           indent ? "h-[30px] text-[12px]" : "h-[34px] text-[13px]",
           checked
             ? "bg-[oklch(0.32_0.018_85_/_0.08)] font-semibold text-(--accent)"
-            : "bg-transparent font-normal text-(--ink-3)"
+            : "bg-transparent font-normal text-ink"
         )}
       >
         {checked && (

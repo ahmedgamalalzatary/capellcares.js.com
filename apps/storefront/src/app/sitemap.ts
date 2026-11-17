@@ -50,6 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: absoluteUrl(localizePath(locale)) },
       { url: absoluteUrl(localizePath(locale, "/products")) },
       { url: absoluteUrl(localizePath(locale, "/categories")) },
+      { url: absoluteUrl(localizePath(locale, "/brands")) },
       { url: absoluteUrl(localizePath(locale, "/offers")) },
       { url: absoluteUrl(localizePath(locale, "/collections")) },
       { url: absoluteUrl(localizePath(locale, "/contact")) }

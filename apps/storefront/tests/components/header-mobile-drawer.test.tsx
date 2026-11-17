@@ -98,8 +98,6 @@ function renderDrawer(overrides: Record<string, unknown> = {}) {
     genders,
     isAr: false,
     mobileOpen: true,
-    user: null,
-    accountHref: "/en/login",
     onClose: vi.fn(),
     onSwitchLang: vi.fn(),
     ...overrides
@@ -143,13 +141,12 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("link", { name: "Girls" })).toBeInTheDocument();
   });
 
-  it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, wishlist, account, follow us, then the language switch", () => {
+  it("orders the menu: shop, gender, categories, brands, new, bestseller, offers, follow us, then the language switch", () => {
     renderDrawer();
     const nav = screen.getByRole("navigation");
     const rows = Array.from(nav.querySelectorAll("a, button")).map((row) => row.textContent?.trim()).filter(Boolean);
-    expect(rows).toEqual(["Shop", "Gender", "Categories", "Brands", "New", "Bestseller", "Offers", "Wishlist", "Account"]);
-    expect(screen.getByRole("link", { name: "Wishlist" })).toHaveAttribute("href", "/en/wishlist");
-    expect(screen.getByRole("link", { name: "Account" }).compareDocumentPosition(screen.getByText("Follow us")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rows).toEqual(["Shop", "Gender", "Categories", "Brands", "New", "Bestseller", "Offers"]);
+    expect(screen.getByRole("link", { name: "Offers" }).compareDocumentPosition(screen.getByText("Follow us")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(nav.compareDocumentPosition(screen.getByRole("button", { name: "English" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -170,7 +167,7 @@ describe("HeaderMobileDrawer", () => {
   it("opens brands like categories: all brands first, then each brand with its picture, leaving out brands with no toys", () => {
     renderDrawer();
     fireEvent.click(screen.getByRole("button", { name: "Brands" }));
-    expect(screen.getByRole("link", { name: "All Brands" })).toHaveAttribute("href", "/en/shop#brands");
+    expect(screen.getByRole("link", { name: "All Brands" })).toHaveAttribute("href", "/en/brands");
     const lego = screen.getByRole("link", { name: "LEGO" });
     expect(lego).toHaveAttribute("href", "/en/brands/lego");
     expect(lego.querySelector("img")?.getAttribute("src")).toContain("lego.png");
@@ -190,10 +187,10 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.getByRole("link", { name: "Girls" })).toHaveAttribute("href", "/en/genders/girls");
   });
 
-  it("shows each gender with its picture in the page language, under an all genders link", () => {
+  it("shows each gender with its picture in the page language, with no all genders link", () => {
     renderDrawer();
     fireEvent.click(screen.getByRole("button", { name: "Gender" }));
-    expect(screen.getByRole("link", { name: "All Genders" })).toHaveAttribute("href", "/en/shop#genders");
+    expect(screen.queryByRole("link", { name: "All Genders" })).toBeNull();
     expect(screen.getByRole("link", { name: "Girls" }).querySelector("img")?.getAttribute("src")).toContain("girls.png");
     cleanup();
 
@@ -227,18 +224,14 @@ describe("HeaderMobileDrawer", () => {
     expect(screen.queryByRole("link", { name: "Body" })).toBeNull();
   });
 
-  it("links the main pages, and the account or orders page", () => {
+  it("links the main pages, with no wishlist, account or orders rows", () => {
     renderDrawer();
     expect(screen.getByRole("link", { name: "Shop" })).toHaveAttribute("href", "/en/shop");
     expect(screen.getByRole("link", { name: "New" })).toHaveAttribute("href", "/en/new");
     expect(screen.getByRole("link", { name: "Bestseller" })).toHaveAttribute("href", "/en/bestsellers");
-    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/en/login");
-  });
-
-  it("shows Orders instead of Account once signed in", () => {
-    renderDrawer({ user: { id: 1, name: "A", email: "a@b.c" }, accountHref: "/en/orders" });
-    expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/en/orders");
-    expect(screen.queryByRole("link", { name: "Account" })).toBeNull();
+    for (const name of ["Wishlist", "Account", "Orders"]) {
+      expect(screen.queryByRole("link", { name })).toBeNull();
+    }
   });
 
   it("closes after a link is followed", () => {

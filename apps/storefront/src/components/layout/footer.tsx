@@ -32,7 +32,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
           <div className="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 lg:border-s lg:border-white/20 lg:ps-12">
             <FooterCol title={dict.footer.shopTitle}>
               <FooterLink href={`/${lang}/categories`}>{dict.footer.categories}</FooterLink>
-              <FooterLink href={`/${lang}/shop#brands`}>{dict.footer.brands}</FooterLink>
+              <FooterLink href={`/${lang}/brands`}>{dict.footer.brands}</FooterLink>
               <FooterLink href={`/${lang}/new`}>{dict.footer.new}</FooterLink>
               <FooterLink href={`/${lang}/bestsellers`}>{dict.footer.bestseller}</FooterLink>
               <FooterLink href={`/${lang}/offers`}>{dict.footer.offers}</FooterLink>
@@ -78,13 +78,17 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
 
         {/* [display:grid], not grid: the global .grid class carries its own gap. Equal outer columns keep the badges in the true middle. */}
         <div className="[display:grid] items-center justify-items-center gap-6 border-t border-white/20 py-6 min-[880px]:grid-cols-[1fr_auto_1fr]">
-          <div
-            role="img"
-            aria-label={dict.footer.paymentMethods}
-            title={dict.footer.paymentMethods}
-            className="flex h-14 w-28 items-center justify-center overflow-hidden text-(--sunny) min-[880px]:justify-self-start"
-          >
-            <Icon.CashOnDelivery className="h-24 w-24" />
+          {/* Payment methods: cash on delivery, then Taly. */}
+          <div className="flex items-center gap-4 min-[880px]:justify-self-start">
+            <div
+              role="img"
+              aria-label={dict.footer.paymentMethods}
+              title={dict.footer.paymentMethods}
+              className="flex h-14 w-28 items-center justify-center overflow-hidden text-(--sunny)"
+            >
+              <Icon.CashOnDelivery className="h-24 w-24" />
+            </div>
+            <Image src="/payments/taly.svg" alt="Taly" title="Taly" width={87} height={40} className="h-10 w-auto" />
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">

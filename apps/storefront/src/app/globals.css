@@ -163,12 +163,32 @@ body {
 
 /* Flat: kept for existing markup; every button is flat now. */
 .btn--flat { margin-bottom: 0; }
-/* Outline in the footer colour: no fill, a 1px ink ring (product page quantity / buy now / share). */
-.btn--outline-ink, .btn--outline-ink:hover, .btn--outline-ink:active { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 
 .btn--sm { height: 38px; padding: 0 16px; font-size: 14px; }
 .btn--lg { height: 54px; padding: 0 30px; font-size: 17px; }
 .btn--block { width: 100%; }
+
+/* Capella (main) button shape in Falta's colours: 10px corners, a 1px border, a small lift on hover.
+   Used by the product page's add to cart / buy now / share and the filter drawer's clear / show results. */
+.btn--main {
+  height: 44px; padding: 0 22px; border-radius: 10px;
+  border: 1px solid transparent; background: var(--ink); color: var(--canvas);
+  font-weight: 600; letter-spacing: 0.01em;
+  transition: transform var(--motion-fast) var(--ease-out-quart),
+              background var(--motion-fast) var(--ease-out-quart),
+              color var(--motion-fast) var(--ease-out-quart),
+              border-color var(--motion-fast) var(--ease-out-quart),
+              box-shadow var(--motion-fast) var(--ease-out-quart);
+}
+.btn--main:hover { background: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.btn--main:active { transform: translateY(0); box-shadow: none; }
+.btn--main.btn--primary { background: var(--accent); color: var(--canvas); }
+.btn--main.btn--primary:hover { background: var(--accent-deep); }
+.btn--main.btn--ghost { background: transparent; color: var(--ink); border-color: var(--hairline-strong); box-shadow: none; }
+.btn--main.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); box-shadow: var(--shadow-1); }
+.btn--main.btn--soft { background: var(--warm-soft); color: var(--ink); }
+.btn--main.btn--soft:hover { background: var(--warm); color: var(--canvas); }
+.btn--main.btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
 
 /* ============================================================
    Fields — cream surface, warm hairline, accent focus ring.
@@ -558,6 +578,9 @@ body {
   color: var(--ink);
 }
 .shop-title > svg { color: var(--title); }
+/* A title with its "View all" link on the same line; the row carries the gap below instead of the title. */
+.shop-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
+.shop-title-row > .shop-title { margin: 0; }
 .shell[lang="ar"] .shop-title { font-family: var(--font-ar-display); font-weight: 400; }
 .shop-title--magenta { --title: var(--magenta); }
 .shop-title--blue    { --title: var(--blue); }
@@ -642,7 +665,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn, .toy-tile, .toy-plate__media { transition: none; }
+  .btn, .btn--main, .toy-tile, .toy-plate__media { transition: none; }
 }
 
 /* ============================================================

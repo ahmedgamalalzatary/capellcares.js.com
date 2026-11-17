@@ -32,8 +32,9 @@ vi.mock("@capella/shared", async () => {
       },
       shop: {
         byGender: "Shop by gender",
-        byCategory: "Shop by category",
-        byBrand: "Shop by brand"
+        byCategory: "Categories",
+        byBrand: "Brands",
+        viewAll: "View all"
       },
       common: { previous: "Previous", next: "Next" },
       shopMedia: {
@@ -173,8 +174,8 @@ describe("shop page", () => {
       el.tagName === "H2" ? el.textContent : "image"
     );
     expect(order).toEqual([
-      "image", "Shop by category",
-      "image", "Shop by brand",
+      "image", "Categories",
+      "image", "Brands",
       "image",
       "image", "Advice",
       "image"
@@ -222,8 +223,15 @@ describe("shop page", () => {
 
   it("gives the footer's Category and Brands links a place to land", async () => {
     const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    expect(container.querySelector("#categories")).toHaveTextContent("Shop by category");
-    expect(container.querySelector("#brands")).toHaveTextContent("Shop by brand");
+    expect(container.querySelector("#categories")).toHaveTextContent("Categories");
+    expect(container.querySelector("#brands")).toHaveTextContent("Brands");
+  });
+
+  it("puts a view all link beside the categories and brands titles, leading to their all pages", async () => {
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const inSection = (id: string) => Array.from(container.querySelectorAll(`#${id} a`)).find((a) => a.textContent === "View all");
+    expect(inSection("categories")).toHaveAttribute("href", "/en/categories");
+    expect(inSection("brands")).toHaveAttribute("href", "/en/brands");
   });
 
   it("shows the gender picture made for the page's language", () => {

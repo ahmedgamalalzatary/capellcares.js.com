@@ -32,6 +32,11 @@ export async function loadCategoriesPageData(lang: string): Promise<Category[]> 
   return safeList(() => fetchCategories({ lang }));
 }
 
+/** The all brands page: every brand; the page itself keeps the ones that have products. */
+export async function loadBrandsPageData(lang: string): Promise<ProductAttribute[]> {
+  return safeList(() => fetchBrands({ lang }));
+}
+
 export async function loadSitemapData(): Promise<{
   products: Product[];
   categories: Category[];

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getDict } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
-import { BrandTiles, CategoryTiles, GenderTiles, ShopHeading } from "@/components/shop/shop-tiles";
+import { BrandTiles, CategoryTiles, GenderTiles, ShopSectionHeading } from "@/components/shop/shop-tiles";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -48,7 +48,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {mainCategories.length > 0 && (
         <section id="categories" className="mb-14 scroll-mt-28">
-          <ShopHeading color="magenta">{dict.shop.byCategory}</ShopHeading>
+          <ShopSectionHeading color="magenta" viewAll={{ href: `/${lang}/categories`, label: dict.shop.viewAll }}>
+            {dict.shop.byCategory}
+          </ShopSectionHeading>
           <CategoryTiles categories={mainCategories} lang={lang} />
         </section>
       )}
@@ -57,7 +59,9 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
 
       {shopBrands.length > 0 && (
         <section id="brands" className="mb-6 scroll-mt-28">
-          <ShopHeading color="blue">{dict.shop.byBrand}</ShopHeading>
+          <ShopSectionHeading color="blue" viewAll={{ href: `/${lang}/brands`, label: dict.shop.viewAll }}>
+            {dict.shop.byBrand}
+          </ShopSectionHeading>
           <BrandTiles brands={shopBrands} lang={lang} />
         </section>
       )}

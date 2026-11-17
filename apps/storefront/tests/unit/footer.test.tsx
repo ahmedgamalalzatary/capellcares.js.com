@@ -51,6 +51,18 @@ describe("footer", () => {
     }
   });
 
+  it("shows the Taly logo next to cash on delivery", () => {
+    for (const lang of ["en", "ar"] as const) {
+      const dict = getDict(lang);
+      const { unmount } = render(<Footer lang={lang} dict={dict} />);
+      const cash = screen.getByRole("img", { name: dict.footer.paymentMethods });
+      const taly = screen.getByRole("img", { name: "Taly" });
+      expect(taly).toHaveAttribute("src", "/payments/taly.svg");
+      expect(cash.compareDocumentPosition(taly) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      unmount();
+    }
+  });
+
   it("credits bit Technology", () => {
     render(<Footer lang="en" dict={getDict("en")} />);
     expect(screen.getByText(/bit Technology/)).toBeInTheDocument();
@@ -71,7 +83,7 @@ describe("footer", () => {
   it("offers Category and Brands in the shop column, in place of Shop and All toys", () => {
     render(<Footer lang="en" dict={getDict("en")} />);
     expect(screen.getByRole("link", { name: "Category" })).toHaveAttribute("href", "/en/categories");
-    expect(screen.getByRole("link", { name: "Brands" })).toHaveAttribute("href", "/en/shop#brands");
+    expect(screen.getByRole("link", { name: "Brands" })).toHaveAttribute("href", "/en/brands");
     expect(screen.queryByRole("link", { name: "Shop" })).toBeNull();
     expect(screen.queryByRole("link", { name: "All toys" })).toBeNull();
   });
