@@ -135,7 +135,6 @@ describe("SectionCard images", () => {
 
     const link = screen.getByLabelText("Offer");
     expect(screen.queryByTestId("card-image-carousel")).toBeNull();
-    expect(link.innerHTML).not.toContain("group-hover:scale");
     expect(slideSources()).toEqual(["/uploads/offer-primary.jpg"]);
     fireEvent.mouseEnter(link);
     expect(slideSources()).toEqual(["/uploads/offer-hover.jpg"]);

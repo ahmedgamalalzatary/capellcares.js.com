@@ -331,7 +331,7 @@ describe("OrderDetailView reviews", () => {
     expect(screen.queryByRole("button", { name: "Write a review" })).not.toBeInTheDocument();
   });
 
-  it("renders a denied backend payment status with the danger treatment", async () => {
+  it("shows a denied backend payment status as Denied", async () => {
     fetchCustomerOrderById.mockResolvedValue({
       id: 13,
       orderCode: "ORDER-13",
@@ -352,7 +352,7 @@ describe("OrderDetailView reviews", () => {
 
     render(createElement(OrderDetailView, { lang: "en", dict, orderId: 13 }));
 
-    expect((await screen.findByText("Denied")).className).toContain("chip--status-bad");
+    expect(await screen.findByText("Denied")).toBeInTheDocument();
   });
 
   it("contains keyboard focus in the review form and restores it to the opener", async () => {

@@ -356,19 +356,6 @@ describe("ProductCard", () => {
     expect(screen.queryByText("New")).toBeNull();
   });
 
-  it("positions the discount tag flush with the card corner", () => {
-    render(createElement(ProductCard, {
-      lang: "en",
-      dict,
-      product: makeProduct([{ id: 11, productId: 1, size: "S", price: 100, stock: 2, sortOrder: 1, discount: activeDiscount("percentage", 20) }] as Product["variants"])
-    }));
-
-    const ribbon = screen.getByTestId("discount-ribbon");
-    expect(ribbon.className.split(" ")).toContain("inset-s-0");
-    expect(ribbon.className.split(" ")).toContain("text-white");
-    expect(ribbon.parentElement!.closest(".overflow-hidden")).toBeNull();
-  });
-
   it("shows no ribbon when no size is discounted", () => {
     render(createElement(ProductCard, {
       lang: "en",

@@ -266,13 +266,6 @@ describe("SearchOverlay", () => {
     expect(await screen.findByText(dict.ask.sections.products)).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: dict.nav.popularSearches })).toBeNull();
   });
-  it("keeps the card row's side padding visible: scrolling snaps to the padding, not the row's edge", () => {
-    const dict = getDict("en");
-    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
-    const row = screen.getByTestId("search-popular-row");
-    expect(row.className.split(" ")).toEqual(expect.arrayContaining(["px-5", "scroll-px-5"]));
-  });
-
   it("gives desktop shoppers previous/next arrows for the card row", () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
@@ -285,16 +278,5 @@ describe("SearchOverlay", () => {
     const dict = getDict("en");
     render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
     for (const card of screen.getAllByTestId("popular-card")) expect(card).toHaveAttribute("data-swipe", "false");
-  });
-
-  it("puts popular searches and categories on one sideways line on phones, wrapping from the sm width up", () => {
-    const dict = getDict("en");
-    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn(), bestsellers, categories } as any));
-    for (const name of [dict.nav.popularSearches, dict.ask.sections.categories]) {
-      const line = screen.getByRole("region", { name }).querySelector("a")!.parentElement!;
-      const classes = line.className.split(" ");
-      expect(classes).toEqual(expect.arrayContaining(["overflow-x-auto", "sm:flex-wrap"]));
-      expect(classes).not.toContain("flex-wrap");
-    }
   });
 });

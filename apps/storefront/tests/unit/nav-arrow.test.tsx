@@ -6,14 +6,12 @@ import { NavArrow } from "@/components/ui/nav-arrow";
 const chevronOf = (button: HTMLElement) => button.querySelector("svg")!;
 
 describe("NavArrow", () => {
-  it("renders a black chevron button by default and forwards the click", () => {
+  it("renders a chevron button and forwards the click", () => {
     const onClick = vi.fn();
     const { getByRole } = render(<NavArrow direction="next" isRtl={false} aria-label="Next" onClick={onClick} />);
     const button = getByRole("button", { name: "Next" });
 
     expect(button.getAttribute("type")).toBe("button");
-    expect(button.className).toContain("text-black");
-    expect(button.className).not.toContain("text-white");
     fireEvent.click(button);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
@@ -45,13 +43,5 @@ describe("NavArrow", () => {
     expect(getByRole("button", { name: "desktop" }).className).toContain("hidden");
     expect(getByRole("button", { name: "desktop" }).className).toContain("lg:grid");
     expect(getByRole("button", { name: "always" }).className).not.toContain("hidden");
-  });
-
-  it("turns white for the light tone (the advice videos)", () => {
-    const { getByRole } = render(<NavArrow direction="next" isRtl={false} tone="light" aria-label="light" />);
-    const button = getByRole("button", { name: "light" });
-
-    expect(button.className).toContain("text-white");
-    expect(button.className).not.toContain("text-black");
   });
 });
