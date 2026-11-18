@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import type { CheckoutPayload } from "../../types/domain.js";
-import type { CheckoutShippingQuote } from "@capella/shared";
+import { normalizeEgyptianPhone, type CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
@@ -105,12 +105,6 @@ async function handleIntentionFailure(input: {
       .where(and(eq(paymentAttempts.id, input.attemptId), eq(paymentAttempts.status, "created")));
   }
   throw input.error;
-}
-
-function normalizeEgyptianPhone(phone: string): string {
-  if (phone.startsWith("+20")) return phone;
-  if (phone.startsWith("0020")) return `+20${phone.slice(4)}`;
-  return `+20${phone.replace(/^0/, "")}`;
 }
 
 function checkoutReturnUrl(redirectionUrl: string, checkoutId: string): string {

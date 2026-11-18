@@ -269,6 +269,8 @@ test("shipping overview searches, filters and sorts on the server", async () => 
     assert.deepEqual(await rows("payment=paymob"), [`${unsent.order.id}:outgoing`]);
     assert.deepEqual(await rows("q=R-8001"), [`${sent.order.id}:return`]);
     assert.deepEqual(await rows(`q=${encodeURIComponent(unsent.order.orderCode)}`), [`${unsent.order.id}:outgoing`]);
+    // Both orders were placed with 01012345678 and stored as +201012345678; the local form still finds them.
+    assert.deepEqual((await rows("q=01012345678")).sort(), [`${sent.order.id}:outgoing`, `${sent.order.id}:return`, `${unsent.order.id}:outgoing`].sort());
     assert.deepEqual(await rows(`from=${encodeURIComponent(new Date(Date.now() + 86_400_000).toISOString())}`), []);
     // Carrier states sort in their natural order (created before delivered); rows without a carrier state go last.
     assert.deepEqual(await rows("sort=carrier"), [`${sent.order.id}:outgoing`, `${sent.order.id}:return`, `${unsent.order.id}:outgoing`]);

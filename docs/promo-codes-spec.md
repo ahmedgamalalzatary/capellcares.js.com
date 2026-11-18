@@ -505,7 +505,7 @@ Sources: [Create your first delivery](https://docs.bosta.co/docs/how-to/create-y
 - COD path: `orders.phone = payload.phone` as typed (`orders.service.ts`).
 - Paymob path: `normalizeEgyptianPhone` → `+20…` (`paymob-checkout.service.ts:110`).
 - First-order and per-customer checks by phone would miss matches across formats.
-- **Fix before promo work:** one shared normalizer in `@capella/shared`, used by every write of `orders.phone`, `checkout_sessions.phone` and customer phones; migration to normalize existing rows; tests for both checkout paths.
+- **Done (Phase 0):** `normalizeEgyptianPhone` in `@capella/shared` (`constants/phone.ts`) is used by COD orders, Paymob sessions, shipment edits and the Bosta recipient check. Migration `0068_normalize_phones` rewrites existing `orders.phone` and `checkout_sessions.phone`. Customers have no phone column; the "account phone" for first-order and per-customer checks means the phones on that account's previous orders. Staff search still finds a phone typed as `010…`, since it is a substring of `+2010…`.
 
 ### 10.4 Test checklist
 
@@ -549,20 +549,20 @@ Sources: [Create your first delivery](https://docs.bosta.co/docs/how-to/create-y
 ### 11.1 To confirm
 
 - ~~"Biggest saving" ranking~~ **Decided (2026-11-18):** measured against the piece's **original price** (original − code price), not against the sale price. A chosen sale piece can therefore end up costing more than its sale price; the confirmation dialog (§9.4) shows that new price before the code is applied.
-- Timezone of server, DB and ERP date inputs (Cairo) before scheduled codes go live.
+- ~~Timezone~~ **Checked (2026-11-18):** the server, every capellastore container and MySQL run on UTC, and the DB driver reads dates as UTC. No change needed. Promo start and end times are stored in UTC; the ERP converts them from and to Cairo time in the browser (Egypt observes daylight saving time, so never add a fixed +2/+3 offset).
 
-### 11.2 Ask Bosta support
+### 11.2 Bosta (answered by the owner, 2026-11-18)
 
-- Fees per delivery type and any COD collection fee
-- Extra charges when the actual package is larger than declared (affects gifts)
-- Whether COD can be edited after creation, and until which state
-- Partial delivery behaviour
+- **COD fee:** none on top of the delivery fee. Free shipping costs us exactly the delivery fee.
+- **Oversize charges:** still open. Keep the gift in the declared parcel size (§5.2).
+- **COD edits after creation:** never. Any amount change means cancel and recreate (matches current code).
+- **Partial delivery:** not offered. The customer accepts the whole order or refuses it, so no per-item partial-collection logic is needed.
 
-### 11.3 Ask Paymob support
+### 11.3 Paymob (answered by the owner, 2026-11-18)
 
-- What happens when an unpaid intention expires; can a payment still complete?
-- Minimum transaction amount
-- Partial refund support for wallets, Fawry/kiosk, valU/installments
+- **Late payment:** a customer can still pay after our session or intention expired. Late-payment handling (§5.4, `over_limit`) is a main path, not a rare safety net.
+- **Minimum amount:** 10 EGP (confirmed).
+- **Payment methods:** card and mobile wallet only (`paymob-config.ts`: card and wallet integrations). Both support partial refunds.
 
 ---
 
@@ -575,8 +575,8 @@ Each phase can be released on its own. It leaves production working and has its 
 **Goal:** fix what the promo checks depend on.
 
 - Phone normalization: one shared normalizer, used on every phone write, plus a migration for existing orders, sessions and customers (§10.3).
-- Verify the timezone of the server, database and ERP date inputs (Cairo), and fix it if needed.
-- Send the open questions to Bosta and Paymob support (§11.2, §11.3). Their answers can arrive while later phases are built.
+- ~~Verify the timezone~~ Checked: everything runs on UTC; no fix needed (§11.1).
+- ~~Send the open questions to Bosta and Paymob support~~ Answered by the owner (§11.2, §11.3); only Bosta oversize charges stay open.
 - ~~Confirm the "biggest saving" ranking (§11.1).~~ Decided: against the original price.
 
 **Done when:** COD and Paymob orders both save `+20…` phones, existing rows are migrated, and the tests pass.

@@ -28,7 +28,7 @@ test("unsent orders accept staff no-money edits on the order record without touc
   assert.equal(result.linked, false);
   const order = await currentOrder(f.order.id);
   assert.equal(order.fullName, "Edited Recipient");
-  assert.equal(order.phone, "01012345678");
+  assert.equal(order.phone, "+201012345678");
   assert.equal(order.addressLine, "Edited line");
   assert.equal(order.buildingApartment, "Edited building");
   assert.equal(order.notes, "Edited notes");

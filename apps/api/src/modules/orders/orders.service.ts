@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
+import { normalizeEgyptianPhone } from "@capella/shared";
 import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
 import { createOrderWithItems } from "./order.repository.js";
 import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repository.js";
@@ -281,7 +282,7 @@ export async function createOrderFromCheckout(
       customerType: payload.customerId ? "registered" : "guest",
       customerId: payload.customerId ?? null,
       fullName: payload.fullName,
-      phone: payload.phone,
+      phone: normalizeEgyptianPhone(payload.phone),
       email: payload.email,
       governorate: shipping?.address.cityName.en ?? payload.governorate,
       cityArea: shipping ? `${shipping.address.zoneName.en} / ${shipping.address.districtName.en}`.slice(0, 120) : payload.cityArea,
