@@ -65,9 +65,11 @@ describe("AuthForm login submit", () => {
     expect(auth.signup).not.toHaveBeenCalled();
   });
 
-  it("asks for nothing on an empty login form", () => {
+  it("asks for nothing on an empty login form, under a title with no brand eyebrow above it", () => {
     const dict = getDict("en");
     render(<AuthForm mode="login" lang="en" dict={dict} />);
+    expect(screen.getByRole("heading", { level: 1, name: dict.auth.loginTitle })).toBeInTheDocument();
+    expect(screen.queryByText(dict.brand)).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: dict.auth.loginCta }));
 

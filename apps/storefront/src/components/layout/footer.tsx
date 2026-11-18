@@ -88,7 +88,11 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
             >
               <Icon.CashOnDelivery className="h-24 w-24" />
             </div>
-            <Image src="/payments/taly.svg" alt="Taly" title="Taly" width={87} height={40} className="h-10 w-auto" />
+            {isAr ? (
+              <Image src="/payments/taly-ar.svg" alt="تالي" title="تالي" width={92} height={42} className="h-10 w-auto" />
+            ) : (
+              <Image src="/payments/taly.svg" alt="Taly" title="Taly" width={87} height={40} className="h-10 w-auto" />
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -105,7 +109,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
                   type="button"
                   onClick={() => switchTo(code)}
                   aria-pressed={active}
-                  className={`min-h-9 rounded-full px-4 text-sm font-bold transition-colors ${active ? "bg-(--sunny) text-ink" : "text-white hover:text-(--sunny)"}`}
+                  className={`min-h-9 rounded-[10px] px-4 text-sm font-bold transition-colors ${active ? "bg-(--sunny) text-ink" : "text-white hover:text-(--sunny)"}`}
                 >
                   {dict.langSwitch[code]}
                 </button>
@@ -134,7 +138,7 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 /* Leads to the "coming soon" page until the apps ship. */
 function StoreBadge({ href, top, bottom, icon }: { href: string; top: string; bottom: string; icon: React.ReactNode }) {
   return (
-    <Link href={href} className="flex h-12 items-center gap-2.5 rounded-2xl bg-white/10 px-4 text-white transition-colors hover:bg-white/20">
+    <Link href={href} className="flex h-12 items-center gap-2.5 rounded-[10px] bg-white/10 px-4 text-white transition-colors hover:bg-white/20">
       <span className="shrink-0">{icon}</span>
       <span className="flex flex-col text-start leading-none">
         <span className="text-[0.6rem] tracking-wide opacity-80">{top}</span>

@@ -23,7 +23,7 @@ type SearchOverlayProps = {
   categories?: { key: string; label: string; href: string }[];
 };
 
-const CHIP = "shrink-0 whitespace-nowrap rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-warm hover:bg-(--warm-soft)";
+const CHIP = "shrink-0 whitespace-nowrap rounded-[10px] border border-(--hairline) bg-canvas px-3.5 py-1.5 text-sm text-ink transition-colors hover:border-warm hover:bg-(--warm-soft)";
 
 /** Phones: one line of chips that slides sideways, so long lists don't push the cards off screen. From sm up they wrap as before. */
 const CHIP_LINE = "-mx-5 flex gap-2 overflow-x-auto px-5 scroll-px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0";
@@ -254,7 +254,7 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
                             key={category.id}
                             href={buildCategoryHref(lang, category)}
                             onClick={onClose}
-                            className="rounded-(--radius-pill) border border-(--hairline) bg-canvas px-3 py-1.5 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
+                            className="rounded-[10px] border border-(--hairline) bg-canvas px-3 py-1.5 text-xs text-(--ink-2) transition-colors hover:border-warm hover:bg-(--warm-soft)"
                           >
                             {pickLang(category.name, lang)}
                           </Link>

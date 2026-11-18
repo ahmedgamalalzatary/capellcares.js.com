@@ -41,6 +41,7 @@
   --brand:        var(--violet);
   --footer-bg:    #f3efff;
   --announce:     var(--violet);
+  --logo-pink:    #ff3483; /* the logo's pink */
 
   /* Aliases kept for code that still references the old names. */
   --bg:           var(--canvas);
@@ -145,7 +146,7 @@ body {
    ============================================================ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 46px; padding: 0 24px; border-radius: var(--radius-pill);
+  height: 46px; padding: 0 24px; border-radius: 10px;
   border: 0; background: var(--ink-2); color: var(--surface);
   font-weight: 700;
   transition: background var(--motion-fast) var(--ease-out-quart);
@@ -164,7 +165,7 @@ body {
 /* Flat: kept for existing markup; every button is flat now. */
 .btn--flat { margin-bottom: 0; }
 
-.btn--sm { height: 38px; padding: 0 16px; font-size: 14px; }
+.btn--sm { height: 38px; padding: 0 16px; font-size: 14px; border-radius: 8px; }
 .btn--lg { height: 54px; padding: 0 30px; font-size: 17px; }
 .btn--block { width: 100%; }
 
@@ -188,6 +189,9 @@ body {
 .btn--main.btn--ghost:hover { background: var(--warm-soft); border-color: var(--warm); box-shadow: var(--shadow-1); }
 .btn--main.btn--soft { background: var(--warm-soft); color: var(--ink); }
 .btn--main.btn--soft:hover { background: var(--warm); color: var(--canvas); }
+/* Share: the soft button with its rest and hover looks swapped. */
+.btn--main.btn--share { background: var(--warm); color: var(--canvas); }
+.btn--main.btn--share:hover { background: var(--warm-soft); color: var(--ink); }
 .btn--main.btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
 
 /* ============================================================
@@ -613,12 +617,12 @@ body {
 .toy-plate--cyan { --tile: var(--cyan); --tile-edge: var(--cyan-deep); }
 .toy-plate--sunny { --tile: var(--sunny); --tile-edge: var(--sunny-deep); }
 
-/* Brand: the logo on a white plate, in the same faded lilac ring as the brand page's logo. */
+/* Brand: the logo on a white plate, ringed in the footer's colour. */
 .toy-plate { display: block; text-align: center; color: var(--ink); }
 .toy-plate__media {
   position: relative; display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 6px;
   border-radius: 50%; background: #fff;
-  box-shadow: inset 0 0 0 3px var(--accent-soft);
+  box-shadow: inset 0 0 0 3px var(--ink);
   overflow: hidden;
   transition: transform var(--motion-fast) var(--ease-out-quart);
 }

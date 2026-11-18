@@ -4,6 +4,7 @@ import Link from "next/link";
 import { pickLang, type Category, type Language, type ProductAttribute } from "@capella/shared";
 import { resolveMediaUrl } from "@/lib/api/client/normalizers";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
+import { Icon } from "@/components/ui/icons";
 
 /** Brand plates take these in turn, so neighbours never match. */
 const PLATE_COLORS = ["violet", "magenta", "blue", "cyan", "sunny"] as const;
@@ -35,8 +36,9 @@ export function ShopSectionHeading({ children, color, viewAll }: { children: Rea
   return (
     <div className="shop-title-row">
       <ShopHeading color={color}>{children}</ShopHeading>
-      <Link href={viewAll.href} className="shrink-0 text-sm font-bold text-(--violet) underline-offset-4 hover:underline">
+      <Link href={viewAll.href} className="inline-flex shrink-0 items-center gap-1.5 text-sm font-bold tracking-[0.06em] text-(--violet) underline-offset-4 hover:underline rtl:tracking-normal">
         {viewAll.label}
+        <Icon.ArrowUp size={16} className="rotate-90 rtl:-rotate-90" />
       </Link>
     </div>
   );

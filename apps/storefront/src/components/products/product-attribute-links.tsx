@@ -4,7 +4,7 @@ import Link from "next/link";
 import { pickLang, type Language, type Product } from "@capella/shared";
 import { useProductAttributes } from "@/components/providers/product-attributes-provider";
 
-const CHIP = "inline-flex items-center rounded-full px-3 py-1 text-sm font-bold";
+const CHIP = "inline-flex items-center rounded-[10px] px-3 py-1 text-sm font-bold";
 const LINK_CHIP = `${CHIP} bg-(--warm-soft) text-(--violet-deep) transition-colors hover:bg-(--accent-soft)`;
 
 /** The brand and ages on the product page. */

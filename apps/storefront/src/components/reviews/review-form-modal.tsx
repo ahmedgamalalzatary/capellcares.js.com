@@ -83,7 +83,7 @@ export function ReviewFormModal({ open, accessToken, itemName, imagePath, target
                 <button
                   key={star}
                   type="button"
-                  className={`border-0 bg-transparent p-1 text-3xl ${star <= rating ? "text-gold" : "text-(--hairline)"}`}
+                  className={`border-0 bg-transparent p-1 text-3xl ${star <= rating ? "text-ink" : "text-(--hairline)"}`}
                   aria-label={format(labels.starLabel ?? "{count} stars", star)}
                   aria-pressed={rating === star}
                   onClick={() => setRating(star)}

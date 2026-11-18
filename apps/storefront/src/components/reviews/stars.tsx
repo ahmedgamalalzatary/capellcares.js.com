@@ -11,13 +11,13 @@ export function Stars({ rating, label, className }: { rating: number; label?: st
   const decorative = label == null;
   return (
     <span
-      className={`inline-flex gap-0.5 text-gold ${className ?? "text-lg"}`}
+      className={`inline-flex gap-0.5 text-ink ${className ?? "text-lg"}`}
       role={decorative ? undefined : "img"}
       aria-hidden={decorative || undefined}
       aria-label={label}
     >
       {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} aria-hidden className={star <= Math.round(rating) ? "text-gold" : "text-(--hairline)"}>★</span>
+        <span key={star} aria-hidden className={star <= Math.round(rating) ? "text-ink" : "text-(--hairline)"}>★</span>
       ))}
     </span>
   );

@@ -51,13 +51,13 @@ describe("footer", () => {
     }
   });
 
-  it("shows the Taly logo next to cash on delivery", () => {
-    for (const lang of ["en", "ar"] as const) {
+  it("shows the Taly logo in the page's language next to cash on delivery", () => {
+    for (const [lang, name, src] of [["en", "Taly", "/payments/taly.svg"], ["ar", "تالي", "/payments/taly-ar.svg"]] as const) {
       const dict = getDict(lang);
       const { unmount } = render(<Footer lang={lang} dict={dict} />);
       const cash = screen.getByRole("img", { name: dict.footer.paymentMethods });
-      const taly = screen.getByRole("img", { name: "Taly" });
-      expect(taly).toHaveAttribute("src", "/payments/taly.svg");
+      const taly = screen.getByRole("img", { name });
+      expect(taly).toHaveAttribute("src", src);
       expect(cash.compareDocumentPosition(taly) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       unmount();
     }

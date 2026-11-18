@@ -37,7 +37,7 @@ export function ShareButton({ path, title, dict, className }: Props) {
 
   return (
     <div className="relative grid">
-      <button type="button" className={["btn btn--soft btn--flat", className].filter(Boolean).join(" ")} onClick={onShare}>
+      <button type="button" className={["btn btn--soft btn--share btn--flat", className].filter(Boolean).join(" ")} onClick={onShare}>
         {dict.common.share}
       </button>
       {linkCopied && (
