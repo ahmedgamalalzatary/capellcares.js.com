@@ -6,6 +6,8 @@ import {
   adminCreatePromoCode,
   adminGetPromoCode,
   adminListPromoCodes,
+  adminPromoAttention,
+  adminPromoCodeReport,
   adminSearchPromoCustomers
 } from "./admin-promo-codes.controller.js";
 
@@ -15,5 +17,7 @@ export const adminPromoCodesRoutes = Router();
 adminPromoCodesRoutes.get("/", requireErpPermission("promos.read"), wrapAsync(adminListPromoCodes));
 adminPromoCodesRoutes.post("/", requireErpPermission("promos.create"), wrapAsync(adminCreatePromoCode));
 adminPromoCodesRoutes.get("/customers", requireErpPermission("promos.create"), wrapAsync(adminSearchPromoCustomers));
+adminPromoCodesRoutes.get("/attention", requireErpPermission("promos.read"), wrapAsync(adminPromoAttention));
 adminPromoCodesRoutes.get("/:id", requireErpPermission("promos.read"), wrapAsync(adminGetPromoCode));
+adminPromoCodesRoutes.get("/:id/report", requireErpPermission("promos.read"), wrapAsync(adminPromoCodeReport));
 adminPromoCodesRoutes.post("/:id/status", requireErpPermission("promos.update_status"), wrapAsync(adminChangePromoCodeStatus));

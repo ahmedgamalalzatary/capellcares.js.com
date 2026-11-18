@@ -7,6 +7,8 @@ import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { PromoCodeDetailView } from "@/features/promos/components/promo-code-detail";
+import { PromoCodeReportView } from "@/features/promos/components/promo-code-report";
+import type { PromoCodeReport } from "@/features/promos/lib/promo-report";
 import { promoErrorMessage, type PromoCodeDetail } from "@/features/promos/lib/promo-form";
 import { usePromoCatalog } from "@/features/promos/lib/use-promo-catalog";
 import { api } from "@/lib/api/client";
@@ -21,6 +23,8 @@ export default function PromoCodeDetailPage() {
   const [loaded, setLoaded] = useState<PromoCodeDetail | null>(null);
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
+  const [loadedReport, setLoadedReport] = useState<{ id: string; report: PromoCodeReport } | null>(null);
+  const report = loadedReport?.id === id ? loadedReport.report : null;
   // Only the code named in the URL is ever shown or changed; a late answer for a previous code is ignored.
   const code = loaded && String(loaded.id) === id ? loaded : null;
 
@@ -35,6 +39,10 @@ export default function PromoCodeDetailPage() {
         setFailed(true);
         showErrorToast(error, "تعذر تحميل الكود.");
       });
+    // The report is extra: if it fails the code itself still shows.
+    api.get<PromoCodeReport>(`/api/erp/promo-codes/${encodeURIComponent(id)}/report`)
+      .then((next) => { if (!cancelled) setLoadedReport({ id, report: next }); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [canRead, id, reload]);
 
@@ -62,6 +70,7 @@ export default function PromoCodeDetailPage() {
           onStatusChange={changeStatus}
         />
       ) : <p className="text-text-muted">{failed ? "تعذر تحميل الكود." : "جارٍ التحميل…"}</p>}
+      {code && report ? <div className="mt-5"><PromoCodeReportView report={report} /></div> : null}
     </AdminShell>
   );
 }

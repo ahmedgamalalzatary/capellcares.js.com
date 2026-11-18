@@ -9,6 +9,7 @@ import {
   PromoCodeError,
   searchPromoCustomersRepo
 } from "./promo-codes.repository.js";
+import { getPromoAttentionRepo, getPromoCodeReportRepo } from "./promo-report.repository.js";
 
 const sendError = (res: Response, error: unknown) => {
   if (error instanceof PromoCodeError) return res.status(error.status).json({ errors: [error.key] });
@@ -59,4 +60,17 @@ export async function adminChangePromoCodeStatus(req: ErpAuthenticatedRequest, r
 export async function adminSearchPromoCustomers(req: Request, res: Response) {
   const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
   res.json({ items: query.length >= 2 ? await searchPromoCustomersRepo(query.slice(0, 100)) : [] });
+}
+
+/** Uses, money, customers, orders and health for one code (spec section 9.3). */
+export async function adminPromoCodeReport(req: Request, res: Response) {
+  const id = parseId(req.params.id);
+  const report = id === null ? null : await getPromoCodeReportRepo(id);
+  if (!report) return res.status(404).json({ errors: ["promo.not_found"] });
+  res.json(report);
+}
+
+/** Dashboard items: free orders a code made that wait for review, and codes ending within a week. */
+export async function adminPromoAttention(_req: Request, res: Response) {
+  res.json(await getPromoAttentionRepo());
 }

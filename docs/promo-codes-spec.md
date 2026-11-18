@@ -694,6 +694,8 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** every report number matches the orders it's built from, with tests on the report queries.
 
+**As built:** `GET /api/erp/promo-codes/:id/report` (`promos.read`, `promo-report.repository.ts`) builds every figure from the orders that used the code and their redemptions. Money and customers count only orders whose use still stands (a denied, expired or cancelled order gave its use back): revenue net of refunds, code discount, delivery absorbed, gift cost at its normal price, sale savings given up, and the average order against the store's average (non-denied orders). A customer is new when that order was their first of any kind, by account or phone. Orders lists every order with the code and its use state; health gives the cancel/deny and refund shares of all those orders and the uses per Cairo day. The ERP code page shows the report under the code; the order page already splits sale, code, free delivery and gift. `GET /api/erp/promo-codes/attention` feeds a dashboard card with open `promo_free_review` orders and running codes ending within 7 days, shown only to people with `promos.read`. `apps/api/tests/services/promo-report.test.ts` checks each figure against the orders.
+
 ### Phase 8: Hardening and launch
 
 **Goal:** the whole feature is live and safe.
