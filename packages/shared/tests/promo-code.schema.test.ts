@@ -96,6 +96,9 @@ describe("promoCodeCreateSchema", () => {
 
   test("amounts must fit the stored precision and range, so nothing rounds to zero or fails to save", () => {
     assert.ok(issues({ ...valid, discountType: "fixed", discountValue: 0.001 }).includes("promo.discount_value_invalid"));
+    assert.ok(issues({ ...valid, discountType: "fixed", discountValue: 1e-9 }).includes("promo.discount_value_invalid"));
+    assert.ok(issues({ ...valid, minOrderAmount: 1e-9 }).length > 0);
+    assert.deepEqual(issues({ ...valid, minOrderAmount: 0 }), []);
     assert.ok(issues({ ...valid, discountType: "fixed", discountValue: 100_000_000 }).includes("promo.discount_value_invalid"));
     assert.ok(issues({ ...valid, maxDiscountAmount: 10.005 }).includes("promo.cap_invalid"));
     assert.ok(issues({ ...valid, minOrderAmount: 0.001 }).length > 0);

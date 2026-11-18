@@ -2,7 +2,7 @@
 // (advisory: cart preview, shipping quote, checkout submit); lockAndRecheckPromo + recordPromoUse are the binding check
 // that runs inside the transaction creating the order, under a row lock on the code, so a limited code can never be
 // used more times than allowed however many customers submit at once.
-import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { categories, checkoutSessions, customers, orders, promoCodeCustomers, promoCodes, promoCodeTargets, promoRedemptions } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { normalizeEgyptianPhone, normalizePromoCode, type PromoAppliedDto, type PromoRejectionDto } from "@capella/shared";
@@ -49,6 +49,8 @@ export type PromoApplication = {
   discountCents: number;
   saleGivenUpCents: number;
   freeShipping: boolean;
+  /** First-order codes are checked one at a time across all of them (see lockAndRecheckPromo). */
+  firstOrderOnly: boolean;
   /** The gift's normal price for the quantity given, for reports; 0 without a gift. */
   giftValueCents: number;
   snapshot: string;
@@ -237,7 +239,9 @@ export async function evaluateCheckoutPromo(input: {
     giftUnavailable: rules.hasGift && !gift,
     replacedSales: result.replacedSales.map((sale) => {
       const item = input.items[Number(sale.key)]!;
-      return { index: Number(sale.key), nameAr: item.snapshotNameAr, nameEn: item.snapshotNameEn, previousLineTotal: sale.previousLineTotal, lineTotal: sale.lineTotal };
+      const itemId = item.itemType === "product_variant" ? item.variantId : item.itemType === "offer" ? item.offerId : item.collectionId;
+      return { index: Number(sale.key), item: `${item.itemType}:${itemId}`, nameAr: item.snapshotNameAr, nameEn: item.snapshotNameEn,
+        previousLineTotal: sale.previousLineTotal, lineTotal: sale.lineTotal };
     })
   };
   const snapshot = JSON.stringify({
@@ -258,6 +262,7 @@ export async function evaluateCheckoutPromo(input: {
       discountCents: result.discountCents,
       saleGivenUpCents: result.saleGivenUpCents,
       freeShipping: result.freeShipping,
+      firstOrderOnly: code.firstOrderOnly,
       giftValueCents,
       snapshot,
       customerId: input.customerId!,
@@ -270,6 +275,11 @@ export async function evaluateCheckoutPromo(input: {
  * `idempotencyKey`: an online checkout repeated with the same key does not count the use its twin session already holds, so the
  * repeat reaches the duplicate-key recovery and gets the twin's payment link instead of "in use". */
 export async function lockAndRecheckPromo(tx: Executor, application: PromoApplication, now = new Date(), idempotencyKey?: string) {
+  // First-order is a rule about the person, who may hold several accounts with one phone: every first-order check takes all
+  // first-order code rows, in id order, so two of them never run side by side. (This code's own row is among them.)
+  if (application.firstOrderOnly) {
+    await tx.select({ id: promoCodes.id }).from(promoCodes).where(eq(promoCodes.firstOrderOnly, true)).orderBy(asc(promoCodes.id)).for("update");
+  }
   const [code] = await tx.select().from(promoCodes).where(eq(promoCodes.id, application.codeId)).limit(1).for("update");
   // First-order is a rule about the customer, not the code: two different first-order codes must wait for each other.
   if (code?.firstOrderOnly) await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, application.customerId)).for("update");

@@ -27,7 +27,8 @@ const promoTargetSchema = z.object({ type: z.enum(PROMO_TARGET_TYPES), id: z.num
 // Amounts are stored as DECIMAL(10,2) and counts as signed INT: anything finer or larger would round to another value or fail to save.
 const MAX_AMOUNT = 99_999_999.99;
 const MAX_COUNT = 2_147_483_647;
-const isStorableAmount = (value: number) => Math.abs(value) <= MAX_AMOUNT && Math.abs(Math.round(value * 100) - value * 100) < 1e-6;
+const isStorableAmount = (value: number) => value === 0 ||
+  (Math.abs(value) >= 0.01 && Math.abs(value) <= MAX_AMOUNT && Math.abs(Math.round(value * 100) - value * 100) < 1e-6);
 const money = (message?: string) => z.number().finite().refine(isStorableAmount, message ? { message } : undefined);
 const count = z.number().int().min(1).max(MAX_COUNT).nullable();
 const isoDate = z.string().datetime({ offset: true }).nullable();

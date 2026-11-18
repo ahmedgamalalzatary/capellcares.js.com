@@ -109,3 +109,16 @@ test("two first-order codes submitted at the same moment by one customer give on
   assert.ok(refused.reason instanceof PromoRejectedError, String(refused.reason));
   assert.equal((await db.select().from(promoRedemptions)).length, 1);
 });
+
+test("two accounts with the same phone using different first-order codes at the same moment get only one first-order discount", async () => {
+  const first = await newCustomer("phone-a@capella.test");
+  const second = await newCustomer("phone-b@capella.test");
+  await code({ code: "WELCOMEA", firstOrderOnly: true });
+  await code({ code: "WELCOMEB", firstOrderOnly: true });
+  const results = await Promise.allSettled([
+    createOrderFromCheckout(await checkout(first, "01066667777", "WELCOMEA"), { idempotencyKey: crypto.randomUUID() }),
+    createOrderFromCheckout({ ...await checkout(second, "01066667777", "WELCOMEB"), email: "phone-b@capella.test" }, { idempotencyKey: crypto.randomUUID() })
+  ]);
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1, JSON.stringify(results.map((result) => result.status)));
+  assert.equal((await db.select().from(promoRedemptions)).length, 1);
+});

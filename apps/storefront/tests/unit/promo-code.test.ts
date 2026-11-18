@@ -16,6 +16,19 @@ describe("promo code storage", () => {
   });
 });
 
+describe("promo code storage when saving fails but reading works", () => {
+  it("keeps the confirmation in memory until it can be saved", () => {
+    savePromoCode("summer20");
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    acceptPromoSales("sig");
+    expect(loadAcceptedPromoSales()).toBe("sig");
+    setItem.mockRestore();
+    acceptPromoSales("sig2");
+    expect(loadAcceptedPromoSales()).toBe("sig2");
+    expect(localStorage.getItem("capella:promo-accepted")).toBe("sig2");
+  });
+});
+
 describe("promo code storage without localStorage", () => {
   it("still keeps the code for this page when the browser blocks storage", () => {
     const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
@@ -55,6 +68,8 @@ describe("accepted sale replacements", () => {
     expect(salesSignature(sales)).toBe(salesSignature([...sales].reverse()));
     expect(salesSignature(sales)).not.toBe(salesSignature([{ ...sales[0]!, lineTotal: 11 }, sales[1]!]));
     expect(salesSignature([])).toBe("");
+    // Another item at the same position and prices is a different replacement.
+    expect(salesSignature([{ ...sales[0]!, item: "product_variant:1" }])).not.toBe(salesSignature([{ ...sales[0]!, item: "product_variant:2" }]));
   });
 
   it("are kept with the code and forgotten when the code changes", () => {

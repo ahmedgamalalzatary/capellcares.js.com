@@ -11,8 +11,11 @@ const CHANGE_EVENT = "capella:promo-code-change";
 // Used when the browser blocks storage (private mode): the code then lasts only for this page.
 let memoryCode: string | null = null;
 let memoryAccepted = "";
+// Keys whose last save failed (storage full or blocked): their value lives in memory until a save succeeds.
+const unsaved = new Set<string>();
 
 function read(key: string, fallback: string): string {
+  if (unsaved.has(key)) return fallback;
   try {
     return localStorage.getItem(key) ?? "";
   } catch {
@@ -24,8 +27,9 @@ function write(key: string, value: string) {
   try {
     if (value) localStorage.setItem(key, value);
     else localStorage.removeItem(key);
+    unsaved.delete(key);
   } catch {
-    // Kept in memory instead.
+    unsaved.add(key);
   }
 }
 
@@ -61,7 +65,8 @@ export function acceptPromoSales(signature: string) {
 /** Identifies a set of sale replacements by line and price, so a confirmation covers exactly what was shown. */
 export function salesSignature(sales: PromoAppliedDto["replacedSales"]): string {
   if (sales.length === 0) return "";
-  return JSON.stringify(sales.map((sale) => [sale.index, sale.previousLineTotal, sale.lineTotal]).sort((a, b) => a[0]! - b[0]!));
+  return JSON.stringify(sales.map((sale) => [sale.index, sale.item ?? "", sale.previousLineTotal, sale.lineTotal])
+    .sort((a, b) => Number(a[0]) - Number(b[0])));
 }
 
 /** The saved promo code and its accepted sale replacements, shared by every component on the page. */

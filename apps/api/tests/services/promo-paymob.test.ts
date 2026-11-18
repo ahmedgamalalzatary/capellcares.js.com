@@ -9,6 +9,7 @@ import { releaseExpiredCheckoutReservations } from "../../src/modules/checkout/c
 import { PaymobMinimumError, submitCheckout } from "../../src/modules/checkout/checkout.service.js";
 import { processPaymobTransaction } from "../../src/modules/payments/paymob/paymob-transaction.service.js";
 import { PromoRejectedError } from "../../src/modules/promos/promo-checkout.js";
+import { CheckoutAmountChangedError } from "../../src/modules/orders/orders.service.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 
 beforeEach(resetApiTestDatabase);
@@ -282,4 +283,29 @@ test("the same request key with a different code is a different checkout, even w
   await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
   await assert.rejects(initiatePaymobCheckout({ payload: { ...body, promoCode: "twin10" }, idempotencyKey, config, ...urls, createIntention: intention }),
     /different checkout/);
+});
+
+test("repeating an online checkout with a free gift returns its payment link even after a price change", async () => {
+  const { ids, payload: body } = await payload(1);
+  await createCode({ giftItemType: "product_variant", giftItemId: ids.secondVariantId, giftQty: 1 });
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_gift_replay", orderId: 9904, clientSecret: "gift_replay", checkoutUrl: "https://checkout" });
+  const first = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
+  await db.update(productVariants).set({ sellingPrice: "999.00" }).where(eq(productVariants.id, ids.firstVariantId));
+  const replay = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention }).catch((error) => error);
+  assert.ok(!(replay instanceof Error), String(replay));
+  assert.equal(replay.checkoutId, first.checkoutId);
+});
+
+test("a repeated online checkout that expects a different amount is told the amount changed, not given the old link", async () => {
+  const { payload: body } = await payload(1);
+  await createCode();
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_amount", orderId: 9905, clientSecret: "amount_secret", checkoutUrl: "https://checkout" });
+  await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
+  const [session] = await db.select().from(checkoutSessions);
+  await assert.rejects(initiatePaymobCheckout({ payload: { ...body, expectedAmountCents: session!.amountCents + 1 }, idempotencyKey, config, ...urls, createIntention: intention }),
+    (error: unknown) => error instanceof CheckoutAmountChangedError);
+  const same = await initiatePaymobCheckout({ payload: { ...body, expectedAmountCents: session!.amountCents }, idempotencyKey, config, ...urls, createIntention: intention });
+  assert.equal(same.checkoutId, session!.publicId);
 });

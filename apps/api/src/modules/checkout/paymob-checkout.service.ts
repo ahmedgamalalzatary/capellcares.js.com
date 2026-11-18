@@ -481,8 +481,10 @@ export async function replayPaymobCheckout(payload: ReplayPayload, idempotencyKe
     ? shipping.quoteId === payload.shippingQuoteId && shipping.address?.cityId === payload.shippingAddress?.cityId &&
       shipping.address?.zoneId === payload.shippingAddress?.zoneId && shipping.address?.districtId === payload.shippingAddress?.districtId
     : !payload.shippingQuoteId && session.governorate === payload.governorate && session.cityArea === payload.cityArea;
-  const snapshot = JSON.parse(session.cartSnapshot) as Array<{ itemType: string; variantId?: number | null; offerId?: number | null; collectionId?: number | null; qty: number }>;
-  const sameItems = Array.isArray(snapshot) && snapshot.length === payload.items.length && payload.items.every((item, index) => {
+  const saved = JSON.parse(session.cartSnapshot) as Array<{ itemType: string; variantId?: number | null; offerId?: number | null; collectionId?: number | null; qty: number; isPromoGift?: boolean }>;
+  // The code's gift is added by the server, never sent by the customer: compare only the lines they bought.
+  const snapshot = Array.isArray(saved) ? saved.filter((line) => line.isPromoGift !== true) : [];
+  const sameItems = snapshot.length === payload.items.length && payload.items.every((item, index) => {
     const line = snapshot[index]!;
     if (line.qty !== item.qty) return false;
     if (item.type === "product") return line.itemType === "product_variant" && line.variantId === item.variantId;
@@ -495,6 +497,8 @@ export async function replayPaymobCheckout(payload: ReplayPayload, idempotencyKe
     session.addressLine === payload.addressLine && session.buildingApartment === payload.buildingApartment &&
     (session.notes ?? "") === (payload.notes ?? "");
   if (!sameDestination || !sameItems || !sameCode || !sameCustomer) return null;
+  // The same checkout, but the customer was shown another total: they must review it, not pay the old one blindly.
+  if (payload.expectedAmountCents != null && payload.expectedAmountCents !== session.amountCents) throw new CheckoutAmountChangedError();
   return {
     kind: "paymob_redirect" as const,
     checkoutId: session.publicId,
