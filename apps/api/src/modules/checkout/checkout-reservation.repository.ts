@@ -22,6 +22,8 @@ interface ReservedCheckoutInput {
   amountCents: number;
   shippingAmountCents?: number;
   shippingSnapshot?: string | null;
+  /** The carrier fee the store absorbs because the code waives delivery. */
+  promoShippingWaivedCents?: number;
   reservationExpiresAt: Date;
   reservations: Array<{ variantId: number; qty: number }>;
   /** The promo code this checkout uses: re-checked under the code's row lock and one use held while the customer pays. */
@@ -62,7 +64,8 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
         promoCodeId: input.promo.codeId,
         promoCodeText: input.promo.codeText,
         promoSnapshot: input.promo.snapshot,
-        promoDiscountCents: input.promo.discountCents
+        promoDiscountCents: input.promo.discountCents,
+        promoShippingWaivedCents: input.promoShippingWaivedCents ?? 0
       } : {})
     }).$returningId();
     if (input.promo) await reservePromoUse(tx, input.promo, session.id);

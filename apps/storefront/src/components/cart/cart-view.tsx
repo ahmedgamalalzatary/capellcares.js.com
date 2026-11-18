@@ -278,7 +278,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           rowClassName="flex items-center justify-between py-1.5 text-sm" />
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
-          <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
+          {appliedPromo?.freeShipping
+            ? <span className="text-sm text-(--success)">{dict.promo.freeDeliveryWithCode}</span>
+            : <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>}
         </div>
         <div className="mt-4 flex items-center justify-between rounded-(--radius) px-3 py-3">
           <span className="text-2xl text-ink">{dict.common.total}</span>

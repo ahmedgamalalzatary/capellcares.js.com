@@ -668,6 +668,8 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** free-shipping orders dispatch to Bosta and collect correctly for both COD and Paymob, and the absorbed fee is recorded.
 
+**As built:** free delivery applies while Bosta delivery is on (`checkoutShippingEnabled`); with delivery off, a free-delivery-only code is refused (`free_shipping_unavailable`) and a combined code keeps its other benefits. The quote keeps the carrier fee in `carrierShippingAmountCents` and charges the customer `shippingAmountCents = 0`, so every existing check (quote total, Paymob amount, Bosta COD, order total) uses the customer amount unchanged; Bosta collects the products total for COD and nothing for Paymob. The carrier fee absorbed is saved in `promo_shipping_waived_cents` on COD orders, on Paymob sessions and copied to their orders, and shown on the ERP order page. Cart and checkout show delivery as free with the waived fee struck through. A delivered order that totals 0 gets the `promo_free_review` hold from Phase 2.
+
 ### Phase 6: Free gift
 
 **Goal:** codes can add a free item.

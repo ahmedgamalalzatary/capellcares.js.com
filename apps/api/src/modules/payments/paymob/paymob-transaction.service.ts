@@ -309,7 +309,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       promoCodeId: match.session.promoCodeId,
       promoCodeText: match.session.promoCodeText,
       promoSnapshot: match.session.promoSnapshot,
-      promoDiscountCents: match.session.promoDiscountCents
+      promoDiscountCents: match.session.promoDiscountCents,
+      promoShippingWaivedCents: match.session.promoShippingWaivedCents
     }).$returningId();
     await tx.update(orders).set({ orderCode: generateOrderCode(order.id) }).where(eq(orders.id, order.id));
     await tx.insert(orderItems).values(snapshot.map((item) => ({

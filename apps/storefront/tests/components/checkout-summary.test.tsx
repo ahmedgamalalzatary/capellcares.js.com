@@ -31,4 +31,10 @@ describe("CheckoutSummary", () => {
     // Subtotal + replaced sales - code saving = the total charged: 100 + 20 - 12 = 108.
     expect(screen.getByText("Subtotal").parentElement).toHaveTextContent(/EGP\s*100/);
   });
+  it("shows delivery as free with the fee the code waived", () => {
+    render(<CheckoutSummary lang="en" dict={getDict("en")} resolved={[]} subtotal={35} shippingAmountCents={0} carrierShippingAmountCents={9729} />);
+    const row = screen.getByText("Shipping").parentElement!;
+    expect(row).toHaveTextContent("Free");
+    expect(row.querySelector("del")).toHaveTextContent(/EGP\s*97.29/);
+  });
 });

@@ -6,7 +6,7 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { normalizeEgyptianPhone, normalizePromoCode, type CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
-import { CheckoutAmountChangedError, priceCheckout, requireAppliedPromo } from "../orders/orders.service.js";
+import { CheckoutAmountChangedError, priceCheckout, requireAppliedPromo, shippingWaivedCents } from "../orders/orders.service.js";
 import { releasePromoReservation } from "../promos/promo-checkout.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
@@ -135,7 +135,8 @@ export async function initiatePaymobCheckout(input: {
   const replay = await replayPaymobCheckout(input.payload, input.idempotencyKey, input.config, input.now);
   if (replay) return replay;
   // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
-  const priced = input.priced ?? await priceCheckout(input.payload, { idempotencyKey: input.idempotencyKey });
+  const priced = input.priced ?? await priceCheckout(input.payload, { idempotencyKey: input.idempotencyKey,
+    ...(input.shippingService ? { shippingAvailable: true } : {}) });
   const promo = requireAppliedPromo(priced);
   const shipping = input.shipping !== undefined
     ? input.shipping
@@ -289,6 +290,7 @@ export async function initiatePaymobCheckout(input: {
         amountCents,
         shippingAmountCents: shipping?.shippingAmountCents ?? 0,
         shippingSnapshot,
+        promoShippingWaivedCents: shippingWaivedCents(promo, shipping ?? null),
         reservationExpiresAt: expiresAt,
         reservations: priced.reservations,
         promo,

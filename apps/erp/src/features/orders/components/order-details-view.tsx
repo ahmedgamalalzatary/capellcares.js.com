@@ -330,6 +330,9 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
                     {order.promoCodeText ? (
                       <Detail label={`كود الخصم (${order.promoCodeText})`}><span className="num">{formatMoney(savings.promoCents / 100)}</span></Detail>
                     ) : null}
+                    {(order.promoShippingWaivedCents ?? 0) > 0 ? (
+                      <Detail label="توصيل مجاني بالكود (تحمّله المتجر)"><span className="num">{formatMoney(order.promoShippingWaivedCents! / 100)}</span></Detail>
+                    ) : null}
                     <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>
                     {refunded > 0 ? (
                       <>

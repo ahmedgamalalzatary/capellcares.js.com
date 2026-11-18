@@ -260,6 +260,8 @@ export const ar = {
     confirmNeeded: "أكّدي الأسعار الجديدة للكود أولًا.",
     saleGivenUpLine: "تخفيضات استبدلها الكود",
     placedSaving: "وفّر لكِ الكود {code} مبلغ {amount}",
+    free: "مجاني",
+    freeDeliveryWithCode: "توصيل مجاني بالكود",
     reasons: {
       login_required: "سجّلي الدخول لاستخدام أكواد الخصم.",
       not_found: "هذا الكود غير موجود.",

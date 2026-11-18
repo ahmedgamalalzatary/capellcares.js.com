@@ -78,6 +78,8 @@ export interface CheckoutPromoState {
 
 export interface CheckoutSummaryProps extends CheckoutViewProps {
   shippingAmountCents?: number | null;
+  /** What delivery would have cost: above shippingAmountCents when a code makes delivery free. */
+  carrierShippingAmountCents?: number | null;
   resolved: CheckoutResolvedItem[];
   subtotal: number;
   promo?: CheckoutPromoState;

@@ -8,7 +8,7 @@ import { loadBundleDiscountsRepo } from "../catalog/offers/bundle-discount.repos
 import { UNTOUCHED_EXPIRY_MS } from "./order/shared.js";
 import type { CheckoutPayload, Order, PaymentStatus } from "../../types/domain.js";
 import { addMoney, multiplyMoney } from "./money.js";
-import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
+import { checkoutShippingEnabled, resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 import { notifyStaffOfNewOrder } from "./order-alert.js";
 import { evaluateCheckoutPromo, PromoRejectedError, type PromoApplication, type PromoPricedItem } from "../promos/promo-checkout.js";
@@ -79,7 +79,7 @@ export type PricedCheckoutPromo = { dto: PromoAppliedDto | PromoRejectionDto; ap
 /** Prices the cart from the database (sale discounts included), then applies the promo code when one is given (spec section 4). */
 export async function priceCheckout(
   payload: Pick<CheckoutPayload, "items"> & Partial<Pick<CheckoutPayload, "promoCode" | "customerId" | "phone">>,
-  options: { now?: Date; idempotencyKey?: string } = {}
+  options: { now?: Date; idempotencyKey?: string; shippingAvailable?: boolean } = {}
 ) {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
@@ -237,7 +237,8 @@ export async function priceCheckout(
       phone: payload.phone ?? null,
       items: pricedItems as PromoPricedItem[],
       now: options.now,
-      idempotencyKey: options.idempotencyKey
+      idempotencyKey: options.idempotencyKey,
+      shippingAvailable: options.shippingAvailable ?? checkoutShippingEnabled()
     });
     if (evaluation.status === "applied") {
       // The discount goes into each line's total (spec section 4.5), so every total check downstream stays unchanged.
@@ -289,6 +290,12 @@ export async function priceCheckout(
   };
 }
 
+/** The carrier fee the store absorbs because the code waives delivery (spec section 8.6); 0 otherwise. */
+export function shippingWaivedCents(promo: PromoApplication | null, shipping: { shippingAmountCents: number; carrierShippingAmountCents?: number } | null) {
+  if (!promo?.freeShipping || !shipping) return 0;
+  return Math.max(0, (shipping.carrierShippingAmountCents ?? shipping.shippingAmountCents) - shipping.shippingAmountCents);
+}
+
 /** The applied promo code for a checkout that must use it; a code that no longer applies stops the checkout with its reason. */
 export function requireAppliedPromo(priced: Awaited<ReturnType<typeof priceCheckout>>): PromoApplication | null {
   if (!priced.promo) return null;
@@ -312,7 +319,7 @@ export async function createOrderFromCheckout(
     }
     return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
   }
-  const priced = await priceCheckout(payload, { now: options.now });
+  const priced = await priceCheckout(payload, { now: options.now, ...(options.shippingService ? { shippingAvailable: true } : {}) });
   const promo = requireAppliedPromo(priced);
   const shipping = await resolveShippingForCheckout(payload, priced, options.shippingService);
   const pricedItems = priced.items;
@@ -345,7 +352,8 @@ export async function createOrderFromCheckout(
       shippingAmountCents: shipping?.shippingAmountCents ?? 0,
       shippingQuoteId: shipping?.quoteId ?? null,
       shippingSize: shipping?.size ?? null,
-      shippingSnapshot: shipping ? JSON.stringify(shipping) : null
+      shippingSnapshot: shipping ? JSON.stringify(shipping) : null,
+      promoShippingWaivedCents: shippingWaivedCents(promo, shipping)
       },
       items: pricedItems,
       promo

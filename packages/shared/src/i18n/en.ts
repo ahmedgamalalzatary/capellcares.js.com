@@ -258,6 +258,8 @@ export const en = {
     confirmNeeded: "Confirm the new prices for your code first.",
     saleGivenUpLine: "Sale prices replaced by the code",
     placedSaving: "Code {code} saved you {amount}",
+    free: "Free",
+    freeDeliveryWithCode: "Free delivery with your code",
     reasons: {
       login_required: "Log in to use promo codes.",
       not_found: "This code doesn't exist.",

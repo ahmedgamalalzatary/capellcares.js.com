@@ -188,6 +188,7 @@ export async function createOrderWithItems(input: {
     shippingQuoteId?: string | null;
     shippingSize?: "small" | "medium" | "large" | null;
     shippingSnapshot?: string | null;
+    promoShippingWaivedCents?: number;
   };
   items: OrderItem[];
   /** The promo code this order uses; re-checked and counted under the code's row lock in this same transaction. */

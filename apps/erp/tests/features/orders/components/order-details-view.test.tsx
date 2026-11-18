@@ -94,6 +94,13 @@ describe("OrderDetailsPage", () => {
     expect(totals.getByText("التوفير بتخفيضات المنتجات")).toBeInTheDocument();
   });
 
+  it("shows the delivery fee the store paid for a free-delivery code", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SHIPFREE", promoDiscountCents: 0, promoShippingWaivedCents: 9729, shippingAmountCents: 0 });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("توصيل مجاني بالكود (تحمّله المتجر)").nextElementSibling).toHaveTextContent("97.29");
+  });
+
   it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
     fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
       rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },

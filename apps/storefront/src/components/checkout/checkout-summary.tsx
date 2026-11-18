@@ -5,7 +5,8 @@ import type { CheckoutSummaryProps } from "../../types/checkout-view.types";
 import { PromoCodeBox } from "./promo-code-box";
 import { PromoSavingsRows } from "./promo-savings-rows";
 
-export function CheckoutSummary({ lang, dict, resolved, subtotal, shippingAmountCents = 0, promo }: CheckoutSummaryProps) {
+export function CheckoutSummary({ lang, dict, resolved, subtotal, shippingAmountCents = 0, carrierShippingAmountCents = null, promo }: CheckoutSummaryProps) {
+  const waived = shippingAmountCents === 0 && (carrierShippingAmountCents ?? 0) > 0;
   const productsTotal = promo?.productsTotal ?? subtotal;
   const applied = promo?.applied ?? null;
   return (
@@ -40,7 +41,14 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal, shippingAmount
         rowClassName="flex items-center justify-between py-1 text-sm" />
       <div className="flex items-center justify-between py-1 text-sm">
         <span className="text-(--ink-2)">{dict.common.shipping}</span>
-        <span className="text-ink">{shippingAmountCents == null ? dict.checkout.shippingPending : formatPrice(shippingAmountCents / 100, lang)}</span>
+        {waived ? (
+          <span className="flex items-center gap-2">
+            <del className="text-(--ink-3)">{formatPrice(carrierShippingAmountCents! / 100, lang)}</del>
+            <span className="text-(--success)">{dict.promo.free}</span>
+          </span>
+        ) : (
+          <span className="text-ink">{shippingAmountCents == null ? dict.checkout.shippingPending : formatPrice(shippingAmountCents / 100, lang)}</span>
+        )}
       </div>
       <div className="mt-4 flex items-end justify-between border-t border-(--hairline) pt-4">
         <span className="text-base font-medium text-(--ink-2)">{dict.common.total}</span>

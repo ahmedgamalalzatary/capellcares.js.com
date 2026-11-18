@@ -76,7 +76,8 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         placeOrder={placeOrder}
       />
       <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} promo={promo}
-        shippingAmountCents={shipping.enabled === false ? 0 : shipping.quote?.shippingAmountCents ?? null} />
+        shippingAmountCents={shipping.enabled === false ? 0 : shipping.quote?.shippingAmountCents ?? null}
+        carrierShippingAmountCents={shipping.quote?.carrierShippingAmountCents ?? null} />
     </div>
   );
 }

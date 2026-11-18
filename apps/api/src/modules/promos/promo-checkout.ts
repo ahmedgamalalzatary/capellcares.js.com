@@ -206,8 +206,8 @@ export async function evaluateCheckoutPromo(input: {
     saleDiscountId: item.snapshotDiscountId
   }));
   const rules = await loadRules(code);
-  // Free shipping (phase 5) and the gift (phase 6) are not offered yet: a code still applies its discount without them.
-  const result = applyPromoPricing(rules, lines, { shippingAvailable: false, giftAvailable: false });
+  // Free delivery means something only while delivery is charged. The gift (phase 6) is not offered yet.
+  const result = applyPromoPricing(rules, lines, { shippingAvailable: input.shippingAvailable ?? false, giftAvailable: false });
   if (!result.ok) return { status: "rejected", dto: rejection(codeText, result) };
 
   const dto: PromoAppliedDto = {
