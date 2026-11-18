@@ -49,13 +49,20 @@ export type PromoApplication = {
   discountCents: number;
   saleGivenUpCents: number;
   freeShipping: boolean;
+  /** The gift's normal price for the quantity given, for reports; 0 without a gift. */
+  giftValueCents: number;
   snapshot: string;
   customerId: number;
   phone: string | null;
 };
 
+/** The code's gift as a priced line (0) with the stock it takes, or null when it cannot be given now. */
+export type PromoGiftOffer = (gift: { itemType: "product_variant" | "offer" | "collection"; itemId: number; qty: number }) =>
+  Promise<{ line: PromoPricedItem & { snapshotBaseUnitPrice: number | null }; needs: Map<number, number> } | null>;
+
 export type PromoEvaluation =
-  | { status: "applied"; code: PromoCodeRow; result: Extract<PromoPricingResult, { ok: true }>; dto: PromoAppliedDto; application: PromoApplication }
+  | { status: "applied"; code: PromoCodeRow; result: Extract<PromoPricingResult, { ok: true }>; dto: PromoAppliedDto; application: PromoApplication;
+    gift: Awaited<ReturnType<PromoGiftOffer>> }
   | { status: "rejected"; dto: PromoRejectionDto };
 
 const rejection = (code: string, failure: PromoAccessFailure | "in_use" | Exclude<PromoPricingResult, { ok: true }>): PromoRejectionDto => {
@@ -179,6 +186,8 @@ export async function evaluateCheckoutPromo(input: {
   shippingAvailable?: boolean;
   /** A repeated online checkout (same idempotency key) does not count the use its own session already holds. */
   idempotencyKey?: string;
+  /** Prices the code's gift and checks its stock; without it a gift is never given. */
+  gift?: PromoGiftOffer;
 }): Promise<PromoEvaluation> {
   const now = input.now ?? new Date();
   const codeText = normalizePromoCode(input.promoCode);
@@ -206,9 +215,15 @@ export async function evaluateCheckoutPromo(input: {
     saleDiscountId: item.snapshotDiscountId
   }));
   const rules = await loadRules(code);
-  // Free delivery means something only while delivery is charged. The gift (phase 6) is not offered yet.
-  const result = applyPromoPricing(rules, lines, { shippingAvailable: input.shippingAvailable ?? false, giftAvailable: false });
+  // The gift is priced and stock-checked first; it is never one of the lines the rules look at (spec section 3.2).
+  const offered = code.giftItemType && code.giftItemId && code.giftQty && input.gift
+    ? await input.gift({ itemType: code.giftItemType, itemId: code.giftItemId, qty: code.giftQty })
+    : null;
+  // Free delivery means something only while delivery is charged.
+  const result = applyPromoPricing(rules, lines, { shippingAvailable: input.shippingAvailable ?? false, giftAvailable: offered !== null });
   if (!result.ok) return { status: "rejected", dto: rejection(codeText, result) };
+  const gift = result.gift ? offered : null;
+  const giftValueCents = gift ? Math.round((gift.line.snapshotBaseUnitPrice ?? 0) * 100) * gift.line.qty : 0;
 
   const dto: PromoAppliedDto = {
     status: "applied",
@@ -218,6 +233,8 @@ export async function evaluateCheckoutPromo(input: {
     discount: result.discountCents / 100,
     saleGivenUp: result.saleGivenUpCents / 100,
     freeShipping: result.freeShipping,
+    gift: gift ? { nameAr: gift.line.snapshotNameAr, nameEn: gift.line.snapshotNameEn, qty: gift.line.qty, value: giftValueCents / 100 } : null,
+    giftUnavailable: rules.hasGift && !gift,
     replacedSales: result.replacedSales.map((sale) => {
       const item = input.items[Number(sale.key)]!;
       return { index: Number(sale.key), nameAr: item.snapshotNameAr, nameEn: item.snapshotNameEn, previousLineTotal: sale.previousLineTotal, lineTotal: sale.lineTotal };
@@ -226,19 +243,22 @@ export async function evaluateCheckoutPromo(input: {
   const snapshot = JSON.stringify({
     id: code.id, code: code.code, rules, startsAt: code.startsAt, endsAt: code.endsAt,
     firstOrderOnly: code.firstOrderOnly, isPrivate: code.isPrivate,
-    discountCents: result.discountCents, saleGivenUpCents: result.saleGivenUpCents, replacedSales: dto.replacedSales
+    discountCents: result.discountCents, saleGivenUpCents: result.saleGivenUpCents, replacedSales: dto.replacedSales,
+    gift: dto.gift ?? null
   });
   return {
     status: "applied",
     code,
     result,
     dto,
+    gift,
     application: {
       codeId: code.id,
       codeText: code.code,
       discountCents: result.discountCents,
       saleGivenUpCents: result.saleGivenUpCents,
       freeShipping: result.freeShipping,
+      giftValueCents,
       snapshot,
       customerId: input.customerId!,
       phone
@@ -260,26 +280,30 @@ export async function lockAndRecheckPromo(tx: Executor, application: PromoApplic
   if (failure) throw new PromoRejectedError({ status: "rejected", code: application.codeText, reason: failure });
 }
 
-export async function recordPromoUse(tx: Executor, application: PromoApplication, orderId: number) {
+export async function recordPromoUse(tx: Executor, application: PromoApplication, orderId: number, shippingWaivedCents = 0) {
   await tx.insert(promoRedemptions).values({
     promoCodeId: application.codeId,
     customerId: application.customerId,
     phoneNormalized: application.phone,
     orderId,
     state: "used",
-    discountCents: application.discountCents
+    discountCents: application.discountCents,
+    shippingWaivedCents,
+    giftValueCents: application.giftValueCents
   });
 }
 
 /** An online checkout holds one use of the code while the customer pays (spec section 6). */
-export async function reservePromoUse(tx: Executor, application: PromoApplication, checkoutSessionId: number) {
+export async function reservePromoUse(tx: Executor, application: PromoApplication, checkoutSessionId: number, shippingWaivedCents = 0) {
   await tx.insert(promoRedemptions).values({
     promoCodeId: application.codeId,
     customerId: application.customerId,
     phoneNormalized: application.phone,
     checkoutSessionId,
     state: "reserved",
-    discountCents: application.discountCents
+    discountCents: application.discountCents,
+    shippingWaivedCents,
+    giftValueCents: application.giftValueCents
   });
 }
 

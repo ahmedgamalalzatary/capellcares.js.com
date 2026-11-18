@@ -37,4 +37,16 @@ describe("CheckoutSummary", () => {
     expect(row).toHaveTextContent("Free");
     expect(row.querySelector("del")).toHaveTextContent(/EGP\s*97.29/);
   });
+  it("lists the code's free gift, or says it is out of stock", () => {
+    const base = { status: "applied" as const, code: "GIFT", arName: "هدية", enName: "Gift", discount: 0, saleGivenUp: 0, freeShipping: false, replacedSales: [] };
+    const promo = (dto: object) => ({ savedCode: "gift", saveCode: () => {}, signedIn: true, loginHref: "/en/login", preview: async () => null, notice: null,
+      onlineMinimum: false, productsTotal: 35, confirmation: null, confirm: () => {}, decline: () => {}, result: dto as never, applied: dto as never });
+    const { unmount } = render(<CheckoutSummary lang="en" dict={getDict("en")} resolved={[]} subtotal={35} shippingAmountCents={0}
+      promo={promo({ ...base, gift: { nameAr: "لوشن", nameEn: "Gift Lotion", qty: 2, value: 80 } })} />);
+    expect(screen.getByText("Free gift: Gift Lotion × 2").parentElement).toHaveTextContent("Free");
+    unmount();
+    render(<CheckoutSummary lang="en" dict={getDict("en")} resolved={[]} subtotal={35} shippingAmountCents={0}
+      promo={promo({ ...base, discount: 5, gift: null, giftUnavailable: true })} />);
+    expect(screen.getByText("The free gift is out of stock; the rest of the code still applies.")).toBeInTheDocument();
+  });
 });

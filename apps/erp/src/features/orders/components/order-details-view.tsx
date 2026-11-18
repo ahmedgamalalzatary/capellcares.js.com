@@ -307,6 +307,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <Badge tone="nude" swatch={false}>{itemTypeLabels[item.itemType]}</Badge>
                             <span className="text-text-strong">{item.snapshotNameAr || item.snapshotNameEn || "عنصر غير مسمى"}</span>
+                            {item.isPromoGift ? <Badge tone="success" swatch={false}>هدية مجانية</Badge> : null}
                           </div>
                           {item.snapshotNameEn && item.snapshotNameAr ? <p dir="auto" className="mt-0.5 text-sm text-text-muted">{item.snapshotNameEn}</p> : null}
                           {item.snapshotSizeLabel ? <p dir="auto" className="text-sm text-text-muted">{item.snapshotSizeLabel}</p> : null}
@@ -329,6 +330,9 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
                     {savings.saleCents > 0 ? <Detail label="التوفير بتخفيضات المنتجات"><span className="num">{formatMoney(savings.saleCents / 100)}</span></Detail> : null}
                     {order.promoCodeText ? (
                       <Detail label={`كود الخصم (${order.promoCodeText})`}><span className="num">{formatMoney(savings.promoCents / 100)}</span></Detail>
+                    ) : null}
+                    {savings.giftCents > 0 ? (
+                      <Detail label="قيمة الهدية المجانية"><span className="num">{formatMoney(savings.giftCents / 100)}</span></Detail>
                     ) : null}
                     {(order.promoShippingWaivedCents ?? 0) > 0 ? (
                       <Detail label="توصيل مجاني بالكود (تحمّله المتجر)"><span className="num">{formatMoney(order.promoShippingWaivedCents! / 100)}</span></Detail>

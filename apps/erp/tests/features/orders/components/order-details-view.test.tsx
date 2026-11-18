@@ -94,6 +94,15 @@ describe("OrderDetailsPage", () => {
     expect(totals.getByText("التوفير بتخفيضات المنتجات")).toBeInTheDocument();
   });
 
+  it("marks the gift line and shows the gift's value in the savings", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "GIFT", promoDiscountCents: 0,
+      items: [detailedOrder.items[0], { ...detailedOrder.items[0], id: 99, qty: 2, unitPrice: 0, lineTotal: 0, snapshotBaseUnitPrice: 40, isPromoGift: true }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("هدية مجانية")).toBeInTheDocument();
+    const totals = within(screen.getByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("قيمة الهدية المجانية").nextElementSibling).toHaveTextContent("80");
+  });
+
   it("shows the delivery fee the store paid for a free-delivery code", async () => {
     fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SHIPFREE", promoDiscountCents: 0, promoShippingWaivedCents: 9729, shippingAmountCents: 0 });
     render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));

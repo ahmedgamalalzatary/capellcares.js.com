@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { normalizeEgyptianPhone } from "@capella/shared";
 import { collectionItems, collections, offerItems, offers, orders, productVariants, products, variantDiscounts } from "@capella/database/drizzle/schema";
@@ -76,6 +76,186 @@ function resolveEffectiveDiscountedPrice(input: {
 
 export type PricedCheckoutPromo = { dto: PromoAppliedDto | PromoRejectionDto; application: PromoApplication | null };
 
+type CheckoutLineInput = CheckoutPayload["items"][number];
+
+/** A gift is priced at its normal price, never through the sale logic (spec section 4.4): that price is kept as the line's
+ * base price for reports, and the line itself costs 0. */
+function giftPricing(basePrice: number) {
+  return { unitPrice: basePrice, snapshotBaseUnitPrice: basePrice, snapshotDiscountId: null, snapshotDiscountType: null,
+    snapshotDiscountValue: null, snapshotDiscountStartsAt: null, snapshotDiscountEndsAt: null };
+}
+
+/** One cart line priced from the database (sale discounts included), or the code's gift at its normal price. */
+async function priceLine(item: CheckoutLineInput, gift = false): Promise<any> {
+  if (item.qty <= 0) throw new Error("Quantity must be positive");
+  if (item.type === "product") {
+    const variantId = Number(item.variantId);
+    const [variant] = await db
+      .select({
+        id: productVariants.id,
+        productId: products.id,
+        categoryId: products.categoryId,
+        sellingPrice: productVariants.sellingPrice,
+        sizeLabel: productVariants.sizeLabel,
+        arName: products.arName,
+        enName: products.enName,
+        discountId: variantDiscounts.id,
+        discountType: variantDiscounts.type,
+        discountValue: variantDiscounts.value,
+        discountStartsAt: variantDiscounts.startsAt,
+        discountEndsAt: variantDiscounts.endsAt,
+        discountStatus: variantDiscounts.status
+      })
+      .from(productVariants)
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
+      .where(
+        and(
+          eq(productVariants.id, variantId),
+          isNull(productVariants.deletedAt),
+          eq(products.status, "active"),
+          isNull(products.deletedAt)
+        )
+      )
+      .limit(1);
+    if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
+    const basePrice = Number(variant.sellingPrice);
+    const pricing = gift ? giftPricing(basePrice) : resolveEffectiveDiscountedPrice({
+      basePrice,
+      discount: variant.discountId
+        ? {
+          id: variant.discountId,
+          type: variant.discountType!,
+          value: Number(variant.discountValue),
+          startsAt: variant.discountStartsAt!,
+          endsAt: variant.discountEndsAt!,
+          status: variant.discountStatus!
+        }
+        : null
+    });
+    const unitPrice = pricing.unitPrice;
+    return {
+      itemType: "product_variant",
+      variantId,
+      productId: variant.productId,
+      categoryId: variant.categoryId,
+      offerId: null,
+      qty: item.qty,
+      unitPrice,
+      lineTotal: multiplyMoney(unitPrice, item.qty),
+      snapshotNameAr: variant.arName,
+      snapshotNameEn: variant.enName,
+      snapshotSizeLabel: variant.sizeLabel,
+      snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+      snapshotDiscountId: pricing.snapshotDiscountId,
+      snapshotDiscountType: pricing.snapshotDiscountType,
+      snapshotDiscountValue: pricing.snapshotDiscountValue,
+      snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+      snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
+    };
+  }
+  if (item.type === "collection") {
+    const collectionId = Number(item.collectionId);
+    const [collection] = await db
+      .select()
+      .from(collections)
+      .where(
+        and(
+          eq(collections.id, collectionId),
+          eq(collections.status, "active"),
+          eq(collections.visibility, "visible"),
+          isNull(collections.deletedAt)
+        )
+      )
+      .limit(1);
+    if (!collection) throw new Error(`Collection not found: ${collectionId}`);
+    const discount = gift ? null : (await loadBundleDiscountsRepo("collection", [collectionId])).get(collectionId) ?? null;
+    const pricing = gift ? giftPricing(Number(collection.fixedPrice)) : resolveEffectiveDiscountedPrice({
+      basePrice: Number(collection.fixedPrice),
+      discount: discount ? { ...discount, id: discount.id! } : null
+    });
+    return {
+      itemType: "collection",
+      variantId: null,
+      offerId: null,
+      collectionId,
+      qty: item.qty,
+      unitPrice: pricing.unitPrice,
+      lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
+      snapshotNameAr: collection.arName,
+      snapshotNameEn: collection.enName,
+      snapshotSizeLabel: null,
+      snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+      snapshotDiscountId: pricing.snapshotDiscountId,
+      snapshotDiscountType: pricing.snapshotDiscountType,
+      snapshotDiscountValue: pricing.snapshotDiscountValue,
+      snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+      snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
+    };
+  }
+  const offerId = Number(item.offerId);
+  const [offer] = await db
+    .select()
+    .from(offers)
+    .where(
+      and(
+        eq(offers.id, offerId),
+        eq(offers.status, "active"),
+        eq(offers.visibility, "visible"),
+        isNull(offers.deletedAt)
+      )
+    )
+    .limit(1);
+  if (!offer) throw new Error(`Offer not found: ${offerId}`);
+  const discount = gift ? null : (await loadBundleDiscountsRepo("offer", [offerId])).get(offerId) ?? null;
+  const pricing = gift ? giftPricing(Number(offer.fixedPrice)) : resolveEffectiveDiscountedPrice({
+    basePrice: Number(offer.fixedPrice),
+    discount: discount ? { ...discount, id: discount.id! } : null
+  });
+  return {
+    itemType: "offer",
+    variantId: null,
+    offerId,
+    qty: item.qty,
+    unitPrice: pricing.unitPrice,
+    lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
+    snapshotNameAr: offer.arName,
+    snapshotNameEn: offer.enName,
+    snapshotSizeLabel: null,
+    snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
+    snapshotDiscountId: pricing.snapshotDiscountId,
+    snapshotDiscountType: pricing.snapshotDiscountType,
+    snapshotDiscountValue: pricing.snapshotDiscountValue,
+    snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
+    snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
+  };
+}
+
+/** The stock a priced line takes, per variant; bundles also get their component snapshot here. */
+async function addStockNeeds(item: any, needs: Map<number, number>) {
+  if (item.itemType === "product_variant") {
+    needs.set(item.variantId, (needs.get(item.variantId) ?? 0) + item.qty);
+    return;
+  }
+  const components = item.itemType === "offer"
+    ? await db.select({ variantId: offerItems.variantId, qty: offerItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
+      .from(offerItems).innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
+      .where(eq(offerItems.offerId, item.offerId))
+      .orderBy(asc(offerItems.id))
+    : await db.select({ variantId: collectionItems.variantId, qty: collectionItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
+      .from(collectionItems).innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
+      .where(eq(collectionItems.collectionId, item.collectionId))
+      .orderBy(asc(collectionItems.id));
+  if (components.length === 0) throw new Error(`No components found for ${item.itemType}`);
+  item.snapshotComponents = components.map((component) => ({
+    variantId: component.variantId, qty: component.qty, unitPrice: Number(component.unitPrice), sizeLabel: component.sizeLabel
+  }));
+  item.snapshotSizeLabel = [...new Set(components.map((component) => component.sizeLabel).filter(Boolean))].join(", ") || null;
+  for (const component of components) {
+    needs.set(component.variantId, (needs.get(component.variantId) ?? 0) + component.qty * item.qty);
+  }
+}
+
 /** Prices the cart from the database (sale discounts included), then applies the promo code when one is given (spec section 4). */
 export async function priceCheckout(
   payload: Pick<CheckoutPayload, "items"> & Partial<Pick<CheckoutPayload, "promoCode" | "customerId" | "phone">>,
@@ -84,150 +264,30 @@ export async function priceCheckout(
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
-    if (item.type === "product") {
-      const variantId = Number(item.variantId);
-      const [variant] = await db
-        .select({
-          id: productVariants.id,
-          productId: products.id,
-          categoryId: products.categoryId,
-          sellingPrice: productVariants.sellingPrice,
-          sizeLabel: productVariants.sizeLabel,
-          arName: products.arName,
-          enName: products.enName,
-          discountId: variantDiscounts.id,
-          discountType: variantDiscounts.type,
-          discountValue: variantDiscounts.value,
-          discountStartsAt: variantDiscounts.startsAt,
-          discountEndsAt: variantDiscounts.endsAt,
-          discountStatus: variantDiscounts.status
-        })
-        .from(productVariants)
-        .innerJoin(products, eq(products.id, productVariants.productId))
-        .leftJoin(variantDiscounts, eq(variantDiscounts.variantId, productVariants.id))
-        .where(
-          and(
-            eq(productVariants.id, variantId),
-            isNull(productVariants.deletedAt),
-            eq(products.status, "active"),
-            isNull(products.deletedAt)
-          )
-        )
-        .limit(1);
-      if (!variant) throw new Error(`Variant not found: ${item.variantId}`);
-      const basePrice = Number(variant.sellingPrice);
-      const pricing = resolveEffectiveDiscountedPrice({
-        basePrice,
-        discount: variant.discountId
-          ? {
-            id: variant.discountId,
-            type: variant.discountType!,
-            value: Number(variant.discountValue),
-            startsAt: variant.discountStartsAt!,
-            endsAt: variant.discountEndsAt!,
-            status: variant.discountStatus!
-          }
-          : null
-      });
-      const unitPrice = pricing.unitPrice;
-      pricedItems.push({
-        itemType: "product_variant",
-        variantId,
-        productId: variant.productId,
-        categoryId: variant.categoryId,
-        offerId: null,
-        qty: item.qty,
-        unitPrice,
-        lineTotal: multiplyMoney(unitPrice, item.qty),
-        snapshotNameAr: variant.arName,
-        snapshotNameEn: variant.enName,
-        snapshotSizeLabel: variant.sizeLabel,
-        snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
-        snapshotDiscountId: pricing.snapshotDiscountId,
-        snapshotDiscountType: pricing.snapshotDiscountType,
-        snapshotDiscountValue: pricing.snapshotDiscountValue,
-        snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
-        snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
-      });
-      continue;
-    }
-    if (item.type === "collection") {
-      const collectionId = Number(item.collectionId);
-      const [collection] = await db
-        .select()
-        .from(collections)
-        .where(
-          and(
-            eq(collections.id, collectionId),
-            eq(collections.status, "active"),
-            eq(collections.visibility, "visible"),
-            isNull(collections.deletedAt)
-          )
-        )
-        .limit(1);
-      if (!collection) throw new Error(`Collection not found: ${collectionId}`);
-      const discount = (await loadBundleDiscountsRepo("collection", [collectionId])).get(collectionId) ?? null;
-      const pricing = resolveEffectiveDiscountedPrice({
-        basePrice: Number(collection.fixedPrice),
-        discount: discount ? { ...discount, id: discount.id! } : null
-      });
-      pricedItems.push({
-        itemType: "collection",
-        variantId: null,
-        offerId: null,
-        collectionId,
-        qty: item.qty,
-        unitPrice: pricing.unitPrice,
-        lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
-        snapshotNameAr: collection.arName,
-        snapshotNameEn: collection.enName,
-        snapshotSizeLabel: null,
-        snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
-        snapshotDiscountId: pricing.snapshotDiscountId,
-        snapshotDiscountType: pricing.snapshotDiscountType,
-        snapshotDiscountValue: pricing.snapshotDiscountValue,
-        snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
-        snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
-      });
-      continue;
-    }
-    const offerId = Number(item.offerId);
-    const [offer] = await db
-      .select()
-      .from(offers)
-      .where(
-        and(
-          eq(offers.id, offerId),
-          eq(offers.status, "active"),
-          eq(offers.visibility, "visible"),
-          isNull(offers.deletedAt)
-        )
-      )
-      .limit(1);
-    if (!offer) throw new Error(`Offer not found: ${offerId}`);
-    const discount = (await loadBundleDiscountsRepo("offer", [offerId])).get(offerId) ?? null;
-    const pricing = resolveEffectiveDiscountedPrice({
-      basePrice: Number(offer.fixedPrice),
-      discount: discount ? { ...discount, id: discount.id! } : null
-    });
-    pricedItems.push({
-      itemType: "offer",
-      variantId: null,
-      offerId,
-      qty: item.qty,
-      unitPrice: pricing.unitPrice,
-      lineTotal: multiplyMoney(pricing.unitPrice, item.qty),
-      snapshotNameAr: offer.arName,
-      snapshotNameEn: offer.enName,
-      snapshotSizeLabel: null,
-      snapshotBaseUnitPrice: pricing.snapshotBaseUnitPrice,
-      snapshotDiscountId: pricing.snapshotDiscountId,
-      snapshotDiscountType: pricing.snapshotDiscountType,
-      snapshotDiscountValue: pricing.snapshotDiscountValue,
-      snapshotDiscountStartsAt: pricing.snapshotDiscountStartsAt,
-      snapshotDiscountEndsAt: pricing.snapshotDiscountEndsAt
-    });
+    pricedItems.push(await priceLine(item));
   }
+  const needs = new Map<number, number>();
+  for (const item of pricedItems) await addStockNeeds(item, needs);
+  // The cart as shown before the code; the parcel size is estimated from this plus any gift (spec section 5.2).
+  const shownCents = pricedItems.reduce((sum, row) => sum + Math.round(row.lineTotal * 100), 0);
+
+  // The code's gift, when it is sold and in stock beyond what the cart itself takes (spec section 4.4).
+  const giftOffer = async (gift: { itemType: "product_variant" | "offer" | "collection"; itemId: number; qty: number }) => {
+    const input: CheckoutLineInput = gift.itemType === "product_variant" ? { type: "product", variantId: gift.itemId, qty: gift.qty }
+      : gift.itemType === "offer" ? { type: "offer", offerId: gift.itemId, qty: gift.qty } : { type: "collection", collectionId: gift.itemId, qty: gift.qty };
+    try {
+      const line = await priceLine(input, true);
+      const giftNeeds = new Map<number, number>();
+      await addStockNeeds(line, giftNeeds);
+      const stock = await db.select({ id: productVariants.id, stockQty: productVariants.stockQty }).from(productVariants)
+        .where(and(inArray(productVariants.id, [...giftNeeds.keys()]), isNull(productVariants.deletedAt)));
+      const fits = stock.length === giftNeeds.size && stock.every((row) => (needs.get(row.id) ?? 0) + giftNeeds.get(row.id)! <= row.stockQty);
+      if (!fits) return null;
+      return { line: { ...line, unitPrice: 0, lineTotal: 0, isPromoGift: true }, needs: giftNeeds };
+    } catch {
+      return null;
+    }
+  };
 
   let promo: PricedCheckoutPromo | null = null;
   if (payload.promoCode) {
@@ -238,7 +298,8 @@ export async function priceCheckout(
       items: pricedItems as PromoPricedItem[],
       now: options.now,
       idempotencyKey: options.idempotencyKey,
-      shippingAvailable: options.shippingAvailable ?? checkoutShippingEnabled()
+      shippingAvailable: options.shippingAvailable ?? checkoutShippingEnabled(),
+      gift: giftOffer
     });
     if (evaluation.status === "applied") {
       // The discount goes into each line's total (spec section 4.5), so every total check downstream stays unchanged.
@@ -250,6 +311,10 @@ export async function priceCheckout(
         item.promoDiscountAmount = line.promoDiscount;
         item.promoReplacedDiscountId = line.replacedSaleDiscountId;
       }
+      if (evaluation.gift) {
+        pricedItems.push(evaluation.gift.line);
+        for (const [variantId, qty] of evaluation.gift.needs) needs.set(variantId, (needs.get(variantId) ?? 0) + qty);
+      }
       promo = { dto: evaluation.dto, application: evaluation.application };
     } else {
       promo = { dto: evaluation.dto, application: null };
@@ -257,35 +322,12 @@ export async function priceCheckout(
   }
 
   const totalAmount = pricedItems.reduce((sum, row) => addMoney(sum, row.lineTotal), 0);
-  const reservationQuantities = new Map<number, number>();
-  for (const item of pricedItems) {
-    if (item.itemType === "product_variant") {
-      reservationQuantities.set(item.variantId, (reservationQuantities.get(item.variantId) ?? 0) + item.qty);
-      continue;
-    }
-    const components = item.itemType === "offer"
-      ? await db.select({ variantId: offerItems.variantId, qty: offerItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
-        .from(offerItems).innerJoin(productVariants, eq(productVariants.id, offerItems.variantId))
-        .where(eq(offerItems.offerId, item.offerId))
-        .orderBy(asc(offerItems.id))
-      : await db.select({ variantId: collectionItems.variantId, qty: collectionItems.qty, unitPrice: productVariants.sellingPrice, sizeLabel: productVariants.sizeLabel })
-        .from(collectionItems).innerJoin(productVariants, eq(productVariants.id, collectionItems.variantId))
-        .where(eq(collectionItems.collectionId, item.collectionId))
-        .orderBy(asc(collectionItems.id));
-    if (components.length === 0) throw new Error(`No components found for ${item.itemType}`);
-    item.snapshotComponents = components.map((component) => ({
-      variantId: component.variantId, qty: component.qty, unitPrice: Number(component.unitPrice), sizeLabel: component.sizeLabel
-    }));
-    item.snapshotSizeLabel = [...new Set(components.map((component) => component.sizeLabel).filter(Boolean))].join(", ") || null;
-    for (const component of components) {
-      const qty = component.qty * item.qty;
-      reservationQuantities.set(component.variantId, (reservationQuantities.get(component.variantId) ?? 0) + qty);
-    }
-  }
   return {
     items: pricedItems,
     totalAmount,
-    reservations: [...reservationQuantities.entries()].map(([variantId, qty]) => ({ variantId, qty })),
+    reservations: [...needs.entries()].map(([variantId, qty]) => ({ variantId, qty })),
+    /** What the parcel is worth for its size estimate: the cart as shown before the code, plus the gift at its normal price. */
+    parcelValueCents: shownCents + (promo?.application?.giftValueCents ?? 0),
     promo
   };
 }

@@ -68,7 +68,7 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
         promoShippingWaivedCents: input.promoShippingWaivedCents ?? 0
       } : {})
     }).$returningId();
-    if (input.promo) await reservePromoUse(tx, input.promo, session.id);
+    if (input.promo) await reservePromoUse(tx, input.promo, session.id, input.promoShippingWaivedCents ?? 0);
 
     for (const reservation of input.reservations) {
       const result = await tx.update(productVariants)

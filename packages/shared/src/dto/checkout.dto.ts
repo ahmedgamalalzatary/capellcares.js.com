@@ -69,6 +69,10 @@ export type PromoAppliedDto = {
   freeShipping: boolean;
   /** Lines whose sale the code replaced: the customer confirms these new prices before applying the code. */
   replacedSales: Array<{ index: number; nameAr: string; nameEn: string; previousLineTotal: number; lineTotal: number }>;
+  /** The free item the code adds (its own line at 0); value is its normal price for the quantity given. */
+  gift?: { nameAr: string; nameEn: string; qty: number; value: number } | null;
+  /** The code has a gift, but it is out of stock: the rest of the code still applies. */
+  giftUnavailable?: boolean;
 };
 
 /** The cart as the server prices it: every line, the products total and the promo code outcome. */

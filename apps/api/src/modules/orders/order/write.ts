@@ -61,6 +61,8 @@ interface OrderItem {
   snapshotDiscountEndsAt?: string | null;
   promoDiscountAmount?: number | null;
   promoReplacedDiscountId?: number | null;
+  /** The code's free item (spec section 4.4): its own line at 0. */
+  isPromoGift?: boolean;
 }
 
 /** Atomically decrements variant stock only if enough is available. */
@@ -278,12 +280,13 @@ export async function createOrderWithItems(input: {
         snapshotDiscountStartsAt: item.snapshotDiscountStartsAt == null ? null : new Date(item.snapshotDiscountStartsAt),
         snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt),
         promoDiscountAmount: item.promoDiscountAmount == null ? null : sql`${item.promoDiscountAmount}`,
-        promoReplacedDiscountId: item.promoReplacedDiscountId ?? null
+        promoReplacedDiscountId: item.promoReplacedDiscountId ?? null,
+        isPromoGift: item.isPromoGift === true
       }))
     );
 
     if (input.promo) {
-      await recordPromoUse(tx, input.promo, order.id);
+      await recordPromoUse(tx, input.promo, order.id, input.order.promoShippingWaivedCents ?? 0);
       // A code that brings the whole order to 0 is allowed, but staff look at it before it ships (spec section 5.5).
       if (input.order.totalAmount === 0) {
         await flagShippingOrder(tx, order.id, "promo_free_review", `Promo code ${input.promo.codeText} made this order free; review it before shipping`);

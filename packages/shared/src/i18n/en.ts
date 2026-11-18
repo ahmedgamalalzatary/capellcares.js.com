@@ -260,6 +260,9 @@ export const en = {
     placedSaving: "Code {code} saved you {amount}",
     free: "Free",
     freeDeliveryWithCode: "Free delivery with your code",
+    giftLine: "Free gift: {name} × {qty}",
+    giftOutOfStock: "The free gift is out of stock; the rest of the code still applies.",
+    giftBadge: "Free gift",
     reasons: {
       login_required: "Log in to use promo codes.",
       not_found: "This code doesn't exist.",

@@ -236,3 +236,12 @@ test("a free-delivery order sends Bosta the products total as the cash to collec
   const request = provider!.buildRequest(freeOrder as any, items as any, "bosta_create_7");
   assert.equal(request.payload.cod, 35);
 });
+
+test("a free gift line ships in the parcel and its contents, without changing the cash to collect", async () => {
+  const provider = await adapter();
+  const withGift = [...items, { qty: 2, snapshotNameEn: "Gift Lotion", snapshotSizeLabel: "50ml", snapshotComponents: null, lineTotal: "0.00", isPromoGift: true }];
+  const request = provider!.buildRequest(order as any, withGift as any, "bosta_create_7");
+  assert.equal(request.payload.cod, 132.29);
+  assert.equal(request.payload.specs.packageDetails.itemsCount, 3);
+  assert.match(request.payload.specs.packageDetails.description, /Gift Lotion \(50ml\) x2/);
+});

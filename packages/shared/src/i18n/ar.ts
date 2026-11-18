@@ -262,6 +262,9 @@ export const ar = {
     placedSaving: "وفّر لكِ الكود {code} مبلغ {amount}",
     free: "مجاني",
     freeDeliveryWithCode: "توصيل مجاني بالكود",
+    giftLine: "هدية مجانية: {name} × {qty}",
+    giftOutOfStock: "الهدية المجانية غير متوفرة حاليًا، وباقي مزايا الكود مطبّقة.",
+    giftBadge: "هدية مجانية",
     reasons: {
       login_required: "سجّلي الدخول لاستخدام أكواد الخصم.",
       not_found: "هذا الكود غير موجود.",

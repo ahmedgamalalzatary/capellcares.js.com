@@ -168,6 +168,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                   <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2">
                     <div className="min-w-0 flex-1">
                       <div className="eyebrow text-(--ink-3)!">{dict.itemType[orderItemTypeKey(item)]}</div>
+                      {item.isPromoGift ? <span className="chip mt-1 inline-flex h-6 px-2 text-xs text-(--success)">{dict.promo.giftBadge}</span> : null}
                       {href ? (
                         <Link href={href} className="mt-1 block font-medium break-words text-ink hover:text-accent">
                           {name}

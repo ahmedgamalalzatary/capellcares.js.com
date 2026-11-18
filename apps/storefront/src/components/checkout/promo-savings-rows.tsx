@@ -31,6 +31,13 @@ export function PromoSavingsRows({ lang, dict, subtotal, productsTotal, applied,
           <span className="text-(--success)">- {formatPrice(applied.discount, lang)}</span>
         </div>
       ) : null}
+      {applied?.gift ? (
+        <div className={rowClassName}>
+          <span className="text-(--ink-2)">{fillTemplate(dict.promo.giftLine, { name: lang === "ar" ? applied.gift.nameAr : applied.gift.nameEn, qty: applied.gift.qty })}</span>
+          <span className="text-(--success)">{dict.promo.free}</span>
+        </div>
+      ) : null}
+      {applied?.giftUnavailable ? <p className="m-0 text-xs text-(--ink-3)">{dict.promo.giftOutOfStock}</p> : null}
     </>
   );
 }

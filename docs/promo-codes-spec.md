@@ -682,6 +682,8 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** gift orders reserve, dispatch, cancel and restock correctly for both COD and Paymob.
 
+**As built:** `priceCheckout` prices the gift with `priceLine(item, gift = true)`, at its normal price and never through the sale logic, then adds it after the pricing engine has run, so it never counts toward a rule. The gift is offered only when it is sold and its stock covers it on top of what the cart itself takes. When it is out of stock, a code with other benefits still applies and says so (`giftUnavailable`); a gift-only code is refused (`gift_unavailable`). The gift line (`is_promo_gift`, price 0, normal price kept in `snapshot_base_unit_price`) is in the reservations, so stock decrement, Paymob reservations and every restock path handle it like any line. The parcel size is estimated from the cart before the code plus the gift's value (`parcelValueCents`), so neither a discount nor a 0-priced gift makes the parcel look smaller. Redemptions record `gift_value_cents` and `shipping_waived_cents`. Cart and checkout list the gift; the customer and ERP order pages badge the gift line, and the ERP savings show its value separately from sale savings.
+
 ### Phase 7: Reporting and dashboard
 
 **Goal:** full visibility for each code.

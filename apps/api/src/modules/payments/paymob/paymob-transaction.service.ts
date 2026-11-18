@@ -333,7 +333,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       snapshotDiscountStartsAt: item.snapshotDiscountStartsAt ? new Date(item.snapshotDiscountStartsAt) : null,
       snapshotDiscountEndsAt: item.snapshotDiscountEndsAt ? new Date(item.snapshotDiscountEndsAt) : null,
       promoDiscountAmount: item.promoDiscountAmount == null ? null : sql`${item.promoDiscountAmount}`,
-      promoReplacedDiscountId: item.promoReplacedDiscountId ?? null
+      promoReplacedDiscountId: item.promoReplacedDiscountId ?? null,
+      isPromoGift: item.isPromoGift === true
     })));
     // The webhook never re-checks the code: the session's held use simply becomes used (spec section 5.4).
     await convertPromoReservation(tx, match.session.id, order.id);

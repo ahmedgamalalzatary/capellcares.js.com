@@ -35,7 +35,7 @@ export class CheckoutShippingError extends Error {
 
 type QuoteRequest = Pick<CheckoutRequestDto, "items" | "paymentMethod" | "shippingAddress" | "customerId">
   & Partial<Pick<CheckoutRequestDto, "addressLine" | "buildingApartment">>;
-type PricedCheckout = { items: unknown[]; totalAmount: number; promo?: { application: { codeId: number; freeShipping?: boolean } | null } | null };
+type PricedCheckout = { items: unknown[]; totalAmount: number; parcelValueCents?: number; promo?: { application: { codeId: number; freeShipping?: boolean } | null } | null };
 export type CheckoutShippingProvider = {
   codPricingPolicy: "collection_total";
   listDestinations(): Promise<ShippingDestination[]>;
@@ -67,8 +67,10 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
     for (let iteration = 0; iteration < 8; iteration++) {
       if (visited.has(codAmountCents)) throw new CheckoutShippingError("SHIPPING_UNAVAILABLE");
       visited.add(codAmountCents);
+      // The carrier sizes the parcel from this value: the cart before the code plus any gift, so neither a discount nor a
+      // 0-priced gift makes the parcel look smaller than it is (spec section 5.2).
       const rate = await provider.quote({ cityId: address.cityId, districtId: address.districtId,
-        productsTotalCents, paymentMethod: payload.paymentMethod === "cod" ? "cod" : "prepaid", codAmountCents }).catch(error => {
+        productsTotalCents: priced.parcelValueCents ?? productsTotalCents, paymentMethod: payload.paymentMethod === "cod" ? "cod" : "prepaid", codAmountCents }).catch(error => {
         throw new CheckoutShippingError(error instanceof ShippingUnsupportedDestinationError ? "SHIPPING_UNSUPPORTED" : "SHIPPING_UNAVAILABLE");
       });
       const customerFeeCents = freeShipping ? 0 : rate.shippingAmountCents;

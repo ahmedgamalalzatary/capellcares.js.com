@@ -252,6 +252,16 @@ describe("OrderDetailView reviews", () => {
     expect(screen.getByText("Collection type")).toBeInTheDocument();
   });
 
+  it("marks the code's free gift line", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({
+      ...order,
+      items: [order.items[0], { ...order.items[0], id: 22, unitPrice: 0, lineTotal: 0, isPromoGift: true, snapshotNameEn: "Gift Lotion", review: null }]
+    });
+    render(createElement(OrderDetailView, { lang: "en", dict: { ...dict, promo: getDict("en").promo }, orderId: 12 }));
+    expect(await screen.findByText("Free gift")).toBeInTheDocument();
+  });
+
   it("shows an error instead of an empty receipt when loading fails", async () => {
     fetchCustomerOrderById.mockRejectedValue(new TypeError("network down"));
 
