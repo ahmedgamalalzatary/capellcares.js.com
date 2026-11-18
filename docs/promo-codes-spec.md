@@ -641,6 +641,8 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** first-order and private codes reject correctly in every identity case in §7 (#22–25).
 
+**As built:** the checks run in `promo-checkout.ts` from Phase 2. A first-order code is refused when the account or the checkout phone (in any format) has any earlier order, including denied ones. It is also refused when the customer already holds or used that code (two open online checkouts). The per-customer limit counts by account or phone, so a re-created account is still limited. Private codes check the account, so a forwarded code is refused. Released uses never count. The cases are covered in `apps/api/tests/services/promo-identity.test.ts`. The ERP customer picker shipped in Phase 1, and `show_in_account` is stored but always off.
+
 ### Phase 5: Free shipping
 
 **Goal:** codes can waive the delivery fee.
