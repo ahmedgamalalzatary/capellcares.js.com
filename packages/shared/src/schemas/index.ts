@@ -15,3 +15,4 @@ export * from "./shipping.schema.js";
 export * from "./shop-media.schema.js";
 export * from "./wishlist.schema.js";
 export * from "./youtube-url.schema.js";
+export * from "./promo-code.schema.js";

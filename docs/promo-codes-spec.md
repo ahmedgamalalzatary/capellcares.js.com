@@ -175,7 +175,7 @@ Runs inside `priceCheckout`, after existing line pricing, so every caller (COD s
 5. **Compute each piece's code price** from its **original price**:
    - percentage: `original × (1 − pct)`
    - fixed: computed at step 7 (spread)
-6. **Choose discounted pieces:** if `max_discounted_pieces` is set, rank pieces by saving for the customer and take the top N (see open item in §11.1).
+6. **Choose discounted pieces:** if `max_discounted_pieces` is set, take the N pieces with the biggest saving against the original price (§11.1). Both percentage and fixed savings scale with the original price, so this means the most expensive pieces first; ties keep cart order.
 7. **Apply amount:**
    - **Percentage:** sum per-piece discounts; if a cap is set and the sum exceeds it, scale every piece's discount down proportionally to the cap.
    - **Fixed:** spread the fixed amount over the chosen pieces in proportion to their original price; never more than the pieces' total.
