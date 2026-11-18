@@ -1,5 +1,5 @@
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { and, eq, gt, gte, isNotNull, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../../shipping/shipping-dispatch.repository.js";
@@ -290,6 +290,10 @@ export async function createOrderWithItems(input: {
     }
 
     await enqueueOrderDelivery(tx, order.id);
+    if (input.promo && input.order.totalAmount === 0) {
+      await tx.update(shippingWorkItems).set({ status: "failed", lastError: "PROMO_FREE_REVIEW" })
+        .where(and(eq(shippingWorkItems.orderId, order.id), eq(shippingWorkItems.operation, "create_delivery"), eq(shippingWorkItems.status, "pending")));
+    }
     return { id: order.id, orderCode };
   });
 }

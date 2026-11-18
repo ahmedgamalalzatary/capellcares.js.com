@@ -52,6 +52,11 @@ export async function retryOrderDeliveryCreation(orderId: number, actorId: numbe
     }
     await tx.update(shippingWorkItems).set({ status: "pending", lastError: null, nextAttemptAt: dueNow(),
       attemptCount: 0, claimedBy: null, claimedAt: null }).where(eq(shippingWorkItems.id, job.id));
+    // Releasing a free promo order for delivery is the staff review its alert asked for.
+    if (job.lastError === "PROMO_FREE_REVIEW") {
+      await tx.update(orderReviewFlags).set({ status: "resolved", resolvedAt: new Date() }).where(and(eq(orderReviewFlags.orderId, orderId),
+        eq(orderReviewFlags.flagType, "promo_free_review"), eq(orderReviewFlags.status, "open")));
+    }
     return true;
   });
 }

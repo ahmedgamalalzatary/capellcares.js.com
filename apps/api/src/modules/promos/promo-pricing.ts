@@ -123,6 +123,8 @@ export function applyPromoPricing(rules: PromoRules, lines: PromoLine[], context
   if (rules.minEligiblePieces !== null && pieces.length < rules.minEligiblePieces) {
     return { ok: false, reason: "min_pieces", missingPieces: rules.minEligiblePieces - pieces.length };
   }
+  // A code limited to chosen items gives nothing, not even free delivery or a gift, to a cart without any of them.
+  if (rules.eligibility.scope === "selected" && pieces.length === 0) return { ok: false, reason: "no_effect" };
 
   // Both percentage and fixed discounts scale with the original price, so the biggest saving against the original
   // price is simply the most expensive pieces first (ties keep cart order).

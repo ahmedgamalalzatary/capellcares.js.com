@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
 import { fillTemplate, loadPromoCode, promoRejectionMessage, savePromoCode } from "@/lib/promo/promo-code";
 
@@ -13,6 +13,19 @@ describe("promo code storage", () => {
     expect(loadPromoCode()).toBe("summer20");
     savePromoCode(null);
     expect(loadPromoCode()).toBe("");
+  });
+});
+
+describe("promo code storage without localStorage", () => {
+  it("still keeps the code for this page when the browser blocks storage", () => {
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    const removeItem = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new Error("blocked"); });
+    savePromoCode("summer20");
+    expect(loadPromoCode()).toBe("summer20");
+    savePromoCode(null);
+    expect(loadPromoCode()).toBe("");
+    setItem.mockRestore(); getItem.mockRestore(); removeItem.mockRestore();
   });
 });
 

@@ -146,3 +146,22 @@ test("online payment below EGP 10 is refused so the customer pays cash on delive
   await db.update(promoCodes).set({ discountValue: (price - 5).toFixed(2) });
   await assert.rejects(submitCheckout(body, { idempotencyKey: crypto.randomUUID() }), (error: unknown) => error instanceof PaymobMinimumError);
 });
+
+test("repeating the same online checkout returns its payment link instead of refusing the code it already holds", async () => {
+  const { payload: body } = await payload(1);
+  await createCode({ totalUsageLimit: 1 });
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_replay", orderId: 9900, clientSecret: "replay_secret", checkoutUrl: "https://checkout" });
+  const first = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
+  const replay = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention }).catch((error) => error);
+  assert.ok(!(replay instanceof Error), String(replay));
+  assert.equal(replay.checkoutId, first.checkoutId);
+});
+
+test("a first-order code held by one open online checkout cannot start a second one for the same customer", async () => {
+  const { payload: body } = await payload(1);
+  await createCode({ firstOrderOnly: true });
+  await initiate(body);
+  await assert.rejects(initiate({ ...body, email: "second-session@capella.test" }),
+    (error: unknown) => error instanceof PromoRejectedError && error.rejection.reason === "in_use");
+});

@@ -79,7 +79,7 @@ export type PricedCheckoutPromo = { dto: PromoAppliedDto | PromoRejectionDto; ap
 /** Prices the cart from the database (sale discounts included), then applies the promo code when one is given (spec section 4). */
 export async function priceCheckout(
   payload: Pick<CheckoutPayload, "items"> & Partial<Pick<CheckoutPayload, "promoCode" | "customerId" | "phone">>,
-  options: { now?: Date } = {}
+  options: { now?: Date; idempotencyKey?: string } = {}
 ) {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
@@ -236,7 +236,8 @@ export async function priceCheckout(
       customerId: payload.customerId ?? null,
       phone: payload.phone ?? null,
       items: pricedItems as PromoPricedItem[],
-      now: options.now
+      now: options.now,
+      idempotencyKey: options.idempotencyKey
     });
     if (evaluation.status === "applied") {
       // The discount goes into each line's total (spec section 4.5), so every total check downstream stays unchanged.
@@ -350,6 +351,13 @@ export async function createOrderFromCheckout(
       promo
     });
   } catch (error) {
+    if (error instanceof PromoRejectedError) {
+      const twin = await findExisting();
+      if (twin?.checkoutFingerprint === checkoutFingerprint) {
+        return { id: twin.id, orderCode: twin.orderCode, paymentStatus: twin.paymentStatus, replayed: true };
+      }
+      throw error;
+    }
     const candidate = error as { code?: string; cause?: { code?: string } };
     if (candidate?.code !== "ER_DUP_ENTRY" && candidate?.cause?.code !== "ER_DUP_ENTRY") throw error;
     const winner = await findExisting();

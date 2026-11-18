@@ -153,8 +153,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   const totalAmount = productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100;
 
   // Paymob takes no payment under EGP 10 (spec section 3.5): a cheaper, non-free total is cash on delivery.
-  const belowOnlineMinimum = productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100 > 0 &&
-    productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100 < ONLINE_PAYMENT_MINIMUM;
+  // Judged on the full total: with delivery enabled, only once this payment method's quote is known.
+  const minimumBasis = shippingQuote ? productsTotal + shippingQuote.shippingAmountCents / 100
+    : availability?.enabled === false ? productsTotal : null;
+  const belowOnlineMinimum = minimumBasis !== null && minimumBasis > 0 && minimumBasis < ONLINE_PAYMENT_MINIMUM;
   useEffect(() => {
     if (belowOnlineMinimum && form.paymentMethod !== PAYMENT_METHODS.cod) setForm((state) => ({ ...state, paymentMethod: PAYMENT_METHODS.cod }));
   }, [belowOnlineMinimum, form.paymentMethod]);
@@ -223,6 +225,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     if (availability?.enabled && !shippingQuote) next.shipping = shippingError ?? dict.checkout.shippingPending;
     if (availability == null || shippingLoading) next.shipping = shippingError ?? dict.common.loading;
     if (cartPromo.loading) next.submit = dict.common.loading;
+    if (cartPromo.failed) next.submit = dict.promo.checkFailed;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -300,7 +303,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   return {
     shipping: { enabled: availability?.enabled ?? null, addresses: availability?.addresses ?? [], quote: shippingQuote,
       loading: shippingLoading, error: shippingError, retry: () => {
-        setQuoted(null); setShippingRetry(value => value + 1);
+        setQuoted(null); setShippingRetry(value => value + 1); cartPromo.refresh();
         Promise.all([fetchProducts({ lang }), fetchOffers({ lang }), fetchCollections({ lang })])
           .then(([products, offers, collections]) => setCatalog({ products, offers, collections })).catch(() => {});
       } },

@@ -92,4 +92,25 @@ describe("PromoCodeBox", () => {
     expect(screen.getByText(/Code SAVE10 no longer applies: Add .*50.* more to use this code\./)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
   });
+
+  it("checks one code at a time, even when Enter is pressed while a check is running", async () => {
+    let finish!: (value: CheckoutPriceResponseDto) => void;
+    const preview = vi.fn().mockReturnValue(new Promise<CheckoutPriceResponseDto>((resolve) => { finish = resolve; }));
+    render(createElement(PromoCodeBox, props({ preview })));
+    typeCode("first");
+    fireEvent.change(screen.getByLabelText("Promo code"), { target: { value: "second" } });
+    fireEvent.keyDown(screen.getByLabelText("Promo code"), { key: "Enter" });
+    expect(preview).toHaveBeenCalledTimes(1);
+    finish(applied());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument());
+  });
+
+  it("says the check failed when the code cannot be checked, and keeps nothing", async () => {
+    const preview = vi.fn().mockRejectedValue(new Error("network"));
+    const onSave = vi.fn();
+    render(createElement(PromoCodeBox, props({ preview, onSave })));
+    typeCode("save10");
+    expect(await screen.findByText("We couldn't check this code. Please try again.")).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

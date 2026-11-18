@@ -23,17 +23,18 @@ export function useCartPromo(lang: Language, lines: CartLine[]) {
   const items = useMemo(() => toCheckoutItems(lines), [lines]);
   // Codes are for signed-in customers only; a guest's code stays saved until they log in.
   const activeCode = user ? savedCode : "";
-  const key = JSON.stringify([items, activeCode, accessToken]);
-  const [state, setState] = useState<{ key: string; priced: CheckoutPriceResponseDto | null } | null>(null);
+  const [version, setVersion] = useState(0);
+  const key = JSON.stringify([items, activeCode, accessToken, version]);
+  const [state, setState] = useState<{ key: string; priced: CheckoutPriceResponseDto | null; failed: boolean } | null>(null);
 
   useEffect(() => {
     if (!activeCode || items.length === 0) return;
     let cancelled = false;
     fetchCheckoutPrice({ items, promoCode: activeCode }, accessToken)
-      .then((priced) => { if (!cancelled) setState({ key, priced }); })
-      .catch(() => { if (!cancelled) setState({ key, priced: null }); });
+      .then((priced) => { if (!cancelled) setState({ key, priced, failed: false }); })
+      .catch(() => { if (!cancelled) setState({ key, priced: null, failed: true }); });
     return () => { cancelled = true; };
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps -- key captures items, code and token
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps -- key captures items, code, token and refreshes
 
   const priced = activeCode && state?.key === key ? state.priced : null;
   const applied = priced?.promo?.status === "applied" ? priced : null;
@@ -47,6 +48,10 @@ export function useCartPromo(lang: Language, lines: CartLine[]) {
     /** Set only when the saved code applies to this cart: its server totals are the ones to show and submit. */
     applied,
     loading: Boolean(activeCode) && items.length > 0 && state?.key !== key,
+    /** The saved code could not be priced: checkout must not go ahead as if there were no code. */
+    failed: Boolean(activeCode) && state?.key === key && state.failed,
+    /** Prices the saved code again (prices or stock may have changed). */
+    refresh: () => setVersion((value) => value + 1),
     preview: (code: string) => fetchCheckoutPrice({ items, promoCode: code }, accessToken)
   };
 }

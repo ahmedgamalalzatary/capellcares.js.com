@@ -6,21 +6,25 @@ import { formatPrice, type Dict, type Language, type PromoRejectionDto } from "@
 // The promo code the customer typed, kept in this browser so it survives moving from cart to checkout and logging in.
 const STORAGE_KEY = "capella:promo-code";
 const CHANGE_EVENT = "capella:promo-code-change";
+// Used when the browser blocks storage (private mode): the code then lasts only for this page.
+let memoryCode: string | null = null;
 
 export function loadPromoCode(): string {
   try {
     return localStorage.getItem(STORAGE_KEY) ?? "";
   } catch {
-    return "";
+    return memoryCode ?? "";
   }
 }
 
 export function savePromoCode(code: string | null) {
+  const value = code?.trim() || null;
+  memoryCode = value;
   try {
-    if (code && code.trim()) localStorage.setItem(STORAGE_KEY, code.trim());
+    if (value) localStorage.setItem(STORAGE_KEY, value);
     else localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Storage can be unavailable (private mode); the code then lasts only for this page.
+    // Kept in memoryCode instead.
   }
   if (typeof window !== "undefined") window.dispatchEvent(new Event(CHANGE_EVENT));
 }

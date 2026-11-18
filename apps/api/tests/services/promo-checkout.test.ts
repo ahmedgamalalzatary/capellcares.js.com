@@ -234,3 +234,33 @@ test("checkout answers a refused code with its reason so the storefront can expl
     assert.ok(response.json.promo.missingAmount > 0);
   });
 });
+
+test("two identical COD submissions with a single-use code return the same order instead of refusing the replay", async () => {
+  const { payload } = await buyer({ items: [{ type: "product", variantId: (await getBaselineIds()).firstVariantId, qty: 1 }] });
+  await createCode({ totalUsageLimit: 1 });
+  const idempotencyKey = crypto.randomUUID();
+  const results = await Promise.all([1, 2].map(() => createOrderFromCheckout(payload, { idempotencyKey })));
+  assert.equal(results[0]!.id, results[1]!.id);
+  assert.equal((await db.select().from(orders)).length, 1);
+});
+
+test("a free promo order with free delivery is held from dispatch until staff release it", async () => {
+  const { fixtureShippingService, selectedDestination } = await import("../helpers/checkout-shipping.js");
+  const { shippingWorkItems } = await import("@capella/database/drizzle/schema");
+  const { payload } = await buyer();
+  await createCode({ discountType: "fixed", discountValue: "100000.00" });
+  const shippingService = fixtureShippingService(0);
+  const withAddress = { ...payload, shippingAddress: selectedDestination };
+  const quote = await shippingService.quoteCheckout(withAddress, await priceCheckout(withAddress));
+  const created = await createOrderFromCheckout({ ...withAddress, shippingQuoteId: quote.quoteId }, { idempotencyKey: crypto.randomUUID(), shippingService });
+  const [job] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, created.id));
+  assert.deepEqual([job!.status, job!.lastError], ["failed", "PROMO_FREE_REVIEW"]);
+
+  const actorId = await createTestAdminUser({ name: "Reviewer", email: "free-review@capella.test", passwordHash: "unused", role: "admin" });
+  const { retryOrderDeliveryCreation } = await import("../../src/modules/shipping/shipping-action.repository.js");
+  await retryOrderDeliveryCreation(created.id, actorId);
+  const [released] = await db.select().from(shippingWorkItems).where(eq(shippingWorkItems.orderId, created.id));
+  assert.equal(released!.status, "pending");
+  const [flag] = await db.select().from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, created.id), eq(orderReviewFlags.flagType, "promo_free_review")));
+  assert.equal(flag!.status, "resolved");
+});

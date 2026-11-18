@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  cairoInputFromInstant,
   createEmptyPromoForm,
+  instantFromCairoInput,
   describePromoBenefits,
   promoErrorMessage,
   promoFormFromCode,
@@ -38,10 +40,20 @@ describe("validatePromoForm", () => {
     });
   });
 
-  it("sends schedule times typed in local (Cairo) time as UTC instants", () => {
-    const result = validatePromoForm({ ...filled(), startsAt: "2030-01-01T10:00", endsAt: "2030-01-02T10:00" });
-    expect(result.payload?.startsAt).toBe(new Date("2030-01-01T10:00").toISOString());
-    expect(result.payload?.endsAt).toBe(new Date("2030-01-02T10:00").toISOString());
+  it("reads schedule times as Cairo time whatever the browser's time zone, including summer time", () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    const result = validatePromoForm({ ...filled(), startsAt: "2030-01-01T10:00", endsAt: "2030-07-01T10:00" });
+    if (previous === undefined) delete process.env.TZ;
+    else process.env.TZ = previous;
+    expect(result.payload?.startsAt).toBe("2030-01-01T08:00:00.000Z");
+    expect(result.payload?.endsAt).toBe("2030-07-01T07:00:00.000Z");
+  });
+
+  it("shows a stored instant back in Cairo time when duplicating with its schedule", () => {
+    expect(cairoInputFromInstant("2030-01-01T08:00:00.000Z")).toBe("2030-01-01T10:00");
+    expect(cairoInputFromInstant("2030-07-01T07:00:00.000Z")).toBe("2030-07-01T10:00");
+    expect(instantFromCairoInput("2030-07-01T10:00")).toBe("2030-07-01T07:00:00.000Z");
   });
 
   it("includes the gift and private customers only when switched on", () => {

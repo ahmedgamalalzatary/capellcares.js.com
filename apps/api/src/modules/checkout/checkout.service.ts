@@ -55,7 +55,7 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
     throw new Error("Idempotency-Key header is required for checkout");
   }
   if (payload.paymentMethod === "paymob") {
-    const priced = await priceCheckout(payload);
+    const priced = await priceCheckout(payload, { idempotencyKey: options.idempotencyKey.trim() });
     const shipping = await resolveShippingForCheckout(payload, priced);
     if (priced.totalAmount === 0 && (shipping?.shippingAmountCents ?? 0) === 0) {
       return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload, {

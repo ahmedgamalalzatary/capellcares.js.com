@@ -101,3 +101,36 @@ it("drops the code and explains when checkout refuses it, so the customer can re
   expect(result.current.errors.submit).toBe("Code SAVE10 was removed: This code has reached its usage limit.");
   expect(loadPromoCode()).toBe("");
 });
+
+it("blocks checkout with a clear message when the code could not be priced, instead of charging without it", async () => {
+  state.price.mockRejectedValue(new Error("network"));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(state.price).toHaveBeenCalled());
+  await fill(result);
+  await act(async () => result.current.placeOrder());
+  expect(state.submit).not.toHaveBeenCalled();
+  expect(result.current.errors.submit).toBe("We couldn't check this code. Please try again.");
+});
+
+it("prices the code again when the customer retries after a price change", async () => {
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  const calls = state.price.mock.calls.length;
+  await act(async () => result.current.shipping.retry());
+  await waitFor(() => expect(state.price.mock.calls.length).toBeGreaterThan(calls));
+});
+
+it("keeps online payment chosen while its delivery quote loads when the full total reaches EGP 10", async () => {
+  state.price.mockResolvedValue({ ...applied, productsTotal: 5, items: [{ ...applied.items[0], lineTotal: 5, promoDiscount: 95 }] });
+  state.quote.mockImplementation(async (input: { paymentMethod: string }) => ({ quoteId: `quote_${input.paymentMethod}`, shippingAmountCents: 3000, size: "small",
+    rateIdentity: "fixture", quotedAt: new Date().toISOString(), productsTotalCents: 500, amountCents: 3500,
+    codAmountCents: input.paymentMethod === "cod" ? 3500 : 0, paymentMethod: input.paymentMethod, address }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(5));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_cod"));
+  await act(async () => result.current.setField("paymentMethod", "paymob"));
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_paymob"));
+  expect(result.current.form.paymentMethod).toBe("paymob");
+  expect(result.current.paymobMethods).toEqual(["card"]);
+});

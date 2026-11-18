@@ -35,7 +35,8 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
 
   const apply = async () => {
     const code = text.trim();
-    if (!code) return;
+    // One check at a time: a slower earlier answer must never overwrite a later code.
+    if (!code || checking) return;
     setMessage(null);
     if (!signedIn) {
       onSave(code);
@@ -43,9 +44,12 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
     }
     setChecking(true);
     try {
-      const priced = await preview(code);
+      const priced = await preview(code).catch(() => null);
       const result = priced?.promo;
-      if (!result) return;
+      if (!result) {
+        setMessage(dict.promo.checkFailed);
+        return;
+      }
       if (result.status === "rejected") {
         setMessage(promoRejectionMessage(result, dict, lang));
         return;

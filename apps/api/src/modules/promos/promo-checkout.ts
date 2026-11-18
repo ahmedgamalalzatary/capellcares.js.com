@@ -2,8 +2,8 @@
 // (advisory: cart preview, shipping quote, checkout submit); lockAndRecheckPromo + recordPromoUse are the binding check
 // that runs inside the transaction creating the order, under a row lock on the code, so a limited code can never be
 // used more times than allowed however many customers submit at once.
-import { and, eq, inArray, or, sql } from "drizzle-orm";
-import { categories, orders, promoCodeCustomers, promoCodes, promoCodeTargets, promoRedemptions } from "@capella/database/drizzle/schema";
+import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { categories, checkoutSessions, orders, promoCodeCustomers, promoCodes, promoCodeTargets, promoRedemptions } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { normalizeEgyptianPhone, normalizePromoCode, type PromoAppliedDto, type PromoRejectionDto } from "@capella/shared";
 import {
@@ -71,8 +71,9 @@ async function loadCode(codeText: string, executor: Executor = db, lock = false)
 }
 
 /** Reserved plus used redemptions: everyone's, and this customer's by account or by phone (so a re-created account still counts); with how many of each are only reserved by an open online payment. */
-async function usageCounts(executor: Executor, codeId: number, customerId: number, phone: string | null) {
-  const live = and(eq(promoRedemptions.promoCodeId, codeId), inArray(promoRedemptions.state, ["reserved", "used"]));
+async function usageCounts(executor: Executor, codeId: number, customerId: number, phone: string | null, ignoreSessionId: number | null) {
+  const live = and(eq(promoRedemptions.promoCodeId, codeId), inArray(promoRedemptions.state, ["reserved", "used"]),
+    ignoreSessionId === null ? undefined : or(isNull(promoRedemptions.checkoutSessionId), ne(promoRedemptions.checkoutSessionId, ignoreSessionId)));
   const mine = phone ? or(eq(promoRedemptions.customerId, customerId), eq(promoRedemptions.phoneNormalized, phone)) : eq(promoRedemptions.customerId, customerId);
   const counts = { live: sql<number>`count(*)`, reserved: sql<number>`sum(${promoRedemptions.state} = 'reserved')` };
   const [[total], [own]] = await Promise.all([
@@ -100,10 +101,10 @@ async function isOnPrivateList(executor: Executor, codeId: number, customerId: n
   return Boolean(row);
 }
 
-async function accessFailure(executor: Executor, code: PromoCodeRow | null, customerId: number | null, phone: string | null, now: Date) {
+async function accessFailure(executor: Executor, code: PromoCodeRow | null, customerId: number | null, phone: string | null, now: Date, ignoreSessionId: number | null = null) {
   if (customerId === null || !code) return validatePromoAccess(code, { customerId, now, onPrivateList: false, hasPreviousOrder: false, usedTotal: 0, usedByCustomer: 0 });
   const [counts, previous, listed] = await Promise.all([
-    usageCounts(executor, code.id, customerId, phone),
+    usageCounts(executor, code.id, customerId, phone, ignoreSessionId),
     code.firstOrderOnly ? hasPreviousOrder(executor, customerId, phone) : Promise.resolve(false),
     code.isPrivate ? isOnPrivateList(executor, code.id, customerId) : Promise.resolve(false)
   ]);
@@ -112,6 +113,10 @@ async function accessFailure(executor: Executor, code: PromoCodeRow | null, cust
   // A limit reached only because another checkout is paying online right now is "in use", not "used up" (spec section 6.2).
   if (failure === "usage_limit" && counts.usedTotal - counts.reservedTotal < code.totalUsageLimit!) return "in_use";
   if (failure === "customer_limit" && counts.usedByCustomer - counts.reservedByCustomer < code.perCustomerLimit!) return "in_use";
+  // A first-order code is one use per customer even before that use becomes an order (two open online checkouts).
+  if (!failure && code.firstOrderOnly && counts.usedByCustomer > 0) {
+    return counts.usedByCustomer > counts.reservedByCustomer ? "first_order" : "in_use";
+  }
   return failure;
 }
 
@@ -160,12 +165,17 @@ export async function evaluateCheckoutPromo(input: {
   now?: Date;
   /** Delivery can be charged for this checkout, so a free-shipping benefit means something. */
   shippingAvailable?: boolean;
+  /** A repeated online checkout (same idempotency key) does not count the use its own session already holds. */
+  idempotencyKey?: string;
 }): Promise<PromoEvaluation> {
   const now = input.now ?? new Date();
   const codeText = normalizePromoCode(input.promoCode);
   const phone = input.phone ? normalizeEgyptianPhone(input.phone) : null;
   const code = input.customerId === null ? null : await loadCode(codeText);
-  const failure = await accessFailure(db, code, input.customerId, phone, now);
+  const [ownSession] = input.idempotencyKey
+    ? await db.select({ id: checkoutSessions.id }).from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, input.idempotencyKey)).limit(1)
+    : [];
+  const failure = await accessFailure(db, code, input.customerId, phone, now, ownSession?.id ?? null);
   if (failure || !code) return { status: "rejected", dto: rejection(codeText, failure ?? "not_found") };
 
   const lineages = await categoryLineages(input.items.flatMap((item) => (item.categoryId ? [item.categoryId] : [])));

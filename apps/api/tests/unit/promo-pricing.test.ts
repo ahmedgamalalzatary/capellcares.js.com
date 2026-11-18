@@ -189,6 +189,11 @@ describe("rules that reject the code", () => {
     assert.deepEqual(pricing(code, [variantLine({ original: 100 })]), { ok: false, reason: "no_effect" });
   });
 
+  test("a code limited to chosen items gives no free delivery or gift to a cart without any of them", () => {
+    const code = rules({ freeShipping: true, hasGift: true, eligibility: { scope: "selected", include: [{ type: "product", id: 999 }], exclude: [] } });
+    assert.deepEqual(pricing(code, [variantLine({ original: 100 })], { shippingAvailable: true, giftAvailable: true }), { ok: false, reason: "no_effect" });
+  });
+
   test("a free-shipping-only code is refused while delivery is unavailable, and other benefits still apply", () => {
     const freeOnly = rules({ discountType: null, discountValue: null, freeShipping: true });
     const offline = { shippingAvailable: false, giftAvailable: false };

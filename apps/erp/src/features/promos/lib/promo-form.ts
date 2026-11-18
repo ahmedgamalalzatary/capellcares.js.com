@@ -118,6 +118,39 @@ const NUMBER_FIELDS = {
   giftQty: "كمية الهدية"
 } as const;
 
+// Schedules are typed and shown in Cairo time (which observes summer time), never the browser's own zone.
+const CAIRO = "Africa/Cairo";
+const cairoParts = new Intl.DateTimeFormat("en-US", {
+  timeZone: CAIRO, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+});
+
+function cairoWallClock(instant: number) {
+  const parts = Object.fromEntries(cairoParts.formatToParts(new Date(instant)).map((part) => [part.type, part.value]));
+  return { year: +parts.year!, month: +parts.month!, day: +parts.day!, hour: +parts.hour!, minute: +parts.minute!, second: +parts.second! };
+}
+
+/** The UTC instant (ISO) for a datetime-local value read as Cairo time. */
+export function instantFromCairoInput(value: string): string {
+  const [date, time] = value.split("T");
+  const [year, month, day] = date!.split("-").map(Number);
+  const [hour, minute] = (time ?? "00:00").split(":").map(Number);
+  const wall = Date.UTC(year!, month! - 1, day!, hour!, minute!);
+  let instant = wall;
+  // Two passes settle the offset even across a summer-time change.
+  for (let pass = 0; pass < 2; pass += 1) {
+    const seen = cairoWallClock(instant);
+    instant += wall - Date.UTC(seen.year, seen.month - 1, seen.day, seen.hour, seen.minute, seen.second);
+  }
+  return new Date(instant).toISOString();
+}
+
+/** A datetime-local value showing an instant in Cairo time. */
+export function cairoInputFromInstant(value: string): string {
+  const seen = cairoWallClock(new Date(value).getTime());
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${seen.year}-${pad(seen.month)}-${pad(seen.day)}T${pad(seen.hour)}:${pad(seen.minute)}`;
+}
+
 const FIELD_LABELS: Record<string, string> = { ...NUMBER_FIELDS, gift: "الهدية", startsAt: "تاريخ البداية", endsAt: "تاريخ الانتهاء" };
 
 /** The API payload for the form, or the Arabic reasons it cannot be saved yet. */
@@ -133,7 +166,7 @@ export function validatePromoForm(form: PromoFormState): { payload: PromoCodeCre
     }
     return value;
   };
-  const instant = (value: string) => (value ? new Date(value).toISOString() : null);
+  const instant = (value: string) => (value ? instantFromCairoInput(value) : null);
 
   const raw = {
     code: form.code,
@@ -175,13 +208,7 @@ export function validatePromoForm(form: PromoFormState): { payload: PromoCodeCre
 
 const text = (value: number | null) => (value === null ? "" : String(value));
 
-/** A datetime-local value for an instant, in the browser's time zone. */
-function localInput(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+const localInput = (value: string | null) => (value ? cairoInputFromInstant(value) : "");
 
 /** Starting values for "Duplicate as new": every rule copied; the code text and schedule left for the new code. */
 export function promoFormFromCode(code: PromoCodeDetail, options: { keepSchedule?: boolean } = {}): PromoFormState {

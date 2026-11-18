@@ -131,7 +131,7 @@ export async function initiatePaymobCheckout(input: {
     throw new Error("Paymob checkout is not configured");
   }
   // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
-  const priced = input.priced ?? await priceCheckout(input.payload);
+  const priced = input.priced ?? await priceCheckout(input.payload, { idempotencyKey: input.idempotencyKey });
   const promo = requireAppliedPromo(priced);
   const shipping = input.shipping !== undefined
     ? input.shipping
