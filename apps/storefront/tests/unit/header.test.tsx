@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let pathname = "/en/products";
@@ -39,7 +39,7 @@ vi.mock("@/components/layout/header/shop-mega-menu", () => ({
 }));
 
 vi.mock("@/components/layout/header/search-overlay", () => ({
-  SearchOverlay: () => null
+  SearchOverlay: ({ open }: { open: boolean }) => (open ? createElement("div", { role: "dialog", "aria-label": "Search overlay" }) : null)
 }));
 
 vi.mock("@/hooks/use-language-switch", () => ({
@@ -117,5 +117,28 @@ describe("Header layout stability", () => {
     expect(accountLinks).toHaveLength(2);
     // Only the desktop cluster still carries a wishlist icon.
     expect(screen.getAllByRole("link", { name: "Wishlist" })).toHaveLength(1);
+  });
+});
+
+describe("Header search overlay", () => {
+  it("closes search when the page changes without a link click, such as a signed-out wishlist redirect", () => {
+    const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    fireEvent.click(screen.getByTestId("mobile-search"));
+    expect(screen.getByRole("dialog", { name: "Search overlay" })).toBeInTheDocument();
+
+    pathname = "/en/wishlist";
+    rerender(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    expect(screen.queryByRole("dialog", { name: "Search overlay" })).not.toBeInTheDocument();
+  });
+
+  it("keeps search open while the page stays the same", () => {
+    const { rerender } = render(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    fireEvent.click(screen.getByTestId("mobile-search"));
+    rerender(<Header lang="en" dict={dict} menuEntries={[]} />);
+
+    expect(screen.getByRole("dialog", { name: "Search overlay" })).toBeInTheDocument();
   });
 });

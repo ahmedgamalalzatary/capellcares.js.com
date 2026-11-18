@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, ChevronLeft, ImagePlus } from "lucide-react";
 import type { Category } from "@capella/shared";
 import { StepCount, Stepper } from "@/components/admin/stepper";
@@ -90,43 +90,25 @@ function ImageWell({
   );
 }
 
-/** A main category's two shop pictures (Arabic and English), side by side; the shop shows the other language's picture when one is missing. */
+/** A main category's two shop pictures (Arabic and English), side by side; the shop shows the other language's picture when one is missing.
+ * The upload itself is owned by CategoryForm, so it outlives this field when the wizard changes step and Save can wait for it. */
 function ShopImagesField({
   arValue,
   enValue,
-  onChange,
-  uploadContext,
+  uploading,
+  error,
+  onUpload,
+  onRemove,
   disabled
 }: {
   arValue: string | null;
   enValue: string | null;
-  onChange: (lang: "ar" | "en", value: string | null) => void;
-  uploadContext: ErpUploadContext;
+  uploading: "ar" | "en" | null;
+  error: string | null;
+  onUpload: (lang: "ar" | "en", files: FileList | null) => void;
+  onRemove: (lang: "ar" | "en") => void;
   disabled?: boolean;
 }) {
-  const [uploading, setUploading] = useState<"ar" | "en" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleFile = async (lang: "ar" | "en", files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    const validationError = validateImageFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    setUploading(lang);
-    setError(null);
-    try {
-      const result = await api.uploadImage(file, uploadContext);
-      onChange(lang, result.url);
-    } catch (uploadError) {
-      setError(getErrorMessage(uploadError, "تعذر رفع الصورة"));
-    } finally {
-      setUploading(null);
-    }
-  };
-
   return (
     <div className="@container grid gap-3">
       <div className="grid gap-4 @lg:grid-cols-2">
@@ -143,8 +125,8 @@ function ShopImagesField({
               inputTestId={`category-shop-image-${lang}-input`}
               canUpload={!disabled && uploading === null}
               busy={uploading !== null}
-              onFiles={(files) => { void handleFile(lang, files); }}
-              onRemove={() => onChange(lang, null)}
+              onFiles={(files) => onUpload(lang, files)}
+              onRemove={() => onRemove(lang)}
               removeLabel={`إزالة الصورة ${lang === "ar" ? "العربية" : "الإنجليزية"}`}
             />
           );
@@ -167,6 +149,33 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   const [enShopImagePath, setEnShopImagePath] = useState(initial?.enShopImagePath ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [shopUploading, setShopUploading] = useState<"ar" | "en" | null>(null);
+  const [shopUploadError, setShopUploadError] = useState<string | null>(null);
+  // Only the latest shop-picture upload may write its result; an older one that finishes late is ignored.
+  const shopUploadSeq = useRef(0);
+
+  const setShopImage = (lang: "ar" | "en", value: string | null) => (lang === "ar" ? setArShopImagePath(value) : setEnShopImagePath(value));
+
+  const uploadShopImage = async (lang: "ar" | "en", files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setShopUploadError(validationError);
+      return;
+    }
+    const seq = ++shopUploadSeq.current;
+    setShopUploading(lang);
+    setShopUploadError(null);
+    try {
+      const result = await api.uploadImage(file, uploadContext);
+      if (seq === shopUploadSeq.current) setShopImage(lang, result.url);
+    } catch (uploadError) {
+      if (seq === shopUploadSeq.current) setShopUploadError(getErrorMessage(uploadError, "تعذر رفع الصورة"));
+    } finally {
+      if (seq === shopUploadSeq.current) setShopUploading(null);
+    }
+  };
 
   const availableCategories = useMemo(() => {
     const excluded = initial ? getDescendantCategoryIds(categories, initial.id) : new Set<number>([-1]);
@@ -219,6 +228,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
   });
 
   const save = async () => {
+    if (shopUploading) return;
     const nextErrors: Record<string, string> = {};
     if (!nameAr.trim()) nextErrors.nameAr = "أدخلي الاسم بالعربية";
     if (!nameEn.trim()) nextErrors.nameEn = "أدخلي الاسم بالإنجليزية";
@@ -301,8 +311,10 @@ export function CategoryForm({ mode, initial, categories }: Props) {
           <ShopImagesField
             arValue={arShopImagePath}
             enValue={enShopImagePath}
-            onChange={(lang, value) => (lang === "ar" ? setArShopImagePath(value) : setEnShopImagePath(value))}
-            uploadContext={uploadContext}
+            uploading={shopUploading}
+            error={shopUploadError}
+            onUpload={(lang, files) => { void uploadShopImage(lang, files); }}
+            onRemove={(lang) => setShopImage(lang, null)}
             disabled={saving}
           />
         ) : canEditImage ? (
@@ -335,7 +347,7 @@ export function CategoryForm({ mode, initial, categories }: Props) {
               </Button>
             ) : null}
             {editing || isLast ? (
-              <Button variant="primary" disabled={saving} onClick={() => { void save(); }}>
+              <Button variant="primary" disabled={saving || shopUploading !== null} onClick={() => { void save(); }}>
                 {saving ? "جارٍ الحفظ…" : editing ? "حفظ التعديلات" : "إنشاء القسم"}
               </Button>
             ) : null}

@@ -35,6 +35,7 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
   const [searching, setSearching] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
@@ -74,8 +75,9 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
 
   useEffect(() => {
     if (open) {
-      // Touch screens: no auto-focus, or the on-screen keyboard pops up and covers the suggestions. It opens when the customer taps the box.
+      // Touch screens: focus the dialog, not the box, or the on-screen keyboard pops up and covers the suggestions. It opens when the customer taps the box.
       if (window.matchMedia?.("(hover: hover) and (pointer: fine)").matches) inputRef.current?.focus();
+      else dialogRef.current?.focus();
     } else {
       setTerm("");
     }
@@ -128,11 +130,13 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-label={dict.nav.search}
         className={[
-          "absolute inset-x-0 top-0 mx-auto flex max-h-[100dvh] w-full max-w-2xl flex-col px-4 pb-6 pt-6 transition-transform duration-200 ease-out",
+          "absolute inset-x-0 top-0 mx-auto flex max-h-[100dvh] outline-none w-full max-w-2xl flex-col px-4 pb-6 pt-6 transition-transform duration-200 ease-out",
           open ? "translate-y-0" : "-translate-y-4"
         ].join(" ")}
       >

@@ -115,6 +115,13 @@ describe("SearchOverlay", () => {
     expect(screen.getByPlaceholderText(dict.nav.search)).not.toHaveFocus();
   });
 
+  it("still moves focus into search on touch screens, so keyboard users are not left behind the overlay", () => {
+    mockPointer(false);
+    const dict = getDict("en");
+    render(createElement(SearchOverlay, { lang: "en", dict, open: true, onClose: vi.fn() }));
+    expect(screen.getByRole("dialog", { name: dict.nav.search })).toHaveFocus();
+  });
+
   it("focuses the box with a mouse, where no on-screen keyboard appears", () => {
     mockPointer(true);
     const dict = getDict("en");

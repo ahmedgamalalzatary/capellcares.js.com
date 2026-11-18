@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+const { toastError, uploadImage } = vi.hoisted(() => ({ toastError: vi.fn(), uploadImage: vi.fn() }));
 const push = vi.fn();
 const upsertCategory = vi.fn().mockResolvedValue(undefined);
 
@@ -19,6 +19,11 @@ vi.mock("sonner", () => ({
   }
 }));
 
+vi.mock("@/lib/api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/client")>();
+  return { ...actual, api: { ...actual.api, uploadImage } };
+});
+
 vi.mock("@/lib/store", () => ({
   getStore: () => ({
     upsertCategory
@@ -34,7 +39,17 @@ afterEach(() => {
   upsertCategory.mockResolvedValue(undefined);
   toastError.mockClear();
   push.mockClear();
+  uploadImage.mockReset();
 });
+
+/** An upload that stays pending until the test resolves it. */
+const pendingUpload = () => {
+  let resolve!: (value: { url: string }) => void;
+  uploadImage.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  return (url: string) => resolve({ url });
+};
+
+const pngFile = () => new File(["x"], "shop.png", { type: "image/png" });
 
 const categories = [
   { id: 1, parentId: null, slug: "hair-care", name: { ar: "العناية بالشعر", en: "Hair Care" }, isLeaf: false, deletedAt: null },
@@ -142,6 +157,46 @@ describe("CategoryForm", () => {
 
     await waitFor(() => expect(upsertCategory).toHaveBeenCalled());
     expect(upsertCategory.mock.calls[0]![0]).toMatchObject({ enShopImagePath: null, arShopImagePath: null });
+  });
+});
+
+describe("CategoryForm shop picture uploads", () => {
+  const mainCategory = { id: 9, parentId: null, slug: "x", name: { ar: "س", en: "X" }, isLeaf: true, deletedAt: null, enShopImagePath: null, arShopImagePath: "/uploads/old-ar.jpg" };
+
+  it("blocks saving while a shop picture is uploading, then saves the uploaded picture", async () => {
+    const finishUpload = pendingUpload();
+    render(createElement(CategoryForm, { mode: "edit", categories, initial: mainCategory }));
+
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+    fireEvent.change(screen.getByTestId("category-shop-image-ar-input"), { target: { files: [pngFile()] } });
+
+    const saveButton = await screen.findByRole("button", { name: "حفظ التعديلات" });
+    await waitFor(() => expect(saveButton).toBeDisabled());
+    fireEvent.click(saveButton);
+    expect(upsertCategory).not.toHaveBeenCalled();
+
+    finishUpload("/uploads/new-ar.jpg");
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(upsertCategory).toHaveBeenCalledWith(expect.objectContaining({ arShopImagePath: "/uploads/new-ar.jpg" })));
+  });
+
+  it("keeps an upload running after leaving the picture step, so a second upload cannot start and the first result still lands", async () => {
+    const finishUpload = pendingUpload();
+    const { container } = render(createElement(CategoryForm, { mode: "edit", categories, initial: mainCategory }));
+
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+    fireEvent.change(screen.getByTestId("category-shop-image-ar-input"), { target: { files: [pngFile()] } });
+    fireEvent.click(screen.getByRole("button", { name: /السابق/ }));
+    fireEvent.click(screen.getByRole("button", { name: /التالي/ }));
+
+    expect(screen.getByTestId("category-shop-image-en-input")).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("جارٍ رفع الصورة…");
+
+    finishUpload("/uploads/new-ar.jpg");
+    await waitFor(() => expect(screen.getByTestId("category-shop-image-en-input")).toBeEnabled());
+    expect(Array.from(container.querySelectorAll("img"), (image) => image.getAttribute("src"))).toContain("http://localhost:4000/uploads/new-ar.jpg");
   });
 });
 

@@ -31,6 +31,12 @@ export function Header({ lang, dict, menuEntries, announcements: cmsAnnouncement
     : authHref("login", lang, `${pathname}${search ? `?${search}` : ""}`);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // The header outlives navigation, so close search whenever the page changes, including code-driven moves such as a signed-out wishlist tap.
+  const [searchPathname, setSearchPathname] = useState(pathname);
+  if (searchPathname !== pathname) {
+    setSearchPathname(pathname);
+    setSearchOpen(false);
+  }
   const isAr = lang === "ar";
   const { switchLang } = useLanguageSwitch(lang);
 
